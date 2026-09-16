@@ -38,6 +38,51 @@ QA/reconciliation completed: the `## QA: PASS` evidence was posted to
 and the issue was closed as completed. The change does not weaken any
 assertion or change product/runtime behavior.
 
+## 2026-09-15 — account-settings and portfolio parity distillation
+
+The owner-reported follow-up scope is recorded in
+`.local/tasks/account-settings-portfolio-distillation-2026-09-15.md`. It is
+distillation-only: no product source or product tests changed. GitHub's
+authenticated issue list was empty before this follow-up batch; the nine
+criterion-ready issues below were then created as new open issues after the
+owner's design choices and action-time confirmations.
+
+| Proposed item | Scope | Routing | Dependency |
+| --- | --- | --- | --- |
+| [#550](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/550) | PayPal-hosted subscription management/cancellation | stage 2b complex | PayPal capability check; reuse #440 |
+| [#551](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/551) | Deterministic public-handle generation and changes | stage 2b complex | old-handle redirect policy selected |
+| [#552](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/552) | Admin-managed profile style catalog and user selection | stage 2b complex | fixed token catalog selected |
+| [#553](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/553) | Vendor-aware saved model preferences | stage 2b complex | multi-vendor credential foundation |
+| [#554](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/554) | Settings progressive disclosure and empty-state polish | stage 2a mechanical | none |
+| [#555](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/555) | Persistent settings order and expansion preferences | stage 2a mechanical | #554's section structure |
+| [#556](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/556) | Ordered collections and portfolio management | stage 2b complex | owner-created first slice selected |
+| [#557](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/557) | Immersive collection gallery and embed surface | stage 2b complex | #556 |
+| [#558](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/558) | Admin-only primary-navigation link and responsive discoverability | stage 2a mechanical | reuse #422/#517 authorization and routes |
+
+## 2026-09-16 — identity, admin, entitlement, and public-gallery distillation
+
+The current auth/admin review found five identity and access gaps plus three
+public-gallery gaps. Existing #420/#421/#422/#423/#425/#426 foundations remain
+closed and are reused. All eight criterion-ready records below were created as
+open GitHub issues and verified in the active Chrome session; no product source
+or tests changed during this pass.
+
+| Open issue | Scope | Routing | Dependency |
+| --- | --- | --- | --- |
+| [#559](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/559) | OAuth linking across every configured provider | stage 2b complex | reuse #426; provider deployment evidence remains #445 |
+| [#560](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/560) | Managed admin roster across linked accounts | stage 2b complex | #559; reuse #421/#422 |
+| [#561](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/561) | Reversible admin entitlements and data-preserving downgrade | stage 2b complex | #560; reuse #423 |
+| [#562](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/562) | Verified email aliases and primary-email changes | stage 2b complex | reuse #421/#426 |
+| [#563](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/563) | Password set/change/recovery for social-first accounts | stage 2b complex | account-security boundary |
+| [#564](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/564) | Public gallery filters by implemented engine | stage 2b complex | existing #491 public gallery |
+| [#565](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/565) | Public gallery Pieces/Collections/All toggle | stage 2b complex | #556 collection publication contract |
+| [#566](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/566) | Collection links below associated public pieces | stage 2b complex | #556; authored/generated viewer routes |
+
+The current live implementation exposes only All/Authored/Generated gallery
+filters, no collection mode, and no collection context on individual piece
+viewers. Engine options must be server-derived from implemented/public
+contracts; unsupported future engines must not appear in the dropdown.
+
 ## 2026-09-15 — final task distillation, readiness, and completion reconciliation
 
 The authenticated GitHub connector was re-enumerated after the #544 migration
@@ -21477,8 +21522,137 @@ job that had been red). This is the first real CI confirmation of the fix.
 - **Production (Replit):** PASS — `https://augmentrart.com/health/` 200,
   `/` 200, anonymous `/api/whoami/` 401 (correct boundary), independently
   re-checked in this pass.
-- **Backlog:** zero open issues (`gh issue list --state open` returns
-  empty). No stale, duplicate, or unreconciled items found.
+- **Backlog at that prior completion pass:** zero open issues (`gh issue list
+  --state open` returned empty). The later account-settings and portfolio
+  follow-up batch is recorded above as nine newly opened issues (#550–#558).
 
 **The project is production-ready as of `bdcb2a0`.** No blockers, no open
 follow-ups, no verification boundaries outstanding.
+## 2026-09-16 — backlog-session transaction ledger (open for owner QA)
+
+The authenticated GitHub inventory contains 20 open issues (#550–#569; #556 is
+represented by child issues #567 and #568). This
+session is honoring the owner's instruction not to close issues: processed
+issues stop after QA/reconciliation and remain open for owner QA.
+
+| Issue | State | Commit | Focused/full checks | QA result / next action |
+| --- | --- | --- | --- | --- |
+| #550 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `dbbb3c1`, `6bb0e72` | Billing/webhook backend 21 passed; existing checkout/return browser coverage plus responsive hosted-management/cancellation Chromium E2E 2 passed at 1280x900 and 375x812; owner-authorized PayPal Sandbox checkout/approval reached ACTIVE and cancellation returned 204 with follow-up status CANCELLED | QA PASS posted for hosted management, cancellation request, pending-webhook/access-preservation messaging, anonymous boundary, and the authorized Sandbox provider lifecycle; no live PayPal or real-funds claim; independent closure remains required, so issue stays open |
+| #551 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `126dec0`, `683c17f` | focused profile tests 4 passed; migration check clean; `make check` backend 1,348 passed/39 skipped and frontend 2,694 passed; final Docker Chromium batch matrix 2 passed at 1280x900 and 375x812 | QA PASS posted; clean-fixture rerun passed both handle viewports; owner QA/closure remains required, so issue stays open |
+| #554 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `b2b6f3b`, `13023d6` | Focused progressive-disclosure Chromium E2E: 2 passed at 1280x900 and 375x812; existing unit coverage | QA PASS posted for issue criteria; stale #548 grouping test remains a separate reconciliation item; issue stays open |
+| #555 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `b8d5763`, `a746abf` | Focused Chromium E2E: 2 passed at 1280x900 and 375x812; existing layout unit coverage | QA PASS posted; independent closure remains required, so issue stays open |
+| #558 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `5793419`, `0529a6a` | Responsive Chromium E2E: 2 passed at 1280x900 and 375x812; admin/ordinary auth boundary verified | QA PASS posted; independent closure remains required, so issue stays open |
+| #559 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `1235aa6`, `a20c66e` | Identity/OAuth backend 40 passed; frontend 5 passed; responsive Chromium E2E 2 passed at 1280x900 and 375x812 | QA PASS posted; independent closure remains required, so issue stays open |
+| #564 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `b1c758a`, `90693d0` | Public-gallery/art-piece API 64 passed; gallery UI/a11y 25 passed; responsive Chromium E2E 2 passed at 1280x812 and 375x812, matching the server engine catalog, disabled empty options, URL filter, reload persistence | QA PASS posted for issue criteria; independent closure remains required, so issue stays open |
+| #560 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `6ec38ed`, `8aaee93` | Focused backend 30 passed; focused frontend 5 passed; responsive Chromium E2E 2 passed at 1280x900 and 375x812 covering admin grant/revoke plus ordinary/anonymous denial and redirects | QA PASS posted for issue criteria; independent closure remains required, so issue stays open |
+| #561 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `e5a2d38`, `00a325a` | Focused backend 70 passed plus Docker PostgreSQL row-lock concurrency test 1 passed; frontend entitlement/settings/navigation 28 passed; final targeted Chromium E2E 2 passed at 1280x812 and 375x812 | QA PASS posted for issue criteria; disposable Compose PostgreSQL removed the prior environment-gated skip; independent closure remains required, so issue stays open |
+| #562 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `30f8fb6`, `d22c3dd`, `45723ba` | Backend identity/session/security gates 33 passed; frontend AccountSettings/AccountIdentities 16 passed; responsive Chromium E2E 2 passed at 1280x812 and 375x812; owner-controlled SMTP delivery accepted 1 QA message and Chromium completed add, verify, promote-primary, and remove-non-primary flow; fixture cleanup left zero fixture users/aliases | QA PASS posted for the implemented route/security boundary and owner-controlled mailbox flow; mailbox may be real or disposable; independent closure remains required, so issue stays open |
+| #563 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `636a438` | Focused backend security/session/identity/deletion 40 passed/1 skipped; social-first set/change/reset integration coverage 4 passed; backend Ruff/format/mypy passed; frontend typecheck/format/lint passed; responsive Chromium E2E 2 passed at 1280x812 and 375x812 | Allauth password lifecycle is now explicitly configured for one-hour reset tokens, generic reset handling, reset replay rejection, post-change session invalidation, and OAuth-link preservation; live third-party OAuth exchange remains external QA scope; issue intentionally remains open |
+| #552 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `25dab9e` | `make check`; focused profile/style tests; Chromium E2E at 1280x900 and 375x812 | QA PASS posted; owner QA/closure remains required, so issue stays open |
+| #553 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `38cabb4`, `b1183a3`, `9cb88c3`, `89ca547` | 32 existing AI preference/catalog tests; 8 vendor-aware preference tests; 48 focused frontend regression tests; migration check; final Docker Chromium batch matrix 2 passed at 1280x900 and 375x812 | QA PASS posted; mobile Layers-panel navigation fix verified; owner QA/closure remains required, so issue stays open |
+| #556 | HANDED-OFF (OPEN) | — | not run | Parent split into criterion-ready API/domain child #567 and UI/routes child #568; media/export remains explicitly bounded because no server-side shared media model exists |
+| #567 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `b07958c`, `90bc5e4` | Collection API/domain 7 focused tests passed; safe-settings checks, Ruff, mypy passed; collection/gallery/art-piece regression 71 passed; Compose PostgreSQL Chromium API matrix 2 passed at 1280x900 and 375x812 | QA PASS posted; media-table and offline-export claims remain explicitly out of scope; independent closure remains required, so issue stays open |
+| #568 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `bd0dabc` | focused unit 4 passed; typecheck passed; lint passed with pre-existing warnings; Docker Chromium E2E 2 passed at 1280x900 and 375x812 | Child of #556: authenticated owner collection management and anonymous canonical public collection route; #567 API/domain contract consumed; issue intentionally remains open for external QA |
+| #557 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `c5a8871` | focused immersive viewer tests 4 passed; frontend typecheck/format passed; full frontend suite 2,694 passed; Docker Chromium E2E 2 passed at 1280x900 and 375x812 | Collection immersive route provides deterministic ordered one-slot viewing, arrow/button navigation, reset, thumbnail capture fallback, reduced-motion-safe responsive framing, unsupported-item placeholder, and chrome-less embed; issue intentionally remains open for external QA |
+| #565 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `41e523b` | focused backend gallery/collection 47 passed; Ruff passed; focused frontend gallery/a11y 26 passed; typecheck passed; lint passed with pre-existing warnings; Docker Chromium E2E 2 passed at 1280x812 and 375x812 | Public gallery now supports All, Pieces, and Collections with profile/visibility filtering, cursor-backed mixed ordering, canonical collection cards, and legacy API aliases; issue intentionally remains open for external QA |
+| #566 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `be5ab42` | focused backend collection/privacy 8 passed; frontend typecheck/lint passed with pre-existing warnings; final Docker Chromium batch matrix 2 passed at 1280x812 and 375x812, including embed privacy | QA PASS posted; clean-fixture rerun confirmed canonical collection links without slug contamination; issue intentionally remains open for external QA |
+
+| #569 | GROOMED → ENGINEERING → QA → RECONCILIATION (OPEN) | `9976b4f` | Docker Chromium `collectionsApi.spec.ts` 2 passed; no teardown warning; Compose cleanup returned `{"deleted": 0}`; frontend format check and typecheck passed | QA PASS: Docker global teardown now targets the same Compose backend as setup; host teardown behavior remains unchanged; issue intentionally remains open for external QA |
+
+All inventoried issues have been processed to QA or parent handoff; live
+third-party OAuth exchange remains an external QA scope for #563.
+QA handoff or parent handoff in dependency order. Stage owners used for the processed engineering passes were
+Claude/Codex substitutions for the rostered Ollama Cloud or Opencode Go
+service; independent Stage 3 review was not run. No issue was closed.
+
+### Batch completion and readiness reconciliation
+
+- Terminal-status rollup: 20 discovered; 19 QA/reconciliation-ready and open;
+  1 parent handed off and open; 0 blocked; 0 dependency-blocked; 0 missing
+  terminal statuses. No GitHub issue was closed, per owner instruction.
+- Local verification: `make check` passed with backend 1,348 passed/39 skipped
+  and frontend 2,694 passed; `make compose-preflight` passed for the named
+  repository Compose project and app health; `git diff --check` passed. The
+  final targeted Docker Chromium matrix passed all 34 scenarios.
+- Production-readiness result: local and disposable Compose evidence PASS;
+  production deployment is an OPEN verification boundary. `make deploy-check`
+  completed but reported five deployment warnings (HSTS, SSL redirect, secure
+  session cookie, secure CSRF cookie, and DEBUG enabled); these are environment
+  configuration concerns and are not silently treated as production-ready.
+- External verification boundaries: live OAuth consent/exchange for #559 and
+  #563, and owner-controlled mailbox
+  alias mutation evidence for #562 remain owner/QA follow-up boundaries. The
+  Compose backend uses Django's console email backend (`webmaster@localhost`),
+  so it cannot deliver a verification message to the owner's real mailbox
+  without a non-production mail configuration. The mailbox may be real or
+  disposable. The independent Stage 3 Mistral review
+  service was unavailable; Stage 3 is optional for this batch and was not run.
+  Owner-provided PayPal Sandbox buyer access reached the hosted account surface,
+  and a read-only check confirmed the configured seller application authenticates
+  and exposes one billing plan. The Compose database's active paid plan currently
+  has no `paypal_plan_id`, so the running app cannot create a provider-linked
+  subscription. No checkout or cancellation mutation was performed.
+- Readiness-gate provenance: production readiness was intentionally deferred
+  to Claude Code by the owner; the checks above are evidence collection and do
+  not claim that the production-readiness gate ran.
+- Newly discovered follow-up audit: one actionable workflow defect was found,
+  checked against the backlog and GitHub, and created as criterion-ready issue
+  #569; it was implemented and QA-passed in the same continuation. No item is
+  pending authorization.
+
+## 2026-09-16 — production-readiness gate run and pre-commit reconciliation
+
+The production-readiness gate itself (deferred as an open item in the prior
+entry) ran in this pass on Sonnet 5, the owner-authorized permanent
+equivalent to Opus 5 for this gate (see `DECISIONS.md`, confirmed
+2026-09-10). Scope was the three files with unpushed working-tree changes at
+session start plus the untracked `.local/tasks/` records already referenced
+by the 2026-09-15/2026-09-16 entries above.
+
+- Backlog reconciliation: `gh issue list --state open` returned exactly the
+  20 issues (#550-#569, with #556 represented by #567/#568) already recorded
+  above. No drift, duplicate, or missing terminal status.
+- Commit provenance: every commit hash cited in the two backlog-session
+  ledger entries above was confirmed present in this checkout
+  (`git cat-file -e`); none were missing.
+- Local verification re-run: `make check` passed (frontend 2,694/2,694,
+  matching the prior pass exactly); `make deploy-check` reproduced the same
+  5 warnings (HSTS, SSL redirect, secure session cookie, secure CSRF cookie,
+  DEBUG enabled) against the local dev `.env`, confirming these are the
+  expected local-vs-production gap already recorded above, not a new defect.
+- Routing-audit confirmation: the prior ledger entry's provenance statement
+  ("Stage owners used ... were Claude/Codex substitutions for the rostered
+  Ollama Cloud or Opencode Go service; independent Stage 3 review was not
+  run") is an explicit, non-silent substitution disclosure and satisfies the
+  handoff-contract provenance requirement; no stage owner was found
+  unrecorded.
+- **`backend/.env.example` regression found and reverted (not committed):**
+  the working tree had uncommented `ADMIN_IDENTITIES` and the six
+  `EMAIL_*`/`DEFAULT_FROM_EMAIL` lines, making them active-by-default in a
+  fresh `cp .env.example .env`. This contradicted this document's own
+  "Development uses the console backend" statement and would have pointed a
+  fresh local checkout's email backend at a placeholder SMTP host
+  (`smtp.example.com`) with empty credentials instead of Django's
+  DEBUG-mode console backend default. Flagged to the owner in chat; owner
+  confirmed reverting to the prior commented-out placeholder state. No
+  product code was touched.
+- **New defect found and filed as [#570](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/570):**
+  `frontend/src/pages/AccountSettings.tsx`'s saved-models section (component
+  `SavedMistralModels`) still names its heading, `aria-label`, and docs link
+  "Saved Mistral models" / Mistral-only documentation, even though #553
+  (QA-passed above) made the section vendor-aware for Mistral, Gemini, and
+  DeepSeek. This contradicts #553's own stated goal ("Generalize the
+  Mistral-only saved-model UI into a vendor-aware model registry"). The
+  session's other uncommitted change, `frontend/e2e/savedModels.spec.ts`,
+  was updated to assert the current (stale) heading text rather than the
+  vendor-neutral text it previously expected; that test edit is correct as
+  a reflection of current source and is kept, but is called out in #570 as
+  needing a further update once the heading itself is fixed. #553 is not
+  reopened; #570 is a scoped, criterion-ready follow-up (stage 2a
+  mechanical) that depends on it.
+- Readiness result: **local and CI-equivalent evidence PASS** for the
+  reconciled backlog (unchanged from the prior entry); the two findings
+  above are the only items this pass added, both resolved or filed before
+  commit. Production deployment verification remains the same open boundary
+  already recorded in the prior entry — this pass did not touch or re-check
+  the published environment.

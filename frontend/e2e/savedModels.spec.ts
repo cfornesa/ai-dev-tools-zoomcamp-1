@@ -45,7 +45,7 @@ test.describe('vendor-aware saved AI models (#553)', () => {
       expect(createdGemini.ok()).toBe(true);
 
       await page.goto('/account/settings');
-      await expect(page.getByRole('heading', { name: 'Saved AI models' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Saved Mistral models' })).toBeVisible();
       await expect(page.getByText(/gemini: Gemini browser model/)).toBeVisible();
 
       await page.goto('/');

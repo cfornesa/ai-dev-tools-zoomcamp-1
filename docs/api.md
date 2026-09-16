@@ -79,6 +79,14 @@ the existing public detail routes. The response includes `canonical_url`,
 The frontend canonical route is `/users/@<handle>/pieces/<piece-slug>`. Existing
 identifier-based viewer routes remain backward-compatible and are not removed.
 
+### Public gallery search (#581)
+
+`GET /api/public/gallery/search/?q=<term>&scope=accounts|content` searches
+only public profiles or published public content. Account results expose only
+handle/display name/link fields; content results use the existing gallery card
+contract. Blank queries return an empty result set, malformed scopes or terms
+over 100 characters return `400`, and ordering is deterministic.
+
 ## Account billing contract (#440, #550)
 
 Authenticated account billing is exposed through `/api/account/billing/` and

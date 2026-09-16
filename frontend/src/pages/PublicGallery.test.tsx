@@ -370,6 +370,12 @@ describe('PublicGallery pagination', () => {
     await user.tab();
     expect(screen.getByRole('combobox', { name: /gallery engine/i })).toHaveFocus();
     await user.tab();
+    expect(screen.getByRole('searchbox', { name: /search public gallery/i })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('combobox', { name: /search scope/i })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Search' })).toHaveFocus();
+    await user.tab();
     expect(screen.getByRole('link', { name: /first/i })).toHaveFocus();
     await user.tab();
     expect(loadMoreButton).toHaveFocus();

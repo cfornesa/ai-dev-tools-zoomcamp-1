@@ -3,10 +3,12 @@ import { Link, useSearchParams } from 'react-router-dom';
 
 import {
   fetchPublicGallery,
+  searchPublicGallery,
   type PublicGalleryEngine,
   type PublicGalleryEngineOption,
   type PublicGalleryItem,
   type PublicGalleryType,
+  type PublicGalleryAccountItem,
 } from '../api/projects';
 
 type InitialLoadState = 'loading' | 'error' | 'ready';
@@ -44,13 +46,14 @@ function isValidEngine(value: string | null): value is PublicGalleryEngine {
   return value === 'canvas2d' || value === 'svg' || value === 'threejs' || value === 'aframe';
 }
 
-function typeBadge(item: PublicGalleryItem): string {
+function typeBadge(item: PublicGalleryItem | PublicGalleryAccountItem): string {
+  if (item.kind === 'account') return 'Account';
   if (item.kind === 'collection') return 'Collection';
   if (item.kind === 'generated') return 'Generated';
   return item.kind === '3d' ? '3D' : '2D';
 }
 
-function GalleryCard({ item }: { item: PublicGalleryItem }) {
+function GalleryCard({ item }: { item: PublicGalleryItem | PublicGalleryAccountItem }) {
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const titleId = `gallery-item-${item.id}-title`;
   const showFallback = !item.thumbnail_url || thumbnailFailed;
@@ -101,13 +104,15 @@ function GalleryCard({ item }: { item: PublicGalleryItem }) {
  */
 function PublicGallery() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') ?? '';
+  const scope = searchParams.get('scope') === 'accounts' ? 'accounts' : 'content';
   const rawType = searchParams.get('type');
   const rawEngine = searchParams.get('engine');
   const type: PublicGalleryType = isValidType(rawType) ? rawType : 'all';
   const engine: PublicGalleryEngine | undefined = isValidEngine(rawEngine) ? rawEngine : undefined;
 
   const [initialLoadState, setInitialLoadState] = useState<InitialLoadState>('loading');
-  const [items, setItems] = useState<PublicGalleryItem[]>([]);
+  const [items, setItems] = useState<Array<PublicGalleryItem | PublicGalleryAccountItem>>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadMoreState, setLoadMoreState] = useState<LoadMoreState>({
@@ -128,7 +133,16 @@ function PublicGallery() {
     let cancelled = false;
     setInitialLoadState('loading');
     setLoadMoreState({ pending: false, error: null });
-    const request = engine ? fetchPublicGallery(type, { engine }) : fetchPublicGallery(type);
+    const request = query
+      ? searchPublicGallery(query, scope).then((result) => ({
+          results: result.results,
+          next_cursor: null,
+          has_more: false,
+          engine_catalog: [],
+        }))
+      : engine
+        ? fetchPublicGallery(type, { engine })
+        : fetchPublicGallery(type);
     request
       .then((page) => {
         if (cancelled) return;
@@ -145,7 +159,7 @@ function PublicGallery() {
     return () => {
       cancelled = true;
     };
-  }, [type, engine]);
+  }, [type, engine, query, scope]);
 
   useEffect(() => loadFirstPage(), [loadFirstPage]);
 
@@ -187,6 +201,15 @@ function PublicGallery() {
     const value = event.target.value;
     setSearchParams(
       { type, ...(isValidEngine(value) ? { engine: value } : {}) },
+      { replace: true },
+    );
+  }
+
+  function handleSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const input = event.currentTarget.elements.namedItem('gallery-search') as HTMLInputElement;
+    setSearchParams(
+      { type, scope, ...(input.value.trim() ? { q: input.value.trim() } : {}) },
       { replace: true },
     );
   }
@@ -242,6 +265,36 @@ function PublicGallery() {
           ))}
         </select>
       </div>
+
+      <form className="gallery-search" onSubmit={handleSearch} role="search">
+        <label htmlFor="gallery-search">Search public gallery</label>
+        <input
+          id="gallery-search"
+          name="gallery-search"
+          type="search"
+          defaultValue={query}
+          maxLength={100}
+        />
+        <label htmlFor="gallery-search-scope">Search scope</label>
+        <select
+          id="gallery-search-scope"
+          value={scope}
+          onChange={(event) =>
+            setSearchParams(
+              {
+                type,
+                scope: event.target.value as 'accounts' | 'content',
+                ...(query ? { q: query } : {}),
+              },
+              { replace: true },
+            )
+          }
+        >
+          <option value="content">Content</option>
+          <option value="accounts">Accounts</option>
+        </select>
+        <button type="submit">Search</button>
+      </form>
 
       {items.length === 0 ? (
         <div>

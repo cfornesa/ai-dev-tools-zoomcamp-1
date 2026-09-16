@@ -305,6 +305,16 @@ export type PublicGalleryItem =
   | PublicGalleryCollectionItem
   | PublicGalleryGeneratedItem;
 
+export type PublicGalleryAccountItem = {
+  id: string;
+  kind: 'account';
+  title: string;
+  owner: string;
+  handle: string;
+  viewer_url: string;
+  thumbnail_url: null;
+};
+
 export type PublicGalleryEngine = 'canvas2d' | 'svg' | 'threejs' | 'aframe';
 export type PublicGalleryEngineOption = {
   value: PublicGalleryEngine;
@@ -338,6 +348,13 @@ export function fetchPublicGallery(
   if (options.pageSize) params.set('page_size', String(options.pageSize));
   if (options.engine) params.set('engine', options.engine);
   return apiFetch<PublicGalleryUnifiedPage>(`/api/public/gallery/?${params.toString()}`);
+}
+
+export function searchPublicGallery(query: string, scope: 'accounts' | 'content') {
+  const params = new URLSearchParams({ q: query, scope });
+  return apiFetch<{ scope: string; results: Array<PublicGalleryItem | PublicGalleryAccountItem> }>(
+    `/api/public/gallery/search/?${params.toString()}`,
+  );
 }
 
 /** Task 51 (issue #53): the *current* saved version of a public project, as

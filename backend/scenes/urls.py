@@ -109,6 +109,7 @@ from scenes.pages_api import PublicPageDetailView
 from scenes.profile_api import AccountProfileView, PublicProfileView
 from scenes.profile_styles_api import AdminProfileStyleDetailView, AdminProfileStyleListCreateView
 from scenes.provider_credentials_api import ProviderCredentialView
+from scenes.public_search_api import PublicGallerySearchView
 from scenes.scene_conversion_api import (
     SceneConversionAcceptView,
     SceneConversionAdvanceView,
@@ -137,6 +138,7 @@ urlpatterns = [
         name="admin-profile-style-detail",
     ),
     path("site-theme/", SiteThemeView.as_view(), name="site-theme"),
+    path("public/gallery/search/", PublicGallerySearchView.as_view(), name="public-gallery-search"),
     path("admin/plans/", AdminPlansView.as_view(), name="admin-plans"),
     path("admin/roles/", AdminRolesView.as_view(), name="admin-roles"),
     path("admin/roles/<str:role_key>/", AdminRoleDetailView.as_view(), name="admin-role-detail"),

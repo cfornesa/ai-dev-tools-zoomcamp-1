@@ -61,3 +61,17 @@ but the same read-only schema query still returned no
 `scenes_syncmutationreceipt` or `scenes_cloudbackupblobtransfer` table. This
 is not a transient publish lag; stop further retries and escalate with the
 deployment release identity and the exact missing-table evidence.
+
+Resolved 2026-09-15: the missing-table evidence was traced to revision drift,
+not a production SQL defect. Replit's workspace was still on an older `main`
+revision whose checkout stopped at migration `0062`; the local repository held
+`0063`–`0065` but GitHub `main` had not yet received them. After owner approval
+of the fast-forward, Replit's Git tab fetched and pulled the revision, the
+Development Database migration ran successfully for all three migrations, and
+the supported Republish flow produced release `f65b4223`. The required
+production tables and `applied_scene_version_id` were verified directly through
+`information_schema.columns`, and `scripts/smoke-published.sh` passed. The safe
+recovery sequence is: synchronize the exact migration revision into Replit,
+migrate Development only, Publish, smoke-test, and inspect actual Production
+tables. Do not enable production startup migrations or repair this class of
+drift with manual production SQL.

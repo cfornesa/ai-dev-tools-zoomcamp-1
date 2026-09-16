@@ -892,3 +892,13 @@ Deployment logs exposed release identity `edcd459` with successful
 security/build/promotion stages and no migration error. Further retries are
 stopped; escalation under #467 must use that release identity and the exact
 missing-table evidence, with no direct production SQL.
+
+## 2026-09-15 — Resolve #467 by synchronizing Replit's Git revision
+
+Owner approved fast-forwarding GitHub `main` and importing it through Replit's
+Git tab. The Replit workspace was stale at migrations `0062`; after Fetch/Pull,
+Development-only migration applied `0063`, `0064`, and `0065` successfully.
+The supported Republish flow completed as `f65b4223`, the published smoke check
+passed, and read-only Production Database inspection confirmed both missing
+tables plus `applied_scene_version_id`. Production startup migrations remained
+disabled and no manual production SQL was used.

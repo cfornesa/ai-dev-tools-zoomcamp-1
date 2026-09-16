@@ -21325,3 +21325,23 @@ and 2,682 frontend tests passed. Formatting, typechecking, and action-pin
 checks pass; lint reports warnings only. GitHub #546 received the authenticated
 Chrome QA verdict and is closed as completed. Evidence is local disposable
 PostgreSQL/Django/Vite plus Chromium and is not a production deployment claim.
+
+## 2026-09-15 — #467 schema blocker resolved through Replit Git synchronization
+
+The blocker was resolved after owner approval of the GitHub `main` fast-forward
+and Replit Git-tab import. The active Replit checkout was confirmed to be an
+older revision that stopped at migration `0062`; after Fetch/Pull, migrations
+`0063_sync_mutation_receipt.py`, `0064_cloudbackupblobtransfer.py`, and
+`0065_sync_receipt_applied_scene_version.py` were present. The Development
+Database migration applied all three successfully.
+
+The supported Republish flow completed as release `f65b4223`. The published
+smoke check passed with `/health/` 200, `/` 200, anonymous `/api/whoami/` 401,
+and the login form 200. A read-only Production Database query returned 40 rows
+across the affected tables, including `scenes_cloudbackupblobtransfer`,
+`scenes_syncmutationreceipt`, `scenes_sceneversion`, and
+`scenes_syncmutationreceipt.applied_scene_version_id`.
+
+This closes the prior #467 deployment/schema blocker. The evidence establishes
+schema parity and anonymous published routing; it does not substitute for any
+separate authenticated deployed-browser matrix required by another issue.

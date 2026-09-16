@@ -236,7 +236,10 @@ function PublicGallery() {
   }
 
   return (
-    <section aria-labelledby="public-gallery-heading">
+    <section
+      className="content-panel public-gallery-panel"
+      aria-labelledby="public-gallery-heading"
+    >
       <h2 id="public-gallery-heading">Public gallery</h2>
 
       <div className="gallery-type-filter">

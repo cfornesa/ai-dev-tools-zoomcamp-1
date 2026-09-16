@@ -181,8 +181,14 @@ test.describe('Responsive app shell', () => {
         page.getByRole('navigation', { name: 'Primary navigation' }),
       );
       await expectVisibleAndInViewport(page.getByRole('radiogroup', { name: 'Reduce motion' }));
-      await expectVisibleAndInViewport(page.locator('.content-panel'));
-      await expectVisibleAndInViewport(page.getByRole('link', { name: 'Sign in with Google' }));
+      // Task #572: '/' now resolves anonymous visitors to the public
+      // gallery instead of a standalone Home surface with its own
+      // Google-specific sign-in CTA. The gallery's content panel is real,
+      // scrollable page content (unlike the old compact Home panel), so
+      // only its heading is asserted in-viewport; the panel itself is only
+      // asserted visible.
+      await expect(page.locator('.content-panel')).toBeVisible();
+      await expectVisibleAndInViewport(page.getByRole('heading', { name: 'Public gallery' }));
       await expectNoHorizontalOverflow(page);
     });
 
@@ -195,8 +201,7 @@ test.describe('Responsive app shell', () => {
         page,
         [
           page.getByRole('link', { name: 'Skip to main content' }),
-          page.getByRole('link', { name: 'Home', exact: true }),
-          page.getByRole('link', { name: 'Public gallery' }),
+          page.getByRole('link', { name: 'Public gallery', exact: true }),
           page.getByRole('link', { name: 'Login', exact: true }),
           page.getByRole('radio', { name: 'Match system' }),
         ],
@@ -220,8 +225,7 @@ test.describe('Responsive app shell', () => {
         page,
         [
           page.getByRole('link', { name: 'Skip to main content' }),
-          page.getByRole('link', { name: 'Home', exact: true }),
-          page.getByRole('link', { name: 'Public gallery' }),
+          page.getByRole('link', { name: 'Public gallery', exact: true }),
           page.getByRole('link', { name: 'Login', exact: true }),
           system,
         ],
@@ -381,8 +385,8 @@ test.describe('Responsive app shell', () => {
           page,
           [
             page.getByRole('link', { name: 'Skip to main content' }),
-            page.getByRole('link', { name: 'Home', exact: true }),
-            page.getByRole('link', { name: 'Public gallery' }),
+            page.getByRole('link', { name: 'Studio', exact: true }),
+            page.getByRole('link', { name: 'Public gallery', exact: true }),
             page.getByRole('link', { name: 'Account settings' }),
             page.getByRole('button', { name: 'Logout' }),
             page.getByRole('radio', { name: 'Match system' }),

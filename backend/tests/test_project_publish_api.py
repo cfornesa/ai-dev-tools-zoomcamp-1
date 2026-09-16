@@ -375,6 +375,7 @@ def test_public_detail_excludes_owner_private_fields(
         "owner",
         "title",
         "description",
+        "seo_config",
         "tags",
         "allow_public_remix",
         "thumbnail_url",
@@ -386,6 +387,7 @@ def test_public_detail_excludes_owner_private_fields(
     }
     assert "export_attribution" not in body
     assert "visibility" not in body
+    assert body["seo_config"] == {}
     assert body["collections"] == []
 
 

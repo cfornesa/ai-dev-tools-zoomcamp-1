@@ -9,6 +9,7 @@ import {
 } from '../export/generateHtmlExport3D';
 import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
+import { applyContentMetadata } from '../metadata';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
 
@@ -62,6 +63,17 @@ function PublicProject3DViewer() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (project) {
+      applyContentMetadata(
+        project.seo_config,
+        project.title,
+        `A public 3D scene by ${project.owner}.`,
+        window.location.href,
+      );
+    }
+  }, [project]);
 
   function embedSnippetFor(projectId: string): string {
     const src = `${window.location.origin}/embed/p3d/${projectId}`;

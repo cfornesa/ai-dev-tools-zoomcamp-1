@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/client';
 import * as projects3dApi from '../api/projects3d';
 import type { PublicProject3D } from '../api/projects3d';
+import type { SeoConfig } from '../api/adminPages';
 import PublicProject3DViewer from './PublicProject3DViewer';
 
 /**
@@ -88,6 +89,43 @@ describe('PublicProject3DViewer load states', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     expect(screen.getByRole('button', { name: 'Open download menu' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View in immersive mode' })).toBeInTheDocument();
+  });
+
+  it('applies configured SEO/AEO metadata to the public 3D viewer', async () => {
+    const seoConfig = {
+      title: '3D search title',
+      description: '3D search description',
+      canonical_policy: 'self',
+      indexing: 'index',
+      og_title: '3D social title',
+      og_description: '3D social description',
+      og_image_url: '',
+      twitter_card: 'summary_large_image',
+      answer_summary: '3D agent answer summary',
+      structured_data: { '@type': 'VisualArtwork' },
+    } as SeoConfig;
+    mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D({ seo_config: seoConfig }));
+
+    renderViewer();
+
+    await screen.findByRole('heading', { name: 'Rotating Cube' });
+    await waitFor(() => expect(document.title).toBe('3D search title'));
+    expect(document.head.querySelector('meta[name="description"]')).toHaveAttribute(
+      'content',
+      '3D search description',
+    );
+    expect(document.head.querySelector('meta[property="og:description"]')).toHaveAttribute(
+      'content',
+      '3D social description',
+    );
+    expect(document.head.querySelector('meta[name="twitter:card"]')).toHaveAttribute(
+      'content',
+      'summary_large_image',
+    );
+    expect(document.head.querySelector('link[data-content-canonical]')).toBeInTheDocument();
+    expect(document.head.querySelector('script[data-content-structured-data]')).toHaveTextContent(
+      'VisualArtwork',
+    );
   });
 
   it('shows a safe, undifferentiated message for a 404 (never-existed or not public)', async () => {

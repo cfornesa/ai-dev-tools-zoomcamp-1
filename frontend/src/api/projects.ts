@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { SeoConfig } from './adminPages';
 
 export type Visibility = 'private' | 'public';
 
@@ -30,6 +31,7 @@ export type Project = {
   owner: string;
   title: string;
   description: string;
+  seo_config?: SeoConfig;
   tags: string[];
   visibility: Visibility;
   allow_public_remix: boolean;
@@ -103,7 +105,10 @@ export type SceneValidationErrorBody = {
  * the PATCH endpoint itself ignores a `visibility` key rather than
  * applying it). */
 export type ProjectMetadataInput = Partial<
-  Pick<Project, 'title' | 'description' | 'tags' | 'allow_public_remix' | 'export_attribution'>
+  Pick<
+    Project,
+    'title' | 'description' | 'seo_config' | 'tags' | 'allow_public_remix' | 'export_attribution'
+  >
 >;
 
 export function listProjects(): Promise<Project[]> {
@@ -380,6 +385,7 @@ export type PublicProject = {
   owner: string;
   title: string;
   description: string;
+  seo_config?: SeoConfig;
   tags: string[];
   allow_public_remix: boolean;
   thumbnail_url: string | null;

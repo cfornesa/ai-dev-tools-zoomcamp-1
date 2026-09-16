@@ -11,6 +11,7 @@ import {
   useCameraOverlayGeometry,
 } from '../editor/cameraOverlayGeometry';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
+import { applyContentMetadata } from '../metadata';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePreview';
 import { normalizeSceneLayers } from '../validation/scene';
@@ -259,6 +260,17 @@ function PublicProjectViewer() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (project) {
+      applyContentMetadata(
+        project.seo_config,
+        project.title,
+        project.description,
+        window.location.href,
+      );
+    }
+  }, [project]);
 
   // Issue #192 follow-up: a plain useCallback, not inlined into the effect
   // below, so `useCameraOverlayRedrawLoop` can call the exact same render

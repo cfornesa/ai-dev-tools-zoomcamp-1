@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/client';
 import * as projectsApi from '../api/projects';
 import type { PublicProject } from '../api/projects';
+import type { SeoConfig } from '../api/adminPages';
 import * as authModule from '../auth/useAuth';
 import PublicProjectViewer from './PublicProjectViewer';
 
@@ -92,6 +93,43 @@ describe('PublicProjectViewer load states', () => {
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(screen.getByTestId('public-scene-canvas')).toBeInTheDocument();
     expect(mockedGetPublicProject).toHaveBeenCalledWith('p1');
+  });
+
+  it('applies configured SEO/AEO metadata to the public 2D viewer', async () => {
+    const seoConfig = {
+      title: 'Search-ready title',
+      description: 'Search-ready description',
+      canonical_policy: 'self',
+      indexing: 'index',
+      og_title: 'Social title',
+      og_description: 'Social description',
+      og_image_url: '',
+      twitter_card: 'summary',
+      answer_summary: 'Agent answer summary',
+      structured_data: { '@type': 'VisualArtwork' },
+    } as SeoConfig;
+    mockedGetPublicProject.mockResolvedValue(basePublicProject({ seo_config: seoConfig }));
+
+    renderViewer();
+
+    await screen.findByRole('heading', { name: 'Hand Follower' });
+    await waitFor(() => expect(document.title).toBe('Search-ready title'));
+    expect(document.head.querySelector('meta[name="description"]')).toHaveAttribute(
+      'content',
+      'Search-ready description',
+    );
+    expect(document.head.querySelector('meta[property="og:title"]')).toHaveAttribute(
+      'content',
+      'Social title',
+    );
+    expect(document.head.querySelector('meta[name="twitter:card"]')).toHaveAttribute(
+      'content',
+      'summary',
+    );
+    expect(document.head.querySelector('link[data-content-canonical]')).toBeInTheDocument();
+    expect(document.head.querySelector('script[data-content-structured-data]')).toHaveTextContent(
+      'VisualArtwork',
+    );
   });
 
   // Task 63 (issue #63): the scene-canvas div had `aria-label` with no

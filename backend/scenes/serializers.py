@@ -3,6 +3,7 @@
 from django.urls import reverse
 from rest_framework import serializers
 
+from scenes.content_metadata import sanitize_content_seo
 from scenes.models import (
     ArtPiece,
     Collection,
@@ -118,12 +119,20 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
     """
 
     tags = TagListField(required=False)
+    seo_config = serializers.DictField(required=False)
+
+    def validate_seo_config(self, value):
+        try:
+            return sanitize_content_seo(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
     class Meta:
         model = Project
         fields = [
             "title",
             "description",
+            "seo_config",
             "tags",
             "allow_public_remix",
             "export_attribution",
@@ -131,6 +140,7 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "title": {"required": False, "allow_blank": False},
             "description": {"required": False, "allow_blank": True},
+            "seo_config": {"required": False},
             "allow_public_remix": {"required": False},
             "export_attribution": {"required": False},
         }
@@ -197,6 +207,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "owner",
             "title",
             "description",
+            "seo_config",
             "tags",
             "visibility",
             "allow_public_remix",
@@ -294,6 +305,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "owner",
             "title",
             "description",
+            "seo_config",
             "tags",
             "allow_public_remix",
             "thumbnail_url",
@@ -646,6 +658,7 @@ class Project3DSerializer(serializers.ModelSerializer):
             "id",
             "owner",
             "title",
+            "seo_config",
             "visibility",
             "thumbnail_url",
             "thumbnail_is_fallback",
@@ -669,17 +682,29 @@ class Project3DSerializer(serializers.ModelSerializer):
 
 class Project3DMetadataSerializer(serializers.ModelSerializer):
     """Issue #301: the `Project3D` counterpart of `ProjectMetadataSerializer`,
-    scoped to just `title` -- `Project3D` has no `description`/`tags`/
+    scoped to `title` and validated content SEO/AEO metadata -- `Project3D`
+    has no `description`/`tags`/
     `allow_public_remix`/`export_attribution` fields to extend this to (the
     same documented scope boundary `Project3DSerializer` itself notes), and
     `visibility` is excluded for the identical reason `ProjectMetadataSerializer`
     excludes it: publishing must go through `Project3DPublishView`/
     `Project3DUnpublishView`, not a generic metadata PATCH."""
 
+    seo_config = serializers.DictField(required=False)
+
+    def validate_seo_config(self, value):
+        try:
+            return sanitize_content_seo(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
     class Meta:
         model = Project3D
-        fields = ["title"]
-        extra_kwargs = {"title": {"required": False, "allow_blank": False}}
+        fields = ["title", "seo_config"]
+        extra_kwargs = {
+            "title": {"required": False, "allow_blank": False},
+            "seo_config": {"required": False},
+        }
 
 
 class PublicSceneVersion3DSerializer(serializers.ModelSerializer):
@@ -714,6 +739,7 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
             "id",
             "owner",
             "title",
+            "seo_config",
             "thumbnail_url",
             "collections",
             "current_version",

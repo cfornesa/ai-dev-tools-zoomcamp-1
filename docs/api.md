@@ -127,6 +127,27 @@ metadata. `q` matches title or description, while `account` resolves an exact
 email or username substring internally; email addresses are never returned in
 content rows. Missing filters preserve the existing full list contract.
 
+### Project and Project3D content SEO/AEO metadata (#588)
+
+The owner-scoped `PATCH /api/projects/<public_id>/` and
+`PATCH /api/projects3d/<public_id>/` metadata contracts accept an optional
+validated `seo_config` object using the same bounded shape as collections and
+generated art pieces. Owner-scoped GET/list responses include the stored
+configuration. Existing rows default to `{}` and the migration is additive;
+no content is deleted or rewritten.
+
+The anonymous `GET /api/public/projects/<public_id>/` and
+`GET /api/public/projects3d/<public_id>/` responses include `seo_config` only
+when the project is currently published and eligible for the existing public
+detail gate. Private, draft, deleted, unpublished, and unauthorized projects
+continue to return the existing not-found/authorization behavior without
+exposing the field.
+
+The frontend public 2D and 3D viewers apply the shared content-metadata
+renderer to the returned configuration, including bounded title,
+description, robots, canonical, Open Graph, Twitter, and JSON-LD output.
+Existing identifier-based and canonical piece routes remain unchanged.
+
 ## Account billing contract (#440, #550)
 
 Authenticated account billing is exposed through `/api/account/billing/` and

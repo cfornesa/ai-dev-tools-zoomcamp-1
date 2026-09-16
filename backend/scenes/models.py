@@ -826,6 +826,11 @@ class Project(models.Model):
     title = models.CharField(max_length=200, default="Untitled animation")
     public_slug = models.SlugField(max_length=220, default="", blank=True)
     description = models.TextField(default="", blank=True)
+    # Issue #588: bounded content SEO/AEO overrides for canonical public
+    # project pages. Validation belongs to the owner-facing serializer;
+    # keeping the persisted value defaultable makes this additive for legacy
+    # rows and safe to synchronize into populated production tables.
+    seo_config = models.JSONField(default=dict, blank=True)
     visibility = models.CharField(
         max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
     )
@@ -1697,6 +1702,9 @@ class Project3D(models.Model):
     )
     title = models.CharField(max_length=200, default="Untitled 3D scene")
     public_slug = models.SlugField(max_length=220, default="", blank=True)
+    # Issue #588: same validated content SEO/AEO shape as Project and the
+    # existing Collection/ArtPiece content families.
+    seo_config = models.JSONField(default=dict, blank=True)
     # Issue #296: publish/visibility parity with the 2D `Project` model
     # above -- same field shapes, same PRIVATE-by-default, same separate
     # `published_at` (not `updated_at`) sort/cursor key for a future public

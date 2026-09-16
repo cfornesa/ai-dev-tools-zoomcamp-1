@@ -21967,3 +21967,24 @@ was selected. Replit completed the publish as deployment `916a02a2`.
 The migration-bearing production boundary is therefore resolved. Browser QA,
 production-readiness, session-completion, and issue closure remain deferred;
 the affected issues remain open for QA.
+
+## 2026-09-16 — project SEO/AEO metadata (#588)
+
+Issue [#588](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/588)
+was already criterion-ready and routed as complex logic. The implementation
+adds validated `seo_config` fields to `Project` and `Project3D`, exposes them
+through owner and public serializers, applies the shared metadata renderer in
+both public viewers, and adds focused privacy/validation/rendering coverage.
+
+- Stage 2b was completed by Codex as a direct substitution because the
+  rostered Ollama Cloud implementation service was unavailable. No new
+  dependency was added and the migration is additive with a defaulted JSON
+  field.
+- The focused backend suite (6 tests), focused viewer suite (36 tests),
+  migration consistency check, Ruff checks, frontend typecheck, and frontend
+  format check passed.
+- The full `make check` passed: 1,409 backend tests passed with 39 skipped and
+  2,717 frontend tests passed. Existing lint warnings remain non-blocking.
+- Stage 3 second-opinion review was not run. Stage 4 QA is being performed by
+  Codex using `qa-self-review` as a documented substitution; production
+  readiness and session completion remain explicitly deferred to Claude Code.

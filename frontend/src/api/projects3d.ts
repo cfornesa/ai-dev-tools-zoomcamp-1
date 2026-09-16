@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { SeoConfig } from './adminPages';
 
 /** A `scene3d` document is validated against
  * ../../../schema/scene3d.schema.json (see validation/scene3d.ts); its
@@ -30,6 +31,7 @@ export type Project3D = {
   id: string;
   owner: string;
   title: string;
+  seo_config?: SeoConfig;
   /** Issue #296: private by default; see `publishProject3D`/`unpublishProject3D`. */
   visibility: Project3DVisibility;
   /** Issue #243: gallery-card thumbnail URL, mirroring 2D `Project.thumbnail_url`. */
@@ -60,7 +62,7 @@ export function getProject3D(id: string): Promise<Project3D> {
  * `updateProjectMetadata` -- scoped to just `title` since `Project3D` has
  * no `description`/`tags`/`allow_public_remix`/`export_attribution`
  * fields (see `Project3DMetadataSerializer`'s own doc comment). */
-export type Project3DMetadataInput = Partial<Pick<Project3D, 'title'>>;
+export type Project3DMetadataInput = Partial<Pick<Project3D, 'title' | 'seo_config'>>;
 
 export function updateProjectMetadata3D(
   id: string,
@@ -110,6 +112,7 @@ export type PublicProject3D = {
   id: string;
   owner: string;
   title: string;
+  seo_config?: SeoConfig;
   thumbnail_url: string | null;
   current_version: SceneVersion3D | null;
   created_at: string;

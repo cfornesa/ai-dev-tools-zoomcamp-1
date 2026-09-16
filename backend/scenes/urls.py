@@ -96,6 +96,14 @@ from scenes.cloud_backup_api import (
     CloudBackupView,
 )
 from scenes.cloud_retention_api import AdminCloudRetentionPurgeView, AdminCloudRetentionView
+from scenes.collections_api import (
+    CollectionDetailView,
+    CollectionItemsView,
+    CollectionListCreateView,
+    CollectionSnapshotView,
+    CollectionVisibilityView,
+    PublicCollectionDetailView,
+)
 from scenes.pages_api import PublicPageDetailView
 from scenes.profile_api import AccountProfileView, PublicProfileView
 from scenes.profile_styles_api import AdminProfileStyleDetailView, AdminProfileStyleListCreateView
@@ -176,6 +184,43 @@ urlpatterns = [
         name="provider-credentials",
     ),
     path("account/profile/", AccountProfileView.as_view(), name="account-profile"),
+    path(
+        "account/collections/",
+        CollectionListCreateView.as_view(),
+        name="account-collection-list-create",
+    ),
+    path(
+        "account/collections/<uuid:public_id>/",
+        CollectionDetailView.as_view(),
+        name="account-collection-detail",
+    ),
+    path(
+        "account/collections/<uuid:public_id>/items/",
+        CollectionItemsView.as_view(),
+        name="account-collection-items",
+    ),
+    path(
+        "account/collections/<uuid:public_id>/publish/",
+        CollectionVisibilityView.as_view(),
+        {"public": True},
+        name="account-collection-publish",
+    ),
+    path(
+        "account/collections/<uuid:public_id>/unpublish/",
+        CollectionVisibilityView.as_view(),
+        {"public": False},
+        name="account-collection-unpublish",
+    ),
+    path(
+        "account/collections/<uuid:public_id>/snapshot/",
+        CollectionSnapshotView.as_view(),
+        name="account-collection-snapshot",
+    ),
+    path(
+        "public/collections/<str:handle>/<slug:slug>/",
+        PublicCollectionDetailView.as_view(),
+        name="public-collection-detail",
+    ),
     path("users/@<str:handle>/", PublicProfileView.as_view(), name="public-profile"),
     path(
         "account/ai-model-preferences/",

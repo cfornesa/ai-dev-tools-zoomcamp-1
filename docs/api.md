@@ -639,3 +639,37 @@ Anonymous callers receive `401`; authenticated non-admins receive `403`;
 invalid actions, stale/conflicting invariants, and protected deletes receive
 finite `400`/`409` responses. Audit responses expose actor username, action,
 resource kind/id, and timestamp, never credentials or private content.
+
+## Owner collections (#556/#567)
+
+The collection API is additive and does not change the existing public project,
+3D project, art-piece, profile, or gallery routes. The first slice groups
+server-owned published artwork; browser-local media records are not represented
+because this repository has no shared server-side media table.
+
+`GET /api/account/collections/` lists the authenticated user's non-deleted
+collections. `POST /api/account/collections/` creates one with
+`{"title":"...", "description":"..."}`. Collection titles are required;
+slugs are generated deterministically and remain stable after creation.
+
+`GET/PATCH/DELETE /api/account/collections/<uuid>/` reads or mutates an
+owner's collection. `DELETE` is a soft delete. `POST
+/api/account/collections/<uuid>/items/` replaces the complete ordered item
+list using `{"items":[{"kind":"project|project3d|art_piece","id":"<public-id>"}]}`;
+duplicates, foreign records, deleted records, and records that are not
+currently public are rejected with `400` and the collection remains unchanged.
+`POST /api/account/collections/<uuid>/publish/` and `/unpublish/` change only
+the collection's publication state.
+
+`GET /api/public/collections/<handle>/<slug>/` returns a published collection
+only when the owner's public profile is enabled. Its `items` are in stored
+position order and include `kind`, `id`, `title`, `viewer_url`, and
+`thumbnail_url` (which may be null). Items that become private, unpublished,
+or deleted are omitted without revealing their prior existence. Missing,
+private, and deleted collections return `404`.
+
+`GET /api/account/collections/<uuid>/snapshot/` returns the same deterministic
+online JSON representation for the owner. It is not an offline export and no
+download or archival guarantee is implied. All account writes require the
+normal session and CSRF protection; anonymous account calls return `401`, and
+another user's collection is indistinguishable from not-found (`404`).

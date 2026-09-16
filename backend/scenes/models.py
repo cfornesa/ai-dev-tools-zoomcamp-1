@@ -203,6 +203,81 @@ class PublicProfileHandleRedirect(models.Model):
         return f"{self.old_handle} -> {self.profile_id}"
 
 
+class Collection(models.Model):
+    """An owner-curated ordered set of published server-owned artwork (#556)."""
+
+    class Visibility(models.TextChoices):
+        PRIVATE = "private", "Private"
+        PUBLIC = "public", "Public"
+
+    public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="collections"
+    )
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, default="")
+    slug = models.SlugField(max_length=120)
+    visibility = models.CharField(
+        max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
+    )
+    published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "slug"], name="unique_collection_slug_per_owner"
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["visibility", "-published_at", "-id"],
+                name="collection_public_gallery_idx",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class CollectionItem(models.Model):
+    """One ordered public-art reference in an owner collection (#567).
+
+    The referenced object id is deliberately a UUID rather than a generic
+    foreign key: the three existing artwork families have separate tables and
+    publication/thumbnail contracts. `scenes.collections` is the single
+    validator for this finite discriminator and keeps the reference atomic.
+    """
+
+    class Kind(models.TextChoices):
+        PROJECT = "project", "2D project"
+        PROJECT3D = "project3d", "3D project"
+        ART_PIECE = "art_piece", "Generated art piece"
+
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name="items")
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    item_id = models.UUIDField()
+    position = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ["position", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["collection", "position"], name="unique_collection_item_position"
+            ),
+            models.UniqueConstraint(
+                fields=["collection", "kind", "item_id"], name="unique_collection_item_ref"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.collection_id}:{self.kind}:{self.item_id}"
+
+
 class CloudRetentionPolicy(models.Model):
     """Singleton lifecycle policy for remote copies of cloud media (#522)."""
 

@@ -17,8 +17,8 @@ from dataclasses import dataclass
 from django.db import transaction
 
 from scenes.entitlements import FEATURE_KEYS
-from scenes.models import EntitlementRole, Plan, SiteSettings
-from scenes.theme import sanitize_theme
+from scenes.models import EntitlementRole, Plan, ProfileStyle, SiteSettings
+from scenes.theme import effective_presentation, sanitize_theme
 
 
 class RevisionConflict(Exception):
@@ -37,6 +37,8 @@ class SiteSettingsView:
     cloud_sync_enabled: bool
     revision: int
     theme_config: dict[str, str]
+    style_key: str | None
+    presentation: dict[str, str]
 
 
 @dataclass(frozen=True)
@@ -64,6 +66,10 @@ def get_site_settings() -> SiteSettingsView:
         cloud_sync_enabled=settings_row.cloud_sync_enabled,
         revision=settings_row.revision,
         theme_config=settings_row.theme_config,
+        style_key=settings_row.style.key if settings_row.style_id else None,
+        presentation=effective_presentation(
+            settings_row.style.presentation if settings_row.style_id else {}
+        ),
     )
 
 
@@ -75,6 +81,7 @@ def update_site_settings(
     site_title: str,
     cloud_sync_enabled: bool | None = None,
     theme_config: dict[str, str] | None = None,
+    style_key: str | None = None,
 ) -> SiteSettingsView:
     if not isinstance(site_title, str) or not site_title.strip():
         raise ValidationFailed("site_title must be a non-empty string.")
@@ -85,6 +92,11 @@ def update_site_settings(
             theme_config = sanitize_theme(theme_config)
         except ValueError as exc:
             raise ValidationFailed(str(exc)) from exc
+    style = None
+    if style_key is not None:
+        style = ProfileStyle.objects.filter(key=style_key, enabled=True).first()
+        if style is None:
+            raise ValidationFailed("style_key must identify an enabled style.")
 
     row = SiteSettings.objects.select_for_update().get(pk=SiteSettings.get_solo().pk)
     if row.revision != expected_revision:
@@ -98,6 +110,8 @@ def update_site_settings(
         row.cloud_sync_enabled = cloud_sync_enabled
     if theme_config is not None:
         row.theme_config = theme_config
+    if style_key is not None:
+        row.style = style
     row.revision += 1
     row.updated_by = actor
     row.save()
@@ -106,6 +120,8 @@ def update_site_settings(
         cloud_sync_enabled=row.cloud_sync_enabled,
         revision=row.revision,
         theme_config=row.theme_config,
+        style_key=row.style.key if row.style_id else None,
+        presentation=effective_presentation(row.style.presentation if row.style_id else {}),
     )
 
 

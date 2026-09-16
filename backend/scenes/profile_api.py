@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from scenes.gallery import eligible_projects, eligible_projects3d
 from scenes.models import ArtPiece, ProfileStyle, PublicProfile, PublicProfileHandleRedirect
-from scenes.theme import effective_profile_theme, sanitize_theme
+from scenes.theme import effective_presentation, effective_profile_theme, sanitize_theme
 
 RESERVED_HANDLES = {"admin", "api", "account", "accounts", "users", "gallery"}
 HANDLE_MAX_LENGTH = 32
@@ -70,6 +70,7 @@ def _profile_payload(profile: PublicProfile) -> dict:
         "theme_config": effective_profile_theme(
             style.tokens if style else {}, profile.theme_config
         ),
+        "presentation": effective_presentation(style.presentation if style else {}),
     }
 
 
@@ -80,6 +81,7 @@ def _available_styles() -> list[dict]:
             "label": style.label,
             "description": style.description,
             "tokens": style.tokens,
+            "presentation": effective_presentation(style.presentation),
         }
         for style in ProfileStyle.objects.filter(enabled=True)
     ]

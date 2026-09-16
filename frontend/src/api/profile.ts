@@ -1,13 +1,16 @@
 import { apiFetch } from './client';
+import type { PresentationOptions } from './adminSettings';
 
 export type PublicProfile = {
   handle: string | null;
   style_key?: string | null;
+  presentation?: PresentationOptions;
   available_styles?: Array<{
     key: string;
     label: string;
     description: string;
     tokens: Record<string, string>;
+    presentation: PresentationOptions;
   }>;
   display_name: string;
   bio: string;

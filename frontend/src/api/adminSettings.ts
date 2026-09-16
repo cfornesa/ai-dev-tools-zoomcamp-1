@@ -5,6 +5,15 @@ export type SiteSettings = {
   revision: number;
   cloud_sync_enabled: boolean;
   theme_config?: Record<string, string>;
+  style_key?: string | null;
+  presentation?: PresentationOptions;
+};
+
+export type PresentationOptions = {
+  font_family: 'system' | 'serif' | 'mono';
+  density: 'comfortable' | 'compact';
+  radius: 'sharp' | 'soft' | 'pill';
+  border_style: 'solid' | 'dashed' | 'none';
 };
 
 export type Plan = {
@@ -38,6 +47,7 @@ export type ProfileStyle = {
   label: string;
   description: string;
   tokens: Record<string, string>;
+  presentation: PresentationOptions;
   enabled: boolean;
   revision: number;
 };
@@ -78,6 +88,7 @@ export async function updateSiteSettings(
   siteTitle: string,
   revision: number,
   themeConfig?: Record<string, string>,
+  styleKey?: string,
 ): Promise<SiteSettings> {
   return apiFetch<SiteSettings>('/api/admin/settings/', {
     method: 'PATCH',
@@ -85,6 +96,7 @@ export async function updateSiteSettings(
       site_title: siteTitle,
       revision,
       ...(themeConfig ? { theme_config: themeConfig } : {}),
+      ...(styleKey ? { style_key: styleKey } : {}),
     }),
   });
 }

@@ -41,9 +41,11 @@ const DEFAULT_THEME = {
 
 function SiteTitleForm({
   settings,
+  styles,
   onSaved,
 }: {
   settings: SiteSettings;
+  styles: ProfileStyle[];
   onSaved: (next: SiteSettings) => void;
 }) {
   const [title, setTitle] = useState(settings.site_title);
@@ -55,15 +57,18 @@ function SiteTitleForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [styleKey, setStyleKey] = useState(settings.style_key ?? 'default');
 
   useEffect(() => {
     setTitle(settings.site_title);
     setTheme({ ...DEFAULT_THEME, ...(settings.theme_config ?? {}) });
     setThemeCleared(false);
+    setStyleKey(settings.style_key ?? 'default');
   }, [settings]);
 
   const dirty =
     title !== settings.site_title ||
+    styleKey !== (settings.style_key ?? 'default') ||
     themeCleared ||
     JSON.stringify(theme) !==
       JSON.stringify({ ...DEFAULT_THEME, ...(settings.theme_config ?? {}) });
@@ -74,7 +79,12 @@ function SiteTitleForm({
     setError(null);
     setMessage(null);
     try {
-      const next = await updateSiteSettings(title, settings.revision, themeCleared ? {} : theme);
+      const next = await updateSiteSettings(
+        title,
+        settings.revision,
+        themeCleared ? {} : theme,
+        styleKey,
+      );
       onSaved(next);
       setMessage('Site title saved.');
     } catch (err) {
@@ -94,6 +104,7 @@ function SiteTitleForm({
     setTitle(settings.site_title);
     setTheme({ ...DEFAULT_THEME, ...(settings.theme_config ?? {}) });
     setThemeCleared(false);
+    setStyleKey(settings.style_key ?? 'default');
     setError(null);
     setMessage(null);
   }
@@ -126,6 +137,20 @@ function SiteTitleForm({
           </label>
         ))}
       </fieldset>
+      <label htmlFor="site-style-select">Global style preset</label>
+      <select
+        id="site-style-select"
+        value={styleKey}
+        onChange={(event) => setStyleKey(event.target.value)}
+      >
+        {styles
+          .filter((style) => style.enabled)
+          .map((style) => (
+            <option key={style.key} value={style.key}>
+              {style.label}
+            </option>
+          ))}
+      </select>
       <div className="admin-settings-actions">
         <button className="admin-action-primary" type="submit" disabled={busy || !dirty}>
           Save
@@ -870,6 +895,12 @@ function ProfileStyleCatalogSettings({
         label: key,
         description: 'A token-only profile style.',
         tokens: { accent: '#c084fc' },
+        presentation: {
+          font_family: 'system',
+          density: 'comfortable',
+          radius: 'soft',
+          border_style: 'solid',
+        },
         enabled: true,
       });
       onStyles([...styles, created]);
@@ -985,7 +1016,11 @@ function AdminSettings() {
       {siteSettings ? (
         <section className="admin-console-section" aria-labelledby="admin-site-section-heading">
           <h3 id="admin-site-section-heading">Site identity and global theme</h3>
-          <SiteTitleForm settings={siteSettings} onSaved={setSiteSettings} />
+          <SiteTitleForm
+            settings={siteSettings}
+            styles={profileStyles ?? []}
+            onSaved={setSiteSettings}
+          />
         </section>
       ) : (
         !loadError && <p role="status">Loading site settings…</p>

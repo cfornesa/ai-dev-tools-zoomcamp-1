@@ -80,6 +80,13 @@ def test_settings_get_allowed_for_admin(client, admin_a):
         "cloud_sync_enabled": False,
         "revision": 1,
         "theme_config": {},
+        "style_key": None,
+        "presentation": {
+            "font_family": "system",
+            "density": "comfortable",
+            "radius": "soft",
+            "border_style": "solid",
+        },
     }
 
 
@@ -177,6 +184,13 @@ def test_admin_can_update_site_title(client, admin_a):
         "cloud_sync_enabled": False,
         "revision": 2,
         "theme_config": {},
+        "style_key": None,
+        "presentation": {
+            "font_family": "system",
+            "density": "comfortable",
+            "radius": "soft",
+            "border_style": "solid",
+        },
     }
     assert SiteSettings.get_solo().site_title == "New Studio Name"
 
@@ -367,6 +381,8 @@ def test_get_site_settings_and_list_plans_expose_only_named_fields():
         "cloud_sync_enabled",
         "revision",
         "theme_config",
+        "style_key",
+        "presentation",
     }
 
     plans = list_plans()

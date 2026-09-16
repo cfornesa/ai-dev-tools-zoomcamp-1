@@ -126,6 +126,13 @@ class SiteSettings(models.Model):
     # Issue #509: cloud backup is disabled until an administrator enables it.
     cloud_sync_enabled = models.BooleanField(default=False)
     theme_config = models.JSONField(default=dict, blank=True)
+    style = models.ForeignKey(
+        "ProfileStyle",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="site_settings",
+    )
     revision = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(
@@ -176,6 +183,7 @@ class ProfileStyle(models.Model):
     label = models.CharField(max_length=80)
     description = models.CharField(max_length=240, blank=True, default="")
     tokens = models.JSONField(default=dict)
+    presentation = models.JSONField(default=dict, blank=True)
     enabled = models.BooleanField(default=True)
     revision = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)

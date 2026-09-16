@@ -48,6 +48,24 @@ integer `revision`. Styles contain only approved six-digit hex tokens for
 `background`, `surface`, `text`, `muted`, and `accent`; disabling a style hides
 it from new user selections without deleting existing assignments.
 
+### Curated global/profile style system (#576)
+
+The style catalog remains server-managed and CSS-injection-safe. Each style
+may expose approved color tokens plus bounded presentation options for
+typography, density, corner radius, and border treatment. `GET
+/api/admin/settings/` and `GET /api/site-theme/` expose the active global
+`style_key`; the site theme response also exposes the effective approved
+presentation options. `PATCH /api/admin/settings/` accepts an enabled
+catalog `style_key` and preserves the existing revision requirement.
+
+`GET|PATCH /api/account/profile/` continues to expose/select `style_key` and
+returns the selected style's approved presentation options. Global settings
+are the fallback for site surfaces; profile selection is an explicit,
+owner-scoped override for the profile and its derivative public surfaces.
+Unknown keys, malformed values, arbitrary CSS/HTML/JavaScript, and disabled
+new selections are rejected or fall back to the documented defaults. Existing
+legacy `theme_config` color overrides remain backward-compatible.
+
 ## Account billing contract (#440, #550)
 
 Authenticated account billing is exposed through `/api/account/billing/` and

@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from scenes.admin_authorization import is_application_admin
 from scenes.models import ProfileStyle
-from scenes.theme import sanitize_theme
+from scenes.theme import sanitize_presentation, sanitize_theme
 
 
 def _denied(request):
@@ -28,6 +28,7 @@ def _payload(style: ProfileStyle) -> dict:
         "label": style.label,
         "description": style.description,
         "tokens": style.tokens,
+        "presentation": style.presentation,
         "enabled": style.enabled,
         "revision": style.revision,
     }
@@ -38,6 +39,7 @@ class ProfileStyleSerializer(serializers.Serializer):
     label = serializers.CharField(max_length=80, trim_whitespace=True)
     description = serializers.CharField(max_length=240, allow_blank=True, required=False)
     tokens = serializers.DictField()
+    presentation = serializers.DictField(required=False)
     enabled = serializers.BooleanField(required=False, default=True)
     revision = serializers.IntegerField(min_value=1, required=False)
 
@@ -49,6 +51,12 @@ class ProfileStyleSerializer(serializers.Serializer):
         if not tokens:
             raise serializers.ValidationError("At least one valid theme token is required.")
         return tokens
+
+    def validate_presentation(self, value):
+        try:
+            return sanitize_presentation(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc)) from exc
 
 
 class AdminProfileStyleListCreateView(APIView):
@@ -97,7 +105,7 @@ class AdminProfileStyleDetailView(APIView):
             style = ProfileStyle.objects.select_for_update().get(pk=style.pk)
             if style.revision != serializer.validated_data.get("revision", style.revision):
                 return Response({"error": "revision_conflict"}, status=status.HTTP_409_CONFLICT)
-            for field in ("key", "label", "description", "tokens", "enabled"):
+            for field in ("key", "label", "description", "tokens", "presentation", "enabled"):
                 if field in serializer.validated_data:
                     setattr(style, field, serializer.validated_data[field])
             style.revision += 1

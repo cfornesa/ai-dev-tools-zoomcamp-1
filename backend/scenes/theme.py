@@ -9,6 +9,18 @@ DEFAULT_THEME = {
     "muted": "#9ca3af",
     "accent": "#c084fc",
 }
+DEFAULT_PRESENTATION = {
+    "font_family": "system",
+    "density": "comfortable",
+    "radius": "soft",
+    "border_style": "solid",
+}
+PRESENTATION_CHOICES = {
+    "font_family": frozenset({"system", "serif", "mono"}),
+    "density": frozenset({"comfortable", "compact"}),
+    "radius": frozenset({"sharp", "soft", "pill"}),
+    "border_style": frozenset({"solid", "dashed", "none"}),
+}
 THEME_KEYS = frozenset(DEFAULT_THEME)
 _HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 
@@ -31,6 +43,26 @@ def effective_theme(value: object) -> dict[str, str]:
     except ValueError:
         override = {}
     return {**DEFAULT_THEME, **override}
+
+
+def sanitize_presentation(value: object) -> dict[str, str]:
+    if not isinstance(value, dict):
+        raise ValueError("presentation must be an object")
+    unknown = set(value) - set(PRESENTATION_CHOICES)
+    if unknown:
+        raise ValueError("Unknown presentation option")
+    for key, option in value.items():
+        if not isinstance(option, str) or option not in PRESENTATION_CHOICES[key]:
+            raise ValueError(f"Invalid presentation option: {key}")
+    return {key: value[key] for key in value}
+
+
+def effective_presentation(value: object) -> dict[str, str]:
+    try:
+        override = sanitize_presentation(value)
+    except ValueError:
+        override = {}
+    return {**DEFAULT_PRESENTATION, **override}
 
 
 def effective_profile_theme(style_tokens: object, legacy_overrides: object) -> dict[str, str]:

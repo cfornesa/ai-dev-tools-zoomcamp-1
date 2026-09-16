@@ -21708,6 +21708,80 @@ production environment does not yet include the closed-backlog batch or
 publication of this batch remains an explicit open action for the owner**,
 not a blocker in the code itself.
 
-**Backlog:** #570 closed (QA PASS, no follow-up). `gh issue list --state
-open` returns **zero** open issues.
+**Backlog:** #570 closed (QA PASS). This follow-up pass created five new open
+issues (#571–#575), all with criterion-ready contracts; none has entered
+engineering yet.
 
+## 2026-09-16 — owner-reported route, styling, and settings follow-ups
+
+The owner reported new live UI evidence after the prior batch was closed. The
+attached screenshots are treated as evidence only. Closed issues #547, #548,
+#521, and #90 remain immutable; these follow-ups address the newly observed
+route, production, and interaction contracts without reopening them.
+
+| Proposed item | Scope | Routing | Dependency |
+| --- | --- | --- | --- |
+| [#571](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/571) Profile settings availability for every signed-in account | Restore `/api/account/profile/` and the `/account/settings` Public profile section for ordinary and application-admin users; verify the exact published deployment | stage 2b complex | investigate the live traceback/data state; linked to closed #547/#548 |
+| [#572](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/572) Anonymous gallery and authenticated Studio routing | Add `/studio`, preserve `/home` as a compatibility redirect, send anonymous `/` and post-logout users to `/gallery`, and replace provider-specific sign-in copy with configured-provider-aware copy | stage 2a mechanical, with auth-route review | preserve public routes and session boundary |
+| [#573](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/573) Site-wide CSS coverage for SPA and allauth surfaces | Audit every user-facing React route plus server-rendered `/accounts/*` routes; apply the shared visual/accessibility treatment, including email management and logout/login states | stage 2a mechanical | inspect current templates and route matrix; linked to closed #521/#90 |
+| [#574](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/574) Account-settings control affordances and collapsed defaults | Replace text-only reorder controls with contextual icon buttons; make sections collapsed by default; place the expand/collapse toggle after section content with correct state labels | stage 2a mechanical | preserve persisted layout behavior from closed #555 |
+| [#575](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/575) Admin console visual structure and defined controls | Add clearer button hierarchy and named sections for admin settings/content/profile-style/entitlement surfaces, using the two reference repositories for visual/behavioral comparison without importing unrelated features | stage 2a mechanical after owner design checkpoint | preserve #422/#518/#552 authorization and API contracts |
+
+Each item requires a criterion-ready GitHub issue before engineering begins.
+The route and admin visual choices are owner-confirmed at the distillation
+level where stated above; implementation still requires the per-issue PM and
+QA gates. Production deployment remains a later readiness/owner operation.
+
+### Distillation reconciliation
+
+- #571 is `HANDED-OFF` with a `verification-boundary` blocker: the published
+  `/api/account/profile/` reproducibly returns HTTP 500, but the available
+  Replit workspace Shell is not a confirmed production database/log context.
+  The exact next action is to inspect the published traceback and verify the
+  production `PublicProfile`/`ProfileStyle` tables and migrations `0052`,
+  `0066`, and `0067` before engineering a fix. The blocker and next action
+  were posted to #571.
+- #572 is the next independent groomed issue. #573, #574, and #575 remain
+  criterion-ready and ordered after it; #575 still carries an owner visual
+  checkpoint before implementation.
+
+## 2026-09-16 — expanded admin, style, URL, metadata, and search follow-ups
+
+The owner selected the admin-cards/grouped-sections direction for #575 and
+expanded the request with curated global/profile styles, canonical user-piece
+URLs, SEO/AEO metadata, public/admin search, CMS page workflow, and responsive
+admin navigation. Task distillation compared the current repository and the
+two local reference repositories; no matching open GitHub issues existed for
+these new capabilities. The attached images remain evidence only.
+
+| Issue | Scope | Routing | Order/dependency |
+| --- | --- | --- | --- |
+| [#575](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/575) | Admin cards, grouped responsibilities, and contextual action hierarchy | stage 2a mechanical | next; owner visual choice recorded |
+| [#576](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/576) | Curated Bauhaus/Minimal styles, palettes, global/profile customization, and safe cascade contract | stage 2b complex | before #577 |
+| [#577](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/577) | Apply global/profile style precedence to gallery, profiles, and collections | stage 2a mechanical | after #576 |
+| [#578](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/578) | Canonical `/users/@handle/pieces/<slug>` public piece routes and stable slugs | stage 2b complex | before #580 |
+| [#579](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/579) | Global CMS page SEO/AEO configuration and safe document metadata | stage 2b complex | independent; before shared metadata consumers |
+| [#580](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/580) | Piece/collection SEO/AEO fields, canonical metadata, and structured data | stage 2b complex | after #578; shares #579 renderer |
+| [#581](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/581) | Anonymous gallery account/content search and type facets | stage 2b complex | independent |
+| [#582](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/582) | Admin content search and account/user filters | stage 2b complex | independent; after #575/#584 presentation |
+| [#583](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/583) | CMS page cards, closed-by-default new-page form, Cancel, and visible Content link | stage 2a mechanical | after #575; independent of #579 |
+| [#584](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/584) | Admin-console heading, desktop buttons, and responsive hamburger navigation | stage 2a mechanical | before #582; related to #575 |
+
+### Distillation reconciliation and blocker report
+
+- Existing open #571 remains a `verification-boundary` handoff: the live
+  profile endpoint returns HTTP 500, but production traceback/database
+  context is unavailable. It is independent of the new presentation work;
+  exact next action remains production traceback plus table/migration
+  verification for `PublicProfile`/`ProfileStyle`.
+- #575 is now fully groomed with the owner-selected admin-card direction and
+  is the next engineering transaction. #576 is the next complex dependency
+  after #575 only because the owner requested style capabilities as part of
+  the same expanded backlog; #577 depends on its data contract.
+- #578–#584 are criterion-ready, linked, and not duplicates of closed #521,
+  #547, #548, #552, or #575’s bounded presentation contract. Their issue
+  bodies contain entry points, finite acceptance criteria, routing hints,
+  verification commands/evidence, dependencies, and out-of-scope boundaries.
+- No new memory topic was added: the expanded request is fully represented by
+  the linked issue contracts, while #571’s existing verification boundary is
+  already recorded in the durable account-settings production audit.

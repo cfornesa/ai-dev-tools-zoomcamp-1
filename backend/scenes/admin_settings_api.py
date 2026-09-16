@@ -22,7 +22,8 @@ from scenes.admin_settings import (
     update_plan,
     update_site_settings,
 )
-from scenes.theme import effective_theme
+from scenes.models import SiteSettings
+from scenes.theme import effective_presentation, effective_profile_theme
 
 
 def _admin_required_response(request) -> Response | None:
@@ -41,6 +42,7 @@ class SiteSettingsUpdateSerializer(serializers.Serializer):
     revision = serializers.IntegerField(min_value=0)
     cloud_sync_enabled = serializers.BooleanField(required=False)
     theme_config = serializers.DictField(required=False)
+    style_key = serializers.SlugField(max_length=48, required=False)
 
 
 class AdminSiteSettingsView(APIView):
@@ -55,6 +57,8 @@ class AdminSiteSettingsView(APIView):
                 "cloud_sync_enabled": site_settings.cloud_sync_enabled,
                 "revision": site_settings.revision,
                 "theme_config": site_settings.theme_config,
+                "style_key": site_settings.style_key,
+                "presentation": site_settings.presentation,
             }
         )
 
@@ -68,6 +72,7 @@ class AdminSiteSettingsView(APIView):
             "revision",
             "cloud_sync_enabled",
             "theme_config",
+            "style_key",
         }
         if unknown_fields:
             return Response(
@@ -88,6 +93,7 @@ class AdminSiteSettingsView(APIView):
                 site_title=serializer.validated_data["site_title"],
                 cloud_sync_enabled=serializer.validated_data.get("cloud_sync_enabled"),
                 theme_config=serializer.validated_data.get("theme_config"),
+                style_key=serializer.validated_data.get("style_key"),
             )
         except RevisionConflict as exc:
             return Response(
@@ -104,6 +110,8 @@ class AdminSiteSettingsView(APIView):
                 "cloud_sync_enabled": updated.cloud_sync_enabled,
                 "revision": updated.revision,
                 "theme_config": updated.theme_config,
+                "style_key": updated.style_key,
+                "presentation": updated.presentation,
             }
         )
 
@@ -112,8 +120,15 @@ class SiteThemeView(APIView):
     """Anonymous-safe effective site theme; invalid data falls back."""
 
     def get(self, request):
-        settings = get_site_settings()
-        return Response(effective_theme(settings.theme_config))
+        row = SiteSettings.get_solo()
+        style = row.style
+        return Response(
+            {
+                **effective_profile_theme(style.tokens if style else {}, row.theme_config),
+                "style_key": style.key if style else None,
+                "presentation": effective_presentation(style.presentation if style else {}),
+            }
+        )
 
 
 class PlanUpdateSerializer(serializers.Serializer):

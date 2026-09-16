@@ -1,18 +1,24 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { fetchPublicProfile, type PublicProfilePage } from '../api/profile';
 
 export default function PublicProfile() {
   const { handle: rawHandle = '' } = useParams<{ handle: string }>();
   const handle = rawHandle.replace(/^@/, '');
+  const navigate = useNavigate();
   const [data, setData] = useState<PublicProfilePage | null>(null);
   const [missing, setMissing] = useState(false);
   useEffect(() => {
     fetchPublicProfile(handle)
-      .then(setData)
+      .then((nextData) => {
+        setData(nextData);
+        if (nextData.profile.handle && nextData.profile.handle !== handle) {
+          navigate(`/users/@${encodeURIComponent(nextData.profile.handle)}`, { replace: true });
+        }
+      })
       .catch(() => setMissing(true));
-  }, [handle]);
+  }, [handle, navigate]);
   if (missing) return <Navigate to="/" replace />;
   if (!data) return <p role="status">Loading profile…</p>;
   return (

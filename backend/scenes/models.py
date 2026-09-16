@@ -162,6 +162,22 @@ class PublicProfile(models.Model):
         return self.handle or f"profile-{self.user_id}"
 
 
+class PublicProfileHandleRedirect(models.Model):
+    """Permanent aliases retained when an owner changes a public handle (#551)."""
+
+    profile = models.ForeignKey(
+        PublicProfile, on_delete=models.CASCADE, related_name="handle_redirects"
+    )
+    old_handle = models.CharField(max_length=32, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.old_handle} -> {self.profile_id}"
+
+
 class CloudRetentionPolicy(models.Model):
     """Singleton lifecycle policy for remote copies of cloud media (#522)."""
 

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as aiPreferencesApi from '../api/aiPreferences';
 import * as aiRetryPreferenceApi from '../api/aiRetryPreference';
+import { ApiError } from '../api/client';
 import * as credentialsApi from '../api/credentials';
 import * as profileApi from '../api/profile';
 import AccountSettings from './AccountSettings';
@@ -28,6 +29,7 @@ const mockedDeletePersona = vi.mocked(aiPreferencesApi.deleteAIPersona);
 const mockedFetchRetryPreference = vi.mocked(aiRetryPreferenceApi.fetchAIRetryPreference);
 const mockedUpdateRetryPreference = vi.mocked(aiRetryPreferenceApi.updateAIRetryPreference);
 const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
+const mockedUpdateProfile = vi.mocked(profileApi.updateProfile);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -85,6 +87,33 @@ describe('AccountSettings', () => {
         .closest('li'),
     ).toHaveClass('account-settings-action-danger');
     expect(container.querySelectorAll('h1')).toHaveLength(0);
+  });
+
+  it('shows a field-level handle error without discarding the typed profile', async () => {
+    mockedUpdateProfile.mockRejectedValue(
+      new ApiError(409, {
+        error: 'handle_taken',
+        detail: { handle: ['That handle is already in use.'] },
+      }),
+    );
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    const handle = await screen.findByLabelText('Handle');
+    await user.clear(handle);
+    await user.type(handle, 'taken-handle');
+    await user.click(screen.getByRole('button', { name: 'Save profile' }));
+
+    expect(await screen.findByText('That handle is already in use.')).toHaveAttribute(
+      'role',
+      'alert',
+    );
+    expect(handle).toHaveValue('taken-handle');
+    expect(handle).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('gives every element a unique id and labels every credential input accessibly', async () => {

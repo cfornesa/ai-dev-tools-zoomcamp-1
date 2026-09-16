@@ -19,6 +19,7 @@ import {
   saveProviderCredential,
 } from '../api/credentials';
 import EntitlementsSummary from './EntitlementsSummary';
+import { ApiError } from '../api/client';
 import { fetchProfile, type PublicProfile, updateProfile } from '../api/profile';
 import { useAuth } from '../auth/useAuth';
 
@@ -245,6 +246,7 @@ function ProfileSettings() {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [handleError, setHandleError] = useState<string | null>(null);
   useEffect(() => {
     fetchProfile()
       .then(setProfile)
@@ -258,7 +260,12 @@ function ProfileSettings() {
       setProfile(await updateProfile(current));
       setMessage('Profile saved.');
       setError(null);
-    } catch {
+      setHandleError(null);
+    } catch (caught) {
+      if (caught instanceof ApiError) {
+        const body = caught.body as { detail?: { handle?: string[] } } | null;
+        setHandleError(body?.detail?.handle?.[0] ?? null);
+      }
       setError('Could not save that profile. Check the handle and try again.');
     }
   }
@@ -274,8 +281,18 @@ function ProfileSettings() {
         <input
           id="profile-handle"
           value={profile.handle ?? ''}
-          onChange={(event) => setProfile({ ...profile, handle: event.target.value.toLowerCase() })}
+          aria-invalid={handleError ? 'true' : undefined}
+          aria-describedby={handleError ? 'profile-handle-error' : undefined}
+          onChange={(event) => {
+            setHandleError(null);
+            setProfile({ ...profile, handle: event.target.value.toLowerCase() });
+          }}
         />
+        {handleError && (
+          <p id="profile-handle-error" role="alert">
+            {handleError}
+          </p>
+        )}
       </div>
       <div className="account-settings-field">
         <label htmlFor="profile-display-name">Display name</label>

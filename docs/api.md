@@ -1,5 +1,21 @@
 # Public gallery API contract
 
+## Public profile handles (#551)
+
+`GET /api/account/profile/` assigns a deterministic handle on first access when
+the authenticated profile has none. The candidate is derived from the stable
+account username, normalized to the handle grammar, and receives a numeric
+suffix when needed; reserved application words are rejected and replaced with
+an account-specific fallback. `PATCH /api/account/profile/` requires a valid,
+unused handle and returns field-level validation errors for malformed,
+reserved, or already-used values without changing the previous handle.
+
+Changing a handle creates a durable redirect-history row. A request for an old
+handle at `GET /api/users/@<handle>/` returns a permanent redirect to the
+current API profile URL, and the frontend updates the browser URL to the
+canonical `/users/@<current-handle>` route. Redirect history is owner-scoped
+through the profile relation and is never exposed in public profile payloads.
+
 ## Account billing contract (#440, #550)
 
 Authenticated account billing is exposed through `/api/account/billing/` and

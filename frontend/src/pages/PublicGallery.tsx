@@ -18,18 +18,26 @@ type LoadMoreState = {
 
 const GALLERY_TYPES: { value: PublicGalleryType; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'authored', label: 'Authored' },
-  { value: 'generated', label: 'Generated' },
+  { value: 'pieces', label: 'Pieces' },
+  { value: 'collections', label: 'Collections' },
 ];
 
 const EMPTY_MESSAGES: Record<PublicGalleryType, string> = {
   all: 'No public pieces yet. Check back soon.',
   authored: 'No authored public pieces yet.',
+  pieces: 'No public pieces yet.',
+  collections: 'No public collections yet.',
   generated: 'No generated public pieces yet.',
 };
 
 function isValidType(value: string | null): value is PublicGalleryType {
-  return value === 'all' || value === 'authored' || value === 'generated';
+  return (
+    value === 'all' ||
+    value === 'pieces' ||
+    value === 'collections' ||
+    value === 'authored' ||
+    value === 'generated'
+  );
 }
 
 function isValidEngine(value: string | null): value is PublicGalleryEngine {
@@ -37,6 +45,7 @@ function isValidEngine(value: string | null): value is PublicGalleryEngine {
 }
 
 function typeBadge(item: PublicGalleryItem): string {
+  if (item.kind === 'collection') return 'Collection';
   if (item.kind === 'generated') return 'Generated';
   return item.kind === '3d' ? '3D' : '2D';
 }
@@ -83,9 +92,9 @@ function GalleryCard({ item }: { item: PublicGalleryItem }) {
 }
 
 /**
- * Issue #491: the anonymous-reachable public gallery — a unified catalog of
- * published authored 2D/3D projects and generated art pieces, with a visible
- * type filter (All / Authored / Generated). The filter is a native `<select>`
+ * Issue #491/#565: the anonymous-reachable public gallery — a unified catalog
+ * of published pieces and collections, with a visible type filter (All /
+ * Pieces / Collections). The filter is a native `<select>`
  * labeled "Gallery type", synchronized two-way with the `type` query
  * parameter. The legacy `/art-pieces/gallery` route redirects here with
  * `type=generated`.
@@ -220,6 +229,8 @@ function PublicGallery() {
               {option.label}
             </option>
           ))}
+          {type === 'generated' && <option value="generated">Generated</option>}
+          {type === 'authored' && <option value="authored">Authored</option>}
         </select>
         <label htmlFor="gallery-engine">Gallery engine</label>
         <select id="gallery-engine" value={engine ?? ''} onChange={handleEngineChange}>

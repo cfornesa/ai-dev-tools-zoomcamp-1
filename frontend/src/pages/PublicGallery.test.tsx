@@ -108,7 +108,7 @@ describe('PublicGallery loading/error/empty states', () => {
 });
 
 describe('PublicGallery filter control', () => {
-  it('renders a labeled select with exactly All, Authored, and Generated options', async () => {
+  it('renders a labeled select with exactly All, Pieces, and Collections options', async () => {
     mockedFetchPublicGallery.mockResolvedValue({ results: [], next_cursor: null, has_more: false });
 
     renderPublicGallery();
@@ -121,10 +121,10 @@ describe('PublicGallery filter control', () => {
     );
     expect(options.map((o) => (o as HTMLOptionElement).value)).toEqual([
       'all',
-      'authored',
-      'generated',
+      'pieces',
+      'collections',
     ]);
-    expect(options.map((o) => o.textContent)).toEqual(['All', 'Authored', 'Generated']);
+    expect(options.map((o) => o.textContent)).toEqual(['All', 'Pieces', 'Collections']);
   });
 
   it('selects All when the type query parameter is absent', async () => {
@@ -165,9 +165,9 @@ describe('PublicGallery filter control', () => {
     await screen.findByText(/no public pieces yet/i);
 
     const select = screen.getByRole('combobox', { name: /gallery type/i });
-    await user.selectOptions(select, 'generated');
+    await user.selectOptions(select, 'pieces');
 
-    expect(mockedFetchPublicGallery).toHaveBeenLastCalledWith('generated');
+    expect(mockedFetchPublicGallery).toHaveBeenLastCalledWith('pieces');
   });
 
   it('derives engine options from the server catalog and keeps the engine in the request', async () => {
@@ -204,8 +204,8 @@ describe('PublicGallery filter control', () => {
     await screen.findByText(/no public pieces yet/i);
 
     const select = screen.getByRole('combobox', { name: /gallery type/i });
-    await user.selectOptions(select, 'authored');
-    expect(mockedFetchPublicGallery).toHaveBeenLastCalledWith('authored');
+    await user.selectOptions(select, 'collections');
+    expect(mockedFetchPublicGallery).toHaveBeenLastCalledWith('collections');
 
     // Simulate a location change (e.g. browser Back/Forward or reload): a
     // fresh render at `/gallery` must re-derive the control state from the
@@ -285,6 +285,32 @@ describe('PublicGallery card rendering', () => {
     const card = screen.getByTestId('gallery-card-gen-1');
     expect(within(card).getByText('Generated')).toBeInTheDocument();
     expect(within(card).getByText('canvas2d')).toBeInTheDocument();
+  });
+
+  it('renders collection cards with a canonical public collection link', async () => {
+    mockedFetchPublicGallery.mockResolvedValue({
+      results: [
+        baseItem({
+          id: 'collection-1',
+          kind: 'collection',
+          title: 'Motion studies',
+          owner: 'alice',
+          thumbnail_url: null,
+          viewer_url: '/users/@alice/motion-studies',
+        }),
+      ],
+      next_cursor: null,
+      has_more: false,
+    });
+
+    renderPublicGallery(['/gallery?type=collections']);
+
+    const card = await screen.findByTestId('gallery-card-collection-1');
+    expect(within(card).getByRole('link', { name: /motion studies/i })).toHaveAttribute(
+      'href',
+      '/users/@alice/motion-studies',
+    );
+    expect(within(card).getByText('Collection')).toBeInTheDocument();
   });
 
   it('shows an accessible fallback when an item has no thumbnail_url', async () => {

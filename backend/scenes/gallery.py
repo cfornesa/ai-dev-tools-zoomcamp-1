@@ -94,7 +94,7 @@ from datetime import datetime
 from django.db.models import Q, QuerySet
 from django.utils.dateparse import parse_datetime
 
-from scenes.models import ArtPiece, Project, Project3D
+from scenes.models import ArtPiece, Collection, Project, Project3D
 
 DEFAULT_PAGE_SIZE = 24
 MAX_PAGE_SIZE = 60
@@ -166,7 +166,22 @@ def eligible_projects3d() -> QuerySet[Project3D]:
     )
 
 
-VALID_GALLERY_TYPES = ("all", "authored", "generated")
+def eligible_collections() -> QuerySet[Collection]:
+    """Published collections whose owner has an enabled public profile."""
+    return (
+        Collection.objects.filter(
+            visibility=Collection.Visibility.PUBLIC,
+            published_at__isnull=False,
+            is_deleted=False,
+            owner__public_profile__is_public=True,
+            owner__public_profile__handle__isnull=False,
+        )
+        .select_related("owner", "owner__public_profile")
+        .order_by("-published_at", "-id")
+    )
+
+
+VALID_GALLERY_TYPES = ("all", "authored", "pieces", "collections", "generated")
 """The values `GET /api/public/gallery/` (#491) accepts for its `type`
 filter; an omitted `type` defaults to `all`, and anything else is a 400."""
 
@@ -177,8 +192,8 @@ VALID_GALLERY_ENGINES = tuple(value for value, _ in ArtPiece.Engine.choices)
 # total-order tiebreaker only ever applied between rows with the exact same
 # `published_at` instant; it is never a per-kind priority while timestamps
 # differ.
-GALLERY_KIND_RANK = {"2d": 0, "3d": 1, "generated": 2}
-_GALLERY_MODEL_RANK = {Project: 0, Project3D: 1, ArtPiece: 2}
+GALLERY_KIND_RANK = {"2d": 0, "3d": 1, "collection": 2, "generated": 3}
+_GALLERY_MODEL_RANK = {Project: 0, Project3D: 1, Collection: 2, ArtPiece: 3}
 
 _UNSET = object()
 

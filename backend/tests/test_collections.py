@@ -247,6 +247,12 @@ def test_private_collection_and_foreign_mutation_are_not_disclosed(owner_client,
         ).status_code
         == 404
     )
+    assert (
+        APIClient()
+        .get(f"/api/public/collections/collection-owner/{collection['slug']}/")
+        .status_code
+        == 404
+    )
 
 
 @pytest.mark.django_db
@@ -277,12 +283,32 @@ def test_public_item_detail_exposes_only_public_collection_context(
             "url": "/users/@collection-owner/public-work",
         }
     ]
-    assert (
-        APIClient()
-        .get(f"/api/public/collections/collection-owner/{collection['slug']}/")
-        .status_code
-        == 404
-    )
+
+
+@pytest.mark.django_db
+def test_public_gallery_collections_mode_is_profile_and_visibility_filtered(
+    owner_client, anonymous_client, owner
+):
+    public = _create_collection(owner_client, "Gallery collection")
+    _create_collection(owner_client, "Hidden collection")
+    assert owner_client.post(f"/api/account/collections/{public['id']}/publish/").status_code == 200
+
+    collections_response = anonymous_client.get("/api/public/gallery/?type=collections")
+    assert collections_response.status_code == 200
+    assert [item["kind"] for item in collections_response.json()["results"]] == ["collection"]
+    assert collections_response.json()["results"][0]["title"] == "Gallery collection"
+
+    all_response = anonymous_client.get("/api/public/gallery/?type=all")
+    assert all_response.status_code == 200
+    assert {item["title"] for item in all_response.json()["results"]} >= {"Gallery collection"}
+    assert "Hidden collection" not in {
+        item["title"] for item in all_response.json()["results"]
+    }
+
+    profile = owner.public_profile
+    profile.is_public = False
+    profile.save(update_fields=["is_public"])
+    assert anonymous_client.get("/api/public/gallery/?type=collections").json()["results"] == []
 
 
 @pytest.mark.django_db

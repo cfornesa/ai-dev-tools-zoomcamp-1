@@ -155,7 +155,8 @@ routes remain unchanged.
 
 ## `GET /api/public/gallery/`
 
-Anonymous-reachable paginated listing merging three kinds of published work:
+Anonymous-reachable paginated listing merging published pieces and public
+collections:
 
 - **2D** — published `Project` records (authored canonical-scene pieces),
   eligible under exactly the same gate `scenes.gallery.eligible_projects`
@@ -170,6 +171,10 @@ Anonymous-reachable paginated listing merging three kinds of published work:
   (`scenes.art_piece_persistence.eligible_art_pieces`:
   `status == ArtPiece.Status.PUBLISHED`, joined owner and current version;
   soft-deleted pieces are excluded by the model's default manager).
+- **Collections** — published `Collection` records whose owner has an enabled
+  public profile and handle; soft-deleted and private collections are
+  excluded. Collection cards use the canonical `/users/@handle/slug` viewer
+  path and never expose member metadata in the gallery card.
 
 Anonymous and signed-in requests receive **identical** response bodies: the
 view never branches on `request.user`. No private or editing fields (scene
@@ -180,7 +185,7 @@ visibility/status internals) ever appear in any item.
 
 | Parameter   | Rule                                                                                                                                        |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`      | `all` (default when omitted) \| `authored` (2D + 3D only) \| `generated` (generated pieces only). Any other value → **HTTP 400**.        |
+| `type`      | `all` (default when omitted; pieces and collections) \| `pieces` (2D + 3D + generated) \| `collections` (collections only) \| legacy `authored`/`generated` aliases. Any other value → **HTTP 400**. |
 | `engine`    | Optional server-supported generated engine (`canvas2d`, `svg`, `threejs`, or `aframe`). It composes with `type`; authored-only results are empty. Any other value → **HTTP 400**. |
 | `cursor`    | Opaque keyset token from a previous response's `next_cursor`. Malformed, or bound to a different `type` (see below) → **HTTP 400**.         |
 | `page_size` | Positive integer, default `24` (`DEFAULT_PAGE_SIZE`), clamped to `60` (`MAX_PAGE_SIZE`); a non-integer value → **HTTP 400**. Same shape as the legacy `/api/public/projects/` endpoint. |
@@ -188,7 +193,7 @@ visibility/status internals) ever appear in any item.
 Error bodies are finite JSON. An invalid filter:
 
 ```json
-{ "errors": { "type": ["Must be one of: all, authored, generated."] } }
+{ "errors": { "type": ["Must be one of: all, pieces, collections, generated."] } }
 ```
 
 The response also includes `engine_catalog`, an array of server-derived

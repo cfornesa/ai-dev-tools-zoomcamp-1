@@ -29,6 +29,7 @@ from scenes.gallery import (
     InvalidCursor,
     clamp_page_size,
     decode_gallery_cursor,
+    eligible_collections,
     eligible_projects,
     eligible_projects3d,
     encode_gallery_cursor,
@@ -452,8 +453,10 @@ class PublicGalleryListView(APIView):
     """
 
     _QUERYSETS_BY_TYPE = {
-        "all": ("2d", "3d", "generated"),
+        "all": ("2d", "3d", "collection", "generated"),
         "authored": ("2d", "3d"),
+        "pieces": ("2d", "3d", "generated"),
+        "collections": ("collection",),
         "generated": ("generated",),
     }
 
@@ -461,7 +464,7 @@ class PublicGalleryListView(APIView):
         gallery_type = request.query_params.get("type", "all")
         if gallery_type not in VALID_GALLERY_TYPES:
             return Response(
-                {"errors": {"type": ["Must be one of: all, authored, generated."]}},
+                {"errors": {"type": ["Must be one of: all, pieces, collections, generated."]}},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         engine = request.query_params.get("engine")
@@ -489,6 +492,8 @@ class PublicGalleryListView(APIView):
                 querysets[kind] = eligible_projects()
             elif kind == "3d":
                 querysets[kind] = eligible_projects3d()
+            elif kind == "collection":
+                querysets[kind] = eligible_collections()
             else:
                 querysets[kind] = eligible_art_pieces().filter(
                     **({"engine": engine} if engine else {})

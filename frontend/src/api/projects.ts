@@ -249,7 +249,7 @@ export function listPublicGallery(
 }
 
 /** Issue #491: discriminator for the unified public gallery. */
-export type PublicGalleryItemKind = '2d' | '3d' | 'generated';
+export type PublicGalleryItemKind = '2d' | '3d' | 'collection' | 'generated';
 
 /** Issue #491: one item from the unified `/api/public/gallery/` endpoint
  * for an authored 2D project. */
@@ -288,9 +288,22 @@ export type PublicGalleryGeneratedItem = {
   engine: string;
 };
 
+export type PublicGalleryCollectionItem = {
+  id: string;
+  kind: 'collection';
+  title: string;
+  owner: string;
+  published_at: string;
+  thumbnail_url: null;
+  viewer_url: string;
+};
+
 /** Issue #491: discriminated union of all public gallery item shapes. */
 export type PublicGalleryItem =
-  PublicGallery2DItem | PublicGallery3DItem | PublicGalleryGeneratedItem;
+  | PublicGallery2DItem
+  | PublicGallery3DItem
+  | PublicGalleryCollectionItem
+  | PublicGalleryGeneratedItem;
 
 export type PublicGalleryEngine = 'canvas2d' | 'svg' | 'threejs' | 'aframe';
 export type PublicGalleryEngineOption = {
@@ -310,7 +323,7 @@ export type PublicGalleryUnifiedPage = {
 
 /** Issue #491: the supported values of the `type` filter on the unified
  * public gallery. */
-export type PublicGalleryType = 'all' | 'authored' | 'generated';
+export type PublicGalleryType = 'all' | 'authored' | 'pieces' | 'collections' | 'generated';
 
 /** Issue #491: fetch one page of the unified public gallery, merging
  * authored 2D/3D projects and generated art pieces. `type` defaults to

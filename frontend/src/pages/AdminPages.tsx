@@ -7,6 +7,7 @@ import {
   fetchAdminPages,
   type CmsPage,
   type CmsPageFields,
+  type SeoConfig,
   updateAdminPage,
 } from '../api/adminPages';
 import { ApiError } from '../api/client';
@@ -21,6 +22,18 @@ const EMPTY_PAGE: CmsPageFields = {
   show_in_nav: false,
   sort_order: 0,
   system_key: null,
+  seo_config: {
+    title: '',
+    description: '',
+    canonical_policy: 'self',
+    indexing: 'index',
+    og_title: '',
+    og_description: '',
+    og_image_url: '',
+    twitter_card: 'summary',
+    answer_summary: '',
+    structured_data: {},
+  },
 };
 
 function AdminPages() {
@@ -62,6 +75,7 @@ function AdminPages() {
       show_in_nav: page.show_in_nav,
       sort_order: page.sort_order,
       system_key: page.system_key,
+      seo_config: page.seo_config,
     });
     setError(null);
     setMessage(null);
@@ -208,6 +222,64 @@ function AdminPages() {
             maxLength={5000}
             rows={5}
           />
+          <fieldset>
+            <legend>SEO and AEO metadata</legend>
+            <label htmlFor="cms-seo-title">Search title</label>
+            <input
+              id="cms-seo-title"
+              maxLength={200}
+              value={draft.seo_config.title}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  seo_config: { ...draft.seo_config, title: event.target.value },
+                })
+              }
+            />
+            <label htmlFor="cms-seo-description">Search description</label>
+            <textarea
+              id="cms-seo-description"
+              maxLength={320}
+              rows={3}
+              value={draft.seo_config.description}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  seo_config: { ...draft.seo_config, description: event.target.value },
+                })
+              }
+            />
+            <label htmlFor="cms-seo-indexing">Indexing</label>
+            <select
+              id="cms-seo-indexing"
+              value={draft.seo_config.indexing}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  seo_config: {
+                    ...draft.seo_config,
+                    indexing: event.target.value as SeoConfig['indexing'],
+                  },
+                })
+              }
+            >
+              <option value="index">Index</option>
+              <option value="noindex">No index</option>
+            </select>
+            <label htmlFor="cms-seo-answer">Answer summary</label>
+            <textarea
+              id="cms-seo-answer"
+              maxLength={1000}
+              rows={3}
+              value={draft.seo_config.answer_summary}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  seo_config: { ...draft.seo_config, answer_summary: event.target.value },
+                })
+              }
+            />
+          </fieldset>
           <label htmlFor="cms-page-status">Status</label>
           <select
             id="cms-page-status"

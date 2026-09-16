@@ -9,6 +9,19 @@ from django.utils.text import slugify
 
 from scenes.models import Page, PageAuditEvent, PageSlugRedirect
 
+SEO_DEFAULTS = {
+    "title": "",
+    "description": "",
+    "canonical_policy": "self",
+    "indexing": "index",
+    "og_title": "",
+    "og_description": "",
+    "og_image_url": "",
+    "twitter_card": "summary",
+    "answer_summary": "",
+    "structured_data": {},
+}
+
 RESERVED_PAGE_SLUGS = frozenset(
     {
         "admin",
@@ -53,6 +66,7 @@ class PageView:
     revision: int
     updated_at: str
     updated_by: str | None
+    seo_config: dict
 
 
 def _display_name(user) -> str | None:
@@ -76,6 +90,7 @@ def page_view(page: Page) -> PageView:
         revision=page.revision,
         updated_at=page.updated_at.isoformat(),
         updated_by=_display_name(page.updated_by),
+        seo_config=page.seo_config,
     )
 
 
@@ -100,6 +115,7 @@ def _clean_fields(data: dict[str, object], *, partial: bool = False) -> dict[str
         "show_in_nav",
         "sort_order",
         "system_key",
+        "seo_config",
     }
     unknown = set(data) - allowed
     if unknown:
@@ -152,6 +168,37 @@ def _clean_fields(data: dict[str, object], *, partial: bool = False) -> dict[str
             )
         else:
             cleaned["system_key"] = system_key
+    if "seo_config" in data:
+        config = data["seo_config"]
+        if not isinstance(config, dict):
+            raise PageValidationFailed("seo_config must be an object.")
+        unknown = set(config) - set(SEO_DEFAULTS)
+        if unknown:
+            raise PageValidationFailed("seo_config contains unknown fields.")
+        cleaned_config = {**SEO_DEFAULTS, **config}
+        for key, limit in (
+            ("title", 200),
+            ("description", 320),
+            ("og_title", 200),
+            ("og_description", 320),
+            ("answer_summary", 1000),
+        ):
+            if not isinstance(cleaned_config[key], str) or len(cleaned_config[key]) > limit:
+                raise PageValidationFailed(f"seo_config.{key} is invalid or too long.")
+        if cleaned_config["canonical_policy"] not in {"self", "none"}:
+            raise PageValidationFailed("seo_config.canonical_policy is invalid.")
+        if cleaned_config["indexing"] not in {"index", "noindex"}:
+            raise PageValidationFailed("seo_config.indexing is invalid.")
+        if cleaned_config["twitter_card"] not in {"summary", "summary_large_image"}:
+            raise PageValidationFailed("seo_config.twitter_card is invalid.")
+        if cleaned_config["og_image_url"] and (
+            not isinstance(cleaned_config["og_image_url"], str)
+            or not cleaned_config["og_image_url"].startswith(("https://", "http://"))
+        ):
+            raise PageValidationFailed("seo_config.og_image_url must be an absolute URL.")
+        if not isinstance(cleaned_config["structured_data"], dict):
+            raise PageValidationFailed("seo_config.structured_data must be an object.")
+        cleaned["seo_config"] = {key: cleaned_config[key] for key in config}
     return cleaned
 
 

@@ -14,6 +14,20 @@ export type CmsPage = {
   revision: number;
   updated_at: string;
   updated_by: string | null;
+  seo_config: SeoConfig;
+};
+
+export type SeoConfig = {
+  title: string;
+  description: string;
+  canonical_policy: 'self' | 'none';
+  indexing: 'index' | 'noindex';
+  og_title: string;
+  og_description: string;
+  og_image_url: string;
+  twitter_card: 'summary' | 'summary_large_image';
+  answer_summary: string;
+  structured_data: Record<string, unknown>;
 };
 
 export type CmsPageFields = Omit<

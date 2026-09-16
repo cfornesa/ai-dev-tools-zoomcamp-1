@@ -22,6 +22,7 @@ class PublicPageDetailView(APIView):
                     "nav_label": page.nav_label,
                     "show_in_nav": page.show_in_nav,
                     "sort_order": page.sort_order,
+                    "seo_config": page.seo_config,
                 }
             )
         redirect = PageSlugRedirect.objects.select_related("page").filter(old_slug=slug).first()

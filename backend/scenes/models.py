@@ -330,6 +330,7 @@ class Page(models.Model):
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=120, unique=True)
     description = models.TextField(max_length=5000, blank=True, default="")
+    seo_config = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
     nav_label = models.CharField(max_length=100, blank=True, default="")
     show_in_nav = models.BooleanField(default=False)

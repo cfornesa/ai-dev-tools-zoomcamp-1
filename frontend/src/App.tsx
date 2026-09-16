@@ -40,6 +40,7 @@ const AdminPages = lazy(() => import('./pages/AdminPages'));
 const AdminContent = lazy(() => import('./pages/AdminContent'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 const CanonicalPublicPiece = lazy(() => import('./pages/CanonicalPublicPiece'));
+const PublicCmsPage = lazy(() => import('./pages/PublicCmsPage'));
 const CollectionManagement = lazy(() => import('./pages/CollectionManagement'));
 const PublicCollection = lazy(() => import('./pages/PublicCollection'));
 const CollectionImmersiveViewer = lazy(() => import('./pages/CollectionImmersiveViewer'));
@@ -69,6 +70,7 @@ function App() {
               <Route path="gallery" element={<PublicGallery />} />
               <Route path="users/:handle" element={<PublicProfile />} />
               <Route path="users/:handle/:collectionSlug" element={<PublicCollection />} />
+              <Route path="pages/:slug" element={<PublicCmsPage />} />
               <Route
                 path="users/:handle/:collectionSlug/immersive"
                 element={<CollectionImmersiveViewer />}

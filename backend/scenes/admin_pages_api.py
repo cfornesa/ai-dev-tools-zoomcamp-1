@@ -43,6 +43,7 @@ def _payload(view):
         "revision": view.revision,
         "updated_at": view.updated_at,
         "updated_by": view.updated_by,
+        "seo_config": view.seo_config,
     }
 
 

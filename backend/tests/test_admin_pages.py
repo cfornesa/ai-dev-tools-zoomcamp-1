@@ -28,6 +28,7 @@ def page_payload(**overrides):
         "nav_label": "About",
         "show_in_nav": False,
         "sort_order": 1,
+        "seo_config": {},
     }
     payload.update(overrides)
     return payload
@@ -72,6 +73,7 @@ def test_admin_can_create_publish_rename_and_audit_page(client, admin_a):
         "nav_label": "About",
         "show_in_nav": False,
         "sort_order": 1,
+        "seo_config": {},
     }
     old = client.get(reverse("public-page-detail", args=["about-studio"]))
     assert old.status_code == 301

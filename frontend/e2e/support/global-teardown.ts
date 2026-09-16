@@ -34,16 +34,43 @@ const UV_CHILD_ENV = {
   UV_CACHE_DIR: process.env.UV_CACHE_DIR ?? path.join(os.tmpdir(), 'creatrweb-uv-cache'),
 };
 
+const fixtureCleanupCommand =
+  process.env.E2E_DOCKER_COMPOSE === 'true'
+    ? {
+        command: 'docker',
+        args: [
+          'compose',
+          '--project-name',
+          'ai-dev-tools-zoomcamp-1',
+          '--file',
+          'compose.yaml',
+          'exec',
+          '-T',
+          'backend',
+          'uv',
+          'run',
+          'python',
+          'manage.py',
+          'e2e_fixtures',
+          'cleanup',
+          '--json',
+        ],
+      }
+    : {
+        command: 'uv',
+        args: ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'cleanup', '--json'],
+      };
+
 export default async function globalTeardown(): Promise<void> {
   const state = readE2EState();
 
   if (state.available) {
     try {
-      execFileSync(
-        'uv',
-        ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'cleanup', '--json'],
-        { cwd: BACKEND_DIR, env: UV_CHILD_ENV, stdio: 'ignore' },
-      );
+      execFileSync(fixtureCleanupCommand.command, fixtureCleanupCommand.args, {
+        cwd: fixtureCleanupCommand.command === 'docker' ? REPO_ROOT : BACKEND_DIR,
+        env: UV_CHILD_ENV,
+        stdio: 'ignore',
+      });
     } catch (err) {
       // Best-effort: teardown must not mask the suite's actual pass/fail
       // result. Surface the failure to the console so a human notices

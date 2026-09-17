@@ -19,6 +19,7 @@ The open schema-centered manifest contained exactly three issues: [#589](https:/
 - Production `migrate --noinput` subsequently returned `No migrations to apply.` Final invariant counts reported six profile styles and zero missing Project, Project3D, ArtPiece slugs, zero unstyled public profiles, and zero null metadata-tag values.
 - Authenticated production-database APIClient checks returned JSON 200 for `/api/projects/`, `/api/projects3d/`, `/api/admin/content/`, and `/api/admin/settings/`; `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` passed; anonymous public routes returned 200. Chrome's external published tab was blocked by the client, so deployed authenticated browser evidence is not claimed.
 - No new actionable product issue was discovered. The only remaining item is #597's historical Replit-hook evidence boundary; no duplicate issue was created.
+- Supplemental #597 check: Replit Shell history searched with `fc -ln -100 | rg -n 'post|merge|migrate|0078|showmigrations'`; it contained this session's manual commands but no historical `postMerge` invocation or migration-run output. The Production Logs search for `0078` returned no logs available, so the two historical causes remain indistinguishable.
 
 ## 2026-09-17 — Task distillation: #589 blocked on a deeper migration-ledger inconsistency, #598 opened
 

@@ -37,3 +37,18 @@ tolerant reopen (anchored, case-insensitive regex matching both trigger
 states, mirrored from `publishingAndRemix.spec.ts`'s own
 `choosePublished`/`chooseDraft` pattern) rather than assuming the shared
 helper covers every sequencing.
+
+**Second confirmed instance (2026-09-17, issue #594's QA → #595):**
+`adminPages.spec.ts` failed for two reasons, neither touched by #594's own
+CSS-only diff. (1) Closed #572 changed the index route (`/`) to redirect
+unauthenticated visitors on to `/gallery` instead of staying at `/`; the
+spec's `toHaveURL(/\/$/)` assertion was never updated and is stale against
+that routing change. (2) `AdminPages.tsx`'s create-page form has been
+gated behind an `editorOpen` state (only `true` after clicking "New page")
+since commit `d8f1013`, but the spec fills the Title field immediately
+after `page.goto('/admin/pages')` without ever clicking "New page" —
+stale against the component's own form-gating, unrelated to any specific
+issue's routing change. Filed as #595 rather than fixed inline during
+#594's QA (out of scope for that issue's diff). Reinforces: run the exact
+spec file before trusting it as evidence for an unrelated issue's QA pass,
+and don't assume a file discoverable via `--list` is still passing.

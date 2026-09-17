@@ -1,5 +1,26 @@
 # AugmentrART Backlog
 
+## 2026-09-17 — Session completion: #591/#592/#594 closed, #589/#590/#593 remain open, #595/#596 filed
+
+Batch rollup for the `/goal`-driven `qa-self-review` → `production-readiness` →
+`session-completion` run over #589-#596:
+
+- **Discovered:** 8 (#589-#596, all already GitHub issues; no duplicates found).
+- **Completed (closed):** [#591](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/591), [#592](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/592), [#594](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/594) — QA PASS, no blockers, CI green.
+- **Dependency-blocked (open):** [#590](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/590), [#593](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/593) — QA PASS for local-engineering scope; each issue's own acceptance criteria require deployed/production evidence gated on #589. [#589](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/589) itself — owner-only Replit production schema/data repair, no production mutation performed this session.
+- **Handed-off (open, non-blocking follow-ups):** [#595](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/595) (stale `adminPages.spec.ts` assertions), [#596](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/596) (TOCTOU race in `public_slug` assignment, found via the nightly scheduled full E2E run's failure).
+- **Missing terminal status:** 0.
+
+**CI reconciliation:** local `main` was 7 commits ahead of `origin/main` and unpushed at session start — none of the #590-#594 engineering or QA commits had run through CI. Pushed via `make git-safe-push` (fast-forward only) with explicit owner confirmation; push-triggered run [35189373833](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/35189373833) is fully green (backend, frontend, workflow validation, browser acceptance E2E, disposable published-routing smoke).
+
+**Routing audit:** stage 4 (QA) and stage 5 (readiness) both ran as Claude Sonnet 5, satisfying the mandatory stage-5 model floor. Every #590-#594 stage-2 substitution (Codex/GPT-5 instead of the rostered Opencode/Ollama service) was already flagged in each engineering handoff and re-recorded in the QA comments. Stage 3 (second-opinion review) did not run on any of #590-#594 — recorded as `not run`, a gap but not a blocker since it's optional in this loop.
+
+**Next action for each open item:**
+- #589: deployment owner runs the approved Replit schema/data repair, then re-verifies `information_schema` + `scripts/smoke-published.sh`.
+- #590, #593: re-open QA's deployed-evidence criteria once #589 lands; no code changes expected.
+- #595: test-only fix to `adminPages.spec.ts` (update the stale redirect assertion, click "New page" before filling the create form).
+- #596: add retry-on-`IntegrityError` handling to `_next_slug`/`assign_public_slug` plus a concurrency regression test.
+
 ## 2026-09-17 — Claude QA batch: #590-#594 PASS, #595 opened, #589 remains the post-QA production gate
 
 `/goal`-driven `qa-self-review` pass over the five issues that had reached a QA

@@ -1,5 +1,67 @@
 # AugmentrART Backlog
 
+## 2026-09-17 — Live published audit follow-ups: #589-#594 proposed
+
+Task-distillation pass after the published site returned generic loading/error
+states. The live Chrome audit separated frontend asset delivery from runtime
+API failures: the hashed JavaScript and CSS bundles both returned HTTP 200 with
+the expected MIME types, while the data-bearing routes below returned 500 or
+the wrong representation. Production Database inspection was read-only.
+
+| Issue | Status | Evidence and next action |
+| --- | --- | --- |
+| [#589](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/589) | DEPENDENCY-BLOCKED / ready for deployment owner | Production is missing `scenes_project.seo_config` and `scenes_project3d.seo_config`; `scenes_sitesettings.metadata_tags` is `NULL`. This causes `/api/projects/`, `/api/projects3d/`, `/api/public/gallery/`, `/api/public/projects/`, `/api/users/@christopher/`, `/api/admin/content/`, and `/api/admin/settings/` to return 500. Repair through the approved Replit schema/data workflow, then run deployed smoke and direct schema checks. Follow-up to closed #586/#588. |
+| [#590](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/590) | DEPENDENCY-BLOCKED by #589 | `/llms.txt` and `/llms-full.txt` return the React HTML shell as `text/html` instead of generated `text/plain`. Fix published serving/proxy routing and verify both local production-like and published surfaces after #589. Follow-up to closed #585. |
+| [#591](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/591) | ENGINEERED / ready for Claude QA (`4b65706`) | Account settings cards now retain headings when collapsed, align headings and move controls, and use text-only disclosure controls. Follow-up to closed #554/#574. |
+| [#592](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/592) | ENGINEERED / ready for Claude QA (`eb40bca`) | Admin console destinations now use consistent button-style navigation with active/focus states while preserving routes and authorization. Follow-up to closed #575/#584. |
+| [#593](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/593) | DEPENDENCY-BLOCKED by #589 | Admin content search labels remain beside fields, and admin settings cannot be fully verified while its API returns 500. Recheck after #589, then fix label/control structure and error/loading layout. Follow-up to closed #575/#583. |
+| [#594](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/594) | ENGINEERED / ready for Claude QA (`c33e4bd`) | CMS/admin operation sections now use border-box sizing and focused responsive scroll-width assertions. Follow-up to closed #583. |
+
+Secondary audit results: templates, account profile/billing, site theme,
+account collections, and the standalone art-piece studio returned successful
+responses or rendered usable controls. Browser-extension console messages
+were classified as non-actionable noise. No product source or production data
+was changed during this pass.
+
+**Distillation reconciliation:** all six actionable findings now have unique
+criterion-ready GitHub issues; closed parent issues remain immutable. The
+corrected transaction order is local engineering for code issues first, Claude
+QA second, and only then the #589 Replit production repair/deployment gate.
+Published verification is not a prerequisite for deploying un-QA'd code.
+
+### 2026-09-17 — engineering handoff before Claude QA
+
+This session intentionally stopped before QA, per owner instruction. #591,
+#592, and #594 each have an issue-scoped commit and an explicit GitHub
+engineering handoff comment. The focused frontend checks and final `make check`
+passed: backend 1,409 passed / 39 skipped; frontend 236 files / 2,718 tests;
+typecheck, formatting, and build passed. Browser screenshots and rendered
+desktop/mobile interaction evidence remain Claude QA gates and were not run.
+
+#589 is a post-QA deployment/data gate because the approved Replit production
+schema/data workflow and published evidence are intentionally deferred until
+the code issues have passed Claude QA. #590 and #593 are now locally
+engineered and checked; their deployed acceptance remains a post-QA gate owned
+by the #589 sequence. No issue was closed and no `## QA: PASS` or
+`## QA: FAIL` verdict was posted.
+
+**Corrected pre-QA transaction ledger:**
+
+| Issue | State | Commit | Engineering evidence | Next owner/action |
+| --- | --- | --- | --- | --- |
+| #589 | `GROOMED → DEPENDENCY-BLOCKED` (post-QA gate) | — | Production repair intentionally not run; live state remains read-only | Claude QA first; then owner-run Replit schema/data repair and deployed verification |
+| #590 | `GROOMED → ENGINEERING/QA → HANDED-OFF` | `76ed49f` | Frontend format/typecheck/lint; focused Vite preview-policy test 10/10; full frontend 236 files / 2,718 tests; production build passed | Claude Code QA; no publish before verdict |
+| #591 | `GROOMED → ENGINEERING/QA → HANDED-OFF` | `4b65706` | Prior focused/full engineering checks passed | Claude Code QA; no publish before verdict |
+| #592 | `GROOMED → ENGINEERING/QA → HANDED-OFF` | `eb40bca` | Prior focused/full engineering checks passed | Claude Code QA; no publish before verdict |
+| #593 | `GROOMED → ENGINEERING/QA → HANDED-OFF` | `1572ba9` | Frontend format/typecheck/lint; full frontend 236 files / 2,718 tests; production build passed | Claude Code QA; no publish before verdict |
+| #594 | `GROOMED → ENGINEERING/QA → HANDED-OFF` | `c33e4bd` | Prior focused/full engineering checks passed | Claude Code QA; no publish before verdict |
+
+The full frontend suite briefly failed once in the pre-existing
+`useDraftAutosave.test.ts` test and passed on both the focused rerun and the
+subsequent full rerun. This remains classified as a transient test-runner
+flake, not an issue defect. No browser QA, Replit publish, production schema
+mutation, or live-data repair was performed in this session.
+
 ## 2026-09-16 — QA batch reconciliation: #571-#587 closed, CI restored, #588 opened
 
 Backlog-session transaction: `GROOMED → ENGINEERING/QA → RECONCILIATION`, run

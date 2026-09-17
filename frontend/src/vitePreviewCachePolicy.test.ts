@@ -48,6 +48,8 @@ describe('previewCachePolicy', () => {
     expect(previewCachePolicy('/api/projects/')).toBeNull();
     expect(previewCachePolicy('/accounts/login/')).toBeNull();
     expect(previewCachePolicy('/health/')).toBeNull();
+    expect(previewCachePolicy('/llms.txt')).toBeNull();
+    expect(previewCachePolicy('/llms-full.txt')).toBeNull();
   });
 });
 

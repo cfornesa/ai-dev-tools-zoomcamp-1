@@ -17,6 +17,14 @@ import { previewCachePolicy } from './src/vitePreviewCachePolicy.js';
 // listening on ::1 on this machine.
 const backendProxyTarget = process.env.BROWSER_QA_BACKEND_URL ?? 'http://127.0.0.1:8000';
 
+const djangoProxy = {
+  '/api': { target: backendProxyTarget, changeOrigin: false },
+  '/accounts': { target: backendProxyTarget, changeOrigin: false },
+  '/health': { target: backendProxyTarget, changeOrigin: false },
+  '/llms.txt': { target: backendProxyTarget, changeOrigin: false },
+  '/llms-full.txt': { target: backendProxyTarget, changeOrigin: false },
+};
+
 /**
  * Vite preview-server plugin implementing the production cache policy for
  * issue #489.
@@ -85,10 +93,14 @@ export default defineConfig({
       // localhost:8000, which Google was never told about -- producing
       // redirect_uri_mismatch even though the browser is correctly on
       // port 5000 the whole time.
-      '/api': { target: backendProxyTarget, changeOrigin: false },
-      '/accounts': { target: backendProxyTarget, changeOrigin: false },
-      '/health': { target: backendProxyTarget, changeOrigin: false },
+      ...djangoProxy,
     },
+  },
+  preview: {
+    // `vite preview` does not inherit `server.proxy`; production therefore
+    // needs the same Django routes explicitly or text resources fall through
+    // to the SPA shell instead of reaching their existing Django views.
+    proxy: djangoProxy,
   },
   test: {
     environment: 'jsdom',

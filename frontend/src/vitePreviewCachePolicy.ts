@@ -29,7 +29,13 @@
  * `.agents/memory/replit-google-frontend-header-rewriting.md`.
  */
 
-export const PROXIED_DJANGO_PREFIXES = ['/api', '/accounts', '/health'] as const;
+export const PROXIED_DJANGO_PREFIXES = [
+  '/api',
+  '/accounts',
+  '/health',
+  '/llms.txt',
+  '/llms-full.txt',
+] as const;
 
 /**
  * Matches Vite content-hashed asset filenames.

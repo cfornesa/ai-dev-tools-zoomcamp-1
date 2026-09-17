@@ -1,5 +1,25 @@
 # AugmentrART Backlog
 
+## 2026-09-17 — Backlog session: production schema ledger reconciliation (#589, #597, #598)
+
+The open schema-centered manifest contained exactly three issues: [#589](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/589), [#597](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/597), and [#598](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/598). The pasted Claude Code report was treated as untrusted intake and independently rechecked through the Replit Shell.
+
+### Transaction ledger
+
+| Issue | State | Stage owners (scoping / engineering / review / QA / readiness) | Evidence and disposition |
+| --- | --- | --- | --- |
+| #598 | `GROOMED → ENGINEERING/QA → CLOSED` | Codex/GPT-5; Codex/GPT-5 substitution for Ollama Cloud; not run; Codex/GPT-5 substitution for Claude Sonnet 5 Medium; readiness not run (mandatory Opus 5/owner-budgeted tier unavailable) | Production backup created; migrations 0056–0059 and 0060, 0063–0078 audited; additive schema/data repair completed transactionally; `manage.py migrate --noinput` reports no migrations; production API and published anonymous smoke evidence recorded on the issue. |
+| #589 | `GROOMED → ENGINEERING/QA → CLOSED` | Codex/GPT-5; no product engineering (deployment repair); not run; Codex/GPT-5 substitution for Claude Sonnet 5 Medium; readiness not run | Production schema/data acceptance restored by the #598 repair. Published `/health/`, root, anonymous identity/login, public routes, and current-production authenticated APIClient route checks pass; exact deployed authenticated browser proof remains an evidence boundary and is recorded explicitly. |
+| #597 | `GROOMED → HANDED-OFF` | Codex/GPT-5; not applicable; not run; Codex/GPT-5 substitution for Claude Sonnet 5 Medium; readiness not run | Development `showmigrations` is now fully applied through `0078`; the Replit Logs search did not prove whether the historical `postMerge` hook fired or whether its migration command failed. Remains open for Replit owner/log correlation. |
+
+### QA and reconciliation evidence
+
+- Replit Production backup: `/tmp/production-before-598.dump` (custom-format `pg_dump`, 332K, 638 TOC entries) created before mutation.
+- Production repair audited and repaired the missing ledger/schema/data effects without a blanket production migration. It added only the missing columns/foreign keys/indexes, replayed the two missing `RunPython` seed effects, backfilled styles and public slugs, normalized `metadata_tags`, and inserted ledger rows in dependency order.
+- Production `migrate --noinput` subsequently returned `No migrations to apply.` Final invariant counts reported six profile styles and zero missing Project, Project3D, ArtPiece slugs, zero unstyled public profiles, and zero null metadata-tag values.
+- Authenticated production-database APIClient checks returned JSON 200 for `/api/projects/`, `/api/projects3d/`, `/api/admin/content/`, and `/api/admin/settings/`; `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` passed; anonymous public routes returned 200. Chrome's external published tab was blocked by the client, so deployed authenticated browser evidence is not claimed.
+- No new actionable product issue was discovered. The only remaining item is #597's historical Replit-hook evidence boundary; no duplicate issue was created.
+
 ## 2026-09-17 — Task distillation: #589 blocked on a deeper migration-ledger inconsistency, #598 opened
 
 Owner ran `cd backend && DATABASE_URL="<production>" uv run python manage.py migrate --noinput`

@@ -76,3 +76,11 @@ already-established owner-supervised pattern from #238/#503/#531: a scoped,
 explicit migration or idempotent data script run directly against
 Production's `DATABASE_URL` via Replit's Shell, never a blanket
 `manage.py migrate` there.
+
+**#597 follow-up (2026-09-17):** Replit Shell now reports Development's
+`scenes` ledger fully applied through `0078_project_content_seo_config`.
+Searching Replit Production Logs for `0078` surfaced runtime error output but
+did not establish whether the historical `postMerge` hook fired for the
+commit or whether its `manage.py migrate` command failed. Keep that historical
+cause unresolved until the owner correlates the hook/run logs; current ledger
+parity is not evidence about the original trigger failure.

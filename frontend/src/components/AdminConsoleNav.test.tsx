@@ -28,9 +28,17 @@ describe('AdminConsoleNav (#584)', () => {
     await user.click(screen.getByRole('button', { name: 'Open menu' }));
 
     expect(screen.getByRole('link', { name: 'Content' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Content' })).toHaveClass(
+      'admin-console-nav-button',
+      'is-active',
+    );
     expect(screen.getByRole('link', { name: 'Pages' })).not.toHaveAttribute('aria-current');
     expect(screen.getByRole('link', { name: 'Settings and plans' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Return to public site' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link')).toHaveLength(4);
+    for (const link of screen.getAllByRole('link')) {
+      expect(link).toHaveClass('admin-console-nav-button', 'admin-action-secondary');
+    }
   });
 
   it('the menu toggle starts collapsed and expands/collapses with correct aria-expanded', async () => {

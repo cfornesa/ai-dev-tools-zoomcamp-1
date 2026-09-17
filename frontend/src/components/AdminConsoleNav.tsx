@@ -28,6 +28,9 @@ export default function AdminConsoleNav({
       </button>
       <div id="admin-console-menu" className="admin-console-menu" hidden={!open}>
         <NavLink
+          className={({ isActive }) =>
+            `admin-console-nav-button admin-action-secondary${isActive ? ' is-active' : ''}`
+          }
           to="/admin/pages"
           aria-current={current === 'pages' ? 'page' : undefined}
           onClick={() => setOpen(false)}
@@ -35,6 +38,9 @@ export default function AdminConsoleNav({
           Pages
         </NavLink>
         <NavLink
+          className={({ isActive }) =>
+            `admin-console-nav-button admin-action-secondary${isActive ? ' is-active' : ''}`
+          }
           to="/admin/content"
           aria-current={current === 'content' ? 'page' : undefined}
           onClick={() => setOpen(false)}
@@ -42,13 +48,20 @@ export default function AdminConsoleNav({
           Content
         </NavLink>
         <NavLink
+          className={({ isActive }) =>
+            `admin-console-nav-button admin-action-secondary${isActive ? ' is-active' : ''}`
+          }
           to="/admin/settings"
           aria-current={current === 'settings' ? 'page' : undefined}
           onClick={() => setOpen(false)}
         >
           Settings and plans
         </NavLink>
-        <NavLink to="/gallery" onClick={() => setOpen(false)}>
+        <NavLink
+          className="admin-console-nav-button admin-action-secondary"
+          to="/gallery"
+          onClick={() => setOpen(false)}
+        >
           Return to public site
         </NavLink>
       </div>

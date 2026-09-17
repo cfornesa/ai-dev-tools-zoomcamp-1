@@ -1,5 +1,38 @@
 # AugmentrART Backlog
 
+## 2026-09-17 — Claude QA batch: #590-#594 PASS, #595 opened, #589 remains the post-QA production gate
+
+`/goal`-driven `qa-self-review` pass over the five issues that had reached a QA
+handoff state (#590-#594), run against a real local PostgreSQL-backed Django +
+Vite dev stack signed in as the `e2e_admin` fixture user (application-admin
+grant restored via `manage.py e2e_fixtures create` after `reconcile_admin_identities`
+revoked it, since `e2e_admin` is not in `ADMIN_IDENTITIES`).
+
+| Issue | Verdict | What QA found |
+| --- | --- | --- |
+| [#591](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/591) | PASS | Verified as-is: card headings/move-controls/disclosure-control geometry and text confirmed live at 1280x900 and 375x812; accessible names (`Move Plan and usage up/down`) confirmed via `read_page`. |
+| [#592](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/592) | PASS | Verified as-is: button-style nav with active state confirmed across `/admin/pages`, `/admin/content`, `/admin/settings` at both viewports, including the mobile collapsed-menu variant. |
+| [#593](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/593) | PASS (local-engineering scope) | Verified against a local database (which has the schema production is still missing) that both API routes return 200 and all fields render label-above-control at both viewports; deployed/production evidence and the error-state criterion remain explicit post-#589 gates. |
+| [#594](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/594) | PASS, follow-up filed | `scrollWidth`/`innerWidth` matched at both viewports (no overflow), confirming the fix. Its own focused Playwright spec (`adminPages.spec.ts`) failed for two reasons unrelated to this issue's CSS diff — a stale anonymous-redirect assertion from closed #572 and a pre-existing (since `d8f1013`) `editorOpen` gate the test never clicks through. Filed [#595](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/595) rather than fixing product/test code inside this QA pass. |
+| [#590](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/590) | PASS (local-engineering scope) | Confirmed `text/plain` 200 responses for `/llms.txt`/`/llms-full.txt` in both Vite dev mode and a local production-like `vite preview` build (mirrors `scripts/start.sh`'s `FRONTEND_SERVE_MODE=preview`); backend `llms` tests (6) and the focused frontend cache-policy test (10) both pass. Published-topology confirmation remains deferred to post-#589 per the issue's own corrected-sequencing comment. |
+
+Full `make check` re-run after QA (not just the focused suites the engineering
+handoffs reported): backend 1,409 passed / 39 skipped; frontend 236 files /
+2,718 tests; typecheck, formatting, and build all green — matches the prior
+handoffs' own numbers, independently re-verified rather than taken on trust.
+
+**#589 remains open** as the sole post-QA production deployment/data gate: the
+approved Replit schema/data repair for the missing `seo_config` columns and
+`NULL` `metadata_tags`, plus direct `information_schema` and
+`scripts/smoke-published.sh` evidence, per its own corrected-sequencing
+comment. No Replit publish or production data mutation was performed in this
+QA session — production remains read-only.
+
+**Discovery-gate reconciliation:** [#595](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/595)
+(stale `adminPages.spec.ts` assertions, unrelated to any of #590-#594's own
+acceptance criteria) is the only new actionable item found during this pass;
+it is linked from #594's QA comment and is not a blocker for closing #590-#594.
+
 ## 2026-09-17 — Live published audit follow-ups: #589-#594 proposed
 
 Task-distillation pass after the published site returned generic loading/error

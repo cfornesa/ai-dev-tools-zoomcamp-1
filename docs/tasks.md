@@ -1,5 +1,33 @@
 # AugmentrART Backlog
 
+## 2026-09-17 — Task distillation: #589 blocked on a deeper migration-ledger inconsistency, #598 opened
+
+Owner ran `cd backend && DATABASE_URL="<production>" uv run python manage.py migrate --noinput`
+against Production (explicit owner action, one-off env override — the Shell
+cannot reach Production by default, see #597). It failed immediately:
+`InconsistentMigrationHistory: Migration scenes.0061_scene_conversion_run is
+applied before its dependency scenes.0060_seed_snapshot_cadence_policy`.
+
+Investigated: this blocks **every** future `migrate` call against Production
+(fake or real, targeted or not) — Django validates the whole recorded ledger
+unconditionally, not just the requested target. Direct read-only inspection
+found the gap is far larger than #589's original scope: the last `scenes`
+ledger row ever inserted in Production is `0062`; `0063`-`0078` (16
+migrations) have no ledger row at all, yet at least one of those tables
+(`scenes_syncmutationreceipt`, `0063`) already exists — a genuine mixed
+state, not a clean gap. `0060`'s own `RunPython` data effect is also only
+partially applied (`paid` plan matches, `free` plan's `feature_keys` is
+missing the key `0060` adds).
+
+Filed [#598](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/598)
+to own this reconciliation (migration-by-migration schema **and** data audit
+across 17 migrations, per the existing `--fake`-where-safe pattern in
+`.agents/memory/replit-production-schema-publishing.md`) and marked it
+blocking #589. Extended that memory topic and cross-linked it from
+`replit-migrations-ledger-not-updated-by-publish.md`. #589 and #598 both
+require Replit Shell access this session does not have — no further
+engineering action is possible from here without it.
+
 ## 2026-09-17 — Task distillation: #589 root-caused post-Republish, #597 opened
 
 Owner triggered a Republish; re-verified every #589 criterion live rather than

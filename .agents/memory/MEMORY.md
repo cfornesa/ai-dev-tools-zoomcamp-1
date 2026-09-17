@@ -25,7 +25,7 @@
 - [GitHub HTTPS credential helper](github-https-credential-helper.md) — A valid GIT_URL secret may need an explicit one-command Git credential helper to bypass stale HTTPS credentials.
 - [Published-app checkpoint commits](published-app-checkpoint-commits.md) — Treat “Published your App” commits as disposable checkpoints during Git reconciliation; preserve meaningful ancestor work and drop checkpoint-only divergence.
 - [Ignored tracked task files](ignored-tracked-task-files.md) — Some tracked .local task files are ignored by default; force-stage the intended incoming version when resolving modify/delete conflicts.
-- [Replit production schema publishing](replit-production-schema-publishing.md) — Replit applies production schema diffs during Publish; Django migrations must stay out of build and startup commands.
+- [Replit production schema publishing](replit-production-schema-publishing.md) — Replit applies production schema diffs during Publish; Django migrations must stay out of build and startup commands. #598: a single RunPython-then-schema ledger gap blocks *every* future migrate call, and a table existing doesn't mean its RunPython data effect actually ran.
 - [GitHub Actions needs failure gate](github-actions-needs-failure-gate.md) — dependent alert jobs need an explicit `always()` gate before checking a failed prerequisite result.
 - [Critical operational decisions](critical-actions.md) — Structured index of the security, deployment, database, authentication, and verification decisions that must not regress.
 - [p5.js getUserMedia polyfill](p5-getusermedia-polyfill.md) — Mocking navigator.mediaDevices.getUserMedia wrong crashes the bundle via p5.js's own load-time polyfill.

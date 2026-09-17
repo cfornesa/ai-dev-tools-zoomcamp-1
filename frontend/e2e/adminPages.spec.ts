@@ -7,12 +7,14 @@ test.describe('Application-admin CMS pages (#517, #594)', () => {
   const fixtures = requireE2EFixtures();
 
   test('anonymous and ordinary users cannot discover the admin console', async ({ page }) => {
+    // Issue #595: the index route ('/') itself redirects on since closed #572 —
+    // an anonymous visitor lands on /gallery, a signed-in non-admin on /studio.
     await page.goto('/admin/pages');
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/gallery(\?|$)/);
 
     await loginViaUI(page, fixtures.other.email, fixtures.password);
     await page.goto('/admin/pages');
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/studio(\?|$)/);
     await expect(page.getByRole('heading', { name: 'Pages' })).toHaveCount(0);
   });
 
@@ -24,6 +26,9 @@ test.describe('Application-admin CMS pages (#517, #594)', () => {
     await expect(page.getByRole('heading', { name: 'Pages' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Return to public site' })).toBeVisible();
 
+    // Issue #595: the create/edit form is gated behind editorOpen and only
+    // renders after "New page" is clicked (AdminPages.tsx, since d8f1013).
+    await page.getByRole('button', { name: 'New page' }).click();
     await page.getByLabel('Title', { exact: true }).fill('E2E CMS Page');
     await page.getByLabel('Slug', { exact: true }).fill('e2e-cms-page');
     await page.getByLabel('Description', { exact: true }).fill('Published CMS content.');

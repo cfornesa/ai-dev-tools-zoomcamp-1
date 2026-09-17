@@ -1,5 +1,20 @@
 # AugmentrART Backlog
 
+## 2026-09-17 — QA self-review closes the loop on #589
+
+Follow-up to the same-day session-completion entry below: `qa-self-review`
+had not yet been explicitly run against #589 itself (only prose reasoning
+existed). Ran it formally and posted `## QA: FAIL` — every criterion is
+either actively failing (fresh read-only recheck: `/api/public/gallery/`,
+`/api/public/projects/`, `/api/users/@christopher/` all still HTTP 500) or
+unverifiable from this session (no Replit database/deployment access).
+Disposition: `RETURNED-TO-deployment-owner` — there is no code diff for this
+issue, so there is nothing for engineering to fix; the next action is the
+owner running the approved Replit schema/data repair workflow, after which
+this issue can be re-QA'd against direct `information_schema` and
+`scripts/smoke-published.sh` evidence. #589 stays open and unclosable by any
+session without production access.
+
 ## 2026-09-17 — Session completion: #591/#592/#594 closed, #589/#590/#593 remain open, #595/#596 filed
 
 Batch rollup for the `/goal`-driven `qa-self-review` → `production-readiness` →

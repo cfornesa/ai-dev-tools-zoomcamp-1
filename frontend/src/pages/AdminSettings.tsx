@@ -125,32 +125,38 @@ function SiteTitleForm({
 
   return (
     <form onSubmit={submit} aria-label="Site title settings" className="admin-settings-form">
-      <label htmlFor="site-title-input">Site title</label>
-      <input
-        id="site-title-input"
-        type="text"
-        value={title}
-        onChange={(event) => setTitle(event.target.value)}
-        maxLength={200}
-        required
-      />
-      <label htmlFor="site-description-input">Site description</label>
-      <textarea
-        id="site-description-input"
-        value={description}
-        onChange={(event) => setDescription(event.target.value)}
-        maxLength={500}
-        rows={3}
-      />
-      <label htmlFor="site-metadata-tags-input">Metadata tags</label>
-      <input
-        id="site-metadata-tags-input"
-        type="text"
-        value={metadataTags}
-        onChange={(event) => setMetadataTags(event.target.value)}
-        placeholder="creative coding, generative art"
-        aria-describedby="site-metadata-tags-help"
-      />
+      <label>
+        Site title
+        <input
+          id="site-title-input"
+          type="text"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          maxLength={200}
+          required
+        />
+      </label>
+      <label>
+        Site description
+        <textarea
+          id="site-description-input"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          maxLength={500}
+          rows={3}
+        />
+      </label>
+      <label>
+        Metadata tags
+        <input
+          id="site-metadata-tags-input"
+          type="text"
+          value={metadataTags}
+          onChange={(event) => setMetadataTags(event.target.value)}
+          placeholder="creative coding, generative art"
+          aria-describedby="site-metadata-tags-help"
+        />
+      </label>
       <p id="site-metadata-tags-help">Separate tags with commas.</p>
       <fieldset>
         <legend>Site theme tokens</legend>
@@ -169,20 +175,22 @@ function SiteTitleForm({
           </label>
         ))}
       </fieldset>
-      <label htmlFor="site-style-select">Global style preset</label>
-      <select
-        id="site-style-select"
-        value={styleKey}
-        onChange={(event) => setStyleKey(event.target.value)}
-      >
-        {styles
-          .filter((style) => style.enabled)
-          .map((style) => (
-            <option key={style.key} value={style.key}>
-              {style.label}
-            </option>
-          ))}
-      </select>
+      <label>
+        Global style preset
+        <select
+          id="site-style-select"
+          value={styleKey}
+          onChange={(event) => setStyleKey(event.target.value)}
+        >
+          {styles
+            .filter((style) => style.enabled)
+            .map((style) => (
+              <option key={style.key} value={style.key}>
+                {style.label}
+              </option>
+            ))}
+        </select>
+      </label>
       <div className="admin-settings-actions">
         <button className="admin-action-primary" type="submit" disabled={busy || !dirty}>
           Save
@@ -501,16 +509,18 @@ function PlanForm({
       className="admin-settings-form admin-plan-form"
     >
       <h3>{plan.plan_key} plan</h3>
-      <label htmlFor={`plan-${plan.plan_key}-daily`}>Daily AI requests</label>
-      <input
-        id={`plan-${plan.plan_key}-daily`}
-        type="number"
-        min={0}
-        step={1}
-        value={dailyRequests}
-        onChange={(event) => setDailyRequests(event.target.value)}
-        required
-      />
+      <label>
+        Daily AI requests
+        <input
+          id={`plan-${plan.plan_key}-daily`}
+          type="number"
+          min={0}
+          step={1}
+          value={dailyRequests}
+          onChange={(event) => setDailyRequests(event.target.value)}
+          required
+        />
+      </label>
       <fieldset>
         <legend>Included features</legend>
         {ALL_FEATURE_KEYS.map((feature) => (
@@ -533,56 +543,66 @@ function PlanForm({
         />
         Active
       </label>
-      <label htmlFor={`plan-${plan.plan_key}-paypal`}>PayPal plan id</label>
-      <input
-        id={`plan-${plan.plan_key}-paypal`}
-        type="text"
-        value={paypalPlanId}
-        onChange={(event) => setPaypalPlanId(event.target.value)}
-      />
-      <label htmlFor={`plan-${plan.plan_key}-price`}>Price</label>
-      <input
-        id={`plan-${plan.plan_key}-price`}
-        type="number"
-        min={0}
-        step="0.01"
-        value={price}
-        onChange={(event) => setPrice(event.target.value)}
-        required
-      />
-      <label htmlFor={`plan-${plan.plan_key}-currency`}>Currency</label>
-      <input
-        id={`plan-${plan.plan_key}-currency`}
-        type="text"
-        maxLength={3}
-        value={currency}
-        onChange={(event) => setCurrency(event.target.value.toUpperCase())}
-        required
-      />
-      <label htmlFor={`plan-${plan.plan_key}-interval`}>Billing interval</label>
-      <select
-        id={`plan-${plan.plan_key}-interval`}
-        value={interval}
-        onChange={(event) => setInterval(event.target.value)}
-      >
-        <option value="day">day</option>
-        <option value="week">week</option>
-        <option value="month">month</option>
-        <option value="year">year</option>
-      </select>
-      <label htmlFor={`plan-${plan.plan_key}-role`}>Permission role</label>
-      <select
-        id={`plan-${plan.plan_key}-role`}
-        value={roleKey}
-        onChange={(event) => setRoleKey(event.target.value)}
-      >
-        <option value="">No role (legacy plan features)</option>
-        {roles.map((role) => (
-          <option key={role.role_key} value={role.role_key}>
-            {role.label}
-          </option>
-        ))}
-      </select>
+      <label>
+        PayPal plan id
+        <input
+          id={`plan-${plan.plan_key}-paypal`}
+          type="text"
+          value={paypalPlanId}
+          onChange={(event) => setPaypalPlanId(event.target.value)}
+        />
+      </label>
+      <label>
+        Price
+        <input
+          id={`plan-${plan.plan_key}-price`}
+          type="number"
+          min={0}
+          step="0.01"
+          value={price}
+          onChange={(event) => setPrice(event.target.value)}
+          required
+        />
+      </label>
+      <label>
+        Currency
+        <input
+          id={`plan-${plan.plan_key}-currency`}
+          type="text"
+          maxLength={3}
+          value={currency}
+          onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+          required
+        />
+      </label>
+      <label>
+        Billing interval
+        <select
+          id={`plan-${plan.plan_key}-interval`}
+          value={interval}
+          onChange={(event) => setInterval(event.target.value)}
+        >
+          <option value="day">day</option>
+          <option value="week">week</option>
+          <option value="month">month</option>
+          <option value="year">year</option>
+        </select>
+      </label>
+      <label>
+        Permission role
+        <select
+          id={`plan-${plan.plan_key}-role`}
+          value={roleKey}
+          onChange={(event) => setRoleKey(event.target.value)}
+        >
+          <option value="">No role (legacy plan features)</option>
+          {roles.map((role) => (
+            <option key={role.role_key} value={role.role_key}>
+              {role.label}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="admin-settings-actions">
         <button className="admin-action-primary" type="submit" disabled={busy}>
           Save

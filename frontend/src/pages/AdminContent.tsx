@@ -127,20 +127,24 @@ function AdminContent() {
         </label>
       </div>
       <form className="admin-content-search" role="search" onSubmit={submitSearch}>
-        <label htmlFor="admin-content-search-input">Search title or description</label>
-        <input
-          id="admin-content-search-input"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          maxLength={100}
-        />
-        <label htmlFor="admin-content-account-filter">Account username or email</label>
-        <input
-          id="admin-content-account-filter"
-          value={accountFilter}
-          onChange={(event) => setAccountFilter(event.target.value)}
-          maxLength={254}
-        />
+        <label>
+          Search title or description
+          <input
+            id="admin-content-search-input"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            maxLength={100}
+          />
+        </label>
+        <label>
+          Account username or email
+          <input
+            id="admin-content-account-filter"
+            value={accountFilter}
+            onChange={(event) => setAccountFilter(event.target.value)}
+            maxLength={254}
+          />
+        </label>
         <button className="admin-action-primary" type="submit">
           Search
         </button>

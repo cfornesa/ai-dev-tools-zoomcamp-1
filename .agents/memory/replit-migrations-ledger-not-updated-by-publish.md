@@ -156,3 +156,13 @@ publish — per the `0031`/generalized-rule notes above, check whether it
 actually ran (every production `Plan` row's `feature_keys` should include
 `"ai_scene_convert_3d"`) independently of whatever fixes the column
 issue; nothing about the 500 symptom would surface that one.
+
+**2026-09-17 — the gap can be one level upstream of everything above:**
+every incident here assumed Development was already correctly migrated and
+only Production lagged. Issue #589 found Development itself missing a
+migration (`0078`), so Publish's Dev-vs-Prod diff had nothing to detect no
+matter how many times it ran. See
+[[replit-development-migrations-not-auto-applied]] for the full writeup —
+check Development's own `django_migrations` ledger before assuming this
+topic's remediations (retry Publish, `--fake`, a scoped direct-Production
+migration) will do anything.

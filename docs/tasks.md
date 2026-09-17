@@ -1,5 +1,36 @@
 # AugmentrART Backlog
 
+## 2026-09-17 — Task distillation: #589 root-caused post-Republish, #597 opened
+
+Owner triggered a Republish; re-verified every #589 criterion live rather than
+assuming success. The Republish redeployed application code successfully
+(confirmed: `/llms.txt` now serves correctly in production, #590's fix
+reached production) but **no schema/data criterion is met** — `seo_config`
+still absent from `scenes_project`/`scenes_project3d`, `metadata_tags` still
+`NULL`, and the three public API routes still 500. New regression noted:
+`/llms-full.txt` now 500s live (was previously the SPA-shell symptom #590
+fixed) — folded into #589 as a criterion to re-check, not a separate issue,
+since it shares the same root cause.
+
+**Root cause confirmed** via direct read-only inspection of both the
+Development and Production databases: Development's own `django_migrations`
+ledger stops at `0077` — migration `0078_project_content_seo_config` was
+never applied to **Development**, not only Production. Every prior
+Replit-schema-diff incident in this repo's memory assumed Development was
+already correct; this is a new, one-level-upstream failure mode. Documented
+in `.agents/memory/replit-development-migrations-not-auto-applied.md` and
+cross-linked from the existing `replit-migrations-ledger-not-updated-by-publish.md`.
+
+**Manifest:**
+
+| Issue | Status | Next action |
+| --- | --- | --- |
+| [#589](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/589) | OPEN, root cause revised | Apply pending migration(s) to Development (owner/Replit-Shell action, safe target), Republish, re-verify; fall back to a scoped direct-Production migration via Replit Shell (per #238/#503/#531 precedent) if Development being current still doesn't propagate |
+| [#597](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/597) | OPEN, new | Diagnose why `scripts/post-merge.sh`'s `manage.py migrate` didn't keep Development current (needs Replit Shell/log access this session lacks); independent of #589's one-time unblock |
+
+Both issues require Replit Shell access this session does not have — no
+further engineering action is possible from here without that access.
+
 ## 2026-09-17 — Backlog session: #595/#596 engineered and closed; #590/#593 closed on local scope per owner instruction; #589 confirmed via live schema read and pending owner Republish decision
 
 Per explicit owner instruction: issues already engineered and QA-PASSED for

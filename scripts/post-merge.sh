@@ -9,4 +9,5 @@ backend_dir="$repo_root/backend"
 (cd "$backend_dir" && uv sync --locked)
 npm --prefix frontend ci
 (cd "$backend_dir" && uv run python manage.py migrate --noinput)
+"$repo_root/scripts/verify-development-migrations.sh"
 npm --prefix frontend run build

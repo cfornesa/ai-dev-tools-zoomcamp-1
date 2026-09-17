@@ -84,3 +84,12 @@ did not establish whether the historical `postMerge` hook fired for the
 commit or whether its `manage.py migrate` command failed. Keep that historical
 cause unresolved until the owner correlates the hook/run logs; current ledger
 parity is not evidence about the original trigger failure.
+
+**Future guard added for #597 (2026-09-17):** Because the historical hook
+cause is not recoverable from retained Replit evidence, `scripts/post-merge.sh`
+now invokes `scripts/verify-development-migrations.sh` immediately after
+Development's `manage.py migrate --noinput`. The guard prints the complete
+migration plan and fails with the unapplied entries when any `[ ]` migration
+remains, or when `showmigrations` cannot complete. This improves future
+observability and fails closed without introducing production startup/build
+migrations; Production remains on Replit's Publish/schema-diff path.

@@ -10,7 +10,7 @@ The open schema-centered manifest contained exactly three issues: [#589](https:/
 | --- | --- | --- | --- |
 | #598 | `GROOMED → ENGINEERING/QA → CLOSED` | Codex/GPT-5; Codex/GPT-5 substitution for Ollama Cloud; not run; Codex/GPT-5 substitution for Claude Sonnet 5 Medium; readiness not run (mandatory Opus 5/owner-budgeted tier unavailable) | Production backup created; migrations 0056–0059 and 0060, 0063–0078 audited; additive schema/data repair completed transactionally; `manage.py migrate --noinput` reports no migrations; production API and published anonymous smoke evidence recorded on the issue. |
 | #589 | `GROOMED → ENGINEERING/QA → CLOSED` | Codex/GPT-5; no product engineering (deployment repair); not run; Codex/GPT-5 substitution for Claude Sonnet 5 Medium; readiness not run | Production schema/data acceptance restored by the #598 repair. Published `/health/`, root, anonymous identity/login, public routes, and current-production authenticated APIClient route checks pass; exact deployed authenticated browser proof remains an evidence boundary and is recorded explicitly. |
-| #597 | `GROOMED → HANDED-OFF` | Codex/GPT-5; not applicable; not run; Codex/GPT-5 substitution for Claude Sonnet 5 Medium; readiness not run | Development `showmigrations` is now fully applied through `0078`; the Replit Logs search did not prove whether the historical `postMerge` hook fired or whether its migration command failed. Remains open for Replit owner/log correlation. |
+| #597 | `GROOMED → ENGINEERING/QA → HANDED-OFF` | Codex/GPT-5; Codex/GPT-5 substitution for Ollama Cloud; not run; Codex/GPT-5 substitution for Claude Sonnet 5 Medium; readiness not run | Re-scoped from unrecoverable historical forensics to future migration observability. Added a post-merge verification guard that prints the migration plan and fails when any migration remains unapplied. Historical cause remains unproven; issue stays open pending Replit execution evidence. |
 
 ### QA and reconciliation evidence
 
@@ -20,6 +20,16 @@ The open schema-centered manifest contained exactly three issues: [#589](https:/
 - Authenticated production-database APIClient checks returned JSON 200 for `/api/projects/`, `/api/projects3d/`, `/api/admin/content/`, and `/api/admin/settings/`; `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` passed; anonymous public routes returned 200. Chrome's external published tab was blocked by the client, so deployed authenticated browser evidence is not claimed.
 - No new actionable product issue was discovered. The only remaining item is #597's historical Replit-hook evidence boundary; no duplicate issue was created.
 - Supplemental #597 check: Replit Shell history searched with `fc -ln -100 | rg -n 'post|merge|migrate|0078|showmigrations'`; it contained this session's manual commands but no historical `postMerge` invocation or migration-run output. The Production Logs search for `0078` returned no logs available, so the two historical causes remain indistinguishable.
+
+### #597 workflow-hardening follow-up
+
+The issue was re-scoped with the owner's agreement: historical Replit logs are
+not retained, so the acceptance contract now focuses on preventing silent
+recurrence. `scripts/post-merge.sh` runs the new
+`scripts/verify-development-migrations.sh` after `manage.py migrate`; the
+guard prints the complete plan as durable hook output and exits nonzero when
+any `[ ]` migration remains. It is Development-only and does not alter the
+production Publish/schema-diff or deployment-build migration policy.
 
 ## 2026-09-17 — Task distillation: #589 blocked on a deeper migration-ledger inconsistency, #598 opened
 

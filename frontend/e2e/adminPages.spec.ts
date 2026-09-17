@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
-test.describe('Application-admin CMS pages (#517)', () => {
+test.describe('Application-admin CMS pages (#517, #594)', () => {
   const fixtures = requireE2EFixtures();
 
   test('anonymous and ordinary users cannot discover the admin console', async ({ page }) => {
@@ -48,8 +48,14 @@ test.describe('Application-admin CMS pages (#517)', () => {
       path: testInfo.outputPath('admin-pages-1280x900.png'),
       fullPage: true,
     });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      1280,
+    );
     await page.setViewportSize({ width: 375, height: 812 });
     await page.screenshot({ path: testInfo.outputPath('admin-pages-375x812.png'), fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      375,
+    );
 
     page.once('dialog', (dialog) => void dialog.accept());
     await pageRow.getByRole('button', { name: 'Move to trash' }).click();

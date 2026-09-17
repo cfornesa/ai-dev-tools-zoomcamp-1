@@ -1,5 +1,19 @@
 # AugmentrART Backlog
 
+## 2026-09-17 — Backlog session: #595/#596 engineered and closed; #590/#593 closed on local scope per owner instruction; #589 confirmed via live schema read and pending owner Republish decision
+
+Per explicit owner instruction: issues already engineered and QA-PASSED for
+their own code/local contract close now rather than staying open only
+because deployed verification is pending, so all actionable/locally-closable
+work is done before the #589 deployment gate.
+
+- [#595](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/595) — engineered (commit `ff15f87`: fixed the stale post-#572 redirect assertion and the missing "New page" click), QA-PASSED, closed.
+- [#596](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/596) — engineered (commit `9da07be`: bounded retry on the `public_slug` save race for Project/Project3D/ArtPiece, verified against both SQLite and real local PostgreSQL), QA-PASSED, closed.
+- [#590](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/590), [#593](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/593) — closed on their own local/code contract per explicit owner instruction; deployed-topology confirmation (blocked on #589) is recorded as owned by #589's post-repair sequence, not silently implied as done.
+- [#589](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/589) — read-only Replit Database panel inspection directly confirmed the exact schema drift: `scenes_project` and `scenes_project3d` both entirely lack a `seo_config` column, and `scenes_sitesettings.metadata_tags` exists but is `NULL`. Attempting the repair itself hit two stops: the Replit SQL console's own classifier hard-blocked write-shaped keystrokes even while drafting a read-only query, and the only remaining repair path (Replit **Republish**, per `.agents/memory/replit-schema-diff-gap-for-new-tables.md`'s established precedent — not a raw migration) is a production deployment action requiring explicit owner confirmation before this session takes it. Issue stays open pending that decision.
+
+Two pushes this session (`ff15f87`→`9da07be` for #595/#596) both went through a full CI cycle: the first push's `Frontend checks` job failed on a transient `CollectionManagement.test.tsx` full-suite flake (isolated + full local reruns both green; `gh run rerun --failed` came back green) — classified as the same transient-flake pattern already on record, not a regression.
+
 ## 2026-09-17 — QA self-review closes the loop on #589
 
 Follow-up to the same-day session-completion entry below: `qa-self-review`

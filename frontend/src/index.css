@@ -376,9 +376,33 @@ button:disabled {
   margin-top: 0;
 }
 
+.account-settings-layout-item {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 88%, var(--accent-bg));
+}
+
+.account-settings-layout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.account-settings-layout-header h3 {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-h);
+}
+
+.account-settings-layout-body {
+  min-width: 0;
+}
+
 .account-settings-layout-controls {
   display: flex;
-  justify-content: flex-end;
   gap: 6px;
 }
 
@@ -394,6 +418,16 @@ button:disabled {
   width: 100%;
   margin-top: 12px;
   gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .account-settings-layout-item {
+    padding: 16px;
+  }
+
+  .account-settings-layout-header {
+    align-items: flex-start;
+  }
 }
 
 .account-settings-actions {

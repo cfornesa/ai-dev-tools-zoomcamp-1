@@ -82,7 +82,40 @@ describe('AccountSettings', () => {
     );
 
     await screen.findByRole('button', { name: 'Expand Plan and usage' });
-    expect(screen.queryByRole('heading', { name: 'Plan and usage' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Plan and usage' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Expand Plan and usage' })).toHaveTextContent(
+      'Expand Plan and usage',
+    );
+    expect(screen.getByRole('button', { name: 'Expand Plan and usage' })).not.toHaveTextContent(
+      '⌄',
+    );
+    expect(
+      screen
+        .getByRole('heading', { name: 'Plan and usage' })
+        .closest('[data-settings-section]')
+        ?.querySelector('.account-settings-layout-body'),
+    ).toHaveAttribute('hidden');
+  });
+
+  it('keeps the card heading visible and puts disclosure last in the card', async () => {
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    const card = screen
+      .getByRole('heading', { name: 'Plan and usage' })
+      .closest('[data-settings-section]') as HTMLElement;
+    const controls = within(card).getByLabelText('Plan and usage layout controls');
+    const disclosure = within(card).getByRole('button', { name: 'Collapse' });
+    expect(card.firstElementChild).toContainElement(
+      screen.getByRole('heading', { name: 'Plan and usage' }),
+    );
+    expect(card.lastElementChild).toBe(disclosure);
+    expect(controls).toContainElement(
+      within(controls).getByRole('button', { name: 'Move Plan and usage up' }),
+    );
   });
 
   it('groups settings and distinguishes account-management actions', async () => {

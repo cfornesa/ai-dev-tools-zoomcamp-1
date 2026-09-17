@@ -939,6 +939,12 @@ class Project(models.Model):
     def __str__(self) -> str:
         return self.title
 
+    def save(self, *args, **kwargs):
+        # Issue #596: retry on a public_slug uniqueness race.
+        from scenes.canonical_piece_signals import save_with_public_slug_retry
+
+        save_with_public_slug_retry(self, super().save, *args, **kwargs)
+
 
 class CloudSyncSignupConsent(models.Model):
     """The signup-time cloud-sync choice recorded once for a newly created
@@ -1761,6 +1767,12 @@ class Project3D(models.Model):
     def __str__(self) -> str:
         return self.title
 
+    def save(self, *args, **kwargs):
+        # Issue #596: retry on a public_slug uniqueness race.
+        from scenes.canonical_piece_signals import save_with_public_slug_retry
+
+        save_with_public_slug_retry(self, super().save, *args, **kwargs)
+
 
 class SceneVersion3D(models.Model):
     class Origin(models.TextChoices):
@@ -1922,6 +1934,12 @@ class ArtPiece(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+    def save(self, *args, **kwargs):
+        # Issue #596: retry on a public_slug uniqueness race.
+        from scenes.canonical_piece_signals import save_with_public_slug_retry
+
+        save_with_public_slug_retry(self, super().save, *args, **kwargs)
 
 
 class ArtPieceVersion(models.Model):

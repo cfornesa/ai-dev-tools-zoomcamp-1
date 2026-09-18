@@ -176,3 +176,15 @@ editor, and card contracts.
 - **GitHub evidence:** [#602 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/602#issuecomment-5726912446)
 - **Outstanding criteria:** real captured thumbnails and six-engine fixture evidence remain with #607/#608/#609
 - **Next action:** continue with #603 profile-card routing/content reconciliation while retaining #602 open
+
+## Transaction ledger — #603
+
+- **Phase:** QA-PASSED FOR INCREMENT; issue remains open pending browser evidence and owner affordance reconciliation
+- **PM/grooming:** complete; profile payload now supplies canonical links for all published piece families
+- **Implementation owner:** Codex/GPT-5, substituted for Opencode Go stage 2a mechanical
+- **Implementation scope:** public profile 2D/3D/generated cards expose persisted slug and `regular_url`; shared `PieceCard` supplies image/fallback/title/attribution geometry
+- **Focused checks:** backend canonical/profile suite 7 passed; frontend profile/gallery/a11y suite 32 passed; typecheck and format passed
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; independent second opinion unavailable
+- **Browser check:** pending local stack availability
+- **Outstanding criteria:** 1280x900/375x812 browser evidence and owner-only edit affordance remain with #605/#601
+- **Next action:** continue with #604 public gallery canonical routing

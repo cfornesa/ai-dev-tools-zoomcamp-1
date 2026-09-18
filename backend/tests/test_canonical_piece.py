@@ -1,8 +1,17 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.utils import timezone
 
-from scenes.models import ArtPiece, ArtPieceVersion, PublicProfile
+from scenes.models import (
+    ArtPiece,
+    ArtPieceVersion,
+    Project,
+    Project3D,
+    PublicProfile,
+    SceneVersion,
+    SceneVersion3D,
+)
 
 
 def _published_piece(user, title):
@@ -54,6 +63,53 @@ def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client)
         item for item in gallery.json()["results"] if item["id"] == str(piece.public_id)
     )
     assert gallery_card["viewer_url"] == "/users/@profile-artist/pieces/profile-study"
+
+
+@pytest.mark.django_db
+def test_profile_cards_expose_canonical_urls_for_authored_piece_families(client):
+    user = get_user_model().objects.create_user(username="profile-authored")
+    PublicProfile.objects.create(user=user, handle="profile-authored", is_public=True)
+    project = Project.objects.create(owner=user, title="Canvas study", public_slug="canvas-study")
+    project.current_version = SceneVersion.objects.create(
+        project=project, sequence=1, scene_json={}, created_by=user
+    )
+    project.visibility = Project.Visibility.PUBLIC
+    project.published_at = timezone.now()
+    project.save(update_fields=["current_version", "visibility", "published_at"])
+    project3d = Project3D.objects.create(
+        owner=user, title="Spatial study", public_slug="spatial-study"
+    )
+    project3d.current_version = SceneVersion3D.objects.create(
+        project=project3d,
+        sequence=1,
+        scene_json={
+            "schemaVersion": 1,
+            "documentType": "scene3d",
+            "id": "profile-spatial-study",
+            "scene": {"backgroundColor": "#808080"},
+            "camera": {
+                "position": {"x": 0, "y": 5, "z": 10},
+                "target": {"x": 0, "y": 0, "z": 0},
+                "fov": 50,
+                "near": 0.1,
+                "far": 1000,
+            },
+            "lights": [],
+            "groups": [],
+            "objects": [],
+            "randomness": {"seed": 0, "enabled": False},
+        },
+        created_by=user,
+    )
+    project3d.visibility = Project3D.Visibility.PUBLIC
+    project3d.published_at = timezone.now()
+    project3d.save(update_fields=["current_version", "visibility", "published_at"])
+
+    response = client.get("/api/users/@profile-authored/")
+    assert response.status_code == 200
+    cards = {item["title"]: item for item in response.json()["pieces"]}
+    assert cards["Canvas study"]["regular_url"] == "/users/@profile-authored/pieces/canvas-study"
+    assert cards["Spatial study"]["regular_url"] == "/users/@profile-authored/pieces/spatial-study"
 
 
 @pytest.mark.django_db

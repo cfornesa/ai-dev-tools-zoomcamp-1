@@ -141,6 +141,10 @@ fails, title, renderer/engine metadata, attribution, and keyboard-visible
 focus. The card component receives its destination from the surface that owns
 the link; it does not infer or hard-code a viewer route.
 
+Public profile piece entries additionally expose `slug` and `regular_url` for
+every published piece family (authored 2D/3D and generated), so profile
+consumers never need to reconstruct a route from an ID.
+
 ### Public gallery search (#581)
 
 `GET /api/public/gallery/search/?q=<term>&scope=accounts|content` searches

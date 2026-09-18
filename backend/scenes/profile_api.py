@@ -95,8 +95,10 @@ def _piece_payload(profile: PublicProfile) -> dict:
         items.append(
             {
                 "id": str(project.public_id),
+                "slug": project.public_slug,
                 "title": project.title,
                 "type": "2d",
+                "regular_url": f"/users/@{profile.handle}/pieces/{project.public_slug}",
                 "thumbnail_url": f"/api/public/projects/{project.public_id}/thumbnail.png",
             }
         )
@@ -104,8 +106,10 @@ def _piece_payload(profile: PublicProfile) -> dict:
         items.append(
             {
                 "id": str(project3d.public_id),
+                "slug": project3d.public_slug,
                 "title": project3d.title,
                 "type": "3d",
+                "regular_url": f"/users/@{profile.handle}/pieces/{project3d.public_slug}",
                 "thumbnail_url": f"/api/public/projects3d/{project3d.public_id}/thumbnail.png",
             }
         )

@@ -59,7 +59,7 @@ Focused:
 ```sh
 cd backend && DJANGO_SETTINGS_MODULE=backend.test_settings uv run pytest tests/test_art_piece_persistence.py tests/test_art_piece_api.py tests/test_art_piece_provider.py
 cd backend && DJANGO_SETTINGS_MODULE=backend.test_settings uv run python manage.py makemigrations --check --dry-run
-cd frontend && npm test -- --run src/api/artPieces.test.ts src/pages/ArtPieceStudio.test.tsx
+cd frontend && npm test -- --run src/api/artPieceEngines.test.ts src/pages/ArtPieceStudio.test.tsx
 ```
 
 Full:

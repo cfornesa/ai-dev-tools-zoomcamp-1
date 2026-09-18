@@ -216,6 +216,15 @@ editor, and card contracts.
 - **GitHub evidence:** [#606 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/606#issuecomment-5727039832)
 - **Next action:** continue with #607 regular/embed runtime parity
 
+## Transaction ledger — #607
+
+- **Phase:** AUDITED; implementation deferred pending prerequisite schema/provider/editor contract work
+- **PM/grooming:** blocker confirmed; current engine union is canvas2d/svg/threejs/aframe only
+- **Evidence:** requested p5.js, C2.js, and C2.js Interactive support crosses #610 editor integration and #613 schema bridge; widening the runtime union alone would create an unvalidated/security-sensitive partial contract
+- **Owner:** no implementation commit; current Codex audit substitution for stage 2b review
+- **GitHub evidence:** [#607 boundary comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/607#issuecomment-5727046271)
+- **Next action:** continue with #608 immersive runtime parity while retaining #607 open
+
 ## Transaction ledger — #604
 
 - **Phase:** QA-PASSED FOR INCREMENT; issue remains open pending browser evidence and immersive secondary-action criteria

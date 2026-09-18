@@ -151,10 +151,14 @@ editor, and card contracts.
 
 ## Transaction ledger — #601
 
-- **Phase:** IMPLEMENTED; pending full checks and QA reconciliation
+- **Phase:** QA-PASSED FOR INCREMENT; issue remains open pending studio-card reconciliation
 - **PM/grooming:** complete; anonymous/non-owner/missing/deleted access is a uniform 404 contract
 - **Implementation owner:** Codex/GPT-5, substituted for Ollama Cloud stage 2b complex
 - **Implementation scope:** owner-only slug resolver, canonical editor route, existing editor mounted with resolved owner payload, UUID editor API compatibility retained
 - **Focused checks:** canonical route suite 6 passed; backend lint/format passed; frontend format/lint/typecheck passed; canonical frontend test 2 passed
 - **Browser check:** pending local stack availability
-- **Next action:** full `make check`, then QA self-review and GitHub reconciliation
+- **Full checks:** backend `make check` 1,415 passed/39 skipped; frontend 2,718 passed; formatting, lint, and typecheck passed (existing lint warnings only)
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; independent second opinion not available
+- **GitHub evidence:** [#601 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/601#issuecomment-5726859541)
+- **Outstanding criterion:** #605 owns switching studio/manage cards to this route
+- **Next action:** continue with #602 card presentation/thumbnail contract and retain #601 open for #605 reconciliation

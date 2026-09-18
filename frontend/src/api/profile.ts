@@ -44,6 +44,7 @@ export type PublicProfilePage = {
     engine?: string;
     regular_url?: string;
     thumbnail_url: string;
+    thumbnail_is_fallback?: boolean;
   }>;
 };
 

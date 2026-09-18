@@ -90,7 +90,7 @@ def _available_styles() -> list[dict]:
 
 def _piece_payload(profile: PublicProfile) -> dict:
     owner = profile.user
-    items = []
+    items: list[dict[str, object]] = []
     for project in eligible_projects().filter(owner=owner):
         items.append(
             {
@@ -125,6 +125,9 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 "engine": piece.engine,
                 "regular_url": f"/users/@{profile.handle}/pieces/{piece.public_slug}",
                 "thumbnail_url": f"/api/public/art-pieces/{piece.public_id}/thumbnail.png",
+                "thumbnail_is_fallback": bool(
+                    getattr(getattr(piece.current_version, "thumbnail", None), "is_fallback", True)
+                ),
             }
         )
     return {"profile": _profile_payload(profile), "pieces": items}

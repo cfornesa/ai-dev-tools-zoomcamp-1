@@ -66,6 +66,7 @@ def test_create_defaults_to_draft_and_persists_fallback_thumbnail(client):
     assert response.data["engine_label"] == "Canvas 2D"
     assert response.data["engine_capabilities"]["regular"] is True
     assert response.data["current_version"]["sequence"] == 1
+    assert response.data["current_version"]["thumbnail_is_fallback"] is True
     piece = ArtPiece.objects.get(public_id=response.data["public_id"])
     assert piece.current_version.thumbnail.width == 320
     assert piece.current_version.thumbnail.height == 240
@@ -263,6 +264,8 @@ def test_thumbnail_upload_replaces_fallback_with_real_capture(client):
     )
     assert upload.status_code == 200
     assert upload.data["is_fallback"] is False
+    refreshed = client.get(f"/api/art-pieces/{public_id}/")
+    assert refreshed.data["current_version"]["thumbnail_is_fallback"] is False
     piece.refresh_from_db()
     assert piece.current_version.thumbnail.is_fallback is False
     assert bytes(piece.current_version.thumbnail.image_data) == png

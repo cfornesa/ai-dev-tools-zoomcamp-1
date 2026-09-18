@@ -652,6 +652,7 @@ def test_unified_items_are_a_discriminated_union_with_public_fields(
 
     # Only generated rows carry the engine label.
     assert by_kind["generated"]["engine"] == "canvas2d"
+    assert by_kind["generated"]["thumbnail_is_fallback"] is True
     assert "engine" not in by_kind["2d"]
     assert "engine" not in by_kind["3d"]
 
@@ -669,6 +670,7 @@ def test_unified_response_excludes_private_and_editing_fields(anon_client, fixed
             "owner",
             "published_at",
             "thumbnail_url",
+            "thumbnail_is_fallback",
             "viewer_url",
             "engine",
             "engine_label",

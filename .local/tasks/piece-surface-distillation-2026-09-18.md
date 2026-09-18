@@ -492,3 +492,13 @@ routes require separate entry-point fixtures and rendered evidence:
 - **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
 - **Evidence boundary:** SQLite/repository evidence passes; disposable PostgreSQL upgrade, direct table/column inspection, and public projection verification remain unavailable because Docker/PostgreSQL is unavailable
 - **Next action:** execute the migration upgrade/inspection on a disposable PostgreSQL runner, then return #613 to QA; hold #612 import until this gate and runtime contracts are complete
+
+### Transaction ledger — #602 — 2026-09-18
+
+- **Phase:** QA FAILED / verification-boundary; explicit fallback-thumbnail contract increment implemented
+- **Implementation commit:** pending commit for explicit `thumbnail_is_fallback` metadata and shared-card behavior
+- **Scope:** generated art-piece version, profile, and unified gallery payloads now identify neutral fallback thumbnails; the shared `PieceCard` renders the accessible fallback state without attempting a placeholder image; authored 2D/3D gallery contracts remain unchanged
+- **Focused checks:** backend art-piece persistence/public-gallery suite `55 passed`; frontend `PieceCard` regression `1 passed`; frontend full suite `2,728 passed`; frontend typecheck/format-check passed; backend ruff/mypy/format-check passed
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
+- **Evidence boundary:** rendered gallery/profile/studio screenshots and fixed 1280x900/375x812 behavior remain unavailable because Docker and localhost Django/Vite are unavailable; no shared or production database was modified
+- **Next action:** run the generated-card fallback/real-thumbnail matrix in Chromium on a disposable PostgreSQL/Django/Vite or approved CI browser runner, then return #602 to QA

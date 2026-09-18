@@ -452,6 +452,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
     owner = serializers.SerializerMethodField()
     published_at = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
+    thumbnail_is_fallback = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
     engine = serializers.SerializerMethodField()
     engine_label = serializers.SerializerMethodField()
@@ -464,6 +465,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
             "owner",
             "published_at",
             "thumbnail_url",
+            "thumbnail_is_fallback",
             "viewer_url",
             "engine",
             "engine_label",
@@ -516,6 +518,13 @@ class PublicGalleryItemSerializer(serializers.Serializer):
                 return f"/users/@{handle}/pieces/{record.public_slug}"
         return _GALLERY_VIEWER_URLS[kind].format(record.public_id)
 
+    def get_thumbnail_is_fallback(self, obj) -> bool | None:
+        kind, record = self._entry(obj)
+        if kind != "generated" or not isinstance(record, ArtPiece):
+            return None
+        thumbnail = getattr(record.current_version, "thumbnail", None)
+        return thumbnail is None or thumbnail.is_fallback
+
     def get_engine(self, obj) -> str | None:
         # Present (with the piece's engine label) only on generated rows;
         # omitted from authored rows -- including it as null would imply a
@@ -538,6 +547,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
         if data["engine"] is None:
             del data["engine"]
             del data["engine_label"]
+            data.pop("thumbnail_is_fallback", None)
         return data
 
 

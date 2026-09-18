@@ -68,6 +68,7 @@ export default function PublicProfile() {
             }
             title={piece.title}
             thumbnailUrl={piece.thumbnail_url}
+            thumbnailIsFallback={piece.thumbnail_is_fallback}
             kind={piece.type}
             engine={piece.engine}
           />

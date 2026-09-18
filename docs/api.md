@@ -616,6 +616,11 @@ Generated (`"kind": "generated"`) items additionally expose **`engine`** —
 the piece's stable engine identifier — and **`engine_label`**, its display
 label. The identifier is one of `canvas2d`, `svg`, `p5js`, `c2js`,
 `c2js-interactive`, `threejs`, or `aframe`.
+Generated items also expose **`thumbnail_is_fallback`**. It is `true` when
+the thumbnail is the neutral placeholder created because no successful
+capture has been uploaded yet, and `false` when it is a real captured
+thumbnail. This lets clients distinguish an intentional placeholder from a
+failed image request.
 
 Example items:
 
@@ -651,6 +656,7 @@ Example items:
   "owner": "alice",
   "published_at": "2026-09-08T09:00:00Z",
   "thumbnail_url": "/api/public/art-pieces/9c4d5e6f-…/thumbnail.png",
+  "thumbnail_is_fallback": true,
   "viewer_url": "/art-pieces/p/9c4d5e6f-…",
   "engine": "canvas2d"
 }

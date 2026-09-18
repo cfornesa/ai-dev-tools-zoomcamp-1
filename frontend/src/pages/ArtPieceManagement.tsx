@@ -40,6 +40,7 @@ function ArtPieceManagement() {
                 }
                 title={piece.title}
                 thumbnailUrl={piece.current_version?.thumbnail_url}
+                thumbnailIsFallback={piece.current_version?.thumbnail_is_fallback}
                 kind="generated"
                 engine={piece.engine}
               />

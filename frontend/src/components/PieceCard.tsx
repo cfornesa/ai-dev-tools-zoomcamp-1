@@ -5,6 +5,7 @@ export type PieceCardProps = {
   href: string;
   title: string;
   thumbnailUrl?: string | null;
+  thumbnailIsFallback?: boolean;
   kind?: string;
   engine?: string;
   owner?: string;
@@ -16,6 +17,7 @@ export default function PieceCard({
   href,
   title,
   thumbnailUrl,
+  thumbnailIsFallback = false,
   kind,
   engine,
   owner,
@@ -23,7 +25,7 @@ export default function PieceCard({
 }: PieceCardProps) {
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const titleId = `piece-card-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-title`;
-  const showFallback = !thumbnailUrl || thumbnailFailed;
+  const showFallback = !thumbnailUrl || thumbnailIsFallback || thumbnailFailed;
   const kindLabel =
     kind === 'generated'
       ? 'Generated'

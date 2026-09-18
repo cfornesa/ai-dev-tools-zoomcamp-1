@@ -143,6 +143,7 @@ class ArtPieceThumbnailUploadSerializer(serializers.Serializer):
 
 
 def _version_data(version: ArtPieceVersion, *, public: bool):
+    thumbnail = getattr(version, "thumbnail", None)
     data = {
         "id": version.id,
         "sequence": version.sequence,
@@ -153,6 +154,7 @@ def _version_data(version: ArtPieceVersion, *, public: bool):
             if public
             else f"/api/art-pieces/{version.piece.public_id}/thumbnail.png"
         ),
+        "thumbnail_is_fallback": thumbnail is None or thumbnail.is_fallback,
     }
     if public:
         data["source"] = version.source

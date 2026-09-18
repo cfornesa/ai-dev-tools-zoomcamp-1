@@ -289,6 +289,7 @@ export type PublicGalleryGeneratedItem = {
   owner: string;
   published_at: string;
   thumbnail_url: string | null;
+  thumbnail_is_fallback: boolean;
   viewer_url: string;
   engine: string;
 };

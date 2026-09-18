@@ -144,6 +144,7 @@ export type ArtPieceVersion = {
   source: string;
   capabilities: ArtPieceCapabilitySet;
   thumbnail_url: string;
+  thumbnail_is_fallback: boolean;
   created_at: string;
   generation_metadata?: Record<string, unknown>;
 };

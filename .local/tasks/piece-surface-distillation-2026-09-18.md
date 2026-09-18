@@ -343,3 +343,21 @@ routes require separate entry-point fixtures and rendered evidence:
 - **Dependencies:** #607 and closed #614
 - **Next action:** hold until #607 reaches a terminal status, then begin its
   own engineering/QA transaction
+
+### QA reconciliation — #607 — 2026-09-18
+
+- **Phase:** QA FAILED / verification-boundary; implementation increment is committed but the issue remains open
+- **Implementation commit:** `5d4ab4d`
+- **QA evidence:** full `UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed with backend `1,429 passed, 39 skipped` and frontend `2,723 passed`; focused backend `24 passed`; focused frontend `28 passed`; frontend build passed
+- **Unverified criteria:** six-engine published regular route, fixed desktop/mobile rendered frames, control visibility/permission behavior, C2 Interactive input restoration, CDN failure states, and owner/non-owner route affordances
+- **Boundary:** `make compose-preflight` failed because Docker daemon is unavailable; localhost health check found no Django/Vite listener; Playwright scenarios were listable but not executable
+- **Disposition:** `verification-boundary`, not a product failure; no new follow-up issue because the existing documented disposable-stack/CI browser workflow is the next action
+- **GitHub evidence:** [engineering handoff](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/607#issuecomment-5727581894), [QA verdict](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/607#issuecomment-5727640133)
+- **Next action:** keep #607 open; run the exact browser matrix on a disposable PostgreSQL/Django/Vite stack or CI browser runner before revisiting QA. Hold dependent #615.
+
+### Fresh distillation after #607 QA boundary — 2026-09-18
+
+- #607 is not terminally complete; it is retained open with a host verification boundary.
+- #615 remains dependency-blocked on #607 and must not begin.
+- The next independent closure-ready issue is #600, canonical user-customizable slugs and compatibility redirects, after closed prerequisites #599 and #611. Its route changes remain a public-interface/irreversible-decision boundary and require compatibility evidence before implementation.
+- #606 depends on #600; #608/#609 depend on #607/#606; #610 is independent of the browser boundary but remains downstream of the canonical engine contract and should follow the route contract ordering.

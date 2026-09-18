@@ -66,3 +66,12 @@ export async function fetchCanonicalPublicPiece(
     `/api/users/@${encodeURIComponent(handle)}/pieces/${encodeURIComponent(pieceSlug)}/`,
   );
 }
+
+export async function fetchOwnerArtPiece(
+  handle: string,
+  pieceSlug: string,
+): Promise<{ canonical_url: string; piece: ArtPiece }> {
+  return apiFetch<{ canonical_url: string; piece: ArtPiece }>(
+    `/api/users/@${encodeURIComponent(handle)}/edit/${encodeURIComponent(pieceSlug)}/`,
+  );
+}

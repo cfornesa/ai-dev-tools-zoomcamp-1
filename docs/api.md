@@ -123,6 +123,16 @@ completed by their respective route contracts. A canonical resolver response
 includes the generated piece payload so the frontend can render the regular
 piece without replacing the browser URL with a legacy identifier route.
 
+### Owner art-piece editor links (#601)
+
+`GET /api/users/@<handle>/edit/<piece-slug>/` requires an authenticated
+request whose user owns the matching non-deleted art piece. It returns the
+owner/editor payload used by the frontend to mount the editor at
+`/users/@<handle>/edit/<piece-slug>`. Anonymous, non-owner, missing, and
+deleted pieces all return the same `404` response; the endpoint never exposes
+owner metadata to unauthorized callers. Existing UUID editor API routes remain
+supported for compatibility.
+
 ### Public gallery search (#581)
 
 `GET /api/public/gallery/search/?q=<term>&scope=accounts|content` searches

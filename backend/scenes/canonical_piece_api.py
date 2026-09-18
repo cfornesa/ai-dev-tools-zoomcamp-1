@@ -61,3 +61,31 @@ class PublicPieceBySlugView(APIView):
                 }
             )
         raise Http404
+
+
+class OwnerArtPieceBySlugView(APIView):
+    """Resolve an owner's slug to the private editor payload without leakage."""
+
+    permission_classes: list = []
+
+    def get(self, request, handle, piece_slug):
+        if not request.user.is_authenticated:
+            raise Http404
+        piece = (
+            ArtPiece.objects.select_related("owner", "current_version")
+            .filter(
+                owner=request.user,
+                owner__public_profile__handle=handle,
+                public_slug=piece_slug,
+                is_deleted=False,
+            )
+            .first()
+        )
+        if piece is None:
+            raise Http404
+        return Response(
+            {
+                "canonical_url": f"/users/@{handle}/edit/{piece.public_slug}",
+                "piece": _piece_data(piece, public=False),
+            }
+        )

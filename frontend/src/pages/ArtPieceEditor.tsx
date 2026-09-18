@@ -87,8 +87,9 @@ function ArtPieceDeleteConfirm({
  * whole flow (pick a library, generate, save as brand-new piece) doesn't
  * apply once a piece and its engine already exist.
  */
-function ArtPieceEditor() {
-  const { id } = useParams<{ id: string }>();
+function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
+  const { id: routeId } = useParams<{ id: string }>();
+  const id = initialPiece?.public_id ?? routeId;
   const navigate = useNavigate();
   const auth = useAuth();
 
@@ -121,6 +122,16 @@ function ArtPieceEditor() {
 
   useEffect(() => {
     if (!id || auth.status !== 'signed-in') return;
+    if (initialPiece) {
+      listArtPieceVersions(id)
+        .then((loadedVersions) => setVersions(loadedVersions))
+        .catch(() => setLoadError(true));
+      setPiece(initialPiece);
+      setTitle(initialPiece.title);
+      setDescription(initialPiece.description);
+      setCapabilities(initialPiece.current_version?.capabilities ?? {});
+      return;
+    }
     Promise.all([getArtPiece(id), listArtPieceVersions(id)])
       .then(([loadedPiece, loadedVersions]) => {
         setPiece(loadedPiece);
@@ -130,7 +141,7 @@ function ArtPieceEditor() {
         setCapabilities(loadedPiece.current_version?.capabilities ?? {});
       })
       .catch(() => setLoadError(true));
-  }, [id, auth.status]);
+  }, [id, auth.status, initialPiece]);
 
   useEffect(() => {
     return () => abortControllerRef.current?.abort();

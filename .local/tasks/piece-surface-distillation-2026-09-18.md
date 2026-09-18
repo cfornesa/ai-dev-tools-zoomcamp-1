@@ -148,3 +148,13 @@ editor, and card contracts.
 - **GitHub evidence:** [#600 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/600#issuecomment-5726777360)
 - **Outstanding criteria:** #601 owner editor route, #605 studio card routing, #606 immersive route, #607/#608 runtime/embed parity
 - **Next action:** continue with #601 while retaining #600 open for dependent reconciliation
+
+## Transaction ledger — #601
+
+- **Phase:** IMPLEMENTED; pending full checks and QA reconciliation
+- **PM/grooming:** complete; anonymous/non-owner/missing/deleted access is a uniform 404 contract
+- **Implementation owner:** Codex/GPT-5, substituted for Ollama Cloud stage 2b complex
+- **Implementation scope:** owner-only slug resolver, canonical editor route, existing editor mounted with resolved owner payload, UUID editor API compatibility retained
+- **Focused checks:** canonical route suite 6 passed; backend lint/format passed; frontend format/lint/typecheck passed; canonical frontend test 2 passed
+- **Browser check:** pending local stack availability
+- **Next action:** full `make check`, then QA self-review and GitHub reconciliation

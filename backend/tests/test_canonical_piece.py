@@ -99,3 +99,24 @@ def test_canonical_piece_404s_for_a_published_piece_on_a_private_profile(client)
         )
     )
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_owner_editor_slug_resolver_is_owner_only(client):
+    user = get_user_model().objects.create_user(username="editor-artist")
+    other = get_user_model().objects.create_user(username="other-artist")
+    PublicProfile.objects.create(user=user, handle="editor-artist", is_public=False)
+    piece = _published_piece(user, "Editor Study")
+    url = reverse(
+        "owner-art-piece-by-slug",
+        kwargs={"handle": "editor-artist", "piece_slug": piece.public_slug},
+    )
+
+    assert client.get(url).status_code == 404
+    client.force_login(other)
+    assert client.get(url).status_code == 404
+    client.force_login(user)
+    response = client.get(url)
+    assert response.status_code == 200
+    assert response.json()["canonical_url"] == "/users/@editor-artist/edit/editor-study"
+    assert response.json()["piece"]["owner_id"] == user.id

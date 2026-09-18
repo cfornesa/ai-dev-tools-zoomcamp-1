@@ -420,7 +420,7 @@ issues were created without product-code or database changes:
 | Issue | Scope | Routing | Dependency/order |
 |---|---|---|---|
 | [#599](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/599) | Cross-repository art-piece contract inventory | stage 2b complex | first |
-| [#611](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/611) | Non-destructive pieces/collections schema parity and embeddability plan | stage 2b complex | #599 |
+| [#611](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/611) | Non-destructive pieces/collections schema parity and embeddability plan | stage 2b complex | #599; migration execution shifted to #613 |
 | [#600](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/600) | Canonical user-customizable piece slugs and compatibility redirects | stage 2b complex | #599, #611 |
 | [#602](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/602) | Shared cards and real thumbnails | stage 2b complex | #599, #600 |
 | [#601](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/601) | Owner-only `/edit/{name}` route | stage 2b complex | #600 |
@@ -432,7 +432,8 @@ issues were created without product-code or database changes:
 | [#608](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608) | Immersive runtime parity for six engines | stage 2b complex | #606, #607 |
 | [#609](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609) | Offline regular/immersive downloads | stage 2b complex | #607, #608 |
 | [#610](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/610) | 2D/3D AI-editor engine integration | stage 2b complex | #599, #600, #611 |
-| [#612](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612) | Import sanitized reference pieces into `@cfornesa` and verify all surfaces | stage 2b complex | last; dependency-blocked |
+| [#613](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613) | Apply approved pieces/collections schema bridge and embeddability migration | stage 2b complex | after #600/#601/#602/#607/#611 |
+| [#612](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612) | Import sanitized reference pieces into `@cfornesa` and verify all surfaces | stage 2b complex | last; after #613 |
 
 Closed related issues remain immutable historical transactions; these are
 follow-ups, not reopenings. #612 explicitly forbids production/shared-database
@@ -447,6 +448,21 @@ The reference scan returned 5,322 matches and `git diff --check` passed. The
 issue was QA-passed and closed with the criterion matrix at
 [GitHub comment #5726528110](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/599#issuecomment-5726528110).
 This closure is documentation-only; the next transaction is #611.
+
+### #611 engineering preparation — 2026-09-18
+
+The schema parity and embeddability plan is implemented in
+[`docs/pieces-schema-parity.md`](pieces-schema-parity.md). The original issue
+command referenced nonexistent `tests/test_migrations.py`; the repository's
+actual migration coverage is `tests/test_scene_migration.py`, so the runnable
+focused command is:
+
+`cd backend && uv run pytest tests/test_scene_migration.py tests/test_art_piece_persistence.py tests/test_collections.py`
+
+That command passed 33 tests with 3 PostgreSQL-only skips. `make check` passed
+with 1,413 backend tests passed/39 skipped and 2,718 frontend tests passed.
+Actual migration execution is shifted to #613 so the slug/capability contracts
+are finalized before the irreversible schema transaction.
 
 ## 2026-09-15 — final task distillation, readiness, and completion reconciliation
 

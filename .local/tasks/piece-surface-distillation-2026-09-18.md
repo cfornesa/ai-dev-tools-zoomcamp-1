@@ -35,7 +35,8 @@ reference repository is modified.
 | 11 | [#608](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608) | Immersive six-engine runtime parity | stage 2b complex | #606, #607 | PROPOSED |
 | 12 | [#609](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609) | Offline regular and immersive downloads | stage 2b complex | #607, #608 | PROPOSED |
 | 13 | [#610](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/610) | 2D/3D AI-editor engine integration | stage 2b complex | #599, #600, #611 | PROPOSED |
-| 14 | [#612](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612) | Import sanitized reference pieces into `@cfornesa` and verify all surfaces | stage 2b complex | #600, #602, #606–#611 | DEPENDENCY-BLOCKED |
+| 14 | [#613](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613) | Apply approved pieces/collections schema bridge and embeddability migration | stage 2b complex | #599, #600, #601, #602, #607, #611 | DEPENDENCY-BLOCKED |
+| 15 | [#612](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612) | Import sanitized reference pieces into `@cfornesa` and verify all surfaces | stage 2b complex | #600, #602, #606–#611, #613 | DEPENDENCY-BLOCKED |
 
 The next issue is exactly **#599**, the contract inventory. No engineering
 should start until its matrix exists and each downstream issue has a checked
@@ -61,7 +62,8 @@ boundary.
 
 ## Blockers and verification boundaries
 
-- **Dependency-blocked:** #612 must wait for #600, #602, #606–#611. It must
+- **Dependency-blocked:** #613 must wait for #599, #600, #601, #602, #607,
+  and #611. #612 must wait for #600, #602, #606–#611, and #613. It must
   use sanitized, exportable fixtures and an idempotent cleanup path; it must
   not write to production merely because the owner is logged in there.
 - **Irreversible decision:** #600 changes live URL structure and therefore
@@ -76,6 +78,12 @@ boundary.
   user's signed-in Chrome session; the web-search connector could not fetch the
   same pages. The browser observation is the authoritative live evidence for
   this manifest.
+
+- **Scope reconciliation:** #611 is retained as the reversible schema
+  inventory/backfill/embeddability plan. Actual migration execution is linked
+  to newly created [#613](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613)
+  so the route and capability contracts are settled before an irreversible
+  schema change.
 
 ## Handoff completeness
 
@@ -100,3 +108,17 @@ editor, and card contracts.
 - **GitHub QA evidence:** [issue comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/599#issuecomment-5726528110)
 - **Final status:** GitHub issue closed as completed; matrix implemented locally, with downstream runtime/deployment work explicitly owned by #600–#612
 - **Next issue:** #611, non-destructive schema parity and embeddability migration plan
+
+## Transaction ledger — #611 (in progress)
+
+- **Phase:** ENGINEERING → QA pending commit
+- **Issue owner / current transaction:** #611, schema parity and embeddability plan
+- **PM/grooming:** scope reconciled; migration execution shifted to #613 to break the route/schema dependency cycle
+- **Implementation owner:** Codex/GPT-5, substituted for rostered Ollama Cloud stage 2b complex
+- **Changed files:** `docs/pieces-schema-parity.md`, this manifest, `docs/tasks.md` pending reconciliation
+- **Focused checks:** corrected backend command `cd backend && uv run pytest tests/test_scene_migration.py tests/test_art_piece_persistence.py tests/test_collections.py` — 33 passed, 3 skipped
+- **Full checks:** `make check` — 1,413 backend passed/39 skipped; 2,718 frontend passed; lint warnings pre-existing
+- **Issue-command correction:** the issue cited nonexistent `tests/test_migrations.py`; repository path is `tests/test_scene_migration.py`, recorded as workflow/documentation correction
+- **Second opinion:** not run
+- **QA:** not yet run; commit required first
+- **Dependency/follow-up:** #613 owns approved migration execution; #612 remains last

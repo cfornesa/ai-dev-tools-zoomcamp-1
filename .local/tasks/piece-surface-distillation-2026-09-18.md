@@ -27,16 +27,16 @@ reference repository is modified.
 | 3 | [#600](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/600) | Canonical user-customizable slug routes and redirects | stage 2b complex | #599, #611 | PROPOSED |
 | 4 | [#602](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/602) | Shared card and thumbnail contract | stage 2b complex | #599, #600 | PROPOSED |
 | 5 | [#601](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/601) | Owner-only `/edit/{name}` route | stage 2b complex | #600 | PROPOSED |
-| 6 | [#603](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/603) | Public profile card consumer | stage 2a/2b conditional | #600, #602 | PROPOSED |
-| 7 | [#604](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/604) | Public gallery card consumer | stage 2b complex | #564, #565, #600, #602 | PROPOSED |
-| 8 | [#605](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/605) | Studio card consumer | stage 2a/2b conditional | #600, #601, #602 | PROPOSED |
+| 6 | [#603](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/603) | Public profile card consumer | stage 2a/2b conditional | #600, #602 | CLOSED — local QA PASS |
+| 7 | [#604](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/604) | Public gallery card consumer | stage 2b complex | #564, #565, #600, #602 | CLOSED — local QA PASS |
+| 8 | [#605](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/605) | Studio card consumer | stage 2a/2b conditional | #600, #601, #602 | CLOSED — local QA PASS |
 | 9 | [#607](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/607) | Regular and regular-embed six-engine runtime | stage 2b complex | #599, #600, #611 | PROPOSED |
-| 10 | [#606](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/606) | Canonical full-screen immersive route | stage 2b complex | #599, #600, #611 | PROPOSED |
+| 10 | [#606](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/606) | Canonical full-screen immersive route | stage 2b complex | #599, #600, #611 | CLOSED — local QA PASS |
 | 11 | [#608](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608) | Immersive six-engine runtime parity | stage 2b complex | #606, #607 | PROPOSED |
 | 12 | [#609](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609) | Offline regular and immersive downloads | stage 2b complex | #607, #608 | PROPOSED |
 | 13 | [#610](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/610) | 2D/3D AI-editor engine integration | stage 2b complex | #599, #600, #611 | PROPOSED |
-| 14 | [#613](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613) | Apply approved pieces/collections schema bridge and embeddability migration | stage 2b complex | #599, #600, #601, #602, #607, #611 | DEPENDENCY-BLOCKED |
-| 15 | [#612](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612) | Import sanitized reference pieces into `@cfornesa` and verify all surfaces | stage 2b complex | #600, #602, #606–#611, #613 | DEPENDENCY-BLOCKED |
+| 14 | [#613](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613) | Apply approved pieces/collections schema bridge and embeddability migration | stage 2b complex | #599, #600, #601, #602, #607, #611 | CLOSED — local QA PASS |
+| 15 | [#612](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612) | Import sanitized reference pieces into `@cfornesa` and verify all surfaces | stage 2b complex | #600, #602, #606–#611, #613 | QA FAIL — parity evidence pending |
 
 The next issue is exactly **#599**, the contract inventory. No engineering
 should start until its matrix exists and each downstream issue has a checked
@@ -533,3 +533,43 @@ routes require separate entry-point fixtures and rendered evidence:
 - **Remaining closure boundary:** the six-engine parity, import, Replit
   publication, physical-device, and exact deployed-asset criteria remain
   open where their issue contracts require evidence beyond this local matrix.
+
+### Backlog-session reconciliation — 2026-09-18 continuation
+
+- **#613 transaction:** `GROOMED → QA → RECONCILIATION → CLOSED`.
+  Disposable PostgreSQL was migrated from scenes `0076` through `0079` with
+  representative pre-bridge user, piece, version, collection, and collection
+  item rows; all survived. Persistence/collection tests passed `38/38`, direct
+  table/column inspection passed, canonical public projections omitted private
+  fields, anonymous editor access returned `404`, and the embed route returned
+  `200`. QA PASS: [comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613#issuecomment-5737523464).
+- **#603 transaction:** `GROOMED → QA → RECONCILIATION → CLOSED`.
+  The Docker-backed Chromium matrix completed `28/28` at the fixed desktop and
+  mobile viewports, covering profile links, cards, fallback state, ownership,
+  and keyboard behavior. QA PASS: [comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/603#issuecomment-5737529556).
+- **#604 transaction:** `GROOMED → QA → RECONCILIATION → CLOSED`.
+  The same matrix verified mixed gallery links, filters, capability-gated
+  immersive actions, shared card geometry, and keyboard behavior. QA PASS:
+  [comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/604#issuecomment-5737531400).
+- **#605 transaction:** `GROOMED → QA → RECONCILIATION → CLOSED`.
+  Owner-management Chromium coverage verified editor-first links, published
+  regular links, status gating, deletion/revision flows, non-owner denial, and
+  responsive keyboard behavior. QA PASS: [comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/605#issuecomment-5737533127).
+- **#606 transaction:** `GROOMED → QA → RECONCILIATION → CLOSED`.
+  Canonical immersive Chromium coverage verified viewport ownership, overlays,
+  close/Escape navigation, controls, legacy UUID/custom/CMS entry points, and
+  responsive no-overflow behavior. QA PASS: [comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/606#issuecomment-5737535118).
+- **#612 transaction:** `GROOMED → ENGINEERING → QA → RECONCILIATION`.
+  Commit `1e40cc1` adds the disposable, owner-scoped, idempotent six-engine
+  importer and a focused E2E spec. Docker import and CUA browser checks passed;
+  headless Chromium could not launch on this macOS host due Mach-port
+  permissions. The issue remains open because full six-engine immersive,
+  download, editor, thumbnail-capture, and deployed evidence is owned by
+  #607–#610 and the importer is intentionally local/disposable. QA FAIL:
+  [comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612#issuecomment-5737487118).
+
+**Current next transaction:** #607 regular six-engine runtime parity. #602,
+#608, #609, #610, #612, #615, #616, #618, and #620 remain open; #600/#601
+remain parent reconciliation containers for the closed consumer slices. No
+production-readiness gate is eligible until the remaining local criteria are
+either closed or explicitly terminally handed off for republishing.

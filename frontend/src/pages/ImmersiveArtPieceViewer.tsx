@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { getPublicArtPiece, type ArtPiece } from '../api/artPieces';
 import {
@@ -76,6 +76,7 @@ function ImmersiveArtPieceViewer({
   regularHref?: string;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
+  const routeNavigate = useNavigate();
   const id = initialPiece?.public_id ?? routeId;
   const [piece, setPiece] = useState<ArtPiece | null>(initialPiece ?? null);
   const [unavailable, setUnavailable] = useState(false);
@@ -208,6 +209,24 @@ function ImmersiveArtPieceViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [piece?.public_id, piece?.engine]);
 
+  const closeHref = regularHref ?? (id ? `/art-pieces/p/${id}` : '/art-pieces/gallery');
+
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      // Native fullscreen owns the first Escape press. The fullscreen hook
+      // exits it; a subsequent Escape closes the immersive route itself.
+      if (event.key !== 'Escape' || document.fullscreenElement) return;
+      routeNavigate(closeHref);
+    }
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [closeHref, routeNavigate]);
+
+  function handleClose() {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    routeNavigate(closeHref);
+  }
+
   if (!piece && !unavailable) return <p role="status">Loading immersive art piece…</p>;
   if (unavailable || !piece?.current_version)
     return (
@@ -229,7 +248,17 @@ function ImmersiveArtPieceViewer({
     >
       {!isEmbedRoute && (
         <header>
-          <h2 id="immersive-art-piece-heading">{piece.title}</h2>
+          <div className="immersive-art-piece-heading-row">
+            <h2 id="immersive-art-piece-heading">{piece.title}</h2>
+            <button
+              type="button"
+              className="immersive-art-piece-close"
+              aria-label="Close immersive view"
+              onClick={handleClose}
+            >
+              Close
+            </button>
+          </div>
           {isSpatial ? (
             <p role="note">
               Drag to look around, scroll to zoom, and use the arrow keys to travel through the
@@ -308,6 +337,7 @@ function ImmersiveArtPieceViewer({
         ref={stageRef}
         className="art-piece-stage immersive-art-piece-stage"
         tabIndex={0}
+        role="region"
         aria-label="Immersive stage"
       >
         <iframe

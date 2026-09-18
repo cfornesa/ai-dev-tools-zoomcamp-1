@@ -430,3 +430,16 @@ routes require separate entry-point fixtures and rendered evidence:
 - #606 is the next independent route slice after the already-scoped slug work: canonical full-screen immersive surface, with #608 owning engine/input parity afterward.
 - #607/#616/#618 retain their own browser gates; #615 remains blocked by #607.
 - **Next issue:** #606 after PM/grooming re-reads its full-screen route fixture and redirect compatibility evidence.
+
+### Transaction ledger — #606 — 2026-09-18
+
+- **Phase:** ENGINEERING complete; QA pending rendered browser evidence
+- **PM/scoping owner:** Codex / GPT-5 substitution for rostered GPT-5.6 Luna / Medium; issue contract retained as one canonical immersive route surface, with engine runtime parity deferred to #608
+- **Implementation owner:** Codex / GPT-5 substitution for rostered Ollama Cloud / kimi-k3; stage 2b complex because route ownership, fullscreen behavior, and authorization-compatible navigation are coupled
+- **Implementation commit:** pending commit for route-owned close/Escape behavior and immersive viewport regression coverage
+- **Focused checks:** `cd frontend && npm test -- --run src/pages/ImmersiveArtPieceViewer.test.tsx` (2 passed); `cd frontend && npm run typecheck`
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache make check` (backend `1,434 passed, 39 skipped`; frontend `2,726 passed`; lint warning-only; format and typecheck passed)
+- **Scope:** canonical immersive viewer owns the viewport, exposes a close control returning to the canonical regular slug, closes on Escape when native fullscreen is not active, and marks the stage as an accessible region; existing native fullscreen/shared controls remain in place
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
+- **Evidence boundary:** Docker daemon unavailable, no local Django/Vite listener, and route-level Chromium scenarios cannot execute; active production Chrome still shows the stale bounded-stage revision, so it is not evidence for this unrepublished commit
+- **Next action:** run the exact canonical immersive route matrix at 1280x900 and 375x812 on a disposable PostgreSQL/Django/Vite or approved CI browser runner, then return #606 to QA; do not close or recommend republish from source/full-suite evidence alone

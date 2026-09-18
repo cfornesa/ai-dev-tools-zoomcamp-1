@@ -3973,6 +3973,31 @@ select.ai-proposal-field-full-width {
   pointer-events: auto;
 }
 
+.immersive-art-piece-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.immersive-art-piece-close {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.48);
+  color: inherit;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.immersive-art-piece-close:hover,
+.immersive-art-piece-close:focus-visible {
+  border-color: rgba(255, 255, 255, 0.72);
+  background: rgba(0, 0, 0, 0.72);
+}
+
 .immersive-art-piece-viewer > .immersive-art-piece-stage {
   position: absolute;
   inset: 0;

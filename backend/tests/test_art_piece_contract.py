@@ -20,7 +20,7 @@ def test_registry_has_stable_ids_labels_and_explicit_surface_values():
     assert ART_PIECE_ENGINE_CAPABILITIES["p5js"] == {
         "label": "p5.js",
         "family": "2d",
-        "regular": False,
+        "regular": True,
         "immersive": False,
         "embed": False,
         "download": False,

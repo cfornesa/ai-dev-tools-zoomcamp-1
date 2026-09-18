@@ -45,7 +45,7 @@ ART_PIECE_ENGINE_CAPABILITIES: Final[dict[str, ArtPieceEngineCapability]] = {
     "p5js": {
         "label": "p5.js",
         "family": "2d",
-        "regular": False,
+        "regular": True,
         "immersive": False,
         "embed": False,
         "download": False,
@@ -55,7 +55,7 @@ ART_PIECE_ENGINE_CAPABILITIES: Final[dict[str, ArtPieceEngineCapability]] = {
     "c2js": {
         "label": "C2.js",
         "family": "2d",
-        "regular": False,
+        "regular": True,
         "immersive": False,
         "embed": False,
         "download": False,
@@ -65,7 +65,7 @@ ART_PIECE_ENGINE_CAPABILITIES: Final[dict[str, ArtPieceEngineCapability]] = {
     "c2js-interactive": {
         "label": "C2.js Interactive",
         "family": "2d",
-        "regular": False,
+        "regular": True,
         "immersive": False,
         "embed": False,
         "download": False,

@@ -16,10 +16,10 @@ describe('art-piece engine capability registry', () => {
     expect(ART_PIECE_ENGINE_CAPABILITIES['c2js-interactive'].label).toBe('C2.js Interactive');
   });
 
-  it('does not claim runtime support for newly registered engines', () => {
+  it('claims only regular-view support for newly registered engines', () => {
     for (const engine of ['p5js', 'c2js', 'c2js-interactive'] as const) {
       expect(ART_PIECE_ENGINE_CAPABILITIES[engine]).toMatchObject({
-        regular: false,
+        regular: true,
         immersive: false,
         embed: false,
         download: false,

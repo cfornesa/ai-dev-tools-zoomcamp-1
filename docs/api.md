@@ -167,8 +167,9 @@ immersive, embed, download, and editor support. A false capability means that
 surface is not implemented and must not be inferred from the engine label.
 
 The three newly registered engines are accepted as stable identifiers for
-forward-compatible persistence, but remain unavailable to runtime/editor/
-download consumers until their dependent contracts are implemented. Existing
+forward-compatible persistence. They now have regular-view runtime adapters;
+generation, immersive, embed, download, and editor consumers remain
+capability-gated until their dependent contracts are implemented. Existing
 four-engine rows and identifier-based routes remain compatible.
 
 ### Public gallery search (#581)

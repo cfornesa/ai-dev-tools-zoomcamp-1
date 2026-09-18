@@ -72,6 +72,34 @@ def test_create_defaults_to_draft_and_persists_fallback_thumbnail(client):
     assert piece.current_version.thumbnail.is_fallback is True
 
 
+@pytest.mark.parametrize(
+    ("engine", "source"),
+    [
+        ("p5js", "window.sketch = (p) => { p.setup = () => {}; };"),
+        ("c2js", "window.sketch = (runtime) => { runtime.startFrame(() => {}); };"),
+        (
+            "c2js-interactive",
+            "window.sketch = (runtime) => { runtime.startFrame(() => {}); };",
+        ),
+    ],
+)
+def test_regular_runtime_engines_persist_with_regular_capability(client, engine, source):
+    response = client.post(
+        "/api/art-pieces/",
+        {
+            "prompt": f"a {engine} piece",
+            "engine": engine,
+            "source": source,
+            "title": engine,
+        },
+        format="json",
+    )
+    assert response.status_code == 201
+    assert response.data["engine"] == engine
+    assert response.data["engine_capabilities"]["regular"] is True
+    assert response.data["engine_capabilities"]["immersive"] is False
+
+
 def test_publish_requires_meaningful_metadata_and_public_detail_hides_prompt(client):
     response = create_piece(client)
     public_id = response.data["public_id"]
@@ -123,7 +151,7 @@ def test_new_version_updates_current_and_existing_version_is_immutable(client):
     public_id = response.data["public_id"]
     version = client.post(
         f"/api/art-pieces/{public_id}/versions/",
-        {"source": "<svg />", "capabilities": {"fullscreen": True}},
+        {"source": SOURCE, "capabilities": {"fullscreen": True}},
         format="json",
     )
     assert version.status_code == 201
@@ -253,7 +281,7 @@ def test_stale_version_upload_cannot_attach_to_a_newer_current_version(client):
 
     new_version = client.post(
         f"/api/art-pieces/{public_id}/versions/",
-        {"source": "<svg />", "capabilities": {}},
+        {"source": SOURCE, "capabilities": {}},
         format="json",
     )
     assert new_version.status_code == 201

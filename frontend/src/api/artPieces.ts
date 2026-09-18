@@ -13,11 +13,10 @@
 import { apiFetch } from './client';
 import type { SeoConfig } from './adminPages';
 
-/** The libraries this endpoint supports -- mirrors
- * `ai_provider/art_piece_provider.py`'s `SUPPORTED_LIBRARIES`. Kept as a
- * union of exactly the supported members (rather than a wider
- * aspirational union) so adding a library is a deliberate, visible
- * change at every call site that switches on it. Also imported by
+/** The stable engine identifiers this endpoint persists -- mirrors
+ * `scenes.art_piece_contract`. Generation availability is separate from
+ * registration, so an engine can be rendered by one surface while remaining
+ * unavailable to generation, download, embed, or immersive flows. Also imported by
  * `../generative/artPieceSandbox.ts`, which needs to know which
  * libraries require a pinned CDN script/relaxed CSP. */
 export type ArtPieceLibrary =
@@ -59,7 +58,7 @@ export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngi
   p5js: {
     label: 'p5.js',
     family: '2d',
-    regular: false,
+    regular: true,
     immersive: false,
     embed: false,
     download: false,
@@ -69,7 +68,7 @@ export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngi
   c2js: {
     label: 'C2.js',
     family: '2d',
-    regular: false,
+    regular: true,
     immersive: false,
     embed: false,
     download: false,
@@ -79,7 +78,7 @@ export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngi
   'c2js-interactive': {
     label: 'C2.js Interactive',
     family: '2d',
-    regular: false,
+    regular: true,
     immersive: false,
     embed: false,
     download: false,

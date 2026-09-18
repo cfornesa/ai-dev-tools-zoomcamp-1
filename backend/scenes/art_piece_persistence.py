@@ -32,6 +32,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.art_piece_contract import art_piece_engine_capability
+from scenes.art_piece_validation import validate_art_piece_source
 from scenes.content_metadata import sanitize_content_seo
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
 from scenes.permissions import Action, can
@@ -208,6 +209,10 @@ class ArtPieceCreateSerializer(serializers.Serializer):
     def validate_capabilities(self, value):
         return _capabilities(value)
 
+    def validate(self, attrs):
+        attrs["source"] = validate_art_piece_source(attrs["engine"], attrs["source"])
+        return attrs
+
 
 class ArtPieceMetadataSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=200, required=False)
@@ -229,6 +234,12 @@ class ArtPieceVersionSerializer(serializers.Serializer):
 
     def validate_capabilities(self, value):
         return _capabilities(value)
+
+    def validate(self, attrs):
+        engine = self.context.get("engine")
+        if engine is not None:
+            attrs["source"] = validate_art_piece_source(engine, attrs["source"])
+        return attrs
 
 
 def _meaningful(piece):
@@ -329,7 +340,7 @@ class ArtPieceVersionListCreateView(APIView):
         piece = _piece_or_404(public_id)
         if not can(request.user, Action.ART_PIECE_WRITE, piece):
             raise Http404
-        serializer = ArtPieceVersionSerializer(data=request.data)
+        serializer = ArtPieceVersionSerializer(data=request.data, context={"engine": piece.engine})
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
             locked = ArtPiece.objects.select_for_update().get(pk=piece.pk)

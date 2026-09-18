@@ -88,6 +88,9 @@ export const ART_PIECE_IFRAME_ALLOW = '';
  * how `generateHtmlExport.ts`'s `P5_VERSION` is the one place this app
  * already pins a CDN library version. */
 const LIBRARY_CDN: Partial<Record<ArtPieceLibrary, string>> = {
+  p5js: 'https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js',
+  c2js: 'https://cdn.jsdelivr.net/npm/c2.js@1.0.9/dist/c2.min.js',
+  'c2js-interactive': 'https://cdn.jsdelivr.net/npm/c2.js@1.0.9/dist/c2.min.js',
   threejs: 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
   // Pinned to 1.4.2, not 1.5.0: jsdelivr's aframe@1.5.0 package has no
   // `dist/aframe.min.js` (404 in production, #236) -- see
@@ -130,6 +133,42 @@ function buildCsp(library: ArtPieceLibrary): string {
   // allowances #455 added here are gone, since nothing in the sandbox
   // ever loads MediaPipe anymore.
   return `default-src 'none'; ${scriptSrc} style-src 'unsafe-inline'; img-src data:;`;
+}
+
+/** The reference runtime contract supplies p5 and C2 sketches with an
+ * explicit mount/runtime object. Keep that adaptation in the trusted wrapper
+ * rather than requiring generated source to load scripts or choose a CDN. */
+function buildFlatEngineBody(snippet: string, library: ArtPieceLibrary): string {
+  if (library === 'p5js') {
+    return `<div id="art-piece-container" style="position:absolute;inset:0;"></div>
+<script>${snippet}
+(function () {
+  var mount = document.getElementById('art-piece-container');
+  if (typeof window.sketch !== 'function' || typeof window.p5 !== 'function') throw new Error('p5.js sketch runtime was not initialized.');
+  window.__artPieceInstance = new window.p5(window.sketch, mount);
+}());</script>`;
+  }
+  if (library === 'c2js' || library === 'c2js-interactive') {
+    return `<canvas id="c2-canvas" width="1280" height="720"></canvas>
+<script>${snippet}
+(function () {
+  var canvas = document.getElementById('c2-canvas');
+  if (!window.c2 || typeof window.sketch !== 'function') throw new Error('C2.js sketch runtime was not initialized.');
+  var frame = 0;
+  var callback = null;
+  function startFrame(handler) {
+    if (typeof handler !== 'function') throw new Error('C2.js startFrame requires a function.');
+    callback = handler;
+    function tick() {
+      if (callback) callback(frame++);
+      window.requestAnimationFrame(tick);
+    }
+    window.requestAnimationFrame(tick);
+  }
+  window.__artPieceInstance = window.sketch({ c2: window.c2, canvas: canvas, startFrame: startFrame });
+}());</script>`;
+  }
+  return '';
 }
 
 /** This function's own code -- never the AI's output -- registers the
@@ -590,7 +629,9 @@ export function buildArtPieceSandboxDocument(
   const body =
     library === 'threejs'
       ? `<div id="art-piece-container" style="position:absolute;inset:0;"></div>\n<script>${snippet}</script>`
-      : snippet;
+      : library === 'p5js' || library === 'c2js' || library === 'c2js-interactive'
+        ? buildFlatEngineBody(snippet, library)
+        : snippet;
   return `<!doctype html>
 <html>
 <head>

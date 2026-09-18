@@ -478,3 +478,8 @@ routes require separate entry-point fixtures and rendered evidence:
 - **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
 - **Evidence boundary:** API/unit and component evidence pass, but owner/visitor rendered profile checks and fixed 1280x900/375x812 screenshots are unavailable because Docker and localhost Django/Vite are unavailable
 - **Next action:** run the profile Chromium matrix with owner/visitor fixtures on a disposable PostgreSQL/Django/Vite or approved CI browser runner, then return #603 to QA
+
+### Duplicate reconciliation — #617 — 2026-09-18
+
+- #617 exactly duplicates the criterion-ready regular slug/shim child #616.
+- Posted the duplicate rationale and closed #617; #616 remains the canonical issue and retains its own QA boundary/evidence.

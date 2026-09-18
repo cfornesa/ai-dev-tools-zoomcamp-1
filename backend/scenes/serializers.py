@@ -503,7 +503,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
         kind, record = self._entry(obj)
         if kind == "collection" and isinstance(record, Collection):
             return f"/users/@{record.owner.public_profile.handle}/{record.slug}"
-        if kind == "generated" and isinstance(record, ArtPiece):
+        if isinstance(record, (Project, Project3D, ArtPiece)):
             handle = (
                 PublicProfile.objects.filter(user_id=record.owner_id)
                 .values_list("handle", flat=True)

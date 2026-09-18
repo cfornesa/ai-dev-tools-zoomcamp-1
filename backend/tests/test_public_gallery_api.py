@@ -23,6 +23,7 @@ from scenes.models import (
     EditSessionDraft,
     Project,
     Project3D,
+    PublicProfile,
     SceneVersion,
     SceneVersion3D,
 )
@@ -573,6 +574,7 @@ def fixed_unified_fixture(owner):
     """Issue #491's fixed fixture: one published piece of each kind at
     distinct titles/timestamps, plus one private/draft sentinel of each
     kind that must never appear under any filter."""
+    PublicProfile.objects.create(user=owner, handle=owner.username, is_public=True)
     when_2d = timezone.now() - timezone.timedelta(minutes=3)
     when_3d = timezone.now() - timezone.timedelta(minutes=2)
     when_generated = timezone.now() - timezone.timedelta(minutes=1)
@@ -637,11 +639,15 @@ def test_unified_items_are_a_discriminated_union_with_public_fields(
         assert item["published_at"] is not None
         assert item["thumbnail_url"] is not None
 
-    assert by_kind["2d"]["viewer_url"] == f"/p/{fixed_unified_fixture['2d'].public_id}"
-    assert by_kind["3d"]["viewer_url"] == f"/p3d/{fixed_unified_fixture['3d'].public_id}"
+    assert by_kind["2d"]["viewer_url"] == (
+        f"/users/@alice/pieces/{fixed_unified_fixture['2d'].public_slug}"
+    )
+    assert by_kind["3d"]["viewer_url"] == (
+        f"/users/@alice/pieces/{fixed_unified_fixture['3d'].public_slug}"
+    )
     assert (
         by_kind["generated"]["viewer_url"]
-        == f"/art-pieces/p/{fixed_unified_fixture['generated'].public_id}"
+        == f"/users/@alice/pieces/{fixed_unified_fixture['generated'].public_slug}"
     )
 
     # Only generated rows carry the engine label.

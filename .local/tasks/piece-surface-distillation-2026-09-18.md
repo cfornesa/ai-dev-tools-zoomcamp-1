@@ -188,3 +188,15 @@ editor, and card contracts.
 - **Browser check:** pending local stack availability
 - **Outstanding criteria:** 1280x900/375x812 browser evidence and owner-only edit affordance remain with #605/#601
 - **Next action:** continue with #604 public gallery canonical routing
+
+## Transaction ledger — #604
+
+- **Phase:** QA-PASSED FOR INCREMENT; issue remains open pending browser evidence and immersive secondary-action criteria
+- **PM/grooming:** complete; unified gallery preserves filters, cursors, ordering, and collection links
+- **Implementation owner:** Codex/GPT-5, substituted for Ollama Cloud stage 2b complex
+- **Implementation scope:** gallery serializer emits owner-slug regular links for published 2D/3D/generated pieces; collection canonical links unchanged; shared `PieceCard` consumes the returned href
+- **Focused checks:** gallery/canonical backend suite 45 passed; frontend full suite 2,718 passed previously after shared-card changes; typecheck/format passed
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; independent second opinion unavailable
+- **Browser check:** pending local stack availability
+- **Outstanding criteria:** 1280x900/375x812 browser evidence and immersive secondary action remain with #606/#608
+- **Next action:** continue with #605 studio cards/editor destinations

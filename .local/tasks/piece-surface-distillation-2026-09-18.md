@@ -361,3 +361,5 @@ routes require separate entry-point fixtures and rendered evidence:
 - #615 remains dependency-blocked on #607 and must not begin.
 - The next independent closure-ready issue is #600, canonical user-customizable slugs and compatibility redirects, after closed prerequisites #599 and #611. Its route changes remain a public-interface/irreversible-decision boundary and require compatibility evidence before implementation.
 - #606 depends on #600; #608/#609 depend on #607/#606; #610 is independent of the browser boundary but remains downstream of the canonical engine contract and should follow the route contract ordering.
+- #616 is the newly created closure-sized regular-route child of #600. It owns slug normalization/collision/privacy and the legacy regular-route shim only; #600 remains the parent reconciliation container and #601–#605 own other consumers.
+- **Next issue:** [#616](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/616), after PM grooming confirms the URL compatibility/rollback contract.

@@ -422,6 +422,7 @@ issues were created without product-code or database changes:
 | [#599](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/599) | Cross-repository art-piece contract inventory | stage 2b complex | first |
 | [#611](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/611) | Non-destructive pieces/collections schema parity and embeddability plan | stage 2b complex | #599; migration execution shifted to #613 |
 | [#600](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/600) | Canonical user-customizable piece slugs and compatibility redirects | stage 2b complex | #599, #611 |
+| [#616](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/616) | Canonical regular art-piece slug resolution and legacy shim | stage 2b complex | #600; next independent route slice |
 | [#602](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/602) | Shared cards and real thumbnails | stage 2b complex | #599, #600 |
 | [#601](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/601) | Owner-only `/edit/{name}` route | stage 2b complex | #600 |
 | [#603](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/603) | Public profile card consumer | stage 2a/2b conditional | #600, #602 |

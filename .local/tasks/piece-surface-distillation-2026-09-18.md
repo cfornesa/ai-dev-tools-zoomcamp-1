@@ -363,3 +363,21 @@ routes require separate entry-point fixtures and rendered evidence:
 - #606 depends on #600; #608/#609 depend on #607/#606; #610 is independent of the browser boundary but remains downstream of the canonical engine contract and should follow the route contract ordering.
 - #616 is the newly created closure-sized regular-route child of #600. It owns slug normalization/collision/privacy and the legacy regular-route shim only; #600 remains the parent reconciliation container and #601–#605 own other consumers.
 - **Next issue:** [#616](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/616), after PM grooming confirms the URL compatibility/rollback contract.
+
+### Transaction ledger — #616
+
+- **Phase:** QA FAILED / verification-boundary; API and persistence implementation is committed, browser route evidence is pending
+- **PM/grooming:** criterion-ready child of #600; the issue verification command was corrected during intake to use the existing `CanonicalPublicPiece.test.tsx`
+- **Implementation commits:** `5eb5d62` and lint correction `c983d72`
+- **Focused checks:** backend `29 passed`; frontend canonical route `2 passed`
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed with backend `1,432 passed, 39 skipped`; frontend `2,723 passed`; lint/format/typecheck passed
+- **Browser boundary:** Docker unavailable; localhost health unavailable; four relevant Chromium scenarios were listed but not executed
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
+- **GitHub evidence:** QA comment posted on #616; issue remains open
+- **Next action:** run regular route browser evidence at 1280x900 and 375x812 on disposable PostgreSQL/Django/Vite or approved CI runner, then return #616 to QA
+
+### Fresh distillation after #616 QA boundary — 2026-09-18
+
+- #616 is retained open with a host verification boundary; no product defect was established by API/full-suite evidence.
+- #601–#610 remain the existing follow-up consumers. #615 remains blocked by #607.
+- The next independent engineering candidate is #610 (AI-editor engine integration), but it should be re-groomed against the now-explicit seven-engine capability contract before implementation; no new issue is required because #610 already owns that scope.

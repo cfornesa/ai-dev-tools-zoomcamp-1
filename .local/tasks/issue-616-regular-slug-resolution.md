@@ -34,7 +34,7 @@ Replit, production, or shared databases.
 
 ```sh
 cd backend && UV_CACHE_DIR=/tmp/codex-uv-cache uv run pytest tests/test_canonical_piece.py tests/test_canonical_piece_slug_race.py tests/test_art_piece_persistence.py
-cd frontend && npm test -- --run src/pages/CanonicalPublicPiece.test.tsx src/api/artPieces.test.ts
+cd frontend && npm test -- --run src/pages/CanonicalPublicPiece.test.tsx
 UV_CACHE_DIR=/tmp/codex-uv-cache make check
 ```
 

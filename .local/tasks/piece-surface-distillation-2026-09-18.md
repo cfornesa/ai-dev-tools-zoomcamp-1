@@ -454,3 +454,27 @@ routes require separate entry-point fixtures and rendered evidence:
 - **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
 - **Evidence boundary:** fixed desktop/mobile Chromium inspection is unavailable because Docker daemon and localhost Django/Vite are unavailable; production evidence is not required by this local issue contract and has not been used
 - **Next action:** run authenticated management-card Chromium checks at 1280x900 and 375x812 on disposable PostgreSQL/Django/Vite or approved CI browser runner, then return #605 to QA
+
+### Transaction ledger — #604 — 2026-09-18
+
+- **Phase:** QA FAILED / verification-boundary; existing implementation remains open
+- **Focused checks:** backend public-gallery/art-piece API suite `67 passed`; frontend public gallery/profile suite `28 passed`; current batch frontend full suite `2,727 passed`
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
+- **Evidence boundary:** API/unit and component evidence pass, but rendered gallery screenshots, keyboard flow, immersive secondary-action visibility, and fixed 1280x900/375x812 behavior are not verified because Docker and localhost Django/Vite are unavailable
+- **Next action:** run the gallery Chromium matrix on a disposable PostgreSQL/Django/Vite or approved CI browser runner, then return #604 to QA
+
+### Fresh distillation after #604/#605/#606 QA boundaries — 2026-09-18
+
+- #604, #605, and #606 are each evaluated by QA and remain open only for the documented browser-host boundary; no new product defect was established in those passes.
+- #613 remains an audited schema bridge with PostgreSQL verification pending; production/development/shared databases remain untouched.
+- #612 import remains dependency-blocked until schema/runtime contracts and import verification are complete; no `@cfornesa` pieces have been imported.
+- Dependent #607/#608/#609/#615 remain held behind their explicit route/runtime dependencies and the unavailable browser stack.
+- **Next action:** continue the independent public-profile/card reconciliation with #603, then reconcile #602/#601 before any production-readiness gate.
+
+### Transaction ledger — #603 — 2026-09-18
+
+- **Phase:** QA FAILED / verification-boundary; existing implementation remains open
+- **Focused checks:** canonical/profile and public-gallery backend suite `46 passed`; public gallery/profile frontend suite `28 passed`; current full frontend gate `2,727 passed`
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
+- **Evidence boundary:** API/unit and component evidence pass, but owner/visitor rendered profile checks and fixed 1280x900/375x812 screenshots are unavailable because Docker and localhost Django/Vite are unavailable
+- **Next action:** run the profile Chromium matrix with owner/visitor fixtures on a disposable PostgreSQL/Django/Vite or approved CI browser runner, then return #603 to QA

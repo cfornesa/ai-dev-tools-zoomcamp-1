@@ -830,7 +830,8 @@ button:disabled {
   color: var(--profile-muted, var(--muted));
 }
 
-.public-profile .project-card {
+.public-profile .project-card,
+.public-profile .piece-card {
   color: var(--profile-text, var(--text));
   background: var(--profile-surface, var(--surface));
   border-color: var(--profile-accent, var(--accent-border));
@@ -3632,6 +3633,19 @@ select.ai-proposal-field-full-width {
   display: block;
   color: inherit;
   text-decoration: none;
+}
+
+.piece-card-link:focus-visible,
+.public-project-card-link:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.piece-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 0;
 }
 
 .public-project-card-link h3 {

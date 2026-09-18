@@ -133,6 +133,14 @@ deleted pieces all return the same `404` response; the endpoint never exposes
 owner metadata to unauthorized callers. Existing UUID editor API routes remain
 supported for compatibility.
 
+### Shared public piece-card contract (#602)
+
+Profile and public-gallery cards use the same presentation contract: a
+fixed-ratio thumbnail, explicit accessible fallback when the URL is absent or
+fails, title, renderer/engine metadata, attribution, and keyboard-visible
+focus. The card component receives its destination from the surface that owns
+the link; it does not infer or hard-code a viewer route.
+
 ### Public gallery search (#581)
 
 `GET /api/public/gallery/search/?q=<term>&scope=accounts|content` searches

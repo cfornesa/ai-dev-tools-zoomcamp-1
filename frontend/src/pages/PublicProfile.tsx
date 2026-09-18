@@ -1,7 +1,8 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { fetchPublicProfile, type PublicProfilePage } from '../api/profile';
+import PieceCard from '../components/PieceCard';
 
 export default function PublicProfile() {
   const { handle: rawHandle = '' } = useParams<{ handle: string }>();
@@ -55,10 +56,9 @@ export default function PublicProfile() {
       <h3>Public pieces</h3>
       <div className="project-grid">
         {data.pieces.map((piece) => (
-          <Link
-            className="project-card"
+          <PieceCard
             key={`${piece.type}-${piece.id}`}
-            to={
+            href={
               piece.regular_url ??
               (piece.type === '2d'
                 ? `/p/${piece.id}`
@@ -66,10 +66,11 @@ export default function PublicProfile() {
                   ? `/p3d/${piece.id}`
                   : `/art-pieces/p/${piece.id}`)
             }
-          >
-            <img src={piece.thumbnail_url} alt="" />
-            <strong>{piece.title}</strong>
-          </Link>
+            title={piece.title}
+            thumbnailUrl={piece.thumbnail_url}
+            kind={piece.type}
+            engine={piece.engine}
+          />
         ))}
       </div>
     </section>

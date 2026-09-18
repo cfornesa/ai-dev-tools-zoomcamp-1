@@ -162,3 +162,16 @@ editor, and card contracts.
 - **GitHub evidence:** [#601 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/601#issuecomment-5726859541)
 - **Outstanding criterion:** #605 owns switching studio/manage cards to this route
 - **Next action:** continue with #602 card presentation/thumbnail contract and retain #601 open for #605 reconciliation
+
+## Transaction ledger — #602
+
+- **Phase:** QA-PASSED FOR INCREMENT; issue remains open pending six-engine thumbnail/runtime criteria
+- **PM/grooming:** complete; shared profile/gallery presentation separated from studio actions
+- **Implementation owner:** Codex/GPT-5, substituted for Ollama Cloud stage 2b complex
+- **Implementation scope:** reusable `PieceCard` for public profile and unified gallery, consistent thumbnail fallback/error behavior, fixed metadata/title order, consumer-supplied href, visible keyboard focus, collection/generated badges
+- **Focused checks:** public gallery/profile/a11y suite 32 passed; frontend typecheck passed
+- **Full checks:** frontend 2,718 passed; lint and format passed (existing lint warnings only)
+- **Browser check:** pending local stack availability; live Chrome evidence remains the initial source for the empty-card defect
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; independent second opinion unavailable
+- **Outstanding criteria:** real captured thumbnails and six-engine fixture evidence remain with #607/#608/#609
+- **Next action:** continue with #603 profile-card routing/content reconciliation while retaining #602 open

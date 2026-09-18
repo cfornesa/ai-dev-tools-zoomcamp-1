@@ -10,6 +10,7 @@ import {
   type PublicGalleryType,
   type PublicGalleryAccountItem,
 } from '../api/projects';
+import PieceCard from '../components/PieceCard';
 
 type InitialLoadState = 'loading' | 'error' | 'ready';
 
@@ -46,51 +47,28 @@ function isValidEngine(value: string | null): value is PublicGalleryEngine {
   return value === 'canvas2d' || value === 'svg' || value === 'threejs' || value === 'aframe';
 }
 
-function typeBadge(item: PublicGalleryItem | PublicGalleryAccountItem): string {
-  if (item.kind === 'account') return 'Account';
-  if (item.kind === 'collection') return 'Collection';
-  if (item.kind === 'generated') return 'Generated';
-  return item.kind === '3d' ? '3D' : '2D';
-}
-
 function GalleryCard({ item }: { item: PublicGalleryItem | PublicGalleryAccountItem }) {
-  const [thumbnailFailed, setThumbnailFailed] = useState(false);
-  const titleId = `gallery-item-${item.id}-title`;
-  const showFallback = !item.thumbnail_url || thumbnailFailed;
+  if (item.kind === 'account') {
+    return (
+      <article className="public-project-card" data-kind="account">
+        <Link to={item.viewer_url} className="public-project-card-link">
+          <h3>{item.title}</h3>
+          <span className="renderer-badge">Account</span>
+        </Link>
+      </article>
+    );
+  }
 
   return (
-    <article
-      aria-labelledby={titleId}
-      className="public-project-card"
-      data-kind={item.kind}
-      data-testid={`gallery-card-${item.id}`}
-    >
-      <Link to={item.viewer_url} className="public-project-card-link">
-        {showFallback ? (
-          <div
-            className="public-project-thumbnail-fallback"
-            role="img"
-            aria-label={`No preview available for ${item.title}`}
-          >
-            No preview available
-          </div>
-        ) : (
-          <img
-            src={item.thumbnail_url ?? undefined}
-            alt={`Preview of ${item.title}`}
-            className="public-project-thumbnail"
-            onError={() => setThumbnailFailed(true)}
-          />
-        )}
-
-        <h3 id={titleId} data-testid={`gallery-card-title-${item.id}`}>
-          {item.title}
-        </h3>
-        <span className="renderer-badge">{typeBadge(item)}</span>
-        {item.kind === 'generated' && <span className="engine-label">{item.engine}</span>}
-      </Link>
-      <p className="public-project-attribution">By {item.owner}</p>
-    </article>
+    <PieceCard
+      href={item.viewer_url}
+      title={item.title}
+      thumbnailUrl={item.thumbnail_url}
+      kind={item.kind}
+      engine={item.kind === 'generated' ? item.engine : undefined}
+      owner={item.owner}
+      testId={`gallery-card-${item.id}`}
+    />
   );
 }
 

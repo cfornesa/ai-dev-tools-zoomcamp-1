@@ -483,3 +483,12 @@ routes require separate entry-point fixtures and rendered evidence:
 
 - #617 exactly duplicates the criterion-ready regular slug/shim child #616.
 - Posted the duplicate rationale and closed #617; #616 remains the canonical issue and retains its own QA boundary/evidence.
+
+### Transaction ledger — #613 — 2026-09-18
+
+- **Phase:** QA FAILED / PostgreSQL verification-boundary; existing schema bridge remains open
+- **Focused checks:** art-piece persistence/collection suite `38 passed`; `makemigrations --check --dry-run` reported `No changes detected`; `sqlmigrate scenes 0077_non_destructive_schema_bridge` emitted reversible state-preserving SQL
+- **Database safety:** no development, production, Replit, or shared database was written
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
+- **Evidence boundary:** SQLite/repository evidence passes; disposable PostgreSQL upgrade, direct table/column inspection, and public projection verification remain unavailable because Docker/PostgreSQL is unavailable
+- **Next action:** execute the migration upgrade/inspection on a disposable PostgreSQL runner, then return #613 to QA; hold #612 import until this gate and runtime contracts are complete

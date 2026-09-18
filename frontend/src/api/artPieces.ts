@@ -63,7 +63,7 @@ export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngi
     embed: false,
     download: false,
     editor_target: '2d-ai',
-    generation: false,
+    generation: true,
   },
   c2js: {
     label: 'C2.js',
@@ -73,7 +73,7 @@ export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngi
     embed: false,
     download: false,
     editor_target: '2d-ai',
-    generation: false,
+    generation: true,
   },
   'c2js-interactive': {
     label: 'C2.js Interactive',
@@ -83,7 +83,7 @@ export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngi
     embed: false,
     download: false,
     editor_target: '2d-ai',
-    generation: false,
+    generation: true,
   },
   threejs: {
     label: 'Three.js',

@@ -169,6 +169,19 @@ def get_art_piece_provider() -> ArtPieceProvider:
                 '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">'
                 '<rect width="800" height="600" fill="teal" /></svg>'
             ),
+            "p5js": (
+                "window.sketch = function (p) { p.setup = function () { p.createCanvas(800, 600); };"
+                " p.draw = function () { p.background(42, 157, 143); p.circle(400, 300, 180); }; };"
+            ),
+            "c2js": (
+                "window.sketch = function (runtime) { var ctx = runtime.canvas.getContext('2d');"
+                " runtime.startFrame(function () { ctx.fillStyle = '#2a9d8f'; ctx.fillRect(0, 0, 1280, 720); }); };"
+            ),
+            "c2js-interactive": (
+                "window.sketch = function (runtime) { var ctx = runtime.canvas.getContext('2d');"
+                " runtime.canvas.addEventListener('pointermove', function () {});"
+                " runtime.startFrame(function () { ctx.fillStyle = '#2a9d8f'; ctx.fillRect(0, 0, 1280, 720); }); };"
+            ),
             "threejs": (
                 "var scene = new THREE.Scene();"
                 "var camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);"

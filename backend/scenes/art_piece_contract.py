@@ -50,7 +50,7 @@ ART_PIECE_ENGINE_CAPABILITIES: Final[dict[str, ArtPieceEngineCapability]] = {
         "embed": False,
         "download": False,
         "editor_target": "2d-ai",
-        "generation": False,
+        "generation": True,
     },
     "c2js": {
         "label": "C2.js",
@@ -60,7 +60,7 @@ ART_PIECE_ENGINE_CAPABILITIES: Final[dict[str, ArtPieceEngineCapability]] = {
         "embed": False,
         "download": False,
         "editor_target": "2d-ai",
-        "generation": False,
+        "generation": True,
     },
     "c2js-interactive": {
         "label": "C2.js Interactive",
@@ -70,7 +70,7 @@ ART_PIECE_ENGINE_CAPABILITIES: Final[dict[str, ArtPieceEngineCapability]] = {
         "embed": False,
         "download": False,
         "editor_target": "2d-ai",
-        "generation": False,
+        "generation": True,
     },
     "threejs": {
         "label": "Three.js",

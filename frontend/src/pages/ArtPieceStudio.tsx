@@ -4,6 +4,7 @@ import { ApiError } from '../api/client';
 import {
   createArtPiece,
   generateArtPiece,
+  ART_PIECE_ENGINE_CAPABILITIES,
   updateArtPiece,
   type ArtPiece,
   type ArtPieceCapabilitySet,
@@ -265,6 +266,9 @@ function ArtPieceStudio() {
           >
             <option value="canvas2d">Canvas2D</option>
             <option value="svg">SVG</option>
+            <option value="p5js">p5.js</option>
+            <option value="c2js">C2.js</option>
+            <option value="c2js-interactive">C2.js Interactive</option>
             <option value="threejs">Three.js</option>
             <option value="aframe">A-Frame</option>
           </select>
@@ -344,7 +348,10 @@ function ArtPieceStudio() {
             <fieldset data-testid="art-piece-capabilities">
               <legend>Capabilities</legend>
               {CAPABILITY_OPTIONS.map(({ key, label, spatialOnly }) => {
-                const unsupported = spatialOnly && !SPATIAL_LIBRARIES.has(resultLibrary);
+                const unsupported =
+                  (key === 'download' &&
+                    !ART_PIECE_ENGINE_CAPABILITIES[resultLibrary].download) ||
+                  (spatialOnly && !SPATIAL_LIBRARIES.has(resultLibrary));
                 return (
                   <label key={key} data-testid={`art-piece-capability-${key}`}>
                     <input
@@ -368,10 +375,16 @@ function ArtPieceStudio() {
               <button
                 type="button"
                 onClick={handleDownload}
-                disabled={downloading}
+                disabled={
+                  downloading || !ART_PIECE_ENGINE_CAPABILITIES[resultLibrary].download
+                }
                 data-testid="art-piece-download"
               >
-                {downloading ? 'Preparing download…' : 'Download'}
+                {downloading
+                  ? 'Preparing download…'
+                  : ART_PIECE_ENGINE_CAPABILITIES[resultLibrary].download
+                    ? 'Download'
+                    : 'Download unavailable for this engine'}
               </button>
             </>
           )}

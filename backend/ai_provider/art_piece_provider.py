@@ -129,6 +129,21 @@ a <script> element of any kind.
 src, no @import, no url(...) pointing outside the document. Every color/gradient/pattern must \
 be defined inline within the <svg> itself."""
 
+_P5JS_SYSTEM_PROMPT = """You generate plain JavaScript for one p5.js generative-art piece. \
+The p5.js library is already loaded globally as `p5`; do not import it or write a script tag. \
+Respond with only JavaScript and assign an instance-mode sketch function to `window.sketch`. \
+The function receives the p5 instance, must create its canvas in setup, draw immediately, and \
+keep all state self-contained. Never fetch a URL, create another script, access cookies or \
+storage, or use eval/Function. Use only the p5 API and deterministic inline values."""
+
+_C2JS_SYSTEM_PROMPT = """You generate plain JavaScript for one C2.js generative-art piece. \
+The wrapper supplies a `runtime` object with `runtime.canvas`, `runtime.c2`, and \
+`runtime.startFrame(callback)`. Respond with only JavaScript and assign a function to \
+`window.sketch`; the function receives `runtime`, draws through the supplied canvas context, \
+and uses `runtime.startFrame` for animation or interaction. Never fetch a URL, create another \
+script, access cookies or storage, or use eval/Function. Keep the source self-contained and \
+preserve pointer events for the interactive variant."""
+
 # Issue #199 (Three.js extension): the AI writes plain JavaScript, not
 # markup -- the sandboxed document (`artPieceSandbox.ts`) loads Three.js
 # itself from a pinned CDN URL this module names above and provides the
@@ -265,6 +280,9 @@ class ArtPieceProvider:
         system_prompt = {
             "canvas2d": _CANVAS2D_SYSTEM_PROMPT,
             "svg": _SVG_SYSTEM_PROMPT,
+            "p5js": _P5JS_SYSTEM_PROMPT,
+            "c2js": _C2JS_SYSTEM_PROMPT,
+            "c2js-interactive": _C2JS_SYSTEM_PROMPT,
             "threejs": _THREEJS_SYSTEM_PROMPT,
             "aframe": _AFRAME_SYSTEM_PROMPT,
         }[library]
@@ -397,6 +415,10 @@ def _looks_like_snippet(snippet: str, library: str) -> bool:
         # CDN/version of its own rather than using the one already loaded.
         has_markup = "<script" in lowered or "<html" in lowered or "<canvas" in lowered
         return "three." in lowered and not has_markup
+    if library == "p5js":
+        return "window.sketch" in lowered and "p.setup" in lowered
+    if library in {"c2js", "c2js-interactive"}:
+        return "window.sketch" in lowered and "startframe" in lowered
     # aframe: declarative markup only, matching SVG's inert-markup
     # rejection of any "<script" tag.
     return "<a-scene" in lowered and "<script" not in lowered

@@ -1,4 +1,8 @@
-import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
+import {
+  ART_PIECE_ENGINE_CAPABILITIES,
+  type ArtPieceCapabilitySet,
+  type ArtPieceLibrary,
+} from '../api/artPieces';
 
 /**
  * Issue #428: shared between `ArtPieceStudio.tsx` (new piece) and
@@ -39,13 +43,16 @@ export const CAPABILITY_OPTIONS: Array<{
  * alongside disabling those checkboxes in the UI, so a stale selection
  * carried over from a previous library choice (or a previous version's
  * capabilities, pre-filled into an edit form) can never reach the save
- * request. Only `immersive` (walkable navigation) is spatial-only as of
- * #449 -- `hand_steering` is supported for every engine. */
+ * request. `immersive` and `download` are engine-surface gated; `hand_steering`
+ * remains supported for every engine. */
 export function sanitizeCapabilities(
   capabilities: ArtPieceCapabilitySet,
   library: ArtPieceLibrary,
 ): ArtPieceCapabilitySet {
-  if (SPATIAL_LIBRARIES.has(library)) return capabilities;
-  const { immersive: _immersive, ...rest } = capabilities;
-  return rest;
+  const engine = ART_PIECE_ENGINE_CAPABILITIES[library];
+  const sanitized = { ...capabilities };
+  if (!engine.immersive) delete sanitized.immersive;
+  if (!engine.download) delete sanitized.download;
+  if (!SPATIAL_LIBRARIES.has(library)) delete sanitized.immersive;
+  return sanitized;
 }

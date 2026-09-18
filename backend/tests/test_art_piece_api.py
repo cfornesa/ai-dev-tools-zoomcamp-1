@@ -85,6 +85,11 @@ _VALID_SVG_SNIPPET = (
     "</svg>"
 )
 
+_VALID_P5_SNIPPET = (
+    "window.sketch = function (p) { p.setup = function () { p.createCanvas(10, 10); }; };"
+)
+_VALID_C2_SNIPPET = "window.sketch = function (runtime) { runtime.startFrame(function () {}); };"
+
 _VALID_THREEJS_SNIPPET = (
     "const container = document.getElementById('art-piece-container');"
     "const renderer = new THREE.WebGLRenderer();"
@@ -145,16 +150,25 @@ def test_output_missing_canvas_or_script_is_rejected_with_422(owner_client, monk
 
 
 @pytest.mark.django_db
-def test_registered_but_unavailable_engine_returns_explicit_422(owner_client, monkeypatch):
-    _use_provider(monkeypatch, ArtPieceProvider(client=_FakeClient(lambda **kwargs: None)))
+def test_registered_p5_engine_returns_a_valid_generated_snippet(owner_client, monkeypatch):
+    _use_provider(monkeypatch, _mistral_provider_returning(_VALID_P5_SNIPPET))
 
     response = owner_client.post(URL, {"library": "p5js", "prompt": "a field"}, format="json")
 
-    assert response.status_code == 422
-    assert response.json() == {
-        "error": "library_unavailable",
-        "detail": "This engine is registered but its runtime is not available yet.",
-    }
+    assert response.status_code == 200
+    assert response.json()["code"] == _VALID_P5_SNIPPET
+
+
+@pytest.mark.parametrize("library", ["c2js", "c2js-interactive"])
+@pytest.mark.django_db
+def test_registered_c2_engines_return_valid_generated_snippets(owner_client, monkeypatch, library):
+    _use_provider(monkeypatch, _mistral_provider_returning(_VALID_C2_SNIPPET))
+
+    response = owner_client.post(URL, {"library": library, "prompt": "a field"}, format="json")
+
+    assert response.status_code == 200
+    assert response.json()["library"] == library
+    assert response.json()["code"] == _VALID_C2_SNIPPET
 
 
 @pytest.mark.django_db

@@ -88,6 +88,28 @@ describe('ArtPieceStudio (issue #199)', () => {
     expect(iframe.srcdoc).toContain('<svg id="art-piece-svg">');
   });
 
+  it('selecting p5.js sends its stable engine ID and renders the instance-mode wrapper', async () => {
+    mockedGenerateArtPiece.mockResolvedValue({
+      library: 'p5js',
+      code: 'window.sketch = function (p) { p.setup = function () { p.createCanvas(10, 10); }; };',
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    render(<ArtPieceStudio />);
+
+    await userEvent.selectOptions(screen.getByLabelText(/library/i), 'p5js');
+    await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'a field');
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(mockedGenerateArtPiece).toHaveBeenCalledWith(
+      'p5js',
+      'a field',
+      expect.anything(),
+      undefined,
+    );
+    const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+    expect(iframe.srcdoc).toContain('new window.p5(window.sketch, mount)');
+  });
+
   it('selecting Three.js sends library: "threejs" and renders the wrapped snippet in a provided container', async () => {
     mockedGenerateArtPiece.mockResolvedValue({
       library: 'threejs',

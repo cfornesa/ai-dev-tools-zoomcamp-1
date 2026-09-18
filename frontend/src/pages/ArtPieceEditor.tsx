@@ -193,6 +193,8 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     try {
       const updated = await updateArtPiece(id, { title: title.trim(), description });
       setPiece(updated);
+      setTitle(updated.title);
+      setDescription(updated.description);
     } catch {
       setMetadataError('Could not save these changes. Please try again.');
     } finally {

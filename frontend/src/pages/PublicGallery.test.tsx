@@ -98,6 +98,17 @@ describe('PublicGallery loading/error/empty states', () => {
     );
   });
 
+  it('keeps all supported gallery filters available from the default view', async () => {
+    mockedFetchPublicGallery.mockResolvedValue({ results: [], next_cursor: null, has_more: false });
+
+    renderPublicGallery(['/gallery']);
+
+    const filter = await screen.findByRole('combobox', { name: 'Gallery type' });
+    expect(filter).toHaveDisplayValue('All');
+    expect(screen.getByRole('option', { name: 'Authored' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Generated' })).toBeInTheDocument();
+  });
+
   it('shows a filter-specific empty state with recovery to All for the generated filter', async () => {
     mockedFetchPublicGallery.mockResolvedValue({ results: [], next_cursor: null, has_more: false });
 
@@ -109,7 +120,7 @@ describe('PublicGallery loading/error/empty states', () => {
 });
 
 describe('PublicGallery filter control', () => {
-  it('renders a labeled select with exactly All, Pieces, and Collections options', async () => {
+  it('renders a labeled select with all supported gallery options', async () => {
     mockedFetchPublicGallery.mockResolvedValue({ results: [], next_cursor: null, has_more: false });
 
     renderPublicGallery();
@@ -124,8 +135,16 @@ describe('PublicGallery filter control', () => {
       'all',
       'pieces',
       'collections',
+      'authored',
+      'generated',
     ]);
-    expect(options.map((o) => o.textContent)).toEqual(['All', 'Pieces', 'Collections']);
+    expect(options.map((o) => o.textContent)).toEqual([
+      'All',
+      'Pieces',
+      'Collections',
+      'Authored',
+      'Generated',
+    ]);
   });
 
   it('selects All when the type query parameter is absent', async () => {

@@ -23,6 +23,8 @@ const GALLERY_TYPES: { value: PublicGalleryType; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'pieces', label: 'Pieces' },
   { value: 'collections', label: 'Collections' },
+  { value: 'authored', label: 'Authored' },
+  { value: 'generated', label: 'Generated' },
 ];
 
 const EMPTY_MESSAGES: Record<PublicGalleryType, string> = {
@@ -234,8 +236,6 @@ function PublicGallery() {
               {option.label}
             </option>
           ))}
-          {type === 'generated' && <option value="generated">Generated</option>}
-          {type === 'authored' && <option value="authored">Authored</option>}
         </select>
         <label htmlFor="gallery-engine">Gallery engine</label>
         <select id="gallery-engine" value={engine ?? ''} onChange={handleEngineChange}>

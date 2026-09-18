@@ -26,6 +26,7 @@ const piece: ArtPiece = {
     source: 'const scene = new THREE.Scene();',
     capabilities: { fullscreen: true, immersive: true },
     thumbnail_url: '',
+    thumbnail_is_fallback: false,
     created_at: '2026-09-18T00:00:00Z',
   },
   created_at: '2026-09-18T00:00:00Z',

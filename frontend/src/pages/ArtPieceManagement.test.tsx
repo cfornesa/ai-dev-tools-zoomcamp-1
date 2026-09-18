@@ -24,6 +24,7 @@ const piece = {
     source: '<canvas />',
     capabilities: {},
     thumbnail_url: '/media/sunset.png',
+    thumbnail_is_fallback: false,
     created_at: '2026-09-18T00:00:00Z',
   },
   created_at: '2026-09-18T00:00:00Z',

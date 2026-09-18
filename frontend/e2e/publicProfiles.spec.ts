@@ -12,9 +12,11 @@ test.describe('Public profiles (#520)', () => {
     await loginViaUI(page, fixtures.other.email, fixtures.password);
     await page.goto('/account/settings');
     await expect(page.getByRole('heading', { name: 'Public profile' })).toBeVisible();
+    await expect(page.getByLabel('Handle')).toHaveValue('e2e_other');
     await page.getByLabel('Handle').fill('e2e-profile');
     await page.getByLabel('Display name').fill('E2E Artist');
     await page.getByLabel('Bio').fill('A public profile bio.');
+    await page.getByLabel('Make profile public').check();
     await page.getByRole('button', { name: 'Save profile' }).click();
     await expect(page.getByText('Profile saved.')).toBeVisible();
 

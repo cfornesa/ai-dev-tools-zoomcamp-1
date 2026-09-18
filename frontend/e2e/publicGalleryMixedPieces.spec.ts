@@ -157,17 +157,17 @@ test.describe('mixed public gallery', () => {
           anonymousPage.getByRole('link', {
             name: new RegExp(`gallery 2d fixture ${project2dId}`, 'i'),
           }),
-        ).toHaveAttribute('href', `/p/${project2dId}`);
+        ).toHaveAttribute('href', '/users/@e2e_owner/pieces/untitled-animation');
         await expect(
           anonymousPage.getByRole('link', {
             name: new RegExp(`gallery 3d fixture ${project3dId}`, 'i'),
           }),
-        ).toHaveAttribute('href', `/p3d/${project3dId}`);
+        ).toHaveAttribute('href', '/users/@e2e_owner/pieces/untitled-3d-scene');
         await expect(
           anonymousPage.getByRole('link', {
             name: new RegExp(`gallery generated fixture`, 'i'),
           }),
-        ).toHaveAttribute('href', `/art-pieces/p/${artPieceId}`);
+        ).toHaveAttribute('href', /\/users\/@e2e_owner\/pieces\/gallery-generated-fixture/);
 
         // Issue #491: rendered evidence must show the All filter state with
         // all three card kinds visible.

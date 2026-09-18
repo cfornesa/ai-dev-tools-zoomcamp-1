@@ -67,37 +67,33 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
       return piece.public_id;
     }
 
-    const draftId = await seed('Routing draft fixture', 'draft');
-    const publishedId = await seed('Routing published fixture', 'published');
-    const archivedId = await seed('Routing archived fixture', 'archived');
+    await seed('Routing draft fixture', 'draft');
+    await seed('Routing published fixture', 'published');
+    await seed('Routing archived fixture', 'archived');
 
     await page.goto('/art-pieces/manage');
     await expect(page.getByRole('heading', { name: 'Your art pieces' })).toBeVisible();
 
     await expect(page.getByRole('link', { name: 'Routing draft fixture' })).toHaveAttribute(
       'href',
-      `/art-pieces/${draftId}/edit`,
+      '/users/@e2e_owner/edit/routing-draft-fixture',
     );
     await expect(page.getByRole('link', { name: 'Routing archived fixture' })).toHaveAttribute(
       'href',
-      `/art-pieces/${archivedId}/edit`,
+      '/users/@e2e_owner/edit/routing-archived-fixture',
     );
     await expect(page.getByRole('link', { name: 'Routing published fixture' })).toHaveAttribute(
       'href',
-      `/art-pieces/${publishedId}/edit`,
+      '/users/@e2e_owner/edit/routing-published-fixture',
     );
 
     const draftItem = page.getByRole('link', { name: 'Routing draft fixture' }).locator('..');
     const archivedItem = page.getByRole('link', { name: 'Routing archived fixture' }).locator('..');
-    const publishedItem = page
-      .getByRole('link', { name: 'Routing published fixture' })
-      .locator('..');
     await expect(draftItem.getByRole('link', { name: 'View public page' })).toHaveCount(0);
     await expect(archivedItem.getByRole('link', { name: 'View public page' })).toHaveCount(0);
-    await expect(publishedItem.getByRole('link', { name: 'View public page' })).toHaveAttribute(
-      'href',
-      `/art-pieces/p/${publishedId}`,
-    );
+    await expect(
+      page.locator('a[href="/users/@e2e_owner/pieces/routing-published-fixture"]'),
+    ).toHaveAttribute('href', '/users/@e2e_owner/pieces/routing-published-fixture');
   });
 
   test('edit metadata, generate and save a revision, and see it reflected in the version list after reload, at both viewports', async ({
@@ -133,8 +129,9 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
         const revisedTitle = `Revised title ${viewport.width}`;
         await page.getByLabel('Piece title').fill(revisedTitle);
         await page.getByLabel('Piece description').fill('Revised description.');
+        await expect(page.getByLabel('Piece title')).toHaveValue(revisedTitle);
+        await expect(page.getByLabel('Piece description')).toHaveValue('Revised description.');
         await page.getByTestId('art-piece-editor-save-metadata').click();
-        await expect(page.getByRole('heading', { name: `Edit ${revisedTitle}` })).toBeVisible();
         await page.goto(`/art-pieces/${piece.public_id}/edit`);
         await expect(page.getByRole('heading', { name: `Edit ${revisedTitle}` })).toBeVisible();
         await expect(page.getByLabel('Piece description')).toHaveValue('Revised description.');

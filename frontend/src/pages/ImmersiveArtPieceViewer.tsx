@@ -384,7 +384,12 @@ function ImmersiveArtPieceViewer({
         </p>
       )}
       {!isEmbedRoute && (
-        <Link to={regularHref ?? `/art-pieces/p/${piece.public_id}`}>Back to regular viewer</Link>
+        <Link
+          className="immersive-art-piece-back-link"
+          to={regularHref ?? `/art-pieces/p/${piece.public_id}`}
+        >
+          Back to regular viewer
+        </Link>
       )}
     </section>
   );

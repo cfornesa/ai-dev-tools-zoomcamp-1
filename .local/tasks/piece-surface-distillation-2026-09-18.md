@@ -510,3 +510,26 @@ routes require separate entry-point fixtures and rendered evidence:
 - **Evidence:** no six-engine chrome-less embed fixtures or fixed-viewport Chromium run was attempted because Docker/PostgreSQL/Django/Vite are unavailable; no code or database writes were made
 - **GitHub evidence:** [dependency/QA gate](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/615#issuecomment-5728509866)
 - **Next action:** keep #615 open and return it to implementation after #607 and the schema/capability gates are verified; a self-skipped browser scenario is not a pass
+
+### Browser QA reconciliation — 2026-09-18
+
+- **Disposable stack:** `make compose-preflight` passed; Docker PostgreSQL,
+  Django, and Vite were healthy. Playwright used `E2E_DOCKER_COMPOSE=true` so
+  fixture users and pieces shared the same database as the app.
+- **Matrix:** the scoped Chromium art-piece matrix completed 28/28 after
+  correcting viewport-safe controls, canonical route expectations, profile
+  load timing, and owner metadata state synchronization. It covered regular,
+  embed, immersive, CMS, ZIP, thumbnail, owner, gallery, and profile flows at
+  the fixed desktop/mobile viewports used by the issue contracts.
+- **Schema gate:** disposable PostgreSQL reported `No changes detected`; direct
+  table inspection confirmed `scenes_artpiece`, `scenes_collection`, and
+  `scenes_artpieceversion` exist. No development, production, Replit, or
+  shared database was modified.
+- **Product corrections:** public-gallery filters are available from the
+  default view; legacy runtime controls stay inside the viewport; immersive
+  back navigation remains clickable above the full-stage layer; profile forms
+  open on first visit; metadata edits synchronize controlled state; stale
+  TypeScript fixtures now include the explicit thumbnail fallback field.
+- **Remaining closure boundary:** the six-engine parity, import, Replit
+  publication, physical-device, and exact deployed-asset criteria remain
+  open where their issue contracts require evidence beyond this local matrix.

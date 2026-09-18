@@ -49,7 +49,11 @@ type SettingsSectionId = (typeof DEFAULT_SECTION_ORDER)[number];
 type SettingsLayout = { order: SettingsSectionId[]; expanded: Record<string, boolean> };
 
 function readSettingsLayout(storageKey: string): SettingsLayout {
-  const fallback = { order: [...DEFAULT_SECTION_ORDER], expanded: {} };
+  // Keep the primary profile workflow immediately available on first visit;
+  // secondary settings remain collapsible. This also preserves the existing
+  // account-settings contract where the profile form is the first actionable
+  // surface after navigation.
+  const fallback = { order: [...DEFAULT_SECTION_ORDER], expanded: { profile: true } };
   try {
     const parsed = JSON.parse(
       localStorage.getItem(storageKey) ?? 'null',
@@ -157,7 +161,7 @@ function AccountSettings() {
   }
 
   function resetLayout() {
-    setLayout({ order: [...DEFAULT_SECTION_ORDER], expanded: {} });
+    setLayout({ order: [...DEFAULT_SECTION_ORDER], expanded: { profile: true } });
   }
 
   const sections: Record<SettingsSectionId, { label: string; content: ReactNode }> = {

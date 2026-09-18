@@ -3946,6 +3946,45 @@ select.ai-proposal-field-full-width {
   position: relative;
 }
 
+/* The immersive/public art-piece viewer still uses the legacy runtime
+   controls component (rather than the shared command-card toolbar). Its
+   disclosure must overlay the stage and scroll within the viewport; leaving
+   it in normal flow places the lower actions below a full-height iframe. */
+.art-piece-stage > [role='region'][aria-label='Piece controls'] {
+  position: absolute;
+  top: 4.5rem;
+  left: 0.75rem;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: min(360px, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 5.5rem);
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.75rem;
+  background: rgba(10, 12, 20, 0.94);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.art-piece-stage > [role='region'][aria-label='Piece controls'] > [role='group'] {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.art-piece-stage > [role='region'][aria-label='Piece controls'] button {
+  min-height: 2.4rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+}
+
 /* #606: immersive art pieces own the viewport rather than rendering as a
    page-contained 640px preview. Header and stage controls remain overlays. */
 .immersive-art-piece-viewer {
@@ -4006,6 +4045,20 @@ select.ai-proposal-field-full-width {
 
 .immersive-art-piece-stage > iframe {
   height: 100% !important;
+}
+
+.immersive-art-piece-back-link {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 150;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 0.65rem;
+  background: rgba(0, 0, 0, 0.62);
+  color: inherit;
+  text-decoration: none;
 }
 
 .public-collection-context {
@@ -4154,10 +4207,11 @@ select.ai-proposal-field-full-width {
   flex-direction: column;
   align-self: flex-start;
   width: min(100%, 46rem);
-  height: max-content;
-  max-height: none;
-  margin: auto;
-  overflow: visible;
+  height: calc(100dvh - 2rem);
+  min-height: 0;
+  max-height: calc(100dvh - 2rem);
+  margin: 0 auto;
+  overflow-y: auto;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 1.25rem;
   background: rgba(9, 14, 24, 0.94);
@@ -4408,9 +4462,13 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-download-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 0.5rem);
+  /* The download disclosure lives inside the fullscreen command card. Keep
+     it in document flow so its actions remain reachable on short viewports;
+     an absolutely positioned menu can land below the viewport after the
+     other stacked controls have opened. */
+  position: relative;
+  right: auto;
+  top: auto;
   z-index: 30;
   display: grid;
   gap: 0.35rem;

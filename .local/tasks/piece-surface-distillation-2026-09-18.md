@@ -234,6 +234,25 @@ editor, and card contracts.
 - **GitHub evidence:** [#609 boundary comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609#issuecomment-5727058839)
 - **Next action:** continue with #610 editor integration
 
+## Transaction ledger — #610
+
+- **Phase:** AUDITED; implementation deferred pending canonical engine/schema contract
+- **PM/grooming:** blocker confirmed; existing editor is source-only and model/provider union has four engines
+- **Evidence:** p5.js/C2.js/C2.js Interactive editor integration and Three/A-Frame editor routing require #613 before safe persistence, then #607/#608/#609 runtime/export parity
+- **Owner:** no implementation commit; current Codex audit substitution for stage 2b review
+- **GitHub evidence:** [#610 boundary comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/610#issuecomment-5727064069)
+- **Next action:** continue with #611/#613 schema bridge reconciliation
+
+## Transaction ledger — #613
+
+- **Phase:** AUDITED; migration code already present, PostgreSQL verification pending
+- **PM/grooming:** complete; no new model delta is authorized by the checked-in #611 matrix without the six-engine contract decisions
+- **Evidence:** existing migrations 0077/0078; safe `makemigrations --check --dry-run` reports no changes; focused suite 33 passed/3 PostgreSQL-gated skipped
+- **Database safety:** no development, production, Replit, or shared database was written
+- **Owner:** no implementation commit; current Codex audit substitution for stage 2b complex review
+- **GitHub evidence:** [#613 audit comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613#issuecomment-5727081694)
+- **Next action:** retain #613 open until disposable PostgreSQL upgrade/schema inspection is available; proceed to #612 import only after the schema gate
+
 ## Transaction ledger — #607
 
 - **Phase:** AUDITED; implementation deferred pending prerequisite schema/provider/editor contract work

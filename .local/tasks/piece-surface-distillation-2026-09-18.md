@@ -502,3 +502,11 @@ routes require separate entry-point fixtures and rendered evidence:
 - **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
 - **Evidence boundary:** rendered gallery/profile/studio screenshots and fixed 1280x900/375x812 behavior remain unavailable because Docker and localhost Django/Vite are unavailable; no shared or production database was modified
 - **Next action:** run the generated-card fallback/real-thumbnail matrix in Chromium on a disposable PostgreSQL/Django/Vite or approved CI browser runner, then return #602 to QA
+
+### Dependency reconciliation — #615 — 2026-09-18
+
+- **Phase:** dependency-blocked / QA scoping complete
+- **Dependencies:** #613 schema bridge, #614 canonical seven-engine capability contract, and #607 regular runtime parity; #612 import remains downstream
+- **Evidence:** no six-engine chrome-less embed fixtures or fixed-viewport Chromium run was attempted because Docker/PostgreSQL/Django/Vite are unavailable; no code or database writes were made
+- **GitHub evidence:** [dependency/QA gate](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/615#issuecomment-5728509866)
+- **Next action:** keep #615 open and return it to implementation after #607 and the schema/capability gates are verified; a self-skipped browser scenario is not a pass

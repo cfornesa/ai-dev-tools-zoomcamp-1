@@ -443,3 +443,14 @@ routes require separate entry-point fixtures and rendered evidence:
 - **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
 - **Evidence boundary:** Docker daemon unavailable, no local Django/Vite listener, and route-level Chromium scenarios cannot execute; active production Chrome still shows the stale bounded-stage revision, so it is not evidence for this unrepublished commit
 - **Next action:** run the exact canonical immersive route matrix at 1280x900 and 375x812 on a disposable PostgreSQL/Django/Vite or approved CI browser runner, then return #606 to QA; do not close or recommend republish from source/full-suite evidence alone
+
+### Transaction ledger — #605 — 2026-09-18
+
+- **Phase:** ENGINEERING complete; QA pending rendered browser evidence
+- **Scope:** authenticated art-piece management cards default to canonical owner editor links, retain published-only regular public links, and use shared thumbnail/title card presentation
+- **Implementation commit:** pending commit for focused management-card regression coverage
+- **Focused checks:** `cd frontend && npm test -- --run src/pages/ArtPieceManagement.test.tsx` (1 passed); `cd frontend && npm run typecheck`
+- **Full checks:** `cd frontend && npm test` (2,727 passed); lint warning-only; format-check and typecheck passed
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
+- **Evidence boundary:** fixed desktop/mobile Chromium inspection is unavailable because Docker daemon and localhost Django/Vite are unavailable; production evidence is not required by this local issue contract and has not been used
+- **Next action:** run authenticated management-card Chromium checks at 1280x900 and 375x812 on disposable PostgreSQL/Django/Vite or approved CI browser runner, then return #605 to QA

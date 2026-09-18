@@ -225,6 +225,15 @@ editor, and card contracts.
 - **GitHub evidence:** [#608 boundary comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5727051635)
 - **Next action:** continue with #609 offline downloads
 
+## Transaction ledger — #609
+
+- **Phase:** AUDITED; implementation deferred pending six-engine runtime/package contract
+- **PM/grooming:** blocker confirmed; current ZIP path covers four engines and fixed-height immersive export
+- **Evidence:** p5.js/C2.js/C2.js Interactive packaging and extracted-browser fixtures depend on #607/#610/#613; no safe identifier-only extension
+- **Owner:** no implementation commit; current Codex audit substitution for stage 2b review
+- **GitHub evidence:** [#609 boundary comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609#issuecomment-5727058839)
+- **Next action:** continue with #610 editor integration
+
 ## Transaction ledger — #607
 
 - **Phase:** AUDITED; implementation deferred pending prerequisite schema/provider/editor contract work

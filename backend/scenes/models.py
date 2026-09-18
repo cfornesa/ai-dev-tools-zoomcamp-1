@@ -28,6 +28,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
+from scenes.art_piece_contract import ART_PIECE_ENGINE_CAPABILITIES
 from scenes.validation import validate_scene
 from scenes.validation3d import validate_scene3d
 
@@ -1882,13 +1883,16 @@ class ArtPieceManager(models.Manager):
 
 class ArtPiece(models.Model):
     class Engine(models.TextChoices):
-        CANVAS2D = "canvas2d", "Canvas 2D"
-        SVG = "svg", "SVG"
-        P5JS = "p5js", "p5.js"
-        C2JS = "c2js", "C2.js"
-        C2JS_INTERACTIVE = "c2js-interactive", "C2.js Interactive"
-        THREEJS = "threejs", "Three.js"
-        AFRAME = "aframe", "A-Frame"
+        CANVAS2D = "canvas2d", ART_PIECE_ENGINE_CAPABILITIES["canvas2d"]["label"]
+        SVG = "svg", ART_PIECE_ENGINE_CAPABILITIES["svg"]["label"]
+        P5JS = "p5js", ART_PIECE_ENGINE_CAPABILITIES["p5js"]["label"]
+        C2JS = "c2js", ART_PIECE_ENGINE_CAPABILITIES["c2js"]["label"]
+        C2JS_INTERACTIVE = (
+            "c2js-interactive",
+            ART_PIECE_ENGINE_CAPABILITIES["c2js-interactive"]["label"],
+        )
+        THREEJS = "threejs", ART_PIECE_ENGINE_CAPABILITIES["threejs"]["label"]
+        AFRAME = "aframe", ART_PIECE_ENGINE_CAPABILITIES["aframe"]["label"]
 
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"

@@ -173,5 +173,6 @@ editor, and card contracts.
 - **Full checks:** frontend 2,718 passed; lint and format passed (existing lint warnings only)
 - **Browser check:** pending local stack availability; live Chrome evidence remains the initial source for the empty-card defect
 - **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; independent second opinion unavailable
+- **GitHub evidence:** [#602 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/602#issuecomment-5726912446)
 - **Outstanding criteria:** real captured thumbnails and six-engine fixture evidence remain with #607/#608/#609
 - **Next action:** continue with #603 profile-card routing/content reconciliation while retaining #602 open

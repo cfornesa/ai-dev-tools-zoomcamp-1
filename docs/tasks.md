@@ -427,7 +427,8 @@ issues were created without product-code or database changes:
 | [#603](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/603) | Public profile card consumer | stage 2a/2b conditional | #600, #602 |
 | [#604](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/604) | Public gallery card consumer | stage 2b complex | #564, #565, #600, #602 |
 | [#605](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/605) | Studio editor-link card consumer | stage 2a/2b conditional | #600–#602 |
-| [#607](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/607) | Regular/embed runtime parity for six engines | stage 2b complex | #599, #600, #611 |
+| [#607](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/607) | Regular-view runtime parity for six engines | stage 2b complex | #599, #600, #611, #614 |
+| [#615](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/615) | Chrome-less embed runtime parity for six engines | stage 2b complex | #607, #614 |
 | [#606](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/606) | Full-screen canonical immersive route | stage 2b complex | #599, #600, #611 |
 | [#608](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608) | Immersive runtime parity for six engines | stage 2b complex | #606, #607 |
 | [#609](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609) | Offline regular/immersive downloads | stage 2b complex | #607, #608 |

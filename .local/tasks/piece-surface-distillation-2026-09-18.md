@@ -309,3 +309,37 @@ The corrected issue contract was re-read from GitHub. The initial QA intake
 found a duplicated model-label source and a nonexistent frontend focused test
 path; both were corrected before the final verdict. No product test was
 weakened, skipped, deleted, or retargeted in the #614 diff.
+
+### Fresh distillation after #614 — 2026-09-18
+
+Issue #614 is closed and unblocks the engine-contract dependency. The former
+#607 bundle was split before engineering because regular and chrome-less embed
+routes require separate entry-point fixtures and rendered evidence:
+
+- #607 is narrowed to regular-view runtime parity and is the next issue.
+- [#615](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/615) owns
+  the chrome-less embed consumer and depends on #607.
+- #608, #609, #610, #613, and #612 remain ordered behind their explicit
+  runtime/schema/editor dependencies.
+
+### Transaction ledger — #607 after split
+
+- **Phase:** GROOMED; next engineering transaction
+- **Scope:** regular public generated-piece viewer only, with six-engine
+  fixtures and fixed desktop/mobile browser evidence
+- **Dependencies:** #599, #600, #611, and closed #614
+- **Shifted scope:** chrome-less embed route is criterion-ready in #615 and is
+  dependency-blocked until #607 closes; immersive, downloads, editor,
+  schema publication, and import remain #608–#610, #613, and #612
+- **Routing:** stage 2b complex; sandbox/runtime security, version selection,
+  capabilities, and device interaction are coupled
+- **Next action:** run PM grooming, then implement #607 only
+
+### Transaction ledger — #615
+
+- **Phase:** GROOMED; dependency-blocked by #607
+- **Scope:** chrome-less embed consumer for six engines, separate from the
+  regular viewer's route-level evidence
+- **Dependencies:** #607 and closed #614
+- **Next action:** hold until #607 reaches a terminal status, then begin its
+  own engineering/QA transaction

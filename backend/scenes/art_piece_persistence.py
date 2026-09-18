@@ -32,8 +32,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.art_piece_contract import art_piece_engine_capability
-from scenes.canonical_piece_signals import normalize_public_slug
 from scenes.art_piece_validation import validate_art_piece_source
+from scenes.canonical_piece_signals import normalize_public_slug
 from scenes.content_metadata import sanitize_content_seo
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
 from scenes.permissions import Action, can

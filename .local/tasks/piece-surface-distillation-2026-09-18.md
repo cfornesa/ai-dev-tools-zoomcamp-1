@@ -134,3 +134,15 @@ editor, and card contracts.
 - **GitHub evidence:** [#611 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/611#issuecomment-5726620072)
 - **Final status:** GitHub issue closed as completed; schema plan implemented locally, migration execution shifted to #613
 - **Next issue:** #600, canonical slug routes and compatibility redirects
+
+## Transaction ledger — #600
+
+- **Phase:** IMPLEMENTED; pending GitHub QA/reconciliation
+- **PM/grooming:** complete; compatibility policy documented as preserving identifier routes while canonicalizing new generated-piece links
+- **Implementation owner:** Codex/GPT-5, substituted for Ollama Cloud stage 2b complex
+- **Implementation scope:** documented API contract; added persisted `public_slug` to public art-piece payloads; profile, unified gallery, and collection cards now emit canonical generated-piece URLs; canonical slug pages render generated art pieces without replacing the browser URL with a UUID route; legacy viewer fallback remains supported
+- **Focused checks:** backend 70 passed; frontend targeted 5 passed; `git diff --check` passed
+- **Full checks:** backend `make check` 1,414 passed/39 skipped; frontend 2,718 passed; formatting, lint, and typecheck passed (existing lint warnings only)
+- **Browser check:** not run against a local stack in this transaction; live Chrome evidence from the initial audit remains recorded in #599/#600 scope
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; independent second opinion not available
+- **Next action:** commit, post QA evidence, then close #600 if accepted; next scoped issue #601

@@ -115,9 +115,11 @@ def _piece_payload(profile: PublicProfile) -> dict:
         items.append(
             {
                 "id": str(piece.public_id),
+                "slug": piece.public_slug,
                 "title": piece.title,
                 "type": "generated",
                 "engine": piece.engine,
+                "regular_url": f"/users/@{profile.handle}/pieces/{piece.public_slug}",
                 "thumbnail_url": f"/api/public/art-pieces/{piece.public_id}/thumbnail.png",
             }
         )

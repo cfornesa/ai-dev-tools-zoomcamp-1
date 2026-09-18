@@ -23,20 +23,21 @@ function embedSnippetFor(publicId: string): string {
   return `<iframe src="${src}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`;
 }
 
-function PublicArtPieceViewer() {
+export default function PublicArtPieceViewer({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const { id } = useParams<{ id: string }>();
-  const [piece, setPiece] = useState<ArtPiece | null>(null);
+  const [piece, setPiece] = useState<ArtPiece | null>(initialPiece ?? null);
   const [error, setError] = useState(false);
   const [showEmbedSnippet, setShowEmbedSnippet] = useState(false);
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const stageRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
+    if (initialPiece) return;
     if (id)
       getPublicArtPiece(id)
         .then(setPiece)
         .catch(() => setError(true));
-  }, [id]);
+  }, [id, initialPiece]);
   useEffect(() => {
     if (piece)
       applyContentMetadata(piece.seo_config, piece.title, piece.description, window.location.href);
@@ -152,5 +153,3 @@ function PublicArtPieceViewer() {
     </section>
   );
 }
-
-export default PublicArtPieceViewer;

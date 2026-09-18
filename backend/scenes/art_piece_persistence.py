@@ -161,6 +161,7 @@ def _version_data(version: ArtPieceVersion, *, public: bool):
 def _piece_data(piece: ArtPiece, *, public: bool):
     data = {
         "public_id": str(piece.public_id),
+        "public_slug": piece.public_slug,
         "title": piece.title,
         "description": piece.description,
         "seo_config": piece.seo_config,

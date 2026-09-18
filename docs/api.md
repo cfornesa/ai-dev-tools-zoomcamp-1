@@ -111,6 +111,18 @@ the existing public detail routes. The response includes `canonical_url`,
 The frontend canonical route is `/users/@<handle>/pieces/<piece-slug>`. Existing
 identifier-based viewer routes remain backward-compatible and are not removed.
 
+### Canonical generated art-piece links (#600)
+
+Published generated art pieces in profile, gallery, and collection-card
+payloads expose the owner-scoped canonical `regular_url` at
+`/users/@<handle>/pieces/<piece-slug>`. The slug is the persisted
+`public_slug`; callers must not reconstruct it from the title or public ID.
+The existing `/art-pieces/p/<public_id>` and embed routes remain supported as
+compatibility URLs while the canonical immersive and owner-editor surfaces are
+completed by their respective route contracts. A canonical resolver response
+includes the generated piece payload so the frontend can render the regular
+piece without replacing the browser URL with a legacy identifier route.
+
 ### Public gallery search (#581)
 
 `GET /api/public/gallery/search/?q=<term>&scope=accounts|content` searches

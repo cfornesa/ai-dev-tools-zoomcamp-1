@@ -1,4 +1,5 @@
 import { apiFetch } from './client';
+import type { ArtPiece } from './artPieces';
 import type { PresentationOptions } from './adminSettings';
 
 export type PublicProfile = {
@@ -37,9 +38,11 @@ export type PublicProfilePage = {
   profile: PublicProfile;
   pieces: Array<{
     id: string;
+    slug?: string;
     title: string;
     type: string;
     engine?: string;
+    regular_url?: string;
     thumbnail_url: string;
   }>;
 };
@@ -52,6 +55,7 @@ export type CanonicalPublicPiece = {
   canonical_url: string;
   viewer_url: string;
   type: '2d' | '3d' | 'generated';
+  piece?: ArtPiece;
 };
 
 export async function fetchCanonicalPublicPiece(

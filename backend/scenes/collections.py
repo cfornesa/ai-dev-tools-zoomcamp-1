@@ -61,11 +61,17 @@ def _item_record(owner, kind: str, item_id: uuid.UUID, *, public: bool):
     raise CollectionValidationError("kind must be one of: project, project3d, art_piece.")
 
 
-def _viewer_url(kind: str, item_id: uuid.UUID) -> str:
+def _viewer_url(kind: str, item_id: uuid.UUID, record=None) -> str:
     if kind == CollectionItem.Kind.PROJECT:
         return f"/p/{item_id}"
     if kind == CollectionItem.Kind.PROJECT3D:
         return f"/p3d/{item_id}"
+    if isinstance(record, ArtPiece):
+        profile = (
+            PublicProfile.objects.filter(user=record.owner).values_list("handle", flat=True).first()
+        )
+        if profile and record.public_slug:
+            return f"/users/@{profile}/pieces/{record.public_slug}"
     return f"/art-pieces/p/{item_id}"
 
 
@@ -86,7 +92,7 @@ def _item_payload(item: CollectionItem, *, public: bool) -> dict | None:
         "id": str(item.item_id),
         "position": item.position,
         "title": record.title,
-        "viewer_url": _viewer_url(item.kind, item.item_id),
+        "viewer_url": _viewer_url(item.kind, item.item_id, record),
         "thumbnail_url": _thumbnail_url(item.kind, item.item_id),
         "label": _KIND_TO_LABEL[item.kind],
     }

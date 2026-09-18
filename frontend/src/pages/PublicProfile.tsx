@@ -59,11 +59,12 @@ export default function PublicProfile() {
             className="project-card"
             key={`${piece.type}-${piece.id}`}
             to={
-              piece.type === '2d'
+              piece.regular_url ??
+              (piece.type === '2d'
                 ? `/p/${piece.id}`
                 : piece.type === '3d'
                   ? `/p3d/${piece.id}`
-                  : `/art-pieces/p/${piece.id}`
+                  : `/art-pieces/p/${piece.id}`)
             }
           >
             <img src={piece.thumbnail_url} alt="" />

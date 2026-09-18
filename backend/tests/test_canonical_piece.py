@@ -33,7 +33,27 @@ def test_canonical_piece_resolves_public_piece_and_suffixes_collisions(client):
     assert response.status_code == 200
     assert response.json()["canonical_url"].endswith("/sunset-study")
     assert response.json()["type"] == "generated"
+    assert response.json()["piece"]["public_slug"] == "sunset-study"
     assert second.public_slug == "sunset-study-2"
+
+
+@pytest.mark.django_db
+def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client):
+    user = get_user_model().objects.create_user(username="profile-artist")
+    PublicProfile.objects.create(user=user, handle="profile-artist", is_public=True)
+    piece = _published_piece(user, "Profile Study")
+
+    profile = client.get("/api/users/@profile-artist/")
+    assert profile.status_code == 200
+    card = next(item for item in profile.json()["pieces"] if item["id"] == str(piece.public_id))
+    assert card["regular_url"] == "/users/@profile-artist/pieces/profile-study"
+
+    gallery = client.get("/api/public/gallery/")
+    assert gallery.status_code == 200
+    gallery_card = next(
+        item for item in gallery.json()["results"] if item["id"] == str(piece.public_id)
+    )
+    assert gallery_card["viewer_url"] == "/users/@profile-artist/pieces/profile-study"
 
 
 @pytest.mark.django_db

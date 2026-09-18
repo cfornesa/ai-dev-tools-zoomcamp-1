@@ -19,7 +19,6 @@ describe('CanonicalPublicPiece (#578)', () => {
       canonical_url: '/users/@artist/pieces/sunset-study',
       viewer_url: '/art-pieces/p/abc123',
       type: 'generated',
-      piece: {},
     } as never);
 
     render(

@@ -10,6 +10,7 @@ from scenes.models import (
     EditSessionDraft,
     Project,
     Project3D,
+    PublicProfile,
     Scene,
     SceneVersion,
     SceneVersion3D,
@@ -502,6 +503,14 @@ class PublicGalleryItemSerializer(serializers.Serializer):
         kind, record = self._entry(obj)
         if kind == "collection" and isinstance(record, Collection):
             return f"/users/@{record.owner.public_profile.handle}/{record.slug}"
+        if kind == "generated" and isinstance(record, ArtPiece):
+            handle = (
+                PublicProfile.objects.filter(user_id=record.owner_id)
+                .values_list("handle", flat=True)
+                .first()
+            )
+            if handle and record.public_slug:
+                return f"/users/@{handle}/pieces/{record.public_slug}"
         return _GALLERY_VIEWER_URLS[kind].format(record.public_id)
 
     def get_engine(self, obj) -> str | None:

@@ -3946,6 +3946,43 @@ select.ai-proposal-field-full-width {
   position: relative;
 }
 
+/* #606: immersive art pieces own the viewport rather than rendering as a
+   page-contained 640px preview. Header and stage controls remain overlays. */
+.immersive-art-piece-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  min-height: 100dvh;
+  background: #11131a;
+  color: #f4f6fb;
+}
+
+.immersive-art-piece-viewer header {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  padding: 18px 24px;
+  background: linear-gradient(#11131add, transparent);
+  pointer-events: none;
+}
+
+.immersive-art-piece-viewer header > * {
+  pointer-events: auto;
+}
+
+.immersive-art-piece-viewer > .immersive-art-piece-stage {
+  position: absolute;
+  inset: 0;
+  min-height: 100dvh;
+}
+
+.immersive-art-piece-stage > iframe {
+  height: 100% !important;
+}
+
 .public-collection-context {
   margin: 1.5rem 0;
   padding: 1rem;

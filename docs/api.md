@@ -145,6 +145,16 @@ Public profile piece entries additionally expose `slug` and `regular_url` for
 every published piece family (authored 2D/3D and generated), so profile
 consumers never need to reconstruct a route from an ID.
 
+### Canonical immersive art-piece route (#606)
+
+Published generated art pieces may be opened at
+`/users/@<handle>/immersive/<piece-slug>`. This route resolves the same
+published version and capability data as regular view but owns the viewport
+with overlay controls; it does not render a page-contained fixed-height
+preview. Unsupported spatial navigation is disclosed by the renderer rather
+than implied. Existing `/art-pieces/immersive/<public_id>` and
+`/embed/art-pieces/immersive/<public_id>` routes remain compatible.
+
 ### Public gallery search (#581)
 
 `GET /api/public/gallery/search/?q=<term>&scope=accounts|content` searches

@@ -202,6 +202,17 @@ editor, and card contracts.
 - **GitHub evidence:** [#605 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/605#issuecomment-5726988478)
 - **Next action:** continue with #606 full-screen immersive route contract
 
+## Transaction ledger — #606
+
+- **Phase:** IMPLEMENTED; pending full checks and QA reconciliation
+- **PM/grooming:** complete; canonical generated-piece immersive route and viewport ownership scoped separately from offline/collection work
+- **Implementation owner:** Codex/GPT-5, substituted for Ollama Cloud stage 2b complex
+- **Implementation scope:** `/users/@handle/immersive/{slug}` wrapper, same-version immersive viewer handoff, viewport-fixed stage/overlay layout, full-height iframe, canonical regular-view back link, legacy UUID routes retained
+- **Focused checks:** frontend format, lint, typecheck passed; available route regression 2 passed
+- **Browser check:** pending local stack availability; live Chrome bounded-stage evidence remains the original defect record
+- **Outstanding criteria:** owner-only edit affordance, six-engine immersive behavior, legacy redirect verification, and 1280x900/375x812 screenshots remain
+- **Next action:** full frontend verification, then QA self-review and reconciliation
+
 ## Transaction ledger — #604
 
 - **Phase:** QA-PASSED FOR INCREMENT; issue remains open pending browser evidence and immersive secondary-action criteria

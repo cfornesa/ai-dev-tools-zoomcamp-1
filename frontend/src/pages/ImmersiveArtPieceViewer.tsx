@@ -66,9 +66,18 @@ function cmsEmbedSnippetFor(publicId: string): string {
   );
 }
 
-function ImmersiveArtPieceViewer() {
-  const { id } = useParams<{ id: string }>();
-  const [piece, setPiece] = useState<ArtPiece | null>(null);
+function ImmersiveArtPieceViewer({
+  initialPiece,
+  canonicalHref,
+  regularHref,
+}: {
+  initialPiece?: ArtPiece;
+  canonicalHref?: string;
+  regularHref?: string;
+} = {}) {
+  const { id: routeId } = useParams<{ id: string }>();
+  const id = initialPiece?.public_id ?? routeId;
+  const [piece, setPiece] = useState<ArtPiece | null>(initialPiece ?? null);
   const [unavailable, setUnavailable] = useState(false);
   const [navigationPose, setNavigationPose] = useState<{ x: number; y: number; z: number } | null>(
     null,
@@ -83,11 +92,11 @@ function ImmersiveArtPieceViewer() {
   const dragRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || initialPiece) return;
     getPublicArtPiece(id)
       .then(setPiece)
       .catch(() => setUnavailable(true));
-  }, [id]);
+  }, [id, initialPiece]);
 
   async function handleCopyEmbedSnippet() {
     if (!id || embedVariant === 'none') return;
@@ -209,7 +218,7 @@ function ImmersiveArtPieceViewer() {
     );
 
   const isSpatial = SPATIAL_LIBRARIES.has(piece.engine);
-  const immersiveHref = `/art-pieces/immersive/${piece.public_id}`;
+  const immersiveHref = canonicalHref ?? `/art-pieces/immersive/${piece.public_id}`;
   const isEmbedRoute = window.location.pathname.startsWith('/embed/art-pieces/immersive/');
 
   return (
@@ -323,7 +332,7 @@ function ImmersiveArtPieceViewer() {
           style={{
             display: 'block',
             width: '100%',
-            height: 640,
+            height: '100%',
             border: 'none',
             pointerEvents: isSpatial ? 'none' : 'auto',
           }}
@@ -344,7 +353,9 @@ function ImmersiveArtPieceViewer() {
           {navigationPose.x.toFixed(2)},{navigationPose.y.toFixed(2)},{navigationPose.z.toFixed(2)}
         </p>
       )}
-      {!isEmbedRoute && <Link to={`/art-pieces/p/${piece.public_id}`}>Back to regular viewer</Link>}
+      {!isEmbedRoute && (
+        <Link to={regularHref ?? `/art-pieces/p/${piece.public_id}`}>Back to regular viewer</Link>
+      )}
     </section>
   );
 }

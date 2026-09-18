@@ -349,8 +349,7 @@ function ArtPieceStudio() {
               <legend>Capabilities</legend>
               {CAPABILITY_OPTIONS.map(({ key, label, spatialOnly }) => {
                 const unsupported =
-                  (key === 'download' &&
-                    !ART_PIECE_ENGINE_CAPABILITIES[resultLibrary].download) ||
+                  (key === 'download' && !ART_PIECE_ENGINE_CAPABILITIES[resultLibrary].download) ||
                   (spatialOnly && !SPATIAL_LIBRARIES.has(resultLibrary));
                 return (
                   <label key={key} data-testid={`art-piece-capability-${key}`}>
@@ -375,9 +374,7 @@ function ArtPieceStudio() {
               <button
                 type="button"
                 onClick={handleDownload}
-                disabled={
-                  downloading || !ART_PIECE_ENGINE_CAPABILITIES[resultLibrary].download
-                }
+                disabled={downloading || !ART_PIECE_ENGINE_CAPABILITIES[resultLibrary].download}
                 data-testid="art-piece-download"
               >
                 {downloading

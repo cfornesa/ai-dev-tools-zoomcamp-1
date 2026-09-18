@@ -84,3 +84,19 @@ boundary, finite acceptance criteria, exact focused checks, a routing hint, and
 an explicit out-of-scope boundary. The import issue is intentionally last so
 that rendering verification uses the final schema, slug, capability, runtime,
 editor, and card contracts.
+
+## Transaction ledger — #599
+
+- **Phase:** CLOSED
+- **Issue owner / current transaction:** #599, cross-repository art-piece contract inventory
+- **PM/grooming:** complete; criterion-ready documentation-only contract
+- **Implementation owner:** Codex/GPT-5, substituted for rostered Ollama Cloud stage 2b complex
+- **Implementation commit:** `1ad99c6`
+- **Changed files:** `docs/piece-surface-parity.md`, `docs/tasks.md`, this manifest
+- **Focused checks:** reference `rg` scan returned 5,322 matches; `git diff --check` passed
+- **Full checks:** not applicable; no product source, tests, API, schema, or runtime changed
+- **Second opinion:** not run
+- **QA owner:** Codex/GPT-5, substituted for rostered Claude Sonnet 5 Medium; `QA: PASS`
+- **GitHub QA evidence:** [issue comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/599#issuecomment-5726528110)
+- **Final status:** GitHub issue closed as completed; matrix implemented locally, with downstream runtime/deployment work explicitly owned by #600–#612
+- **Next issue:** #611, non-destructive schema parity and embeddability migration plan

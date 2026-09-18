@@ -439,6 +439,15 @@ follow-ups, not reopenings. #612 explicitly forbids production/shared-database
 writes without owner approval, backup evidence, reversible mapping, and
 cleanup verification.
 
+### #599 closure reconciliation — 2026-09-18
+
+The cross-repository parity inventory is complete in
+[`docs/piece-surface-parity.md`](piece-surface-parity.md), commit `1ad99c6`.
+The reference scan returned 5,322 matches and `git diff --check` passed. The
+issue was QA-passed and closed with the criterion matrix at
+[GitHub comment #5726528110](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/599#issuecomment-5726528110).
+This closure is documentation-only; the next transaction is #611.
+
 ## 2026-09-15 — final task distillation, readiness, and completion reconciliation
 
 The authenticated GitHub connector was re-enumerated after the #544 migration

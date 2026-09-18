@@ -671,6 +671,7 @@ def test_unified_response_excludes_private_and_editing_fields(anon_client, fixed
             "thumbnail_url",
             "viewer_url",
             "engine",
+            "engine_label",
         }
 
     # No scene/prompt/draft/visibility data anywhere in the body, and the
@@ -736,6 +737,9 @@ def test_unified_engine_filter_and_catalog_are_server_derived(anon_client, owner
     }
     assert catalog["canvas2d"]["count"] == 1
     assert catalog["canvas2d"]["available"] is True
+    generated = next(item for item in response.json()["results"] if item["kind"] == "generated")
+    assert generated["engine"] == "svg"
+    assert generated["engine_label"] == "SVG"
     assert canvas.engine == ArtPiece.Engine.CANVAS2D
 
 

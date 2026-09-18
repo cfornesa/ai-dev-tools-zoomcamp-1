@@ -145,6 +145,19 @@ def test_output_missing_canvas_or_script_is_rejected_with_422(owner_client, monk
 
 
 @pytest.mark.django_db
+def test_registered_but_unavailable_engine_returns_explicit_422(owner_client, monkeypatch):
+    _use_provider(monkeypatch, ArtPieceProvider(client=_FakeClient(lambda **kwargs: None)))
+
+    response = owner_client.post(URL, {"library": "p5js", "prompt": "a field"}, format="json")
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "error": "library_unavailable",
+        "detail": "This engine is registered but its runtime is not available yet.",
+    }
+
+
+@pytest.mark.django_db
 def test_empty_output_is_rejected_with_422(owner_client, monkeypatch):
     _use_provider(monkeypatch, _mistral_provider_returning("   "))
 

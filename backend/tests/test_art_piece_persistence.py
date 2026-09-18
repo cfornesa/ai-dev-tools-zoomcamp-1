@@ -62,6 +62,9 @@ def test_create_defaults_to_draft_and_persists_fallback_thumbnail(client):
     # capture is uploaded through ArtPieceThumbnailUploadView.
     response = create_piece(client)
     assert response.data["status"] == "draft"
+    assert response.data["engine"] == "canvas2d"
+    assert response.data["engine_label"] == "Canvas 2D"
+    assert response.data["engine_capabilities"]["regular"] is True
     assert response.data["current_version"]["sequence"] == 1
     piece = ArtPiece.objects.get(public_id=response.data["public_id"])
     assert piece.current_version.thumbnail.width == 320

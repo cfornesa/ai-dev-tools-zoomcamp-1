@@ -435,6 +435,14 @@ issues were created without product-code or database changes:
 | [#613](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613) | Apply approved pieces/collections schema bridge and embeddability migration | stage 2b complex | after #600/#601/#602/#607/#611 |
 | [#612](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612) | Import sanitized reference pieces into `@cfornesa` and verify all surfaces | stage 2b complex | last; after #613 |
 
+| [#614](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/614) | Canonical six-engine art-piece capability contract | stage 2b complex | after #599/#611; prerequisite for #607–#610 and #612 |
+
+Issue #614 is the reconciled prerequisite for the requested p5.js, C2.js, and
+C2.js Interactive support. It preserves existing engine IDs, adds stable
+`p5js`, `c2js`, and `c2js-interactive` IDs, and keeps display labels separate
+from persistence and routes. Runtime, editor, download, schema-bridge, and
+import work remain in their existing closure-sized issues.
+
 Closed related issues remain immutable historical transactions; these are
 follow-ups, not reopenings. #612 explicitly forbids production/shared-database
 writes without owner approval, backup evidence, reversible mapping, and

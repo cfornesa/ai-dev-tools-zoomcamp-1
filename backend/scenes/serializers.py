@@ -3,6 +3,7 @@
 from django.urls import reverse
 from rest_framework import serializers
 
+from scenes.art_piece_contract import art_piece_engine_capability
 from scenes.content_metadata import sanitize_content_seo
 from scenes.models import (
     ArtPiece,
@@ -453,6 +454,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
     engine = serializers.SerializerMethodField()
+    engine_label = serializers.SerializerMethodField()
 
     class Meta:
         fields = [
@@ -464,6 +466,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
             "thumbnail_url",
             "viewer_url",
             "engine",
+            "engine_label",
         ]
 
     @staticmethod
@@ -524,10 +527,17 @@ class PublicGalleryItemSerializer(serializers.Serializer):
             return None
         return record.engine
 
+    def get_engine_label(self, obj) -> str | None:
+        kind, record = self._entry(obj)
+        if kind != "generated" or not isinstance(record, ArtPiece):
+            return None
+        return art_piece_engine_capability(record.engine)["label"]
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if data["engine"] is None:
             del data["engine"]
+            del data["engine_label"]
         return data
 
 

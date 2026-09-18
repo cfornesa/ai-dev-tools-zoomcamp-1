@@ -155,6 +155,22 @@ preview. Unsupported spatial navigation is disclosed by the renderer rather
 than implied. Existing `/art-pieces/immersive/<public_id>` and
 `/embed/art-pieces/immersive/<public_id>` routes remain compatible.
 
+### Art-piece engine capability contract (#614)
+
+Generated art-piece API payloads expose the persisted `engine` identifier and
+the separate `engine_label`; clients must use the identifier for filtering,
+runtime selection, and routes. The stable identifiers are `canvas2d`, `svg`,
+`p5js`, `c2js`, `c2js-interactive`, `threejs`, and `aframe`. Display labels
+are `Canvas 2D`, `SVG`, `p5.js`, `C2.js`, `C2.js Interactive`, `Three.js`, and
+`A-Frame`. The capability registry also exposes explicit booleans for regular,
+immersive, embed, download, and editor support. A false capability means that
+surface is not implemented and must not be inferred from the engine label.
+
+The three newly registered engines are accepted as stable identifiers for
+forward-compatible persistence, but remain unavailable to runtime/editor/
+download consumers until their dependent contracts are implemented. Existing
+four-engine rows and identifier-based routes remain compatible.
+
 ### Public gallery search (#581)
 
 `GET /api/public/gallery/search/?q=<term>&scope=accounts|content` searches
@@ -330,7 +346,7 @@ visibility/status internals) ever appear in any item.
 | Parameter   | Rule                                                                                                                                        |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `type`      | `all` (default when omitted; pieces and collections) \| `pieces` (2D + 3D + generated) \| `collections` (collections only) \| legacy `authored`/`generated` aliases. Any other value → **HTTP 400**. |
-| `engine`    | Optional server-supported generated engine (`canvas2d`, `svg`, `threejs`, or `aframe`). It composes with `type`; authored-only results are empty. Any other value → **HTTP 400**. |
+| `engine`    | Optional server-supported generated engine (`canvas2d`, `svg`, `p5js`, `c2js`, `c2js-interactive`, `threejs`, or `aframe`). It composes with `type`; authored-only results are empty. Any other value → **HTTP 400**. |
 | `cursor`    | Opaque keyset token from a previous response's `next_cursor`. Malformed, or bound to a different `type` (see below) → **HTTP 400**.         |
 | `page_size` | Positive integer, default `24` (`DEFAULT_PAGE_SIZE`), clamped to `60` (`MAX_PAGE_SIZE`); a non-integer value → **HTTP 400**. Same shape as the legacy `/api/public/projects/` endpoint. |
 
@@ -340,12 +356,13 @@ Error bodies are finite JSON. An invalid filter:
 { "errors": { "type": ["Must be one of: all, pieces, collections, generated."] } }
 ```
 
-The response also includes `engine_catalog`, an array of server-derived
-`{value, label, count, available}` entries for the currently implemented
-generated engines. `available` is false when the selected type has no
-published results for that engine; dormant or unsupported engine values are
-never listed. The frontend uses this catalog for its engine control and keeps
-the selected engine in the shareable URL.
+The response also includes `engine_catalog`, an array of registry-derived
+`{value, label, count, available}` entries for every stable engine. `available`
+is false when the selected type has no published results for that engine;
+registered-but-not-yet-implemented engines remain visible with explicit false
+capabilities and must not be treated as runnable. The frontend uses this
+catalog for its engine control and keeps the selected engine in the shareable
+URL.
 
 ## Signup-time cloud-sync consent (#524)
 
@@ -585,7 +602,9 @@ Every item carries a **`kind`** discriminator with value `"2d"`, `"3d"`, or
 | `viewer_url`   | Path of the piece's public viewer route: `/p/:id` (`2d`), `/p3d/:id` (`3d`), `/art-pieces/p/:id` (`generated`).    |
 
 Generated (`"kind": "generated"`) items additionally expose **`engine`** —
-the piece's engine label (`canvas2d`, `svg`, `threejs`, or `aframe`).
+the piece's stable engine identifier — and **`engine_label`**, its display
+label. The identifier is one of `canvas2d`, `svg`, `p5js`, `c2js`,
+`c2js-interactive`, `threejs`, or `aframe`.
 
 Example items:
 

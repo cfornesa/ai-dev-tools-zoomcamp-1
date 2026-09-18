@@ -283,3 +283,16 @@ editor, and card contracts.
 - **Browser check:** pending local stack availability
 - **Outstanding criteria:** 1280x900/375x812 browser evidence and immersive secondary action remain with #606/#608
 - **Next action:** continue with #605 studio cards/editor destinations
+
+## Transaction ledger — #614
+
+- **Phase:** GROOMED; criterion-ready handoff to stage 2b
+- **PM/distillation:** duplicate search found no existing six-engine capability-contract issue; issue definition is recorded in `.local/tasks/issue-614-six-engine-contract.md`
+- **Issue-scoping owner:** Codex/GPT-5, rostered Codex GPT-5.6 Luna at Medium; current run is the authorized Codex implementation of stage 1
+- **Implementation routing:** stage 2b complex, because the contract crosses persisted engine choices, API/provider validation, frontend types, and migration safety
+- **Scope:** additive seven-ID registry (`canvas2d`, `svg`, `p5js`, `c2js`, `c2js-interactive`, `threejs`, `aframe`) with separate display labels and explicit capabilities
+- **Dependencies:** #599 and #611; unlocks #607–#610 and the safe import prerequisite for #612
+- **Evidence boundary:** local contract/migration tests only; no live rendering, Replit publication, or shared database write
+- **Next action:** create the matching GitHub issue, groom it, then implement one issue transaction at a time
+
+GitHub issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/614

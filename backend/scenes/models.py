@@ -1882,8 +1882,11 @@ class ArtPieceManager(models.Manager):
 
 class ArtPiece(models.Model):
     class Engine(models.TextChoices):
-        CANVAS2D = "canvas2d", "Canvas2D"
+        CANVAS2D = "canvas2d", "Canvas 2D"
         SVG = "svg", "SVG"
+        P5JS = "p5js", "p5.js"
+        C2JS = "c2js", "C2.js"
+        C2JS_INTERACTIVE = "c2js-interactive", "C2.js Interactive"
         THREEJS = "threejs", "Three.js"
         AFRAME = "aframe", "A-Frame"
 

@@ -31,6 +31,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from scenes.art_piece_contract import art_piece_engine_capability
 from scenes.content_metadata import sanitize_content_seo
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
 from scenes.permissions import Action, can
@@ -166,6 +167,8 @@ def _piece_data(piece: ArtPiece, *, public: bool):
         "description": piece.description,
         "seo_config": piece.seo_config,
         "engine": piece.engine,
+        "engine_label": art_piece_engine_capability(piece.engine)["label"],
+        "engine_capabilities": art_piece_engine_capability(piece.engine),
         "status": piece.status,
         "current_version": _version_data(piece.current_version, public=public)
         if piece.current_version

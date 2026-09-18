@@ -43,11 +43,15 @@ from ai_provider.errors import (
     AIProviderTimeoutError,
 )
 from ai_provider.interface import AIUsageMetadata
+from scenes.art_piece_contract import (
+    GENERATABLE_ART_PIECE_ENGINES,
+    SUPPORTED_ART_PIECE_ENGINES,
+)
 
 # Every library this endpoint supports. Kept as a real constant (not
 # inlined) so `ArtPieceGenerateRequestSerializer` and any future library
 # addition both read from the one place.
-SUPPORTED_LIBRARIES = ("canvas2d", "svg", "threejs", "aframe")
+SUPPORTED_LIBRARIES = SUPPORTED_ART_PIECE_ENGINES
 
 # Issue #199 (Three.js/A-Frame extension): unlike Canvas2D/SVG, these two
 # libraries need their own runtime loaded via a pinned CDN `<script>` the
@@ -85,6 +89,7 @@ _ESTIMATED_COMPLETION_COST_PER_1K = 0.006
 
 RESPONSE_TOO_LARGE_PREFIX = "response_too_large:"
 EMPTY_OR_MALFORMED_PREFIX = "empty_or_malformed:"
+ENGINE_UNAVAILABLE_PREFIX = "engine_unavailable:"
 
 _CANVAS2D_SYSTEM_PROMPT = """You generate the inner markup for a single generative-art piece \
 using ONLY the browser's native Canvas2D API (CanvasRenderingContext2D). Follow these rules \
@@ -250,6 +255,12 @@ class ArtPieceProvider:
             # the serializer), not a documented provider condition -- raise
             # rather than fold into `ArtPieceResult.error`.
             raise ValueError(f"Unsupported library: {library!r}")
+        if library not in GENERATABLE_ART_PIECE_ENGINES:
+            return ArtPieceResult(
+                code=None,
+                usage=zero_usage,
+                error=f"{ENGINE_UNAVAILABLE_PREFIX}{library}",
+            )
 
         system_prompt = {
             "canvas2d": _CANVAS2D_SYSTEM_PROMPT,

@@ -35,11 +35,13 @@ from rest_framework.views import APIView
 
 from ai_provider.art_piece_provider import (
     EMPTY_OR_MALFORMED_PREFIX,
+    ENGINE_UNAVAILABLE_PREFIX,
     RESPONSE_TOO_LARGE_PREFIX,
     SUPPORTED_LIBRARIES,
     ArtPieceProvider,
 )
 from ai_provider.config import use_fake_ai_provider
+from scenes.art_piece_contract import GENERATABLE_ART_PIECE_ENGINES
 from scenes.entitlements import get_effective_cap, is_unlimited
 from scenes.models import MistralCredentialDecryptionError, ProviderCredential
 
@@ -204,6 +206,14 @@ def get_art_piece_provider() -> ArtPieceProvider:
 
         class _FakeArtPieceProvider:
             def generate(self, prompt: str, library: str) -> ArtPieceResult:
+                if library not in GENERATABLE_ART_PIECE_ENGINES:
+                    return ArtPieceResult(
+                        usage=AIUsageMetadata(
+                            prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0
+                        ),
+                        code=None,
+                        error=f"{ENGINE_UNAVAILABLE_PREFIX}{library}",
+                    )
                 if _THROWING_SNIPPET_MARKER in prompt:
                     code = _THROWING_CODE
                 else:
@@ -332,6 +342,14 @@ class ArtPieceGenerateView(APIView):
 
         if result.error is not None:
             error_text = result.error
+            if error_text.startswith(ENGINE_UNAVAILABLE_PREFIX):
+                return Response(
+                    {
+                        "error": "library_unavailable",
+                        "detail": "This engine is registered but its runtime is not available yet.",
+                    },
+                    status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                )
             if error_text.startswith(RESPONSE_TOO_LARGE_PREFIX):
                 return Response(
                     {

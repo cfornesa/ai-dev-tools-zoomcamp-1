@@ -20,7 +20,93 @@ import type { SeoConfig } from './adminPages';
  * change at every call site that switches on it. Also imported by
  * `../generative/artPieceSandbox.ts`, which needs to know which
  * libraries require a pinned CDN script/relaxed CSP. */
-export type ArtPieceLibrary = 'canvas2d' | 'svg' | 'threejs' | 'aframe';
+export type ArtPieceLibrary =
+  'canvas2d' | 'svg' | 'p5js' | 'c2js' | 'c2js-interactive' | 'threejs' | 'aframe';
+
+export type ArtPieceEngineCapability = {
+  label: string;
+  family: '2d' | '3d';
+  regular: boolean;
+  immersive: boolean;
+  embed: boolean;
+  download: boolean;
+  editor_target: '2d-ai' | '3d-ai';
+  generation: boolean;
+};
+
+/** Mirrors `scenes.art_piece_contract` without deriving behavior from labels. */
+export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngineCapability> = {
+  canvas2d: {
+    label: 'Canvas 2D',
+    family: '2d',
+    regular: true,
+    immersive: true,
+    embed: true,
+    download: true,
+    editor_target: '2d-ai',
+    generation: true,
+  },
+  svg: {
+    label: 'SVG',
+    family: '2d',
+    regular: true,
+    immersive: true,
+    embed: true,
+    download: true,
+    editor_target: '2d-ai',
+    generation: true,
+  },
+  p5js: {
+    label: 'p5.js',
+    family: '2d',
+    regular: false,
+    immersive: false,
+    embed: false,
+    download: false,
+    editor_target: '2d-ai',
+    generation: false,
+  },
+  c2js: {
+    label: 'C2.js',
+    family: '2d',
+    regular: false,
+    immersive: false,
+    embed: false,
+    download: false,
+    editor_target: '2d-ai',
+    generation: false,
+  },
+  'c2js-interactive': {
+    label: 'C2.js Interactive',
+    family: '2d',
+    regular: false,
+    immersive: false,
+    embed: false,
+    download: false,
+    editor_target: '2d-ai',
+    generation: false,
+  },
+  threejs: {
+    label: 'Three.js',
+    family: '3d',
+    regular: true,
+    immersive: true,
+    embed: true,
+    download: true,
+    editor_target: '3d-ai',
+    generation: true,
+  },
+  aframe: {
+    label: 'A-Frame',
+    family: '3d',
+    regular: true,
+    immersive: true,
+    embed: true,
+    download: true,
+    editor_target: '3d-ai',
+    generation: true,
+  },
+};
 
 export type ArtPieceUsage = {
   prompt_tokens: number;
@@ -70,6 +156,8 @@ export type ArtPiece = {
   description: string;
   prompt?: string;
   engine: ArtPieceLibrary;
+  engine_label?: string;
+  engine_capabilities?: ArtPieceEngineCapability;
   status: 'draft' | 'published' | 'archived';
   current_version: ArtPieceVersion | null;
   created_at: string;

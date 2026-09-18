@@ -216,6 +216,15 @@ editor, and card contracts.
 - **GitHub evidence:** [#606 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/606#issuecomment-5727039832)
 - **Next action:** continue with #607 regular/embed runtime parity
 
+## Transaction ledger — #608
+
+- **Phase:** AUDITED; implementation deferred pending six-engine prerequisite contract work
+- **PM/grooming:** blocker confirmed; current immersive controls/runtime cover only the existing four-engine union
+- **Evidence:** p5.js/C2.js/C2.js Interactive adapters, authored asset-error handling, and fixture evidence require #607/#610/#613; #606 supplies only the viewport shell
+- **Owner:** no implementation commit; current Codex audit substitution for stage 2b review
+- **GitHub evidence:** [#608 boundary comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5727051635)
+- **Next action:** continue with #609 offline downloads
+
 ## Transaction ledger — #607
 
 - **Phase:** AUDITED; implementation deferred pending prerequisite schema/provider/editor contract work

@@ -413,3 +413,20 @@ routes require separate entry-point fixtures and rendered evidence:
 - The existing generic `ArtPieceEditor` already revises Three.js/A-Frame source and uses the shared sandbox, but it does not expose a distinct 3D AI-editor mode/fixture. That is an actionable scope gap, not evidence that #619 is complete.
 - [#620](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/620) owns the explicit 3D art-piece editor mode and canonical owner-editor evidence; #619 remains the parent 3D reconciliation container.
 - **Next issue:** #620, after PM grooming confirms the route/mode boundary.
+
+### Transaction ledger — #620
+
+- **Phase:** QA FAILED / verification-boundary; explicit engine-family mode is committed, route-level Three.js/A-Frame evidence is pending
+- **Implementation commit:** `18c9e79`
+- **Checks:** frontend full suite `2,724 passed`; typecheck passed; lint warning-only; backend full gate from the same batch `1,434 passed, 39 skipped`
+- **Browser boundary:** Docker unavailable; localhost health unavailable; seven owner-editor Chromium scenarios were listed but not executed
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
+- **GitHub evidence:** [engineering](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/620#issuecomment-5728047323), [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/620#issuecomment-5728047497)
+- **Next action:** keep #620 open; execute Three.js/A-Frame owner-editor scenarios at both fixed viewports on disposable PostgreSQL/Django/Vite or CI, then return to QA
+
+### Fresh distillation after #620 QA boundary — 2026-09-18
+
+- #620 remains open with a host verification boundary; #619 remains the parent reconciliation container.
+- #606 is the next independent route slice after the already-scoped slug work: canonical full-screen immersive surface, with #608 owning engine/input parity afterward.
+- #607/#616/#618 retain their own browser gates; #615 remains blocked by #607.
+- **Next issue:** #606 after PM/grooming re-reads its full-screen route fixture and redirect compatibility evidence.

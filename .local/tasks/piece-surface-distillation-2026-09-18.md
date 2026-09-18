@@ -191,13 +191,16 @@ editor, and card contracts.
 
 ## Transaction ledger — #605
 
-- **Phase:** IMPLEMENTED; pending full checks and QA reconciliation
+- **Phase:** QA-PASSED; browser screenshots pending local stack
 - **PM/grooming:** complete; primary studio/manage destination is owner editor, published public-view action remains separate
 - **Implementation owner:** Codex/GPT-5, substituted for Opencode Go stage 2a mechanical
 - **Implementation scope:** management cards resolve the current profile handle, use `/users/@handle/edit/{public_slug}` as the primary action, and use the canonical regular public route for published pieces; UUID fallbacks remain for profile/API migration gaps
 - **Focused checks:** frontend format, typecheck, lint, and 40 targeted tests passed
 - **Browser check:** pending local stack availability
-- **Next action:** full `make check`, then QA self-review and GitHub reconciliation
+- **Full checks:** frontend 2,717 passed in full run; one unrelated CollectionManagement test failed once and passed 2/2 in isolated rerun; format, lint, and typecheck passed
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; independent second opinion unavailable
+- **GitHub evidence:** [#605 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/605#issuecomment-5726988478)
+- **Next action:** continue with #606 full-screen immersive route contract
 
 ## Transaction ledger — #604
 

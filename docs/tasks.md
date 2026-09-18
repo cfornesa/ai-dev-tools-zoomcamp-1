@@ -403,6 +403,42 @@ filters, no collection mode, and no collection context on individual piece
 viewers. Engine options must be server-derived from implemented/public
 contracts; unsupported future engines must not appear in the dropdown.
 
+## 2026-09-18 — piece routes, surface parity, and @cfornesa import distillation
+
+Owner-reported live evidence was reconciled against the checkout and the
+read-only `../augment-humankind` and `../augment-humankind-react-node`
+references. The profile currently exposes UUID-style piece links and empty
+thumbnail regions; the live immersive 3D route is a bounded page stage rather
+than a viewport-filling immersive surface. The local engine contract also does
+not yet include p5.js, C2.js, or C2.js Interactive.
+
+The complete manifest, duplicate report, dependency order, blocker triage, and
+verification boundaries are in
+`.local/tasks/piece-surface-distillation-2026-09-18.md`. New criterion-ready
+issues were created without product-code or database changes:
+
+| Issue | Scope | Routing | Dependency/order |
+|---|---|---|---|
+| [#599](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/599) | Cross-repository art-piece contract inventory | stage 2b complex | first |
+| [#611](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/611) | Non-destructive pieces/collections schema parity and embeddability plan | stage 2b complex | #599 |
+| [#600](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/600) | Canonical user-customizable piece slugs and compatibility redirects | stage 2b complex | #599, #611 |
+| [#602](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/602) | Shared cards and real thumbnails | stage 2b complex | #599, #600 |
+| [#601](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/601) | Owner-only `/edit/{name}` route | stage 2b complex | #600 |
+| [#603](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/603) | Public profile card consumer | stage 2a/2b conditional | #600, #602 |
+| [#604](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/604) | Public gallery card consumer | stage 2b complex | #564, #565, #600, #602 |
+| [#605](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/605) | Studio editor-link card consumer | stage 2a/2b conditional | #600–#602 |
+| [#607](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/607) | Regular/embed runtime parity for six engines | stage 2b complex | #599, #600, #611 |
+| [#606](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/606) | Full-screen canonical immersive route | stage 2b complex | #599, #600, #611 |
+| [#608](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608) | Immersive runtime parity for six engines | stage 2b complex | #606, #607 |
+| [#609](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609) | Offline regular/immersive downloads | stage 2b complex | #607, #608 |
+| [#610](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/610) | 2D/3D AI-editor engine integration | stage 2b complex | #599, #600, #611 |
+| [#612](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612) | Import sanitized reference pieces into `@cfornesa` and verify all surfaces | stage 2b complex | last; dependency-blocked |
+
+Closed related issues remain immutable historical transactions; these are
+follow-ups, not reopenings. #612 explicitly forbids production/shared-database
+writes without owner approval, backup evidence, reversible mapping, and
+cleanup verification.
+
 ## 2026-09-15 — final task distillation, readiness, and completion reconciliation
 
 The authenticated GitHub connector was re-enumerated after the #544 migration

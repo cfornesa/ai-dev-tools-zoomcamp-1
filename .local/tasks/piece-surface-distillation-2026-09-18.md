@@ -189,6 +189,16 @@ editor, and card contracts.
 - **Outstanding criteria:** 1280x900/375x812 browser evidence and owner-only edit affordance remain with #605/#601
 - **Next action:** continue with #604 public gallery canonical routing
 
+## Transaction ledger — #605
+
+- **Phase:** IMPLEMENTED; pending full checks and QA reconciliation
+- **PM/grooming:** complete; primary studio/manage destination is owner editor, published public-view action remains separate
+- **Implementation owner:** Codex/GPT-5, substituted for Opencode Go stage 2a mechanical
+- **Implementation scope:** management cards resolve the current profile handle, use `/users/@handle/edit/{public_slug}` as the primary action, and use the canonical regular public route for published pieces; UUID fallbacks remain for profile/API migration gaps
+- **Focused checks:** frontend format, typecheck, lint, and 40 targeted tests passed
+- **Browser check:** pending local stack availability
+- **Next action:** full `make check`, then QA self-review and GitHub reconciliation
+
 ## Transaction ledger — #604
 
 - **Phase:** QA-PASSED FOR INCREMENT; issue remains open pending browser evidence and immersive secondary-action criteria

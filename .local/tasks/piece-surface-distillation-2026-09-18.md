@@ -253,6 +253,16 @@ editor, and card contracts.
 - **GitHub evidence:** [#613 audit comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613#issuecomment-5727081694)
 - **Next action:** retain #613 open until disposable PostgreSQL upgrade/schema inspection is available; proceed to #612 import only after the schema gate
 
+## Transaction ledger — #612
+
+- **Phase:** DEPENDENCY-BLOCKED; no import performed
+- **PM/grooming:** complete; import requires idempotent mapping, reversible cleanup, schema verification, and all six engine/runtime contracts
+- **Evidence:** no repository import command currently exists; requested p5.js/C2.js/C2.js Interactive engines are not persisted/provider/sandbox-supported
+- **Database safety:** `@cfornesa`, development, production, Replit, and shared databases untouched
+- **Owner:** no implementation commit; current Codex dependency audit substitution for stage 2b complex
+- **GitHub evidence:** [#612 dependency note](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612#issuecomment-5727091282)
+- **Next action:** defer import until #613 and #607–#610 are genuinely complete
+
 ## Transaction ledger — #607
 
 - **Phase:** AUDITED; implementation deferred pending prerequisite schema/provider/editor contract work

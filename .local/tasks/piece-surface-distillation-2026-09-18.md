@@ -381,3 +381,11 @@ routes require separate entry-point fixtures and rendered evidence:
 - #616 is retained open with a host verification boundary; no product defect was established by API/full-suite evidence.
 - #601–#610 remain the existing follow-up consumers. #615 remains blocked by #607.
 - The next independent engineering candidate is #610 (AI-editor engine integration), but it should be re-groomed against the now-explicit seven-engine capability contract before implementation; no new issue is required because #610 already owns that scope.
+
+### Fresh distillation after #616 — 2026-09-18
+
+- The broad #610 editor item spans two independently observable editor modes, so it was split before engineering.
+- [#618](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/618) owns the 2D AI-editor route for p5.js, C2.js, C2.js Interactive, and SVG.
+- [#619](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/619) owns the 3D AI-editor route for Three.js and A-Frame.
+- #610 remains the parent reconciliation container; neither child begins until its own PM handoff is selected.
+- **Next issue:** #618, the 2D AI-editor slice, because it is independent of the unavailable regular-route browser verification boundary.

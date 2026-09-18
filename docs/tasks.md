@@ -434,6 +434,8 @@ issues were created without product-code or database changes:
 | [#608](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608) | Immersive runtime parity for six engines | stage 2b complex | #606, #607 |
 | [#609](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609) | Offline regular/immersive downloads | stage 2b complex | #607, #608 |
 | [#610](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/610) | 2D/3D AI-editor engine integration | stage 2b complex | #599, #600, #611 |
+| [#618](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/618) | 2D AI-editor p5.js/C2.js/SVG engine integration | stage 2b complex | #610; split from parent |
+| [#619](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/619) | 3D AI-editor Three.js/A-Frame engine integration | stage 2b complex | #610; split from parent |
 | [#613](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/613) | Apply approved pieces/collections schema bridge and embeddability migration | stage 2b complex | after #600/#601/#602/#607/#611 |
 | [#612](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612) | Import sanitized reference pieces into `@cfornesa` and verify all surfaces | stage 2b complex | last; after #613 |
 

@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 
 import {
   createArtPieceVersion,
+  ART_PIECE_ENGINE_CAPABILITIES,
   deleteArtPiece,
   generateArtPiece,
   getArtPiece,
@@ -324,10 +325,15 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
 
   const sandboxDoc = reviseCode ? buildArtPieceSandboxDocument(reviseCode, piece.engine) : null;
   const currentVersion = piece.current_version;
+  const engineCapability = ART_PIECE_ENGINE_CAPABILITIES[piece.engine];
+  const editorModeLabel = engineCapability.family === '3d' ? '3D AI editor' : '2D AI editor';
 
   return (
     <section aria-labelledby="art-piece-editor-heading">
       <h2 id="art-piece-editor-heading">Edit {piece.title}</h2>
+      <p data-testid="art-piece-editor-mode">
+        {editorModeLabel} · {engineCapability.label}
+      </p>
       <p>
         <Link to="/art-pieces/manage">Back to your art pieces</Link>
       </p>

@@ -122,3 +122,15 @@ editor, and card contracts.
 - **Second opinion:** not run
 - **QA:** not yet run; commit required first
 - **Dependency/follow-up:** #613 owns approved migration execution; #612 remains last
+
+## Transaction ledger — #611
+
+- **Phase:** CLOSED
+- **PM/grooming:** complete; irreversible migration execution shifted to #613
+- **Implementation owner:** Codex/GPT-5, substituted for Ollama Cloud stage 2b complex
+- **Implementation commit:** `fc5ec5a`
+- **Focused checks:** corrected backend suite 33 passed/3 skipped; `make check` 1,413 backend passed/39 skipped and 2,718 frontend passed; `git diff --check` passed
+- **QA owner:** Codex/GPT-5, substituted for Claude Sonnet 5 Medium; `QA: PASS`
+- **GitHub evidence:** [#611 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/611#issuecomment-5726620072)
+- **Final status:** GitHub issue closed as completed; schema plan implemented locally, migration execution shifted to #613
+- **Next issue:** #600, canonical slug routes and compatibility redirects

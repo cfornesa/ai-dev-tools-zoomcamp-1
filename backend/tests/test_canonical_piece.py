@@ -47,6 +47,26 @@ def test_canonical_piece_resolves_public_piece_and_suffixes_collisions(client):
 
 
 @pytest.mark.django_db
+def test_canonical_and_legacy_generated_routes_resolve_the_same_public_piece(client):
+    user = get_user_model().objects.create_user(username="legacy-artist")
+    PublicProfile.objects.create(user=user, handle="legacy-artist", is_public=True)
+    piece = _published_piece(user, "Legacy Study")
+
+    canonical = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "legacy-artist", "piece_slug": piece.public_slug},
+        )
+    )
+    legacy = client.get(f"/api/public/art-pieces/{piece.public_id}/")
+
+    assert canonical.status_code == 200
+    assert legacy.status_code == 200
+    assert canonical.json()["piece"]["public_id"] == legacy.json()["public_id"]
+    assert canonical.json()["piece"]["public_slug"] == piece.public_slug
+
+
+@pytest.mark.django_db
 def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client):
     user = get_user_model().objects.create_user(username="profile-artist")
     PublicProfile.objects.create(user=user, handle="profile-artist", is_public=True)

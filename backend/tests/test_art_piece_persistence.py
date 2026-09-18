@@ -72,6 +72,57 @@ def test_create_defaults_to_draft_and_persists_fallback_thumbnail(client):
     assert piece.current_version.thumbnail.is_fallback is True
 
 
+def test_custom_slug_is_normalized_and_can_be_updated_without_new_version(client):
+    response = client.post(
+        "/api/art-pieces/",
+        {
+            "prompt": "custom slug",
+            "engine": "svg",
+            "source": "<svg />",
+            "title": "Custom",
+            "description": "A custom slug",
+            "public_slug": "  My Custom Piece! ",
+        },
+        format="json",
+    )
+    assert response.status_code == 201
+    assert response.data["public_slug"] == "my-custom-piece"
+    public_id = response.data["public_id"]
+    version_id = response.data["current_version"]["id"]
+    updated = client.patch(
+        f"/api/art-pieces/{public_id}/",
+        {"public_slug": "renamed-piece"},
+        format="json",
+    )
+    assert updated.status_code == 200
+    assert updated.data["public_slug"] == "renamed-piece"
+    assert updated.data["current_version"]["id"] == version_id
+
+
+def test_custom_slug_collision_is_rejected(client):
+    first = create_piece(client)
+    second = client.post(
+        "/api/art-pieces/",
+        {
+            "prompt": "duplicate",
+            "engine": "svg",
+            "source": "<svg />",
+            "title": "Duplicate",
+            "description": "Another piece",
+            "public_slug": "green",
+        },
+        format="json",
+    )
+    assert second.status_code == 201
+    collision = client.patch(
+        f"/api/art-pieces/{first.data['public_id']}/",
+        {"public_slug": "green"},
+        format="json",
+    )
+    assert collision.status_code == 400
+    assert collision.data["public_slug"] == ["This slug is already in use."]
+
+
 @pytest.mark.parametrize(
     ("engine", "source"),
     [

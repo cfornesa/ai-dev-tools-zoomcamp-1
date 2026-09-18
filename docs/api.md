@@ -102,14 +102,19 @@ legacy `theme_config` color overrides remain backward-compatible.
 
 `GET /api/users/@<handle>/pieces/<piece-slug>/` resolves a published public
 2D project, 3D project, or generated art piece owned by the profile. Slugs are
-persisted, lowercase, title-derived identifiers and are unique per owner and
-piece family; collisions receive deterministic numeric suffixes. Private,
-deleted, archived, and missing pieces return the same not-found behavior as
-the existing public detail routes. The response includes `canonical_url`,
-`viewer_url`, and renderer/type information.
+persisted, lowercase, normalized identifiers and are unique per owner and
+piece family. A caller may provide a custom slug through the owner mutation
+path; omitted slugs remain title-derived and collisions receive deterministic
+numeric suffixes. Private, deleted, archived, and missing pieces return the
+same not-found behavior as the existing public detail routes. The response
+includes `canonical_url`, `viewer_url`, and renderer/type information.
 
 The frontend canonical route is `/users/@<handle>/pieces/<piece-slug>`. Existing
-identifier-based viewer routes remain backward-compatible and are not removed.
+identifier-based viewer routes remain backward-compatible shims and are not
+removed. A slug change affects only the current canonical path; the existing
+identifier route continues to resolve the same piece, and reverting the slug
+through the owner mutation restores the prior canonical path without creating
+a new version.
 
 ### Canonical generated art-piece links (#600)
 
@@ -122,6 +127,11 @@ compatibility URLs while the canonical immersive and owner-editor surfaces are
 completed by their respective route contracts. A canonical resolver response
 includes the generated piece payload so the frontend can render the regular
 piece without replacing the browser URL with a legacy identifier route.
+
+Owner-scoped `POST /api/art-pieces/` and `PATCH /api/art-pieces/<public_id>/`
+accept optional `public_slug` text. The server normalizes it with the shared
+slug policy, rejects an empty normalized custom value or an owner collision,
+and preserves the existing identifier route when a slug changes.
 
 ### Owner art-piece editor links (#601)
 

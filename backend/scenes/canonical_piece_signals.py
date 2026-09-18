@@ -19,8 +19,14 @@ MAX_PUBLIC_SLUG_SAVE_ATTEMPTS = 5
 _PUBLIC_SLUG_ERROR_MARKER = "public_slug"
 
 
+def normalize_public_slug(value: str) -> str:
+    """Return the stable user-facing slug form used by canonical routes."""
+
+    return slugify(value)[:220]
+
+
 def _next_slug(model, instance) -> str:
-    base = slugify(instance.title)[:200] or "piece"
+    base = normalize_public_slug(instance.title)[:200] or "piece"
     candidate = base
     suffix = 2
     while (

@@ -23,7 +23,7 @@ capture from a placeholder.
 
 from __future__ import annotations
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import serializers, status
@@ -32,6 +32,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.art_piece_contract import art_piece_engine_capability
+from scenes.canonical_piece_signals import normalize_public_slug
 from scenes.art_piece_validation import validate_art_piece_source
 from scenes.content_metadata import sanitize_content_seo
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
@@ -199,6 +200,9 @@ class ArtPieceCreateSerializer(serializers.Serializer):
     capabilities = serializers.DictField(required=False, default=dict)
     generation_metadata = serializers.DictField(required=False, default=dict)
     seo_config = serializers.DictField(required=False, default=dict)
+    public_slug = serializers.CharField(
+        max_length=220, required=False, allow_blank=True, default=""
+    )
 
     def validate_seo_config(self, value):
         try:
@@ -210,6 +214,12 @@ class ArtPieceCreateSerializer(serializers.Serializer):
         return _capabilities(value)
 
     def validate(self, attrs):
+        raw_slug = attrs["public_slug"]
+        attrs["public_slug"] = normalize_public_slug(raw_slug)
+        if raw_slug.strip() and not attrs["public_slug"]:
+            raise serializers.ValidationError(
+                {"public_slug": "Slug must contain a letter or number."}
+            )
         attrs["source"] = validate_art_piece_source(attrs["engine"], attrs["source"])
         return attrs
 
@@ -219,6 +229,13 @@ class ArtPieceMetadataSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=4000, required=False, allow_blank=True)
     status = serializers.ChoiceField(choices=ArtPiece.Status.choices, required=False)
     seo_config = serializers.DictField(required=False)
+    public_slug = serializers.CharField(max_length=220, required=False, allow_blank=True)
+
+    def validate_public_slug(self, value):
+        normalized = normalize_public_slug(value)
+        if value.strip() and not normalized:
+            raise serializers.ValidationError("Slug must contain a letter or number.")
+        return normalized
 
     def validate_seo_config(self, value):
         try:
@@ -259,25 +276,36 @@ class ArtPieceListCreateView(APIView):
         serializer = ArtPieceCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
-        with transaction.atomic():
-            piece = ArtPiece.objects.create(
-                owner=request.user,
-                title=values["title"],
-                description=values["description"],
-                prompt=values["prompt"],
-                engine=values["engine"],
-                seo_config=values["seo_config"],
-            )
-            version = ArtPieceVersion.objects.create(
-                piece=piece,
-                sequence=1,
-                source=values["source"],
-                capabilities=values["capabilities"],
-                generation_metadata=values["generation_metadata"],
-            )
-            piece.current_version = version
-            piece.save(update_fields=["current_version", "updated_at"])
-            regenerate_thumbnail(version)
+        if (
+            values["public_slug"]
+            and ArtPiece.objects.filter(
+                owner=request.user, public_slug=values["public_slug"]
+            ).exists()
+        ):
+            return Response({"public_slug": ["This slug is already in use."]}, status=400)
+        try:
+            with transaction.atomic():
+                piece = ArtPiece.objects.create(
+                    owner=request.user,
+                    title=values["title"],
+                    description=values["description"],
+                    prompt=values["prompt"],
+                    engine=values["engine"],
+                    seo_config=values["seo_config"],
+                    public_slug=values["public_slug"],
+                )
+                version = ArtPieceVersion.objects.create(
+                    piece=piece,
+                    sequence=1,
+                    source=values["source"],
+                    capabilities=values["capabilities"],
+                    generation_metadata=values["generation_metadata"],
+                )
+                piece.current_version = version
+                piece.save(update_fields=["current_version", "updated_at"])
+                regenerate_thumbnail(version)
+        except IntegrityError:
+            return Response({"public_slug": ["This slug is already in use."]}, status=400)
         return Response(_piece_data(piece, public=False), status=status.HTTP_201_CREATED)
 
 
@@ -304,14 +332,25 @@ class ArtPieceDetailView(APIView):
                 {"detail": "Publishing requires a version and meaningful title and description."},
                 status=400,
             )
-        with transaction.atomic():
-            locked = ArtPiece.objects.select_for_update().get(pk=piece.pk)
-            for key, value in serializer.validated_data.items():
-                setattr(locked, key, value)
-            locked.published_at = (
-                timezone.now() if next_status == ArtPiece.Status.PUBLISHED else None
-            )
-            locked.save()
+        try:
+            with transaction.atomic():
+                locked = ArtPiece.objects.select_for_update().get(pk=piece.pk)
+                next_slug = serializer.validated_data.get("public_slug")
+                if (
+                    next_slug
+                    and ArtPiece.objects.filter(owner=locked.owner, public_slug=next_slug)
+                    .exclude(pk=locked.pk)
+                    .exists()
+                ):
+                    return Response({"public_slug": ["This slug is already in use."]}, status=400)
+                for key, value in serializer.validated_data.items():
+                    setattr(locked, key, value)
+                locked.published_at = (
+                    timezone.now() if next_status == ArtPiece.Status.PUBLISHED else None
+                )
+                locked.save()
+        except IntegrityError:
+            return Response({"public_slug": ["This slug is already in use."]}, status=400)
         return Response(_piece_data(locked, public=False))
 
     def delete(self, request, public_id):

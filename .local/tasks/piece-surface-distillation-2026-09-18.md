@@ -389,3 +389,21 @@ routes require separate entry-point fixtures and rendered evidence:
 - [#619](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/619) owns the 3D AI-editor route for Three.js and A-Frame.
 - #610 remains the parent reconciliation container; neither child begins until its own PM handoff is selected.
 - **Next issue:** #618, the 2D AI-editor slice, because it is independent of the unavailable regular-route browser verification boundary.
+
+### Transaction ledger — #618
+
+- **Phase:** QA FAILED / verification-boundary; 2D provider/catalog/sandbox capability increment is committed, browser editor workflow remains pending
+- **Implementation commits:** `cc4b10a`, `411ebfc`, and `545b57d`
+- **Focused checks:** backend provider/API/contract/persistence/validation `37 passed`; frontend Studio/runtime/registry `18 passed`
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed with backend `1,434 passed, 39 skipped`; frontend `2,724 passed`; lint/format/typecheck passed
+- **Browser boundary:** Docker unavailable; localhost health unavailable; six relevant Chromium scenarios were listed but not executed
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; Stage 3 independent-family review not run
+- **GitHub evidence:** [engineering handoff](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/618#issuecomment-5727965025), [QA verdict](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/618#issuecomment-5727970343)
+- **Next action:** keep #618 open; run authenticated editor browser evidence at both fixed viewports on disposable PostgreSQL/Django/Vite or CI, then return to QA
+
+### Fresh distillation after #618 QA boundary — 2026-09-18
+
+- #618 remains open with a host verification boundary; no product defect was established by API/full-suite evidence.
+- #619 is the next independent closure-sized issue from the same parent split and owns only the 3D editor route for Three.js/A-Frame.
+- #607/#616 retain their own pending browser gates; #615 remains blocked by #607.
+- **Next issue:** #619 after PM/grooming re-reads its fixed 3D editor fixture and evidence boundary.

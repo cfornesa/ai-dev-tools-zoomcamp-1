@@ -137,7 +137,7 @@ editor, and card contracts.
 
 ## Transaction ledger — #600
 
-- **Phase:** IMPLEMENTED; pending GitHub QA/reconciliation
+- **Phase:** QA-PASSED FOR INCREMENT; issue remains open pending dependent surface criteria
 - **PM/grooming:** complete; compatibility policy documented as preserving identifier routes while canonicalizing new generated-piece links
 - **Implementation owner:** Codex/GPT-5, substituted for Ollama Cloud stage 2b complex
 - **Implementation scope:** documented API contract; added persisted `public_slug` to public art-piece payloads; profile, unified gallery, and collection cards now emit canonical generated-piece URLs; canonical slug pages render generated art pieces without replacing the browser URL with a UUID route; legacy viewer fallback remains supported
@@ -145,4 +145,6 @@ editor, and card contracts.
 - **Full checks:** backend `make check` 1,414 passed/39 skipped; frontend 2,718 passed; formatting, lint, and typecheck passed (existing lint warnings only)
 - **Browser check:** not run against a local stack in this transaction; live Chrome evidence from the initial audit remains recorded in #599/#600 scope
 - **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; independent second opinion not available
-- **Next action:** commit, post QA evidence, then close #600 if accepted; next scoped issue #601
+- **GitHub evidence:** [#600 QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/600#issuecomment-5726777360)
+- **Outstanding criteria:** #601 owner editor route, #605 studio card routing, #606 immersive route, #607/#608 runtime/embed parity
+- **Next action:** continue with #601 while retaining #600 open for dependent reconciliation

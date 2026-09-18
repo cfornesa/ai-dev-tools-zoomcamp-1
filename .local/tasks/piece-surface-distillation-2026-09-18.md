@@ -293,6 +293,19 @@ editor, and card contracts.
 - **Scope:** additive seven-ID registry (`canvas2d`, `svg`, `p5js`, `c2js`, `c2js-interactive`, `threejs`, `aframe`) with separate display labels and explicit capabilities
 - **Dependencies:** #599 and #611; unlocks #607–#610 and the safe import prerequisite for #612
 - **Evidence boundary:** local contract/migration tests only; no live rendering, Replit publication, or shared database write
-- **Next action:** create the matching GitHub issue, groom it, then implement one issue transaction at a time
+- **Implementation commits:** `9210872`, QA correction `d767409`, and verification-record correction `fa3e0f6`; focused and full checks rerun after the product correction
+- **Focused checks:** backend `46 passed`; frontend `14 passed`; migration drift `No changes detected`; `sqlmigrate scenes 0079_art_piece_engine_contract` is reversible state-only `(no-op)`
+- **Full checks:** `make check` after the correction: backend `1418 passed, 39 skipped`; frontend `2720 passed`; lint, format, and mypy passed
+- **QA owner:** Codex/GPT-5 substitution for Claude Sonnet 5 Medium; independent Stage 3 review not run
+- **QA result:** PASS with fixes; canonical model labels now consume the registry directly, and the focused frontend command was corrected to an existing test file
+- **Evidence boundary:** local automated contract/migration evidence only; no live rendering, Replit publication, or shared database write
+- **Next action:** post QA matrix, close #614, and resume the next dependency-ready issue (#607/#610 after this prerequisite)
 
 GitHub issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/614
+
+### #614 QA reconciliation — 2026-09-18
+
+The corrected issue contract was re-read from GitHub. The initial QA intake
+found a duplicated model-label source and a nonexistent frontend focused test
+path; both were corrected before the final verdict. No product test was
+weakened, skipped, deleted, or retargeted in the #614 diff.

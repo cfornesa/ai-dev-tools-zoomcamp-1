@@ -407,3 +407,9 @@ routes require separate entry-point fixtures and rendered evidence:
 - #619 is the next independent closure-sized issue from the same parent split and owns only the 3D editor route for Three.js/A-Frame.
 - #607/#616 retain their own pending browser gates; #615 remains blocked by #607.
 - **Next issue:** #619 after PM/grooming re-reads its fixed 3D editor fixture and evidence boundary.
+
+### Fresh distillation after #619 audit — 2026-09-18
+
+- The existing generic `ArtPieceEditor` already revises Three.js/A-Frame source and uses the shared sandbox, but it does not expose a distinct 3D AI-editor mode/fixture. That is an actionable scope gap, not evidence that #619 is complete.
+- [#620](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/620) owns the explicit 3D art-piece editor mode and canonical owner-editor evidence; #619 remains the parent 3D reconciliation container.
+- **Next issue:** #620, after PM grooming confirms the route/mode boundary.

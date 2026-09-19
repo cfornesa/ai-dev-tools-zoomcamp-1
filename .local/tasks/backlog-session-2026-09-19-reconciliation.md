@@ -14,8 +14,8 @@ GitHub comment; no unrecorded service is credited.
 | Order | Issue | Scope | Dependencies | State | Routing / next action |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634) | Resolve the Vitest Security Center gate | Replit workspace synchronization | `CLOSED / QA PASS` | CI and the fresh Replit Security Center scan pass; no remaining work in this issue. |
-| 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #622 evidence | `OPEN / QA FAIL — production-target mismatch` | Development Shell import is idempotent and valid, but production remains unchanged because Replit exposes separate databases. Execute the importer against production, then rerun route/render evidence. |
-| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / DEPENDENCY-BLOCKED` | Publish, smoke, CI, and schema evidence pass; imported-piece and authenticated/public surface evidence remain blocked by #633's production-target mismatch. |
+| 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #622 evidence | `OPEN / production import PASS; surface follow-up remains` | Production now contains exactly six imported reference pieces with current versions and PNG thumbnail endpoints; the temporary import trigger was removed after verification. Final card rendering remains coupled to #622. |
+| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / card-rendering blocker` | Publish, smoke, schema, canonical links, route status, immersive stage, and API thumbnail evidence pass. Profile cards still show `No preview available` for fallback thumbnails, and the full six-engine browser matrix remains. |
 
 ## Duplicate and already-covered work
 
@@ -33,30 +33,25 @@ GitHub comment; no unrecorded service is credited.
   `npm ci`, frontend checks, full Vitest, build, and push CI pass.
 - Local #633 implementation: `2aa5b8a`; focused import tests, full backend
   tests, lint, format, and mypy pass. CI run `35440004191` is green.
-- Replit's Git panel currently reports both `Unsupported state: you are in the
-  middle of a rebase. Please finish the rebase manually` and `Git Error
-  UNAUTHENTICATED Failed to authenticate with the remote`. Its visible scan is
-  still for Vitest 4.1.10, so the reviewed SHA has not been externally
-  verified there.
-- Classification: `verification-boundary` plus `workflow/infrastructure-
-  defect` for Replit synchronization. It becomes actionable only through a
-  reviewed rebase recovery choice; no force reset or agent mutation is
-  authorized by inference.
+- Replit synchronization, Security Center scan, and publication are now
+  resolved. The published API returns eight profile pieces total, including
+  six `reference-*` fixtures; all six imported detail endpoints return JSON
+  200 and all six thumbnail endpoints return PNG 200.
+- The remaining classification is `surface-contract`: `PieceCard` hides a
+  stored fallback thumbnail whenever `thumbnail_is_fallback` is true, so the
+  profile visually renders a no-preview tile even though the API has a valid
+  PNG URL. This is an existing #622 acceptance gap, not a new duplicate issue.
 
 ## Required terminal sequence
 
-1. Repair/confirm Replit's Git authentication and resolve the rebase through
-   an owner-approved choice, pull reviewed `feb93f7`, run Security Center scan,
-   and confirm Republish is enabled.
-2. Republish and run `scripts/smoke-published.sh`.
-3. Run #633's production dry-run through Replit Shell; review owner/profile,
-   six fixtures, conflicts, and zero writes.
-4. Execute the approved owner-scoped import, inspect production tables, and
-   perform #622's public/immersive/embed/download/editor authorization matrix.
-5. Post per-criterion QA/reconciliation comments, close only criteria-complete
-   issues, then invoke production-readiness and session-completion.
+1. Resolve the #622 card-rendering discrepancy so stored fallback thumbnails
+   display consistently with the API contract.
+2. Complete #622's six-engine regular/immersive/embed/download/editor-owner
+   browser matrix and anonymous authorization checks.
+3. Post per-criterion QA/reconciliation comments, close only
+   criteria-complete issues, then invoke production-readiness and
+   session-completion.
 
-The synchronization prerequisite is resolved. The remaining blocker is narrower:
-the approved importer was executed in Replit's development Shell while the
-published app reads the separate production database. No new issue is needed;
-this is still within #633's production execution acceptance criterion.
+The production-target and synchronization prerequisites are resolved. The
+remaining blocker is the rendered-card contract described above; no new issue
+is needed because it is already within #622's public-card acceptance scope.

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import PieceCard from './PieceCard';
 
 describe('PieceCard', () => {
-  it('uses the explicit fallback flag before attempting to load a placeholder image', () => {
+  it('renders a stored fallback thumbnail instead of hiding the available image', () => {
     render(
       <MemoryRouter>
         <PieceCard
@@ -17,9 +17,10 @@ describe('PieceCard', () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole('img', { name: 'No preview available for Fallback piece' }),
-    ).toBeVisible();
-    expect(screen.queryByAltText('Preview of Fallback piece')).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Fallback preview of Fallback piece' })).toHaveAttribute(
+      'src',
+      '/api/public/art-pieces/fallback/thumbnail.png',
+    );
+    expect(screen.queryByText('No preview available')).not.toBeInTheDocument();
   });
 });

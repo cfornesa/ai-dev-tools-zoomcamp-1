@@ -25,7 +25,10 @@ export default function PieceCard({
 }: PieceCardProps) {
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const titleId = `piece-card-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-title`;
-  const showFallback = !thumbnailUrl || thumbnailIsFallback || thumbnailFailed;
+  // A stored fallback is still a valid thumbnail response. Render it so
+  // profile/gallery cards remain image-bearing; only an absent or failed URL
+  // should become the text fallback tile.
+  const showFallback = !thumbnailUrl || thumbnailFailed;
   const kindLabel =
     kind === 'generated'
       ? 'Generated'
@@ -56,7 +59,7 @@ export default function PieceCard({
         ) : (
           <img
             src={thumbnailUrl}
-            alt={`Preview of ${title}`}
+            alt={thumbnailIsFallback ? `Fallback preview of ${title}` : `Preview of ${title}`}
             className="piece-card-thumbnail public-project-thumbnail"
             onError={() => setThumbnailFailed(true)}
           />

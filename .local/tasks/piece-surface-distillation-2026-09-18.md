@@ -762,3 +762,24 @@ either closed or explicitly terminally handed off for republishing.
 - **Next action:** rerun task-distillation reconciliation, then the complete
   backlog-session/readiness/session-completion pass under the newly authorized
   routing. No Replit or shared-database write is implied by this authorization.
+
+### Task-distillation reconciliation — 2026-09-18
+
+- **Manifest/status:** GitHub open-issue enumeration is empty; the processed
+  piece-surface issue set remains terminal and no duplicate product issue was
+  discovered. The current worktree is clean after the workflow-documentation
+  commit.
+- **CI classification:** run `35303359231` failed on pushed SHA
+  `06283704d3ef06d8c1647045320cac039f556489` with the same
+  `unique_project_public_slug_per_owner` collision family previously owned by
+  closed #419/#596. The current checkout already contains #596's retry fix
+  (`9da07be`); this stale pre-fix run is not evidence of a current defect, and
+  no new issue was created or closed history reopened.
+- **Local evidence:** `make compose-preflight` passed for the repository-owned
+  Docker stack; backend/frontend health and root probes returned healthy/200;
+  `UV_CACHE_DIR=/tmp/codex-uv-cache NPM_CONFIG_CACHE=/tmp/codex-npm-cache make check`
+  passed with backend `1436 passed, 39 skipped` and frontend `2734 passed`.
+- **Next groomed action:** publish the current committed revision to the
+  repository remote so CI evaluates the actual fixed checkout, then inspect
+  that run before assigning the readiness CI dimension. No Replit or shared
+  database write is implied.

@@ -2,7 +2,16 @@
 
 ## Status
 
-`PROPOSED` — discovered during #622 production-readiness verification.
+`GROOMED → ENGINEERING` — PM pass complete; implementation is a complex/data-layer substitution because the rostered Ollama Cloud service is unavailable in this session.
+
+## Transaction ledger
+
+- **Issue:** #633
+- **Entry point/fixture:** `import_reference_pieces` against the existing owner/profile represented by `@cfornesa`; six repository-defined sanitized fixtures.
+- **Dependencies:** #622 release evidence gate; closed #612/#613/#614/#607/#608/#609/#610/#615/#616 contracts.
+- **Stage owners:** scoping `Codex / GPT-5 / current session, substituted: no`; implementation `Ollama Cloud / kimi-k3 / not available, Codex/GPT-5 substitution: yes`; second opinion `not run`; QA pending `Claude / Sonnet 5 Medium, substitution pending`.
+- **Evidence boundary:** local/disposable tests and dry-run are automation-verifiable; production import and deployed route evidence remain explicitly manual Replit acceptance.
+- **Current next action:** add dry-run and explicit production opt-in while preserving the disposable guard, then run focused backend tests.
 
 ## Goal
 
@@ -28,6 +37,9 @@ One documented, non-interactive production workflow selected by the owner, with 
 
 ## Verification
 
+- **Production preflight:** `cd backend && uv run --env-file .env python manage.py import_reference_pieces import --handle cfornesa --username christopher1 --email cfornesa@outlook.com --allow-production --dry-run --json` (must report `no_write: true`; review before any import).
+- **Production import:** run the same command without `--dry-run` only after the preflight output is accepted; this is the sole production data-writing step and remains an explicit Replit operation.
+- **Production cleanup:** `... manage.py import_reference_pieces cleanup --handle cfornesa --username christopher1 --email cfornesa@outlook.com --allow-production --dry-run --json`, then remove `--dry-run` only for an owner-approved rollback of rows carrying the fixture provenance marker.
 - Focused backend tests for the management workflow.
 - `make check`.
 - Disposable PostgreSQL execution of dry-run, import, repeat import, and cleanup.

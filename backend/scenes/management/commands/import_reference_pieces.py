@@ -1,10 +1,11 @@
-"""Import a small, sanitized reference-piece matrix into a disposable DB.
+"""Import a small, sanitized reference-piece matrix with explicit opt-in.
 
 This is deliberately a management command rather than an API endpoint: the
 fixtures are a QA bridge from the augment-humankind runtime contract, not a
-general content-ingestion surface. It refuses non-debug settings, is
-owner-scoped, idempotent by source identity, and can remove only rows carrying
-its provenance marker.
+general content-ingestion surface. Development/test imports remain disposable
+and owner-scoped. Production requires an explicit opt-in, resolves an existing
+profile rather than creating an account, supports a no-write dry run, and can
+remove only rows carrying its provenance marker.
 """
 
 from __future__ import annotations
@@ -134,43 +135,165 @@ def _fixture_marker(source_id: str) -> dict[str, str]:
 
 
 class Command(BaseCommand):
-    help = "Import or remove sanitized augment-humankind reference pieces in a disposable database."
+    help = (
+        "Import or remove sanitized augment-humankind reference pieces "
+        "with explicit production opt-in."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument("action", choices=["import", "cleanup"])
-        parser.add_argument("--username", default="cfornesa")
+        parser.add_argument(
+            "--username",
+            default=None,
+            help=(
+                "Optional expected login username; production resolves the owner by public handle."
+            ),
+        )
         parser.add_argument("--handle", default="cfornesa")
+        parser.add_argument("--email", default=None)
+        parser.add_argument(
+            "--allow-production",
+            action="store_true",
+            help="Permit a non-debug import only after the existing owner/profile is resolved.",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Report the owner and planned changes without writing any rows.",
+        )
         parser.add_argument("--json", action="store_true")
 
     def handle(self, *args, **options):
-        if not settings.DEBUG:
-            raise CommandError("Reference imports are restricted to DEBUG/disposable databases.")
+        production = not settings.DEBUG
+        if production and not options["allow_production"]:
+            raise CommandError(
+                "Production reference imports require the explicit --allow-production opt-in."
+            )
         username = options["username"]
         handle = normalize_public_slug(options["handle"])
         if not handle:
             raise CommandError("--handle must contain a letter or number.")
         User = get_user_model()
-        with transaction.atomic():
-            owner, _ = User.objects.get_or_create(
-                username=username,
-                defaults={"email": f"{username}@example.test", "is_active": True},
-            )
-            PublicProfile.objects.update_or_create(
-                user=owner,
-                defaults={
-                    "handle": handle,
-                    "display_name": "Christopher Fornesa",
-                    "is_public": True,
-                },
-            )
-            if options["action"] == "cleanup":
-                result = self._cleanup(owner)
-            else:
-                result = self._import(owner)
-        if options["json"]:
+        if production:
+            owner = self._resolve_existing_owner(username, handle, options["email"])
+        else:
+            username = username or "cfornesa"
+            owner = User.objects.filter(username=username).first()
+            if not owner and options["dry_run"]:
+                result = self._dry_run_missing_owner(username, handle, options["action"])
+                return self._write_result(result, options["json"])
+            if options["dry_run"]:
+                result = self._dry_run(owner, handle, options["action"])
+                return self._write_result(result, options["json"])
+            with transaction.atomic():
+                owner, _ = User.objects.get_or_create(
+                    username=username,
+                    defaults={"email": f"{username}@example.test", "is_active": True},
+                )
+                PublicProfile.objects.update_or_create(
+                    user=owner,
+                    defaults={
+                        "handle": handle,
+                        "display_name": "Christopher Fornesa",
+                        "is_public": True,
+                    },
+                )
+                if options["action"] == "cleanup":
+                    result = self._cleanup(owner)
+                else:
+                    result = self._import(owner)
+            return self._write_result(result, options["json"])
+
+        if options["dry_run"]:
+            result = self._dry_run(owner, handle, options["action"])
+        else:
+            with transaction.atomic():
+                if options["action"] == "cleanup":
+                    result = self._cleanup(owner)
+                else:
+                    result = self._import(owner)
+        return self._write_result(result, options["json"])
+
+    def _write_result(self, result: dict[str, object], as_json: bool) -> None:
+        if as_json:
             self.stdout.write(json.dumps(result, sort_keys=True))
         else:
             self.stdout.write(self.style.SUCCESS(json.dumps(result, indent=2, sort_keys=True)))
+
+    def _resolve_existing_owner(self, username: str | None, handle: str, email: str | None):
+        profile = PublicProfile.objects.select_related("user").filter(handle=handle).first()
+        if not profile:
+            raise CommandError(
+                f"No existing public profile owns @{handle}; production imports "
+                "never create profiles."
+            )
+        owner = profile.user
+        if username and owner.username != username:
+            raise CommandError(
+                f"Profile @{handle} belongs to username {owner.username!r}, not {username!r}."
+            )
+        if email and owner.email.lower() != email.lower():
+            raise CommandError(f"Profile @{handle} does not belong to the requested email.")
+        return owner
+
+    def _dry_run_missing_owner(self, username: str, handle: str, action: str) -> dict[str, object]:
+        return {
+            "dry_run": True,
+            "no_write": True,
+            "action": action,
+            "owner": username,
+            "handle": handle,
+            "owner_exists": False,
+            "planned_fixture_count": len(FIXTURES) if action == "import" else 0,
+        }
+
+    def _dry_run(self, owner, handle: str, action: str) -> dict[str, object]:
+        marked = [
+            piece
+            for piece in ArtPiece.all_objects.filter(owner=owner)
+            if piece.current_version
+            and piece.current_version.generation_metadata.get("reference_import", {}).get(
+                "import_name"
+            )
+            == IMPORT_NAME
+        ]
+        if action == "cleanup":
+            return {
+                "dry_run": True,
+                "no_write": True,
+                "action": action,
+                "owner": owner.username,
+                "owner_id": owner.pk,
+                "handle": handle,
+                "marked_piece_count": len(marked),
+            }
+        occupied = set(
+            ArtPiece.all_objects.filter(owner=owner).values_list("public_slug", flat=True)
+        )
+        conflicts: list[str] = []
+        existing_markers: set[str] = set()
+        for piece in marked:
+            version = piece.current_version
+            if version:
+                existing_markers.add(version.generation_metadata["reference_import"]["source_id"])
+        for fixture in FIXTURES:
+            if fixture.source_id in existing_markers:
+                continue
+            if fixture.slug in occupied:
+                conflicts.append(fixture.slug)
+        return {
+            "dry_run": True,
+            "no_write": True,
+            "action": action,
+            "owner": owner.username,
+            "owner_id": owner.pk,
+            "handle": handle,
+            "planned_fixture_count": len(FIXTURES),
+            "existing_reference_count": len(existing_markers),
+            "would_create": len(FIXTURES) - len(existing_markers),
+            "slug_conflicts": conflicts,
+            "idempotent": True,
+        }
 
     def _import(self, owner) -> dict[str, object]:
         rows: list[dict[str, object]] = []

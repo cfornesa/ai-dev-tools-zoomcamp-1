@@ -330,12 +330,24 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const engineCapability = ART_PIECE_ENGINE_CAPABILITIES[piece.engine];
   const editorModeLabel = engineCapability.family === '3d' ? '3D AI editor' : '2D AI editor';
 
+  const isSourceOnlyEditor = engineCapability.family === '2d';
+
   return (
-    <section aria-labelledby="art-piece-editor-heading">
+    <section
+      aria-labelledby="art-piece-editor-heading"
+      data-editor-family={engineCapability.family}
+      data-editor-engine={piece.engine}
+    >
       <h2 id="art-piece-editor-heading">Edit {piece.title}</h2>
       <p data-testid="art-piece-editor-mode">
         {editorModeLabel} · {engineCapability.label}
       </p>
+      {isSourceOnlyEditor && (
+        <p data-testid="art-piece-editor-source-only">
+          Source-only preview for {engineCapability.label}; this engine does not expose structured
+          scene layers in the AI editor.
+        </p>
+      )}
       <p>
         <Link to="/art-pieces/manage">Back to your art pieces</Link>
       </p>

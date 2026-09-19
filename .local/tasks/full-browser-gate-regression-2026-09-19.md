@@ -2,7 +2,7 @@
 
 ## Status
 
-`PROPOSED` — discovered during readiness reconciliation; no product implementation in the distillation pass.
+`IN PROGRESS` — implementation landed locally; workflow-dispatch verification remains.
 
 ## Goal
 
@@ -32,6 +32,19 @@ Use the existing CI PostgreSQL service and deterministic Playwright fixture user
 - `gh workflow run ci.yml --ref main`
 - `gh run watch <run-id> --interval 15 --exit-status`
 - `gh run view <run-id> --job <browser-job-id> --log`
+
+## Current implementation evidence
+
+- The repeated slug collision was root-caused to `_next_slug()` using the
+  filtered default manager while soft-deleted rows remain protected by the
+  database uniqueness constraint.
+- `backend/scenes/canonical_piece_signals.py` now uses each model's
+  `all_objects` manager for collision checks.
+- `backend/tests/test_canonical_piece_slug_race.py` covers Project, Project3D,
+  and ArtPiece replacement after soft deletion; the rebuilt disposable
+  PostgreSQL container passes the focused suite (`7 passed`).
+- The first full-browser failure is a separate stale assertion in #623:
+  anonymous billing currently redirects to `/gallery?type=all`, not `/`.
 
 ## Out of scope
 

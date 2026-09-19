@@ -3,6 +3,18 @@
 Append-only log of agent-relevant decisions. See `AGENTS.md` Section 10 for
 ownership and read cadence.
 
+## 2026-09-19
+
+- **#621 slug-collision root cause:** retain soft-deleted rows in canonical
+  public-slug collision checks by querying each model's `all_objects` manager.
+  The database uniqueness constraints still protect those rows, so using the
+  filtered default manager is incorrect. Regression coverage covers Project,
+  Project3D, and ArtPiece.
+- **#623 browser contract:** anonymous billing is expected to land on the
+  current public gallery route `/gallery?type=all`, so the stale E2E expectation
+  of `/` is tracked as a separate mechanical issue rather than mixed into the
+  backend slug repair.
+
 ## 2026-09-14
 
 - **#542 conflict policy (owner-selected):** deterministic hybrid merge. The

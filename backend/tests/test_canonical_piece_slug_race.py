@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 
 from scenes import canonical_piece_signals
-from scenes.models import ArtPiece
+from scenes.models import ArtPiece, Project, Project3D
 
 
 @pytest.mark.django_db
@@ -84,3 +84,24 @@ def test_public_slug_retry_reraises_unrelated_integrity_errors():
 
     with pytest.raises(IntegrityError):
         canonical_piece_signals.save_with_public_slug_retry(piece, fail_unrelated)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("model", "kwargs"),
+    [
+        (Project, {}),
+        (Project3D, {}),
+        (ArtPiece, {"prompt": "p", "engine": ArtPiece.Engine.SVG}),
+    ],
+)
+def test_public_slug_allocator_includes_soft_deleted_rows(model, kwargs):
+    """Soft deletion must not free a slug still protected by the DB constraint."""
+    user = get_user_model().objects.create_user(username=f"soft-delete-{model.__name__.lower()}")
+    retired = model.objects.create(owner=user, title="Retired Piece", **kwargs)
+    retired.is_deleted = True
+    retired.save(update_fields=["is_deleted"])
+
+    replacement = model.objects.create(owner=user, title="Retired Piece", **kwargs)
+
+    assert replacement.public_slug == "retired-piece-2"

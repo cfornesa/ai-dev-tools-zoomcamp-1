@@ -843,3 +843,32 @@ either closed or explicitly terminally handed off for republishing.
   the complete browser gate, then execute #622's approved Replit publication
   and direct production schema/surface verification before a final readiness
   and session-completion verdict.
+
+### Engineering transaction — #621 slug collision repair — 2026-09-19
+
+- **Phase:** ENGINEERING → QA pending workflow-dispatch verification
+- **Implementation owner:** Codex/GPT-5, substituted for rostered Ollama Cloud
+  stage 2b complex; substitution authorized by the owner and recorded here.
+- **Changed files:** `backend/scenes/canonical_piece_signals.py`,
+  `backend/tests/test_canonical_piece_slug_race.py`, plus the focused browser
+  contract update tracked separately as #623.
+- **Root cause:** filtered default managers hide soft-deleted rows even though
+  `(owner, public_slug)` uniqueness constraints still protect them.
+- **Focused evidence:** offline slug suite `7 passed`; rebuilt disposable
+  PostgreSQL container slug suite `7 passed`; `make check` passed with backend
+  `1439 passed, 39 skipped` and frontend `2734 passed`.
+- **Browser limitation:** local macOS Playwright Chromium could not start due
+  the sandbox Mach-port permission boundary; workflow CI remains authoritative.
+- **Next action:** commit/push, run the exact workflow-dispatch full browser
+  gate, then QA #621 and #623 against terminal counts and failure names.
+
+### Discovery transaction — #623 anonymous billing route contract — 2026-09-19
+
+- **Phase:** GROOMED → ENGINEERING pending workflow-dispatch verification
+- **Issue:** [#623](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/623)
+  updates the stale anonymous billing assertion from `/` to the current
+  public-gallery destination `/gallery?type=all` while retaining all
+  authenticated billing coverage.
+- **Routing:** stage 2a mechanical frontend/test contract update.
+- **Focused evidence:** local browser execution is blocked by the same macOS
+  Chromium launch permission boundary, so CI verification is required.

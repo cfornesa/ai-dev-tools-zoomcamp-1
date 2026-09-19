@@ -29,8 +29,13 @@ def _next_slug(model, instance) -> str:
     base = normalize_public_slug(instance.title)[:200] or "piece"
     candidate = base
     suffix = 2
+    # The public_slug uniqueness constraints include soft-deleted rows.  The
+    # default managers intentionally hide those rows from normal product
+    # queries, so slug allocation must use the unfiltered manager or it can
+    # repeatedly select a candidate the database will reject.
+    slug_manager = model.all_objects
     while (
-        model.objects.filter(owner=instance.owner, public_slug=candidate)
+        slug_manager.filter(owner=instance.owner, public_slug=candidate)
         .exclude(pk=instance.pk)
         .exists()
     ):

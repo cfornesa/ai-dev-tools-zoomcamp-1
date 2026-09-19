@@ -29,7 +29,10 @@ test.describe('Account billing checkout (#440)', () => {
 
   test('anonymous visitors cannot access billing', async ({ page }) => {
     await page.goto('/account/billing');
-    await expect(page).toHaveURL(/\/$/);
+    // The public shell's anonymous landing route is the filtered public
+    // gallery, not the signed-in studio home. Keep this assertion aligned
+    // with Home.tsx/Layout.tsx so a public-route change is explicit here.
+    await expect(page).toHaveURL(/\/gallery\?type=all$/);
   });
 
   test('shows explicit monthly pricing and starts a mocked PayPal checkout', async ({ page }) => {

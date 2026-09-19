@@ -15,8 +15,8 @@ GitHub comment; no unrecorded service is credited.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634) | Resolve the Vitest Security Center gate | Replit workspace synchronization | `CLOSED / QA PASS` | CI and the fresh Replit Security Center scan pass; no remaining work in this issue. |
 | 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #622 evidence | `CLOSED / QA PASS` | Production import, six reference engines, stored thumbnails, routes, cleanup publish, and regression evidence passed; broader release-surface work remains in #622. |
-| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / awaiting promotion of 3e8e150` | Six-engine regular/immersive/editor matrices pass in the current production artifact; canonical `edit_url`/slug-link fix is verified locally and queued in Replit Build/Promote. Refresh live evidence after promotion, then close. |
-| 4 | [#635](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/635) | Reduce CI feedback time without weakening required coverage | none | `PROPOSED / scoped follow-up` | Baseline the 172-second frontend run and compare changed-path, parallel/sharded, and fast/full workflow strategies before implementation. |
+| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / blocked on Replit authentication and rebase state` | Six-engine regular/immersive/editor matrices pass in the prior production artifact; latest Replit publish still serves the legacy UUID link. Replit Git now reports `UNAUTHENTICATED` and an in-progress rebase, so manual workspace recovery is required before Pull, republish, and fresh live verification. |
+| 4 | [#635](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/635) | Reduce CI feedback time without weakening required coverage | none | `CLOSED / QA PASS` | Changed-test PR feedback path and deterministic full main/release gate are implemented and verified by green CI run `35444460681`. |
 
 ## Duplicate and already-covered work
 
@@ -34,13 +34,18 @@ GitHub comment; no unrecorded service is credited.
   `npm ci`, frontend checks, full Vitest, build, and push CI pass.
 - Local #633 implementation: `2aa5b8a`; focused import tests, full backend
   tests, lint, format, and mypy pass. CI run `35440004191` is green.
-- Replit synchronization, Security Center scan, and publication are now
+- Security Center scan and the six-engine publication/import evidence are
   resolved. The published API returns eight profile pieces total, including
   six `reference-*` fixtures; all six imported detail endpoints return JSON
   200 and all six thumbnail endpoints return PNG 200.
 - The card-rendering classification is resolved by `088545f`; live profile
   cards now show stored fallback PNGs. The latest source/API contract fix is
-  `3e8e150`; production promotion is still in progress.
+  `3e8e150`; the latest Replit publish promoted stale revision `885fceb` and
+  live verification still shows the UUID immersive link.
+- Replit Git currently reports `UNAUTHENTICATED` and an in-progress rebase;
+  no destructive rebase recovery was attempted.
+- #635 is closed after green CI run `35444460681`; the main push full frontend
+  job took 5m46s, while the representative changed-test PR path took about 6s.
 
 ## Required terminal sequence
 
@@ -52,6 +57,7 @@ GitHub comment; no unrecorded service is credited.
    criteria-complete issues, then invoke production-readiness and
    session-completion.
 
-The production-target and synchronization prerequisites are resolved. The
-remaining release blocker is promotion of `3e8e150`; the CI runtime concern is
-tracked separately in #635 and must not be fixed by dropping release coverage.
+The production target and imported data are resolved, but the remaining
+release blocker is Replit workspace synchronization and promotion of the
+canonical-link fix. The CI runtime concern is closed in #635 without dropping
+release coverage.

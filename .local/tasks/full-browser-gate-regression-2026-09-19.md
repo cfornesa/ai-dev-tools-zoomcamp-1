@@ -84,6 +84,17 @@ shared/production data.
   failures were isolated to #628/admin redirect expectation, #627/generated
   3D editor preview, #624/AI exit routing, and the public-profile fixture
   route. Timing is verified, but the product gate remains open.
+- Terminal full-matrix run `35432568533` on `c9aa186` completed with
+  `271 passed`, `5 failed`, and `6 skipped` across three parallel shards.
+  The remaining failures were isolated to #627 (A-Frame editor preview and
+  generated Three.js steering runtime), #624 (cloud-disabled exit checkpoint),
+  and #630 (profile-handle persistence/teardown). No #625 stage-geometry or
+  #628 admin/settings failures appeared in this matrix.
+- Push run `35433447342` on `b7b0103` is the first ordinary-push one-shard
+  validation of the faster feedback path; backend, frontend, disposable
+  published-routing, and workflow-validation jobs are green while the single
+  browser shard is still running. Its terminal browser result is required
+  before #624/#630 reconciliation.
 
 ## Out of scope
 

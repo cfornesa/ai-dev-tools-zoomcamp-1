@@ -3,6 +3,15 @@
 Append-only log of agent-relevant decisions. See `AGENTS.md` Section 10 for
 ownership and read cadence.
 
+## 2026-09-19 — QA reconciliation of residual browser families
+
+- #625 stage geometry and #628 admin/settings contracts were closed after
+  terminal full-matrix run `35432568533` showed no failures in either family.
+  The remaining five failures were kept in their scoped follow-ups (#624,
+  #627, and #630) rather than reopening or broadening the closed issues.
+- Ordinary push CI remains one browser shard for bounded feedback; scheduled
+  and manual runs retain the complete three-shard browser matrix.
+
 ## 2026-09-19 — full-browser residual contract repairs
 
 - Keep `/gallery?type=all` as the canonical public landing destination for

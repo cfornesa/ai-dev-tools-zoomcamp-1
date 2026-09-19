@@ -568,6 +568,16 @@ routes require separate entry-point fixtures and rendered evidence:
   #607–#610 and the importer is intentionally local/disposable. QA FAIL:
   [comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612#issuecomment-5737487118).
 
+### Transaction ledger — #607 C2 runtime increment — 2026-09-19
+
+- **Phase:** `ENGINEERING → QA`; issue remains open pending the complete six-engine fixed-viewport browser gate.
+- **Implementation commit:** `7ae5618 Fix regular C2 art piece rendering`.
+- **Product correction:** C2 and C2 Interactive now share a deterministic reference-compatible Renderer adapter inside the opaque sandbox, paint one synchronous frame before the RAF loop, and use a 320x240 viewport so authored coordinates remain visible beneath the stage overlays. The new focused E2E spec covers six engines through canonical regular routes at desktop/mobile viewports.
+- **Focused checks:** sandbox suite `23 passed`; frontend typecheck passed; Prettier and `git diff --check` passed; Docker CUA visibly rendered the imported C2 cyan shape and C2 Interactive pink shape.
+- **Evidence boundary:** this host's headless Chromium still fails at process launch with the documented macOS Mach-port permission error; no complete six-engine fixed-viewport Playwright result is claimed. No shared, development, production, or Replit database was written.
+- **GitHub evidence:** [structured QA comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/607#issuecomment-5737731687).
+- **Next action:** run the new six-engine spec on the approved CI/browser runner, then reconcile #607 and its dependent #608–#610 criteria; keep production-readiness and session-completion gates closed.
+
 **Current next transaction:** #607 regular six-engine runtime parity. #602,
 #608, #609, #610, #612, #615, #616, #618, and #620 remain open; #600/#601
 remain parent reconciliation containers for the closed consumer slices. No

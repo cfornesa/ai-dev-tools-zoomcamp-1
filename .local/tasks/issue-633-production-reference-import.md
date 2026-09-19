@@ -54,9 +54,9 @@ One documented, non-interactive production workflow selected by the owner, with 
 
 ## Verification
 
-- **Production preflight:** `cd backend && uv run --env-file .env python manage.py import_reference_pieces import --handle cfornesa --username christopher1 --email cfornesa@outlook.com --allow-production --dry-run --json` (must report `no_write: true`; review before any import).
+- **Production preflight:** `cd backend && uv run --env-file .env python manage.py import_reference_pieces import --handle cfornesa --username christopher --allow-production --dry-run --json` (must report `no_write: true`; review before any import). The production email is intentionally omitted because the development fixture email does not match the production account.
 - **Production import:** run the same command without `--dry-run` only after the preflight output is accepted; this is the sole production data-writing step and remains an explicit Replit operation.
-- **Production cleanup:** `... manage.py import_reference_pieces cleanup --handle cfornesa --username christopher1 --email cfornesa@outlook.com --allow-production --dry-run --json`, then remove `--dry-run` only for an owner-approved rollback of rows carrying the fixture provenance marker.
+- **Production cleanup:** `... manage.py import_reference_pieces cleanup --handle cfornesa --username christopher --allow-production --dry-run --json`, then remove `--dry-run` only for an owner-approved rollback of rows carrying the fixture provenance marker.
 - Focused backend tests for the management workflow.
 - `make check`.
 - Disposable PostgreSQL execution of dry-run, import, repeat import, and cleanup.

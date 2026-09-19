@@ -17,3 +17,12 @@ inserts; do not infer production state from Shell output.
 Confirmed on 2026-09-19 during #633: the Shell contained six imported rows for
 `christopher1/@cfornesa`, while `GET /api/users/@cfornesa/` on
 `augmentrart.com` still returned only the two pre-existing pieces.
+
+The approved production path is a temporary, gated invocation from
+`scripts/start-production.sh`, enabled only for one publish through
+`[userenv.production]`. Resolve the production profile by its handle and
+production username; do not pass the development fixture email. After the
+publish, verify the live profile contains the six reference engines and that
+each detail and fallback-thumbnail endpoint returns successfully, then remove
+the production trigger before the cleanup publish. The gate remains disabled
+by default in the launcher so it cannot run during ordinary restarts.

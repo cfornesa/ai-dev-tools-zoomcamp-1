@@ -107,6 +107,13 @@ shared/production data.
 - The ordinary push run `35433447342` remains green with its intentionally
   short one-shard browser smoke plus WebKit regression. The full matrix is
   reserved for manual/scheduled acceptance.
+- Discovery gate follow-up: push run `35434772435` found one unrelated
+  full-Vitest CI-load timing failure in
+  `frontend/src/pages/CollectionManagement.test.tsx` after 2,733 passing
+  tests. The focused test passes locally; duplicate search found no existing
+  issue, so criterion-ready follow-up [#631](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/631)
+  records the mechanical synchronization work. It is deferred until the
+  current #627 transaction has a terminal result.
 
 ## Out of scope
 

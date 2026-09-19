@@ -2,7 +2,7 @@
 
 ## Status
 
-`GROOMED → ENGINEERING` — PM pass complete; implementation is a complex/data-layer substitution because the rostered Ollama Cloud service is unavailable in this session.
+`GROOMED → ENGINEERING/QA → DEPENDENCY-BLOCKED` — local implementation and QA evidence are ready; approved Replit publication is blocked by #634's unresolved Security Center findings.
 
 ## Transaction ledger
 
@@ -11,7 +11,7 @@
 - **Dependencies:** #622 release evidence gate; closed #612/#613/#614/#607/#608/#609/#610/#615/#616 contracts.
 - **Stage owners:** scoping `Codex / GPT-5 / current session, substituted: no`; implementation `Ollama Cloud / kimi-k3 / not available, Codex/GPT-5 substitution: yes`; second opinion `not run`; QA pending `Claude / Sonnet 5 Medium, substitution pending`.
 - **Evidence boundary:** local/disposable tests and dry-run are automation-verifiable; production import and deployed route evidence remain explicitly manual Replit acceptance.
-- **Current next action:** add dry-run and explicit production opt-in while preserving the disposable guard, then run focused backend tests.
+- **Current next action:** resolve or disposition #634, publish this revision, then execute the production dry-run before any import.
 
 ## Goal
 
@@ -51,6 +51,7 @@ One documented, non-interactive production workflow selected by the owner, with 
 ## Dependencies
 
 - #622 — production evidence gate; this issue supplies the missing import prerequisite.
+- #634 — Replit Security Center gate currently disables Republish for unresolved `vitest`/`@vitest/mocker` findings.
 - Closed #612 — disposable reference import contract and fixture provenance.
 - Closed #613/#614/#607/#608/#609/#610/#615/#616 — schema, capability, runtime, editor, embed, and slug contracts.
 

@@ -15,6 +15,15 @@ dependency-blocked until #633 is implemented, independently reviewed, QA
 verified, and its approved production import is followed by the authenticated
 surface matrix.
 
+The reviewed importer revision is currently held by a separate Replit
+Security Center gate reporting unresolved medium findings for `vitest` and
+`@vitest/mocker` v4.1.10. That new blocker is tracked in [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634); no dependency change was made during #633.
+
+#634 identified `GHSA-82fw-gwwq-j7x9` and applied the minimal existing-package
+upgrade to Vitest 4.1.11; local npm audit now reports zero vulnerabilities.
+Replit must rescan the pushed revision before the publish blocker is considered
+resolved.
+
 ## 2026-09-17 — Backlog session: production schema ledger reconciliation (#589, #597, #598)
 
 The open schema-centered manifest contained exactly three issues: [#589](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/589), [#597](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/597), and [#598](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/598). The pasted Claude Code report was treated as untrusted intake and independently rechecked through the Replit Shell.

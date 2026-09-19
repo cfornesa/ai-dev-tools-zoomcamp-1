@@ -71,6 +71,20 @@ RATE_LIMIT_WINDOW_SECONDS = 60
 DAILY_QUOTA_MAX_SUCCESSES = 50
 
 
+def _generation_rate_limit() -> int:
+    """Return the request-attempt budget for this runtime.
+
+    The deterministic fake provider is used only by the browser E2E server.
+    Its requests do not consume a vendor quota, so keeping the production
+    five-per-minute budget there makes independent browser scenarios depend
+    on shard ordering rather than testing the art-piece workflow. Real
+    providers retain the public limit and its dedicated unit coverage.
+    """
+    if use_fake_ai_provider():
+        return 100
+    return RATE_LIMIT_MAX_ATTEMPTS
+
+
 def _rate_limit_cache_key(user_id: int) -> str:
     return f"art-piece-rate:{user_id}"
 
@@ -338,7 +352,7 @@ class ArtPieceGenerateView(APIView):
         user_id = request.user.id
         if not _increment_and_check(
             _rate_limit_cache_key(user_id),
-            limit=RATE_LIMIT_MAX_ATTEMPTS,
+            limit=_generation_rate_limit(),
             window_seconds=RATE_LIMIT_WINDOW_SECONDS,
         ):
             return _rate_limited_response()

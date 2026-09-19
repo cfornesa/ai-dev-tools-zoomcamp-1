@@ -207,6 +207,8 @@ function buildListenerScript(library: ArtPieceLibrary): string {
 (function () {
   var pieceLibrary = ${JSON.stringify(library)};
   function report(status, message) {
+    if (status === 'ready' && runtimeFailed) return;
+    if (status === 'error') runtimeFailed = true;
     try {
       window.parent.postMessage(
         { source: ${JSON.stringify(ART_PIECE_SANDBOX_MESSAGE_SOURCE)}, status: status, message: message },
@@ -217,6 +219,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
       // throws, there is nothing else this sandbox can do to report it.
     }
   }
+  var runtimeFailed = false;
   // Issue #430: reports acknowledged runtime state (not just command
   // receipt) for sound/microphone, so the parent -- and this suite's own
   // E2E spec -- observe what the sandbox actually did, never a spoofed

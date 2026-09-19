@@ -98,8 +98,15 @@ shared/production data.
 - Commit `fa7de8a` keeps the generated art-piece studio sandbox handshake
   listener mounted for the page lifetime, preventing a fast ready/error
   message from racing the phase-dependent effect. Focused ArtPieceStudio
-  coverage passes (`13 tests`) and the full matrix `35433934539` is the
-  authoritative validation in progress against this fix.
+  coverage passes (`13 tests`). Full matrix `35433934539` completed with
+  `274 passed`, `2 failed`, and `6 skipped`; the only failures were #627's
+  A-Frame editor preview and generated crash-on-load cases. Trace inspection
+  showed the A-Frame failure was an HTTP 429 from the shared five-per-minute
+  fake-provider budget, while the crash case exposed an error-then-ready
+  sandbox handshake race.
+- The ordinary push run `35433447342` remains green with its intentionally
+  short one-shard browser smoke plus WebKit regression. The full matrix is
+  reserved for manual/scheduled acceptance.
 
 ## Out of scope
 

@@ -12,12 +12,13 @@ fixed beginning at 4.1.11. The reviewed dependency-only change is pushed in
 (`2,734` tests), build, and `npm audit` (0 vulnerabilities) pass locally.
 
 The remaining acceptance boundary is external: Replit's Security Center still
-shows the old 4.1.10 scan because its Git panel reports an unfinished rebase.
-Republish/rescan is therefore dependency-blocked. Preserve the reviewed SHA;
-finish or recover the workspace rebase through an explicitly reviewed workflow,
-then pull, rescan, and republish. Do not force-reset the workspace or use a
-Replit Agent fix action as a substitute for repository review. #633 and #622
-remain open behind this gate.
+shows the old 4.1.10 scan because its Git panel reports an unfinished rebase
+and an `UNAUTHENTICATED` GitHub remote. Republish/rescan is therefore
+dependency-blocked. Preserve the reviewed SHA; repair/confirm Git
+authentication, finish or recover the workspace rebase through an explicitly
+reviewed workflow, then pull, rescan, and republish. Do not force-reset the
+workspace or use a Replit Agent fix action as a substitute for repository
+review. #633 and #622 remain open behind this gate.
 
 ## 2026-09-19 — Production import follow-up (#633)
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-`GROOMED → ENGINEERING → QA/DEPENDENCY-BLOCKED` — authoritative advisory identified and minimal fixed-version upgrade implemented; Replit cannot rescan the reviewed revision while its Git workspace reports an unfinished rebase.
+`GROOMED → ENGINEERING → QA/DEPENDENCY-BLOCKED` — authoritative advisory identified and minimal fixed-version upgrade implemented; Replit cannot rescan the reviewed revision while its Git workspace reports an unfinished rebase and unauthenticated remote.
 
 ## Transaction ledger
 
@@ -10,7 +10,7 @@
 - **Entry point/fixture:** `frontend/package.json` and `frontend/package-lock.json`, scanned by npm audit and Replit Security Center.
 - **Dependencies:** #633 and #622.
 - **Stage owners:** scoping `Codex / GPT-5 / current session, substituted: no`; implementation `Opencode Go / kimi-k3 / not available, Codex/GPT-5 substitution: yes`; second opinion `not run`; QA pending `Claude / Sonnet 5 Medium, substitution pending`.
-- **Current next action:** finish or safely recover the pre-existing Replit rebase, pull the reviewed SHA, then rescan/review Republish; do not force-reset the workspace or use Replit Agent to mutate the repository.
+- **Current next action:** repair/confirm Replit Git authentication, then finish or safely recover the pre-existing rebase and pull the reviewed SHA; rescan/review Republish afterward. Do not force-reset the workspace or use Replit Agent to mutate the repository.
 
 ## Goal
 
@@ -39,8 +39,9 @@ the reviewed `main` revision.
 - [ ] Replit Security Center no longer blocks Republish, or the exact owner
   decision and remaining platform boundary are recorded on #633/#622. **Currently
   blocked:** the workspace Git panel reports `Unsupported state: you are in the
-  middle of a rebase. Please finish the rebase manually`, so the visible scan
-  remains on the old v4.1.10 dependency set.
+  middle of a rebase. Please finish the rebase manually`, and `Git Error
+  UNAUTHENTICATED`, so the visible scan remains on the old v4.1.10 dependency
+  set.
 - [ ] The resulting lockfile/manifests contain no secrets and the dependency
   change is isolated to this issue.
 

@@ -33,8 +33,9 @@ GitHub comment; no unrecorded service is credited.
   `npm ci`, frontend checks, full Vitest, build, and push CI pass.
 - Local #633 implementation: `2aa5b8a`; focused import tests, full backend
   tests, lint, format, and mypy pass.
-- Replit's Git panel currently reports: `Unsupported state: you are in the
-  middle of a rebase. Please finish the rebase manually.` Its visible scan is
+- Replit's Git panel currently reports both `Unsupported state: you are in the
+  middle of a rebase. Please finish the rebase manually` and `Git Error
+  UNAUTHENTICATED Failed to authenticate with the remote`. Its visible scan is
   still for Vitest 4.1.10, so the reviewed SHA has not been externally
   verified there.
 - Classification: `verification-boundary` plus `workflow/infrastructure-
@@ -44,8 +45,9 @@ GitHub comment; no unrecorded service is credited.
 
 ## Required terminal sequence
 
-1. Resolve the Replit rebase through an owner-approved choice, pull reviewed
-   `0049e26`, run Security Center scan, and confirm Republish is enabled.
+1. Repair/confirm Replit's Git authentication and resolve the rebase through
+   an owner-approved choice, pull reviewed `feb93f7`, run Security Center scan,
+   and confirm Republish is enabled.
 2. Republish and run `scripts/smoke-published.sh`.
 3. Run #633's production dry-run through Replit Shell; review owner/profile,
    six fixtures, conflicts, and zero writes.

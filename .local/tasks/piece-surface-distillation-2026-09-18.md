@@ -671,3 +671,12 @@ either closed or explicitly terminally handed off for republishing.
 - **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixtures were disposable.
 - **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/615#issuecomment-5738380757).
 - **Next action:** continue with shared cards/thumbnails (#602), canonical slugs (#616), then reconcile parent containers and rerun #612's complete acceptance matrix.
+
+### Transaction ledger — #610 editor integration parent — 2026-09-19
+
+- **Phase:** `RECONCILIATION → QA → CLOSED`.
+- **Parent evidence:** #618 and #620 are closed with their own browser/QA matrices; together they cover all requested generated engines, explicit 2D/3D editor routing, source-only boundaries, immutable revisions, capability/version preservation, provider/crash recovery, and owner authorization.
+- **Repository evidence:** the shared full gate passed backend `1436 passed, 39 skipped`, frontend `2734 passed`, lint, format, typecheck, and action-pin checks.
+- **Safety boundary:** no shared, development, production, or Replit database was written.
+- **GitHub evidence:** [parent QA reconciliation and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/610#issuecomment-5738384428).
+- **Next action:** continue with shared cards/thumbnails (#602), canonical slugs (#616), then rerun #612's complete cross-surface acceptance matrix.

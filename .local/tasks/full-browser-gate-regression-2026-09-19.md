@@ -121,6 +121,20 @@ shared/production data.
   contract and slug-isolation contract are green; #627 and #621 were closed.
   Discovery gate follow-up [#632](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/632)
   tracks the separate admin login fixture timeout.
+- Mechanical follow-up [#631](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/631)
+  was implemented in `7e22707`: the collection-management test now uses a
+  synchronized `userEvent` interaction sequence. Focused coverage passed
+  (`2 passed`), and the complete frontend Vitest suite passed (`241 files`,
+  `2734 tests`). QA comment and issue closure are recorded on GitHub.
+- #632 was rerun as Browser acceptance E2E shard 1 job `105878745662` in
+  workflow `35435158520` and completed successfully. The original mobile
+  login timeout was not reproduced, so the issue was closed as a transient
+  CI-load/fixture timing failure with no product change.
+- CI strategy is now reconciled: ordinary pushes run the bounded Chromium
+  smoke shard plus the WebKit fullscreen regression; scheduled/manual runs
+  execute the full three-shard browser matrix in parallel. Do not manually
+  re-trigger the full matrix after every batch; use the nightly result or
+  targeted local/CI evidence unless the owner explicitly requests a full run.
 
 ## Out of scope
 

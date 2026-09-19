@@ -5,12 +5,12 @@ metadata:
   type: feedback
 ---
 
-The full multi-browser Playwright matrix (`npm run test:e2e`, no `--project`
-filter, single-worker per `playwright.config.ts`) genuinely takes ~40
-minutes to run — that is not a bug or something to optimize away, it is the
-real cost of 819 tests across chromium/firefox/webkit with `workers: 1`
-(a deliberate choice for fixture/concurrency-test correctness, see
-[[full-browser-readiness-gate]]).
+Historical note: before the 2026-09-19 workflow split, the full multi-browser
+Playwright matrix (`npm run test:e2e`, no `--project` filter, single-worker per
+`playwright.config.ts`) genuinely took ~40 minutes as one serial job. The
+current workflow shards it into three parallel one-worker jobs, reducing wall
+time to roughly 10–12 minutes while preserving the fixture/concurrency
+properties that require one worker inside each shard.
 
 **2026-09-09 incident:** during one session, this full matrix was manually
 triggered via `gh workflow run CI --ref main` (`workflow_dispatch`) three
@@ -26,12 +26,11 @@ run can no longer be cancelled by an unrelated push. That fix is real and
 worth keeping, but it does not address the deeper issue below.
 
 **The actual lesson, per the repository owner's explicit correction:**
-`ci.yml` already runs this exact full matrix automatically every weeknight
-(`schedule: cron: "17 3 * * 1-5"`) — there was never a need to manually
-re-trigger it in the same session as an engineering batch. Manually
-re-running a ~40-minute single-worker suite after every batch, "just to be
-sure," is the actual waste — not the suite's own runtime, which is fixed
-and known.
+`ci.yml` runs the full matrix automatically every weeknight
+(`schedule: cron: "17 3 * * 1-5"`), and push CI now provides a bounded smoke
+gate. There is no need to manually re-trigger the full matrix in the same
+session as an engineering batch, even though the parallelized matrix is now
+shorter.
 
 **How to apply:** for future sessions on this repo, do not call
 `gh workflow run CI` to manually force the full multi-browser matrix as a

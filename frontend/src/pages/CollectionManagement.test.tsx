@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -82,9 +82,11 @@ describe('CollectionManagement', () => {
     await user.clear(title);
     await user.type(title, 'Renamed');
     await user.click(screen.getByRole('button', { name: 'Save details' }));
-    expect(mockedUpdate).toHaveBeenCalledWith('collection-1', {
-      title: 'Renamed',
-      description: 'Small experiments',
+    await waitFor(() => {
+      expect(mockedUpdate).toHaveBeenCalledWith('collection-1', {
+        title: 'Renamed',
+        description: 'Small experiments',
+      });
     });
 
     await user.click(screen.getByRole('button', { name: /publish collection/i }));

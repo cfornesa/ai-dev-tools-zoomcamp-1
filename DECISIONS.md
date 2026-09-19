@@ -53,6 +53,25 @@ ownership and read cadence.
   of `/` is tracked as a separate mechanical issue rather than mixed into the
   backend slug repair.
 
+## 2026-09-19 — CI runtime strategy and transient-failure reconciliation
+
+- Ordinary push CI remains intentionally short: one Chromium smoke shard plus
+  the WebKit fullscreen regression. The complete browser acceptance suite is
+  retained for scheduled/manual execution as three parallel one-worker shards
+  rather than being made a required serial push gate.
+- Full matrix `35435158520` supplied the required art-piece and slug evidence:
+  `275 passed`, `1 failed`, `6 skipped`; the one failure was an unrelated
+  mobile admin-entitlement login timeout. Rerunning the failed shard as job
+  `105878745662` completed successfully, so #632 was closed as a transient
+  CI-load/fixture timing failure.
+- #631's controlled-input timing fix is `7e22707`; focused coverage passed and
+  the full frontend suite passed with `241` files and `2734` tests. No test
+  reduction was needed; the runtime problem is addressed by separating bounded
+  push feedback from scheduled full coverage.
+- Do not manually trigger the full matrix as a routine post-batch action. Use
+  the latest scheduled result or targeted local/CI evidence; manually run the
+  full matrix only for an owner-requested release or closure gate.
+
 ## 2026-09-14
 
 - **#542 conflict policy (owner-selected):** deterministic hybrid merge. The

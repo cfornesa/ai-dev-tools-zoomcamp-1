@@ -116,7 +116,10 @@ function ArtPieceStudio() {
   }, []);
 
   useEffect(() => {
-    if (phase !== 'previewing') return;
+    // Keep this listener mounted for the lifetime of the page. The preview
+    // iframe is created in the same commit that changes `phase` to
+    // `previewing`; waiting for a phase-dependent effect can miss the
+    // sandbox's synchronous ready/error handshake before the effect runs.
     function onMessage(event: MessageEvent) {
       if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
       const parsed = parseArtPieceSandboxMessage(event.data);
@@ -129,7 +132,7 @@ function ArtPieceStudio() {
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [phase]);
+  }, []);
 
   function updateModel(next: string) {
     setModel(next);

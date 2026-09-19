@@ -629,3 +629,12 @@ either closed or explicitly terminally handed off for republishing.
 - **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixture data and extracted temporary artifacts were disposable.
 - **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609#issuecomment-5738254516).
 - **Next transaction:** continue with the next dependency-ready consumer slice; #612 remains downstream and owns the owner-scoped `@cfornesa` importer/profile completion.
+
+### Transaction ledger — #612 importer/profile reconciliation — 2026-09-19
+
+- **Phase:** `ENGINEERING → QA-PENDING`.
+- **Implementation:** commit `fc51004`; the disposable importer now reconciles stale marker-owned rows by creating immutable replacement versions, preserving public IDs/slugs while advancing capabilities and regenerating thumbnails. p5.js, C2.js, and C2.js Interactive now import with `immersive` and `download` enabled.
+- **Verification:** focused backend importer tests passed `2/2`; Docker re-imported the six sanitized fixtures into `@cfornesa` and Docker Chromium `referenceImport.spec.ts` passed `1/1` at desktop and mobile viewport sizes.
+- **Evidence boundary:** this proves the owner-scoped import/profile increment only. #612 remains open for editor and chrome-less embed acceptance owned by #610/#615, and the imported rows remain disposable Docker evidence; no shared, development, production, or Replit database was written.
+- **GitHub evidence:** [importer/profile reconciliation](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612#issuecomment-5738271058).
+- **Next action:** continue with the next dependency-ready editor/embed slice, then rerun #612's complete six-engine acceptance matrix before closing it.

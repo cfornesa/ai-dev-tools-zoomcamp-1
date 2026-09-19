@@ -59,9 +59,7 @@ class PublicPieceBySlugView(APIView):
             }
             if request.user.is_authenticated and request.user == owner:
                 response["edit_url"] = f"/users/@{handle}/edit/{art_piece.public_slug}"
-            return Response(
-                response
-            )
+            return Response(response)
         raise Http404
 
 

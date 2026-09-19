@@ -732,3 +732,21 @@ either closed or explicitly terminally handed off for republishing.
 - **GitHub evidence:** #619 [reconciliation](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/619#issuecomment-5738432810), #601 [reconciliation](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/601#issuecomment-5738433026), and #600 [reconciliation](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/600#issuecomment-5738433378).
 - **Safety boundary:** no shared, development, production, or Replit database was written.
 - **Next action:** run task-distillation reconciliation, then production-readiness and session-completion against the now-empty project backlog; deployment/republish remains a separate evidence gate.
+
+### Task-distillation and readiness handoff — 2026-09-19
+
+- **Manifest reconciliation:** GitHub open-issue enumeration returned no
+  remaining issues. The manifest's actionable slices are terminal and each has
+  a linked implementation/QA/closure record; no duplicate or uncovered
+  product issue was discovered in this pass.
+- **Durable memory:** `.agents/memory/immersive-flat-engine-presentation.md`
+  records the six-engine flat immersive presentation contract and was indexed
+  in `.agents/memory/MEMORY.md`.
+- **Production-readiness status:** `BLOCKED` as a workflow/model gate, not a
+  product defect. The required `production-readiness` stage is restricted to
+  Opus 5 or Sonnet 5; neither is available in this session, so no readiness
+  verdict or republish recommendation is claimed.
+- **Exact next action:** resume this goal on a host exposing the rostered Opus
+  5 or Sonnet 5 model, run production-readiness across local/approved-browser/
+  CI/Replit publication dimensions, then run session-completion. Do not
+  republish before that gate.

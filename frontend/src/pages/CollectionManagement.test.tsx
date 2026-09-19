@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -74,26 +74,30 @@ beforeEach(() => {
 
 describe('CollectionManagement', () => {
   it('edits, reorders, publishes, and exposes item removal controls', async () => {
+    const user = userEvent.setup();
     renderPage();
     expect(await screen.findByRole('heading', { name: 'Edit collection' })).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Renamed' } });
-    await userEvent.click(screen.getByRole('button', { name: 'Save details' }));
+    const title = screen.getByLabelText('Title');
+    await user.clear(title);
+    await user.type(title, 'Renamed');
+    await user.click(screen.getByRole('button', { name: 'Save details' }));
     expect(mockedUpdate).toHaveBeenCalledWith('collection-1', {
       title: 'Renamed',
       description: 'Small experiments',
     });
 
-    await userEvent.click(screen.getByRole('button', { name: /publish collection/i }));
+    await user.click(screen.getByRole('button', { name: /publish collection/i }));
     expect(mockedPublish).toHaveBeenCalledWith('collection-1', true);
     expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument();
   });
 
   it('rejects an empty create title before making an API call', async () => {
+    const user = userEvent.setup();
     mockedFetch.mockResolvedValue([]);
     renderPage();
     await screen.findByRole('heading', { name: 'Create collection' });
-    await userEvent.click(screen.getByRole('button', { name: 'Create collection' }));
+    await user.click(screen.getByRole('button', { name: 'Create collection' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a collection title first.');
     expect(collectionsApi.createCollection).not.toHaveBeenCalled();
   });

@@ -638,3 +638,14 @@ either closed or explicitly terminally handed off for republishing.
 - **Evidence boundary:** this proves the owner-scoped import/profile increment only. #612 remains open for editor and chrome-less embed acceptance owned by #610/#615, and the imported rows remain disposable Docker evidence; no shared, development, production, or Replit database was written.
 - **GitHub evidence:** [importer/profile reconciliation](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612#issuecomment-5738271058).
 - **Next action:** continue with the next dependency-ready editor/embed slice, then rerun #612's complete six-engine acceptance matrix before closing it.
+
+### Transaction ledger — #618 2D AI editor modes — 2026-09-19
+
+- **Phase:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Implementation:** commits `0aa2aba` and `8d98cc9`; the existing source-preserving editor now exposes explicit 2D engine/family identity and a source-only preview boundary, while the regression contract reflects immersive support for all registered engines.
+- **Browser evidence:** Docker Chromium `artPiece2dEditor.spec.ts` passed `1/1` at 1280x900 and 375x812 for SVG and C2.js Interactive, covering canonical owner routing, engine identity, fake-provider revision preview, and immutable version-2 save/current-version state. Clean disposable runs also passed the capability/recovery suite `2/2`, including cross-user denial and crash recovery.
+- **Repository evidence:** full `make check` passed with backend `1436 passed, 39 skipped` and frontend `2734 passed`; lint, format, typecheck, and action-pin checks passed.
+- **QA provenance:** Codex/GPT-5 substitution for the rostered implementation and Claude Sonnet 5 Medium QA stages; Stage 3 independent-family review unavailable.
+- **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixtures were disposable.
+- **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/618#issuecomment-5738345654).
+- **Next action:** continue with #620's explicit Three.js/A-Frame 3D editor mode, then reconcile #610 after both editor children are complete.

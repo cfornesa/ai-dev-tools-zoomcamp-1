@@ -607,3 +607,14 @@ either closed or explicitly terminally handed off for republishing.
 - **Full repository gate:** `UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed: backend `1436 passed, 39 skipped`; frontend `2732 passed`; action-pin check, lint, format, and typecheck passed.
 - **GitHub evidence:** [live correction](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5737948844) and [full repository gate](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5737980256).
 - **Next action:** add/run the six-engine immersive fixed-viewport browser matrix and verify authored Three.js/A-Frame transforms/errors before QA closure.
+
+### Transaction ledger — #608 immersive runtime parity — 2026-09-19
+
+- **Phase:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Implementation:** commits `4bdd4a9`, `abf626b`, `e74a7e1`, and `0cbec76`; immersive capability is enabled for the six requested engines, flat engines use the lazy synthetic shell with responsive full-screen presentation, and the mobile overlay no longer obscures the title.
+- **Browser evidence:** Docker Chromium six-engine immersive matrix passed `1/1` across 1280x900 and 375x812; existing immersive Custom/CMS suites passed 8 scenarios; camera/sound/microphone/steering suites passed 11 scenarios. CUA visibly inspected all six rendered frames and rechecked the corrected mobile p5.js overlay.
+- **Repository evidence:** final `UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed with backend `1436 passed, 39 skipped`, frontend `2732 passed`, action-pin check, lint, format, and typecheck. A transient CollectionManagement failure was isolated and the full frontend suite rerun passed.
+- **QA provenance:** Codex/GPT-5 substitution for the rostered Ollama Cloud implementation and Claude Sonnet 5 Medium QA stages; Stage 3 independent-family review unavailable; intake `ACCEPTED-WITH-FIXES`.
+- **Safety boundary:** no shared, development, production, or Replit database was written.
+- **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5738113835).
+- **Next transaction:** #609 offline regular/immersive downloads; #612 remains downstream of the closed runtime contract and still owns importer/profile completion.

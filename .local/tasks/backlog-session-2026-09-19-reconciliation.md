@@ -13,10 +13,25 @@ GitHub comment; no unrecorded service is credited.
 
 | Order | Issue | Scope | Dependencies | State | Routing / next action |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634) | Resolve the Vitest Security Center gate | Replit workspace synchronization | `CLOSED / QA PASS` | CI and the fresh Replit Security Center scan pass; no remaining work in this issue. |
-| 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #622 evidence | `CLOSED / QA PASS` | Production import, six reference engines, stored thumbnails, routes, cleanup publish, and regression evidence passed; broader release-surface work remains in #622. |
-| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / blocked on Replit authentication and rebase state` | Six-engine regular/immersive/editor matrices pass in the prior production artifact; latest Replit publish still serves the legacy UUID link. Replit Git now reports `UNAUTHENTICATED` and an in-progress rebase, so manual workspace recovery is required before Pull, republish, and fresh live verification. |
+| 1 | [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634) | Resolve the Vitest Security Center gate | Replit workspace synchronization | `CLOSED / QA PASS` | Fixed dependency revision and clean Security Center evidence were reconciled; no remaining work in this issue. |
+| 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #622 evidence | `CLOSED / QA PASS` | Production import, six reference engines, stored thumbnails, routes, cleanup publish, and regression evidence passed. |
+| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `CLOSED / QA PASS` | Corrected checkout `4fd39f8` was promoted; authenticated owner, anonymous authorization, canonical links, and published smoke passed. |
 | 4 | [#635](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/635) | Reduce CI feedback time without weakening required coverage | none | `CLOSED / QA PASS` | Changed-test PR feedback path and deterministic full main/release gate are implemented and verified by green CI run `35444460681`. |
+
+## Stage-owner and terminal-status audit
+
+All four manifest issues have terminal GitHub status and a QA verdict. The
+rostered external implementation and review services were unavailable, so
+Codex/GPT-5 performed the substituted implementation and QA work; stage 3 was
+not run. Production-readiness and session-completion are owner-authorized
+Codex/GPT-5 substitutions recorded in `DECISIONS.md`.
+
+| Issue | Scoping | Implementation | Second opinion | QA | Readiness | Final |
+| --- | --- | --- | --- | --- | --- | --- |
+| #634 | Codex / GPT-5 / medium / no substitution | Codex / GPT-5 / medium / substituted for Opencode Go | not run | Codex / GPT-5 / medium / substituted for Claude Sonnet 5 | Codex / GPT-5 / medium / owner-authorized substitution | CLOSED |
+| #633 | Codex / GPT-5 / medium / no substitution | Codex / GPT-5 / medium / substituted for Ollama Cloud | not run | Codex / GPT-5 / medium / substituted for Claude Sonnet 5 | Codex / GPT-5 / medium / owner-authorized substitution | CLOSED |
+| #622 | Codex / GPT-5 / medium / no substitution | Codex / GPT-5 / medium / substituted for implementation service | not run | Codex / GPT-5 / medium / substituted for Claude Sonnet 5 | Codex / GPT-5 / medium / owner-authorized substitution | CLOSED |
+| #635 | Codex / GPT-5 / medium / no substitution | Codex / GPT-5 / medium / substituted for Ollama Cloud | not run | Codex / GPT-5 / medium / substituted for Claude Sonnet 5 | Codex / GPT-5 / medium / owner-authorized substitution | CLOSED |
 
 ## Duplicate and already-covered work
 
@@ -47,17 +62,16 @@ GitHub comment; no unrecorded service is credited.
 - #635 is closed after green CI run `35444460681`; the main push full frontend
   job took 5m46s, while the representative changed-test PR path took about 6s.
 
-## Required terminal sequence
+## Required terminal sequence — completed
 
 1. Resolve the #622 card-rendering discrepancy so stored fallback thumbnails
-   display consistently with the API contract.
+   display consistently with the API contract. **Complete.**
 2. Complete #622's six-engine regular/immersive/embed/download/editor-owner
-   browser matrix and anonymous authorization checks.
+   browser matrix and anonymous authorization checks. **Complete.**
 3. Post per-criterion QA/reconciliation comments, close only
    criteria-complete issues, then invoke production-readiness and
-   session-completion.
+   session-completion. **Complete.**
 
-The production target and imported data are resolved, but the remaining
-release blocker is Replit workspace synchronization and promotion of the
-canonical-link fix. The CI runtime concern is closed in #635 without dropping
-release coverage.
+The production target, imported data, canonical links, and CI strategy are
+resolved. No open issues or unlinked actionable follow-ups remain in this
+manifest.

@@ -1094,3 +1094,21 @@ service/model/effort must be recorded in the backlog ledger, and the result
 must never be represented as a Claude run. The governing dispatch contract,
 production-readiness, backlog-session, and session-completion documents (and
 their mirrored skills where present) were updated together.
+
+## 2026-09-19 (final backlog/session completion for #622, #633, #634, #635)
+
+The owner-authorized GPT-5 runtime ran the final production-readiness and
+session-completion gates as an explicit substitution for the rostered Claude
+Opus/Sonnet tier. All four manifest issues are terminal and closed: #634
+security remediation, #633 production reference import, #622 published
+canonical route evidence, and #635 CI feedback optimization. Stage 3
+second-opinion review was not run and remains explicitly recorded as not run,
+not implicitly covered by QA.
+
+Readiness evidence is separated by boundary: local full backend/frontend
+checks passed; CI run `35444460681` on `4fd39f8` passed backend, frontend,
+workflow, browser acceptance, and disposable routing jobs; the promoted
+production route exposes the owner-only edit URL and slug-based immersive URL;
+anonymous access omits editing; and `scripts/smoke-published.sh` passed
+against `https://augmentrart.com`. No open issues or unlinked actionable
+follow-ups remain in the reconciled manifest.

@@ -2,9 +2,8 @@
 
 ## Status
 
-`PROPOSED` — discovered during the final QA pass for #622/#633. The final
-local frontend run passed 241 test files / 2,734 tests but took approximately
-172 seconds before the build.
+`GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` — changed-test PR
+feedback and deterministic full main/release gates are implemented and green.
 
 ## Scope
 
@@ -30,6 +29,18 @@ then implement the selected coverage-preserving strategy.
 - CI workflow validation
 - Full frontend/backend release suites
 - Timed representative PR feedback paths
+
+## Transaction ledger
+
+- **Stage owners:** scoping `Codex / GPT-5 / medium, substituted: no`;
+  implementation `Codex / GPT-5 / medium, substituted: yes for Ollama Cloud`;
+  second opinion `not run`; QA `Codex / GPT-5 / medium, substituted: yes for
+  Claude Sonnet 5`; readiness `Codex / GPT-5 / medium, owner-authorized
+  substitution`.
+- **Evidence:** changed path 10 files / 39 tests in about 6 seconds; full
+  frontend 241 files / 2,734 tests in about 105 seconds; full backend 1,447
+  passed / 39 skipped in about 131 seconds; authoritative CI run
+  `35444460681` passed all required jobs.
 
 ## GitHub
 

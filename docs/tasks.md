@@ -3,6 +3,32 @@
 The current open-issue manifest and dependency reconciliation is recorded in
 `.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
 
+## 2026-09-19 — Final backlog/session reconciliation (#622, #633, #634, #635)
+
+The final manifest contains four processed issues and zero remaining open
+issues: #634 security remediation, #633 owner-scoped production import, #622
+published piece evidence, and #635 CI feedback optimization. All four have
+terminal `CLOSED / QA PASS` status with GitHub criterion comments and recorded
+Codex/GPT-5 substitution provenance; Mistral Vibe second-opinion review was
+not run.
+
+Final evidence boundary:
+
+- Local: focused and full backend/frontend checks passed; the full frontend
+  suite covered 241 files / 2,734 tests and the backend suite covered 1,447
+  passed with 39 skips.
+- CI: run `35444460681` on `4fd39f8` passed backend, frontend, workflow,
+  browser acceptance, and disposable published-routing jobs.
+- Production: the corrected checkout was promoted through Replit; the owner
+  route exposes `/users/@cfornesa/edit/reference-threejs-study`, the regular
+  viewer exposes `/users/@cfornesa/immersive/reference-threejs-study`, and an
+  anonymous session does not expose editing. `scripts/smoke-published.sh`
+  passed against `https://augmentrart.com`.
+
+The readiness and session-completion gates ran as owner-authorized GPT-5
+substitutions for the rostered Claude tier. No required issue, acceptance
+criterion, or follow-up remains unlinked in this batch.
+
 ## 2026-09-19 — CI feedback-time optimization (#635)
 
 Pull requests now use Vitest's dependency-aware changed-test path against the

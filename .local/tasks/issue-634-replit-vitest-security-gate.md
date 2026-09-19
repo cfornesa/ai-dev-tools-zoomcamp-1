@@ -9,7 +9,7 @@
 - **Issue:** #634
 - **Entry point/fixture:** `frontend/package.json` and `frontend/package-lock.json`, scanned by npm audit and Replit Security Center.
 - **Dependencies:** #633 and #622.
-- **Stage owners:** scoping `Codex / GPT-5 / current session, substituted: no`; implementation `Opencode Go / kimi-k3 / not available, Codex/GPT-5 substitution: yes`; second opinion `not run`; QA pending `Claude / Sonnet 5 Medium, substitution pending`.
+- **Stage owners:** scoping `Codex / GPT-5 / medium, substituted: no`; implementation `Codex / GPT-5 / medium, substituted: yes for Opencode Go`; second opinion `not run`; QA `Codex / GPT-5 / medium, substituted: yes for Claude Sonnet 5`; readiness `Codex / GPT-5 / medium, owner-authorized substitution`.
 - **Final action:** Replit Git was repaired by the owner-authorized workspace workflow; the synchronized remote is `f03d3a8`, and a fresh Security Center scan reports zero active issues. Do not use Replit Agent security fixes as a substitute for reviewed repository changes.
 
 ## Goal

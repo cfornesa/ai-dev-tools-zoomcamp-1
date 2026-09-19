@@ -4003,7 +4003,7 @@ select.ai-proposal-field-full-width {
   top: 0;
   right: 0;
   left: 0;
-  padding: 18px 24px;
+  padding: 4.25rem 24px 18px;
   background: linear-gradient(#11131add, transparent);
   pointer-events: none;
 }

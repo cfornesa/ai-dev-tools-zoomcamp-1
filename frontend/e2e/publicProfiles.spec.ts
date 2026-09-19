@@ -25,7 +25,19 @@ test.describe('Public profiles (#520)', () => {
     await page.getByRole('button', { name: 'Save profile' }).click();
     await expect(page.getByText('Profile saved.')).toBeVisible();
 
-    await page.goto(`/users/@${publicHandle}`);
+    // Use the server's canonical response rather than assuming the submitted
+    // handle survived validation/normalization unchanged. This also makes a
+    // failed profile write observable before the browser follows the public
+    // route, instead of turning it into an opaque missing-heading failure.
+    const savedProfile = (await (await apiGet(page.context(), '/api/account/profile/')).json()) as {
+      handle: string;
+      display_name: string;
+      is_public: boolean;
+    };
+    expect(savedProfile.handle).toBe(publicHandle);
+    expect(savedProfile.display_name).toBe('E2E Artist');
+    expect(savedProfile.is_public).toBe(true);
+    await page.goto(`/users/@${savedProfile.handle}`);
     await expect(page.getByRole('heading', { name: 'E2E Artist' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Public pieces' })).toBeVisible();
     await page.setViewportSize({ width: 1280, height: 900 });

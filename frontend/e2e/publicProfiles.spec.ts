@@ -22,7 +22,12 @@ test.describe('Public profiles (#520)', () => {
     await page.getByLabel('Display name').fill('E2E Artist');
     await page.getByLabel('Bio').fill('A public profile bio.');
     await page.getByLabel('Make profile public').check();
+    const saveResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PATCH' && response.url().endsWith('/api/account/profile/'),
+    );
     await page.getByRole('button', { name: 'Save profile' }).click();
+    expect((await saveResponse).status()).toBe(200);
     await expect(page.getByText('Profile saved.')).toBeVisible();
 
     // Use the server's canonical response rather than assuming the submitted

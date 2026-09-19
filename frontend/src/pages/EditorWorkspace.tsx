@@ -1376,7 +1376,11 @@ function EditorWorkspace() {
     void draftServerSync.deleteServerDraft();
     setShowExitConfirm(false);
     setExitSaveFailure(null);
-    navigate('/');
+    // Use the authenticated landing route explicitly. The root route is an
+    // auth-sensitive redirect, and keeping the destination concrete prevents
+    // a pending auth/provider render from leaving the browser on the editor
+    // URL after the confirmation has completed.
+    navigate('/studio');
   }
 
   // Issue #527: "Save now before clearing" -- attempted once, the first

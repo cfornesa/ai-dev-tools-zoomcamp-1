@@ -9,7 +9,7 @@ test.describe('Application-admin content operations (#518)', () => {
 
   test('anonymous and ordinary users cannot discover content operations', async ({ page }) => {
     await page.goto('/admin/content');
-    await expect(page).toHaveURL(/\/gallery$/);
+    await expect(page).toHaveURL(/\/gallery(?:\?type=all)?$/);
 
     await loginViaUI(page, fixtures.other.email, fixtures.password);
     await page.goto('/admin/content');

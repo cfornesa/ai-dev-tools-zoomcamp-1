@@ -149,7 +149,6 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   }, []);
 
   useEffect(() => {
-    if (revisePhase !== 'previewing') return;
     function onMessage(event: MessageEvent) {
       if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
       const parsed = parseArtPieceSandboxMessage(event.data);
@@ -162,7 +161,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [revisePhase]);
+  }, []);
 
   if (auth.status === 'loading') return null;
   if (auth.status !== 'signed-in') {

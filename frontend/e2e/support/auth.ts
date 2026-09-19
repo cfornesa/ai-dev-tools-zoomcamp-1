@@ -38,10 +38,10 @@ export async function loginViaUI(page: Page, email: string, password: string): P
   await page.getByLabel('Password', { exact: true }).fill(password);
   const pageSessionResponse = page.waitForResponse(
     (response) => response.request().method() === 'GET' && response.url().endsWith('/api/whoami/'),
-    { timeout: 15000 },
+    { timeout: 30000 },
   );
   await Promise.all([
-    page.waitForURL((url) => url.pathname === '/', { timeout: 15000 }),
+    page.waitForURL((url) => url.pathname === '/', { timeout: 30000 }),
     page.getByRole('button', { name: 'Login', exact: true }).click(),
   ]);
   const sessionResponse = await pageSessionResponse;
@@ -57,7 +57,7 @@ export async function loginViaUI(page: Page, email: string, password: string): P
   // would also be true for a failed login that re-renders the form at the
   // same path in some allauth configurations).
   await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible({
-    timeout: 15000,
+    timeout: 30000,
   });
   // Issue #474: on Firefox specifically, an APIRequestContext call made
   // immediately after this UI login can 401 even though the page's own

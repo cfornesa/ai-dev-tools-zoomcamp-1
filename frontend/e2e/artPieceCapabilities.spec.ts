@@ -60,22 +60,22 @@ test.describe('Generated studio /art-pieces: capability contract (#428)', () => 
         await loginViaUI(page, fixture.owner.email, fixture.password);
         await generate(page, 'canvas2d', 'a red rectangle');
 
-        // Issue #449: only walkable immersive navigation is spatial-only --
-        // hand steering now works for every engine (a lazily-built CSS 3D
-        // presentation of the flat piece's own artwork), so its checkbox
-        // is enabled here too.
+        // Issue #608/#609: every registered engine now has the same
+        // immersive/download surface; flat engines use the synthetic spatial
+        // shell for navigation while preserving the authored artwork.
         const handSteering = page.getByTestId('art-piece-capability-hand_steering');
         const immersive = page.getByTestId('art-piece-capability-immersive');
         await expect(handSteering).not.toContainText('Three.js/A-Frame only');
-        await expect(immersive).toContainText('Three.js/A-Frame only');
+        await expect(immersive).not.toContainText('Three.js/A-Frame only');
         await expect(handSteering.locator('input')).toBeEnabled();
-        await expect(immersive.locator('input')).toBeDisabled();
+        await expect(immersive.locator('input')).toBeEnabled();
 
         await page.getByTestId('art-piece-capability-screenshot').locator('input').check();
         await page.getByTestId('art-piece-capability-download').locator('input').check();
         await page.getByTestId('art-piece-capability-sound').locator('input').check();
         await page.getByTestId('art-piece-capability-hand_steering').locator('input').check();
         await page.getByTestId('art-piece-capability-camera_view').locator('input').check();
+        await immersive.locator('input').check();
 
         const title = `Capability contract flat fixture ${viewport.width}`;
         await page.getByLabel('Piece title').fill(title);
@@ -104,7 +104,7 @@ test.describe('Generated studio /art-pieces: capability contract (#428)', () => 
           fullscreen: false,
           screenshot: true,
           download: true,
-          immersive: false,
+          immersive: true,
         });
 
         await context.close();

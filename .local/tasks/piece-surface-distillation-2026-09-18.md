@@ -932,3 +932,13 @@ either closed or explicitly terminally handed off for republishing.
 - New duplicate-checked issues: #629 for live media-transfer enable returning
   409 in both viewports, and #630 for profile-handle mutations leaking into
   gallery/profile fixtures.
+
+### Transaction — bounded browser run #35423929110 — 2026-09-19
+
+- Evidence: `258 passed, 18 failed, 6 skipped` on `5042278`; the bounded run
+  completed in 31.2 minutes without hitting its 50-minute job ceiling.
+- Admin protected-route assertions are restored to the verified `/studio`
+  contract; the prior gallery expectation was a test-side misread.
+- The next batch carries explicit saved-model/persona section visibility,
+  admin entitlement for live-transfer protocol coverage, and unconditional
+  profile-handle fixture restoration.

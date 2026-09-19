@@ -69,6 +69,12 @@ Use the existing CI PostgreSQL service and deterministic Playwright fixture user
 - New duplicate-checked issues: [#629](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/629)
   for live media-transfer fixture conflicts and [#630](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/630)
   for profile-handle state leakage.
+- Terminal run `35423929110` on `5042278` completed with `258 passed`, `18
+  failed`, and `6 skipped` in 31.2 minutes. The route expectation changes in
+  this commit were directionally wrong for protected admin routes: the app's
+  current contract is `/studio`, so those assertions are restored before the
+  next run. The remaining new test-state fixes are intentionally staged for
+  the next verification.
 
 ## Out of scope
 

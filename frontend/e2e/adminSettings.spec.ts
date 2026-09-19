@@ -65,7 +65,7 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
       await page.goto('/admin/settings');
       // Non-owner UI gating (#458's convention): a confirmed non-admin is
       // redirected away rather than shown the form.
-      await expect(page).toHaveURL(/\/gallery(?:\?type=all)?$/);
+      await expect(page).toHaveURL(/\/studio$/);
       await expect(page.getByRole('heading', { name: 'Admin settings' })).toHaveCount(0);
 
       const settingsResponse = await apiGet(context, '/api/admin/settings/');

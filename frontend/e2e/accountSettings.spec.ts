@@ -108,6 +108,12 @@ test.describe('Account settings grouping (#548)', () => {
       );
       await page.goto('/account/settings');
       await assertGroupedSettings(page);
+      await expect(
+        page.locator('[data-settings-section="models"] .account-settings-layout-body'),
+      ).toBeVisible();
+      await expect(
+        page.locator('[data-settings-section="personas"] .account-settings-layout-body'),
+      ).toBeVisible();
       await expect(page.getByText('Small (mistral-small-latest)')).toBeVisible();
       await expect(page.getByText('Playful')).toBeVisible();
       await expect(page.getByText('Mistral key: configured')).toBeVisible();

@@ -30,7 +30,11 @@ test.describe('Live authenticated resumable media transfer (#546)', () => {
       page,
     }) => {
       await page.setViewportSize(viewport);
-      await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      // Cloud project sync is an entitlement-gated feature. The deterministic
+      // application-admin fixture is intentionally used here so this live
+      // protocol test exercises transfer behavior rather than depending on a
+      // free-plan seed having cloud_project_sync enabled.
+      await loginViaUI(page, fixtures.admin.email, fixtures.password);
       await page.goto('/account/settings/storage');
 
       // The disposable E2E database keeps the cloud-sync kill switch closed

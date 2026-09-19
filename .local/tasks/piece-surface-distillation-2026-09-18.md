@@ -603,4 +603,7 @@ either closed or explicitly terminally handed off for republishing.
 - **Evidence boundary:** imported Docker p5.js regular view is visible, but the first live immersive p5.js inspection showed a blank white frame under the overlay. This is retained as an active browser defect until the six-engine immersive matrix identifies and fixes the runtime/layout cause; no closure claim is made.
 - **GitHub evidence:** [engineering increment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5737925475).
 - **Safety boundary:** no development, production, shared, or Replit database was written.
-- **Next action:** add/run the six-engine immersive fixed-viewport browser matrix, then fix the blank flat-engine immersive frame and verify authored Three.js/A-Frame transforms/errors before QA closure.
+- **Live correction:** commit `abf626b` adds presentation-specific dark letterboxing and responsive `canvas`/`svg` sizing; CUA recheck rendered the imported p5.js orange circle centered in the full-screen surface.
+- **Full repository gate:** `UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed: backend `1436 passed, 39 skipped`; frontend `2732 passed`; action-pin check, lint, format, and typecheck passed.
+- **GitHub evidence:** [live correction](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5737948844) and [full repository gate](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5737980256).
+- **Next action:** add/run the six-engine immersive fixed-viewport browser matrix and verify authored Three.js/A-Frame transforms/errors before QA closure.

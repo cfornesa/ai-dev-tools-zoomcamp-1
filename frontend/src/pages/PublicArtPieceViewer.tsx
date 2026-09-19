@@ -23,7 +23,15 @@ function embedSnippetFor(publicId: string): string {
   return `<iframe src="${src}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`;
 }
 
-export default function PublicArtPieceViewer({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
+export default function PublicArtPieceViewer({
+  initialPiece,
+  canonicalHref,
+  editHref,
+}: {
+  initialPiece?: ArtPiece;
+  canonicalHref?: string;
+  editHref?: string;
+} = {}) {
   const { id } = useParams<{ id: string }>();
   const [piece, setPiece] = useState<ArtPiece | null>(initialPiece ?? null);
   const [error, setError] = useState(false);
@@ -72,6 +80,7 @@ export default function PublicArtPieceViewer({ initialPiece }: { initialPiece?: 
       {!isEmbedRoute && (
         <>
           <h2 id="public-art-piece-heading">{piece.title}</h2>
+          {editHref && <Link to={editHref}>Edit piece</Link>}
           <p>{piece.description}</p>
           <p>
             <button
@@ -131,7 +140,11 @@ export default function PublicArtPieceViewer({ initialPiece }: { initialPiece?: 
           stageRef={stageRef}
           iframeRef={iframeRef}
           capabilities={piece.current_version.capabilities}
-          immersiveHref={`/art-pieces/immersive/${piece.public_id}`}
+          immersiveHref={
+            canonicalHref
+              ? canonicalHref.replace('/pieces/', '/immersive/')
+              : `/art-pieces/immersive/${piece.public_id}`
+          }
           library={piece.engine}
           source={piece.current_version.source}
           title={piece.title}

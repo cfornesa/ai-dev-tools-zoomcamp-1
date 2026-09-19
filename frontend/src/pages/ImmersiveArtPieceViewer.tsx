@@ -70,10 +70,12 @@ function ImmersiveArtPieceViewer({
   initialPiece,
   canonicalHref,
   regularHref,
+  editHref,
 }: {
   initialPiece?: ArtPiece;
   canonicalHref?: string;
   regularHref?: string;
+  editHref?: string;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const routeNavigate = useNavigate();
@@ -250,6 +252,7 @@ function ImmersiveArtPieceViewer({
         <header>
           <div className="immersive-art-piece-heading-row">
             <h2 id="immersive-art-piece-heading">{piece.title}</h2>
+            {editHref && <Link to={editHref}>Edit piece</Link>}
             <button
               type="button"
               className="immersive-art-piece-close"

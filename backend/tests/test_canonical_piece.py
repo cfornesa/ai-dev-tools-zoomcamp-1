@@ -67,6 +67,26 @@ def test_canonical_and_legacy_generated_routes_resolve_the_same_public_piece(cli
 
 
 @pytest.mark.django_db
+def test_canonical_generated_piece_exposes_edit_url_only_to_owner(client):
+    user = get_user_model().objects.create_user(username="canonical-owner")
+    PublicProfile.objects.create(user=user, handle="canonical-owner", is_public=True)
+    piece = _published_piece(user, "Owner Study")
+    url = reverse(
+        "public-piece-by-slug",
+        kwargs={"handle": "canonical-owner", "piece_slug": piece.public_slug},
+    )
+
+    anonymous = client.get(url)
+    assert anonymous.status_code == 200
+    assert "edit_url" not in anonymous.json()
+
+    client.force_login(user)
+    owner = client.get(url)
+    assert owner.status_code == 200
+    assert owner.json()["edit_url"] == "/users/@canonical-owner/edit/owner-study"
+
+
+@pytest.mark.django_db
 def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client):
     user = get_user_model().objects.create_user(username="profile-artist")
     PublicProfile.objects.create(user=user, handle="profile-artist", is_public=True)

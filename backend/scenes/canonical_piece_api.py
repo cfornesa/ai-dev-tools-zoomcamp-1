@@ -15,7 +15,6 @@ def _profile_or_404(handle):
 
 
 class PublicPieceBySlugView(APIView):
-    authentication_classes: list = []
     permission_classes: list = []
 
     def get(self, request, handle, piece_slug):
@@ -52,13 +51,16 @@ class PublicPieceBySlugView(APIView):
             current_version__isnull=False,
         ).first()
         if art_piece:
+            response = {
+                "canonical_url": f"/users/@{handle}/pieces/{art_piece.public_slug}",
+                "viewer_url": f"/art-pieces/p/{art_piece.public_id}",
+                "type": "generated",
+                "piece": _piece_data(art_piece, public=True),
+            }
+            if request.user.is_authenticated and request.user == owner:
+                response["edit_url"] = f"/users/@{handle}/edit/{art_piece.public_slug}"
             return Response(
-                {
-                    "canonical_url": f"/users/@{handle}/pieces/{art_piece.public_slug}",
-                    "viewer_url": f"/art-pieces/p/{art_piece.public_id}",
-                    "type": "generated",
-                    "piece": _piece_data(art_piece, public=True),
-                }
+                response
             )
         raise Http404
 

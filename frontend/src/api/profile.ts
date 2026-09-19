@@ -56,6 +56,7 @@ export type CanonicalPublicPiece = {
   canonical_url: string;
   viewer_url: string;
   type: '2d' | '3d' | 'generated';
+  edit_url?: string;
   piece?: ArtPiece;
 };
 

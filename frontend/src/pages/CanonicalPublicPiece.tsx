@@ -18,7 +18,13 @@ export default function CanonicalPublicPiece() {
   if (missing) return <Navigate to="/gallery" replace />;
   if (!resolved) return <p role="status">Loading public piece…</p>;
   if (resolved.type === 'generated' && resolved.piece) {
-    return <PublicArtPieceViewer initialPiece={resolved.piece} />;
+    return (
+      <PublicArtPieceViewer
+        initialPiece={resolved.piece}
+        canonicalHref={resolved.canonical_url}
+        editHref={resolved.edit_url}
+      />
+    );
   }
   return <Navigate to={resolved.viewer_url} replace />;
 }

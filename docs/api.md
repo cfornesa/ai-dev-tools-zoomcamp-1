@@ -133,6 +133,13 @@ accept optional `public_slug` text. The server normalizes it with the shared
 slug policy, rejects an empty normalized custom value or an owner collision,
 and preserves the existing identifier route when a slug changes.
 
+When the canonical resolver is requested by the piece author, the generated
+piece response may also include `edit_url` with the owner-scoped
+`/users/@<handle>/edit/<piece-slug>` path. Anonymous and non-owner responses
+omit this field. Canonical viewers use the resolver's canonical URL for their
+immersive link and render the edit action only when `edit_url` is present;
+legacy UUID viewer and embed URLs remain compatibility shims.
+
 ### Owner art-piece editor links (#601)
 
 `GET /api/users/@<handle>/edit/<piece-slug>/` requires an authenticated

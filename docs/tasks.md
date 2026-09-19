@@ -1,5 +1,20 @@
 # AugmentrART Backlog
 
+## 2026-09-19 — Production import follow-up (#633)
+
+Production-readiness verification for #622 confirmed the published application
+and the actual pieces/collections tables in Replit Production, but the existing
+owner represented by `@cfornesa` (`auth_user.id=2`, username `christopher1`)
+has zero non-deleted pieces and collections. The repository importer is
+intentionally disposable-only, so this is a distinct data-layer/workflow gap,
+not a reason to weaken that guard or reopen closed #612.
+
+The criterion-ready follow-up is [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633), tracked locally in
+`.local/tasks/issue-633-production-reference-import.md`. #622 remains
+dependency-blocked until #633 is implemented, independently reviewed, QA
+verified, and its approved production import is followed by the authenticated
+surface matrix.
+
 ## 2026-09-17 — Backlog session: production schema ledger reconciliation (#589, #597, #598)
 
 The open schema-centered manifest contained exactly three issues: [#589](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/589), [#597](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/597), and [#598](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/598). The pasted Claude Code report was treated as untrusted intake and independently rechecked through the Replit Shell.

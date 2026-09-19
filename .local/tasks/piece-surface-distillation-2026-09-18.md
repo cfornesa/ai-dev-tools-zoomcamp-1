@@ -844,6 +844,25 @@ either closed or explicitly terminally handed off for republishing.
   and direct production schema/surface verification before a final readiness
   and session-completion verdict.
 
+### Production import follow-up — 2026-09-19
+
+- **Discovery:** #622's approved Replit publish completed and direct production
+  inspection confirmed the pieces/collections schema, but the existing owner
+  represented by `@cfornesa` has zero non-deleted art pieces and zero
+  collections.
+- **Duplicate check:** closed #612 is explicitly disposable-only; no open issue
+  covers a production-safe, owner-scoped fixture import. #622 remains the
+  release-evidence container and cannot absorb the data-layer implementation.
+- **Classification:** `dependency-blocked` for #622, with a distinct
+  `implementation-defect/workflow` follow-up for the missing production-safe
+  import path.
+- **New issue:** #633 [criterion-ready production import workflow](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633), with the matching local record at `.local/tasks/issue-633-production-reference-import.md`.
+- **Dependency/order:** #633 must be implemented, independently reviewed, and
+  QA-verified before #622's owner/import/browser criteria can be closed.
+- **Safety boundary:** no production rows were written during inspection; the
+  Replit Production Database remained read-only, and no direct SQL insert or
+  disposable importer bypass was used.
+
 ### Engineering transaction — #621 slug collision repair — 2026-09-19
 
 - **Phase:** ENGINEERING → QA pending workflow-dispatch verification

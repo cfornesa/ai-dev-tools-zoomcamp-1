@@ -1,5 +1,15 @@
 # DECISIONS.md
 
+## 2026-09-19 — Production fixture import remains a separately scoped workflow
+
+- Replit Publish completed and the published smoke plus direct production table
+  inspection passed for #622. The production owner represented by `@cfornesa`
+  currently has zero pieces and collections.
+- Keep `import_reference_pieces` DEBUG/disposable-only. Do not bypass its guard
+  or write production rows through SQL. #633 owns the explicit opt-in,
+  owner-resolving, idempotent production import workflow; #622 is
+  dependency-blocked on that issue for authenticated surface evidence.
+
 Append-only log of agent-relevant decisions. See `AGENTS.md` Section 10 for
 ownership and read cadence.
 

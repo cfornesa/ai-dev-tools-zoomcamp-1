@@ -114,6 +114,13 @@ shared/production data.
   issue, so criterion-ready follow-up [#631](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/631)
   records the mechanical synchronization work. It is deferred until the
   current #627 transaction has a terminal result.
+- Terminal full matrix `35435158520` on `1123286`: shard 1 passed all
+  art-piece scenarios but had one unrelated admin-entitlement mobile login
+  timeout; shard 2 passed 94 and shard 3 passed 88 with 6 intentional skips.
+  Aggregate: `275 passed`, `1 failed`, `6 skipped`. The art-piece acceptance
+  contract and slug-isolation contract are green; #627 and #621 were closed.
+  Discovery gate follow-up [#632](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/632)
+  tracks the separate admin login fixture timeout.
 
 ## Out of scope
 

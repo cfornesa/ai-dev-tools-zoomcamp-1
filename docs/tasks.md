@@ -1,5 +1,8 @@
 # AugmentrART Backlog
 
+The current open-issue manifest and dependency reconciliation is recorded in
+`.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
+
 ## 2026-09-19 — Vitest security remediation and Replit synchronization blocker (#634)
 
 The existing Vitest security findings were independently confirmed as

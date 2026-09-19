@@ -54,7 +54,7 @@ test.describe('managed application-admin roster (#560)', () => {
       const ordinaryApi = await apiGet(ordinaryContext, '/api/admin/content/');
       expect(ordinaryApi.status()).toBe(403);
       await ordinaryPage.goto('/admin/content');
-      await expect(ordinaryPage).toHaveURL(/\/studio$/);
+      await expect(ordinaryPage).toHaveURL(/\/gallery(?:\?type=all)?$/);
       await ordinaryContext.close();
 
       const anonymousContext = await browser.newContext();
@@ -62,7 +62,7 @@ test.describe('managed application-admin roster (#560)', () => {
       const anonymousApi = await apiGet(anonymousContext, '/api/admin/content/');
       expect(anonymousApi.status()).toBe(401);
       await anonymousPage.goto('/admin/content');
-      await expect(anonymousPage).toHaveURL(/\/studio$/);
+      await expect(anonymousPage).toHaveURL(/\/gallery(?:\?type=all)?$/);
       await anonymousContext.close();
     });
   }

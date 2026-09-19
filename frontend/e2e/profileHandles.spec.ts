@@ -35,6 +35,24 @@ async function signInOther(browser: Browser, email: string, password: string) {
 test.describe('public handle lifecycle (#551)', () => {
   const fixtures = requireE2EFixtures();
 
+  test.afterEach(async ({ browser }) => {
+    // Handle mutations are durable server state. Restore both deterministic
+    // fixture identities even when an assertion fails before the test's
+    // normal cleanup path runs, so later public-gallery/profile specs do not
+    // inherit a viewport-specific handle.
+    for (const fixture of [fixtures.owner, fixtures.other]) {
+      const context = await browser.newContext({ baseURL: 'http://localhost:5000' });
+      const page = await context.newPage();
+      await loginViaUI(page, fixture.email, fixtures.password);
+      const current = await profile(context);
+      await apiPatch(context, '/api/account/profile/', {
+        ...current,
+        handle: fixture === fixtures.owner ? 'e2e_owner' : 'e2e_other',
+      });
+      await context.close();
+    }
+  });
+
   for (const viewport of VIEWPORTS) {
     test(`generates, changes, validates, and redirects handles at ${viewport.width}x${viewport.height}`, async ({
       page,

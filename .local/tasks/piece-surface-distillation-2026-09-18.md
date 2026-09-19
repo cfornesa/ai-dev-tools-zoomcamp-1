@@ -921,3 +921,14 @@ either closed or explicitly terminally handed off for republishing.
   site-title/theme feedback, and ambiguous profile-style heading assertions.
   It is routed as stage 2b auth/admin UI integration without reopening closed
   predecessor issues.
+
+### Transaction — full browser run #35422220437 — 2026-09-19
+
+- Evidence: `259 passed, 17 failed, 6 skipped` on `522b978`; backend,
+  frontend, disposable routing, and WebKit gates passed.
+- Existing residuals remain assigned to #624 (account/admin/settings) and
+  #627 (generated art preview/runtime); AI recovery remains in the current
+  gate reconciliation.
+- New duplicate-checked issues: #629 for live media-transfer enable returning
+  409 in both viewports, and #630 for profile-handle mutations leaking into
+  gallery/profile fixtures.

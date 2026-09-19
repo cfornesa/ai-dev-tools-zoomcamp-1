@@ -61,6 +61,14 @@ Use the existing CI PostgreSQL service and deterministic Playwright fixture user
   are now split across #624 (account/admin route and settings contracts),
   #625 (stage card overflow), #627 (generated art-piece previews/runtime),
   and #628 (admin settings/profile-style/theme feedback).
+- Terminal run `35422220437` on `522b978` completed with `259 passed`, `17
+  failed`, and `6 skipped` in 32.6 minutes. The earlier stage-geometry and
+  profile-style failures are no longer present; remaining failures are in
+  #624/#627 plus AI recovery, live media-transfer 409s, and profile-handle
+  fixture leakage.
+- New duplicate-checked issues: [#629](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/629)
+  for live media-transfer fixture conflicts and [#630](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/630)
+  for profile-handle state leakage.
 
 ## Out of scope
 

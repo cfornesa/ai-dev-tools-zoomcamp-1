@@ -16,4 +16,18 @@ export BACKEND_SERVE_MODE=asgi
 # Running migrations on every autoscale instance delays port availability and
 # can create overlapping startup work during scale-out.
 export RUN_MIGRATIONS_ON_START=false
+
+# Issue #633: allow one explicitly enabled, owner-scoped reference fixture
+# import to run inside the published runtime, where DATABASE_URL is the
+# production database. This is disabled by default and is removed from the
+# production userenv immediately after the approved fixture import is verified.
+if [[ "${RUN_REFERENCE_IMPORT_ON_START:-false}" == "true" ]]; then
+  (cd "$(dirname "${BASH_SOURCE[0]}")/../backend" && uv run python manage.py \
+    import_reference_pieces import \
+    --handle "${REFERENCE_IMPORT_HANDLE:-cfornesa}" \
+    --username "${REFERENCE_IMPORT_USERNAME:-christopher1}" \
+    --email "${REFERENCE_IMPORT_EMAIL:-cfornesa@outlook.com}" \
+    --allow-production --json)
+fi
+
 exec "$(dirname "${BASH_SOURCE[0]}")/start.sh"

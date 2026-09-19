@@ -24,6 +24,12 @@ RECAPTCHA_ALLOWED_HOSTNAMES = "augmentrart.com"
 DJANGO_ALLOWED_HOSTS = "augmentrart.com,animate.creatrweb.com,creatrweb.replit.app,localhost,127.0.0.1"
 DJANGO_DEBUG = "false"
 RUN_MIGRATIONS_ON_START = "false"
+# Temporary owner-approved #633 production fixture import. Remove after the
+# published production rows and live profile/API evidence are verified.
+RUN_REFERENCE_IMPORT_ON_START = "true"
+REFERENCE_IMPORT_HANDLE = "cfornesa"
+REFERENCE_IMPORT_USERNAME = "christopher1"
+REFERENCE_IMPORT_EMAIL = "cfornesa@outlook.com"
 
 [workflows]
 runButton = "Project"

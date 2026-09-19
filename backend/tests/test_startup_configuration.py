@@ -118,6 +118,14 @@ def test_production_wrapper_selects_preview_mode_via_the_shared_launcher():
     assert "BACKEND_SERVE_MODE=asgi" in wrapper
 
 
+def test_production_wrapper_gates_owner_scoped_reference_import():
+    wrapper = (ROOT / "scripts" / "start-production.sh").read_text()
+
+    assert 'RUN_REFERENCE_IMPORT_ON_START:-false' in wrapper
+    assert "import_reference_pieces import" in wrapper
+    assert "--allow-production --json" in wrapper
+
+
 def test_production_launcher_uses_pinned_asgi_server():
     launcher = (ROOT / "scripts" / "start.sh").read_text()
 

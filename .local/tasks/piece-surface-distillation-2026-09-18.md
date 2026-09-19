@@ -618,3 +618,14 @@ either closed or explicitly terminally handed off for republishing.
 - **Safety boundary:** no shared, development, production, or Replit database was written.
 - **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5738113835).
 - **Next transaction:** #609 offline regular/immersive downloads; #612 remains downstream of the closed runtime contract and still owns importer/profile completion.
+
+### Transaction ledger — #609 offline regular and immersive downloads — 2026-09-19
+
+- **Phase:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Implementation:** commit `7b92e57`; downloadable bundles now vendor p5.js, Three.js, and A-Frame runtimes, provide a reference-compatible inline C2.js/C2 Interactive adapter, and carry responsive full-height immersive CSS. All six engines expose the same immersive navigation contract, including flat-engine synthetic poses and standalone A-Frame camera registration.
+- **Browser evidence:** Docker Chromium extracted and served every regular and immersive ZIP from temporary HTTP servers with network access blocked after extraction; SVG, p5.js, C2.js, C2.js Interactive, Three.js, and A-Frame all rendered and accepted keyboard navigation (`artPieceSixEngineZip.spec.ts`, `1 passed`). Existing Full, Immersive, Non-Camera, and flat ZIP suites passed `8/8`.
+- **Repository evidence:** `UV_CACHE_DIR=/tmp/codex-uv-cache NPM_CONFIG_CACHE=/tmp/codex-npm-cache make check` passed with backend `1436 passed, 39 skipped` and frontend `2734 passed`; lint, format, typecheck, action-pin, focused bundle tests, and `git diff --check` passed.
+- **QA provenance:** Codex/GPT-5 substitution for the rostered implementation and Claude Sonnet 5 Medium QA stages; Stage 3 independent-family review unavailable.
+- **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixture data and extracted temporary artifacts were disposable.
+- **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/609#issuecomment-5738254516).
+- **Next transaction:** continue with the next dependency-ready consumer slice; #612 remains downstream and owns the owner-scoped `@cfornesa` importer/profile completion.

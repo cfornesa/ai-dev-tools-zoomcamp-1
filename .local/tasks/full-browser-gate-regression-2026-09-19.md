@@ -2,8 +2,8 @@
 
 ## Status
 
-`IN PROGRESS` — slug-collision repair is verified in the latest workflow run;
-account-settings and stage-geometry follow-ups remain before terminal QA.
+`IN PROGRESS` — slug-collision repair is verified; the full workflow is now
+three-way sharded, with residual product/fixture failures still open for QA.
 
 ## Goal
 
@@ -15,11 +15,15 @@ Make the workflow-dispatch full browser acceptance gate reliable on the current 
 
 ## Fixed fixture
 
-Use the existing CI PostgreSQL service and deterministic Playwright fixture users. Reproduce with the current `main` revision and the full suite (`282` tests, one worker), preserving the existing disposable database and no shared/production data.
+Use isolated CI PostgreSQL services and deterministic Playwright fixture users.
+Reproduce with the current `main` revision and the full suite split across
+three Playwright shards, preserving one worker per shard and no
+shared/production data.
 
 ## Acceptance criteria
 
-- [ ] A workflow-dispatch run of `npm run test:e2e` reaches a terminal result without the repeated `unique_project_public_slug_per_owner` collision family for generated `untitled-animation-*` projects.
+- [x] A workflow-dispatch full run reaches a terminal result without the repeated `unique_project_public_slug_per_owner` collision family for generated `untitled-animation-*` projects.
+- [x] Full browser execution is sharded into three isolated CI jobs; the latest shard durations were 9m33s, 10m01s, and 12m21s.
 - [ ] The first failing test, if any, is isolated with a stable fixture and a direct failure rather than a cascade of route/setup failures.
 - [ ] The canonical slug behavior remains unchanged for explicit user slugs: collisions are rejected, and auto-generated slugs advance deterministically and safely under concurrent creation.
 - [ ] The full browser run records exact counts and the failing spec/test names in the issue closure comment; no closed issue is reopened.
@@ -75,6 +79,11 @@ Use the existing CI PostgreSQL service and deterministic Playwright fixture user
   current contract is `/studio`, so those assertions are restored before the
   next run. The remaining new test-state fixes are intentionally staged for
   the next verification.
+- Terminal run `35430026620` on `fd052d2` completed with shard 2 green in
+  9m33s; shards 1 and 3 completed in 12m21s and 10m01s. The remaining
+  failures were isolated to #628/admin redirect expectation, #627/generated
+  3D editor preview, #624/AI exit routing, and the public-profile fixture
+  route. Timing is verified, but the product gate remains open.
 
 ## Out of scope
 

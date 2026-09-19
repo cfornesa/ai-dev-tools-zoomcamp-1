@@ -649,3 +649,14 @@ either closed or explicitly terminally handed off for republishing.
 - **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixtures were disposable.
 - **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/618#issuecomment-5738345654).
 - **Next action:** continue with #620's explicit Three.js/A-Frame 3D editor mode, then reconcile #610 after both editor children are complete.
+
+### Transaction ledger — #620 3D AI editor modes — 2026-09-19
+
+- **Phase:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Implementation:** commit `0760010`, building on the explicit family/engine identity hooks in `0aa2aba`; Three.js and A-Frame now have dedicated browser acceptance coverage for the shared 3D AI-editor mode without source coercion.
+- **Browser evidence:** Docker Chromium `artPiece3dEditor.spec.ts` passed `1/1` at 1280x900 and 375x812 for both engines, covering canonical owner routing, stable engine identity, authored preview canvas rendering, fake-provider revision generation, and immutable version-2 save/current-version state. Existing immersive runtime evidence covered authored Three.js/A-Frame camera and input behavior; non-owner denial passed in the owner-editing suite.
+- **Repository evidence:** the same implementation gate passed backend `1436 passed, 39 skipped`, frontend `2734 passed`, lint, format, typecheck, and action-pin checks.
+- **QA provenance:** Codex/GPT-5 substitution for the rostered implementation and Claude Sonnet 5 Medium QA stages; Stage 3 independent-family review unavailable.
+- **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixtures were disposable.
+- **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/620#issuecomment-5738356043).
+- **Next action:** reconcile the #610 editor parent, then continue with the chrome-less embed/card/slug surfaces (#615, #602, #616, #601/#600) and rerun #612's complete acceptance matrix.

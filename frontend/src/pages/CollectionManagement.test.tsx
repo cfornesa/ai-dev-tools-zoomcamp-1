@@ -79,6 +79,7 @@ describe('CollectionManagement', () => {
     expect(await screen.findByRole('heading', { name: 'Edit collection' })).toBeInTheDocument();
 
     const title = screen.getByLabelText('Title');
+    await waitFor(() => expect(title).toHaveValue('Spring studies'));
     await user.clear(title);
     await user.type(title, 'Renamed');
     await user.click(screen.getByRole('button', { name: 'Save details' }));

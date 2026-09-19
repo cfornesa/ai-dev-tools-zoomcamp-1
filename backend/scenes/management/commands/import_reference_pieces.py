@@ -58,7 +58,7 @@ FIXTURES = (
             "p.draw = () => { p.background(17, 24, 39); p.fill(251, 191, 36); "
             "p.circle(160, 120, 120); }; };"
         ),
-        {"screenshot": True, "fullscreen": True},
+        {"screenshot": True, "fullscreen": True, "immersive": True, "download": True},
     ),
     ReferenceFixture(
         "legacy-c2-default",
@@ -73,7 +73,7 @@ FIXTURES = (
             "context.arc(160 + Math.sin(frame / 20) * 40, 120, 42, 0, Math.PI * 2); "
             "context.fill(); }); };"
         ),
-        {"screenshot": True, "fullscreen": True},
+        {"screenshot": True, "fullscreen": True, "immersive": True, "download": True},
     ),
     ReferenceFixture(
         "legacy-c2-interactive-default",
@@ -90,7 +90,7 @@ FIXTURES = (
             "context.arc(Number(canvas.dataset.pointerX || 160), 120, 42, 0, Math.PI * 2); "
             "context.fill(); }); };"
         ),
-        {"screenshot": True, "fullscreen": True},
+        {"screenshot": True, "fullscreen": True, "immersive": True, "download": True},
     ),
     ReferenceFixture(
         "legacy-three-default",
@@ -187,6 +187,18 @@ class Command(BaseCommand):
             )
             if existing:
                 piece = existing
+                version = piece.current_version
+                if version and version.capabilities != fixture.capabilities:
+                    version = ArtPieceVersion.objects.create(
+                        piece=piece,
+                        sequence=version.sequence + 1,
+                        source=version.source,
+                        capabilities=fixture.capabilities,
+                        generation_metadata=version.generation_metadata,
+                    )
+                    piece.current_version = version
+                    piece.save(update_fields=["current_version", "updated_at"])
+                    regenerate_thumbnail(version)
             else:
                 slug = normalize_public_slug(fixture.slug)
                 suffix = 2

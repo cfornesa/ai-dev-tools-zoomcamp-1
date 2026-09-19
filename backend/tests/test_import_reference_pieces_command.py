@@ -41,6 +41,11 @@ def test_reference_import_is_idempotent_owner_scoped_and_reversible():
         piece.current_version.generation_metadata["reference_import"]["import_name"] == IMPORT_NAME
         for piece in ArtPiece.objects.filter(owner=owner)
     )
+    assert all(
+        piece.current_version.capabilities.get("immersive") is True
+        and piece.current_version.capabilities.get("download") is True
+        for piece in ArtPiece.objects.filter(owner=owner)
+    )
 
     call_command(
         "import_reference_pieces",

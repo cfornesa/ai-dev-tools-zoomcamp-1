@@ -71,6 +71,10 @@ ownership and read cadence.
 - Do not manually trigger the full matrix as a routine post-batch action. Use
   the latest scheduled result or targeted local/CI evidence; manually run the
   full matrix only for an owner-requested release or closure gate.
+- Final push run `35437244888` on `385dd99` passed all required jobs: backend
+  `2m07s`, frontend `6m04s`, disposable routing `1m11s`, and browser smoke /
+  WebKit `5m47s`. The shorter required gate is green without reducing the
+  frontend or browser test set.
 
 ## 2026-09-14
 

@@ -135,6 +135,11 @@ shared/production data.
   execute the full three-shard browser matrix in parallel. Do not manually
   re-trigger the full matrix after every batch; use the nightly result or
   targeted local/CI evidence unless the owner explicitly requests a full run.
+- Final push validation for `385dd99` is workflow
+  `35437244888`: backend (`2m07s`), frontend (`6m04s`), disposable routing
+  (`1m11s`), workflow validation, and the browser smoke/WebKit job (`5m47s`)
+  all passed. The ordinary push gate is therefore green after the async
+  collection-test stabilization.
 
 ## Out of scope
 

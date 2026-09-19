@@ -7,21 +7,25 @@ import {
 /**
  * Issue #428: shared between `ArtPieceStudio.tsx` (new piece) and
  * `ArtPieceEditor.tsx` (#429, new version on an existing piece).
- * `SPATIAL_LIBRARIES` gates capabilities that need a *native* registered
- * engine camera (`window.__registerArtPieceCamera` called by the
- * generated Three.js/A-Frame snippet itself) -- walkable immersive
- * navigation (#434) is the only one left; `ImmersiveArtPieceViewer.tsx`
- * and `standaloneArtPieceRuntimeSource.ts` each still hold their own
- * copy of this same set for that same narrower purpose.
+ * `SPATIAL_LIBRARIES` gates capabilities that need a spatial presentation.
+ * Three.js/A-Frame use native registered cameras; flat engines use the
+ * sandbox's lazy synthetic room shell.
  *
  * Hand steering is deliberately *not* gated by this set as of #449:
  * `artPieceSandbox.ts` now lazily builds a CSS 3D presentation of a flat
  * Canvas2D/SVG piece's own existing artwork and registers a *synthetic*
  * camera adapter through that same hook on first activation, so steering
- * works for every engine -- only walkable navigation still requires a
- * real spatial scene to fly through.
+ * and immersive navigation work for every registered engine.
  */
-export const SPATIAL_LIBRARIES = new Set<ArtPieceLibrary>(['threejs', 'aframe']);
+export const SPATIAL_LIBRARIES = new Set<ArtPieceLibrary>([
+  'canvas2d',
+  'svg',
+  'p5js',
+  'c2js',
+  'c2js-interactive',
+  'threejs',
+  'aframe',
+]);
 
 export const CAPABILITY_OPTIONS: Array<{
   key: keyof ArtPieceCapabilitySet;
@@ -53,6 +57,5 @@ export function sanitizeCapabilities(
   const sanitized = { ...capabilities };
   if (!engine.immersive) delete sanitized.immersive;
   if (!engine.download) delete sanitized.download;
-  if (!SPATIAL_LIBRARIES.has(library)) delete sanitized.immersive;
   return sanitized;
 }

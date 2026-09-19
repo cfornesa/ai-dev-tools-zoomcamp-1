@@ -149,7 +149,7 @@ def test_regular_runtime_engines_persist_with_regular_capability(client, engine,
     assert response.status_code == 201
     assert response.data["engine"] == engine
     assert response.data["engine_capabilities"]["regular"] is True
-    assert response.data["engine_capabilities"]["immersive"] is False
+    assert response.data["engine_capabilities"]["immersive"] is True
 
 
 def test_publish_requires_meaningful_metadata_and_public_detail_hides_prompt(client):

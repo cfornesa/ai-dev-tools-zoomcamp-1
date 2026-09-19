@@ -583,3 +583,24 @@ routes require separate entry-point fixtures and rendered evidence:
 remain parent reconciliation containers for the closed consumer slices. No
 production-readiness gate is eligible until the remaining local criteria are
 either closed or explicitly terminally handed off for republishing.
+
+### Transaction ledger — #607 regular six-engine runtime parity — 2026-09-19
+
+- **Phase:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Implementation:** commits `7ae5618` and `040da37`; C2/C2 Interactive now use a deterministic reference-compatible renderer adapter in the opaque sandbox, with a synchronous first frame and aligned 320x240 stage.
+- **Browser evidence:** disposable Docker-backed Chromium ran `e2e/artPieceSixEngineRegular.spec.ts` successfully (`1 passed`, covering 1280x900 and 375x812 across SVG, p5.js, C2.js, C2.js Interactive, Three.js, and A-Frame). CUA also visually confirmed the regular SVG route and the imported C2/C2 Interactive pieces.
+- **Repository evidence:** `UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed with backend `1436 passed, 39 skipped` and frontend `2731 passed`; lint, format, and typecheck passed. Focused Docker backend API tests passed `63/63`.
+- **QA provenance:** Codex/GPT-5 substitution for the rostered implementation and Claude Sonnet 5 Medium QA stages; Stage 3 independent-family review was unavailable. The Docker image's full-suite collection failure was classified as stale-image infrastructure and was not used as the repository gate.
+- **Safety boundary:** no development, production, shared, or Replit database was written; imported `@cfornesa` pieces remain disposable Docker fixtures only.
+- **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/607#issuecomment-5737889877).
+- **Next action:** continue with the next dependency-ready surface issue; #607's embed, immersive, offline, editor, import, and deployed-publication follow-ons remain separate.
+
+### Transaction ledger — #608 immersive parity increment — 2026-09-19
+
+- **Phase:** `GROOMED → ENGINEERING → QA-PENDING`.
+- **Implementation:** the backend/frontend capability registries now expose immersive support for SVG, p5.js, C2.js, and C2.js Interactive; the immersive viewer and sandbox use the existing lazy synthetic spatial shell for flat engines while preserving separate embed/download/editor gates.
+- **Focused checks:** backend contract/validation/persistence `26 passed`; frontend runtime/viewer tests `30 passed`; frontend typecheck and format-check passed.
+- **Evidence boundary:** imported Docker p5.js regular view is visible, but the first live immersive p5.js inspection showed a blank white frame under the overlay. This is retained as an active browser defect until the six-engine immersive matrix identifies and fixes the runtime/layout cause; no closure claim is made.
+- **GitHub evidence:** [engineering increment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/608#issuecomment-5737925475).
+- **Safety boundary:** no development, production, shared, or Replit database was written.
+- **Next action:** add/run the six-engine immersive fixed-viewport browser matrix, then fix the blank flat-engine immersive frame and verify authored Three.js/A-Frame transforms/errors before QA closure.

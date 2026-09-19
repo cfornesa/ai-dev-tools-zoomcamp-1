@@ -21,7 +21,7 @@ def test_registry_has_stable_ids_labels_and_explicit_surface_values():
         "label": "p5.js",
         "family": "2d",
         "regular": True,
-        "immersive": False,
+        "immersive": True,
         "embed": False,
         "download": False,
         "editor_target": "2d-ai",

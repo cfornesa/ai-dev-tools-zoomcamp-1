@@ -16,7 +16,15 @@ import PieceStageControls from './PieceStageControls';
  * instead of the previous, always-shown "drag to explore, arrow keys to
  * move" instructions that lied for every engine that can't do any of
  * that. */
-const SPATIAL_LIBRARIES = new Set(['threejs', 'aframe']);
+const SPATIAL_LIBRARIES = new Set([
+  'canvas2d',
+  'svg',
+  'p5js',
+  'c2js',
+  'c2js-interactive',
+  'threejs',
+  'aframe',
+]);
 
 /** Small, discrete per-keypress/per-drag-step deltas -- deliberately no
  * added inertia/momentum/easing, so there is no continuous animation for
@@ -264,11 +272,7 @@ function ImmersiveArtPieceViewer({
               Drag to look around, scroll to zoom, and use the arrow keys to travel through the
               piece. Use Reset in Piece controls to return home.
             </p>
-          ) : (
-            <p role="note" data-testid="navigation-unsupported">
-              Walkable navigation isn't available for this piece's renderer.
-            </p>
-          )}
+          ) : null}
           {navigationError === 'no-camera-registered' && (
             <p role="status" data-testid="navigation-status">
               This piece hasn't set up a walkable camera yet.

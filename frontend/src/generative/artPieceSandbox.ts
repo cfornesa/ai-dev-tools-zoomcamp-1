@@ -575,13 +575,12 @@ function buildListenerScript(library: ArtPieceLibrary): string {
         // drag/touch look, zoom) shares the exact same bounded-pose
         // mechanism #432 built for hand-steering, applied to a
         // registered camera via the user's own keyboard/pointer input
-        // instead of a hand-tracking gesture -- never gated on camera_
-        // view/hand_steering, since it needs no device permission at
-        // all. Same honest engine-support boundary as steering: a flat
-        // Canvas2D/SVG piece has no registerable spatial camera.
+        // instead of a hand-tracking gesture. Flat engines lazily register
+        // the synthetic room shell on first navigation.
         if (pieceLibrary !== 'threejs' && pieceLibrary !== 'aframe') {
-          reportState('navigation', { active: false, error: 'unsupported-engine' });
-        } else if (!registeredCamera) {
+          ensureFlatSpatialShell();
+        }
+        if (!registeredCamera) {
           reportState('navigation', { active: false, error: 'no-camera-registered' });
         } else {
           var navCurrentPose = registeredCamera.getPose();

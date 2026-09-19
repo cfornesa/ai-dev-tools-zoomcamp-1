@@ -29,7 +29,6 @@ RUN_MIGRATIONS_ON_START = "false"
 RUN_REFERENCE_IMPORT_ON_START = "true"
 REFERENCE_IMPORT_HANDLE = "cfornesa"
 REFERENCE_IMPORT_USERNAME = "christopher"
-REFERENCE_IMPORT_EMAIL = "cfornesa@outlook.com"
 
 [workflows]
 runButton = "Project"

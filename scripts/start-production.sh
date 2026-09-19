@@ -25,11 +25,13 @@ if [[ "${RUN_REFERENCE_IMPORT_ON_START:-false}" == "true" ]]; then
   reference_import_args=(
     import_reference_pieces import
     --handle "${REFERENCE_IMPORT_HANDLE:-cfornesa}"
-    --email "${REFERENCE_IMPORT_EMAIL:-cfornesa@outlook.com}"
     --allow-production --json
   )
   if [[ -n "${REFERENCE_IMPORT_USERNAME:-}" ]]; then
     reference_import_args+=(--username "${REFERENCE_IMPORT_USERNAME}")
+  fi
+  if [[ -n "${REFERENCE_IMPORT_EMAIL:-}" ]]; then
+    reference_import_args+=(--email "${REFERENCE_IMPORT_EMAIL}")
   fi
   (cd "$(dirname "${BASH_SOURCE[0]}")/../backend" && uv run python manage.py "${reference_import_args[@]}")
 fi

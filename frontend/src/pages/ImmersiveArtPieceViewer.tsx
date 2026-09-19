@@ -349,7 +349,11 @@ function ImmersiveArtPieceViewer({
           title="Immersive art piece preview"
           sandbox={ART_PIECE_IFRAME_SANDBOX}
           allow={ART_PIECE_IFRAME_ALLOW}
-          srcDoc={buildArtPieceSandboxDocument(piece.current_version.source, piece.engine)}
+          srcDoc={buildArtPieceSandboxDocument(
+            piece.current_version.source,
+            piece.engine,
+            'immersive',
+          )}
           // Issue #434: a cross-document iframe captures pointer/wheel
           // input entirely within its own document -- it never bubbles
           // to this stage div no matter what the stage listens for.

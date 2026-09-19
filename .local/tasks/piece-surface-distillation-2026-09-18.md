@@ -690,3 +690,13 @@ either closed or explicitly terminally handed off for republishing.
 - **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixtures were disposable.
 - **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/616#issuecomment-5738403281).
 - **Next action:** continue with shared cards/thumbnails (#602), then reconcile parent route containers and rerun #612's complete cross-surface acceptance matrix.
+
+### Transaction ledger — #602 shared cards and six-engine thumbnails — 2026-09-19
+
+- **Phase:** `GROOMED → QA → RECONCILIATION → CLOSED`.
+- **Browser evidence:** Docker Chromium `artPieceSixEngineThumbnails.spec.ts` passed `1/1`; the real editor capture path replaced fallback thumbnails for SVG, p5.js, C2.js, C2.js Interactive, Three.js, and A-Frame, and canonical-slug profile cards rendered the six captured images at 1280x900 and 375x812. Prior focused card/profile/gallery coverage passed `32` cases.
+- **Repository evidence:** current full gate passed backend `1436 passed, 39 skipped`, frontend `2734 passed`, lint, format, typecheck, and action-pin checks.
+- **QA provenance:** Codex/GPT-5 substitution for the rostered implementation and Claude Sonnet 5 Medium QA stages; Stage 3 independent-family review unavailable.
+- **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixture captures were disposable.
+- **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/602#issuecomment-5738418990).
+- **Next action:** rerun #612's complete cross-surface acceptance matrix against the now-closed runtime, embed, editor, slug, card, and thumbnail contracts, then reconcile the remaining parent route containers.

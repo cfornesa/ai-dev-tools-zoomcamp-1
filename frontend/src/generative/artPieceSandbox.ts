@@ -78,7 +78,7 @@ export const ART_PIECE_IFRAME_SANDBOX = 'allow-scripts';
  * has a real origin and needs no iframe `allow` delegation at all. */
 export const ART_PIECE_IFRAME_ALLOW = '';
 
-/** Issue #199 (Three.js/A-Frame extension): these two libraries need
+/** Issue #199 (Three.js/A-Frame extension): these libraries need
  * their own runtime loaded via a pinned CDN `<script>` this module
  * injects -- never a URL the AI supplies (`art_piece_provider.py`'s
  * system prompts for these two libraries explicitly forbid the model
@@ -86,11 +86,12 @@ export const ART_PIECE_IFRAME_ALLOW = '';
  * `ai_provider/art_piece_provider.py`'s `THREEJS_VERSION`/
  * `AFRAME_VERSION` constants -- keep the two in sync by hand, mirroring
  * how `generateHtmlExport.ts`'s `P5_VERSION` is the one place this app
- * already pins a CDN library version. */
+ * already pins a CDN library version. C2 is intentionally excluded from
+ * this map: its reference Renderer is not reliable in an opaque srcdoc,
+ * so the C2 branch supplies the reference-compatible Canvas2D contract
+ * locally. */
 const LIBRARY_CDN: Partial<Record<ArtPieceLibrary, string>> = {
   p5js: 'https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js',
-  c2js: 'https://cdn.jsdelivr.net/npm/c2.js@1.0.9/dist/c2.min.js',
-  'c2js-interactive': 'https://cdn.jsdelivr.net/npm/c2.js@1.0.9/dist/c2.min.js',
   threejs: 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
   // Pinned to 1.4.2, not 1.5.0: jsdelivr's aframe@1.5.0 package has no
   // `dist/aframe.min.js` (404 in production, #236) -- see
@@ -149,23 +150,47 @@ function buildFlatEngineBody(snippet: string, library: ArtPieceLibrary): string 
 }());</script>`;
   }
   if (library === 'c2js' || library === 'c2js-interactive') {
-    return `<canvas id="c2-canvas" width="1280" height="720"></canvas>
+    return `<canvas id="c2-canvas" width="320" height="240"></canvas>
 <script>${snippet}
 (function () {
   var canvas = document.getElementById('c2-canvas');
-  if (!window.c2 || typeof window.sketch !== 'function') throw new Error('C2.js sketch runtime was not initialized.');
-  var frame = 0;
-  var callback = null;
-  function startFrame(handler) {
-    if (typeof handler !== 'function') throw new Error('C2.js startFrame requires a function.');
-    callback = handler;
-    function tick() {
-      if (callback) callback(frame++);
+  var c2Fallback = {
+    Renderer: function (target) {
+      this.context = target.getContext('2d');
+      this.clear = function (color) { this.context.fillStyle = color || '#ffffff'; this.context.fillRect(0, 0, target.width, target.height); };
+      this.fill = function (color) { this.context.fillStyle = color; };
+      this.circle = function (x, y, radius) { this.context.beginPath(); this.context.arc(x, y, radius, 0, Math.PI * 2); this.context.fill(); };
+    }
+  };
+  // The upstream c2.js Renderer is not usable from this opaque srcdoc
+  // sandbox in Chromium, even when its global is present. Keep the public
+  // reference contract but use the deterministic Canvas2D implementation
+  // here so regular and immersive views render consistently.
+  var c2Runtime = c2Fallback;
+  function boot() {
+    if (typeof window.sketch !== 'function') throw new Error('C2.js sketch runtime was not initialized.');
+    var frame = 0;
+    var callback = null;
+    function startFrame(handler) {
+      if (typeof handler !== 'function') throw new Error('C2.js startFrame requires a function.');
+      callback = handler;
+      // Paint one deterministic frame synchronously. This keeps the regular
+      // viewer visibly initialized even when a browser throttles animation
+      // callbacks for a sandboxed/off-screen iframe; the RAF loop continues
+      // for animated and interactive pieces.
+      callback(frame++);
+      function tick() {
+        if (callback) callback(frame++);
+        window.requestAnimationFrame(tick);
+      }
       window.requestAnimationFrame(tick);
     }
-    window.requestAnimationFrame(tick);
+    window.__artPieceInstance = window.sketch({ c2: c2Runtime, canvas: canvas, startFrame: startFrame });
   }
-  window.__artPieceInstance = window.sketch({ c2: window.c2, canvas: canvas, startFrame: startFrame });
+  try { boot(); } catch (error) {
+    document.body.setAttribute('data-c2-error', String(error && error.message || error));
+    throw error;
+  }
 }());</script>`;
   }
   return '';

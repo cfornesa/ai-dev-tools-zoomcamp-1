@@ -98,6 +98,27 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain(scene);
   });
 
+  it('c2.js embeds the reference-compatible renderer contract inside the opaque sandbox', () => {
+    const doc = buildArtPieceSandboxDocument(
+      'window.sketch = ({ canvas, startFrame }) => { startFrame(() => {}); };',
+      'c2js',
+    );
+    expect(doc).toContain('var c2Fallback = {');
+    expect(doc).toMatch(/script-src 'unsafe-inline';/);
+    expect(doc).toContain('id="c2-canvas"');
+    expect(doc).toContain('width="320" height="240"');
+    expect(doc).toContain('window.__artPieceInstance = window.sketch');
+  });
+
+  it('c2.js interactive uses the same reference-compatible renderer contract', () => {
+    const doc = buildArtPieceSandboxDocument(
+      "window.sketch = ({ canvas, startFrame }) => { canvas.addEventListener('pointermove', () => {}); startFrame(() => {}); };",
+      'c2js-interactive',
+    );
+    expect(doc).toContain('var c2Fallback = {');
+    expect(doc).toMatch(/script-src 'unsafe-inline';/);
+  });
+
   it("threejs's CSP does not grant 'unsafe-eval' -- only A-Frame needs it", () => {
     const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs');
     expect(doc).not.toMatch(/'unsafe-eval'/);

@@ -95,6 +95,11 @@ shared/production data.
   published-routing, and workflow-validation jobs are green while the single
   browser shard is still running. Its terminal browser result is required
   before #624/#630 reconciliation.
+- Commit `fa7de8a` keeps the generated art-piece studio sandbox handshake
+  listener mounted for the page lifetime, preventing a fast ready/error
+  message from racing the phase-dependent effect. Focused ArtPieceStudio
+  coverage passes (`13 tests`) and the full matrix `35433934539` is the
+  authoritative validation in progress against this fix.
 
 ## Out of scope
 

@@ -14,16 +14,17 @@ describe('regular art-piece engine adapters', () => {
   });
 
   it.each(['c2js', 'c2js-interactive'] as const)(
-    'boots %s through the shared C2 runtime object',
+    'boots %s through the reference-compatible C2 runtime object',
     (library) => {
       const html = buildArtPieceSandboxDocument(
         'window.sketch = (runtime) => { runtime.startFrame(() => {}); };',
         library,
       );
-      expect(html).toContain('c2.js@1.0.9/dist/c2.min.js');
+      expect(html).toContain('var c2Fallback = {');
       expect(html).toContain('id="c2-canvas"');
+      expect(html).toContain('width="320" height="240"');
       expect(html).toContain(
-        'window.sketch({ c2: window.c2, canvas: canvas, startFrame: startFrame })',
+        'window.sketch({ c2: c2Runtime, canvas: canvas, startFrame: startFrame })',
       );
     },
   );

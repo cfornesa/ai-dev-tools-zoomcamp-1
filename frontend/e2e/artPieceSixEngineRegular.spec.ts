@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { apiPatch, apiPost } from './support/api.js';
+import { apiGet, apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
@@ -57,13 +57,16 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
     context,
   }) => {
     await loginViaUI(page, e2eFixtures.owner.email, e2eFixtures.password);
-    await page.goto('/account/settings');
-    await expect(page.getByRole('heading', { name: 'Public profile' })).toBeVisible();
-    await page.getByLabel('Handle').fill('e2e-six-engine');
-    await page.getByLabel('Display name').fill('Six Engine Fixture');
-    await page.getByLabel('Make profile public').check();
-    await page.getByRole('button', { name: 'Save profile' }).click();
-    await expect(page.getByText('Profile saved.')).toBeVisible();
+    const profileResponse = await apiGet(context, '/api/account/profile/');
+    expect(profileResponse.ok()).toBe(true);
+    const profile = (await profileResponse.json()) as Record<string, unknown>;
+    const updatedProfile = await apiPatch(context, '/api/account/profile/', {
+      ...profile,
+      handle: 'e2e-six-engine',
+      display_name: 'Six Engine Fixture',
+      is_public: true,
+    });
+    expect(updatedProfile.ok()).toBe(true);
 
     const created: Array<{ slug: string; immersive: boolean }> = [];
     for (const fixture of fixtures) {

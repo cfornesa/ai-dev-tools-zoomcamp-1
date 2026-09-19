@@ -806,3 +806,40 @@ either closed or explicitly terminally handed off for republishing.
   push CI remain usable evidence; the complete browser dimension is
   `OPEN FOLLOW-UP`, not a piece-surface product failure. Replit publication
   remains unverified and is tracked as #622 [release evidence gate](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622).
+
+### Production-readiness assessment — 2026-09-19
+
+- **Routing/provenance:** stage 5 was performed by the owner-authorized
+  Codex/GPT-5 substitution; the rostered Claude Opus 5/Sonnet 5 service was
+  unavailable. Runtime-reported effort is not exposed, so no invented effort
+  value is recorded. This substitution is authorized in `DISPATCH.md`, the
+  handoff contract, the readiness skills, and `DECISIONS.md`.
+- **Local/development:** `PASS`. Repository-owned Docker preflight and health
+  probes passed; `make check` passed with backend `1436 passed, 39 skipped` and
+  frontend `2734 passed`.
+- **Focused browser evidence:** `PASS` for the six-engine regular, immersive,
+  embed, thumbnail, and offline paths recorded in the closed #602/#607/#608/
+  #609/#615 evidence; the WebKit fullscreen regression also passed.
+- **CI:** `OPEN FOLLOW-UP`. Push run `35415028203` passed all scheduled gates,
+  including backend, frontend, workflow, disposable published routing, and
+  browser smoke. Complete-dispatch run `35415331889` passed those same
+  prerequisites but reported `84 failed`, `189 passed`, and `3 did not run`
+  in the 282-test full browser suite, with the collision cascade tracked by
+  #621.
+- **Replit/production:** `OPEN FOLLOW-UP`. No current-session publish or
+  production-table inspection was performed; #622 records the exact publish,
+  smoke, schema, and authenticated `@cfornesa` surface evidence required.
+- **Readiness verdict:** `OPEN FOLLOW-UP`, not `PASS` and not `BLOCKED`.
+  Republish is not recommended until #621 is resolved or explicitly accepted
+  and #622's deployment evidence is captured. No shared, production, Replit,
+  or user database was written in this session.
+
+### Session-completion reconciliation — 2026-09-19
+
+- The prior piece-surface issue batch remains terminal and closed, but the
+  current session is not complete because newly discovered actionable work is
+  open in #621 and #622.
+- Required next transaction: implement and independently review #621, rerun
+  the complete browser gate, then execute #622's approved Replit publication
+  and direct production schema/surface verification before a final readiness
+  and session-completion verdict.

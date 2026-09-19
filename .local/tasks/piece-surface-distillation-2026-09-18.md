@@ -783,3 +783,26 @@ either closed or explicitly terminally handed off for republishing.
   repository remote so CI evaluates the actual fixed checkout, then inspect
   that run before assigning the readiness CI dimension. No Replit or shared
   database write is implied.
+
+### Task-distillation reconciliation — full browser gate — 2026-09-19
+
+- **Discovery:** manual workflow-dispatch CI run `35415331889` evaluated
+  `1958280` with backend, frontend, workflow, disposable-publish, and WebKit
+  gates green, but the 282-test full browser suite terminated after 45m33s
+  with `84 failed`, `189 passed`, and `3 did not run`.
+- **Failure family:** the earliest failures are unrelated account/admin
+  contracts; the run then cascades through project, gallery, and art-piece
+  setup. PostgreSQL diagnostics repeatedly report
+  `unique_project_public_slug_per_owner` for owner `6` and
+  `untitled-animation-30`, so the suite's fixture/app state is not a valid
+  clean acceptance baseline for the piece-surface verdict.
+- **Duplicate check:** closed #419/#596 and the older full-gate records were
+  inspected; closed history was not reopened. A new current-revision issue is
+  required to isolate and repair the fixture/slug collision before relying on
+  the full browser gate.
+- **New issue:** #621 [criterion-ready follow-up](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/621), with the matching local record in
+  `.local/tasks/full-browser-gate-regression-2026-09-19.md`.
+- **Readiness impact:** local checks, focused six-engine browser checks, and
+  push CI remain usable evidence; the complete browser dimension is
+  `OPEN FOLLOW-UP`, not a piece-surface product failure. Replit publication
+  remains unverified and is still a separate release evidence gate.

@@ -23,3 +23,11 @@ schema was present, but the repository's sanitized reference importer remains
 DEBUG/disposable-only, so production fixture imports require a separately
 scoped, owner-resolving, opt-in workflow (#633) rather than bypassing the
 guard or using direct SQL inserts.
+
+**2026-09-19 deployment-gate lesson:** Replit Security Center can continue
+showing findings for an older dependency revision when the project Git panel is
+in an unfinished rebase state. Treat `Unsupported state: you are in the middle
+of a rebase` as a synchronization blocker: preserve the reviewed GitHub SHA,
+finish or recover the workspace rebase through an explicitly reviewed workflow,
+then pull, rescan, and republish. Do not force-reset the workspace or use an
+agent fix action as a substitute for repository review.

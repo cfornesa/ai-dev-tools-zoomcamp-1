@@ -2,7 +2,7 @@
 
 ## Status
 
-`GROOMED → ENGINEERING → QA` — authoritative advisory identified and minimal fixed-version upgrade implemented; Replit rescan/republish remains pending.
+`GROOMED → ENGINEERING → QA/DEPENDENCY-BLOCKED` — authoritative advisory identified and minimal fixed-version upgrade implemented; Replit cannot rescan the reviewed revision while its Git workspace reports an unfinished rebase.
 
 ## Transaction ledger
 
@@ -10,7 +10,7 @@
 - **Entry point/fixture:** `frontend/package.json` and `frontend/package-lock.json`, scanned by npm audit and Replit Security Center.
 - **Dependencies:** #633 and #622.
 - **Stage owners:** scoping `Codex / GPT-5 / current session, substituted: no`; implementation `Opencode Go / kimi-k3 / not available, Codex/GPT-5 substitution: yes`; second opinion `not run`; QA pending `Claude / Sonnet 5 Medium, substitution pending`.
-- **Current next action:** run the exact frontend checks, push the isolated upgrade, then rescan/review Republish in Replit.
+- **Current next action:** finish or safely recover the pre-existing Replit rebase, pull the reviewed SHA, then rescan/review Republish; do not force-reset the workspace or use Replit Agent to mutate the repository.
 
 ## Goal
 
@@ -37,7 +37,10 @@ the reviewed `main` revision.
 - [ ] No production runtime dependency, test coverage, or CI gate is weakened
   to silence the scanner.
 - [ ] Replit Security Center no longer blocks Republish, or the exact owner
-  decision and remaining platform boundary are recorded on #633/#622.
+  decision and remaining platform boundary are recorded on #633/#622. **Currently
+  blocked:** the workspace Git panel reports `Unsupported state: you are in the
+  middle of a rebase. Please finish the rebase manually`, so the visible scan
+  remains on the old v4.1.10 dependency set.
 - [ ] The resulting lockfile/manifests contain no secrets and the dependency
   change is isolated to this issue.
 
@@ -54,6 +57,11 @@ the reviewed `main` revision.
 - `make frontend-lint frontend-format-check frontend-typecheck frontend-test`
 - `npm --prefix frontend run build`
 - Replit Security Center scan and Republish review for the exact pushed SHA.
+
+Current external boundary: the pushed `df7ed16` revision is present on GitHub,
+but Replit's workspace is not yet verified against it. The workspace's Git
+panel is in an unfinished rebase state; this is a deployment synchronization
+blocker, not a reason to weaken the dependency fix or CI coverage.
 
 ## Dependencies
 

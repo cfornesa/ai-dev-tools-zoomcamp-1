@@ -80,7 +80,7 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await page.goto('/admin/settings');
-      await expect(page).toHaveURL(/\/studio$/);
+      await expect(page).toHaveURL(/\/gallery$/);
 
       const response = await apiGet(context, '/api/admin/settings/');
       expect(response.status()).toBe(401);

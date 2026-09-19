@@ -276,6 +276,35 @@ test.describe('AI create/edit proposals', () => {
       await createBlankProjectViaUI(page);
       await expandAllCollapsibleSections(page);
       await setAIScenario(page, 'success');
+      await page.route('**/api/account/ai-model-preferences/', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: 1,
+              vendor: 'mistral',
+              slug: 'mistral-small-latest',
+              label: 'Small',
+              created_at: '2026-01-01T00:00:00Z',
+            },
+            {
+              id: 2,
+              vendor: 'gemini',
+              slug: 'gemini-2.5-flash',
+              label: 'Gemini Flash',
+              created_at: '2026-01-01T00:00:00Z',
+            },
+            {
+              id: 3,
+              vendor: 'deepseek',
+              slug: 'deepseek-chat',
+              label: 'DeepSeek Chat',
+              created_at: '2026-01-01T00:00:00Z',
+            },
+          ]),
+        }),
+      );
 
       const proposalForm = page.getByRole('form', { name: 'Generate a new scene' });
 
@@ -286,7 +315,9 @@ test.describe('AI create/edit proposals', () => {
       ] as const) {
         await proposalForm.getByLabel('AI provider').selectOption(vendor);
         if (model) {
-          await expect(proposalForm.getByLabel(`${vendor} model (optional)`)).toHaveValue(model);
+          const modelSelect = proposalForm.getByLabel(`${vendor} model (optional)`);
+          await modelSelect.selectOption(model);
+          await expect(modelSelect).toHaveValue(model);
         }
         await page
           .getByRole('textbox', { name: 'Describe the scene you want to generate' })
@@ -880,7 +911,9 @@ test.describe('Local and server draft autosave', () => {
         .getByRole('alertdialog', { name: 'Exit without saving?' })
         .getByRole('button', { name: 'Exit without saving' })
         .click();
-      await page.waitForURL('/');
+      // `navigate('/')` immediately resolves through Home.tsx; authenticated
+      // users land on the studio while anonymous users land on the gallery.
+      await page.waitForURL(/\/studio$/);
       expect(await readLocalDraft(page, projectId)).toBeNull();
 
       await context.close();

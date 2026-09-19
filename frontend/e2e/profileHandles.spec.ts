@@ -43,13 +43,17 @@ test.describe('public handle lifecycle (#551)', () => {
     for (const fixture of [fixtures.owner, fixtures.other]) {
       const context = await browser.newContext({ baseURL: 'http://localhost:5000' });
       const page = await context.newPage();
-      await loginViaUI(page, fixture.email, fixtures.password);
-      const current = await profile(context);
-      await apiPatch(context, '/api/account/profile/', {
-        ...current,
-        handle: fixture === fixtures.owner ? 'e2e_owner' : 'e2e_other',
-      });
-      await context.close();
+      try {
+        await loginViaUI(page, fixture.email, fixtures.password);
+        const current = await profile(context);
+        const response = await apiPatch(context, '/api/account/profile/', {
+          ...current,
+          handle: fixture === fixtures.owner ? 'e2e_owner' : 'e2e_other',
+        });
+        expect(response.ok()).toBe(true);
+      } finally {
+        await context.close();
+      }
     }
   });
 

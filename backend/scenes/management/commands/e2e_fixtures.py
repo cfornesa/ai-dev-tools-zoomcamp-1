@@ -130,7 +130,14 @@ class Command(BaseCommand):
     def _create(self, as_json: bool):
         from django.contrib.sessions.models import Session
 
-        from scenes.models import ApplicationAdmin, SessionMetadata
+        from scenes.models import (
+            ApplicationAdmin,
+            PublicProfile,
+            PublicProfileHandleRedirect,
+            SessionMetadata,
+            UserEntitlementPlan,
+            UserFeatureOverride,
+        )
 
         with transaction.atomic():
             owner = _get_or_create_user(*E2E_USERS["owner"])
@@ -139,6 +146,22 @@ class Command(BaseCommand):
             admin = _get_or_create_user(*E2E_USERS["admin"])
             deletable = _get_or_create_user(*E2E_USERS["deletable"])
             ApplicationAdmin.objects.get_or_create(user=admin)
+
+            # Aborted browser runs can leave user-scoped policy and handle
+            # history behind. Reset only the disposable fixture identities
+            # so the next run starts with the documented default contract.
+            UserEntitlementPlan.objects.filter(
+                user__in=[owner, other, empty, admin, deletable]
+            ).delete()
+            UserFeatureOverride.objects.filter(
+                user__in=[owner, other, empty, admin, deletable]
+            ).delete()
+            fixture_profiles = PublicProfile.objects.filter(
+                user__in=[owner, other, empty, admin, deletable]
+            )
+            PublicProfileHandleRedirect.objects.filter(profile__in=fixture_profiles).delete()
+            PublicProfile.objects.filter(user=owner).update(handle="e2e_owner")
+            PublicProfile.objects.filter(user=other).update(handle="e2e_other")
 
             # Issue #505: every e2e spec that logs a fixture user in via
             # the real /accounts/login/ form leaves a server-side Django

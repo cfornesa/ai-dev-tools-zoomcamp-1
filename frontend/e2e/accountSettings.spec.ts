@@ -92,6 +92,21 @@ test.describe('Account settings grouping (#548)', () => {
           ]),
         }),
       );
+      await page.route('**/api/account/ai-model-preferences/', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([
+            {
+              id: 1,
+              vendor: 'mistral',
+              slug: 'mistral-small-latest',
+              label: 'Small',
+              created_at: '2026-01-01T00:00:00Z',
+            },
+          ]),
+        }),
+      );
       await page.route('**/api/account/ai-personas/', (route) =>
         route.fulfill({
           status: 200,

@@ -212,12 +212,22 @@ class AccountProfileView(APIView):
                     },
                     status=400,
                 )
+            redirect = (
+                PublicProfileHandleRedirect.objects.filter(old_handle=handle)
+                .select_related("profile")
+                .first()
+            )
+            # An owner may reclaim a handle from their own redirect history.
+            # This keeps test/dev fixture identities resettable and is also a
+            # reasonable product rule: once the owner reclaims the old name,
+            # the old alias is no longer needed. Redirects owned by another
+            # profile remain hard conflicts.
             if (
                 handle
                 and handle != profile.handle
                 and (
                     PublicProfile.objects.filter(handle=handle).exclude(pk=profile.pk).exists()
-                    or PublicProfileHandleRedirect.objects.filter(old_handle=handle).exists()
+                    or (redirect is not None and redirect.profile_id != profile.pk)
                 )
             ):
                 return Response(
@@ -228,6 +238,8 @@ class AccountProfileView(APIView):
                     status=409,
                 )
             old_handle = profile.handle
+            if redirect is not None and redirect.profile_id == profile.pk:
+                redirect.delete()
             style_changed = "style_key" in values and style.pk != profile.style_id
             for field in (
                 "handle",

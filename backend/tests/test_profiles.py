@@ -93,6 +93,28 @@ def test_handle_change_creates_permanent_redirect_and_field_errors(client):
 
 
 @pytest.mark.django_db
+def test_owner_can_reclaim_a_handle_from_own_redirect_history(client):
+    user = get_user_model().objects.create_user(username="alice", password="x")
+    client.force_login(user)
+    profile = client.get(reverse("account-profile")).json()
+
+    changed = client.patch(
+        reverse("account-profile"),
+        {"handle": "new-alice", "revision": profile["revision"]},
+        content_type="application/json",
+    )
+    reclaimed = client.patch(
+        reverse("account-profile"),
+        {"handle": "alice", "revision": changed.json()["revision"]},
+        content_type="application/json",
+    )
+
+    assert reclaimed.status_code == 200
+    assert reclaimed.json()["handle"] == "alice"
+    assert not PublicProfileHandleRedirect.objects.filter(old_handle="alice").exists()
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize("is_staff", [False, True])
 def test_profile_get_fails_safely_on_schema_drift(client, monkeypatch, is_staff):
     """A production database missing a pending migration (#571) must return

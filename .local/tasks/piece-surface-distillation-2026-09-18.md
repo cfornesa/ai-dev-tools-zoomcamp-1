@@ -680,3 +680,13 @@ either closed or explicitly terminally handed off for republishing.
 - **Safety boundary:** no shared, development, production, or Replit database was written.
 - **GitHub evidence:** [parent QA reconciliation and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/610#issuecomment-5738384428).
 - **Next action:** continue with shared cards/thumbnails (#602), canonical slugs (#616), then rerun #612's complete cross-surface acceptance matrix.
+
+### Transaction ledger — #616 canonical generated-piece slugs — 2026-09-19
+
+- **Phase:** `GROOMED → QA → RECONCILIATION → CLOSED`.
+- **Browser evidence:** after the prior Docker-unavailable boundary, fresh Docker Chromium `canonicalArtPieceSlug.spec.ts` passed `1/1` at 1280x900 and 375x812. A published SVG rendered at `/users/@<handle>/pieces/<slug>`, and `/art-pieces/p/<public_id>` remained a functional UUID compatibility shim.
+- **Repository evidence:** backend canonical slug/race/persistence coverage passed `29/29`; the current full gate passed backend `1436 passed, 39 skipped`, frontend `2734 passed`, lint, format, typecheck, and action-pin checks.
+- **Evidence note:** the legacy profile/gallery suites carry stale long-lived Docker fixture assumptions (duplicate titles and profile metadata); the isolated fresh-fixture route gate was used for this issue's browser criterion.
+- **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixtures were disposable.
+- **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/616#issuecomment-5738403281).
+- **Next action:** continue with shared cards/thumbnails (#602), then reconcile parent route containers and rerun #612's complete cross-surface acceptance matrix.

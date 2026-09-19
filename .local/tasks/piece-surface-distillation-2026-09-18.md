@@ -720,3 +720,15 @@ either closed or explicitly terminally handed off for republishing.
   #616, #618, and #620. Production-readiness and session-completion remain
   intentionally pending until the remaining parent route containers and
   deployment evidence are reconciled.
+
+### Transaction ledger — remaining parent/container reconciliation — 2026-09-19
+
+- **Phase:** `RECONCILIATION → QA → CLOSED` for #600, #601, and #619.
+- **Evidence:** #619 reconciles the explicit Three.js/A-Frame parent against
+  #620; #601 reconciles owner-only editor routing against #605/#616/#618/#620;
+  #600 reconciles canonical custom slugs and UUID compatibility against #616
+  and the shared card/profile/gallery surfaces. All inherited browser and full
+  repository gates are recorded in their child ledgers above.
+- **GitHub evidence:** #619 [reconciliation](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/619#issuecomment-5738432810), #601 [reconciliation](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/601#issuecomment-5738433026), and #600 [reconciliation](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/600#issuecomment-5738433378).
+- **Safety boundary:** no shared, development, production, or Replit database was written.
+- **Next action:** run task-distillation reconciliation, then production-readiness and session-completion against the now-empty project backlog; deployment/republish remains a separate evidence gate.

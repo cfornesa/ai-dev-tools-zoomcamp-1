@@ -639,6 +639,16 @@ either closed or explicitly terminally handed off for republishing.
 - **GitHub evidence:** [importer/profile reconciliation](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612#issuecomment-5738271058).
 - **Next action:** continue with the next dependency-ready editor/embed slice, then rerun #612's complete six-engine acceptance matrix before closing it.
 
+### Transaction ledger — #612 final six-engine importer/profile reconciliation — 2026-09-19
+
+- **Phase:** `QA-PENDING → QA → RECONCILIATION → CLOSED`.
+- **Import evidence:** Docker re-imported the sanitized SVG, p5.js, C2.js, C2.js Interactive, Three.js, and A-Frame set into disposable `@cfornesa`, preserving canonical slugs/public IDs and current immersive/download capabilities. `referenceImport.spec.ts` passed `1/1` at desktop and mobile profile sizes with canonical card links and explicit fallback-thumbnail semantics before capture.
+- **Dependent surface evidence:** the same closed source/runtime contracts passed the six-engine regular (#607), immersive (#608), offline download (#609), editor (#618/#620), chrome-less embed (#615), and real-thumbnail/profile (#602) matrices.
+- **Repository evidence:** focused importer tests passed `2/2`; full repository checks passed backend `1436 passed, 39 skipped`, frontend `2734 passed`, lint, format, typecheck, and action-pin checks.
+- **Safety boundary:** imported rows and thumbnails remained disposable Docker evidence; no shared, development, production, or Replit database was written.
+- **GitHub evidence:** [final QA reconciliation and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/612#issuecomment-5738425198).
+- **Next action:** process the remaining parent route containers and run the required production-readiness gate only after the backlog is reconciled.
+
 ### Transaction ledger — #618 2D AI editor modes — 2026-09-19
 
 - **Phase:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
@@ -700,3 +710,13 @@ either closed or explicitly terminally handed off for republishing.
 - **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixture captures were disposable.
 - **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/602#issuecomment-5738418990).
 - **Next action:** rerun #612's complete cross-surface acceptance matrix against the now-closed runtime, embed, editor, slug, card, and thumbnail contracts, then reconcile the remaining parent route containers.
+
+### Ledger reconciliation note — 2026-09-19
+
+- The #612 final importer/profile closure was recorded above when its GitHub
+  gate completed; the later #618, #620, #615, #610, #616, and #602 entries
+  document the remaining dependent closures that supplied that final evidence.
+- Current local closure set: #602, #607, #608, #609, #610, #612, #615,
+  #616, #618, and #620. Production-readiness and session-completion remain
+  intentionally pending until the remaining parent route containers and
+  deployment evidence are reconciled.

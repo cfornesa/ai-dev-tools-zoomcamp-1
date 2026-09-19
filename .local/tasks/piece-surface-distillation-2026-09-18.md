@@ -660,3 +660,14 @@ either closed or explicitly terminally handed off for republishing.
 - **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixtures were disposable.
 - **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/620#issuecomment-5738356043).
 - **Next action:** reconcile the #610 editor parent, then continue with the chrome-less embed/card/slug surfaces (#615, #602, #616, #601/#600) and rerun #612's complete acceptance matrix.
+
+### Transaction ledger — #615 chrome-less embed parity — 2026-09-19
+
+- **Phase:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Implementation/evidence:** commit `600d793` adds the missing six-engine embed matrix against the shared chrome-less viewer; no duplicate runtime or weakened sandbox path was needed.
+- **Browser evidence:** Docker Chromium `artPieceSixEngineEmbed.spec.ts` passed `1/1` at 1280x900 and 375x812 for SVG, p5.js, C2.js, C2.js Interactive, Three.js, and A-Frame. All rendered in the shared sandbox iframe, application chrome was absent, controls remained capability-gated, and C2 Interactive pointer input updated in-frame. Existing regular embed boundary tests passed `3/3`.
+- **Repository evidence:** the same surface gate passed backend `1436 passed, 39 skipped`, frontend `2734 passed`, lint, format, typecheck, and action-pin checks.
+- **QA provenance:** Codex/GPT-5 substitution for the rostered implementation and Claude Sonnet 5 Medium QA stages; Stage 3 independent-family review unavailable.
+- **Safety boundary:** no shared, development, production, or Replit database was written; Docker fixtures were disposable.
+- **GitHub evidence:** [QA PASS and closure](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/615#issuecomment-5738380757).
+- **Next action:** continue with shared cards/thumbnails (#602), canonical slugs (#616), then reconcile parent containers and rerun #612's complete acceptance matrix.

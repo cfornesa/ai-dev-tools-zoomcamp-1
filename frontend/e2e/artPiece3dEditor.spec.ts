@@ -56,7 +56,10 @@ test.describe('3D AI editor engine modes (#620)', () => {
           .fill('add a second form');
         await page.getByRole('button', { name: 'Generate revision' }).click();
         const preview = page.frameLocator('iframe[title="Art piece revision preview"]');
-        await expect(preview.locator('canvas')).toBeVisible();
+        // Three.js owns a renderer canvas directly; A-Frame owns the scene
+        // element and may create its renderer canvas asynchronously in a
+        // headless browser. Assert each engine's stable runtime surface.
+        await expect(preview.locator(engine === 'threejs' ? 'canvas' : 'a-scene')).toBeVisible();
         await expect(page.getByTestId('art-piece-editor-save-version')).toBeVisible();
         await page.getByTestId('art-piece-editor-save-version').click();
         await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 2');

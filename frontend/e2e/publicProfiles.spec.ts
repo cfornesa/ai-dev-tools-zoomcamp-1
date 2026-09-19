@@ -27,14 +27,15 @@ test.describe('Public profiles (#520)', () => {
         response.request().method() === 'PATCH' && response.url().endsWith('/api/account/profile/'),
     );
     await page.getByRole('button', { name: 'Save profile' }).click();
-    expect((await saveResponse).status()).toBe(200);
+    const savedResponse = await saveResponse;
+    expect(savedResponse.status()).toBe(200);
     await expect(page.getByText('Profile saved.')).toBeVisible();
 
     // Use the server's canonical response rather than assuming the submitted
     // handle survived validation/normalization unchanged. This also makes a
     // failed profile write observable before the browser follows the public
     // route, instead of turning it into an opaque missing-heading failure.
-    const savedProfile = (await (await apiGet(page.context(), '/api/account/profile/')).json()) as {
+    const savedProfile = (await savedResponse.json()) as {
       handle: string;
       display_name: string;
       is_public: boolean;

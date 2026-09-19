@@ -1372,7 +1372,10 @@ function EditorWorkspace() {
     // change again in this component (the confirmation navigates away),
     // so no queued/in-flight periodic write can recreate a draft even if
     // the component hasn't fully unmounted yet.
-    await draftAutosave.clearDraft();
+    // Start local cleanup before leaving, but do not make navigation wait on
+    // IndexedDB while a fake clock or a slow browser is active. The draft
+    // clear is idempotent and continues after the route transition.
+    void draftAutosave.clearDraft();
     void draftServerSync.deleteServerDraft();
     setShowExitConfirm(false);
     setExitSaveFailure(null);

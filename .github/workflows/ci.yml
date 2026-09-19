@@ -77,6 +77,10 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          # Vitest's PR fast path compares against the base revision. Keep the
+          # full history available so changed-test selection is deterministic.
+          fetch-depth: 0
 
       - name: Install Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -98,7 +102,14 @@ jobs:
         run: npm run typecheck
 
       - name: Test (vitest)
-        run: npm test
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            npm test -- --changed "$PR_BASE_SHA" --passWithNoTests
+          else
+            npm test
+          fi
 
   published-smoke:
     name: Published routing smoke check

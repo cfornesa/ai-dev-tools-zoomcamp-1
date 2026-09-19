@@ -24,3 +24,15 @@ Action upgrades are intentional dependency changes. To upgrade one:
    change. Keep the release label comment beside each workflow pin.
 3. Run `make check-workflows` and review the resulting workflow diff before
    merging.
+
+## Vitest feedback boundary
+
+Pull requests use Vitest's dependency-aware `--changed <base-sha>` selection
+to keep review feedback proportional to the files under review. This does not
+delete tests or weaken assertions: the backend checks and all frontend quality
+checks still run, and `npm test` remains the deterministic full-suite command.
+
+Pushes to `main`, manual workflow dispatches, and release validation continue
+to run the complete frontend suite. Use `cd frontend && npm test` locally when
+the full release gate is required; use `cd frontend && npm test --
+--changed <base-sha> --passWithNoTests` only for PR-feedback parity.

@@ -3,6 +3,22 @@
 The current open-issue manifest and dependency reconciliation is recorded in
 `.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
 
+## 2026-09-19 — CI feedback-time optimization (#635)
+
+Pull requests now use Vitest's dependency-aware changed-test path against the
+pull request base SHA, while pushes to `main`, manual dispatches, and release
+validation retain the unsliced full frontend suite. The full backend checks
+and frontend lint, format, typecheck, and build checks remain required. A
+local two-shard experiment was rejected because concurrent editor tests timed
+out and the wall-clock result was not materially shorter.
+
+Evidence for the reviewed implementation: the changed path selected 10 files
+and 39 tests in about 6 seconds; the full frontend suite passed 241 files and
+2,734 tests in about 105 seconds; the full backend suite passed 1,447 tests
+with 39 skips in about 131 seconds. Workflow pin validation, typecheck, lint,
+format, and production build also passed. The authoritative full command
+remains `cd frontend && npm test`.
+
 ## 2026-09-19 — Vitest security remediation and Replit synchronization blocker (#634)
 
 The existing Vitest security findings were independently confirmed as

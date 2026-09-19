@@ -15,7 +15,7 @@ GitHub comment; no unrecorded service is credited.
 | ---: | --- | --- | --- | --- | --- |
 | 1 | [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634) | Resolve the Vitest Security Center gate | Replit workspace synchronization | `CLOSED / QA PASS` | CI and the fresh Replit Security Center scan pass; no remaining work in this issue. |
 | 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #622 evidence | `CLOSED / QA PASS` | Production import, six reference engines, stored thumbnails, routes, cleanup publish, and regression evidence passed; broader release-surface work remains in #622. |
-| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / interaction-download-authorization matrix` | Card thumbnails, canonical links, API thumbnails, embeds, routes, and one visual immersive/editor path pass; complete the six-engine browser interaction/download/author-only-controls matrix before closure. |
+| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / awaiting promotion of 3e8e150` | Six-engine regular/immersive/editor matrices pass in the current production artifact; canonical `edit_url`/slug-link fix is verified locally and queued in Replit Build/Promote. Refresh live evidence after promotion, then close. |
 | 4 | [#635](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/635) | Reduce CI feedback time without weakening required coverage | none | `PROPOSED / scoped follow-up` | Baseline the 172-second frontend run and compare changed-path, parallel/sharded, and fast/full workflow strategies before implementation. |
 
 ## Duplicate and already-covered work
@@ -38,10 +38,9 @@ GitHub comment; no unrecorded service is credited.
   resolved. The published API returns eight profile pieces total, including
   six `reference-*` fixtures; all six imported detail endpoints return JSON
   200 and all six thumbnail endpoints return PNG 200.
-- The remaining classification is `surface-contract`: `PieceCard` hides a
-  stored fallback thumbnail whenever `thumbnail_is_fallback` is true, so the
-  profile visually renders a no-preview tile even though the API has a valid
-  PNG URL. This is an existing #622 acceptance gap, not a new duplicate issue.
+- The card-rendering classification is resolved by `088545f`; live profile
+  cards now show stored fallback PNGs. The latest source/API contract fix is
+  `3e8e150`; production promotion is still in progress.
 
 ## Required terminal sequence
 
@@ -54,5 +53,5 @@ GitHub comment; no unrecorded service is credited.
    session-completion.
 
 The production-target and synchronization prerequisites are resolved. The
-remaining blocker is the rendered-card contract described above; no new issue
-is needed because it is already within #622's public-card acceptance scope.
+remaining release blocker is promotion of `3e8e150`; the CI runtime concern is
+tracked separately in #635 and must not be fixed by dropping release coverage.

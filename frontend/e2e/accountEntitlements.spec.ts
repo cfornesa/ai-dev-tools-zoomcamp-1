@@ -29,6 +29,7 @@ test.describe('Account entitlements summary (#439)', () => {
     context,
   }) => {
     await page.goto('/account/settings');
+    await page.getByRole('button', { name: 'Expand Plan and usage' }).click();
     await expect(page.getByText('Sign in to see your plan and usage.')).toBeVisible();
 
     const response = await apiGet(context, '/api/account/entitlements/');
@@ -51,6 +52,7 @@ test.describe('Account entitlements summary (#439)', () => {
       };
 
       await page.goto('/account/settings');
+      await page.getByRole('button', { name: 'Expand Plan and usage' }).click();
       const summary = page.getByRole('region', { name: 'Your plan and usage' });
       await expect(summary).toBeVisible();
       await expect(summary).toContainText(body.plan_key);

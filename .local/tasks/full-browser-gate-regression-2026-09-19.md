@@ -2,7 +2,8 @@
 
 ## Status
 
-`IN PROGRESS` — implementation landed locally; workflow-dispatch verification remains.
+`IN PROGRESS` — slug-collision repair is verified in the latest workflow run;
+account-settings and stage-geometry follow-ups remain before terminal QA.
 
 ## Goal
 
@@ -45,6 +46,13 @@ Use the existing CI PostgreSQL service and deterministic Playwright fixture user
   PostgreSQL container passes the focused suite (`7 passed`).
 - The first full-browser failure is a separate stale assertion in #623:
   anonymous billing currently redirects to `/gallery?type=all`, not `/`.
+- Workflow run `35418436064` confirmed the slug-collision family is gone:
+  `236 passed`, `40 failed`, `6 skipped`, with no
+  `unique_project_public_slug_per_owner` failures. The remaining failures are
+  grouped under #624 (account-settings visibility and landing-route contract)
+  and #625 (stage command geometry/overflow across browser surfaces).
+- #623 is closed `QA: PASS`; its five billing scenarios passed in the same
+  workflow run.
 
 ## Out of scope
 

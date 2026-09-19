@@ -45,6 +45,7 @@ test.describe('vendor-aware saved AI models (#553)', () => {
       expect(createdGemini.ok()).toBe(true);
 
       await page.goto('/account/settings');
+      await page.getByRole('button', { name: 'Expand Saved AI models' }).click();
       await expect(page.getByRole('heading', { name: 'Saved AI models' })).toBeVisible();
       await expect(page.getByText(/gemini: Gemini browser model/)).toBeVisible();
 

@@ -147,7 +147,7 @@ test.describe('Account deletion (#443)', () => {
     await page.getByTestId('account-deletion-submit').click();
 
     // Logged out and redirected home.
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/gallery\?type=all$/);
     await expect(page.getByText('Sign in to see your projects.')).toBeVisible();
 
     // The session this very page was using is now unauthenticated.

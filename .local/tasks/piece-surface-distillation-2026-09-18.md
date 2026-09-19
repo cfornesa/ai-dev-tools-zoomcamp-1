@@ -872,3 +872,29 @@ either closed or explicitly terminally handed off for republishing.
 - **Routing:** stage 2a mechanical frontend/test contract update.
 - **Focused evidence:** local browser execution is blocked by the same macOS
   Chromium launch permission boundary, so CI verification is required.
+
+### Engineering transaction — #624 account-settings browser contract — 2026-09-19
+
+- **Phase:** ENGINEERING → QA pending full workflow verification
+- **Implementation owner:** Codex/GPT-5, substituted for the rostered
+  implementation service under the owner authorization recorded in
+  `DECISIONS.md`.
+- **Scope:** preserve compact progressive disclosure; expand the relevant
+  section explicitly in entitlement, settings, credentials, and saved-model
+  scenarios; align protected/logout redirects with `/gallery?type=all`.
+- **Focused evidence:** frontend typecheck, Prettier check, AccountSettings
+  and PieceStageToolbar component suites: `19 passed`.
+- **Next action:** verify the affected browser scenarios in the next full
+  workflow run and close #624 only after the complete family is green.
+
+### Engineering transaction — #625 editor-stage geometry contract — 2026-09-19
+
+- **Phase:** ENGINEERING → QA pending full workflow verification
+- **Implementation owner:** Codex/GPT-5, substituted for the rostered
+  implementation service under the owner authorization recorded in
+  `DECISIONS.md`.
+- **Scope:** keep the shared command card and its overlay within the viewport
+  on narrow stages without an inner scrollbar; the overlay owns overflow when
+  content requires it.
+- **Focused evidence:** frontend typecheck, Prettier check, and shared
+  PieceStageToolbar component suite passed; cross-browser evidence is pending.

@@ -21,6 +21,17 @@ async function assertGroupedSettings(page: Page) {
   ]) {
     await expect(page.getByRole('heading', { name: heading })).toBeVisible();
   }
+  for (const label of [
+    'Plan and usage',
+    'Account management',
+    'AI provider credentials',
+    'Saved AI models',
+    'Personas',
+    'Automatic retry',
+  ]) {
+    const expand = page.getByRole('button', { name: `Expand ${label}` });
+    if (await expand.count()) await expand.click();
+  }
   const actions = page.getByRole('list', { name: 'Account management actions' });
   await expect(actions.getByRole('listitem')).toHaveCount(6);
   await expect(actions.getByRole('link', { name: /delete your account/i })).toBeVisible();

@@ -113,6 +113,7 @@ test.describe('Personal Mistral credential settings', () => {
     }
     await page.getByRole('link', { name: 'Account settings' }).click();
     await expect(page).toHaveURL(/\/account\/settings$/);
+    await page.getByRole('button', { name: 'Expand AI provider credentials' }).click();
 
     const duplicateIds = await page.evaluate(() => {
       const ids = Array.from(document.querySelectorAll('[id]')).map((element) => element.id);

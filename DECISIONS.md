@@ -3,6 +3,19 @@
 Append-only log of agent-relevant decisions. See `AGENTS.md` Section 10 for
 ownership and read cadence.
 
+## 2026-09-19 — full-browser residual contract repairs
+
+- Keep `/gallery?type=all` as the canonical public landing destination for
+  anonymous/protected redirects; update stale browser expectations instead of
+  regressing the public shell route.
+- Preserve account-settings progressive disclosure. Browser scenarios now
+  explicitly expand the section whose content they verify.
+- The shared stage command card is not a second scrolling surface on narrow
+  viewports. The full-screen overlay owns overflow; the card is sized to keep
+  controls inside the viewport.
+- Actual implementation/QA runtime is owner-authorized Codex/GPT-5
+  substitution; rostered external services were unavailable.
+
 ## 2026-09-19
 
 - **#621 slug-collision root cause:** retain soft-deleted rows in canonical

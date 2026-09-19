@@ -155,7 +155,7 @@ test.describe('Account sessions: list and revoke (#441)', () => {
     await currentItem.getByRole('button', { name: 'Revoke' }).click();
     await currentItem.getByRole('button', { name: 'Confirm' }).click();
 
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/gallery\?type=all$/);
     await expect(page.getByText('Sign in to see your projects.')).toBeVisible();
   });
 

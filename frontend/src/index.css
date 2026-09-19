@@ -4598,6 +4598,13 @@ select.ai-proposal-field-full-width {
      scrollbar; stack each action as a compact, full-width row instead. */
   .piece-stage-command-card {
     width: min(100%, 28rem);
+    height: calc(100dvh - 1rem);
+    max-height: calc(100dvh - 1rem);
+    overflow: visible;
+  }
+
+  .piece-stage-command-overlay {
+    padding: 0.5rem;
   }
 
   .piece-stage-command-card > [role='group'] {

@@ -24,6 +24,8 @@ test.describe('account settings layout persistence (#555)', () => {
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
       await page.goto('/account/settings');
 
+      await page.getByRole('button', { name: 'Expand Automatic retry' }).click();
+
       for (let index = 0; index < 6; index += 1) {
         await page.getByRole('button', { name: 'Move Automatic retry up' }).click();
       }
@@ -43,6 +45,7 @@ test.describe('account settings layout persistence (#555)', () => {
       await page.reload();
       await expect(page.locator('[data-settings-section]').first()).toBeVisible();
       expect((await sections(page))[0]).toBe('plan');
+      await page.getByRole('button', { name: 'Expand Plan and usage' }).click();
       await expect(page.getByRole('button', { name: /Collapse Plan and usage/ })).toBeVisible();
       await page.getByRole('radio', { name: 'Reduced' }).click();
       await expect(page.locator('.reduced-motion-status')).toContainText('reduced');

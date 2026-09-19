@@ -148,6 +148,13 @@ def get_effective_cap(user, feature_key: str) -> int:
     if override is not None and not override.allowed:
         return 0
     plan = _active_plan(get_user_plan_key(user))
+    # Application-admin grants are an authority bypass for quota-bound remote
+    # capabilities. Keep a positive sentinel here so service-layer eligibility
+    # checks (notably cloud backup enablement) agree with
+    # resolve_effective_capabilities(), which already reports admins as
+    # unlimited. The request paths still enforce their independent rate limits.
+    if is_unlimited(user):
+        return max(plan.daily_ai_requests if plan is not None else 1, 1)
     if plan is None or feature_key not in plan.feature_keys:
         return 0
     return plan.daily_ai_requests

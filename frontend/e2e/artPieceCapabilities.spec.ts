@@ -23,7 +23,14 @@ import { requireE2EFixtures } from './support/prerequisites.js';
  * test-invocation count drops.
  */
 
-async function generate(page: Page, library: string, prompt: string): Promise<void> {
+async function generate(
+  page: Page,
+  library: string,
+  prompt: string,
+  email: string,
+  password: string,
+): Promise<void> {
+  await loginViaUI(page, email, password);
   await page.goto('/art-pieces');
   await page.getByLabel('Library').selectOption(library);
   await page.getByLabel('Describe the art piece you want to generate').fill(prompt);
@@ -57,8 +64,7 @@ test.describe('Generated studio /art-pieces: capability contract (#428)', () => 
         const context = await browser.newContext();
         const page = await context.newPage();
         await page.setViewportSize(viewport);
-        await loginViaUI(page, fixture.owner.email, fixture.password);
-        await generate(page, 'canvas2d', 'a red rectangle');
+        await generate(page, 'canvas2d', 'a red rectangle', fixture.empty.email, fixture.password);
 
         // Issue #608/#609: every registered engine now has the same
         // immersive/download surface; flat engines use the synthetic spatial
@@ -114,8 +120,7 @@ test.describe('Generated studio /art-pieces: capability contract (#428)', () => 
         const context = await browser.newContext();
         const page = await context.newPage();
         await page.setViewportSize(viewport);
-        await loginViaUI(page, fixture.owner.email, fixture.password);
-        await generate(page, 'threejs', 'a rotating cube');
+        await generate(page, 'threejs', 'a rotating cube', fixture.empty.email, fixture.password);
 
         const handSteering = page.getByTestId('art-piece-capability-hand_steering');
         const immersive = page.getByTestId('art-piece-capability-immersive');
@@ -248,8 +253,7 @@ test.describe('Generated studio /art-pieces: capability contract (#428)', () => 
     await test.step('failure recovery: a save error leaves the form editable and retryable', async () => {
       const context = await browser.newContext();
       const page = await context.newPage();
-      await loginViaUI(page, fixture.owner.email, fixture.password);
-      await generate(page, 'canvas2d', 'a red rectangle');
+      await generate(page, 'canvas2d', 'a red rectangle', fixture.empty.email, fixture.password);
 
       await page.getByLabel('Piece title').fill('Retry fixture');
       await page.getByLabel('Piece description').fill('First attempt is forced to fail.');

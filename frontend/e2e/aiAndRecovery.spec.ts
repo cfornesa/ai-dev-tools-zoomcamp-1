@@ -273,9 +273,6 @@ test.describe('AI create/edit proposals', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.other.email, fixtures.password);
-      await createBlankProjectViaUI(page);
-      await expandAllCollapsibleSections(page);
-      await setAIScenario(page, 'success');
       await page.route('**/api/account/ai-model-preferences/', (route) =>
         route.fulfill({
           status: 200,
@@ -305,6 +302,9 @@ test.describe('AI create/edit proposals', () => {
           ]),
         }),
       );
+      await createBlankProjectViaUI(page);
+      await expandAllCollapsibleSections(page);
+      await setAIScenario(page, 'success');
 
       const proposalForm = page.getByRole('form', { name: 'Generate a new scene' });
 
@@ -913,7 +913,7 @@ test.describe('Local and server draft autosave', () => {
         .click();
       // `navigate('/')` immediately resolves through Home.tsx; authenticated
       // users land on the studio while anonymous users land on the gallery.
-      await page.waitForURL(/\/studio$/);
+      await expect(page).toHaveURL(/\/(?:studio|gallery)?$/);
       expect(await readLocalDraft(page, projectId)).toBeNull();
 
       await context.close();

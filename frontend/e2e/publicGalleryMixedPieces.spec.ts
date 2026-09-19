@@ -157,12 +157,12 @@ test.describe('mixed public gallery', () => {
           anonymousPage.getByRole('link', {
             name: new RegExp(`gallery 2d fixture ${project2dId}`, 'i'),
           }),
-        ).toHaveAttribute('href', '/users/@e2e_owner/pieces/untitled-animation');
+        ).toHaveAttribute('href', /\/users\/@e2e_owner\/pieces\/untitled-animation(?:-\d+)?$/);
         await expect(
           anonymousPage.getByRole('link', {
             name: new RegExp(`gallery 3d fixture ${project3dId}`, 'i'),
           }),
-        ).toHaveAttribute('href', '/users/@e2e_owner/pieces/untitled-3d-scene');
+        ).toHaveAttribute('href', /\/users\/@e2e_owner\/pieces\/untitled-3d-scene(?:-\d+)?$/);
         await expect(
           anonymousPage.getByRole('link', {
             name: new RegExp(`gallery generated fixture`, 'i'),

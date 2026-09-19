@@ -14,14 +14,18 @@ test.describe('Public profiles (#520)', () => {
     await page.goto('/account/settings');
     await expect(page.getByRole('heading', { name: 'Public profile' })).toBeVisible();
     await expect(page.getByLabel('Handle')).toHaveValue('e2e_other');
-    await page.getByLabel('Handle').fill('e2e-profile');
+    const publicHandle = `e2e-profile-${testInfo.project.name}-${Date.now().toString(36)}`.slice(
+      0,
+      32,
+    );
+    await page.getByLabel('Handle').fill(publicHandle);
     await page.getByLabel('Display name').fill('E2E Artist');
     await page.getByLabel('Bio').fill('A public profile bio.');
     await page.getByLabel('Make profile public').check();
     await page.getByRole('button', { name: 'Save profile' }).click();
     await expect(page.getByText('Profile saved.')).toBeVisible();
 
-    await page.goto('/users/@e2e-profile');
+    await page.goto(`/users/@${publicHandle}`);
     await expect(page.getByRole('heading', { name: 'E2E Artist' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Public pieces' })).toBeVisible();
     await page.setViewportSize({ width: 1280, height: 900 });

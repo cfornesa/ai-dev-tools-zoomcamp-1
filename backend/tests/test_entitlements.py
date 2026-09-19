@@ -238,6 +238,15 @@ def test_application_admin_quota_capability_is_explicitly_unlimited():
 
 
 @pytest.mark.django_db
+def test_application_admin_remote_capability_has_positive_service_cap():
+    admin = _make_user("admin_cloud_cap")
+    ApplicationAdmin.objects.create(user=admin)
+    Plan.objects.filter(plan_key="free").update(feature_keys=[])
+
+    assert entitlements.get_effective_cap(admin, "cloud_project_sync") > 0
+
+
+@pytest.mark.django_db
 def test_role_and_global_layers_resolve_atomically_and_global_deny_wins():
     user = _make_user("alice")
     admin = _make_user("admin")

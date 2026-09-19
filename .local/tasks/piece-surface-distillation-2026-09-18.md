@@ -750,3 +750,15 @@ either closed or explicitly terminally handed off for republishing.
   5 or Sonnet 5 model, run production-readiness across local/approved-browser/
   CI/Replit publication dimensions, then run session-completion. Do not
   republish before that gate.
+
+### Workflow authorization update — 2026-09-18
+
+- **Owner authorization:** the owner explicitly approved the active Codex/GPT-5
+  runtime as a session substitution for the unavailable rostered Claude Opus
+  5/Sonnet 5 production-readiness tier.
+- **Documentation:** `DISPATCH.md`, the shared handoff contract, both skill
+  mirrors for production-readiness/backlog-session/session-completion, and
+  `DECISIONS.md` now permit and require explicit recording of this substitution.
+- **Next action:** rerun task-distillation reconciliation, then the complete
+  backlog-session/readiness/session-completion pass under the newly authorized
+  routing. No Replit or shared-database write is implied by this authorization.

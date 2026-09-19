@@ -989,3 +989,14 @@ the first real CI evidence for #549.
 green, CI green on the pushed commit, and production (`augmentrart.com`)
 healthy with #547's earlier schema fix still confirmed live. No blockers or
 open follow-ups remain — the project is production-ready as of `bdcb2a0`.
+
+## 2026-09-18 (owner-authorized GPT-5 production-readiness substitution)
+
+The owner explicitly authorized the active Codex/GPT-5 runtime to run the
+production-readiness and session-completion gates when the rostered Claude
+Opus 5/Sonnet 5 tier is unavailable. This is a permitted, session-recorded
+substitution rather than a change to the rostered owner: the actual
+service/model/effort must be recorded in the backlog ledger, and the result
+must never be represented as a Claude run. The governing dispatch contract,
+production-readiness, backlog-session, and session-completion documents (and
+their mirrored skills where present) were updated together.

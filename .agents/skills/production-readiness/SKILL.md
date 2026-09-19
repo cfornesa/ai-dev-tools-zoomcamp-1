@@ -36,14 +36,13 @@ This skill is stage 5, the production-readiness gate in
 `LOOP-AGENTS.md` Section 2. See `.agents/skills/_shared/HANDOFF-CONTRACT.md`
 for the stage map and provenance rules.
 
-It is never delegated to another service or to a lesser Claude model: Opus 5
-or Sonnet 5 is mandatory for this gate regardless of how small the batch
-looks (owner-authorized 2026-09-10 as a permanent equivalence between the
-two — see `DECISIONS.md` — not a per-run substitution to flag). Effort is
-budget-constrained to `Low` for Opus 5 / `Medium` for Sonnet 5 by owner
-decision, matching `DISPATCH.md`. If neither is
-available, Rule 6 applies — stop and say so rather than running the gate on
-a cheaper model.
+The rostered tier is Claude Opus 5 or Sonnet 5. If neither is available, the
+owner may explicitly authorize the active GPT-5 runtime as a session
+substitution. This is a flagged provenance event, not a silent downgrade:
+record the authorization in `DECISIONS.md` and the actual service/model/effort
+in the backlog ledger. No other model or service may substitute for this gate.
+The rostered effort is `Low` for Opus 5 / `Medium` for Sonnet 5; GPT-5 uses
+the owner-recorded effort for the authorized run, matching `DISPATCH.md`.
 
 At reduced effort the gate's rigor comes from working the dimensions and
 outputs below item by item. Where the effort level cannot support a confident
@@ -104,6 +103,7 @@ Return:
 - exact next action for each blocker;
 - confirmation that no issue is silently omitted or duplicated;
 - the routing audit: actual stage owner per stage, every substitution, and
-  confirmation that this gate itself ran on the rostered model tier.
+  confirmation that this gate itself ran on the rostered model tier or on an
+  explicitly recorded owner-authorized GPT-5 substitution.
 
 Do not call the project production-ready while any required issue or acceptance criterion is incomplete, unverified, or blocked. If tools or environments are unavailable, record the attempted command/tool, exact failure, impact, and next action rather than treating missing evidence as a pass.

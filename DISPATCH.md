@@ -28,7 +28,7 @@
 | 2b | Implementation — complex logic | Opencode Desktop (`/connect` to Ollama Cloud) | kimi-k3 | — | skill `implementation-complex` |
 | 3 | Second-opinion patch review (optional) | Mistral Vibe | devstral-2 | — | skill `second-opinion-review` |
 | 4 | QA self-review | Claude | Sonnet 5 | Medium | skill `qa-self-review` |
-| 5 | Production-readiness gate | Claude | **Opus 5 or Sonnet 5 (mandatory tier)** | Low (Opus 5) / Medium (Sonnet 5) | skill `production-readiness` |
+| 5 | Production-readiness gate | Claude | **Opus 5 or Sonnet 5 (rostered tier); GPT-5 is an owner-authorized substitute when explicitly recorded** | Low (Opus 5) / Medium (Sonnet 5) / owner-recorded GPT-5 effort | skill `production-readiness` |
 | 6 | Batch reconciliation and handoff | Claude | Sonnet 5 | Medium | skill `session-completion` |
 
 Every row is dispatched by invoking the named task/skill. The **Service** and
@@ -50,9 +50,12 @@ Record the actual platform/model/effort for provenance. The Stage 1 restriction
 against Luna applies only to `issue-scoping`; it does not apply to
 `task-distillation` or `backlog-session`.
 
-Two rows are not substitutable: stage 3 cannot be satisfied by the model that
-wrote the diff, and stage 5 never leaves the Opus 5/Sonnet 5 Claude tier
-(owner-authorized 2026-09-10, permanent — see DECISIONS.md).
+Stage 3 cannot be satisfied by the model that wrote the diff. Stage 5 remains
+rostered to the Opus 5/Sonnet 5 Claude tier, but the owner may explicitly
+authorize GPT-5 as a session substitution when that tier is unavailable. The
+substitution must be recorded in `DECISIONS.md` and the backlog ledger with
+the actual service, model, and effort; it must never be presented as a
+rostered Claude run.
 
 ---
 
@@ -148,14 +151,14 @@ Claude-authored diffs.
 ## Stage 5 — Production-readiness gate
 
 **Service:** Claude.
-**Model:** `Claude Opus 5` or `Claude Sonnet 5` — **mandatory**, owner-authorized
-2026-09-10 as a permanent equivalence (not a per-run substitution to flag
-going forward). This is the one stage where the model tier is non-negotiable:
-never Haiku, never a non-Claude service, regardless of how small the change
-looks. That, not token spend, is what `LOOP-AGENTS.md`'s "never downgraded"
-rule protects. If neither Opus 5 nor Sonnet 5 is available, Rule 6 applies —
-stop and say so.
-**Effort:** `Low` — a separate, budget-owned dial for `Claude Opus 5` and `Medium` for `Claude Sonnet 5`.
+**Model:** `Claude Opus 5` or `Claude Sonnet 5` is the rostered tier. If neither
+is available, the owner may explicitly authorize the active GPT-5 runtime as a
+session substitution. That substitution is a flagged provenance event, not a
+silent downgrade: record the owner authorization in `DECISIONS.md` and record
+the actual service/model/effort in the backlog ledger. No other model or
+service is permitted to substitute for this gate. The rostered effort is
+`Low` for Claude Opus 5 and `Medium` for Claude Sonnet 5; GPT-5 uses the
+owner-recorded effort for the authorized run.
 
 Because the effort level is low, this gate earns its rigor from procedure
 rather than unbounded reasoning: work the readiness dimensions and the

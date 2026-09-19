@@ -84,8 +84,10 @@ The orchestrator's own obligations at each handoff:
 
 Two rules from the contract are repeated here because the ledger enforces
 them: a Claude-authored diff can never satisfy the second-opinion stage, and
-the production-readiness gate never routes to another service or a lesser
-Claude model (Opus 5 is mandatory; its effort level is the owner's to set).
+the production-readiness gate remains rostered to Opus 5/Sonnet 5 unless the
+owner explicitly authorizes GPT-5 as a session substitution. Any such
+substitution must be flagged in `DECISIONS.md` and the ledger with actual
+service/model/effort provenance.
 
 ## Prerequisite phase gate
 
@@ -302,7 +304,9 @@ The project batch may be reported complete only when:
 - backlog, GitHub, and memory links are reconciled;
 - every stage of every processed issue has a recorded owner, with each
   substitution flagged and the readiness gate run on the rostered model tier
-  (Opus 5) at the owner's budgeted effort;
+  (Opus 5/Sonnet 5) at the owner's budgeted effort, or on an explicitly
+  owner-authorized GPT-5 substitution recorded in `DECISIONS.md` and the
+  ledger;
 - session completion has run; and
 - the issue/PR state reflects the actual batch result.
 - every newly discovered actionable item is linked to an existing/new issue or explicitly recorded as pending authorization with an owner and next action.

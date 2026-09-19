@@ -277,14 +277,16 @@ test.describe('AI create/edit proposals', () => {
       await expandAllCollapsibleSections(page);
       await setAIScenario(page, 'success');
 
+      const proposalForm = page.getByRole('form', { name: 'Generate a new scene' });
+
       for (const [vendor, model] of [
         ['mistral', ''],
         ['gemini', 'gemini-2.5-flash'],
         ['deepseek', 'deepseek-chat'],
       ] as const) {
-        await page.getByLabel('AI provider').selectOption(vendor);
+        await proposalForm.getByLabel('AI provider').selectOption(vendor);
         if (model) {
-          await expect(page.getByLabel(`${vendor} model (optional)`)).toHaveValue(model);
+          await expect(proposalForm.getByLabel(`${vendor} model (optional)`)).toHaveValue(model);
         }
         await page
           .getByRole('textbox', { name: 'Describe the scene you want to generate' })

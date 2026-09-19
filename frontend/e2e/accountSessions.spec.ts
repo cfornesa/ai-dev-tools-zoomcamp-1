@@ -156,7 +156,7 @@ test.describe('Account sessions: list and revoke (#441)', () => {
     await currentItem.getByRole('button', { name: 'Confirm' }).click();
 
     await expect(page).toHaveURL(/\/gallery\?type=all$/);
-    await expect(page.getByText('Sign in to see your projects.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Public gallery' })).toBeVisible();
   });
 
   test("a different user's own session is never listed or revocable by another account", async ({

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 
+import { apiGet, apiPatch } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
@@ -27,5 +28,12 @@ test.describe('Public profiles (#520)', () => {
     await page.screenshot({ path: testInfo.outputPath('profile-1280x900.png'), fullPage: true });
     await page.setViewportSize({ width: 375, height: 812 });
     await page.screenshot({ path: testInfo.outputPath('profile-375x812.png'), fullPage: true });
+
+    const current = await (await apiGet(page.context(), '/api/account/profile/')).json();
+    await apiPatch(page.context(), '/api/account/profile/', {
+      ...(current as Record<string, unknown>),
+      handle: 'e2e_other',
+      is_public: false,
+    });
   });
 });

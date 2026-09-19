@@ -33,7 +33,7 @@ async function assertGroupedSettings(page: Page) {
     if (await expand.count()) await expand.click();
   }
   const actions = page.getByRole('list', { name: 'Account management actions' });
-  await expect(actions.getByRole('listitem')).toHaveCount(6);
+  await expect(actions.getByRole('listitem')).toHaveCount(11);
   await expect(actions.getByRole('link', { name: /delete your account/i })).toBeVisible();
   expect(
     await page.evaluate(

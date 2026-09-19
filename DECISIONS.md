@@ -16,6 +16,22 @@ ownership and read cadence.
 - Actual implementation/QA runtime is owner-authorized Codex/GPT-5
   substitution; rostered external services were unavailable.
 
+## 2026-09-19 — terminal full-browser reconciliation
+
+- Workflow run `35420287899` completed with `243 passed`, `33 failed`, and
+  `6 skipped` after a 33-minute browser step. The slug-allocation repair held:
+  no `unique_project_public_slug_per_owner` failures appeared.
+- The account/admin failures are contract and fixture-isolation work: protected
+  admin destinations are `/studio`, account settings secondary sections are
+  collapsed by default, and profile handle mutations must be restored before
+  later serial specs.
+- Generated preview failures remain a distinct runtime family and are tracked
+  in #627; admin settings/profile-style/theme feedback remains #628. Do not
+  reopen closed predecessor issues.
+- #626 records the missing bounded workflow/Playwright timeout discovered from
+  the long-running full-browser step; its implementation is deferred until
+  the current repair batch is terminal.
+
 ## 2026-09-19
 
 - **#621 slug-collision root cause:** retain soft-deleted rows in canonical

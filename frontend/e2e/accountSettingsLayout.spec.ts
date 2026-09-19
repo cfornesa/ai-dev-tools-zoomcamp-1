@@ -31,9 +31,16 @@ test.describe('account settings layout persistence (#555)', () => {
       }
       const reordered = await sections(page);
       expect(reordered[0]).toBe('retry');
-      await page.getByRole('button', { name: /Collapse Automatic retry/ }).click();
+      await page
+        .locator('[data-settings-section="retry"]')
+        .getByRole('button', { name: 'Collapse' })
+        .click();
       await page.reload();
-      await expect(page.getByRole('button', { name: /Expand Automatic retry/ })).toBeVisible();
+      await expect(
+        page
+          .locator('[data-settings-section="retry"]')
+          .getByRole('button', { name: 'Expand Automatic retry' }),
+      ).toBeVisible();
       expect((await sections(page))[0]).toBe('retry');
 
       await page.evaluate(() =>
@@ -46,7 +53,9 @@ test.describe('account settings layout persistence (#555)', () => {
       await expect(page.locator('[data-settings-section]').first()).toBeVisible();
       expect((await sections(page))[0]).toBe('plan');
       await page.getByRole('button', { name: 'Expand Plan and usage' }).click();
-      await expect(page.getByRole('button', { name: /Collapse Plan and usage/ })).toBeVisible();
+      await expect(
+        page.locator('[data-settings-section="plan"]').getByRole('button', { name: 'Collapse' }),
+      ).toBeVisible();
       await page.getByRole('radio', { name: 'Reduced' }).click();
       await expect(page.locator('.reduced-motion-status')).toContainText('reduced');
     });

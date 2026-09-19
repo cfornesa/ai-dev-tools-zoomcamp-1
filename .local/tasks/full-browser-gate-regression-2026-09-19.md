@@ -53,6 +53,14 @@ Use the existing CI PostgreSQL service and deterministic Playwright fixture user
   and #625 (stage command geometry/overflow across browser surfaces).
 - #623 is closed `QA: PASS`; its five billing scenarios passed in the same
   workflow run.
+- Discovery gate: #626 records the missing bounded execution contract found
+  while run `35420287899` remained live beyond the previous terminal duration;
+  its local record is `.local/tasks/full-browser-timeout-2026-09-19.md`.
+- Terminal run `35420287899` completed with `243 passed`, `33 failed`, and
+  `6 skipped`. The slug collision family remained absent. Residual failures
+  are now split across #624 (account/admin route and settings contracts),
+  #625 (stage card overflow), #627 (generated art-piece previews/runtime),
+  and #628 (admin settings/profile-style/theme feedback).
 
 ## Out of scope
 

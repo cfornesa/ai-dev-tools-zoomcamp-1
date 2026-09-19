@@ -898,3 +898,26 @@ either closed or explicitly terminally handed off for republishing.
   content requires it.
 - **Focused evidence:** frontend typecheck, Prettier check, and shared
   PieceStageToolbar component suite passed; cross-browser evidence is pending.
+
+### Discovery transaction — #626 bounded browser workflow — 2026-09-19
+
+- **Phase:** PROPOSED → discovery recorded; implementation deferred until the
+  current workflow run is terminal.
+- **Issue:** [#626](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/626)
+  adds explicit job/Playwright bounds and terminal diagnostics for a hung full
+  browser acceptance run.
+- **Routing:** stage 2a mechanical CI/test infrastructure.
+- **Evidence:** run `35420287899` has remained in the full browser step beyond
+  the prior terminal duration; the workflow and Playwright config currently
+  expose no explicit execution bound.
+
+### Discovery transactions — #627/#628 residual browser families — 2026-09-19
+
+- **#627 generated previews:** terminal run `35420287899` failed the
+  Three.js/A-Frame revision preview and generated capability preview/save
+  flows with missing canvas/preview surfaces. This is separate from the
+  repaired slug allocation and is routed as stage 2b runtime integration.
+- **#628 admin surfaces:** the same run failed admin protected-route,
+  site-title/theme feedback, and ambiguous profile-style heading assertions.
+  It is routed as stage 2b auth/admin UI integration without reopening closed
+  predecessor issues.

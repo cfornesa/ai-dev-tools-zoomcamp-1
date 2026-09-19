@@ -47,7 +47,7 @@ test.describe('profile style catalog (#552)', () => {
       expect(ordinaryStyles.status()).toBe(403);
 
       await adminPage.goto('/admin/settings');
-      await expect(adminPage.getByRole('heading', { name: 'Profile style catalog' })).toBeVisible();
+      await expect(adminPage.locator('#admin-styles-heading')).toBeVisible();
       await expect(adminPage.getByLabel('Ocean preview')).toBeVisible();
 
       const stylesResponse = await apiGet(adminContext, '/api/admin/profile-styles/');

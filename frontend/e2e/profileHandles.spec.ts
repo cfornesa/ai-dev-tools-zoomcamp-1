@@ -52,7 +52,6 @@ test.describe('public handle lifecycle (#551)', () => {
       const other = await signInOther(browser, fixtures.other.email, fixtures.password);
       const collisionHandle = `qa-collision-${viewport.width}`;
       await setHandle(other.page.context(), collisionHandle);
-      await other.context.close();
 
       await page.goto('/account/settings');
       const handleInput = page.getByLabel('Handle');
@@ -71,6 +70,12 @@ test.describe('public handle lifecycle (#551)', () => {
       await expect(page.getByText(`@${changedHandle}`)).toBeVisible();
       await expect(page).toHaveURL(new RegExp(`/users/@${changedHandle}$`));
       await page.screenshot({ path: testInfo.outputPath('public-profile-handle.png') });
+
+      // Restore shared fixture identity before the next serial spec; profile
+      // handles are durable server state, unlike browser storage.
+      await setHandle(page.context(), oldHandle);
+      await setHandle(other.page.context(), 'e2e_other');
+      await other.context.close();
     });
   }
 });

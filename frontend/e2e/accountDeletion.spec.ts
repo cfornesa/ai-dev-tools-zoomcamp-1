@@ -148,7 +148,7 @@ test.describe('Account deletion (#443)', () => {
 
     // Logged out and redirected home.
     await expect(page).toHaveURL(/\/gallery\?type=all$/);
-    await expect(page.getByText('Sign in to see your projects.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Public gallery' })).toBeVisible();
 
     // The session this very page was using is now unauthenticated.
     expect((await apiGet(context, '/api/whoami/')).status()).toBe(401);

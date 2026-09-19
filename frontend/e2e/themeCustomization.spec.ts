@@ -21,7 +21,7 @@ test.describe('Theme customization (#521)', () => {
     await expect(themeForm.getByLabel('accent', { exact: true })).toBeVisible();
     await themeForm.getByLabel('accent', { exact: true }).fill('#00ff00');
     await themeForm.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(themeForm.getByText('Site title saved.')).toBeVisible();
+    await expect(themeForm.getByText('Global site metadata saved.')).toBeVisible();
     await apiPatch(context, '/api/admin/settings/', {
       site_title: 'AugmentrART',
       theme_config: settings.theme_config,

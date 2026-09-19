@@ -29,8 +29,8 @@ test.describe('account settings progressive disclosure (#554)', () => {
       await page.getByRole('button', { name: 'Expand Saved AI models' }).click();
       await page.getByRole('button', { name: 'Expand Personas' }).click();
 
-      const modelSection = page.getByRole('heading', { name: 'Saved AI models' }).locator('..');
-      const personaSection = page.getByRole('heading', { name: 'Personas' }).locator('..');
+      const modelSection = page.locator('[data-settings-section="models"]');
+      const personaSection = page.locator('[data-settings-section="personas"]');
       await expect(page.getByRole('button', { name: 'New model' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'New persona' })).toBeVisible();
       await expect(page.getByLabel('Model slug')).toHaveCount(0);

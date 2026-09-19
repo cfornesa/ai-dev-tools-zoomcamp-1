@@ -21,7 +21,7 @@ test.describe('admin navigation discoverability (#558)', () => {
       await adminPage.setViewportSize(viewport);
       await loginViaUI(adminPage, fixtures.admin.email, fixtures.password);
       await adminPage.goto('/admin/content');
-      if (viewport.width < 768) await adminPage.getByRole('button', { name: 'Open menu' }).click();
+      if (viewport.width < 768) await adminPage.locator('.app-shell-hamburger').click();
       await expect(adminPage.getByRole('link', { name: 'Admin' })).toHaveAttribute(
         'aria-current',
         'page',
@@ -32,8 +32,7 @@ test.describe('admin navigation discoverability (#558)', () => {
       const ordinaryPage = await ordinaryContext.newPage();
       await ordinaryPage.setViewportSize(viewport);
       await loginViaUI(ordinaryPage, fixtures.other.email, fixtures.password);
-      if (viewport.width < 768)
-        await ordinaryPage.getByRole('button', { name: 'Open menu' }).click();
+      if (viewport.width < 768) await ordinaryPage.locator('.app-shell-hamburger').click();
       await expect(ordinaryPage.getByRole('link', { name: 'Admin' })).toHaveCount(0);
       expect((await apiGet(ordinaryContext, '/api/admin/settings/')).status()).toBe(403);
       await ordinaryContext.close();

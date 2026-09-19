@@ -805,4 +805,4 @@ either closed or explicitly terminally handed off for republishing.
 - **Readiness impact:** local checks, focused six-engine browser checks, and
   push CI remain usable evidence; the complete browser dimension is
   `OPEN FOLLOW-UP`, not a piece-surface product failure. Replit publication
-  remains unverified and is still a separate release evidence gate.
+  remains unverified and is tracked as #622 [release evidence gate](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622).

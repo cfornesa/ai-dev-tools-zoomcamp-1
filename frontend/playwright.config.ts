@@ -45,6 +45,10 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: 0,
+  // Keep a full scheduled/dispatch matrix from hanging indefinitely when a
+  // browser or dev server stops making progress. The CI job has a slightly
+  // larger hard ceiling so Playwright can finish its failure diagnostics.
+  globalTimeout: 45 * 60 * 1000,
   reporter: [['list']],
   globalSetup: './e2e/support/global-setup.ts',
   globalTeardown: './e2e/support/global-teardown.ts',

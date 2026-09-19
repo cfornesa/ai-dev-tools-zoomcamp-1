@@ -317,6 +317,9 @@ jobs:
     name: Browser acceptance E2E
     if: ${{ github.event_name != 'deployment_status' }}
     runs-on: ubuntu-latest
+    # The scheduled/full matrix is intentionally serial, but a hung browser
+    # or server must still release the runner and surface a bounded failure.
+    timeout-minutes: 50
     # The Playwright global setup creates disposable fixture users in this
     # service and removes them in global teardown. Never point this job at a
     # shared or production database.

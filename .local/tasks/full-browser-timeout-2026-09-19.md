@@ -2,8 +2,8 @@
 
 ## Status
 
-`PROPOSED` — discovered while observing workflow-dispatch run #35420287899;
-no implementation has started.
+`IMPLEMENTED_PENDING_QA` — the bounded workflow/configuration change is
+committed locally and awaits the next authoritative browser run.
 
 ## Issue
 
@@ -24,3 +24,9 @@ no implementation has started.
 
 Stage 2a mechanical CI/test infrastructure. Do not cancel or replace the
 current live run solely because this issue was discovered.
+
+## Implementation
+
+- `.github/workflows/ci.yml` bounds `e2e-browser` at 50 minutes.
+- `frontend/playwright.config.ts` bounds the Playwright matrix at 45 minutes,
+  leaving room for CI failure diagnostics and artifact upload.

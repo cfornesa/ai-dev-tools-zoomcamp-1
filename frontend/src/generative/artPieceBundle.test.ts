@@ -10,6 +10,8 @@ import {
 const CANVAS2D_CODE =
   '<canvas id="art-piece-canvas"></canvas><script>document.title = "hi";</script>';
 const SVG_CODE = '<svg id="art-piece-svg"></svg>';
+const P5_CODE = 'window.sketch = (p) => { p.setup = () => { p.createCanvas(320, 240); }; };';
+const C2_CODE = 'window.sketch = ({ canvas, startFrame }) => { startFrame(() => {}); };';
 const THREEJS_CODE = "THREE.foo(); document.getElementById('art-piece-container');";
 const AFRAME_CODE = '<a-scene id="art-piece-scene" embedded><a-box></a-box></a-scene>';
 
@@ -58,6 +60,35 @@ describe('generateArtPieceBundle', () => {
     const zip = await JSZip.loadAsync(blob);
     expect(fileNames(zip)).toEqual(['README.txt', 'index.html', 'styles/piece.css']);
     expect(await zip.files['index.html'].async('string')).toContain(SVG_CODE);
+  });
+
+  it('p5.js: bundles the pinned runtime and mounts the sketch through the explicit adapter', async () => {
+    const blob = await generateArtPieceBundle('p5js', P5_CODE);
+    const zip = await JSZip.loadAsync(blob);
+    expect(fileNames(zip)).toEqual([
+      'README.txt',
+      'index.html',
+      'runtime/p5.min.js',
+      'styles/piece.css',
+    ]);
+    const html = await zip.files['index.html'].async('string');
+    expect(html).toContain('runtime/p5.min.js');
+    expect(html).toContain('new window.p5(window.sketch, mount)');
+    expect(html).not.toContain('cdn.jsdelivr.net');
+  });
+
+  it('C2.js and C2.js Interactive: bundle the opaque-sandbox compatibility adapter inline', async () => {
+    for (const library of ['c2js', 'c2js-interactive'] as const) {
+      const blob = await generateArtPieceBundle(library, C2_CODE, { presentation: 'immersive' });
+      const zip = await JSZip.loadAsync(blob);
+      expect(fileNames(zip)).toEqual(['README.txt', 'index.html', 'styles/piece.css']);
+      const html = await zip.files['index.html'].async('string');
+      const css = await zip.files['styles/piece.css'].async('string');
+      expect(html).toContain('id="c2-canvas"');
+      expect(html).toContain('var c2Fallback = {');
+      expect(html).toContain('art-piece-navigation-pose');
+      expect(css).toContain('height: 100dvh');
+    }
   });
 
   it('adds viewer controls without a recursive download control', async () => {

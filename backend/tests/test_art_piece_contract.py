@@ -23,7 +23,7 @@ def test_registry_has_stable_ids_labels_and_explicit_surface_values():
         "regular": True,
         "immersive": True,
         "embed": False,
-        "download": False,
+        "download": True,
         "editor_target": "2d-ai",
         "generation": True,
     }

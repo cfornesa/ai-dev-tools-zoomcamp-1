@@ -22,7 +22,7 @@ describe('art-piece engine capability registry', () => {
         regular: true,
         immersive: true,
         embed: false,
-        download: false,
+        download: true,
         generation: true,
       });
     }

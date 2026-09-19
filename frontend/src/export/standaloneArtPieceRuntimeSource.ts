@@ -22,7 +22,16 @@
 import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
 import type { ArtPieceExportMode, ArtPieceExportPresentation } from '../generative/artPieceBundle';
 
-const SPATIAL_LIBRARIES: ArtPieceLibrary[] = ['threejs', 'aframe'];
+const SPATIAL_LIBRARIES: ArtPieceLibrary[] = [
+  'canvas2d',
+  'svg',
+  'p5js',
+  'c2js',
+  'c2js-interactive',
+  'threejs',
+  'aframe',
+];
+const NATIVE_SPATIAL_LIBRARIES: ArtPieceLibrary[] = ['threejs', 'aframe'];
 
 /** Small, discrete per-keypress/per-drag-step deltas -- kept identical to
  * `ImmersiveArtPieceViewer.tsx`'s own `KEY_STEP`/`DRAG_SENSITIVITY`/
@@ -51,7 +60,7 @@ export function buildStandaloneArtPieceRuntimeScript(
   // for #449 -- no engine restriction here anymore, only the mode/
   // capability gate every other control shares.
   const includeSteering = mode === 'full' && capabilities.hand_steering === true;
-  const isSpatialLibrary = SPATIAL_LIBRARIES.includes(library);
+  const isSpatialLibrary = NATIVE_SPATIAL_LIBRARIES.includes(library);
   const includeFullscreen = capabilities.fullscreen !== false;
   const includeScreenshot = capabilities.screenshot !== false;
   // Issue #448: the Guide dialog is static, capability-independent
@@ -60,9 +69,8 @@ export function buildStandaloneArtPieceRuntimeScript(
   // unconditional, matching `PieceStageControls.tsx`'s own always-present
   // "Show hand gesture guide" button.
   const includeGuide = true;
-  // Walkable navigation: `ImmersiveArtPieceViewer.tsx`'s own presentation
-  // only, and only for an engine with a registerable spatial camera --
-  // the same boundary #432/#434 already draw for steering/navigation.
+  // Walkable navigation uses native cameras for Three.js/A-Frame and the
+  // lazy synthetic room shell for flat engines.
   const includeNavigation = presentation === 'immersive' && SPATIAL_LIBRARIES.includes(library);
 
   return `<script>
@@ -79,6 +87,55 @@ export function buildStandaloneArtPieceRuntimeScript(
     registeredCamera = adapter;
     try { initialCameraPose = adapter.getPose(); } catch (e) { initialCameraPose = null; }
   };
+  ${
+    !isSpatialLibrary
+      ? `
+  // Flat engines use the same lazy synthetic room shell as the live
+  // sandbox. It is defined before controls so immersive navigation can
+  // activate it even when hand steering is not enabled.
+  var flatShellArtwork = null;
+  var flatShellOriginalStyle = null;
+  var flatShellPose = { x: 0, y: 0, z: 5 };
+  function applyFlatShellPose(x, y, z) {
+    if (!flatShellArtwork) return;
+    var rotateY = x * 15;
+    var rotateX = -y * 15;
+    var zoom = 5 / z;
+    flatShellArtwork.style.transform =
+      'rotateY(' + rotateY + 'deg) rotateX(' + rotateX + 'deg) scale(' + zoom + ')';
+  }
+  function ensureFlatSpatialShell() {
+    if (registeredCamera) return true;
+    var artwork = document.querySelector('canvas') || document.querySelector('svg');
+    if (!artwork) return false;
+    flatShellArtwork = artwork;
+    flatShellOriginalStyle = artwork.getAttribute('style');
+    document.body.style.perspective = '800px';
+    artwork.style.transformOrigin = 'center center';
+    artwork.style.transition = 'none';
+    flatShellPose = { x: 0, y: 0, z: 5 };
+    applyFlatShellPose(0, 0, 5);
+    window.__registerArtPieceCamera({
+      getPose: function () { return flatShellPose; },
+      setPose: function (x, y, z) {
+        flatShellPose = { x: x, y: y, z: z };
+        applyFlatShellPose(x, y, z);
+      }
+    });
+    return true;
+  }
+  function disposeFlatSpatialShell() {
+    if (flatShellArtwork) {
+      if (flatShellOriginalStyle === null) flatShellArtwork.removeAttribute('style');
+      else flatShellArtwork.setAttribute('style', flatShellOriginalStyle);
+    }
+    flatShellArtwork = null;
+    registeredCamera = null;
+    initialCameraPose = null;
+  }
+  `
+      : ''
+  }
 
   function setupControls() {
   function byAction(action) { return document.querySelector('[data-action="' + action + '"]'); }
@@ -156,11 +213,50 @@ export function buildStandaloneArtPieceRuntimeScript(
   var navPoseEl = document.getElementById('art-piece-navigation-pose');
   var navDragStart = null;
   function reportNavPose() {
-    if (!registeredCamera || !navPoseEl) return;
+    if (!navPoseEl) return;
+    if (!registeredCamera) {
+      navPoseEl.textContent = '0.00,0.00,5.00';
+      return;
+    }
     var pose = registeredCamera.getPose();
     navPoseEl.textContent = pose.x.toFixed(2) + ',' + pose.y.toFixed(2) + ',' + pose.z.toFixed(2);
   }
+  ${
+    library === 'aframe'
+      ? `
+  // A-Frame declarative pieces have no generated script that can register
+  // their camera. Mirror the live sandbox's trusted adapter so the
+  // standalone immersive export exposes the same navigation contract.
+  var aframeScene = document.querySelector('a-scene');
+  function registerAframeCamera() {
+    if (!aframeScene || registeredCamera || !aframeScene.camera) return;
+    var cameraObject = aframeScene.camera;
+    if (!cameraObject.el || !cameraObject.el.object3D) return;
+    var cameraElement = cameraObject.el;
+    var wrappingElement = cameraElement.parentEl;
+    var placedObject = wrappingElement && wrappingElement.tagName !== 'A-SCENE'
+      ? wrappingElement.object3D
+      : cameraElement.object3D;
+    window.__registerArtPieceCamera({
+      getPose: function () {
+        return { x: placedObject.position.x, y: placedObject.position.y, z: placedObject.position.z };
+      },
+      setPose: function (x, y, z) {
+        placedObject.position.set(x, y, z);
+        placedObject.lookAt(0, 0, 0);
+      }
+    });
+    reportNavPose();
+  }
+  if (aframeScene) {
+    if (aframeScene.hasLoaded) registerAframeCamera();
+    else aframeScene.addEventListener('loaded', registerAframeCamera);
+  }
+  `
+      : ''
+  }
   function navigateBy(dx, dz) {
+    if (!registeredCamera && typeof ensureFlatSpatialShell === 'function') ensureFlatSpatialShell();
     if (!registeredCamera) return;
     var pose = registeredCamera.getPose();
     registeredCamera.setPose(pose.x + (dx || 0), pose.y, pose.z + (dz || 0));
@@ -193,6 +289,7 @@ export function buildStandaloneArtPieceRuntimeScript(
     event.preventDefault();
     navigateBy(0, event.deltaY > 0 ? ${NAV_ZOOM_STEP} : -${NAV_ZOOM_STEP});
   }, { passive: false });
+  if (typeof ensureFlatSpatialShell === 'function') ensureFlatSpatialShell();
   reportNavPose();
   `
       : ''
@@ -415,7 +512,7 @@ export function buildStandaloneArtPieceRuntimeScript(
     return { x: pose.x * scale, y: pose.y * scale, z: pose.z * scale };
   }
   ${
-    isSpatialLibrary
+    isSpatialLibrary || includeNavigation
       ? ''
       : `
   // Issue #459: a Canvas2D/SVG export has no native spatial camera to

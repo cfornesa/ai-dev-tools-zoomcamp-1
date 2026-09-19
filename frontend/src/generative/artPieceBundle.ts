@@ -58,6 +58,16 @@ export type ArtPieceExportMode = 'full' | 'non-camera';
  * Sound/Camera/Steer/Fullscreen contract every export already has. */
 export type ArtPieceExportPresentation = 'regular' | 'immersive';
 
+const SPATIAL_ART_PIECE_LIBRARIES: ArtPieceLibrary[] = [
+  'canvas2d',
+  'svg',
+  'p5js',
+  'c2js',
+  'c2js-interactive',
+  'threejs',
+  'aframe',
+];
+
 export type ArtPieceExportOptions = {
   capabilities?: ArtPieceCapabilitySet;
   mode?: ArtPieceExportMode;
@@ -85,20 +95,50 @@ export class ArtPieceBundleError extends Error {
  * stage) than the regular small-preview export, but the same fixed-box
  * containment approach either way. */
 function buildPieceCss(presentation: ArtPieceExportPresentation): string {
-  const stageHeight = presentation === 'immersive' ? '640px' : '480px';
+  const immersive = presentation === 'immersive';
+  const stageHeight = immersive ? '100dvh' : '480px';
   return `html, body {
   margin: 0;
   padding: 0;
-  background: #ffffff;
+  height: 100%;
+  background: ${immersive ? '#111827' : '#ffffff'};
+  color: ${immersive ? '#f4f6fb' : '#111827'};
 }
 canvas {
   display: block;
   max-width: 100%;
 }
 #art-piece-container, a-scene {
+  display: block;
   position: relative;
   width: 100%;
   height: ${stageHeight};
+}
+a-scene canvas.a-canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+${
+  immersive
+    ? `
+canvas, svg {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+}
+.art-piece-controls {
+  position: fixed;
+  z-index: 20;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: calc(100vw - 2rem);
+}
+`
+    : ''
 }
 `;
 }
@@ -110,6 +150,10 @@ canvas {
  * `artPieceSandbox.ts`'s frontend constants are already two hand-synced
  * copies rather than one shared source. */
 const LIBRARY_CDN: Partial<Record<ArtPieceLibrary, { url: string; filename: string }>> = {
+  p5js: {
+    url: 'https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js',
+    filename: 'p5.min.js',
+  },
   threejs: {
     url: 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
     filename: 'three.min.js',
@@ -225,7 +269,7 @@ function buildExportControls(
   const includeCamera = mode === 'full' && capabilities.camera_view === true;
   const includeSteering = mode === 'full' && capabilities.hand_steering === true;
   const includeNavigation =
-    presentation === 'immersive' && (library === 'threejs' || library === 'aframe');
+    presentation === 'immersive' && SPATIAL_ART_PIECE_LIBRARIES.includes(library);
   const buttons = [
     capabilities.screenshot !== false ? '<button data-action="screenshot">Screenshot</button>' : '',
     capabilities.sound === true
@@ -289,6 +333,44 @@ function buildIndexHtml(
   let body: string;
   if (library === 'threejs') {
     body = '<div id="art-piece-container"></div>\n<script src="scripts/piece.js"></script>';
+  } else if (library === 'p5js') {
+    body = `<div id="art-piece-container"></div>
+<script>${exportCode}
+(function () {
+  var mount = document.getElementById('art-piece-container');
+  if (typeof window.sketch !== 'function' || typeof window.p5 !== 'function') {
+    throw new Error('p5.js sketch runtime was not initialized.');
+  }
+  window.__artPieceInstance = new window.p5(window.sketch, mount);
+}());</script>`;
+  } else if (library === 'c2js' || library === 'c2js-interactive') {
+    body = `<canvas id="c2-canvas" width="320" height="240"></canvas>
+<script>${exportCode}
+(function () {
+  var canvas = document.getElementById('c2-canvas');
+  var c2Fallback = {
+    Renderer: function (target) {
+      this.context = target.getContext('2d');
+      this.clear = function (color) { this.context.fillStyle = color || '#ffffff'; this.context.fillRect(0, 0, target.width, target.height); };
+      this.fill = function (color) { this.context.fillStyle = color; };
+      this.circle = function (x, y, radius) { this.context.beginPath(); this.context.arc(x, y, radius, 0, Math.PI * 2); this.context.fill(); };
+    }
+  };
+  if (typeof window.sketch !== 'function') throw new Error('C2.js sketch runtime was not initialized.');
+  var frame = 0;
+  var callback = null;
+  function startFrame(handler) {
+    if (typeof handler !== 'function') throw new Error('C2.js startFrame requires a function.');
+    callback = handler;
+    callback(frame++);
+    function tick() {
+      if (callback) callback(frame++);
+      window.requestAnimationFrame(tick);
+    }
+    window.requestAnimationFrame(tick);
+  }
+  window.__artPieceInstance = window.sketch({ c2: c2Fallback, canvas: canvas, startFrame: startFrame });
+}());</script>`;
   } else {
     // canvas2d, svg, aframe: natural content already includes whatever
     // markup/script it needs -- see this module's doc comment for why
@@ -338,9 +420,12 @@ generated markup directly in index.html) for behavior, then reopen
 index.html.
 
 runtime/ (if present) holds a vendored copy of this piece's rendering
-library (Three.js or A-Frame), fetched once at export time so this piece
+library (p5.js, Three.js, or A-Frame), fetched once at export time so this piece
 works completely offline -- it never depends on a live CDN connection
 after you download it.
+
+C2.js and C2.js Interactive use the bundled compatibility adapter matching
+the live opaque-sandbox contract; no external runtime is required.
 `;
 
 /** Fetches `url` and returns its bytes as a `Uint8Array` (JSZip's most

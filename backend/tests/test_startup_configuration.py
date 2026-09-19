@@ -122,6 +122,8 @@ def test_production_wrapper_gates_owner_scoped_reference_import():
     wrapper = (ROOT / "scripts" / "start-production.sh").read_text()
 
     assert 'RUN_REFERENCE_IMPORT_ON_START:-false' in wrapper
+    assert 'if [[ -n "${REFERENCE_IMPORT_USERNAME:-}" ]]' in wrapper
+    assert 'reference_import_args+=(--username "${REFERENCE_IMPORT_USERNAME}")' in wrapper
     assert "import_reference_pieces import" in wrapper
     assert "--allow-production --json" in wrapper
 

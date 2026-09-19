@@ -22,12 +22,16 @@ export RUN_MIGRATIONS_ON_START=false
 # production database. This is disabled by default and is removed from the
 # production userenv immediately after the approved fixture import is verified.
 if [[ "${RUN_REFERENCE_IMPORT_ON_START:-false}" == "true" ]]; then
-  (cd "$(dirname "${BASH_SOURCE[0]}")/../backend" && uv run python manage.py \
-    import_reference_pieces import \
-    --handle "${REFERENCE_IMPORT_HANDLE:-cfornesa}" \
-    --username "${REFERENCE_IMPORT_USERNAME:-christopher1}" \
-    --email "${REFERENCE_IMPORT_EMAIL:-cfornesa@outlook.com}" \
-    --allow-production --json)
+  reference_import_args=(
+    import_reference_pieces import
+    --handle "${REFERENCE_IMPORT_HANDLE:-cfornesa}"
+    --email "${REFERENCE_IMPORT_EMAIL:-cfornesa@outlook.com}"
+    --allow-production --json
+  )
+  if [[ -n "${REFERENCE_IMPORT_USERNAME:-}" ]]; then
+    reference_import_args+=(--username "${REFERENCE_IMPORT_USERNAME}")
+  fi
+  (cd "$(dirname "${BASH_SOURCE[0]}")/../backend" && uv run python manage.py "${reference_import_args[@]}")
 fi
 
 exec "$(dirname "${BASH_SOURCE[0]}")/start.sh"

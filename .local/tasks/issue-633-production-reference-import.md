@@ -17,7 +17,7 @@
 
 Provide an explicit, auditable workflow to import the six sanitized reference fixtures into the already-authenticated production owner represented by `@cfornesa`, without bypassing the application's persistence layer or weakening the existing disposable-database safety guard.
 
-The current command `backend/scenes/management/commands/import_reference_pieces.py` is intentionally restricted to `DEBUG`/disposable databases. Production schema inspection confirms the required tables exist, but the production owner row (`auth_user.id=2`, username `christopher1`, email `cfornesa@outlook.com`) currently has zero non-deleted art pieces and zero collections.
+The current command `backend/scenes/management/commands/import_reference_pieces.py` is intentionally restricted to `DEBUG`/disposable databases. Production schema inspection confirms the required tables exist, but the production owner row (`auth_user.id=2`, username `christopher`, email `cfornesa@outlook.com`) currently has zero non-deleted art pieces and zero collections. Development uses the separate `christopher1` fixture account; production must use `christopher`.
 
 ## Entry point
 

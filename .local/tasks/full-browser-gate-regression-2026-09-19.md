@@ -1,0 +1,156 @@
+# Full browser gate regression — current-revision fixture/slug isolation
+
+## Status
+
+`IN PROGRESS` — slug-collision repair is verified; the full workflow is now
+three-way sharded, with residual product/fixture failures still open for QA.
+
+## Goal
+
+Make the workflow-dispatch full browser acceptance gate reliable on the current revision by isolating the first failing fixture/setup failure and preventing repeated `unique_project_public_slug_per_owner` collisions from poisoning later tests.
+
+## Entry point
+
+`.github/workflows/ci.yml` → `Browser acceptance E2E` → `Run full browser acceptance suite`.
+
+## Fixed fixture
+
+Use isolated CI PostgreSQL services and deterministic Playwright fixture users.
+Reproduce with the current `main` revision and the full suite split across
+three Playwright shards, preserving one worker per shard and no
+shared/production data.
+
+## Acceptance criteria
+
+- [x] A workflow-dispatch full run reaches a terminal result without the repeated `unique_project_public_slug_per_owner` collision family for generated `untitled-animation-*` projects.
+- [x] Full browser execution is sharded into three isolated CI jobs; the latest shard durations were 9m33s, 10m01s, and 12m21s.
+- [ ] The first failing test, if any, is isolated with a stable fixture and a direct failure rather than a cascade of route/setup failures.
+- [ ] The canonical slug behavior remains unchanged for explicit user slugs: collisions are rejected, and auto-generated slugs advance deterministically and safely under concurrent creation.
+- [ ] The full browser run records exact counts and the failing spec/test names in the issue closure comment; no closed issue is reopened.
+- [ ] Focused art-piece coverage remains green for regular, immersive, embed, editor, thumbnail, and offline six-engine paths after the fix.
+
+## Verification
+
+- `UV_CACHE_DIR=/tmp/codex-uv-cache NPM_CONFIG_CACHE=/tmp/codex-npm-cache make check`
+- `make compose-preflight`
+- `cd frontend && npx playwright test --list`
+- `gh workflow run ci.yml --ref main`
+- `gh run watch <run-id> --interval 15 --exit-status`
+- `gh run view <run-id> --job <browser-job-id> --log`
+
+## Current implementation evidence
+
+- The repeated slug collision was root-caused to `_next_slug()` using the
+  filtered default manager while soft-deleted rows remain protected by the
+  database uniqueness constraint.
+- `backend/scenes/canonical_piece_signals.py` now uses each model's
+  `all_objects` manager for collision checks.
+- `backend/tests/test_canonical_piece_slug_race.py` covers Project, Project3D,
+  and ArtPiece replacement after soft deletion; the rebuilt disposable
+  PostgreSQL container passes the focused suite (`7 passed`).
+- The first full-browser failure is a separate stale assertion in #623:
+  anonymous billing currently redirects to `/gallery?type=all`, not `/`.
+- Workflow run `35418436064` confirmed the slug-collision family is gone:
+  `236 passed`, `40 failed`, `6 skipped`, with no
+  `unique_project_public_slug_per_owner` failures. The remaining failures are
+  grouped under #624 (account-settings visibility and landing-route contract)
+  and #625 (stage command geometry/overflow across browser surfaces).
+- #623 is closed `QA: PASS`; its five billing scenarios passed in the same
+  workflow run.
+- Discovery gate: #626 records the missing bounded execution contract found
+  while run `35420287899` remained live beyond the previous terminal duration;
+  its local record is `.local/tasks/full-browser-timeout-2026-09-19.md`.
+- Terminal run `35420287899` completed with `243 passed`, `33 failed`, and
+  `6 skipped`. The slug collision family remained absent. Residual failures
+  are now split across #624 (account/admin route and settings contracts),
+  #625 (stage card overflow), #627 (generated art-piece previews/runtime),
+  and #628 (admin settings/profile-style/theme feedback).
+- Terminal run `35422220437` on `522b978` completed with `259 passed`, `17
+  failed`, and `6 skipped` in 32.6 minutes. The earlier stage-geometry and
+  profile-style failures are no longer present; remaining failures are in
+  #624/#627 plus AI recovery, live media-transfer 409s, and profile-handle
+  fixture leakage.
+- New duplicate-checked issues: [#629](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/629)
+  for live media-transfer fixture conflicts and [#630](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/630)
+  for profile-handle state leakage.
+- Terminal run `35423929110` on `5042278` completed with `258 passed`, `18
+  failed`, and `6 skipped` in 31.2 minutes. The route expectation changes in
+  this commit were directionally wrong for protected admin routes: the app's
+  current contract is `/studio`, so those assertions are restored before the
+  next run. The remaining new test-state fixes are intentionally staged for
+  the next verification.
+- Terminal run `35430026620` on `fd052d2` completed with shard 2 green in
+  9m33s; shards 1 and 3 completed in 12m21s and 10m01s. The remaining
+  failures were isolated to #628/admin redirect expectation, #627/generated
+  3D editor preview, #624/AI exit routing, and the public-profile fixture
+  route. Timing is verified, but the product gate remains open.
+- Terminal full-matrix run `35432568533` on `c9aa186` completed with
+  `271 passed`, `5 failed`, and `6 skipped` across three parallel shards.
+  The remaining failures were isolated to #627 (A-Frame editor preview and
+  generated Three.js steering runtime), #624 (cloud-disabled exit checkpoint),
+  and #630 (profile-handle persistence/teardown). No #625 stage-geometry or
+  #628 admin/settings failures appeared in this matrix.
+- Push run `35433447342` on `b7b0103` is the first ordinary-push one-shard
+  validation of the faster feedback path; backend, frontend, disposable
+  published-routing, and workflow-validation jobs are green while the single
+  browser shard is still running. Its terminal browser result is required
+  before #624/#630 reconciliation.
+- Commit `fa7de8a` keeps the generated art-piece studio sandbox handshake
+  listener mounted for the page lifetime, preventing a fast ready/error
+  message from racing the phase-dependent effect. Focused ArtPieceStudio
+  coverage passes (`13 tests`). Full matrix `35433934539` completed with
+  `274 passed`, `2 failed`, and `6 skipped`; the only failures were #627's
+  A-Frame editor preview and generated crash-on-load cases. Trace inspection
+  showed the A-Frame failure was an HTTP 429 from the shared five-per-minute
+  fake-provider budget, while the crash case exposed an error-then-ready
+  sandbox handshake race.
+- The ordinary push run `35433447342` remains green with its intentionally
+  short one-shard browser smoke plus WebKit regression. The full matrix is
+  reserved for manual/scheduled acceptance.
+- Discovery gate follow-up: push run `35434772435` found one unrelated
+  full-Vitest CI-load timing failure in
+  `frontend/src/pages/CollectionManagement.test.tsx` after 2,733 passing
+  tests. The focused test passes locally; duplicate search found no existing
+  issue, so criterion-ready follow-up [#631](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/631)
+  records the mechanical synchronization work. It is deferred until the
+  current #627 transaction has a terminal result.
+- Terminal full matrix `35435158520` on `1123286`: shard 1 passed all
+  art-piece scenarios but had one unrelated admin-entitlement mobile login
+  timeout; shard 2 passed 94 and shard 3 passed 88 with 6 intentional skips.
+  Aggregate: `275 passed`, `1 failed`, `6 skipped`. The art-piece acceptance
+  contract and slug-isolation contract are green; #627 and #621 were closed.
+  Discovery gate follow-up [#632](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/632)
+  tracks the separate admin login fixture timeout.
+- Mechanical follow-up [#631](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/631)
+  was implemented in `7e22707`: the collection-management test now uses a
+  synchronized `userEvent` interaction sequence. Focused coverage passed
+  (`2 passed`), and the complete frontend Vitest suite passed (`241 files`,
+  `2734 tests`). QA comment and issue closure are recorded on GitHub.
+- #632 was rerun as Browser acceptance E2E shard 1 job `105878745662` in
+  workflow `35435158520` and completed successfully. The original mobile
+  login timeout was not reproduced, so the issue was closed as a transient
+  CI-load/fixture timing failure with no product change.
+- CI strategy is now reconciled: ordinary pushes run the bounded Chromium
+  smoke shard plus the WebKit fullscreen regression; scheduled/manual runs
+  execute the full three-shard browser matrix in parallel. Do not manually
+  re-trigger the full matrix after every batch; use the nightly result or
+  targeted local/CI evidence unless the owner explicitly requests a full run.
+- Final push validation for `385dd99` is workflow
+  `35437244888`: backend (`2m07s`), frontend (`6m04s`), disposable routing
+  (`1m11s`), workflow validation, and the browser smoke/WebKit job (`5m47s`)
+  all passed. The ordinary push gate is therefore green after the async
+  collection-test stabilization.
+
+## Out of scope
+
+- Reopening or editing closed #419/#596.
+- Reworking art-piece route/card/engine functionality already covered by the closed #600–#620 batch.
+- Any write to a shared development, production, Replit, or user database.
+
+## Evidence boundary
+
+The failed run was `35415331889` on commit `1958280`: backend, frontend, workflow validation, disposable published routing, and WebKit regression passed; the full browser suite reported `84 failed`, `189 passed`, and `3 did not run`, with PostgreSQL repeatedly reporting `unique_project_public_slug_per_owner` for owner `6` and `untitled-animation-30`.
+
+## Routing hint
+
+Complex implementation: backend/data-layer/test-fixture and concurrency behavior, with browser verification. Stage 2b implementation-complex; independent review and QA required before closure.

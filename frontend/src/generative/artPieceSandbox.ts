@@ -647,6 +647,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
 export function buildArtPieceSandboxDocument(
   snippet: string,
   library: ArtPieceLibrary = 'canvas2d',
+  presentation: 'regular' | 'immersive' = 'regular',
 ): string {
   const cdnUrl = LIBRARY_CDN[library];
   const cdnScriptTag = cdnUrl ? `<script src="${cdnUrl}"></script>` : '';
@@ -664,6 +665,7 @@ export function buildArtPieceSandboxDocument(
 <style>
   html, body { margin: 0; padding: 0; background: #ffffff; height: 100%; }
   canvas { display: block; max-width: 100%; }
+  ${presentation === 'immersive' ? 'body { display: grid; place-items: center; overflow: hidden; background: #111827; } canvas, svg { width: 100% !important; height: 100% !important; object-fit: contain; }' : ''}
   a-scene { position: absolute; inset: 0; }
 </style>
 ${cdnScriptTag}

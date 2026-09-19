@@ -119,6 +119,17 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toMatch(/script-src 'unsafe-inline';/);
   });
 
+  it('scales flat artwork into the immersive viewport without changing regular markup', () => {
+    const regular = buildArtPieceSandboxDocument('<svg />', 'svg');
+    const immersive = buildArtPieceSandboxDocument('<svg />', 'svg', 'immersive');
+
+    expect(regular).not.toContain('object-fit: contain');
+    expect(immersive).toContain('width: 100% !important');
+    expect(immersive).toContain('object-fit: contain');
+    expect(immersive).toContain('background: #111827');
+    expect(immersive).toContain('place-items: center');
+  });
+
   it("threejs's CSP does not grant 'unsafe-eval' -- only A-Frame needs it", () => {
     const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs');
     expect(doc).not.toMatch(/'unsafe-eval'/);

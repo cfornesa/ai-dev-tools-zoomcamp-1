@@ -1,5 +1,49 @@
 # AugmentrART Backlog
 
+The current open-issue manifest and dependency reconciliation is recorded in
+`.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
+
+## 2026-09-19 — Vitest security remediation and Replit synchronization blocker (#634)
+
+The existing Vitest security findings were independently confirmed as
+`GHSA-82fw-gwwq-j7x9`, affecting the `vitest`/`@vitest/mocker` 4.1.x path and
+fixed beginning at 4.1.11. The reviewed dependency-only change is pushed in
+`df7ed16`; `npm ci`, frontend lint/format/typecheck, the full Vitest suite
+(`2,734` tests), build, and `npm audit` (0 vulnerabilities) pass locally.
+
+The remaining acceptance boundary is external: Replit's Security Center still
+shows the old 4.1.10 scan because its Git panel reports an unfinished rebase
+and an `UNAUTHENTICATED` GitHub remote. Republish/rescan is therefore
+dependency-blocked. Preserve the reviewed SHA; repair/confirm Git
+authentication, finish or recover the workspace rebase through an explicitly
+reviewed workflow, then pull, rescan, and republish. Do not force-reset the
+workspace or use a Replit Agent fix action as a substitute for repository
+review. #633 and #622 remain open behind this gate.
+
+## 2026-09-19 — Production import follow-up (#633)
+
+Production-readiness verification for #622 confirmed the published application
+and the actual pieces/collections tables in Replit Production, but the existing
+owner represented by `@cfornesa` (`auth_user.id=2`, username `christopher1`)
+has zero non-deleted pieces and collections. The repository importer is
+intentionally disposable-only, so this is a distinct data-layer/workflow gap,
+not a reason to weaken that guard or reopen closed #612.
+
+The criterion-ready follow-up is [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633), tracked locally in
+`.local/tasks/issue-633-production-reference-import.md`. #622 remains
+dependency-blocked until #633 is implemented, independently reviewed, QA
+verified, and its approved production import is followed by the authenticated
+surface matrix.
+
+The reviewed importer revision is currently held by a separate Replit
+Security Center gate reporting unresolved medium findings for `vitest` and
+`@vitest/mocker` v4.1.10. That new blocker is tracked in [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634); no dependency change was made during #633.
+
+#634 identified `GHSA-82fw-gwwq-j7x9` and applied the minimal existing-package
+upgrade to Vitest 4.1.11; local npm audit now reports zero vulnerabilities.
+Replit must rescan the pushed revision before the publish blocker is considered
+resolved.
+
 ## 2026-09-17 — Backlog session: production schema ledger reconciliation (#589, #597, #598)
 
 The open schema-centered manifest contained exactly three issues: [#589](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/589), [#597](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/597), and [#598](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/598). The pasted Claude Code report was treated as untrusted intake and independently rechecked through the Replit Shell.

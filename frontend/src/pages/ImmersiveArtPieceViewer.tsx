@@ -16,15 +16,7 @@ import PieceStageControls from './PieceStageControls';
  * instead of the previous, always-shown "drag to explore, arrow keys to
  * move" instructions that lied for every engine that can't do any of
  * that. */
-const SPATIAL_LIBRARIES = new Set([
-  'canvas2d',
-  'svg',
-  'p5js',
-  'c2js',
-  'c2js-interactive',
-  'threejs',
-  'aframe',
-]);
+const SPATIAL_LIBRARIES = new Set(['threejs', 'aframe']);
 
 /** Small, discrete per-keypress/per-drag-step deltas -- deliberately no
  * added inertia/momentum/easing, so there is no continuous animation for
@@ -386,6 +378,11 @@ function ImmersiveArtPieceViewer({
           presentation="immersive"
         />
       </div>
+      {!isSpatial && (
+        <p data-testid="navigation-unsupported" role="status">
+          Walkable navigation isn't available for this piece type.
+        </p>
+      )}
       {isSpatial && navigationPose && (
         <p data-testid="navigation-pose">
           {navigationPose.x.toFixed(2)},{navigationPose.y.toFixed(2)},{navigationPose.z.toFixed(2)}

@@ -314,12 +314,19 @@ jobs:
           STAGING_HOST="$staging_host" scripts/smoke-local.sh
 
   e2e-browser:
-    name: Browser acceptance E2E
+    name: Browser acceptance E2E (shard ${{ matrix.shard }})
     if: ${{ github.event_name != 'deployment_status' }}
     runs-on: ubuntu-latest
-    # The scheduled/full matrix is intentionally serial, but a hung browser
-    # or server must still release the runner and surface a bounded failure.
-    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      # Routine pushes keep one smoke shard. Manual/scheduled full runs use
+      # three isolated jobs, each with its own disposable database and
+      # fixture lifecycle, so serial test semantics remain intact while
+      # wall-clock time falls roughly with the shard count.
+      matrix:
+        shard: ${{ fromJSON((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && '[1,2,3]' || '[1]') }}
+    # A hung browser or server must release its isolated runner promptly.
+    timeout-minutes: 30
     # The Playwright global setup creates disposable fixture users in this
     # service and removes them in global teardown. Never point this job at a
     # shared or production database.
@@ -417,6 +424,7 @@ jobs:
           '
 
       - name: Run WebKit fullscreen Escape regression
+        if: ${{ matrix.shard == 1 }}
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:5000
@@ -444,7 +452,7 @@ jobs:
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:5000
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
 
       - name: Upload browser diagnostics
         if: ${{ failure() }}

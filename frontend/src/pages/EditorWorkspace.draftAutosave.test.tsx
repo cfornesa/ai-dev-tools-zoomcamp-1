@@ -103,6 +103,7 @@ function renderWorkspace() {
     <MemoryRouter initialEntries={['/projects/p1']}>
       <Routes>
         <Route path="/" element={<p>Gallery placeholder</p>} />
+        <Route path="/studio" element={<p>Studio placeholder</p>} />
         <Route path="/projects/:id" element={<EditorWorkspace />} />
         <Route path="/projects/:id/settings" element={<p>Settings placeholder</p>} />
       </Routes>
@@ -189,7 +190,7 @@ describe('Exit without saving', () => {
     await user.click(confirmButton);
 
     await waitFor(() => expect(clearDraft).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.getByText('Gallery placeholder')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Studio placeholder')).toBeInTheDocument());
   });
 
   // Issue #527: "Save now before clearing" for a project explicitly opted
@@ -294,6 +295,6 @@ describe('Exit without saving', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Clear anyway' }));
 
     await waitFor(() => expect(clearDraft).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.getByText('Gallery placeholder')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Studio placeholder')).toBeInTheDocument());
   });
 });

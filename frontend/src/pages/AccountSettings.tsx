@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
@@ -284,12 +284,17 @@ function AccountSettings() {
 
 function ProfileSettings() {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const profileDirtyRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [handleError, setHandleError] = useState<string | null>(null);
   useEffect(() => {
     fetchProfile()
-      .then(setProfile)
+      .then((loadedProfile) => {
+        // A duplicate/late development fetch must not overwrite edits in the
+        // controlled form while the user is already working on them.
+        if (!profileDirtyRef.current) setProfile(loadedProfile);
+      })
       .catch(() => setError('Could not load profile settings.'));
   }, []);
   if (!profile) return error ? <p role="alert">{error}</p> : <p role="status">Loading profile…</p>;
@@ -298,6 +303,7 @@ function ProfileSettings() {
     const current = profile as PublicProfile;
     try {
       setProfile(await updateProfile(current));
+      profileDirtyRef.current = false;
       setMessage('Profile saved.');
       setError(null);
       setHandleError(null);
@@ -308,6 +314,10 @@ function ProfileSettings() {
       }
       setError('Could not save that profile. Check the handle and try again.');
     }
+  }
+  function updateDraft(nextProfile: PublicProfile) {
+    profileDirtyRef.current = true;
+    setProfile(nextProfile);
   }
   return (
     <form className="account-settings-form" aria-label="Profile settings" onSubmit={save}>
@@ -324,7 +334,7 @@ function ProfileSettings() {
           aria-describedby={handleError ? 'profile-handle-error' : undefined}
           onChange={(event) => {
             setHandleError(null);
-            setProfile({ ...profile, handle: event.target.value.toLowerCase() });
+            updateDraft({ ...profile, handle: event.target.value.toLowerCase() });
           }}
         />
         {handleError && (
@@ -340,7 +350,7 @@ function ProfileSettings() {
             id="profile-style"
             value={profile.style_key ?? ''}
             onChange={(event) =>
-              setProfile({ ...profile, style_key: event.target.value, theme_config: {} })
+              updateDraft({ ...profile, style_key: event.target.value, theme_config: {} })
             }
           >
             {profile.available_styles.map((style) => (
@@ -373,7 +383,7 @@ function ProfileSettings() {
           </div>
           <button
             type="button"
-            onClick={() => setProfile({ ...profile, style_key: 'default', theme_config: {} })}
+            onClick={() => updateDraft({ ...profile, style_key: 'default', theme_config: {} })}
           >
             Reset style
           </button>
@@ -384,7 +394,7 @@ function ProfileSettings() {
         <input
           id="profile-display-name"
           value={profile.display_name}
-          onChange={(event) => setProfile({ ...profile, display_name: event.target.value })}
+          onChange={(event) => updateDraft({ ...profile, display_name: event.target.value })}
         />
       </div>
       <div className="account-settings-field">
@@ -392,7 +402,7 @@ function ProfileSettings() {
         <textarea
           id="profile-bio"
           value={profile.bio}
-          onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
+          onChange={(event) => updateDraft({ ...profile, bio: event.target.value })}
         />
       </div>
       <div className="account-settings-field">
@@ -401,7 +411,7 @@ function ProfileSettings() {
           id="profile-website"
           type="url"
           value={profile.website_url}
-          onChange={(event) => setProfile({ ...profile, website_url: event.target.value })}
+          onChange={(event) => updateDraft({ ...profile, website_url: event.target.value })}
         />
       </div>
       <div className="account-settings-field">
@@ -410,7 +420,7 @@ function ProfileSettings() {
           id="profile-image"
           type="url"
           value={profile.profile_image_url}
-          onChange={(event) => setProfile({ ...profile, profile_image_url: event.target.value })}
+          onChange={(event) => updateDraft({ ...profile, profile_image_url: event.target.value })}
         />
       </div>
       <div className="account-settings-field">
@@ -420,7 +430,7 @@ function ProfileSettings() {
           type="color"
           value={profile.theme_config.accent ?? '#c084fc'}
           onChange={(event) =>
-            setProfile({
+            updateDraft({
               ...profile,
               theme_config: { ...profile.theme_config, accent: event.target.value },
             })
@@ -430,7 +440,7 @@ function ProfileSettings() {
       <button
         className="shell-action"
         type="button"
-        onClick={() => setProfile({ ...profile, theme_config: {} })}
+        onClick={() => updateDraft({ ...profile, theme_config: {} })}
       >
         Reset profile theme
       </button>
@@ -439,7 +449,7 @@ function ProfileSettings() {
           id="profile-public"
           type="checkbox"
           checked={profile.is_public}
-          onChange={(event) => setProfile({ ...profile, is_public: event.target.checked })}
+          onChange={(event) => updateDraft({ ...profile, is_public: event.target.checked })}
         />{' '}
         Make profile public
       </label>

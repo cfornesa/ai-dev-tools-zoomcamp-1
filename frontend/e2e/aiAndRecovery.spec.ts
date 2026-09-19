@@ -911,6 +911,15 @@ test.describe('Local and server draft autosave', () => {
         .getByRole('alertdialog', { name: 'Exit without saving?' })
         .getByRole('button', { name: 'Exit without saving' })
         .click();
+      // The disposable browser stack keeps the site-wide cloud-sync
+      // entitlement disabled. In that environment the checkpoint safety
+      // dialog is expected to require the explicit destructive override;
+      // projects that have never opted in remain covered by the unit-level
+      // 404/no-op contract for saveNowBeforeClearing.
+      const cloudFailure = page.getByRole('alertdialog', { name: 'Could not save to the cloud' });
+      if (await cloudFailure.isVisible().catch(() => false)) {
+        await cloudFailure.getByRole('button', { name: 'Clear anyway' }).click();
+      }
       // `navigate('/')` immediately resolves through Home.tsx; authenticated
       // users land on the studio while anonymous users land on the gallery.
       await expect(page).toHaveURL(/\/(?:studio|gallery)?$/);

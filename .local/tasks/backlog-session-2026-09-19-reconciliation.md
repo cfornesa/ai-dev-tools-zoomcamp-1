@@ -14,8 +14,9 @@ GitHub comment; no unrecorded service is credited.
 | Order | Issue | Scope | Dependencies | State | Routing / next action |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634) | Resolve the Vitest Security Center gate | Replit workspace synchronization | `CLOSED / QA PASS` | CI and the fresh Replit Security Center scan pass; no remaining work in this issue. |
-| 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #622 evidence | `OPEN / production import PASS; surface follow-up remains` | Production now contains exactly six imported reference pieces with current versions and PNG thumbnail endpoints; the temporary import trigger was removed after verification. Final card rendering remains coupled to #622. |
-| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / card-rendering blocker` | Publish, smoke, schema, canonical links, route status, immersive stage, and API thumbnail evidence pass. Profile cards still show `No preview available` for fallback thumbnails, and the full six-engine browser matrix remains. |
+| 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #622 evidence | `CLOSED / QA PASS` | Production import, six reference engines, stored thumbnails, routes, cleanup publish, and regression evidence passed; broader release-surface work remains in #622. |
+| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / interaction-download-authorization matrix` | Card thumbnails, canonical links, API thumbnails, embeds, routes, and one visual immersive/editor path pass; complete the six-engine browser interaction/download/author-only-controls matrix before closure. |
+| 4 | [#635](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/635) | Reduce CI feedback time without weakening required coverage | none | `PROPOSED / scoped follow-up` | Baseline the 172-second frontend run and compare changed-path, parallel/sharded, and fast/full workflow strategies before implementation. |
 
 ## Duplicate and already-covered work
 

@@ -13,9 +13,9 @@ GitHub comment; no unrecorded service is credited.
 
 | Order | Issue | Scope | Dependencies | State | Routing / next action |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634) | Resolve the Vitest Security Center gate | Replit workspace synchronization | `ENGINEERING → QA/DEPENDENCY-BLOCKED` | Stage 2a mechanical dependency remediation is implemented and locally/CI verified. Safely resolve the pre-existing Replit rebase, pull reviewed `0049e26`, rescan, and review Republish. |
-| 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #634, then #622 evidence | `ENGINEERING/QA → DEPENDENCY-BLOCKED` | Stage 2b complex data-layer workflow is implemented and locally QA-verified. Run the documented production dry-run only after #634 clears, then import and verify routes/tables. |
-| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP` | Existing publish/smoke/schema evidence passes. Re-run dry-run/import and authenticated/public route matrix after #633. |
+| 1 | [#634](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/634) | Resolve the Vitest Security Center gate | Replit workspace synchronization | `CLOSED / QA PASS` | CI and the fresh Replit Security Center scan pass; no remaining work in this issue. |
+| 2 | [#633](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/633) | Owner-scoped production reference-piece import | #622 evidence | `OPEN / QA FAIL — production-target mismatch` | Development Shell import is idempotent and valid, but production remains unchanged because Replit exposes separate databases. Execute the importer against production, then rerun route/render evidence. |
+| 3 | [#622](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/622) | Replit publish and production piece evidence | #633 | `OPEN FOLLOW-UP / DEPENDENCY-BLOCKED` | Publish, smoke, CI, and schema evidence pass; imported-piece and authenticated/public surface evidence remain blocked by #633's production-target mismatch. |
 
 ## Duplicate and already-covered work
 
@@ -32,7 +32,7 @@ GitHub comment; no unrecorded service is credited.
 - Local #634 implementation: `df7ed16`; `npm audit` reports zero findings;
   `npm ci`, frontend checks, full Vitest, build, and push CI pass.
 - Local #633 implementation: `2aa5b8a`; focused import tests, full backend
-  tests, lint, format, and mypy pass.
+  tests, lint, format, and mypy pass. CI run `35440004191` is green.
 - Replit's Git panel currently reports both `Unsupported state: you are in the
   middle of a rebase. Please finish the rebase manually` and `Git Error
   UNAUTHENTICATED Failed to authenticate with the remote`. Its visible scan is
@@ -56,6 +56,7 @@ GitHub comment; no unrecorded service is credited.
 5. Post per-criterion QA/reconciliation comments, close only criteria-complete
    issues, then invoke production-readiness and session-completion.
 
-No independent issue is currently available: all three remaining issues share
-the same Replit synchronization prerequisite. This is a dependency handoff,
-not a completion claim.
+The synchronization prerequisite is resolved. The remaining blocker is narrower:
+the approved importer was executed in Replit's development Shell while the
+published app reads the separate production database. No new issue is needed;
+this is still within #633's production execution acceptance criterion.

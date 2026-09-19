@@ -2,7 +2,7 @@
 
 ## Status
 
-`GROOMED → ENGINEERING → QA/DEPENDENCY-BLOCKED` — authoritative advisory identified and minimal fixed-version upgrade implemented; Replit cannot rescan the reviewed revision while its Git workspace reports an unfinished rebase and unauthenticated remote.
+`GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` — authoritative advisory identified, minimal fixed-version upgrade implemented, Replit Git repaired, and Security Center rescanned clean.
 
 ## Transaction ledger
 
@@ -10,7 +10,7 @@
 - **Entry point/fixture:** `frontend/package.json` and `frontend/package-lock.json`, scanned by npm audit and Replit Security Center.
 - **Dependencies:** #633 and #622.
 - **Stage owners:** scoping `Codex / GPT-5 / current session, substituted: no`; implementation `Opencode Go / kimi-k3 / not available, Codex/GPT-5 substitution: yes`; second opinion `not run`; QA pending `Claude / Sonnet 5 Medium, substitution pending`.
-- **Current next action:** repair/confirm Replit Git authentication, then finish or safely recover the pre-existing rebase and pull the reviewed SHA; rescan/review Republish afterward. Do not force-reset the workspace or use Replit Agent to mutate the repository.
+- **Final action:** Replit Git was repaired by the owner-authorized workspace workflow; the synchronized remote is `f03d3a8`, and a fresh Security Center scan reports zero active issues. Do not use Replit Agent security fixes as a substitute for reviewed repository changes.
 
 ## Goal
 
@@ -26,23 +26,21 @@ the reviewed `main` revision.
 
 ## Acceptance criteria
 
-- [ ] The exact advisory identifiers, affected dependency paths, and fixed
+- [x] The exact advisory identifiers, affected dependency paths, and fixed
   versions (if available) are recorded from the authoritative package/advisory
   source; no version is guessed from the scanner label alone.
-- [ ] Either `frontend/package.json` and `frontend/package-lock.json` are
+- [x] Either `frontend/package.json` and `frontend/package-lock.json` are
   updated to a reviewed fixed version with `npm ci`, lint, typecheck, Vitest,
   and build passing, or a documented security-center disposition explains why
   the finding is a non-actionable false positive/platform report and is
   accepted by the owner.
-- [ ] No production runtime dependency, test coverage, or CI gate is weakened
+- [x] No production runtime dependency, test coverage, or CI gate is weakened
   to silence the scanner.
-- [ ] Replit Security Center no longer blocks Republish, or the exact owner
-  decision and remaining platform boundary are recorded on #633/#622. **Currently
-  blocked:** the workspace Git panel reports `Unsupported state: you are in the
-  middle of a rebase. Please finish the rebase manually`, and `Git Error
-  UNAUTHENTICATED`, so the visible scan remains on the old v4.1.10 dependency
-  set.
-- [ ] The resulting lockfile/manifests contain no secrets and the dependency
+- [x] Replit Security Center no longer blocks Republish, or the exact owner
+  decision and remaining platform boundary are recorded on #633/#622. **Pass:**
+  Replit Git is authenticated and up to date, and the fresh scan reports “No
+  security or privacy issues detected in the latest scan.”
+- [x] The resulting lockfile/manifests contain no secrets and the dependency
   change is isolated to this issue.
 
 ## Evidence captured
@@ -59,10 +57,9 @@ the reviewed `main` revision.
 - `npm --prefix frontend run build`
 - Replit Security Center scan and Republish review for the exact pushed SHA.
 
-Current external boundary: the pushed `df7ed16` revision is present on GitHub,
-but Replit's workspace is not yet verified against it. The workspace's Git
-panel is in an unfinished rebase state; this is a deployment synchronization
-blocker, not a reason to weaken the dependency fix or CI coverage.
+Reconciliation evidence: Replit Git is authenticated and up to date at
+`f03d3a8`; the fresh Security Center scan reports zero active issues. The
+remaining production import and route evidence belongs to dependent #633/#622.
 
 ## Dependencies
 

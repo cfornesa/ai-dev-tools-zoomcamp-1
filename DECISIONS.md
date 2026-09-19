@@ -1,5 +1,16 @@
 # DECISIONS.md
 
+## 2026-09-19 — Production importer must execute in the production runtime
+
+- The authorized `import_reference_pieces --allow-production` workflow was
+  exercised twice in Replit's interactive Shell and proved idempotent, but that
+  Shell targets Development Database. The published app reads the separate
+  Production Database, which still has only the pre-existing profile pieces.
+- Keep the application-layer importer and its explicit production guard. Do not
+  count a development-Shell run as production evidence or replace the workflow
+  with direct SQL/UI inserts; the next execution must use a confirmed
+  production-runtime/database context, followed by live API and browser checks.
+
 ## 2026-09-19 — Production fixture import remains a separately scoped workflow
 
 - Replit Publish completed and the published smoke plus direct production table

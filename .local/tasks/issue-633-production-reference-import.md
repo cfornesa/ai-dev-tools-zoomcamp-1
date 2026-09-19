@@ -2,7 +2,7 @@
 
 ## Status
 
-`GROOMED → ENGINEERING/QA → DEPENDENCY-BLOCKED` — local implementation and QA evidence are ready; approved Replit publication is blocked by #634's unresolved Security Center findings.
+`GROOMED → ENGINEERING → QA → RECONCILIATION` — local implementation, CI, development dry-run/import, and publish evidence pass; production import remains open because the Replit interactive Shell targets Development Database, not the separate Production Database.
 
 ## Transaction ledger
 
@@ -11,7 +11,7 @@
 - **Dependencies:** #622 release evidence gate; closed #612/#613/#614/#607/#608/#609/#610/#615/#616 contracts.
 - **Stage owners:** scoping `Codex / GPT-5 / current session, substituted: no`; implementation `Ollama Cloud / kimi-k3 / not available, Codex/GPT-5 substitution: yes`; second opinion `not run`; QA pending `Claude / Sonnet 5 Medium, substitution pending`.
 - **Evidence boundary:** local/disposable tests and dry-run are automation-verifiable; production import and deployed route evidence remain explicitly manual Replit acceptance.
-- **Current next action:** resolve or disposition #634, publish this revision, then execute the production dry-run before any import.
+- **Current next action:** execute the same owner-scoped command in a confirmed production-database environment, then rerun the authenticated/public route matrix. Do not treat a successful interactive-Shell command as production evidence.
 
 ## Goal
 
@@ -34,6 +34,23 @@ One documented, non-interactive production workflow selected by the owner, with 
 - [ ] Tests cover the production opt-in guard, dry-run/no-write behavior, existing-owner resolution, idempotency, provenance-scoped cleanup, and slug conflict handling against a disposable PostgreSQL-compatible test setup.
 - [ ] The workflow is documented with the exact commands and a rollback/verification checklist; no credentials or production connection strings are committed.
 - [ ] After the approved production execution, direct table inspection and authenticated/anonymous browser evidence are attached to #622: six cards with thumbnails, regular/immersive/embed/download behavior, author-only edit controls, and full-screen immersive rendering.
+
+## Current evidence and blocker
+
+- CI run `35440004191` passed all required jobs, including frontend, backend,
+  workflow validation, disposable smoke, and browser acceptance.
+- Replit Security Center reports zero active issues; Republish completed and
+  `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` passed.
+- The authorized command ran twice in Replit's interactive Shell and was
+  idempotent there: six published rows, six current versions with capabilities,
+  and six fallback thumbnails for `christopher1/@cfornesa`.
+- Direct production API evidence contradicts those development rows:
+  `GET /api/users/@cfornesa/` still returns only the two pre-existing pieces,
+  and the six development UUIDs return HTTP 404 from production.
+- Replit's Database panel visibly reports separate Development and Production
+  databases. The production database is read-only in the current panel, and
+  #633 explicitly excludes direct SQL/UI inserts. A production-targeted command
+  execution path is therefore still required before this issue can pass.
 
 ## Verification
 

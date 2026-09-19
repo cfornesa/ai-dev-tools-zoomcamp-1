@@ -19,6 +19,7 @@
 - [Playwright runtime prerequisites](playwright-runtime-prerequisites.md) — Browser E2E needs Chromium system libraries and the project fixture environment.
 - [E2E wrong Docker project](e2e-wrong-docker-project.md) — A healthy unrelated Compose stack can serve the expected port while health/API probes return the wrong app.
 - [Replit publish verification](replit-publish-verification.md) — Use deployment-status events for checks that must run after publishing; direct production table checks are required, and production fixture imports need the explicit owner-scoped workflow in #633.
+- [Replit development Shell versus production import](replit-development-shell-vs-production-import.md) — The interactive Replit Shell targets Development Database; published augmentrart.com reads Production Database. Never treat Shell importer output as production evidence; confirm the production runtime/database before importing and recheck the live API.
 - [Mistral credential rotation](mistral-credential-rotation.md) — Retain prior Fernet roots during controlled credential re-encryption before retiring them.
 - [Allauth JWT runtime dependency](allauth-jwt-runtime-dependency.md) — Pin PyJWT explicitly because the installed allauth release imports jwt during OAuth callback validation without declaring it.
 - [Browser-facing CSRF origin](browser-facing-csrf-origin.md) — Same-origin browser POSTs must trust the Vite origin, not only Django's internal backend port.

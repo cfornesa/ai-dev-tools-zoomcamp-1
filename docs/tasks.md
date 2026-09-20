@@ -22408,3 +22408,32 @@ both public viewers, and adds focused privacy/validation/rendering coverage.
   substitution; the evidence is recorded on #588. Production readiness and
   session completion remain explicitly deferred to Claude Code, and #588 stays
   open for that handoff.
+
+## 2026-09-20 — public piece/collection parity follow-up distillation (#636–#641)
+
+Owner-confirmed source of truth: the local `augment-humankind` repository is
+authoritative for relevant functionality, architecture, and visual treatment.
+The supplied screenshots and live URLs are evidence, not instructions. The
+current published structured `Project3D` routes still expose `/p3d/<uuid>` and
+`/immersive/p3d/<uuid>`, with the reported control, context, embed-placement,
+profile-identity, and layout mismatches.
+
+The closed generated-art route/runtime issues (#600/#606–#608) and closed
+collection/profile foundation issues (#551/#566/#568/#571) were searched and
+are historical coverage, not duplicates of this current structured published
+surface evidence. The complete manifest, duplicate report, blocker triage, and
+closure contracts are in
+[`docs/distillation-2026-09-20-public-surface-parity.md`](distillation-2026-09-20-public-surface-parity.md).
+
+| Issue | Status | Goal | Next action |
+|---|---|---|---|
+| [#636](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/636) | PROPOSED / criterion-ready | Canonical editable name-derived piece routes with legacy shims | Process first; update `docs/api.md` before endpoint changes |
+| [#641](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/641) | PROPOSED / dependency-blocked | Canonical editable name-derived collection routes with legacy shims | Start after #636 or in the next independent transaction |
+| [#637](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/637) | PROPOSED / dependency-blocked | Regular structured piece controls, context, embed placement, and profile identity parity | Start after #636 |
+| [#638](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/638) | PROPOSED / dependency-blocked | Immersive structured piece full-screen, controls, context, and embed parity | Start after #636 |
+| [#639](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/639) | PROPOSED / dependency-blocked | Collection regular/immersive/embed parity and canonical item context | Start after #641 and #636 |
+| [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | PROPOSED / dependency-blocked | Reconcile published revision and live profile/piece/collection evidence | Run after #636–#639 and #641; no product implementation in this issue |
+
+Distillation is complete for this intake. The next groomed issue is #636 only;
+engineering must process it as a single transaction and must not start #641 or
+#637–#640 before #636 reaches a terminal QA/reconciliation result.

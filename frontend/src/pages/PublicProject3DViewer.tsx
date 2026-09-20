@@ -26,10 +26,15 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * this page to wire up itself, unlike the 2D viewer's hand-rolled camera
  * overlay compositing into a p5 canvas).
  */
-function PublicProject3DViewer() {
-  const { id } = useParams<{ id: string }>();
+function PublicProject3DViewer({
+  initialProject,
+}: {
+  initialProject?: PublicProject3D;
+} = {}) {
+  const { id: routeId } = useParams<{ id: string }>();
+  const id = routeId ?? initialProject?.id;
   const [loadState, setLoadState] = useState<LoadState>('loading');
-  const [project, setProject] = useState<PublicProject3D | null>(null);
+  const [project, setProject] = useState<PublicProject3D | null>(initialProject ?? null);
   // Issue #296 (mirrors #293's 2D embed snippet exactly): reaching this
   // component's "ready" state already implies the project is published --
   // an unavailable project 404s before ever getting here -- so no
@@ -39,6 +44,11 @@ function PublicProject3DViewer() {
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialProject) {
+      setProject(initialProject);
+      setLoadState('ready');
+      return;
+    }
     if (!id) return;
     let cancelled = false;
     setLoadState('loading');
@@ -62,7 +72,7 @@ function PublicProject3DViewer() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, initialProject]);
 
   useEffect(() => {
     if (project) {

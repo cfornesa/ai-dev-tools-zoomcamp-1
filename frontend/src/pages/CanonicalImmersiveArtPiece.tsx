@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { fetchCanonicalPublicPiece, type CanonicalPublicPiece } from '../api/profile';
+import type { ArtPiece } from '../api/artPieces';
 import ImmersiveArtPieceViewer from './ImmersiveArtPieceViewer';
 
 export default function CanonicalImmersiveArtPiece() {
@@ -30,7 +31,7 @@ export default function CanonicalImmersiveArtPiece() {
   if (!resolved?.piece) return <p role="status">Loading immersive art piece…</p>;
   return (
     <ImmersiveArtPieceViewer
-      initialPiece={resolved.piece}
+      initialPiece={resolved.piece as ArtPiece}
       canonicalHref={`/users/@${cleanHandle}/immersive/${pieceSlug}`}
       regularHref={`/users/@${cleanHandle}/pieces/${pieceSlug}`}
       editHref={resolved.edit_url}

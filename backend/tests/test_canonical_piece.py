@@ -151,6 +151,17 @@ def test_profile_cards_expose_canonical_urls_for_authored_piece_families(client)
     assert cards["Canvas study"]["regular_url"] == "/users/@profile-authored/pieces/canvas-study"
     assert cards["Spatial study"]["regular_url"] == "/users/@profile-authored/pieces/spatial-study"
 
+    canonical = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "profile-authored", "piece_slug": "spatial-study"},
+        )
+    )
+    assert canonical.status_code == 200
+    assert canonical.json()["canonical_url"] == "/users/@profile-authored/pieces/spatial-study"
+    assert canonical.json()["type"] == "3d"
+    assert canonical.json()["piece"]["id"] == str(project3d.public_id)
+
 
 @pytest.mark.django_db
 def test_canonical_piece_does_not_expose_private_or_unknown_piece(client):

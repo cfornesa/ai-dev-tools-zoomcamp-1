@@ -1,5 +1,7 @@
 import { apiFetch } from './client';
 import type { ArtPiece } from './artPieces';
+import type { PublicProject } from './projects';
+import type { PublicProject3D } from './projects3d';
 import type { PresentationOptions } from './adminSettings';
 
 export type PublicProfile = {
@@ -57,7 +59,7 @@ export type CanonicalPublicPiece = {
   viewer_url: string;
   type: '2d' | '3d' | 'generated';
   edit_url?: string;
-  piece?: ArtPiece;
+  piece?: ArtPiece | PublicProject | PublicProject3D;
 };
 
 export async function fetchCanonicalPublicPiece(

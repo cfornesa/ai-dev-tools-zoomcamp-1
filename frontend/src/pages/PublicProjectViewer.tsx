@@ -110,12 +110,17 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * success, the visitor is sent straight to their new private project's
  * editor.
  */
-function PublicProjectViewer() {
-  const { id } = useParams<{ id: string }>();
+function PublicProjectViewer({
+  initialProject,
+}: {
+  initialProject?: PublicProject;
+} = {}) {
+  const { id: routeId } = useParams<{ id: string }>();
+  const id = routeId ?? initialProject?.id;
   const navigate = useNavigate();
   const auth = useAuth();
   const [loadState, setLoadState] = useState<LoadState>('loading');
-  const [project, setProject] = useState<PublicProject | null>(null);
+  const [project, setProject] = useState<PublicProject | null>(initialProject ?? null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [forkState, setForkState] = useState<'idle' | 'forking'>('idle');
   const [forkError, setForkError] = useState<string | null>(null);
@@ -236,6 +241,11 @@ function PublicProjectViewer() {
   }, []);
 
   useEffect(() => {
+    if (initialProject) {
+      setProject(initialProject);
+      setLoadState('ready');
+      return;
+    }
     if (!id) return;
     let cancelled = false;
     setLoadState('loading');
@@ -259,7 +269,7 @@ function PublicProjectViewer() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, initialProject]);
 
   useEffect(() => {
     if (project) {

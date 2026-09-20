@@ -22441,7 +22441,7 @@ engineering must process it as a single transaction and must not start #641 or
 ### #636 transaction ledger — 2026-09-20
 
 - PM/groom: current GitHub specification re-read before implementation and again before QA; scope remains criterion-ready Stage 2b.
-- Engineering: direct canonical rendering for structured 2D/3D payloads, with existing legacy viewer routes preserved; commits `fa1f46b` and `1ad3928`.
+- Engineering: direct canonical rendering for structured 2D/3D payloads, with existing legacy viewer routes preserved; commits `fa1f46b`, `1ad3928`, and `0458ead`.
 - Verification: focused canonical backend 9 passed; full backend 1447 passed/39 skipped; focused canonical frontend 4 passed; typecheck/lint/format/diff checks passed.
-- QA: provisional implementation pass; required Chromium route matrix at 1280x900 and 375x812 is pending because Docker and localhost:5000 are unavailable. One unrelated full-frontend autosave test was flaky but passed 8/8 on isolated rerun.
-- Reconciliation: not terminal; do not start #641 or #637–#640 until browser verification is rerun against this checkout and the current GitHub issue/task specification is re-read.
+- QA: implementation pass. The focused Chromium route matrix covering published structured 2D/3D canonical routes at 1280x900 and 375x812 passed (`1 passed`, 16.7s) against the local Django/Vite checkout. One unrelated full-frontend autosave test was flaky but passed 8/8 on isolated rerun.
+- Reconciliation: ready to close #636 after recording the fresh GitHub/task re-read and browser evidence; do not start #641 or #637–#640 until that closure is recorded.

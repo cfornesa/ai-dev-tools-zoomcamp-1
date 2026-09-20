@@ -22437,3 +22437,11 @@ closure contracts are in
 Distillation is complete for this intake. The next groomed issue is #636 only;
 engineering must process it as a single transaction and must not start #641 or
 #637–#640 before #636 reaches a terminal QA/reconciliation result.
+
+### #636 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub specification re-read before implementation and again before QA; scope remains criterion-ready Stage 2b.
+- Engineering: direct canonical rendering for structured 2D/3D payloads, with existing legacy viewer routes preserved; commits `fa1f46b` and `1ad3928`.
+- Verification: focused canonical backend 9 passed; full backend 1447 passed/39 skipped; focused canonical frontend 4 passed; typecheck/lint/format/diff checks passed.
+- QA: provisional implementation pass; required Chromium route matrix at 1280x900 and 375x812 is pending because Docker and localhost:5000 are unavailable. One unrelated full-frontend autosave test was flaky but passed 8/8 on isolated rerun.
+- Reconciliation: not terminal; do not start #641 or #637–#640 until browser verification is rerun against this checkout and the current GitHub issue/task specification is re-read.

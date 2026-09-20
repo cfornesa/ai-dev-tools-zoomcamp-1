@@ -15,6 +15,12 @@ vi.mock('./PublicProject3DViewer', () => ({
   ),
 }));
 
+vi.mock('./PublicProjectViewer', () => ({
+  default: ({ initialProject }: { initialProject: { title: string } }) => (
+    <output data-testid="canonical-2d-piece">{initialProject.title}</output>
+  ),
+}));
+
 function Destination() {
   return <output data-testid="destination">{useLocation().pathname}</output>;
 }
@@ -38,6 +44,28 @@ describe('CanonicalPublicPiece (#578)', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('canonical-3d-piece')).toHaveTextContent('Spatial study'),
+    );
+    expect(screen.queryByTestId('destination')).not.toBeInTheDocument();
+  });
+
+  it('renders a structured 2D piece directly at its canonical slug route', async () => {
+    vi.mocked(fetchCanonicalPublicPiece).mockResolvedValue({
+      canonical_url: '/users/@artist/pieces/canvas-study',
+      viewer_url: '/p/abc123',
+      type: '2d',
+      piece: { title: 'Canvas study', id: 'abc123' },
+    } as never);
+
+    render(
+      <MemoryRouter initialEntries={['/users/@artist/pieces/canvas-study']}>
+        <Routes>
+          <Route path="/users/:handle/pieces/:pieceSlug" element={<CanonicalPublicPiece />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('canonical-2d-piece')).toHaveTextContent('Canvas study'),
     );
     expect(screen.queryByTestId('destination')).not.toBeInTheDocument();
   });

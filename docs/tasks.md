@@ -22452,3 +22452,20 @@ engineering must process it as a single transaction and must not start #641 or
 - Verification: focused canonical backend 9 passed; full backend 1447 passed/39 skipped; focused canonical frontend 4 passed; typecheck/lint/format/diff checks passed.
 - QA: implementation pass. The focused Chromium route matrix covering published structured 2D/3D canonical routes at 1280x900 and 375x812 passed (`1 passed`, 16.7s) against the local Django/Vite checkout. One unrelated full-frontend autosave test was flaky but passed 8/8 on isolated rerun.
 - Reconciliation: ready to close #636 after recording the fresh GitHub/task re-read and browser evidence; do not start #641 or #637–#640 until that closure is recorded.
+
+## 2026-09-20 — discovery-gate re-distillation for #642–#652
+
+Other agents created eleven additional open issues during this session. Their
+current GitHub bodies were re-read before engineering resumed and reconciled
+in [`docs/distillation-2026-09-20-public-surface-parity.md`](distillation-2026-09-20-public-surface-parity.md).
+No duplicates were found. The remaining work is ordered as follows:
+
+- #641 is next: canonical collection persistence/resolution/privacy and link serializers.
+- #637 and #638 remain independent piece-surface consumers after #636.
+- #639 follows #641 and the relevant piece consumers; #640 is final live publication reconciliation only.
+- #642 → #643 → #646/#647 is the theme/preset chain; #644 and #645 are shell consumers, with #648 after the shell contract.
+- #649 → #650 is the profile header/card chain.
+- #651 and #652 are separate generated-thumbnail capture pipelines because their sandbox/WebGL failure modes differ.
+
+The next groomed transaction is #641. No new issue is being silently folded
+into that implementation.

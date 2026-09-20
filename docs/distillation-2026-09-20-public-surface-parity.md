@@ -105,3 +105,33 @@ behavior, slug mutation/collision/privacy tests, legacy redirect/shim evidence,
 fixed-viewport Chromium evidence, `docs/api.md` updated before any public API
 change, and full checks. #641 and #637–#640 remain open and must not be
 implemented or closed in the same transaction.
+
+## Re-distillation of agent-created follow-ups — 2026-09-20
+
+The discovery gate found eleven new open issues after #636 was processed:
+#642–#652. Their current GitHub bodies were re-read and compared with the
+existing backlog and reference repositories. No duplicate was found: #642 and
+#643 are distinct persisted theme contracts, #644 and #645 are separate shell
+consumers, #646/#647 are distinct seeded presets, #649/#650 split profile
+header from profile cards, and #651/#652 split 2D from WebGL thumbnail capture.
+
+| Issue | Reconciled scope | Dependency/order |
+|---|---|---|
+| #641 | Canonical collection persistence, resolution, privacy, and link serializers | next after #636; prerequisite for #639 |
+| #637 | Regular structured-piece composition/control parity | after #636; independent of #641 |
+| #638 | Immersive structured-piece composition/control parity | after #636; independent of #641 |
+| #639 | Collection consumer composition/control parity | after #641 and relevant piece consumers |
+| #640 | Live publication/revision reconciliation only | after #637–#639 and #641 |
+| #642 | Paired light/dark persisted palette contract | first of the new theme chain |
+| #643 | Finite presentation tokens and self-hosted font/backdrop contract | after or alongside #642; prerequisite for #646/#647 |
+| #644 | Persisted pre-paint visitor mode toggle | after #642; CSS consumer can follow #643 |
+| #645 | Public shell/header layout and navigation | independent; coordinate with #644 before final shell QA |
+| #646/#647 | Pareto/Celestial seeded styles | after #642 and #643; separate transactions |
+| #648 | Home hero composition | after the shell contract (#645) |
+| #649/#650 | Profile header, then public collection/piece card sections | #650 follows #649 and uses #636/#641 links |
+| #651/#652 | Generated 2D capture, then generated 3D/WebGL capture | separate engine-specific pipelines |
+
+The next groomed transaction is #641 because it is the remaining route/data
+prerequisite for #639 and is already criterion-ready. The new theme chain and
+thumbnail work remain reconciled but must not be silently folded into the
+collection or piece-parity transactions.

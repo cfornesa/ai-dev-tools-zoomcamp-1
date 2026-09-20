@@ -3,6 +3,13 @@
 The current open-issue manifest and dependency reconciliation is recorded in
 `.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
 
+## 2026-09-20 — Design, theme, profile, and share-thumbnail parity (#642–#655)
+
+Fourteen new PROPOSED-then-filed issues; see
+`docs/distillation-2026-09-20-design-and-share-parity.md` for the manifest,
+dependency order, and duplicate report. Next engineering issue after the
+canonical-route batch (#636 first): #642.
+
 ## 2026-09-19 — Final backlog/session reconciliation (#622, #633, #634, #635)
 
 The final manifest contains four processed issues and zero remaining open

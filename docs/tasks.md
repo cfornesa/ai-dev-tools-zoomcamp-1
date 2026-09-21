@@ -33,13 +33,14 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 12 | [#685](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685) | CLOSED, QA PASS | Editorial public-profile cards are complete; continue with the feed chain at #686. |
 | 15 | [#686](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/686) | CLOSED, QA PASS | Per-profile Atom feed is complete; continue with RSS at #687. |
 | 16 | [#687](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/687) | CLOSED, QA PASS | Per-profile RSS 2.0 feed is complete; continue with JSON Feed at #688. |
-| 17 | [#688](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/688) → [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | JSON Feed endpoint, then the feeds/discovery page. |
+| 17 | [#688](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/688) | CLOSED, QA PASS | Per-profile JSON Feed 1.1 is complete; continue with the feeds/discovery page at #689. |
+| 18 | [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Feeds/discovery page after the Atom, RSS, and JSON endpoints. |
 | 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #688; #640 remains publication-boundary blocked and
+The next groomed issue is #689; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
 
 ### #674 transaction ledger — 2026-09-21 — CLOSED
@@ -327,6 +328,33 @@ The next groomed issue is #688; #640 remains publication-boundary blocked and
   only; no production publication claim is made.
 - Reconciliation: issue closed after the QA PASS; the next independent
   transaction is #688. The separate collection metadata/legacy-shim follow-up
+  remains #695.
+
+### #688 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: the live issue body was reread before implementation. Scope was
+  limited to `/users/@<handle>/feed.json`, JSON Feed 1.1 metadata and item
+  fields, shared public-piece filtering/order/cap, canonical and absolute URLs,
+  image/content projections, engine/kind tags, cache validators, privacy,
+  404 behavior, and documentation. Atom, RSS, and the HTML feeds page remain
+  separate contracts.
+- Engineering: documented the JSON Feed contract first; extended the shared
+  entry serializer with engine/kind tags, added the raw Django JSON Feed view
+  and Vite dev/preview proxy coverage, and added JSON/cache regression tests.
+  Commit: `149fab9`.
+- QA: [GitHub QA PASS comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/688#issuecomment-5760048801).
+  Exact focused verification passed 5/5; `make check` passed with backend
+  1,476 passed/39 skipped and frontend 244 files/2,755 tests. The rebuilt
+  Docker/Vite stack returned `200 application/feed+json` for the JSON route
+  with absolute feed URL, ETag, Last-Modified, and public cache headers; the
+  disposable runtime profile was removed immediately.
+- Provenance: Stage 2b implementation and stage 4 QA were direct Codex/GPT-5
+  substitutions because the rostered external services were unavailable; the
+  stage 3 independent-family review was not run because Mistral Vibe was
+  unavailable. Intake outcome: ACCEPTED. Evidence is local/Docker/runtime
+  only; no production publication claim is made.
+- Reconciliation: issue closed after the QA PASS; the next independent
+  transaction is #689. The separate collection metadata/legacy-shim follow-up
   remains #695.
 
 ### #673 transaction ledger — 2026-09-21 — CLOSED

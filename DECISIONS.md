@@ -62,6 +62,19 @@ ownership and read cadence.
   inspection, and post-publish smoke/revision evidence. No Replit mutation was
   initiated.
 
+## 2026-09-21 — Replit republish entered an active infrastructure boundary
+
+- The verified local `main` was fast-forward-pushed to GitHub at `c6ce160`.
+  Replit's clean workspace was reconciled from its old checkpoint-diverged
+  branch to `origin/main`, preserving `gitsafe-backup/main` before the reset.
+- The owner-authorized Republish created revision `6dc01ac6` and passed its
+  visible security checks, but remained in Bundle at `Pushing nix-0 layer...`
+  for roughly ten minutes. Public domains still served `index-BQvbObdP.js`
+  and the legacy `/immersive/p3d/...` link, so #640 cannot close yet.
+- This is the existing #640 workflow/infrastructure boundary; no duplicate was
+  created and no second publish was started while the active operation remained
+  live.
+
 ## 2026-09-19 — QA reconciliation of residual browser families
 
 - #625 stage geometry and #628 admin/settings contracts were closed after

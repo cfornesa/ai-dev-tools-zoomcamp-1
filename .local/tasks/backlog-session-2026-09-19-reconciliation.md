@@ -104,13 +104,15 @@ among the closed refinement/provider issues.
   failed at the expected identity boundary (401), so it is not counted as
   product evidence and must be rerun with matching backend/database state.
 - Published: `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`
-  passed health, root, anonymous identity, and login checks. This does not
-  satisfy #640 because the deployed revision still needs owner-approved
-  publication plus exact regular/immersive/profile/collection/embed route
-  inspection and revision identity evidence.
+  passed health, root, anonymous identity, and login checks. The owner-authorized
+  Republish imported `c6ce160` and created Replit revision `6dc01ac6`, but its
+  Bundle phase is stalled at `Pushing nix-0 layer...`; all public domains still
+  serve the old `index-BQvbObdP.js` and legacy immersive link. This does not
+  satisfy #640's exact route/revision evidence.
 - Readiness: `OPEN FOLLOW-UP`; no Replit mutation was performed. Next action
   is for the owner to approve the publication path, then rerun #640's exact
-  live route matrix and published smoke against the resulting revision.
+  live route matrix and published smoke against the resulting revision after
+  the active Bundle operation completes or fails. No second publish was started.
 - Routing: scoping/implementation/QA and readiness were run by Codex/GPT-5
   substitutions where the rostered services were unavailable; stage 3 was not
   run. The readiness substitution is recorded in `DECISIONS.md`.

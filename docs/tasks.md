@@ -28,9 +28,12 @@ failure: host-side fixture login was created against the host `.env` database
 while `BASE_URL=http://127.0.0.1:5000` reached the running Docker backend, so
 post-login `/api/whoami/` remained 401. Re-run it only against a matching local
 backend/database pair. Production readiness is `OPEN FOLLOW-UP`, not PASS,
-because #640 still requires owner-approved publication, exact live route
-inspection, and post-publish smoke/revision evidence. No Replit state was
-mutated.
+because #640 still requires a completed owner-authorized publication, exact
+live route inspection, and post-publish smoke/revision evidence. The attempted
+Republish imported `c6ce160` and created Replit revision `6dc01ac6`, but its
+Bundle phase remains stalled at `Pushing nix-0 layer...`; all public domains
+still serve the old `index-BQvbObdP.js` and legacy immersive link. No second
+publish or Replit data mutation was performed.
 
 | Order | Issue | Status / routing | Dependency and next action |
 | --- | --- | --- | --- |

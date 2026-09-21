@@ -27,7 +27,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 9 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) | CLOSED, QA PASS; stage 2a complete | Generated Canvas2D/SVG manual source tools, preview, version save, canonical surfaces, and ZIP evidence are complete; continue with #668. |
 | 10 | [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | CLOSED, QA PASS; stage 2a complete | Generated 3D manual tools are complete; continue with #669. |
 | 11 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) | CLOSED, QA PASS; stage 2a complete | Debounced unsaved source/tool preview with error recovery is complete; continue with #670. |
-| 12 | [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Visitor C2 Interactive draw/screenshot behavior. |
+| 12 | [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | CLOSED, QA PASS; stage 2a complete | Temporary visitor drawing and marked screenshots for C2.js Interactive are complete; continue with #671. |
 | 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
 | 13 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
 | 14 | [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697) | PROPOSED, discovery follow-up | Six-engine captured-thumbnail cards disappear from the owner profile; reconcile before closing the regression. |
@@ -49,7 +49,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #670; #640 remains publication-boundary blocked
+The next groomed issue is #671; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
 ### #667 transaction ledger — 2026-09-21 — CLOSED, QA PASS
@@ -109,6 +109,20 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   with screenshot and rendered-pixel/data evidence.
 - QA: PASS; full `make check` passed, GitHub evidence posted, and issue closed
   at [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669#issuecomment-5765096761).
+
+### #670 transaction ledger — 2026-09-21 — CLOSED, QA PASS
+
+- PM/grooming: the live issue was reread before implementation and again before
+  QA; scope stayed limited to temporary anonymous C2.js Interactive drawing and
+  marked screenshots on regular and immersive surfaces.
+- Engineering: added parent-owned normalized pointer/touch strokes, visible
+  Draw/Clear controls, trusted screenshot compositing, responsive 1280/375
+  coverage, reload/no-write assertions, and inspected marked screenshots. The
+  opaque sandbox and existing steering/pointer-lock command bridge remain
+  unchanged.
+- QA: PASS; the four-scenario Docker Chromium matrix and full `make check`
+  passed, GitHub evidence posted, and issue closed at
+  [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670#issuecomment-5765492174).
 
 ### Next groomed issue — #669
 

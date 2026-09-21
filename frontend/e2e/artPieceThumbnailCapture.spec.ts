@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { apiGet, apiPost, apiPostMultipart } from './support/api.js';
+import { apiGet, apiPatch, apiPost, apiPostMultipart } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
@@ -314,5 +314,45 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
 
       await context.close();
     });
+  });
+
+  test('an owner opening a published 2D piece repairs a missed publish-time capture', async ({
+    browser,
+  }) => {
+    test.setTimeout(60000);
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await loginViaUI(page, fixture.owner.email, fixture.password);
+    const created = await apiPost(context, '/api/art-pieces/', {
+      title: 'Published first-view thumbnail fixture',
+      description: 'Published without an editor capture.',
+      prompt: 'yellow rectangle',
+      engine: 'canvas2d',
+      capabilities: {},
+      source:
+        '<canvas id="art-piece-canvas" width="320" height="240"></canvas>' +
+        '<script>var c=document.getElementById("art-piece-canvas");var x=c.getContext("2d");x.fillStyle="#facc15";x.fillRect(0,0,320,240);</script>',
+    });
+    expect(created.status()).toBe(201);
+    const piece = (await created.json()) as { public_id: string };
+    const published = await apiPatch(context, `/api/art-pieces/${piece.public_id}/`, {
+      status: 'published',
+    });
+    expect(published.status()).toBe(200);
+
+    await page.goto(`/art-pieces/p/${piece.public_id}`);
+    await expect(
+      page.getByRole('heading', { name: 'Published first-view thumbnail fixture' }),
+    ).toBeVisible();
+    await expect
+      .poll(async () => {
+        const detail = await apiGet(context, `/api/art-pieces/${piece.public_id}/`);
+        const body = (await detail.json()) as {
+          current_version: { thumbnail_is_fallback: boolean };
+        };
+        return body.current_version.thumbnail_is_fallback;
+      })
+      .toBe(false);
+    await context.close();
   });
 });

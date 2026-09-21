@@ -22434,16 +22434,16 @@ closure contracts are in
 
 | Issue | Status | Goal | Next action |
 |---|---|---|---|
-| [#636](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/636) | PROPOSED / criterion-ready | Canonical editable name-derived piece routes with legacy shims | Process first; update `docs/api.md` before endpoint changes |
-| [#641](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/641) | PROPOSED / dependency-blocked | Canonical editable name-derived collection routes with legacy shims | Start after #636 or in the next independent transaction |
+| [#636](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/636) | CLOSED / QA-passed | Canonical editable name-derived piece routes with legacy shims | Complete |
+| [#641](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/641) | OPEN / QA-pending | Canonical editable name-derived collection routes with legacy shims | Reconcile and close after current evidence |
 | [#637](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/637) | PROPOSED / dependency-blocked | Regular structured piece controls, context, embed placement, and profile identity parity | Start after #636 |
 | [#638](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/638) | PROPOSED / dependency-blocked | Immersive structured piece full-screen, controls, context, and embed parity | Start after #636 |
 | [#639](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/639) | PROPOSED / dependency-blocked | Collection regular/immersive/embed parity and canonical item context | Start after #641 and #636 |
 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | PROPOSED / dependency-blocked | Reconcile published revision and live profile/piece/collection evidence | Run after #636–#639 and #641; no product implementation in this issue |
 
-Distillation is complete for this intake. The next groomed issue is #636 only;
-engineering must process it as a single transaction and must not start #641 or
-#637–#640 before #636 reaches a terminal QA/reconciliation result.
+Distillation is complete for this intake. #636 is closed and #641 is the active
+single transaction; #637–#640 remain deferred until #641 reaches a terminal
+QA/reconciliation result where their dependency requires it.
 
 ### #636 transaction ledger — 2026-09-20
 
@@ -22469,3 +22469,10 @@ No duplicates were found. The remaining work is ordered as follows:
 
 The next groomed transaction is #641. No new issue is being silently folded
 into that implementation.
+
+### #641 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub #641 and this task entry were re-read before implementation and again before QA; scope remained criterion-ready Stage 2b.
+- Engineering: added owner-scoped editable collection slugs with redirect history, canonical regular/immersive/embed links, canonical piece item links, legacy route compatibility, management UI editing, API documentation, migration `0080_collection_slug_redirect`, and fixed-viewport coverage; commit `3084d89`.
+- Verification: focused backend collection suite 22 passed; focused frontend collection suite 7 passed; typecheck/format/lint passed; full `make check` passed with backend 1448 passed/39 skipped and frontend 241 files/2736 tests passed; Chromium collection matrix 4 passed across 1280x900 and 375x812.
+- QA/reconciliation: current issue and task specification were re-read after all checks; evidence covers canonical regular, canonical immersive, embed compatibility, ordered membership, privacy, and slug redirect behavior. Ready to close #641.

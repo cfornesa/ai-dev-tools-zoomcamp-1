@@ -89,3 +89,26 @@ Already covered, not re-filed: engine integration into AI editors (#610,
 #618–#620), runtime/immersive/download parity for six engines (#607–#609),
 collection immersive parity (#639). Verification boundary: reference repos read
 as source only; no live provider was run.
+
+## Addendum — owner UI review of the running app (#673–#683)
+
+Owner screenshots (2026-09-21) showed the AI assistant panel, header, and
+account settings still unstyled and not mobile-ready. Prior closures (#574
+arrow-only reorder, #644 toggle, #645/#648 header/hero) stay closed; the gaps
+are new issues. Key finding: Pareto/Celestial are seeded but
+`SiteSettings.style` defaults to null, so the reference look never appears
+unless an admin selects it (#675).
+
+| Order | Issue | Routing |
+|---|---|---|
+| 1 | #673 remove Home link; Studio/Public gallery entry | 2a |
+| 2 | #674 header chrome: one mode control, responsive toolbar | 2a |
+| 3 | #675 default site style resolution | 2b |
+| 4 | #676 apply site style to Studio/editors/account (needs #675) | 2a |
+| 5 | #677 account-settings drag handle + dashed placeholder | 2a |
+| 6 | #678 / #679 2D / 3D AI panel full-width fields, mobile | 2a |
+| 7 | #680 account-settings spacing tokens; #681 admin spacing (needs #680) | 2a |
+| 8 | #682 profile-settings load error diagnosis | 2b or 2a |
+| 9 | #683 vivid-design evidence matrix (needs 1–8) | stage 4 |
+
+Verification boundary: #682's cause is unclassified until reproduced.

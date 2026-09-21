@@ -29,7 +29,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 11 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) | CLOSED, QA PASS; stage 2a complete | Debounced unsaved source/tool preview with error recovery is complete; continue with #670. |
 | 12 | [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | CLOSED, QA PASS; stage 2a complete | Temporary visitor drawing and marked screenshots for C2.js Interactive are complete; continue with #671. |
 | 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA BLOCKED | Required `editOutputConsistency.spec.ts` matrix is absent; existing evidence is fragmented and does not satisfy the issue. |
-| 13 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
+| 13 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | CLOSED, QA PASS; stage 2b complete | Default/unset profile styles now inherit the effective site style across profile and collection surfaces. |
 | 14 | [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697) | PROPOSED, discovery follow-up | Six-engine captured-thumbnail cards disappear from the owner profile; reconcile before closing the regression. |
 | 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete. |
 | 12 | [#680](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/680) / [#681](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/681) | CLOSED, QA PASS | Shared account/admin spacing tokens and responsive form/card layouts are complete. |
@@ -49,7 +49,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #672; #640 remains publication-boundary blocked
+The next groomed issue is #697; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
 ### #667 transaction ledger — 2026-09-21 — CLOSED, QA PASS
@@ -135,12 +135,32 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   evidence artifact; the independent #697 thumbnail regression remains
   separately tracked.
 - QA evidence: [#671 QA BLOCKED](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671#issuecomment-5765515374).
-- Next groomed issue: #672.
+- Next groomed issue: #697.
 
-### Next groomed issue — #672
+### #672 transaction ledger — 2026-09-21 — CLOSED, QA PASS
 
-- Profile style inheritance defect; reread the live issue before implementation
-  and keep the work scoped to its acceptance criteria.
+- PM/grooming: the live issue was reread before implementation and QA. Scope
+  stayed limited to inherited profile/collection style resolution, paired
+  light/dark presentation, and focused browser evidence; new presets and
+  metadata remained out of scope.
+- Engineering: resolved unset/default profile styles through the effective site
+  style in the public profile payload, shared paired-palette variables across
+  profile and collection consumers, and added backend/unit/browser regressions.
+  Commit: `67e7bc2`.
+- Verification: focused backend 8 passed; focused frontend 11 passed; the
+  Docker Chromium matrix passed 1/1 across 1280x900 and 375x812 in light/dark
+  reduced-motion mode, with eight screenshots inspected; full `make check`
+  passed with backend 1,482 passed/39 skipped and frontend 2,777 passed.
+- QA: PASS; [#672 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672#issuecomment-5765877633).
+- Reconciliation: #672 was closed after the corrected QA evidence. Evidence
+  is local/disposable-stack only; production readiness and Replit publication
+  remain deferred to the final batch gate. Next groomed issue: #697.
+
+### Next groomed issue — #697
+
+- Six-engine captured-thumbnail cards disappearing from the owner profile;
+  reread the live issue before implementation and keep the regression scoped
+  to its criterion-ready profile-card contract.
 
 ### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE
 

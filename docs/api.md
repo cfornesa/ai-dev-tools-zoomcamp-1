@@ -10,6 +10,23 @@ grammar:
 - `/users/@<handle>/edit/<slug>` — the owner's piece editor entry point; and
 - `/users/@<handle>/collections/<slug>` plus `/users/@<handle>/collections/<slug>/immersive` — collection views.
 
+### Profile Atom feeds (#686)
+
+`GET /users/@<handle>/feed.xml` returns the public profile's Atom 1.0 feed
+with `Content-Type: application/atom+xml; charset=utf-8`. The feed is limited
+to the profile's currently public, published pieces, ordered newest first and
+capped at 50 entries. Each entry uses the canonical profile-nested piece URL,
+an absolute self/alternate link, the published/updated timestamps, escaped
+title and description text, and an HTML content projection containing the
+absolute thumbnail URL, title, and description. `media:thumbnail` supplies the
+absolute PNG thumbnail URL. Private, unpublished, deleted, inactive, unknown,
+and non-public profiles return `404` without existence-leaking payloads.
+
+The response includes `ETag`, `Last-Modified`, and a public revalidation cache
+policy; matching `If-None-Match` or `If-Modified-Since` requests receive
+`304 Not Modified`. RSS, JSON Feed, collection feeds, and the HTML feeds page
+are separate contracts.
+
 The piece engine is a capability/data value (Three.js, p5.js, C2.js, C2.js
 Interactive, A-Frame, or SVG), not a second URL namespace. Public gallery,
 profile, collection, feed, Open Graph, embed, and editor serializers emit the

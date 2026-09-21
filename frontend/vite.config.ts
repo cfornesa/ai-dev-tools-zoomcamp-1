@@ -65,6 +65,52 @@ function publicOrigin(): string {
   return parsed.origin;
 }
 
+function profileFeedPath(pathname: string): boolean {
+  return /^\/users\/@[^/]+\/feed\.xml\/?$/.test(pathname);
+}
+
+function profileFeedProxyPlugin(): Plugin {
+  const install = (server: {
+    middlewares: { use: (handler: (...args: any[]) => void) => void };
+  }) => {
+    server.middlewares.use(async (request, response, next) => {
+      const requestUrl = new URL(request.url ?? '/', 'http://localhost');
+      if (request.method !== 'GET' || !profileFeedPath(requestUrl.pathname)) {
+        return next();
+      }
+      try {
+        const upstream = await fetch(
+          `${backendProxyTarget}${requestUrl.pathname}${requestUrl.search}`,
+          {
+            headers: {
+              Accept: 'application/atom+xml',
+              'X-Forwarded-Host': request.headers.host ?? 'localhost:5000',
+              'X-Forwarded-Proto': request.headers['x-forwarded-proto'] ?? 'http',
+            },
+          },
+        );
+        response.statusCode = upstream.status;
+        for (const header of ['cache-control', 'content-type', 'etag', 'last-modified']) {
+          const value = upstream.headers.get(header);
+          if (value) response.setHeader(header, value);
+        }
+        response.end(Buffer.from(await upstream.arrayBuffer()));
+      } catch {
+        next();
+      }
+    });
+  };
+  return {
+    name: 'creatrweb-profile-atom-feed-proxy',
+    configureServer(server) {
+      install(server);
+    },
+    configurePreviewServer(server) {
+      install(server);
+    },
+  };
+}
+
 function routeDescriptor(pathname: string): { kind: string; publicId: string } | null {
   const direct = pathname.match(/^\/(art-pieces\/p|p3d|p)\/([^/]+)\/?$/);
   if (direct) {
@@ -238,7 +284,7 @@ const previewCachePolicyPlugin = (): Plugin => ({
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), previewCachePolicyPlugin(), shareMetadataPlugin()],
+  plugins: [react(), previewCachePolicyPlugin(), shareMetadataPlugin(), profileFeedProxyPlugin()],
   server: {
     host: true,
     port: 5000,

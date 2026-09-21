@@ -21,10 +21,16 @@ from django.urls import include, path
 from backend.oauth_gates import github_callback, github_login, linkedin_callback, linkedin_login
 from backend.views import health, whoami
 from scenes.llms import LLMSFullTextView, LLMSTextView
+from scenes.profile_feeds import PublicProfileAtomFeedView
 
 urlpatterns = [
     path('llms.txt', LLMSTextView.as_view(), name='llms'),
     path('llms-full.txt', LLMSFullTextView.as_view(), name='llms-full'),
+    path(
+        'users/@<str:handle>/feed.xml',
+        PublicProfileAtomFeedView.as_view(),
+        name='public-profile-atom-feed',
+    ),
     path('admin/', admin.site.urls),
     path('health/', health, name='health'),
     path('api/whoami/', whoami, name='whoami'),

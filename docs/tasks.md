@@ -19,8 +19,8 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 1 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | OPEN, publication-boundary blocked | Owner-controlled Replit publication; independent product work may proceed, but this remains the final live reconciliation gate. |
 | 2 | [#673](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/673) | CLOSED, QA PASS; stage 2a complete | Header navigation now routes `/` by auth state and removes Home from primary navigation. |
 | 3 | [#661](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/661) | CLOSED, QA PASS; stage 2a complete | Shared mention field and stable-ID 2D targeting are complete; continue with #662. |
-| 4 | [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | OPEN, stage 2a | 3D targeting; preserve the shared 2D mention regression and continue to #663 after closure. |
-| 5 | [#663](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/663) | OPEN, stage 2a | Generated-piece refine UI after #658. |
+| 4 | [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | CLOSED, QA PASS; stage 2a complete | 3D targeting and shared mention regressions are complete; continue to #663. |
+| 5 | [#663](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/663) | CLOSED, QA PASS; stage 2a complete | Generated-piece refinement targets, bounded plan/retries, and saved-version evidence are complete; continue to #664/#665. |
 | 6 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | OPEN, stage 2a | Unified 2D then 3D editors; preserve legacy redirects and canonical route contract. |
 | 7 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | OPEN, stage 2a | Capability matrix before manual tools. |
 | 8 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) / [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 2D then 3D manual tools after #666. |
@@ -45,8 +45,8 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #661; #640 remains publication-boundary blocked and
-#695 is now closed after the collection-specific follow-up was reconciled.
+The next groomed issue is #664/#665; #640 remains publication-boundary blocked
+and #695 is now closed after the collection-specific follow-up was reconciled.
 
 ### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE
 
@@ -108,6 +108,31 @@ The next groomed issue is #661; #640 remains publication-boundary blocked and
   claim is made. No new actionable issue was found in scope.
 - Reconciliation: final GitHub issue reread is complete; next independent
   transaction is #663.
+
+### #663 transaction ledger — 2026-09-21 — READY FOR CLOSURE
+
+- PM/grooming: the live issue body was reread before implementation and after
+  the final gate. Scope stayed limited to generated art-piece refinement;
+  canonical profile-nested editor routing remains #664/#665.
+- Engineering: added stable source-marker discovery for declared parts and
+  media assets, reused the shared accessible mention field, sent selected
+  target IDs through the existing bounded-refinement API, exposed the plan /
+  attempt criteria, and showed the accepted new-version state. Added the
+  asset-only/no-parts hint contract, API typing, marker documentation, and
+  desktop/mobile browser coverage. The existing backend refine transaction
+  remains atomic and unchanged; no migration or dependency was added.
+- QA matrix: focused refinement/mention/studio tests passed 19; backend
+  `test_art_piece_refine.py` passed 4; full `make check` passed with backend
+  `1479 passed, 39 skipped` and frontend `249 files / 2770 tests`, with lint,
+  format, typecheck, and action-pin checks green. Rebuilt Docker frontend and
+  Chromium passed 2/2 at 1280x900 and 375x812. Filtered-target and plan/
+  accepted-version screenshots were captured and inspected under
+  `frontend/test-results/artPieceRefine-*/`.
+- Provenance: direct Codex/GPT-5 substitution because the rostered
+  implementation/review services were unavailable; no production-publication
+  claim is made. No new actionable issue was found in scope.
+- Reconciliation: final GitHub issue reread is required immediately before the
+  QA comment; next independent transaction is #664/#665.
 
 ### #695 transaction ledger — 2026-09-21 — CLOSED
 

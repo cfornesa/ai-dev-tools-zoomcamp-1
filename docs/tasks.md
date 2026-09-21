@@ -7,8 +7,16 @@ The current open-issue manifest and dependency reconciliation is recorded in
 
 Fourteen new PROPOSED-then-filed issues; see
 `docs/distillation-2026-09-20-design-and-share-parity.md` for the manifest,
-dependency order, and duplicate report. #642 is complete and reconciled;
-#643 is the next engineering issue in the theme chain.
+dependency order, and duplicate report. #642, #643, and #644 are complete and
+reconciled; #645 is the next engineering issue in the theme chain.
+
+### #644 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained a visitor-facing light/dark/system preference with pre-paint application, persistence, and route-wide inheritance.
+- Engineering: added the inline pre-paint bootstrap, safe preference helpers, live system-mode subscription, persisted header toggle/select controls, light/dark document tokens, immersive-route inheritance, and focused unit/Chromium coverage. Commit `4deed39`.
+- QA: focused Layout/theme tests passed 19 tests; Chromium theme E2E passed 2 scenarios; full `make check` passed with backend 1,453 passed/39 skipped and frontend 243 files/2,740 tests, plus lint, format, typecheck, and action-pin checks. Required 1280x900 and 375x812 light/dark screenshots were captured and inspected locally.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Opencode/kimi-k3; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No migration, runtime dependency, or deployment mutation.
+- Reconciliation: GitHub QA comment [#644 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/644#issuecomment-5754392961) posted; issue is ready to close.
 
 ### #642 transaction ledger — 2026-09-20
 

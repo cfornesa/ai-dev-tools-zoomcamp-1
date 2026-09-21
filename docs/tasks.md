@@ -217,7 +217,7 @@ The next groomed issue is #685; #640 remains publication-boundary blocked and
 - Reconciliation: issue closed after QA PASS; next independent transaction is
   #685. The separate collection metadata/legacy-shim follow-up remains #695.
 
-### #684 reconciliation — 2026-09-21 — REOPENED
+### #684 reconciliation — 2026-09-21 — CLOSED
 
 - Intake: the corrected GitHub body was reread after closure. It confirms that
   `pieces`, `immersive`, `edit`, and `collections` are profile-nested
@@ -231,10 +231,14 @@ The next groomed issue is #685; #640 remains publication-boundary blocked and
   Legacy routes remain documented compatibility shims; viewer UI behavior is
   still delegated to #690–#694. Direct Codex/GPT-5 substitution is being used
   because the rostered implementation/review services are unavailable.
-- Current verification: focused backend canonical gallery/collection/remix/
-  share tests 72 passed; frontend typecheck passed; focused public viewer and
-  gallery tests 60 passed. Full `make check`, browser route coverage, QA, and
-  issue closure remain pending.
+- Verification: focused backend canonical gallery/collection/remix/share tests
+  72 passed; focused public viewer/gallery tests 60 passed; full `make check`
+  passed with backend 1,471 passed/39 skipped and frontend 244 files/2,753
+  tests; fixed-viewport Chromium route smoke passed 3/3. QA PASS was posted at
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/684#issuecomment-5759090856.
+- Reconciliation: issue closed after the corrected QA PASS; next independent
+  transaction is #685. The separate collection metadata/legacy-shim follow-up
+  remains #695.
 
 ### #673 transaction ledger — 2026-09-21 — CLOSED
 

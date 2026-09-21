@@ -210,8 +210,9 @@ describe('PublicProject3DViewer immersive-view entry point (issue #311)', () => 
     expect(screen.queryByRole('link', { name: /immersive mode/i })).not.toBeInTheDocument();
   });
 
-  it('uses the canonical profile-nested immersive route when supplied by a canonical viewer', async () => {
+  it('uses a styled button to open the canonical profile-nested immersive route', async () => {
     mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
+    const openWindow = vi.spyOn(window, 'open').mockImplementation(() => null);
     render(
       <MemoryRouter initialEntries={['/users/@alice/pieces/rotating-cube']}>
         <Routes>
@@ -220,6 +221,7 @@ describe('PublicProject3DViewer immersive-view entry point (issue #311)', () => 
             element={
               <PublicProject3DViewer
                 initialProject={basePublicProject3D()}
+                toolbarMode="inline"
                 immersiveHref="/users/@alice/immersive/rotating-cube"
               />
             }
@@ -229,9 +231,15 @@ describe('PublicProject3DViewer immersive-view entry point (issue #311)', () => 
     );
 
     await screen.findByRole('heading', { name: 'Rotating Cube' });
-    expect(screen.getByRole('link', { name: 'View in immersive mode' })).toHaveAttribute(
-      'href',
+    expect(screen.queryByRole('link', { name: 'View in immersive mode' })).not.toBeInTheDocument();
+
+    const immersiveButton = screen.getByRole('button', { name: 'View in immersive mode' });
+    expect(immersiveButton).toHaveClass('public-project-immersive-button');
+    await userEvent.setup().click(immersiveButton);
+    expect(openWindow).toHaveBeenCalledWith(
       '/users/@alice/immersive/rotating-cube',
+      '_blank',
+      'noopener,noreferrer',
     );
   });
 });

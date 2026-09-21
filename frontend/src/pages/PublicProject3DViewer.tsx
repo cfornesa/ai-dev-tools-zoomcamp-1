@@ -195,12 +195,25 @@ function PublicProject3DViewer({
           >
             {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
           </button>{' '}
-          {/* Issue #311: mirrors the reference implementation's own entry
-              point exactly -- a plain link opening the immersive view in a
-              new tab, not a same-tab navigation or in-page overlay. */}
-          <a href={immersiveHref ?? `/immersive/p3d/${id}`} target="_blank" rel="noreferrer">
-            View in immersive mode
-          </a>
+          {toolbarMode === 'inline' ? (
+            <button
+              type="button"
+              className="public-project-immersive-button"
+              onClick={() =>
+                window.open(
+                  immersiveHref ?? `/immersive/p3d/${id}`,
+                  '_blank',
+                  'noopener,noreferrer',
+                )
+              }
+            >
+              View in immersive mode
+            </button>
+          ) : (
+            <a href={immersiveHref ?? `/immersive/p3d/${id}`} target="_blank" rel="noreferrer">
+              View in immersive mode
+            </a>
+          )}
         </p>
         {showEmbedSnippet && id && (
           <div className="public-project-embed-snippet" data-testid="embed-snippet-panel">

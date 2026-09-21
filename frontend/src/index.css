@@ -4476,6 +4476,15 @@ select.ai-proposal-field-full-width {
   margin: 0 8px 8px 0;
 }
 
+/* Canonical structured-piece surfaces use a compact action button for the
+   immersive entry point. Legacy viewers retain their historical anchor
+   affordance, while the canonical action stays visually aligned with the
+   reference's outlined controls without looking like an underlined link. */
+.public-project-immersive-button {
+  min-height: 42px;
+  padding: 6px 14px;
+}
+
 /* Issue #331: the iframe entry point is a stage-only surface. Keep the
    public viewer's shared renderer and toolbar, but remove the gallery
    metadata/Preview panel chrome that belongs to `/p/:id`. */

@@ -196,4 +196,29 @@ describe('PublicProject3DViewer immersive-view entry point (issue #311)', () => 
     await screen.findByText(/isn't available/i);
     expect(screen.queryByRole('link', { name: /immersive mode/i })).not.toBeInTheDocument();
   });
+
+  it('uses the canonical profile-nested immersive route when supplied by a canonical viewer', async () => {
+    mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
+    render(
+      <MemoryRouter initialEntries={['/users/@alice/pieces/rotating-cube']}>
+        <Routes>
+          <Route
+            path="/users/:handle/pieces/:pieceSlug"
+            element={
+              <PublicProject3DViewer
+                initialProject={basePublicProject3D()}
+                immersiveHref="/users/@alice/immersive/rotating-cube"
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', { name: 'Rotating Cube' });
+    expect(screen.getByRole('link', { name: 'View in immersive mode' })).toHaveAttribute(
+      'href',
+      '/users/@alice/immersive/rotating-cube',
+    );
+  });
 });

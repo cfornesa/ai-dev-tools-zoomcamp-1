@@ -185,7 +185,7 @@ function PublicProject3DViewer({
           {/* Issue #311: mirrors the reference implementation's own entry
               point exactly -- a plain link opening the immersive view in a
               new tab, not a same-tab navigation or in-page overlay. */}
-          <a href={`/immersive/p3d/${id}`} target="_blank" rel="noreferrer">
+          <a href={immersiveHref ?? `/immersive/p3d/${id}`} target="_blank" rel="noreferrer">
             View in immersive mode
           </a>
         </p>

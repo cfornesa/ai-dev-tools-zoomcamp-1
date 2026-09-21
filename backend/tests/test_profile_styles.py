@@ -148,3 +148,37 @@ def test_explicit_plain_global_style_remains_authoritative(client):
     assert response.json()["style_key"] == "default"
     assert response.json()["theme_palettes"]["dark"]["accent"] == plain.tokens["accent"]
     assert response.json()["presentation"]["font_family"] == "system"
+
+
+@pytest.mark.django_db
+def test_default_profile_style_inherits_effective_global_style_on_public_profile(client):
+    user = get_user_model().objects.create_user(username="plain-profile")
+    default = ProfileStyle.objects.get(key="default")
+    celestial = ProfileStyle.objects.get(key="celestial")
+    PublicProfile.objects.create(user=user, handle="plain-profile", style=default)
+    SiteSettings.objects.update_or_create(pk=1, defaults={"style": celestial})
+
+    response = client.get(reverse("public-profile", kwargs={"handle": "plain-profile"}))
+
+    assert response.status_code == 200
+    profile = response.json()["profile"]
+    assert profile["style_key"] == "default"
+    assert profile["theme_config"]["accent"] == celestial.tokens["dark"]["accent"]
+    assert profile["presentation"]["font_family"] == "script"
+
+
+@pytest.mark.django_db
+def test_non_default_profile_style_still_overrides_effective_global_style(client):
+    user = get_user_model().objects.create_user(username="pareto-profile")
+    pareto = ProfileStyle.objects.get(key="pareto")
+    celestial = ProfileStyle.objects.get(key="celestial")
+    PublicProfile.objects.create(user=user, handle="pareto-profile", style=pareto)
+    SiteSettings.objects.update_or_create(pk=1, defaults={"style": celestial})
+
+    response = client.get(reverse("public-profile", kwargs={"handle": "pareto-profile"}))
+
+    assert response.status_code == 200
+    profile = response.json()["profile"]
+    assert profile["style_key"] == "pareto"
+    assert profile["theme_config"]["accent"] == pareto.tokens["dark"]["accent"]
+    assert profile["presentation"]["shadow"] == "offset"

@@ -1,8 +1,9 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { fetchPublicProfile, type PublicProfilePage } from '../api/profile';
 import PieceCard from '../components/PieceCard';
+import { profileStyleVars } from '../theme/profileStyle';
 
 export default function PublicProfile() {
   const { handle: rawHandle = '' } = useParams<{ handle: string }>();
@@ -22,29 +23,13 @@ export default function PublicProfile() {
   }, [handle, navigate]);
   if (missing) return <Navigate to="/" replace />;
   if (!data) return <p role="status">Loading profile…</p>;
-  const theme = data.profile.theme_config;
   const collections = data.collections ?? [];
   const displayName = data.profile.display_name || data.profile.handle || 'Public profile';
   const socialLinks = Object.entries(data.profile.social_links ?? {}).filter(
     ([label, url]) => label.trim() && url.trim(),
   );
   return (
-    <section
-      className="content-panel public-profile"
-      style={
-        {
-          '--profile-background': theme.background,
-          '--profile-surface': theme.surface,
-          '--profile-text': theme.text,
-          '--profile-muted': theme.muted,
-          '--profile-accent': theme.accent,
-          '--profile-font': profilePresentationFont(data.profile.presentation?.font_family),
-          '--profile-radius': profileRadius(data.profile.presentation?.radius),
-          '--profile-density': data.profile.presentation?.density === 'compact' ? '12px' : '20px',
-          '--profile-border-style': data.profile.presentation?.border_style ?? 'solid',
-        } as CSSProperties
-      }
-    >
+    <section className="content-panel public-profile" style={profileStyleVars(data.profile)}>
       <div className="public-profile-heading">
         {data.profile.profile_image_url && (
           <img src={data.profile.profile_image_url} alt={`${displayName} avatar`} />
@@ -123,16 +108,4 @@ export default function PublicProfile() {
       )}
     </section>
   );
-}
-
-function profilePresentationFont(value: string | undefined): string {
-  if (value === 'serif') return "Georgia, 'Times New Roman', serif";
-  if (value === 'mono') return 'ui-monospace, Consolas, monospace';
-  return "system-ui, 'Segoe UI', Roboto, sans-serif";
-}
-
-function profileRadius(value: string | undefined): string {
-  if (value === 'sharp') return '2px';
-  if (value === 'pill') return '999px';
-  return '8px';
 }

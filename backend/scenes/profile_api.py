@@ -9,6 +9,7 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from scenes.admin_settings import effective_site_style
 from scenes.collections import collection_payload
 from scenes.gallery import eligible_projects, eligible_projects3d
 from scenes.models import (
@@ -17,6 +18,7 @@ from scenes.models import (
     ProfileStyle,
     PublicProfile,
     PublicProfileHandleRedirect,
+    SiteSettings,
 )
 from scenes.theme import (
     effective_presentation,
@@ -69,7 +71,18 @@ class ProfileSerializer(serializers.Serializer):
 
 
 def _profile_payload(profile: PublicProfile) -> dict:
+    # The catalog's `default` entry represents the absence of a profile-level
+    # override.  Resolve that case against the active site style so public
+    # profiles and their derivative collection surfaces inherit the same
+    # global cascade as the shared shell.  Non-default selections remain
+    # explicit profile-scoped overrides, including disabled styles that were
+    # previously selected and therefore remain readable.
     style = profile.style
+    resolved_style = (
+        style
+        if style is not None and style.key != "default"
+        else effective_site_style(SiteSettings.get_solo())
+    )
     return {
         "handle": profile.handle,
         "style_key": style.key if style else None,
@@ -81,12 +94,14 @@ def _profile_payload(profile: PublicProfile) -> dict:
         "is_public": profile.is_public,
         "revision": profile.revision,
         "theme_config": effective_profile_theme(
-            style.tokens if style else {}, profile.theme_config
+            resolved_style.tokens if resolved_style else {}, profile.theme_config
         ),
         "theme_palettes": effective_theme_palettes(
-            style.tokens if style else {}, profile.theme_config
+            resolved_style.tokens if resolved_style else {}, profile.theme_config
         ),
-        "presentation": effective_presentation(style.presentation if style else {}),
+        "presentation": effective_presentation(
+            resolved_style.presentation if resolved_style else {}
+        ),
     }
 
 

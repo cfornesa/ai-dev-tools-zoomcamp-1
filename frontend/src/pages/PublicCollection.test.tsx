@@ -139,9 +139,9 @@ describe('PublicCollection', () => {
     const section = heading.closest('.public-collection') as HTMLElement;
     expect(section).not.toBeNull();
     await vi.waitFor(() =>
-      expect(section.style.getPropertyValue('--profile-background')).toBe('#f4efe6'),
+      expect(section.style.getPropertyValue('--profile-background-dark')).toBe('#f4efe6'),
     );
-    expect(section.style.getPropertyValue('--profile-accent')).toBe('#dc2626');
+    expect(section.style.getPropertyValue('--profile-accent-dark')).toBe('#dc2626');
     expect(section.style.getPropertyValue('--profile-radius')).toBe('999px');
   });
 });

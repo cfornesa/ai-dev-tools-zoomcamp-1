@@ -1,9 +1,10 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 
 import { fetchPublicCollection, type Collection, type CollectionItem } from '../api/collections';
 import { fetchPublicProfile, type PublicProfile } from '../api/profile';
 import { applyContentMetadata } from '../metadata';
+import { profileStyleVars } from '../theme/profileStyle';
 
 function CollectionCard({ item }: { item: CollectionItem }) {
   const [failed, setFailed] = useState(false);
@@ -103,31 +104,7 @@ export default function PublicCollection() {
   return (
     <section
       className="content-panel public-collection"
-      style={
-        profile
-          ? ({
-              '--profile-background': profile.theme_config.background,
-              '--profile-surface': profile.theme_config.surface,
-              '--profile-text': profile.theme_config.text,
-              '--profile-muted': profile.theme_config.muted,
-              '--profile-accent': profile.theme_config.accent,
-              '--profile-font':
-                profile.presentation?.font_family === 'serif'
-                  ? "Georgia, 'Times New Roman', serif"
-                  : profile.presentation?.font_family === 'mono'
-                    ? 'ui-monospace, Consolas, monospace'
-                    : "system-ui, 'Segoe UI', Roboto, sans-serif",
-              '--profile-radius':
-                profile.presentation?.radius === 'sharp'
-                  ? '2px'
-                  : profile.presentation?.radius === 'pill'
-                    ? '999px'
-                    : '8px',
-              '--profile-density': profile.presentation?.density === 'compact' ? '12px' : '20px',
-              '--profile-border-style': profile.presentation?.border_style ?? 'solid',
-            } as CSSProperties)
-          : undefined
-      }
+      style={profile ? profileStyleVars(profile) : undefined}
       aria-labelledby="public-collection-heading"
     >
       <header>

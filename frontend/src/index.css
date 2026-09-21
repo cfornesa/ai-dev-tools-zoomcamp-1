@@ -1039,6 +1039,24 @@ button:disabled {
   border-style: var(--profile-border-style, var(--site-border-style));
 }
 
+.app-shell .public-profile,
+.app-shell .public-collection {
+  --profile-background: var(--profile-background-dark, var(--bg));
+  --profile-surface: var(--profile-surface-dark, var(--code-bg));
+  --profile-text: var(--profile-text-dark, var(--text));
+  --profile-muted: var(--profile-muted-dark, var(--text));
+  --profile-accent: var(--profile-accent-dark, var(--accent));
+}
+
+:root[data-theme='light'] .app-shell .public-profile,
+:root[data-theme='light'] .app-shell .public-collection {
+  --profile-background: var(--profile-background-light, var(--bg));
+  --profile-surface: var(--profile-surface-light, var(--code-bg));
+  --profile-text: var(--profile-text-light, var(--text));
+  --profile-muted: var(--profile-muted-light, var(--text));
+  --profile-accent: var(--profile-accent-light, var(--accent));
+}
+
 .public-profile-heading {
   display: flex;
   align-items: flex-start;

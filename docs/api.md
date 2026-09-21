@@ -302,12 +302,13 @@ presentation options. `PATCH /api/admin/settings/` accepts an enabled
 catalog `style_key` and preserves the existing revision requirement.
 
 `GET|PATCH /api/account/profile/` continues to expose/select `style_key` and
-returns the selected style's approved presentation options. Global settings
-are the fallback for site surfaces; an unset global style resolves to the
-seeded `celestial` preset without writing it into `SiteSettings.style`, while
-an explicit `default`/plain or other catalog selection remains authoritative.
-Profile selection is an explicit, owner-scoped override for the profile and
-its derivative public surfaces.
+returns the selected style's approved presentation options. A profile whose
+style is unset or `default` has no profile-specific style override: its public
+profile and derivative collection surfaces inherit the effective global site
+style. An explicit non-default catalog selection is an owner-scoped override
+for that profile and its derivative public surfaces. The `default` catalog
+entry remains available as the safe plain fallback when the global site style
+itself is disabled or unavailable.
 Unknown keys, malformed values, arbitrary CSS/HTML/JavaScript, and disabled
 new selections are rejected or fall back to the documented defaults. Existing
 legacy `theme_config` color overrides remain backward-compatible.

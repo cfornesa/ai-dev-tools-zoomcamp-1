@@ -63,8 +63,8 @@ describe('PublicProfile theme cascade (#577)', () => {
     const heading = await screen.findByRole('heading', { name: 'The Artist' });
     const section = heading.closest('.public-profile') as HTMLElement;
     expect(section).not.toBeNull();
-    expect(section.style.getPropertyValue('--profile-background')).toBe('#f4efe6');
-    expect(section.style.getPropertyValue('--profile-accent')).toBe('#dc2626');
+    expect(section.style.getPropertyValue('--profile-background-dark')).toBe('#f4efe6');
+    expect(section.style.getPropertyValue('--profile-accent-dark')).toBe('#dc2626');
     expect(section.style.getPropertyValue('--profile-font')).toContain('Georgia');
     expect(section.style.getPropertyValue('--profile-radius')).toBe('2px');
     expect(section.style.getPropertyValue('--profile-density')).toBe('12px');

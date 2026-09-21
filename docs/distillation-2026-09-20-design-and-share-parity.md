@@ -147,3 +147,15 @@ hamburger controls (live check of `/art-pieces/p/6307c5a9-…`, 2026-09-21).
 | 3 | #692 legacy 2D `/p/:id` (inline or 301; Rule 5) | 2a |
 | 4 | #693 legacy 3D `/p3d/:id` | 2a |
 | 5 | #694 evidence matrix, reached via gallery/profile cards (needs #690–#693) | stage 4 |
+
+## Correction — route grammar (2026-09-21)
+
+Owner clarification: `pieces`, `edit`, `immersive`, and `collections` are
+subdirectories of `/users/@<handle>/`, never top-level; engines are data, not
+URL segments. Audit of #636–#694 found: #684 proposed engine-specific
+first-level roots (rewritten; retitled); #654 (closed) used
+`/users/@artist/<collectionSlug>` (corrective issue #695); #661–#665 and
+#690–#694 named legacy paths as primary entry points (edited to name the
+canonical route first, legacy paths as redirect shims). `App.tsx` still
+registers the ambiguous `users/:handle/:collectionSlug`; #684/#695 own its
+retirement and reserved-slug protection.

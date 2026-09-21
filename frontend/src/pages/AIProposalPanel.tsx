@@ -5,6 +5,8 @@ import { getSceneVersion, type SceneDocument, type SceneVersion } from '../api/p
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
 import type { ScenePreview, SceneRendererId } from '../render/scenePreview';
 import AIRunPanel, { type AIRunSelectableObject } from './AIRunPanel';
+import MentionPromptField from './MentionPromptField';
+import { buildAITargetOptions, targetIdsFor } from './aiTargeting';
 import { buildOutline } from './sceneOutline';
 import { useAIProposal, type ProposalMode } from './useAIProposal';
 import { useAIRun } from './useAIRun';
@@ -133,6 +135,8 @@ function AIProposalPanel({
   // at a time via `workflowMode`.
   const aiRun = useAIRun<SceneVersion>('project', projectId, getSceneVersion);
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>('one-shot');
+  const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
+  const targetOptions = workingCopy ? buildAITargetOptions(workingCopy) : [];
 
   // Issue #462's own acceptance criterion: "Resolve selection to stable
   // IDs rather than trusting text mentions" -- reuses the same outline
@@ -225,7 +229,9 @@ function AIProposalPanel({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    await generate(workingCopy, currentVersionId);
+    await generate(workingCopy, currentVersionId, {
+      targetIds: targetIdsFor(targetOptions, selectedTargetIds),
+    });
   }
 
   async function handleAccept() {
@@ -329,16 +335,19 @@ function AIProposalPanel({
               </select>
             </div>
             <div className="behavior-card-field">
-              <label htmlFor="ai-proposal-prompt">
-                {mode === 'create'
-                  ? 'Describe the scene you want to generate'
-                  : 'Describe the change you want to make'}
-              </label>
-              <textarea
+              <MentionPromptField
                 id="ai-proposal-prompt"
+                label={
+                  mode === 'create'
+                    ? 'Describe the scene you want to generate'
+                    : 'Describe the change you want to make'
+                }
                 value={prompt}
+                onChange={setPrompt}
+                options={targetOptions}
+                selectedIds={selectedTargetIds}
+                onSelectedIdsChange={setSelectedTargetIds}
                 disabled={pending}
-                onChange={(event) => setPrompt(event.target.value)}
               />
             </div>
             {/* Issue #198/#262: optional, defaults to the server's own model.

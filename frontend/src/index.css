@@ -3734,6 +3734,80 @@ textarea:disabled {
   resize: vertical;
 }
 
+.mention-prompt-field {
+  position: relative;
+}
+
+.ai-target-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.45rem;
+}
+
+.ai-target-chip {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent, #c084fc) 18%, transparent);
+  border: 1px solid var(--accent, #c084fc);
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.2rem 0.35rem 0.2rem 0.6rem;
+}
+
+.ai-target-chip small,
+.ai-target-listbox small {
+  color: var(--muted-text, #a7a9b8);
+  font-size: 0.75em;
+}
+
+.ai-target-chip button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.1rem 0.25rem;
+}
+
+.ai-target-listbox {
+  background: var(--panel-background, #15161d);
+  border: 1px solid var(--accent, #c084fc);
+  border-radius: 0.45rem;
+  display: grid;
+  max-height: 15rem;
+  overflow-y: auto;
+  position: absolute;
+  width: 100%;
+  z-index: 20;
+}
+
+.ai-target-listbox button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+}
+
+.ai-target-listbox button.is-active,
+.ai-target-listbox button:hover {
+  background: color-mix(in srgb, var(--accent, #c084fc) 22%, transparent);
+}
+
+.ai-target-listbox button[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.ai-target-listbox em {
+  color: var(--muted-text, #a7a9b8);
+  font-size: 0.8em;
+}
+
 .ai-proposal-panel > .editor-tool-group,
 .ai-proposal-panel form > .editor-tool-group {
   display: flex;

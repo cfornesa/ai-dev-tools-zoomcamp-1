@@ -85,6 +85,7 @@ export function createAIScene(
   model?: string,
   personaId?: number,
   vendor?: 'mistral' | 'gemini' | 'deepseek',
+  targetIds: string[] = [],
 ): Promise<AICreateSceneResponse> {
   return apiFetch<AICreateSceneResponse>(`/api/projects/${projectId}/ai/create-scene/`, {
     method: 'POST',
@@ -93,6 +94,7 @@ export function createAIScene(
       ...(model ? { model } : {}),
       ...(personaId ? { persona_id: personaId } : {}),
       ...(vendor && vendor !== 'mistral' ? { vendor } : {}),
+      ...(targetIds.length > 0 ? { target_ids: targetIds } : {}),
     }),
     signal,
   });
@@ -107,6 +109,7 @@ export function editAIScene(
   model?: string,
   personaId?: number,
   vendor?: 'mistral' | 'gemini' | 'deepseek',
+  targetIds: string[] = [],
 ): Promise<AIEditSceneResponse> {
   return apiFetch<AIEditSceneResponse>(`/api/projects/${projectId}/ai/edit-scene/`, {
     method: 'POST',
@@ -117,6 +120,7 @@ export function editAIScene(
       ...(model ? { model } : {}),
       ...(personaId ? { persona_id: personaId } : {}),
       ...(vendor && vendor !== 'mistral' ? { vendor } : {}),
+      ...(targetIds.length > 0 ? { target_ids: targetIds } : {}),
     }),
     signal,
   });

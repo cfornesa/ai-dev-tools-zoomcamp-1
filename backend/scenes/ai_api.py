@@ -271,6 +271,9 @@ class AICreateSceneRequestSerializer(serializers.Serializer):
     # validation error -- same "don't confirm hidden data" spirit as this
     # project's other owner-scoped lookups.
     persona_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    target_ids = serializers.ListField(
+        child=serializers.CharField(max_length=128), required=False, allow_empty=True, default=list
+    )
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
@@ -315,6 +318,9 @@ class AIEditSceneRequestSerializer(serializers.Serializer):
         default="",
     )
     persona_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    target_ids = serializers.ListField(
+        child=serializers.CharField(max_length=128), required=False, allow_empty=True, default=list
+    )
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
@@ -475,6 +481,20 @@ def _stale_base_response(current_version_id: int | None) -> Response:
         },
         status=status.HTTP_409_CONFLICT,
     )
+
+
+def _augment_prompt_with_target_ids(prompt: str, target_ids: list[str]) -> str:
+    """Make explicit @-target selections available to the provider.
+
+    The provider-facing interface intentionally remains prompt-based. Stable
+    IDs are appended in a machine-readable sentence so the existing patch
+    reference guard recognizes a selected element even when its display label
+    was never typed as free text.
+    """
+    unique_ids = list(dict.fromkeys(target_ids))
+    if not unique_ids:
+        return prompt
+    return f"{prompt}\nOnly modify the selected element id(s): {', '.join(unique_ids)}."
 
 
 def _invalid_current_scene_response(validation: SceneValidationResult) -> Response:
@@ -777,6 +797,7 @@ class AIEditSceneView(APIView):
         if not input_serializer.is_valid():
             return _request_invalid_response(input_serializer.errors)
         prompt = input_serializer.validated_data["prompt"]
+        target_ids = input_serializer.validated_data.get("target_ids", [])
         current_scene = input_serializer.validated_data["current_scene"]
         base_version_id = input_serializer.validated_data["base_version_id"]
         model = input_serializer.validated_data.get("model") or None
@@ -821,7 +842,10 @@ class AIEditSceneView(APIView):
         except UnsupportedProvider:
             return _unsupported_provider_response()
         outcome = provider.edit_scene_with_patch(
-            AIEditSceneRequest(prompt=prompt, current_scene=current_scene)
+            AIEditSceneRequest(
+                prompt=_augment_prompt_with_target_ids(prompt, target_ids),
+                current_scene=current_scene,
+            )
         )
         result = outcome.result
 

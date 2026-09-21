@@ -257,6 +257,7 @@ export function useAIProposal(projectId: string | undefined) {
   const acceptAbortRef = useRef<AbortController | null>(null);
   const acceptInFlightRef = useRef(false);
   const attemptCountRef = useRef(0);
+  const targetIdsRef = useRef<string[]>([]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -303,7 +304,7 @@ export function useAIProposal(projectId: string | undefined) {
     async (
       currentScene: SceneDocument | null,
       baseVersionId: number | null,
-      options?: { isManualRetry?: boolean },
+      options?: { isManualRetry?: boolean; targetIds?: string[] },
     ): Promise<void> => {
       if (!projectId) return;
       const trimmed = prompt.trim();
@@ -330,6 +331,8 @@ export function useAIProposal(projectId: string | undefined) {
       setProposal(null);
 
       const trimmedModel = model.trim() || undefined;
+      if (options?.targetIds) targetIdsRef.current = options.targetIds;
+      const targetIds = targetIdsRef.current;
       const maxRetries = retryPreference?.auto_retry_enabled ? retryPreference.max_retries : 0;
       // A manual retry (auto-retry off, user clicked "Retry") continues the
       // visible attempt count from where it left off; any other call
@@ -346,13 +349,23 @@ export function useAIProposal(projectId: string | undefined) {
           if (mode === 'create') {
             const result =
               vendor === 'mistral'
-                ? await createAIScene(
-                    projectId,
-                    trimmed,
-                    controller.signal,
-                    trimmedModel,
-                    personaId ?? undefined,
-                  )
+                ? targetIds.length > 0
+                  ? await createAIScene(
+                      projectId,
+                      trimmed,
+                      controller.signal,
+                      trimmedModel,
+                      personaId ?? undefined,
+                      undefined,
+                      targetIds,
+                    )
+                  : await createAIScene(
+                      projectId,
+                      trimmed,
+                      controller.signal,
+                      trimmedModel,
+                      personaId ?? undefined,
+                    )
                 : await createAIScene(
                     projectId,
                     trimmed,
@@ -360,6 +373,7 @@ export function useAIProposal(projectId: string | undefined) {
                     trimmedModel,
                     personaId ?? undefined,
                     vendor,
+                    ...(targetIds.length > 0 ? [targetIds] : []),
                   );
             if (!mountedRef.current || abortControllerRef.current !== controller) return;
             setProposal({
@@ -374,15 +388,27 @@ export function useAIProposal(projectId: string | undefined) {
           } else {
             const result =
               vendor === 'mistral'
-                ? await editAIScene(
-                    projectId,
-                    trimmed,
-                    currentScene as SceneDocument,
-                    baseVersionId,
-                    controller.signal,
-                    trimmedModel,
-                    personaId ?? undefined,
-                  )
+                ? targetIds.length > 0
+                  ? await editAIScene(
+                      projectId,
+                      trimmed,
+                      currentScene as SceneDocument,
+                      baseVersionId,
+                      controller.signal,
+                      trimmedModel,
+                      personaId ?? undefined,
+                      undefined,
+                      targetIds,
+                    )
+                  : await editAIScene(
+                      projectId,
+                      trimmed,
+                      currentScene as SceneDocument,
+                      baseVersionId,
+                      controller.signal,
+                      trimmedModel,
+                      personaId ?? undefined,
+                    )
                 : await editAIScene(
                     projectId,
                     trimmed,
@@ -392,6 +418,7 @@ export function useAIProposal(projectId: string | undefined) {
                     trimmedModel,
                     personaId ?? undefined,
                     vendor,
+                    ...(targetIds.length > 0 ? [targetIds] : []),
                   );
             if (!mountedRef.current || abortControllerRef.current !== controller) return;
             setProposal({
@@ -433,7 +460,10 @@ export function useAIProposal(projectId: string | undefined) {
   const retryGeneration = useCallback(
     (currentScene: SceneDocument | null, baseVersionId: number | null): void => {
       if (!isRetryableAIErrorCode(genError?.code)) return;
-      void generate(currentScene, baseVersionId, { isManualRetry: true });
+      void generate(currentScene, baseVersionId, {
+        isManualRetry: true,
+        targetIds: targetIdsRef.current,
+      });
     },
     [genError, generate],
   );

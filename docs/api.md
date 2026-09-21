@@ -50,6 +50,16 @@ documented compatibility shims; they are not emitted as new public links.
 Reserved namespace words (`pieces`, `collections`, `immersive`, `edit`,
 `feed`, and `feeds`) cannot be allocated as public collection slugs.
 
+### AI edit target references (#661)
+
+The 2D AI create/edit request bodies may include an optional `target_ids`
+array. The editor sends stable scene IDs, never display labels. Selecting a
+layer or group expands the request to include its descendant IDs; selecting a
+locked item or a draw.io graph node is presented as disabled and does not send
+an ID. Plain text that merely resembles a label is not treated as a target.
+The field is additive and omitted by older clients. The agent-run request
+continues to use its existing `selected_target_ids` field.
+
 ### Profile JSON Feeds (#688)
 
 `GET /users/@<handle>/feed.json` returns the same privacy-filtered,

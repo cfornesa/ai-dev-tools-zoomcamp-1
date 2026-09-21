@@ -44,8 +44,40 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #695; #640 remains publication-boundary blocked and
+The next groomed issue is #661; #640 remains publication-boundary blocked and
 #695 is now closed after the collection-specific follow-up was reconciled.
+
+### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE
+
+- PM/grooming: the live issue body was reread before implementation and after
+  the final gate. Scope stayed limited to the 2D AI request box; 3D and
+  generated-piece editors remain out of scope and are covered by #662/#663.
+  The existing canonical editor route work remains tracked by #664; the
+  current browser fixture enters through the supported AI-editor creation
+  flow while that shared route transaction is still open.
+- Engineering: added a shared keyboard-accessible `@` mention field with an
+  ARIA combobox wrapper/listbox, typed chips, removal, stable IDs, group/layer
+  descendant expansion, locked-media/locked-layer disabling, and disabled
+  Draw.io nodes with reasons. Added additive `target_ids` request plumbing;
+  edit requests append selected IDs to the provider-facing prompt so the
+  existing stable-reference guard scopes the generated patch. Updated
+  `docs/api.md` before the API contract addition. No migration or dependency
+  was added.
+- QA matrix: focused targeting/mention/hook tests passed 28; backend AI edit
+  tests passed 31; the full suite passed backend `1477 passed, 39 skipped` and
+  frontend `247 files / 2766 tests passed`, with lint, format, typecheck, and
+  action-pin checks green. Rebuilt Docker frontend and Chromium passed 2/2 at
+  1280x900 and 375x812. Screenshots were captured and inspected for list-open
+  and chip-inserted states at both widths:
+  `frontend/test-results/aiMention2d-2D-AI-targetin-854d5-erts-a-typed-chip-at-1280px-chromium/`
+  and
+  `frontend/test-results/aiMention2d-2D-AI-targetin-d8f99-serts-a-typed-chip-at-375px-chromium/`.
+  The final focused axe suites passed 41/41 before the final gate.
+- Provenance: direct Codex/GPT-5 substitution because the rostered
+  implementation/review services were unavailable; no production-publication
+  claim is made. No new actionable issue was found in scope.
+- Reconciliation: final GitHub issue reread is complete; next independent
+  transaction is #662.
 
 ### #695 transaction ledger — 2026-09-21 — CLOSED
 

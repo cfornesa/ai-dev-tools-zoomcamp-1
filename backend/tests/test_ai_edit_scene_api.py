@@ -113,12 +113,15 @@ def _mistral_provider_raising(exc: BaseException) -> MistralSceneProvider:
     return MistralSceneProvider(client=_FakeClient(handler))
 
 
-def _payload(prompt="make it black", scene=None, base_version_id=None):
-    return {
+def _payload(prompt="make it black", scene=None, base_version_id=None, target_ids=None):
+    payload = {
         "prompt": prompt,
         "current_scene": scene if scene is not None else copy.deepcopy(BLANK_SCENE),
         "base_version_id": base_version_id,
     }
+    if target_ids is not None:
+        payload["target_ids"] = target_ids
+    return payload
 
 
 _BG_BLACK_PATCH = [{"op": "replace", "path": "/canvas/backgroundColor", "value": "#000000"}]
@@ -443,6 +446,31 @@ def test_patch_touching_an_unreferenced_shape_is_rejected_with_422(
     assert response.status_code == 422
     assert response.json()["error"] == "unreferenced_element"
     assert SceneVersion.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
+def test_selected_target_ids_are_added_to_provider_prompt(monkeypatch, owner_client, project):
+    scene = _scene_with_named_shapes()
+    captured: dict = {}
+    patch = [{"op": "replace", "path": "/shapes/0/style/fill", "value": "#ff0000"}]
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=10, completion_tokens=20),
+            choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(patch)))],
+        )
+
+    _use_provider(monkeypatch, MistralSceneProvider(client=_FakeClient(handler)))
+    response = owner_client.post(
+        _url(project),
+        _payload(prompt="make it red", scene=scene, target_ids=["shape-sun"]),
+        format="json",
+    )
+
+    assert response.status_code == 200
+    prompt_text = json.dumps(captured["messages"])
+    assert "shape-sun" in prompt_text
 
 
 @pytest.mark.django_db

@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { formatPublishedDate, truncateExcerpt } from './pieceCardUtils';
+
 export type PieceCardProps = {
   href: string;
   title: string;
+  description?: string;
+  publishedAt?: string | null;
   thumbnailUrl?: string | null;
   thumbnailIsFallback?: boolean;
   kind?: string;
@@ -16,8 +20,9 @@ export type PieceCardProps = {
 export default function PieceCard({
   href,
   title,
+  description = '',
+  publishedAt,
   thumbnailUrl,
-  thumbnailIsFallback = false,
   kind,
   engine,
   owner,
@@ -39,6 +44,8 @@ export default function PieceCard({
           : kind === '2d'
             ? '2D'
             : undefined;
+  const excerpt = truncateExcerpt(description);
+  const publishedLabel = publishedAt ? formatPublishedDate(publishedAt) : null;
 
   return (
     <article
@@ -47,7 +54,7 @@ export default function PieceCard({
       data-kind={kind}
       data-testid={testId}
     >
-      <Link to={href} className="piece-card-link public-project-card-link">
+      <Link to={href} className="piece-card-link public-project-card-link" aria-label={title}>
         {showFallback ? (
           <div
             className="piece-card-thumbnail-fallback public-project-thumbnail-fallback"
@@ -59,14 +66,20 @@ export default function PieceCard({
         ) : (
           <img
             src={thumbnailUrl}
-            alt={thumbnailIsFallback ? `Fallback preview of ${title}` : `Preview of ${title}`}
+            alt=""
             className="piece-card-thumbnail public-project-thumbnail"
             onError={() => setThumbnailFailed(true)}
           />
         )}
+        {publishedLabel && (
+          <p className="piece-card-date">
+            <time dateTime={publishedAt ?? undefined}>{publishedLabel}</time>
+          </p>
+        )}
         <h3 id={titleId} data-testid={testId ? `${testId}-title` : undefined}>
           {title}
         </h3>
+        {excerpt && <p className="piece-card-excerpt">{excerpt}</p>}
         {(kindLabel || engine) && (
           <p className="piece-card-meta">
             {kindLabel && <span className="renderer-badge">{kindLabel}</span>}

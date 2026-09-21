@@ -1173,11 +1173,14 @@ button:disabled {
   color: var(--profile-text, var(--text));
   background: var(--profile-surface, var(--surface));
   border-color: var(--profile-accent, var(--accent-border));
+  border-radius: var(--profile-radius, var(--site-radius));
+  box-shadow: var(--shadow);
 }
 
 .public-profile h2,
 .public-profile h3 {
   text-align: center;
+  color: var(--profile-text, var(--text-h));
 }
 
 @media (max-width: 767px) {
@@ -4105,7 +4108,27 @@ select.ai-proposal-field-full-width {
 .public-project-card-link h3 {
   margin: 12px 0 0;
   font-size: 18px;
-  color: var(--text-h);
+  color: var(--profile-text, var(--text-h));
+  overflow-wrap: anywhere;
+}
+
+.public-profile .piece-card .renderer-badge,
+.public-profile .piece-card .engine-label {
+  color: var(--profile-text, var(--text-h));
+}
+
+.piece-card-date {
+  margin: 0;
+  color: var(--profile-muted, var(--muted));
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.piece-card-excerpt {
+  margin: 10px 0 0;
+  color: var(--profile-muted, var(--muted));
+  overflow-wrap: anywhere;
 }
 
 .public-project-thumbnail,

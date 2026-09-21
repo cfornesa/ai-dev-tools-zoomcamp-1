@@ -101,10 +101,13 @@ export default function PublicProfile() {
                 key={`${piece.type}-${piece.id}`}
                 href={piece.regular_url ?? `/users/@${handle}/pieces/${piece.slug ?? piece.id}`}
                 title={piece.title}
+                description={piece.description}
+                publishedAt={piece.published_at}
                 thumbnailUrl={piece.thumbnail_url}
                 thumbnailIsFallback={piece.thumbnail_is_fallback}
                 kind={piece.type}
                 engine={piece.engine}
+                testId={`profile-piece-${piece.id}`}
               />
             ))}
           </div>

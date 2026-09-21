@@ -12,7 +12,7 @@ export type PublicProfile = {
   available_styles?: Array<{
     key: string;
     label: string;
-    description: string;
+    description?: string;
     tokens: Record<string, string>;
     presentation: PresentationOptions;
   }>;
@@ -52,8 +52,10 @@ export type PublicProfilePage = {
     id: string;
     slug?: string;
     title: string;
+    description?: string;
     type: string;
     engine?: string;
+    published_at?: string;
     regular_url?: string;
     thumbnail_url: string;
     thumbnail_is_fallback?: boolean;

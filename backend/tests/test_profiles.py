@@ -149,6 +149,10 @@ def test_public_profile_projects_only_public_collections_and_members(client):
         f"/api/public/art-pieces/{public_piece.public_id}/thumbnail.png"
     )
     assert all(piece["title"] != "Private piece" for piece in payload["pieces"])
+    public_payload = next(piece for piece in payload["pieces"] if piece["title"] == "Public piece")
+    assert public_payload["description"] == ""
+    assert public_payload["engine"] == "canvas2d"
+    assert public_payload["published_at"] is not None
 
 
 @pytest.mark.django_db

@@ -334,6 +334,9 @@ the link; it does not infer or hard-code a viewer route.
 Public profile piece entries additionally expose `slug` and `regular_url` for
 every published piece family (authored 2D/3D and generated), so profile
 consumers never need to reconstruct a route from an ID.
+They also expose the public `description`, ISO-8601 `published_at`, and
+capability `engine` values used by the editorial profile card; private and
+unpublished records are excluded before serialization.
 
 Public gallery list items additionally expose `viewer_url`; remix provenance
 includes `source_viewer_url` whenever the immediate source remains public.

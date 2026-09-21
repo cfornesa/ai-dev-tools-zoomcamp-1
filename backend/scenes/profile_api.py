@@ -112,7 +112,10 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 "id": str(project.public_id),
                 "slug": project.public_slug,
                 "title": project.title,
+                "description": project.description,
                 "type": "2d",
+                "engine": "canvas2d",
+                "published_at": project.published_at.isoformat() if project.published_at else None,
                 "regular_url": f"/users/@{profile.handle}/pieces/{project.public_slug}",
                 "thumbnail_url": f"/api/public/projects/{project.public_id}/thumbnail.png",
             }
@@ -123,7 +126,16 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 "id": str(project3d.public_id),
                 "slug": project3d.public_slug,
                 "title": project3d.title,
+                "description": (
+                    project3d.seo_config.get("description", "")
+                    if isinstance(project3d.seo_config, dict)
+                    else ""
+                ),
                 "type": "3d",
+                "engine": "threejs",
+                "published_at": project3d.published_at.isoformat()
+                if project3d.published_at
+                else None,
                 "regular_url": f"/users/@{profile.handle}/pieces/{project3d.public_slug}",
                 "thumbnail_url": f"/api/public/projects3d/{project3d.public_id}/thumbnail.png",
             }
@@ -136,8 +148,10 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 "id": str(piece.public_id),
                 "slug": piece.public_slug,
                 "title": piece.title,
+                "description": piece.description,
                 "type": "generated",
                 "engine": piece.engine,
+                "published_at": piece.published_at.isoformat() if piece.published_at else None,
                 "regular_url": f"/users/@{profile.handle}/pieces/{piece.public_slug}",
                 "thumbnail_url": f"/api/public/art-pieces/{piece.public_id}/thumbnail.png",
                 "thumbnail_is_fallback": bool(

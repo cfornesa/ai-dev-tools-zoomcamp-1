@@ -29,13 +29,14 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete. |
 | 12 | [#680](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/680) / [#681](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/681) | CLOSED, QA PASS | Shared account/admin spacing tokens and responsive form/card layouts are complete. |
 | 13 | [#682](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/682) | CLOSED, QA PASS; diagnosis recorded | Current checkout creates/loads missing profiles successfully; profile failures now have safe status-specific messaging and Retry. |
+| 14 | [#683](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/683) | CLOSED, QA PASS; stage 4 complete | Vivid-design evidence matrix captured and inspected across default/Pareto, light/dark, and 375/768/1280. |
 | 12 | [#685](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685) → [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Cards first, then Atom/RSS/JSON feeds, then feeds/discovery page. |
 | 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #683; #640 remains publication-boundary blocked and
+The next groomed issue is #685; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
 
 ### #674 transaction ledger — 2026-09-21 — CLOSED
@@ -193,6 +194,28 @@ The next groomed issue is #683; #640 remains publication-boundary blocked and
   Chromium only; no production publication claim is made.
 - Reconciliation: issue closed after QA PASS; next independent transaction is
   #683. The separate collection metadata/legacy-shim follow-up remains #695.
+
+### #683 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: current issue body re-read after #682 closure; stage 4 QA-only
+  scope and the required default/Pareto, light/dark, 375/768/1280 matrix
+  were confirmed. Direct Codex/GPT-5 substitution because the rostered QA
+  service was unavailable.
+- Engineering/QA: no product code was changed. Added
+  vividDesignMatrix.spec.ts to capture header, editor AI panel, and account
+  settings evidence, including no Home link, one mode control, full-width
+  prompt, reorder control, responsive overflow, and style presentation
+  assertions. Commit: c10f978.
+- Evidence: [GitHub QA PASS comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/683#issuecomment-5758733681).
+  One matrix test passed with 12 inspected screenshots; full make check passed
+  with backend 1471 passed / 39 skipped and frontend 244 files / 2753 tests
+  passed.
+- Provenance: Stage 3 second-opinion review was not run because Mistral Vibe
+  was unavailable; stage 4 QA was a direct Codex/GPT-5 substitution for the
+  unavailable Claude Sonnet 5 Medium service. Evidence is local/Docker/
+  Chromium only; no production publication claim is made.
+- Reconciliation: issue closed after QA PASS; next independent transaction is
+  #685. The separate collection metadata/legacy-shim follow-up remains #695.
 
 ### #673 transaction ledger — 2026-09-21 — CLOSED
 

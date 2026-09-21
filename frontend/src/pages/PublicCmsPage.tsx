@@ -4,12 +4,22 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../api/client';
 import type { SeoConfig } from '../api/adminPages';
 
-type PublicCmsPageData = {
+export type PublicCmsPageData = {
   title: string;
   slug: string;
   description: string;
   seo_config: SeoConfig;
 };
+
+export function PublicCmsPageContent({ page }: { page: PublicCmsPageData }) {
+  return (
+    <article className="content-panel public-cms-page" aria-labelledby="cms-page-heading">
+      <h2 id="cms-page-heading">{page.title}</h2>
+      <p>{page.description}</p>
+      <Link to="/gallery">Return to gallery</Link>
+    </article>
+  );
+}
 
 function setMeta(name: string, content: string, property = false) {
   const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
@@ -67,13 +77,7 @@ function PublicCmsPage() {
   }, [page]);
   if (missing) return <Navigate to="/gallery" replace />;
   if (!page) return <p role="status">Loading page…</p>;
-  return (
-    <article className="content-panel" aria-labelledby="cms-page-heading">
-      <h2 id="cms-page-heading">{page.title}</h2>
-      <p>{page.description}</p>
-      <Link to="/gallery">Return to gallery</Link>
-    </article>
-  );
+  return <PublicCmsPageContent page={page} />;
 }
 
 export default PublicCmsPage;

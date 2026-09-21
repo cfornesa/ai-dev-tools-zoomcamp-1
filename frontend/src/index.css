@@ -278,6 +278,60 @@ body {
   font-size: 14px;
 }
 
+.home-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.home-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: clamp(48px, 10vw, 120px) 24px clamp(40px, 8vw, 96px);
+  text-align: center;
+}
+
+.home-hero-eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-hero h1 {
+  max-width: 100%;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(2.5rem, 8vw, 6rem);
+  line-height: 1.05;
+}
+
+.home-hero-tagline {
+  max-width: 720px;
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1rem, 2vw, 1.35rem);
+}
+
+.home-hero-cta {
+  margin-top: 12px;
+}
+
+.home-page > .public-cms-page {
+  width: min(100% - 48px, 960px);
+  align-self: center;
+  box-sizing: border-box;
+}
+
+#public-gallery {
+  scroll-margin-top: 24px;
+}
+
 .app-shell-nav {
   display: flex;
   flex-wrap: nowrap;
@@ -1299,6 +1353,12 @@ code {
 
   .app-shell-header-row h1 {
     text-align: left;
+  }
+
+  .app-shell-brand {
+    max-width: calc(100% - 56px);
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 
   .app-shell-mobile-menu {

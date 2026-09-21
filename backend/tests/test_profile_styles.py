@@ -2,7 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from scenes.models import ApplicationAdmin, ProfileStyle, PublicProfile
+from scenes.models import ApplicationAdmin, ProfileStyle, PublicProfile, SiteSettings
 
 
 @pytest.mark.django_db
@@ -17,7 +17,23 @@ def test_profile_style_catalog_is_admin_only_and_seeded(client):
     ApplicationAdmin.objects.create(user=user)
     styles = client.get(url)
     assert styles.status_code == 200
-    assert {style["key"] for style in styles.json()} >= {"default", "ocean", "forest", "sunset"}
+    assert {style["key"] for style in styles.json()} >= {
+        "default",
+        "ocean",
+        "forest",
+        "sunset",
+        "pareto",
+    }
+    pareto = next(style for style in styles.json() if style["key"] == "pareto")
+    assert set(pareto["tokens"]) == {"light", "dark"}
+    assert pareto["presentation"] == {
+        "font_family": "system",
+        "density": "comfortable",
+        "radius": "sharp",
+        "border_style": "solid",
+        "shadow": "offset",
+        "backdrop": "plain",
+    }
 
 
 @pytest.mark.django_db
@@ -85,3 +101,18 @@ def test_users_can_select_enabled_style_but_disabled_existing_style_stays_readab
     assert (
         PublicProfile.objects.get(user=user).style_id == ProfileStyle.objects.get(key="default").id
     )
+
+
+@pytest.mark.django_db
+def test_disabled_global_style_falls_back_to_default_site_theme(client):
+    pareto = ProfileStyle.objects.get(key="pareto")
+    default = ProfileStyle.objects.get(key="default")
+    SiteSettings.objects.update_or_create(pk=1, defaults={"style": pareto})
+    pareto.enabled = False
+    pareto.save(update_fields=["enabled"])
+
+    response = client.get(reverse("site-theme"))
+
+    assert response.status_code == 200
+    assert response.json()["theme_palettes"]["dark"]["accent"] == default.tokens["accent"]
+    assert response.json()["presentation"]["shadow"] == "none"

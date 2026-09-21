@@ -22,7 +22,7 @@ from scenes.admin_settings import (
     update_plan,
     update_site_settings,
 )
-from scenes.models import SiteSettings
+from scenes.models import ProfileStyle, SiteSettings
 from scenes.theme import effective_presentation, effective_profile_theme, effective_theme_palettes
 
 
@@ -35,6 +35,13 @@ def _admin_required_response(request) -> Response | None:
             status=status.HTTP_403_FORBIDDEN,
         )
     return None
+
+
+def _effective_site_style(site_settings: SiteSettings) -> ProfileStyle | None:
+    style = site_settings.style if site_settings.style_id else None
+    if style is not None and style.enabled:
+        return style
+    return ProfileStyle.objects.filter(key="default", enabled=True).first()
 
 
 class SiteSettingsUpdateSerializer(serializers.Serializer):
@@ -55,6 +62,7 @@ class AdminSiteSettingsView(APIView):
         if denied:
             return denied
         site_settings = get_site_settings()
+        style = _effective_site_style(SiteSettings.get_solo())
         return Response(
             {
                 "site_title": site_settings.site_title,
@@ -64,9 +72,7 @@ class AdminSiteSettingsView(APIView):
                 "revision": site_settings.revision,
                 "theme_config": site_settings.theme_config,
                 "theme_palettes": effective_theme_palettes(
-                    SiteSettings.get_solo().style.tokens
-                    if SiteSettings.get_solo().style_id
-                    else {},
+                    style.tokens if style else {},
                     site_settings.theme_config,
                 ),
                 "style_key": site_settings.style_key,
@@ -145,7 +151,7 @@ class SiteThemeView(APIView):
 
     def get(self, request):
         row = SiteSettings.get_solo()
-        style = row.style
+        style = _effective_site_style(row)
         return Response(
             {
                 **effective_profile_theme(style.tokens if style else {}, row.theme_config),

@@ -71,6 +71,19 @@ beforeEach(() => {
       enabled: true,
       revision: 1,
     },
+    {
+      id: 2,
+      key: 'pareto',
+      label: 'Pareto',
+      description: 'Hard bordered indigo style',
+      tokens: {
+        light: { background: '#f4f5ff', accent: '#4f46e5' },
+        dark: { background: '#101226', accent: '#818cf8' },
+      },
+      presentation: { ...presentation, radius: 'sharp', shadow: 'offset' },
+      enabled: true,
+      revision: 1,
+    },
   ]);
   vi.mocked(adminApi.updateProfileStyle).mockImplementation(async (style) => style);
 });
@@ -87,9 +100,9 @@ describe('AdminSettings presentation choices (#643)', () => {
     const font = await screen.findByRole('combobox', { name: 'Default font family' });
     const shadow = screen.getByRole('combobox', { name: 'Default shadow' });
     const backdrop = screen.getByRole('combobox', { name: 'Default backdrop' });
-    expect(screen.getByRole('option', { name: 'Script' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Offset' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Cosmic' })).toBeInTheDocument();
+    expect(screen.getAllByRole('option', { name: 'Script' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('option', { name: 'Offset' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('option', { name: 'Cosmic' }).length).toBeGreaterThan(0);
 
     await user.selectOptions(font, 'script');
     await user.selectOptions(shadow, 'offset');
@@ -112,5 +125,16 @@ describe('AdminSettings presentation choices (#643)', () => {
         presentation: expect.objectContaining({ backdrop: 'cosmic' }),
       }),
     );
+  });
+
+  it('lists the built-in Pareto style with its paired presentation contract', async () => {
+    render(
+      <MemoryRouter>
+        <AdminSettings />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Pareto')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Pareto shadow' })).toHaveValue('offset');
   });
 });

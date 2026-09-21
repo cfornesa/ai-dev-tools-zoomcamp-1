@@ -964,6 +964,16 @@ function ProfileStyleCatalogSettings({
       setError('Could not create that profile style.');
     }
   }
+  function previewTokens(style: ProfileStyle): Record<string, string> {
+    if (
+      'dark' in style.tokens &&
+      typeof style.tokens.dark === 'object' &&
+      style.tokens.dark !== null
+    ) {
+      return style.tokens.dark;
+    }
+    return style.tokens as Record<string, string>;
+  }
   return (
     <section className="admin-settings-card" aria-labelledby="profile-style-catalog-heading">
       <h3 id="profile-style-catalog-heading">Profile style catalog</h3>
@@ -1066,9 +1076,9 @@ function ProfileStyleCatalogSettings({
             aria-label={`${style.label} preview`}
             className="profile-style-preview"
             style={{
-              backgroundColor: style.tokens.background,
-              color: style.tokens.text,
-              borderColor: style.tokens.accent,
+              backgroundColor: previewTokens(style).background,
+              color: previewTokens(style).text,
+              borderColor: previewTokens(style).accent,
             }}
           >
             {style.enabled ? 'Enabled preview' : 'Disabled preview'}

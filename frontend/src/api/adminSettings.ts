@@ -55,7 +55,7 @@ export type ProfileStyle = {
   key: string;
   label: string;
   description: string;
-  tokens: Record<string, string>;
+  tokens: Record<string, string> | { light: Record<string, string>; dark: Record<string, string> };
   presentation: PresentationOptions;
   enabled: boolean;
   revision: number;

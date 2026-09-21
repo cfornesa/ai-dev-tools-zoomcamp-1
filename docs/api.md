@@ -77,8 +77,10 @@ Application administrators can use `GET|POST /api/admin/profile-styles/` and
 `PATCH /api/admin/profile-styles/<id>/` to manage the finite catalog. Anonymous
 callers receive `401`, non-admins `403`, and updates require the current
 integer `revision`. Styles contain only approved six-digit hex tokens for
-`background`, `surface`, `text`, `muted`, and `accent`; disabling a style hides
-it from new user selections without deleting existing assignments.
+`background`, `surface`, `text`, `muted`, and `accent`; paired `light` and
+`dark` palettes are supported, and disabling a style hides it from new user
+selections while global site settings safely fall back to the enabled
+`default` style.
 
 ### Curated global/profile style system (#576)
 

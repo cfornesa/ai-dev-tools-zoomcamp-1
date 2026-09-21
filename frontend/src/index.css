@@ -124,6 +124,19 @@ body,
   --shadow: 4px 4px 0 var(--border);
 }
 
+:root[data-site-shadow='offset'] .shell-action {
+  border-width: 2px;
+  border-radius: 2px;
+  box-shadow: 4px 4px 0 var(--border);
+}
+
+:root[data-site-shadow='offset'] .public-project-card,
+:root[data-site-shadow='offset'] .content-panel {
+  border-width: 2px;
+  border-radius: 2px;
+  box-shadow: 4px 4px 0 var(--border);
+}
+
 :root[data-theme='light'] {
   color-scheme: light;
   --text: #6b6375;

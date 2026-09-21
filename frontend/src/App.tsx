@@ -43,6 +43,7 @@ const AdminSettings = lazy(() => import('./pages/AdminSettings'));
 const AdminPages = lazy(() => import('./pages/AdminPages'));
 const AdminContent = lazy(() => import('./pages/AdminContent'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
+const PublicProfileFeeds = lazy(() => import('./pages/PublicProfileFeeds'));
 const CanonicalPublicPiece = lazy(() => import('./pages/CanonicalPublicPiece'));
 const CanonicalArtPieceEditor = lazy(() => import('./pages/CanonicalArtPieceEditor'));
 const PublicCmsPage = lazy(() => import('./pages/PublicCmsPage'));
@@ -86,6 +87,7 @@ function App() {
                   Home/Gallery split. */}
               <Route path="gallery" element={<PublicGallery />} />
               <Route path="users/:handle" element={<PublicProfile />} />
+              <Route path="users/:handle/feeds" element={<PublicProfileFeeds />} />
               <Route
                 path="users/:handle/collections/:collectionSlug"
                 element={<PublicCollection />}

@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { fetchPublicProfile, type PublicProfilePage } from '../api/profile';
 import PieceCard from '../components/PieceCard';
@@ -52,6 +52,11 @@ export default function PublicProfile() {
         <div>
           <h2>{displayName}</h2>
           {data.profile.handle && <p className="public-profile-handle">@{data.profile.handle}</p>}
+          {data.profile.handle && (
+            <Link className="public-profile-subscribe" to={`/users/@${data.profile.handle}/feeds`}>
+              Subscribe to feeds
+            </Link>
+          )}
           {data.profile.bio && <p className="public-profile-bio">{data.profile.bio}</p>}
           {data.profile.website_url && (
             <a

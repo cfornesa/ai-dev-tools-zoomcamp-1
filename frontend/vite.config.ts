@@ -122,7 +122,7 @@ function routeDescriptor(pathname: string): { kind: string; publicId: string } |
 
 function siteMetadataDescriptor(pathname: string): string | null {
   if (pathname === '/' || pathname === '/home') return '/api/public/share-meta/site/home/';
-  const profile = pathname.match(/^\/users\/@([^/]+)\/?$/);
+  const profile = pathname.match(/^\/users\/@([^/]+)(?:\/feeds)?\/?$/);
   if (profile) {
     return `/api/public/share-meta/site/profile/${encodeURIComponent(profile[1])}/`;
   }
@@ -191,6 +191,16 @@ function metadataTags(metadata: ShareMetadata | null, requestPath: string): stri
       '<meta property="og:image:width" content="1200" data-server-metadata="true" />',
       '<meta property="og:image:height" content="630" data-server-metadata="true" />',
       `<meta name="twitter:image" content="${escapeHtml(imageUrl)}" data-server-metadata="true" />`,
+    );
+  }
+  const profile = requestPath.match(/^\/users\/@([^/]+)(?:\/feeds)?\/?$/);
+  if (profile) {
+    const handle = encodeURIComponent(profile[1]);
+    const feedBase = `${origin}/users/@${handle}`;
+    tags.push(
+      `<link rel="alternate" type="application/atom+xml" href="${escapeHtml(`${feedBase}/feed.xml`)}" data-server-metadata="true" />`,
+      `<link rel="alternate" type="application/rss+xml" href="${escapeHtml(`${feedBase}/feed.rss`)}" data-server-metadata="true" />`,
+      `<link rel="alternate" type="application/feed+json" href="${escapeHtml(`${feedBase}/feed.json`)}" data-server-metadata="true" />`,
     );
   }
   return tags.join('\n    ');

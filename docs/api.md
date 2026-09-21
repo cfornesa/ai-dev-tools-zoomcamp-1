@@ -161,6 +161,14 @@ the art-piece rate and daily quota counters once per provider call, and
 supports all registered generative engines. Private pieces and runs remain
 owner-scoped and return `404` to other users.
 
+The owner editor discovers refinement targets from the current source using
+the explicit marker `data-augmentr-part="<stable-id>"` on a declared element,
+or the JavaScript comment form `@augmentr-part <stable-id>`. Media targets
+use `data-augmentr-asset="<stable-id>"` or `@augmentr-asset <stable-id>`;
+the editor sends only IDs selected as chips, never display labels. A source
+with no part markers still exposes its discovered assets and a hint that no
+parts were declared.
+
 ## Global site metadata settings (#586)
 
 The application-admin-only `GET|PATCH /api/admin/settings/` contract includes

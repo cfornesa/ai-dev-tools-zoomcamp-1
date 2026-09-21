@@ -14,7 +14,8 @@ export type AITargetOption = {
     | 'object'
     | 'light'
     | 'camera'
-    | 'material';
+    | 'material'
+    | 'part';
   category?: string;
   disabled?: boolean;
   disabledReason?: string;

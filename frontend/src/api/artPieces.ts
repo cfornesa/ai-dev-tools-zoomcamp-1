@@ -193,6 +193,41 @@ export type ArtPieceErrorBody = {
   detail: unknown;
 };
 
+export type ArtPieceRefineRun = {
+  id: number;
+  piece_id: string;
+  status: 'running' | 'awaiting_review' | 'accepted' | 'failed';
+  plan: { steps: unknown[]; target_ids: string[]; success_criteria: unknown[] };
+  instruction: string;
+  target_references: string[];
+  auto_retry_enabled: boolean;
+  max_retries: number;
+  attempts: number;
+  repairs: number;
+  edits: unknown[];
+  attempt_results: Array<{ attempt: number; passed: boolean; feedback?: string }>;
+  candidate_source: string | null;
+  accepted_version_id: number | null;
+  validation_summary: string;
+  error_reason: string;
+  usage: ArtPieceUsage;
+  created_at: string;
+  updated_at: string;
+};
+
+export function refineArtPiece(
+  publicId: string,
+  instruction: string,
+  targetReferences: string[] = [],
+  signal?: AbortSignal,
+): Promise<ArtPieceRefineRun> {
+  return apiFetch<ArtPieceRefineRun>(`/api/art-pieces/${publicId}/refine/`, {
+    method: 'POST',
+    body: JSON.stringify({ instruction, target_references: targetReferences }),
+    signal,
+  });
+}
+
 /** `model` blank/omitted means "use the account default", matching
  * `createAIScene`/`editAIScene`'s identical `model?: string` contract
  * from issue #198. */

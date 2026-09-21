@@ -67,10 +67,9 @@ test.describe('2D AI editor engine modes (#618)', () => {
         await page
           .getByLabel('Describe the revision you want to generate')
           .fill('make it brighter');
-        await page.getByRole('button', { name: 'Generate revision' }).click();
+        await page.getByRole('button', { name: 'Refine piece' }).click();
         await expect(page.getByTestId('art-piece-editor-preview')).toBeVisible();
-        await expect(page.getByTestId('art-piece-editor-save-version')).toBeVisible();
-        await page.getByTestId('art-piece-editor-save-version').click();
+        await expect(page.getByTestId('art-piece-refine-accepted')).toBeVisible();
         await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 2');
         await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('(current)');
         await context.close();

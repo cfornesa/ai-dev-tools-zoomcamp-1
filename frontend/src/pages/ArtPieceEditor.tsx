@@ -5,10 +5,10 @@ import {
   createArtPieceVersion,
   ART_PIECE_ENGINE_CAPABILITIES,
   deleteArtPiece,
-  generateArtPiece,
   getArtPiece,
   listArtPieceVersions,
   regenerateArtPieceThumbnail,
+  refineArtPiece,
   updateArtPiece,
   type ArtPiece,
   type ArtPieceCapabilitySet,
@@ -27,6 +27,8 @@ import {
   ART_PIECE_IFRAME_SANDBOX,
 } from '../generative/artPieceSandbox';
 import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
+import MentionPromptField from './MentionPromptField';
+import { buildArtPieceTargetOptions } from './artPieceTargets';
 
 type RevisionPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
@@ -107,6 +109,10 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const [revisePhase, setRevisePhase] = useState<RevisionPhase>('idle');
   const [reviseCode, setReviseCode] = useState<string | null>(null);
   const [reviseError, setReviseError] = useState<string | null>(null);
+  const [refineRun, setRefineRun] = useState<import('../api/artPieces').ArtPieceRefineRun | null>(
+    null,
+  );
+  const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [capabilities, setCapabilities] = useState<ArtPieceCapabilitySet>({});
   const [versionSaving, setVersionSaving] = useState(false);
   const [versionSaveError, setVersionSaveError] = useState<string | null>(null);
@@ -216,10 +222,30 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     setReviseCode(null);
 
     try {
-      const result = await generateArtPiece(piece.engine, trimmed, controller.signal);
+      const result = await refineArtPiece(
+        piece.public_id,
+        trimmed,
+        selectedTargetIds,
+        controller.signal,
+      );
       if (abortControllerRef.current !== controller) return;
-      setReviseCode(result.code);
+      setRefineRun(result);
+      if (result.status !== 'accepted' || !result.candidate_source) {
+        setRevisePhase('error');
+        setReviseError(
+          result.validation_summary ||
+            'The refinement did not produce a valid revision; the stored source is unchanged.',
+        );
+        return;
+      }
+      setReviseCode(result.candidate_source);
       setRevisePhase('previewing');
+      const [updatedPiece, updatedVersions] = await Promise.all([
+        getArtPiece(piece.public_id),
+        listArtPieceVersions(piece.public_id),
+      ]);
+      setPiece(updatedPiece);
+      setVersions(updatedVersions);
     } catch {
       if (abortControllerRef.current !== controller) return;
       setRevisePhase('error');
@@ -326,6 +352,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
 
   const sandboxDoc = reviseCode ? buildArtPieceSandboxDocument(reviseCode, piece.engine) : null;
   const currentVersion = piece.current_version;
+  const targetOptions = buildArtPieceTargetOptions(currentVersion?.source ?? '');
   const engineCapability = ART_PIECE_ENGINE_CAPABILITIES[piece.engine];
   const editorModeLabel = engineCapability.family === '3d' ? '3D AI editor' : '2D AI editor';
 
@@ -417,21 +444,46 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
 
       <form onSubmit={handleRegenerate}>
         <h3>Revise this piece</h3>
+        <p>
+          The refinement plan runs with bounded retries before a new version is stored. Select
+          declared parts or assets to scope the change.
+        </p>
         <div className="behavior-card-field">
-          <label htmlFor="art-piece-editor-prompt">
-            Describe the revision you want to generate
-          </label>
-          <textarea
+          <MentionPromptField
             id="art-piece-editor-prompt"
+            label="Describe the revision you want to generate"
             value={prompt}
+            onChange={setPrompt}
+            options={targetOptions}
+            selectedIds={selectedTargetIds}
+            onSelectedIdsChange={setSelectedTargetIds}
             disabled={revisePhase === 'pending'}
-            onChange={(event) => setPrompt(event.target.value)}
           />
+          {!targetOptions.some((option) => option.type === 'part') && (
+            <p className="ai-target-empty-hint">
+              No declared parts yet; marked media assets remain available as targets.
+            </p>
+          )}
         </div>
         <button type="submit" disabled={revisePhase === 'pending' || prompt.trim().length === 0}>
-          {revisePhase === 'pending' ? 'Generating…' : 'Generate revision'}
+          {revisePhase === 'pending' ? 'Refining…' : 'Refine piece'}
         </button>
       </form>
+
+      {refineRun && (
+        <section aria-label="Refinement plan" data-testid="art-piece-refine-plan">
+          <h3>Refinement plan</h3>
+          <p>
+            Attempt {refineRun.attempts} of {refineRun.max_retries + 1};{' '}
+            {refineRun.target_references.length} target(s) selected.
+          </p>
+          <ul>
+            {refineRun.plan.success_criteria.map((criterion, index) => (
+              <li key={index}>{JSON.stringify(criterion)}</li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {revisePhase === 'error' && reviseError && (
         <div role="alert" aria-live="assertive" data-testid="art-piece-editor-revise-error">
@@ -475,14 +527,20 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
                     );
                   })}
                 </fieldset>
-                <button
-                  type="button"
-                  onClick={handleSaveVersion}
-                  disabled={versionSaving}
-                  data-testid="art-piece-editor-save-version"
-                >
-                  {versionSaving ? 'Saving…' : 'Save as new version'}
-                </button>
+                {refineRun?.status === 'accepted' ? (
+                  <p role="status" data-testid="art-piece-refine-accepted">
+                    Refinement saved as version {refineRun.accepted_version_id}.
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSaveVersion}
+                    disabled={versionSaving}
+                    data-testid="art-piece-editor-save-version"
+                  >
+                    {versionSaving ? 'Saving…' : 'Save as new version'}
+                  </button>
+                )}
                 {versionSaveError && <p role="alert">{versionSaveError}</p>}
               </>
             )}

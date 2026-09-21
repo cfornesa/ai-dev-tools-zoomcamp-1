@@ -40,6 +40,14 @@ export async function updateProfile(profile: PublicProfile): Promise<PublicProfi
 
 export type PublicProfilePage = {
   profile: PublicProfile;
+  collections: Array<{
+    id: string;
+    title: string;
+    slug: string;
+    viewer_url: string;
+    thumbnail_url: string | null;
+    item_count: number;
+  }>;
   pieces: Array<{
     id: string;
     slug?: string;

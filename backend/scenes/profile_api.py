@@ -9,8 +9,15 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from scenes.collections import collection_payload
 from scenes.gallery import eligible_projects, eligible_projects3d
-from scenes.models import ArtPiece, ProfileStyle, PublicProfile, PublicProfileHandleRedirect
+from scenes.models import (
+    ArtPiece,
+    Collection,
+    ProfileStyle,
+    PublicProfile,
+    PublicProfileHandleRedirect,
+)
 from scenes.theme import (
     effective_presentation,
     effective_profile_theme,
@@ -138,7 +145,26 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 ),
             }
         )
-    return {"profile": _profile_payload(profile), "pieces": items}
+    collections = []
+    for collection in Collection.objects.filter(
+        owner=owner,
+        visibility=Collection.Visibility.PUBLIC,
+        is_deleted=False,
+        published_at__isnull=False,
+    ):
+        payload = collection_payload(collection, public=True)
+        public_items = payload["items"]
+        collections.append(
+            {
+                "id": payload["id"],
+                "title": payload["title"],
+                "slug": payload["slug"],
+                "viewer_url": payload["canonical_url"],
+                "thumbnail_url": public_items[0]["thumbnail_url"] if public_items else None,
+                "item_count": len(public_items),
+            }
+        )
+    return {"profile": _profile_payload(profile), "collections": collections, "pieces": items}
 
 
 class AccountProfileView(APIView):

@@ -42,6 +42,15 @@ current API profile URL, and the frontend updates the browser URL to the
 canonical `/users/@<current-handle>` route. Redirect history is owner-scoped
 through the profile relation and is never exposed in public profile payloads.
 
+The anonymous `GET /api/users/@<handle>/` response remains backward-compatible
+with its existing `profile` and `pieces` fields and additionally exposes
+`collections`. Only published, public, non-deleted collections owned by the
+profile are included. Each collection entry contains its public `id`, `title`,
+`slug`, canonical `viewer_url`, a first-public-member `thumbnail_url` when one
+exists, and `item_count`; `item_count` and the thumbnail are computed from
+publicly eligible members only, so private or unpublished members are never
+leaked through the profile projection.
+
 `GET /api/account/profile/` returns `503 {"detail": "Profile settings are
 temporarily unavailable."}` instead of an unhandled `500` when the database
 is missing a schema element the view depends on (a pending migration not yet

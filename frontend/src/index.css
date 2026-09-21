@@ -1048,6 +1048,18 @@ button:disabled {
   margin-top: 12px;
 }
 
+.public-profile-section > h3 {
+  max-width: 960px;
+  margin-inline: auto;
+}
+
+.app-shell .public-profile-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
 @media (max-width: 600px) {
   .public-profile-heading {
     flex-direction: column;
@@ -1061,6 +1073,11 @@ button:disabled {
 
   .public-profile-social {
     justify-content: center;
+  }
+
+  .app-shell .public-profile-card-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 0;
   }
 }
 

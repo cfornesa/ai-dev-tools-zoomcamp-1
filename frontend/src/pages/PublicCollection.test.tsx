@@ -106,6 +106,7 @@ describe('PublicCollection', () => {
           accent: '#dc2626',
         },
       },
+      collections: [],
       pieces: [],
     });
 

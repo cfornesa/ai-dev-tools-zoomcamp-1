@@ -23,6 +23,7 @@ export default function PublicProfile() {
   if (missing) return <Navigate to="/" replace />;
   if (!data) return <p role="status">Loading profile…</p>;
   const theme = data.profile.theme_config;
+  const collections = data.collections ?? [];
   const displayName = data.profile.display_name || data.profile.handle || 'Public profile';
   const socialLinks = Object.entries(data.profile.social_links ?? {}).filter(
     ([label, url]) => label.trim() && url.trim(),
@@ -73,27 +74,52 @@ export default function PublicProfile() {
           )}
         </div>
       </div>
-      <h3>Public pieces</h3>
-      <div className="project-grid">
-        {data.pieces.map((piece) => (
-          <PieceCard
-            key={`${piece.type}-${piece.id}`}
-            href={
-              piece.regular_url ??
-              (piece.type === '2d'
-                ? `/p/${piece.id}`
-                : piece.type === '3d'
-                  ? `/p3d/${piece.id}`
-                  : `/art-pieces/p/${piece.id}`)
-            }
-            title={piece.title}
-            thumbnailUrl={piece.thumbnail_url}
-            thumbnailIsFallback={piece.thumbnail_is_fallback}
-            kind={piece.type}
-            engine={piece.engine}
-          />
-        ))}
-      </div>
+      {collections.length > 0 && (
+        <section className="public-profile-section" aria-labelledby="public-profile-collections">
+          <h3 id="public-profile-collections">Collections</h3>
+          <div className="project-grid public-profile-card-grid">
+            {collections.map((collection) => (
+              <PieceCard
+                key={collection.id}
+                href={collection.viewer_url}
+                title={collection.title}
+                thumbnailUrl={collection.thumbnail_url}
+                kind="collection"
+                engine={`${collection.item_count} public ${collection.item_count === 1 ? 'piece' : 'pieces'}`}
+                testId={`profile-collection-${collection.id}`}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      {data.pieces.length > 0 && (
+        <section className="public-profile-section" aria-labelledby="public-profile-pieces">
+          <h3 id="public-profile-pieces">Pieces</h3>
+          <div className="project-grid public-profile-card-grid">
+            {data.pieces.map((piece) => (
+              <PieceCard
+                key={`${piece.type}-${piece.id}`}
+                href={
+                  piece.regular_url ??
+                  (piece.type === '2d'
+                    ? `/p/${piece.id}`
+                    : piece.type === '3d'
+                      ? `/p3d/${piece.id}`
+                      : `/art-pieces/p/${piece.id}`)
+                }
+                title={piece.title}
+                thumbnailUrl={piece.thumbnail_url}
+                thumbnailIsFallback={piece.thumbnail_is_fallback}
+                kind={piece.type}
+                engine={piece.engine}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      {collections.length === 0 && data.pieces.length === 0 && (
+        <p role="status">No public collections or pieces yet.</p>
+      )}
     </section>
   );
 }

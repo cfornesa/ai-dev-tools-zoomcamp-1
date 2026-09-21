@@ -2,8 +2,16 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.db.utils import ProgrammingError
 from django.urls import reverse
+from django.utils import timezone
 
-from scenes.models import PublicProfile, PublicProfileHandleRedirect
+from scenes.models import (
+    ArtPiece,
+    ArtPieceVersion,
+    Collection,
+    CollectionItem,
+    PublicProfile,
+    PublicProfileHandleRedirect,
+)
 
 
 @pytest.mark.django_db
@@ -66,6 +74,81 @@ def test_profile_handle_privacy_and_conflict_are_safe(client):
     assert conflict.status_code == 409
     assert client.get("/api/users/@alice/").json()["profile"]["bio"] == "private metadata"
     assert "email" not in client.get("/api/users/@alice/").json()["profile"]
+
+
+@pytest.mark.django_db
+def test_public_profile_projects_only_public_collections_and_members(client):
+    user = get_user_model().objects.create_user(username="collection-artist", password="x")
+    PublicProfile.objects.create(user=user, handle="collection-artist", is_public=True)
+    public_piece = ArtPiece.objects.create(
+        owner=user,
+        title="Public piece",
+        prompt="public",
+        engine=ArtPiece.Engine.CANVAS2D,
+        status=ArtPiece.Status.PUBLISHED,
+        published_at=timezone.now(),
+    )
+    public_version = ArtPieceVersion.objects.create(
+        piece=public_piece, sequence=1, source="<canvas></canvas>"
+    )
+    public_piece.current_version = public_version
+    public_piece.save(update_fields=["current_version"])
+    private_piece = ArtPiece.objects.create(
+        owner=user,
+        title="Private piece",
+        prompt="private",
+        engine=ArtPiece.Engine.CANVAS2D,
+        status=ArtPiece.Status.DRAFT,
+    )
+    populated = Collection.objects.create(
+        owner=user,
+        title="Populated collection",
+        slug="populated",
+        visibility=Collection.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    Collection.objects.create(
+        owner=user,
+        title="Empty collection",
+        slug="empty",
+        visibility=Collection.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    Collection.objects.create(
+        owner=user,
+        title="Private collection",
+        slug="private",
+        visibility=Collection.Visibility.PRIVATE,
+    )
+    CollectionItem.objects.create(
+        collection=populated,
+        kind=CollectionItem.Kind.ART_PIECE,
+        item_id=public_piece.public_id,
+        position=0,
+    )
+    CollectionItem.objects.create(
+        collection=populated,
+        kind=CollectionItem.Kind.ART_PIECE,
+        item_id=private_piece.public_id,
+        position=1,
+    )
+
+    payload = client.get("/api/users/@collection-artist/").json()
+
+    assert {collection["title"] for collection in payload["collections"]} == {
+        "Populated collection",
+        "Empty collection",
+    }
+    populated_payload = next(
+        collection
+        for collection in payload["collections"]
+        if collection["title"] == "Populated collection"
+    )
+    assert populated_payload["item_count"] == 1
+    assert populated_payload["thumbnail_url"].endswith(
+        f"/api/public/art-pieces/{public_piece.public_id}/thumbnail.png"
+    )
+    assert all(piece["title"] != "Private piece" for piece in payload["pieces"])
 
 
 @pytest.mark.django_db

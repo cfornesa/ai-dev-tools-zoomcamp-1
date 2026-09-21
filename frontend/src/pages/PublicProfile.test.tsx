@@ -40,6 +40,7 @@ const SAMPLE: profileApi.PublicProfilePage = {
       accent: '#dc2626',
     },
   },
+  collections: [],
   pieces: [],
 };
 
@@ -130,6 +131,51 @@ describe('PublicProfile theme cascade (#577)', () => {
     expect(screen.queryByText('A public bio.')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /example\.com/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Social links' })).not.toBeInTheDocument();
+  });
+
+  it('renders collections before pieces and shows public member counts', async () => {
+    mockedFetch.mockResolvedValue({
+      ...SAMPLE,
+      collections: [
+        {
+          id: 'collection-1',
+          title: 'Curated works',
+          slug: 'curated-works',
+          viewer_url: '/users/@artist/collections/curated-works',
+          thumbnail_url: '/thumbnail.png',
+          item_count: 3,
+        },
+      ],
+      pieces: [
+        {
+          id: 'piece-1',
+          title: 'A piece',
+          type: '2d',
+          thumbnail_url: '/piece.png',
+        },
+      ],
+    });
+
+    renderAt('artist');
+
+    await screen.findByRole('heading', { name: 'The Artist' });
+    const collections = screen.getByRole('heading', { name: 'Collections' });
+    const pieces = screen.getByRole('heading', { name: 'Pieces' });
+    expect(collections.compareDocumentPosition(pieces)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(screen.getByRole('heading', { name: 'Curated works' })).toBeInTheDocument();
+    expect(screen.getByText('3 public pieces')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'A piece' })).toBeInTheDocument();
+  });
+
+  it('shows one empty state when both public sections are empty', async () => {
+    mockedFetch.mockResolvedValue(SAMPLE);
+
+    renderAt('artist');
+
+    await screen.findByRole('heading', { name: 'The Artist' });
+    expect(screen.queryByRole('heading', { name: 'Collections' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Pieces' })).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('No public collections or pieces yet.');
   });
 
   it('redirects home for a missing or private profile without rendering any theme', async () => {

@@ -93,11 +93,18 @@ function Layout() {
       system: "system-ui, 'Segoe UI', Roboto, sans-serif",
       serif: "Georgia, 'Times New Roman', serif",
       mono: 'ui-monospace, Consolas, monospace',
+      script: "Lora, Georgia, 'Times New Roman', serif",
+    };
+    const headingFonts: Record<string, string> = {
+      system: "system-ui, 'Segoe UI', Roboto, sans-serif",
+      serif: "Georgia, 'Times New Roman', serif",
+      mono: 'ui-monospace, Consolas, monospace',
       script: "'Pinyon Script', Georgia, 'Times New Roman', serif",
     };
     const presentation = siteTheme.presentation;
     if (presentation?.font_family && fonts[presentation.font_family]) {
       root.style.setProperty('--site-font', fonts[presentation.font_family]);
+      root.style.setProperty('--heading', headingFonts[presentation.font_family]);
       root.dataset.siteFont = presentation.font_family;
     }
     if (presentation?.density) {

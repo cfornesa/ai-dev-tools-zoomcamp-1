@@ -70,6 +70,13 @@
   --site-backdrop:
     radial-gradient(circle at 18% 15%, rgb(192 132 252 / 22%) 0 1px, transparent 2px),
     radial-gradient(circle at 76% 28%, rgb(255 255 255 / 18%) 0 1px, transparent 2px),
+    linear-gradient(135deg, #f4ead3, #fff8e7 70%, var(--bg));
+}
+
+:root[data-theme='dark'][data-site-backdrop='cosmic'] {
+  --site-backdrop:
+    radial-gradient(circle at 18% 15%, rgb(192 132 252 / 22%) 0 1px, transparent 2px),
+    radial-gradient(circle at 76% 28%, rgb(255 255 255 / 18%) 0 1px, transparent 2px),
     linear-gradient(135deg, #071b2a, #2a1238 70%, var(--bg));
 }
 

@@ -84,6 +84,19 @@ beforeEach(() => {
       enabled: true,
       revision: 1,
     },
+    {
+      id: 3,
+      key: 'celestial',
+      label: 'Celestial',
+      description: 'Cosmic script-heading style',
+      tokens: {
+        light: { background: '#f4ead3', accent: '#b8892e' },
+        dark: { background: '#071b2a', accent: '#e4b95c' },
+      },
+      presentation: { ...presentation, font_family: 'script', shadow: 'soft', backdrop: 'cosmic' },
+      enabled: true,
+      revision: 1,
+    },
   ]);
   vi.mocked(adminApi.updateProfileStyle).mockImplementation(async (style) => style);
 });
@@ -136,5 +149,17 @@ describe('AdminSettings presentation choices (#643)', () => {
 
     expect(await screen.findByText('Pareto')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Pareto shadow' })).toHaveValue('offset');
+  });
+
+  it('lists the built-in Celestial style with script and cosmic presentation', async () => {
+    render(
+      <MemoryRouter>
+        <AdminSettings />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Celestial')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Celestial font family' })).toHaveValue('script');
+    expect(screen.getByRole('combobox', { name: 'Celestial backdrop' })).toHaveValue('cosmic');
   });
 });

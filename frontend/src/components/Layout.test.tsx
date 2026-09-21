@@ -298,7 +298,8 @@ describe('Layout: global site theme cascade (#577)', () => {
     const root = document.documentElement;
     await vi.waitFor(() => expect(root.style.getPropertyValue('--bg')).toBe('#101014'));
     expect(root.style.getPropertyValue('--accent')).toBe('#22c55e');
-    expect(root.style.getPropertyValue('--site-font')).toContain('Pinyon Script');
+    expect(root.style.getPropertyValue('--site-font')).toContain('Lora');
+    expect(root.style.getPropertyValue('--heading')).toContain('Pinyon Script');
     expect(root.style.getPropertyValue('--site-density')).toBe('12px');
     expect(root.style.getPropertyValue('--site-radius')).toBe('999px');
     expect(root.dataset.siteFont).toBe('script');

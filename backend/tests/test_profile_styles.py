@@ -23,6 +23,7 @@ def test_profile_style_catalog_is_admin_only_and_seeded(client):
         "forest",
         "sunset",
         "pareto",
+        "celestial",
     }
     pareto = next(style for style in styles.json() if style["key"] == "pareto")
     assert set(pareto["tokens"]) == {"light", "dark"}
@@ -34,6 +35,10 @@ def test_profile_style_catalog_is_admin_only_and_seeded(client):
         "shadow": "offset",
         "backdrop": "plain",
     }
+    celestial = next(style for style in styles.json() if style["key"] == "celestial")
+    assert set(celestial["tokens"]) == {"light", "dark"}
+    assert celestial["presentation"]["font_family"] == "script"
+    assert celestial["presentation"]["backdrop"] == "cosmic"
 
 
 @pytest.mark.django_db

@@ -1,3 +1,6 @@
+import { promises as fs } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 import { configDefaults } from 'vitest/config';
@@ -24,6 +27,156 @@ const djangoProxy = {
   '/llms.txt': { target: backendProxyTarget, changeOrigin: false },
   '/llms-full.txt': { target: backendProxyTarget, changeOrigin: false },
 };
+
+type ShareMetadata = {
+  title: string;
+  description: string;
+  canonical_path: string;
+  image_url: string | null;
+};
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return entities[character];
+  });
+}
+
+function publicOrigin(): string {
+  const origin = process.env.PUBLIC_SITE_ORIGIN ?? 'http://localhost:5000';
+  const parsed = new URL(origin);
+  if (
+    !['http:', 'https:'].includes(parsed.protocol) ||
+    !parsed.hostname ||
+    parsed.username ||
+    parsed.password ||
+    parsed.pathname !== '/' ||
+    parsed.search ||
+    parsed.hash
+  ) {
+    throw new Error('PUBLIC_SITE_ORIGIN must be an origin such as https://augmentrart.com');
+  }
+  return parsed.origin;
+}
+
+function routeDescriptor(pathname: string): { kind: string; publicId: string } | null {
+  const direct = pathname.match(/^\/(art-pieces\/p|p3d|p)\/([^/]+)\/?$/);
+  if (direct) {
+    const kind = direct[1] === 'p' ? '2d' : direct[1] === 'p3d' ? '3d' : 'generated';
+    return { kind, publicId: direct[2] };
+  }
+  return null;
+}
+
+async function fetchShareMetadata(pathname: string): Promise<ShareMetadata | null> {
+  const direct = routeDescriptor(pathname);
+  let kind: string;
+  let publicId: string;
+  if (direct) {
+    ({ kind, publicId } = direct);
+  } else {
+    const canonical = pathname.match(/^\/users\/@([^/]+)\/pieces\/([^/]+)\/?$/);
+    if (!canonical) return null;
+    const response = await fetch(
+      `${backendProxyTarget}/api/users/@${encodeURIComponent(canonical[1])}/pieces/${encodeURIComponent(canonical[2])}/`,
+      { headers: { Accept: 'application/json' } },
+    );
+    if (!response.ok) return null;
+    const payload = (await response.json()) as {
+      type?: string;
+      piece?: { id?: string; public_id?: string };
+    };
+    kind = payload.type === 'generated' ? 'generated' : payload.type === '3d' ? '3d' : '2d';
+    publicId = payload.piece?.id ?? payload.piece?.public_id ?? '';
+    if (!publicId) return null;
+  }
+  const response = await fetch(
+    `${backendProxyTarget}/api/public/share-meta/${kind}/${encodeURIComponent(publicId)}/`,
+    { headers: { Accept: 'application/json' } },
+  );
+  if (!response.ok) return null;
+  return (await response.json()) as ShareMetadata;
+}
+
+function metadataTags(metadata: ShareMetadata | null, requestPath: string): string {
+  const origin = publicOrigin();
+  const canonicalUrl = `${origin}${metadata?.canonical_path ?? requestPath}`;
+  const title = metadata?.title ?? 'AugmentrART';
+  const description = metadata?.description ?? 'Interactive artwork by AugmentrART.';
+  const imageUrl = metadata?.image_url ? `${origin}${metadata.image_url}` : null;
+  const tags = [
+    `<meta property="og:title" content="${escapeHtml(title)}" data-server-metadata="true" />`,
+    `<meta property="og:description" content="${escapeHtml(description)}" data-server-metadata="true" />`,
+    `<meta property="og:type" content="article" data-server-metadata="true" />`,
+    `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" data-server-metadata="true" />`,
+    '<meta name="twitter:card" content="summary_large_image" data-server-metadata="true" />',
+  ];
+  if (imageUrl) {
+    tags.push(
+      `<meta property="og:image" content="${escapeHtml(imageUrl)}" data-server-metadata="true" />`,
+      '<meta property="og:image:width" content="1200" data-server-metadata="true" />',
+      '<meta property="og:image:height" content="630" data-server-metadata="true" />',
+      `<meta name="twitter:image" content="${escapeHtml(imageUrl)}" data-server-metadata="true" />`,
+    );
+  }
+  return tags.join('\n    ');
+}
+
+function shareMetadataPlugin(): Plugin {
+  const install = (
+    server: {
+      middlewares: { use: (handler: (...args: any[]) => void) => void };
+      config: { root: string };
+    },
+    preview: boolean,
+  ) => {
+    server.middlewares.use(async (request, response, next) => {
+      if (request.method !== 'GET') return next();
+      const requestPath = new URL(request.url ?? '/', 'http://localhost').pathname;
+      if (
+        !routeDescriptor(requestPath) &&
+        !/^\/users\/@[^/]+\/pieces\/[^/]+\/?$/.test(requestPath)
+      ) {
+        return next();
+      }
+      try {
+        const metadata = await fetchShareMetadata(requestPath);
+        const indexPath = preview
+          ? resolve(server.config.root, 'dist/index.html')
+          : resolve(server.config.root, 'index.html');
+        let html = await fs.readFile(indexPath, 'utf8');
+        if (!preview && 'transformIndexHtml' in server) {
+          html = await (
+            server as typeof server & {
+              transformIndexHtml: (url: string, html: string) => Promise<string>;
+            }
+          ).transformIndexHtml(requestPath, html);
+        }
+        html = html.replace('</head>', `    ${metadataTags(metadata, requestPath)}\n  </head>`);
+        response.statusCode = 200;
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.end(html);
+      } catch {
+        next();
+      }
+    });
+  };
+  return {
+    name: 'creatrweb-server-share-metadata',
+    configureServer(server) {
+      install(server, false);
+    },
+    configurePreviewServer(server) {
+      install(server, true);
+    },
+  };
+}
 
 /**
  * Vite preview-server plugin implementing the production cache policy for
@@ -62,7 +215,7 @@ const previewCachePolicyPlugin = (): Plugin => ({
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), previewCachePolicyPlugin()],
+  plugins: [react(), previewCachePolicyPlugin(), shareMetadataPlugin()],
   server: {
     host: true,
     port: 5000,

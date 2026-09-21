@@ -26,6 +26,22 @@ field; malformed or oversized values are rejected atomically. The anonymous
 `GET /api/site-theme/` projection may include these safe public fields for
 metadata consumers, but never exposes admin-only settings or sensitive data.
 
+## Server-rendered public share metadata (#653)
+
+The anonymous `GET /api/public/share-meta/<kind>/<public_id>/` endpoint is a
+privacy-gated projection used by the SPA web server when it builds no-JS HTML
+for public piece routes. `<kind>` is one of `2d`, `3d`, or `generated`; a
+private, unpublished, deleted, missing, or versionless item returns `404`
+without confirming its existence. A successful response contains only the
+public title, description, canonical path, and `image_url`; `image_url` is
+`null` when the current thumbnail is explicitly marked fallback.
+
+`GET /api/public/share-image/<kind>/<public_id>.png` returns a public,
+opaque `1200x630` PNG share image made by fitting the stored current
+thumbnail into the share-card dimensions. It applies the same publication
+gate as the metadata endpoint and never executes generated art source. These
+routes are additive; the existing card thumbnail URLs remain unchanged.
+
 ## Public profile handles (#551)
 
 `GET /api/account/profile/` assigns a deterministic handle on first access when

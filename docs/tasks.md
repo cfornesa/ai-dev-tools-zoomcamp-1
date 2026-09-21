@@ -35,6 +35,14 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No dependency, migration, or public API contract change.
 - Reconciliation: GitHub QA comment [#652 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/652#issuecomment-5755406274) posted; issue is closed.
 
+### #653 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained no-JS OG/Twitter tags for legacy and canonical public piece routes, safe absolute URLs, 1200×630 share images, fallback omission, privacy 404s, escaping, and client metadata compatibility.
+- Engineering: added documented anonymous share-metadata and share-image projections with the same public eligibility gates as the existing detail routes; share images fit stored thumbnails to 1200×630 without executing generated source. Added Vite dev/preview middleware that injects escaped metadata into the SPA shell using configured `PUBLIC_SITE_ORIGIN`, plus client-side preservation of server-provided images and production/Compose origin configuration. Added backend contract tests and source-backed no-JS Chromium coverage. Commit pending.
+- QA: focused backend share-metadata tests passed 2; source-backed Chromium no-JS metadata E2E passed 1; frontend production build passed; full checks are running.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No new package dependency; additive API/HTML contract documented before implementation.
+- Reconciliation: GitHub QA comment pending after the final full-check result.
+
 ### #649 transaction ledger — 2026-09-20
 
 - PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained the public profile header order, optional-field omission, plain-text multiline bio, safe external links, unknown/private fallback, and responsive screenshot evidence.

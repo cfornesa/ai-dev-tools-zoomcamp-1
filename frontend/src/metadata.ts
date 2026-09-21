@@ -12,6 +12,7 @@ export function applyContentMetadata(
     const attr = property ? 'property' : 'name';
     let node = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${name}"]`);
     if (!content) {
+      if (node?.dataset.serverMetadata === 'true') return;
       node?.remove();
       return;
     }

@@ -102,8 +102,10 @@ time after QA and reconciliation.
 
 #636–#639 and #641 are closed with canonical route/API behavior, slug/privacy tests,
 legacy compatibility evidence, fixed-viewport Chromium evidence, and full
-checks. #640 is now the active live publication/revision reconciliation
-transaction; it must not add product implementation.
+checks. #640 is the active live publication/revision reconciliation
+transaction; it must not add product implementation and remains open until the
+approved publication path updates the live revision and the post-publish
+matrix passes.
 
 ## Re-distillation of agent-created follow-ups — 2026-09-20
 

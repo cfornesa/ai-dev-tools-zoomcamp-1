@@ -22439,11 +22439,21 @@ closure contracts are in
 | [#637](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/637) | CLOSED / QA-passed | Regular structured piece controls, context, embed placement, and profile identity parity | Complete |
 | [#638](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/638) | CLOSED / QA-passed | Immersive structured piece full-screen, controls, context, and embed parity | Complete |
 | [#639](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/639) | CLOSED / QA-passed | Collection regular/immersive/embed parity and canonical item context | Complete |
-| [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | PROPOSED / dependency-blocked | Reconcile published revision and live profile/piece/collection evidence | Run after #636–#639 and #641; no product implementation in this issue |
+| [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | OPEN / publication-boundary blocked | Reconcile published revision and live profile/piece/collection evidence | Local checkout is ready; approved Replit publication and post-publish smoke remain |
 
-Distillation is complete for this intake. #636–#638 and #641 are closed;
-#639 is the next collection-surface transaction. #640 remains deferred until
-the relevant public surfaces are reconciled.
+The product-parity transactions #636–#639 and #641 are closed and QA-passed.
+#640 is the active publication/revision reconciliation transaction; it has no
+remaining product implementation in scope and cannot close until the approved
+Replit publication path updates the live revision and the post-publish checks
+pass.
+
+### #640 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and task specification re-read immediately before reconciliation; scope remains publication/revision evidence only.
+- Local checkout: canonical piece, immersive, and collection parity work is committed and full checks are green; the verified local revision is the checkout HEAD (see git log) after #636–#639 and #641.
+- Published revision evidence: `https://augmentrart.com` serves asset `index-BQvbObdP.js`; the live canonical piece route `/users/@cfornesa/pieces/untitled-3d-scene-3` still renders the legacy `/immersive/p3d/<uuid>` link and hamburger controls, while `/users/@cfornesa/immersive/untitled-3d-scene-3` reports that the immersive piece is unavailable. The live profile identifies `cfornesa` and links the piece at the expected canonical slug, but its consumer surface is the old deployed implementation.
+- Published smoke: `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` passed for health, root, anonymous whoami, and login form. Direct named-route checks returned HTTP 200 through the SPA fallback; DOM inspection, not status alone, established the deployed-vs-checkout mismatch.
+- Classification: workflow/infrastructure publication-boundary defect, not a new product implementation defect. No Replit publication was initiated because this task does not grant external deployment mutation authority. Keep #640 open pending approved publication, then rerun the exact live route matrix and smoke checks before closure.
 
 ### #636 transaction ledger — 2026-09-20
 

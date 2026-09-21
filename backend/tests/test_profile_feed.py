@@ -163,6 +163,50 @@ def test_profile_atom_feed_supports_etag_and_last_modified(client, feed_profile)
 
 
 @pytest.mark.django_db
+def test_profile_rss_feed_reuses_public_entries_and_rss_metadata(client, feed_profile):
+    profile, _ = feed_profile
+
+    response = client.get(
+        f"/users/@{profile.handle}/feed.rss",
+        HTTP_ACCEPT="text/html",
+    )
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/rss+xml"
+    assert response["Cache-Control"] == "public, max-age=300, must-revalidate"
+    root = ElementTree.fromstring(response.content)
+    channel = root.find("channel")
+    assert channel is not None
+    assert channel.findtext("title") == "Feed Artist on AugmentrART"
+    assert channel.findtext("lastBuildDate")
+    self_link = channel.find("atom:link", namespaces=ATOM)
+    assert self_link is not None
+    assert self_link.attrib["rel"] == "self"
+    assert self_link.attrib["type"] == "application/rss+xml"
+    assert self_link.attrib["href"].endswith("/users/@feed-artist/feed.rss")
+
+    items = channel.findall("item")
+    assert [item.findtext("title") for item in items] == [
+        "<script>& newest",
+        "Middle 3D",
+        "Older & 2D",
+    ]
+    for item in items:
+        assert item.findtext("guid") == item.findtext("link")
+        assert item.findtext("pubDate")
+        description = item.findtext("description") or ""
+        assert "<img" in description
+        assert item.find("enclosure").attrib["type"] == "image/png"
+        assert item.find("media:thumbnail", namespaces=ATOM) is not None
+
+    not_modified = client.get(
+        f"/users/@{profile.handle}/feed.rss",
+        HTTP_IF_NONE_MATCH=response["ETag"],
+    )
+    assert not_modified.status_code == 304
+
+
+@pytest.mark.django_db
 def test_profile_atom_feed_hides_unknown_and_private_profiles(client, feed_profile):
     profile, _ = feed_profile
     profile.is_public = False

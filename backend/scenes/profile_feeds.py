@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from datetime import UTC, datetime
+from email.utils import format_datetime
 from html import escape
 from typing import Any
 from urllib.parse import quote
@@ -78,21 +79,46 @@ def _feed_records(profile: PublicProfile) -> list[tuple[str, Any]]:
     return records[:FEED_LIMIT]
 
 
-def _build_feed(request: HttpRequest, profile: PublicProfile) -> tuple[bytes, datetime]:
+def _entry_data(request: HttpRequest, kind: str, record: Any) -> dict[str, Any]:
+    canonical_url = _absolute(request, piece_viewer_path(record, kind))
+    thumbnail_url = _absolute(request, _thumbnail_path(record, kind))
+    title = str(record.title)
+    description = _description(record)
+    content_html = (
+        f'<p><img src="{escape(thumbnail_url, quote=True)}" alt="" />'
+        f"</p><h2>{escape(title)}</h2><p>{escape(description)}</p>"
+    )
+    return {
+        "canonical_url": canonical_url,
+        "thumbnail_url": thumbnail_url,
+        "title": title,
+        "description": description,
+        "content_html": content_html,
+        "published": _timestamp(getattr(record, "published_at", None)),
+        "updated": _timestamp(getattr(record, "updated_at", None)),
+    }
+
+
+def _feed_context(
+    request: HttpRequest, profile: PublicProfile, suffix: str
+) -> tuple[str, str, str, datetime, list[dict[str, Any]]]:
     profile_path = f"/users/@{quote(profile.handle or '', safe='@')}"
-    feed_url = _absolute(request, f"{profile_path}/feed.xml")
+    feed_url = _absolute(request, f"{profile_path}/{suffix}")
     profile_url = _absolute(request, profile_path)
-    records = _feed_records(profile)
-    feed_updated = max(
-        [_timestamp(profile.updated_at)]
-        + [_timestamp(getattr(record, "updated_at", None)) for _, record in records]
+    entries = [_entry_data(request, kind, record) for kind, record in _feed_records(profile)]
+    feed_updated = max([_timestamp(profile.updated_at)] + [entry["updated"] for entry in entries])
+    feed_title = f"{profile.display_name or profile.handle or 'Public profile'} on AugmentrART"
+    return feed_url, profile_url, feed_title, feed_updated, entries
+
+
+def _build_feed(request: HttpRequest, profile: PublicProfile) -> tuple[bytes, datetime]:
+    feed_url, profile_url, feed_title, feed_updated, entries = _feed_context(
+        request, profile, "feed.xml"
     )
 
     root = ElementTree.Element(_atom("feed"))
     ElementTree.SubElement(root, _atom("id")).text = feed_url
-    ElementTree.SubElement(
-        root, _atom("title")
-    ).text = f"{profile.display_name or profile.handle or 'Public profile'} on AugmentrART"
+    ElementTree.SubElement(root, _atom("title")).text = feed_title
     author = ElementTree.SubElement(root, _atom("author"))
     ElementTree.SubElement(author, _atom("name")).text = (
         profile.display_name or profile.handle or "Public profile"
@@ -101,68 +127,130 @@ def _build_feed(request: HttpRequest, profile: PublicProfile) -> tuple[bytes, da
     ElementTree.SubElement(root, _atom("link"), {"rel": "alternate", "href": profile_url})
     ElementTree.SubElement(root, _atom("updated")).text = _format_timestamp(feed_updated)
 
-    for kind, record in records:
-        canonical_path = piece_viewer_path(record, kind)
-        canonical_url = _absolute(request, canonical_path)
-        thumbnail_url = _absolute(request, _thumbnail_path(record, kind))
-        published = _timestamp(getattr(record, "published_at", None))
-        updated = _timestamp(getattr(record, "updated_at", None))
-        title = str(record.title)
-        description = _description(record)
-        content_html = (
-            f'<p><img src="{escape(thumbnail_url, quote=True)}" alt="" />'
-            f"</p><h2>{escape(title)}</h2><p>{escape(description)}</p>"
-        )
-
+    for entry_data in entries:
         entry = ElementTree.SubElement(root, _atom("entry"))
-        ElementTree.SubElement(entry, _atom("id")).text = canonical_url
-        ElementTree.SubElement(entry, _atom("title")).text = title
-        ElementTree.SubElement(entry, _atom("link"), {"rel": "alternate", "href": canonical_url})
-        ElementTree.SubElement(entry, _atom("published")).text = _format_timestamp(published)
-        ElementTree.SubElement(entry, _atom("updated")).text = _format_timestamp(updated)
-        ElementTree.SubElement(entry, _atom("summary")).text = description
+        ElementTree.SubElement(entry, _atom("id")).text = entry_data["canonical_url"]
+        ElementTree.SubElement(entry, _atom("title")).text = entry_data["title"]
+        ElementTree.SubElement(
+            entry, _atom("link"), {"rel": "alternate", "href": entry_data["canonical_url"]}
+        )
+        ElementTree.SubElement(entry, _atom("published")).text = _format_timestamp(
+            entry_data["published"]
+        )
+        ElementTree.SubElement(entry, _atom("updated")).text = _format_timestamp(
+            entry_data["updated"]
+        )
+        ElementTree.SubElement(entry, _atom("summary")).text = entry_data["description"]
         content = ElementTree.SubElement(entry, _atom("content"), {"type": "html"})
-        content.text = content_html
+        content.text = entry_data["content_html"]
         ElementTree.SubElement(
             entry,
             _atom("link"),
             {
                 "rel": "enclosure",
                 "type": "image/png",
-                "href": thumbnail_url,
+                "href": entry_data["thumbnail_url"],
             },
         )
-        ElementTree.SubElement(entry, f"{{{MEDIA_NS}}}thumbnail", {"url": thumbnail_url})
+        ElementTree.SubElement(
+            entry, f"{{{MEDIA_NS}}}thumbnail", {"url": entry_data["thumbnail_url"]}
+        )
 
     return ElementTree.tostring(root, encoding="utf-8", xml_declaration=True), feed_updated
+
+
+def _build_rss_feed(request: HttpRequest, profile: PublicProfile) -> tuple[bytes, datetime]:
+    feed_url, profile_url, feed_title, feed_updated, entries = _feed_context(
+        request, profile, "feed.rss"
+    )
+    channel_description = (
+        profile.bio or f"Public pieces by {profile.display_name or profile.handle}"
+    )
+
+    def xml(value: str) -> str:
+        return escape(value, quote=True)
+
+    def cdata(value: str) -> str:
+        return f"<![CDATA[{value.replace(']]>', ']]]]><![CDATA[>')}]]>"
+
+    lines = [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" '
+        'xmlns:media="http://search.yahoo.com/mrss/">',
+        "<channel>",
+        f"<title>{xml(feed_title)}</title>",
+        f"<link>{xml(profile_url)}</link>",
+        f"<description>{xml(channel_description)}</description>",
+        "<lastBuildDate>"
+        f"{format_datetime(feed_updated.astimezone(UTC), usegmt=True)}"
+        "</lastBuildDate>",
+        f'<atom:link href="{xml(feed_url)}" rel="self" type="application/rss+xml" />',
+    ]
+    for entry in entries:
+        lines.extend(
+            [
+                "<item>",
+                f"<title>{xml(entry['title'])}</title>",
+                f"<link>{xml(entry['canonical_url'])}</link>",
+                f'<guid isPermaLink="true">{xml(entry["canonical_url"])}</guid>',
+                "<pubDate>"
+                f"{format_datetime(entry['published'].astimezone(UTC), usegmt=True)}"
+                "</pubDate>",
+                f"<description>{cdata(entry['content_html'])}</description>",
+                f'<enclosure url="{xml(entry["thumbnail_url"])}" type="image/png" />',
+                f'<media:thumbnail url="{xml(entry["thumbnail_url"])}" />',
+                "</item>",
+            ]
+        )
+    lines.extend(["</channel>", "</rss>"])
+    return "\n".join(lines).encode("utf-8"), feed_updated
+
+
+def _public_profile_or_404(handle: str) -> PublicProfile:
+    profile = (
+        PublicProfile.objects.filter(handle=handle.lower(), is_public=True, user__is_active=True)
+        .select_related("user")
+        .first()
+    )
+    if profile is None:
+        raise Http404
+    return profile
+
+
+def _conditional_feed_response(
+    request: HttpRequest, body: bytes, updated: datetime, content_type: str
+) -> HttpResponse:
+    etag = f'"{hashlib.sha256(body).hexdigest()}"'
+    last_modified = int(_timestamp(updated).timestamp())
+    if request.headers.get("If-None-Match") == etag:
+        response = HttpResponse(status=304)
+    else:
+        modified_since = parse_http_date_safe(request.headers.get("If-Modified-Since", ""))
+        if modified_since is not None and modified_since >= last_modified:
+            response = HttpResponse(status=304)
+        else:
+            response = HttpResponse(body, content_type=content_type)
+    response["ETag"] = etag
+    response["Last-Modified"] = http_date(last_modified)
+    response["Cache-Control"] = FEED_CACHE_CONTROL
+    return response
 
 
 class PublicProfileAtomFeedView(View):
     """Serve a privacy-filtered, validator-aware Atom 1.0 profile feed."""
 
     def get(self, request: HttpRequest, handle: str) -> HttpResponse:
-        profile = (
-            PublicProfile.objects.filter(
-                handle=handle.lower(), is_public=True, user__is_active=True
-            )
-            .select_related("user")
-            .first()
-        )
-        if profile is None:
-            raise Http404
-
+        profile = _public_profile_or_404(handle)
         body, updated = _build_feed(request, profile)
-        etag = f'"{hashlib.sha256(body).hexdigest()}"'
-        last_modified = int(_timestamp(updated).timestamp())
-        if request.headers.get("If-None-Match") == etag:
-            response = HttpResponse(status=304)
-        else:
-            modified_since = parse_http_date_safe(request.headers.get("If-Modified-Since", ""))
-            if modified_since is not None and modified_since >= last_modified:
-                response = HttpResponse(status=304)
-            else:
-                response = HttpResponse(body, content_type="application/atom+xml; charset=utf-8")
-        response["ETag"] = etag
-        response["Last-Modified"] = http_date(last_modified)
-        response["Cache-Control"] = FEED_CACHE_CONTROL
-        return response
+        return _conditional_feed_response(
+            request, body, updated, "application/atom+xml; charset=utf-8"
+        )
+
+
+class PublicProfileRSSFeedView(View):
+    """Serve the shared public profile projection as RSS 2.0."""
+
+    def get(self, request: HttpRequest, handle: str) -> HttpResponse:
+        profile = _public_profile_or_404(handle)
+        body, updated = _build_rss_feed(request, profile)
+        return _conditional_feed_response(request, body, updated, "application/rss+xml")

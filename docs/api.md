@@ -27,6 +27,18 @@ policy; matching `If-None-Match` or `If-Modified-Since` requests receive
 `304 Not Modified`. RSS, JSON Feed, collection feeds, and the HTML feeds page
 are separate contracts.
 
+### Profile RSS feeds (#687)
+
+`GET /users/@<handle>/feed.rss` returns the same privacy-filtered, newest-first
+and 50-entry-capped public piece projection as the Atom feed, serialized as RSS
+2.0 with `Content-Type: application/rss+xml`. The channel includes absolute
+self, profile, description, and `lastBuildDate` metadata. Each item includes
+an escaped title, canonical permalink/guid, RFC 822 publication date, CDATA
+HTML description with thumbnail/title/description, an absolute PNG enclosure,
+and `media:thumbnail`. It shares the Atom feed's 404 privacy boundary and
+`ETag`/`Last-Modified`/304 public-cache behavior. Atom, JSON Feed, collection
+feeds, and the HTML feeds page remain separate contracts.
+
 The piece engine is a capability/data value (Three.js, p5.js, C2.js, C2.js
 Interactive, A-Frame, or SVG), not a second URL namespace. Public gallery,
 profile, collection, feed, Open Graph, embed, and editor serializers emit the

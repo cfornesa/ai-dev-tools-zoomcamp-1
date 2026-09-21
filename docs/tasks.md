@@ -8,8 +8,16 @@ The current open-issue manifest and dependency reconciliation is recorded in
 Fourteen new PROPOSED-then-filed issues; see
 `docs/distillation-2026-09-20-design-and-share-parity.md` for the manifest,
 dependency order, and duplicate report. #642, #643, and #644 are complete and
-reconciled; #645 and #646 are complete and reconciled; #647 is the next
+reconciled; #645, #646, and #647 are complete and reconciled; #648 is the next
 engineering issue in the theme chain.
+
+### #647 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained the idempotent Celestial catalog seed, script headings with readable serif body, cosmic backdrop, light/dark legibility, reduced-motion static behavior, and profile picker visibility.
+- Engineering: added additive migration `0082_seed_celestial_style` with paired parchment/deep-teal-plum palettes and approved presentation enums; mapped script presentations to Pinyon Script headings plus Lora body text; added a light cosmic backdrop variant and catalog/browser regression coverage. Commit `0a0fb61`.
+- QA: focused profile-style backend tests passed 4; AdminSettings tests passed 3; source-backed Chromium Celestial E2E passed 2 scenarios with inspected dark desktop `1280x900` and light mobile `375x812` screenshots; final `make check` passed with backend 1,455 passed/39 skipped and frontend 243 files/2,743 tests, plus lint, format, typecheck, and action-pin checks.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Opencode/kimi-k3; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No runtime dependency; migration publication remains subject to the repository's Replit schema-diff process.
+- Reconciliation: GitHub QA comment [#647 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/647#issuecomment-5754869580) posted; issue is ready to close.
 
 ### #646 transaction ledger — 2026-09-20
 

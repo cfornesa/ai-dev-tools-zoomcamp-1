@@ -3,7 +3,7 @@
 The current open-issue manifest and dependency reconciliation is recorded in
 `.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
 
-## 2026-09-21 — Current open backlog reconciliation (#640, #661–#697)
+## 2026-09-21 — Current open backlog reconciliation (#640, #661–#698)
 
 The live GitHub open-issue list was re-read after the AI preview correction and
 compared with `docs/distillation-2026-09-20-design-and-share-parity.md`,
@@ -28,9 +28,10 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 10 | [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | CLOSED, QA PASS; stage 2a complete | Generated 3D manual tools are complete; continue with #669. |
 | 11 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) | CLOSED, QA PASS; stage 2a complete | Debounced unsaved source/tool preview with error recovery is complete; continue with #670. |
 | 12 | [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | CLOSED, QA PASS; stage 2a complete | Temporary visitor drawing and marked screenshots for C2.js Interactive are complete; continue with #671. |
-| 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA BLOCKED | Required `editOutputConsistency.spec.ts` matrix is absent; existing evidence is fragmented and does not satisfy the issue. |
+| 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | CLOSED, QA PASS; stage 4 complete | Manual and fake-provider AI edits reach regular, immersive, and extracted ZIP outputs across all required engines; evidence test committed as `48abed7`. |
 | 13 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | CLOSED, QA PASS; stage 2b complete | Default/unset profile styles now inherit the effective site style across profile and collection surfaces. |
 | 14 | [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697) | CLOSED, QA PASS; discovery follow-up reconciled | Six-engine profile thumbnail evidence now matches the authoritative decorative-image/link accessibility contract. |
+| 15 | [#698](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/698) | CLOSED, QA PASS; stage 2b complete | Deterministic fake-provider generated-piece refinement is complete; return to #671's evidence-only matrix. |
 | 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete. |
 | 12 | [#680](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/680) / [#681](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/681) | CLOSED, QA PASS | Shared account/admin spacing tokens and responsive form/card layouts are complete. |
 | 13 | [#682](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/682) | CLOSED, QA PASS; diagnosis recorded | Current checkout creates/loads missing profiles successfully; profile failures now have safe status-specific messaging and Retry. |
@@ -49,8 +50,9 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #671; #640 remains publication-boundary blocked
-and #695 is now closed after the collection-specific follow-up was reconciled.
+The next remaining open issue is #640, which remains publication-boundary
+blocked; #671 is closed after its evidence matrix passed, and #695 is now closed after the collection-specific follow-up was
+reconciled.
 
 ### #667 transaction ledger — 2026-09-21 — CLOSED, QA PASS
 
@@ -130,18 +132,41 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   passed, GitHub evidence posted, and issue closed at
   [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670#issuecomment-5765492174).
 
-### #671 transaction ledger — 2026-09-21 — OPEN, QA BLOCKED
+### #671 transaction ledger — 2026-09-21 — CLOSED, QA PASS
 
-- QA: the live issue was reread before review. The required
-  `frontend/e2e/editOutputConsistency.spec.ts` does not exist, and the
-  existing editor/output suites do not provide the required six-engine
-  manual-plus-AI edit → regular/immersive/ZIP matrix.
-- Reconciliation: no implementation changes were made because #671 is an
-  evidence-only QA boundary. It remains open and blocked pending the named
-  evidence artifact; the independent #697 thumbnail regression remains
-  separately tracked.
-- QA evidence: [#671 QA BLOCKED](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671#issuecomment-5765515374).
-- Next groomed issue: #697.
+- QA: the live issue was reread immediately before review. The named
+  `frontend/e2e/editOutputConsistency.spec.ts` matrix passed for manual and
+  fake-provider AI edits across canvas2d, svg, p5js, c2js, threejs, and aframe,
+  with the current c2js-interactive engine covered as well.
+- Verification: regular and immersive views rendered each current version;
+  downloaded ZIPs were extracted, served, and checked for the edited marker;
+  representative screenshots were inspected; `make check` passed with backend
+  1,490 passed/39 skipped and frontend 2,777 passed.
+- QA evidence: [#671 QA PASS](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671).
+- Commit: `48abed7` adds the evidence matrix; #671 was closed after QA.
+- Reconciliation: #640 is now the only remaining open issue in this batch and
+  remains an owner-controlled publication boundary.
+
+### #698 transaction ledger — 2026-09-21 — CLOSED, QA PASS
+
+- PM/distillation: fresh duplicate search found no existing issue for
+  deterministic `AI_PROVIDER=fake` support at the generated art-piece
+  refinement boundary. #671 remained evidence-only and did not absorb this
+  provider implementation.
+- Engineering: fake refinement now applies deterministic, engine-appropriate
+  observable edits for all seven supported engines; refinement uses the
+  existing fake-aware attempt budget; backend success/failure regressions and
+  the focused browser matrix were added. Commit: `50cb2ff`.
+- Verification: focused backend 41 passed; Chromium 1 passed across all seven
+  engines; full `make check` passed with backend 1,490 passed/39 skipped and
+  frontend 2,777 passed.
+- QA: PASS; [#698 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/698#issuecomment-5766393091).
+  Intake was ACCEPTED-WITH-FIXES after correcting the fake-path rate-limit
+  boundary and adding the required failure-path regression. Stage 3 was not
+  run because Mistral Vibe was unavailable.
+- Reconciliation: #698 was closed after QA. Evidence is local/disposable-stack
+  only; the cross-surface matrix remains owned by #671. Next groomed issue:
+  #671.
 
 ### #672 transaction ledger — 2026-09-21 — CLOSED, QA PASS
 

@@ -24,6 +24,30 @@
 Append-only log of agent-relevant decisions. See `AGENTS.md` Section 10 for
 ownership and read cadence.
 
+## 2026-09-21 — #671 refinement-provider prerequisite is a distinct follow-up
+
+- Fresh task distillation of the corrected #684 route contract and the live
+  open issues found that #671's named six-engine manual-plus-AI matrix cannot
+  honestly run its AI half: `AI_PROVIDER=fake` covers structured scene APIs but
+  not generated art-piece refinement.
+- Created and linked #698 for that provider-selection/browser-evidence gap.
+  Keep #671 evidence-only and do not absorb provider implementation into it.
+- Direct Codex/GPT-5 implementation is an owner-authorized substitution for
+  unavailable rostered external services; stage provenance must be recorded
+  on #698 and in the task ledger.
+
+## 2026-09-21 — #671 evidence matrix passes against corrected #684 contract
+
+- After #698 closed, the named `editOutputConsistency.spec.ts` evidence matrix
+  was added without changing product code. It verified manual and fake-provider
+  AI edits through regular, immersive, and extracted ZIP outputs for every
+  required engine, plus the current C2.js Interactive engine.
+- Docker Chromium passed the matrix and the full `make check` gate passed.
+  Representative screenshots were inspected with no output defect discovered;
+  #671 was therefore QA-passed and closed. Commit: `48abed7`.
+- #640 remains the only open issue in this batch and is an owner-controlled
+  publication boundary; no Replit state was mutated.
+
 ## 2026-09-19 — QA reconciliation of residual browser families
 
 - #625 stage geometry and #628 admin/settings contracts were closed after

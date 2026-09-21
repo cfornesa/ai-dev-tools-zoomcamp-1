@@ -75,3 +75,20 @@ Codex/GPT-5 substitutions recorded in `DECISIONS.md`.
 The production target, imported data, canonical links, and CI strategy are
 resolved. No open issues or unlinked actionable follow-ups remain in this
 manifest.
+
+## 2026-09-21 continuation reconciliation — corrected live open set
+
+The earlier historical manifest above is retained as a record of its prior
+batch. A fresh GitHub read after the corrected #684 contract found three
+issues requiring reconciliation: #640, #671, and the newly scoped #698.
+#640 remains an owner-controlled publication boundary. #698's distinct
+deterministic fake-provider prerequisite for generated art-piece refinement
+was implemented, QA-verified, and closed. #671's evidence-only matrix then
+passed QA and was closed. No duplicate was found
+among the closed refinement/provider issues.
+
+| Issue | State | Next action | Provenance |
+| --- | --- | --- | --- |
+| [#698](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/698) | CLOSED / QA PASS | Closed after commit `50cb2ff`, seven-engine Chromium evidence, and full checks. | Stage 2b and stage 4: Codex / GPT-5 substitutions; stage 3 not run. |
+| [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | CLOSED / QA PASS | `editOutputConsistency.spec.ts` proves manual and fake-provider AI edits reach regular, immersive, and extracted ZIP outputs across all required engines. | Commit `48abed7`; stage 4 Codex / GPT-5 substitution; stage 3 not run. |
+| [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | PUBLICATION-BOUNDARY BLOCKED | Approved publication/import, then exact live route matrix and published smoke. | Owner-controlled external state; no mutation initiated. |

@@ -207,6 +207,44 @@ def test_profile_rss_feed_reuses_public_entries_and_rss_metadata(client, feed_pr
 
 
 @pytest.mark.django_db
+def test_profile_json_feed_reuses_public_entries_and_json_feed_metadata(client, feed_profile):
+    profile, _ = feed_profile
+
+    response = client.get(f"/users/@{profile.handle}/feed.json", HTTP_ACCEPT="text/html")
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/feed+json"
+    assert response["Cache-Control"] == "public, max-age=300, must-revalidate"
+    document = response.json()
+    assert document["version"] == "https://jsonfeed.org/version/1.1"
+    assert document["title"] == "Feed Artist on AugmentrART"
+    assert document["home_page_url"].endswith(f"/users/@{profile.handle}")
+    assert document["feed_url"].endswith(f"/users/@{profile.handle}/feed.json")
+    assert document["authors"] == [{"name": "Feed Artist"}]
+
+    items = document["items"]
+    assert [item["title"] for item in items] == [
+        "<script>& newest",
+        "Middle 3D",
+        "Older & 2D",
+    ]
+    for item in items:
+        assert item["id"] == item["url"]
+        assert item["image"] == item["banner_image"]
+        assert item["content_html"].count("<img") == 1
+        assert item["date_published"]
+        assert item["date_modified"]
+        assert item["tags"]
+        assert item["url"].startswith("http://testserver/")
+
+    not_modified = client.get(
+        f"/users/@{profile.handle}/feed.json",
+        HTTP_IF_NONE_MATCH=response["ETag"],
+    )
+    assert not_modified.status_code == 304
+
+
+@pytest.mark.django_db
 def test_profile_atom_feed_hides_unknown_and_private_profiles(client, feed_profile):
     profile, _ = feed_profile
     profile.is_public = False

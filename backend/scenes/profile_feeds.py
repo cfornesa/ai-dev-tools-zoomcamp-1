@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import UTC, datetime
 from email.utils import format_datetime
 from html import escape
@@ -84,6 +85,7 @@ def _entry_data(request: HttpRequest, kind: str, record: Any) -> dict[str, Any]:
     thumbnail_url = _absolute(request, _thumbnail_path(record, kind))
     title = str(record.title)
     description = _description(record)
+    engine = getattr(record, "engine", None) or {"2d": "scene-2d", "3d": "threejs"}.get(kind, kind)
     content_html = (
         f'<p><img src="{escape(thumbnail_url, quote=True)}" alt="" />'
         f"</p><h2>{escape(title)}</h2><p>{escape(description)}</p>"
@@ -94,6 +96,9 @@ def _entry_data(request: HttpRequest, kind: str, record: Any) -> dict[str, Any]:
         "title": title,
         "description": description,
         "content_html": content_html,
+        "engine": str(engine),
+        "kind": kind,
+        "tags": list(dict.fromkeys((str(engine), kind))),
         "published": _timestamp(getattr(record, "published_at", None)),
         "updated": _timestamp(getattr(record, "updated_at", None)),
     }
@@ -206,6 +211,38 @@ def _build_rss_feed(request: HttpRequest, profile: PublicProfile) -> tuple[bytes
     return "\n".join(lines).encode("utf-8"), feed_updated
 
 
+def _build_json_feed(request: HttpRequest, profile: PublicProfile) -> tuple[bytes, datetime]:
+    feed_url, profile_url, feed_title, feed_updated, entries = _feed_context(
+        request, profile, "feed.json"
+    )
+    document = {
+        "version": "https://jsonfeed.org/version/1.1",
+        "title": feed_title,
+        "home_page_url": profile_url,
+        "feed_url": feed_url,
+        "authors": [{"name": profile.display_name or profile.handle or "Public profile"}],
+        "items": [
+            {
+                "id": entry["canonical_url"],
+                "url": entry["canonical_url"],
+                "title": entry["title"],
+                "summary": entry["description"],
+                "content_html": entry["content_html"],
+                "image": entry["thumbnail_url"],
+                "banner_image": entry["thumbnail_url"],
+                "date_published": entry["published"].astimezone(UTC).isoformat(),
+                "date_modified": entry["updated"].astimezone(UTC).isoformat(),
+                "tags": entry["tags"],
+            }
+            for entry in entries
+        ],
+    }
+    return (
+        json.dumps(document, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
+        feed_updated,
+    )
+
+
 def _public_profile_or_404(handle: str) -> PublicProfile:
     profile = (
         PublicProfile.objects.filter(handle=handle.lower(), is_public=True, user__is_active=True)
@@ -254,3 +291,12 @@ class PublicProfileRSSFeedView(View):
         profile = _public_profile_or_404(handle)
         body, updated = _build_rss_feed(request, profile)
         return _conditional_feed_response(request, body, updated, "application/rss+xml")
+
+
+class PublicProfileJSONFeedView(View):
+    """Serve the shared public profile projection as JSON Feed 1.1."""
+
+    def get(self, request: HttpRequest, handle: str) -> HttpResponse:
+        profile = _public_profile_or_404(handle)
+        body, updated = _build_json_feed(request, profile)
+        return _conditional_feed_response(request, body, updated, "application/feed+json")

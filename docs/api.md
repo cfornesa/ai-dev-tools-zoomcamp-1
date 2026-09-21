@@ -50,6 +50,18 @@ documented compatibility shims; they are not emitted as new public links.
 Reserved namespace words (`pieces`, `collections`, `immersive`, `edit`,
 `feed`, and `feeds`) cannot be allocated as public collection slugs.
 
+### Profile JSON Feeds (#688)
+
+`GET /users/@<handle>/feed.json` returns the same privacy-filtered,
+newest-first and 50-entry-capped public piece projection as the Atom and RSS
+feeds with `Content-Type: application/feed+json`. The JSON Feed 1.1 document
+includes `title`, absolute `home_page_url`, absolute `feed_url`, and an
+`authors` profile entry. Each item includes an absolute permalink `id`/`url`,
+title, summary, HTML content with thumbnail/title/description, absolute
+thumbnail `image` and `banner_image`, published/modified timestamps, and
+engine/kind tags. It shares the other profile feeds' privacy boundary,
+404 behavior, ETag/Last-Modified validators, and public cache policy.
+
 ## Published AI-agent guidance files (#585)
 
 `GET /llms.txt` and `GET /llms-full.txt` are anonymous, public

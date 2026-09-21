@@ -66,7 +66,7 @@ function publicOrigin(): string {
 }
 
 function profileFeedPath(pathname: string): boolean {
-  return /^\/users\/@[^/]+\/feed\.(?:xml|rss)\/?$/.test(pathname);
+  return /^\/users\/@[^/]+\/feed\.(?:xml|rss|json)\/?$/.test(pathname);
 }
 
 function profileFeedProxyPlugin(): Plugin {

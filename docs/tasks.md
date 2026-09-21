@@ -18,6 +18,14 @@ dependency order, and duplicate report. #642 is complete and reconciled;
 - Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Opencode/kimi-k3; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No migration or deployment mutation.
 - Reconciliation: GitHub QA comment [#642 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/642#issuecomment-5754115081) posted; issue is ready to close.
 
+### #643 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and task specification were re-read before implementation and again before QA; scope remained finite presentation tokens, CSS mapping, self-hosted fonts, and settings controls.
+- Engineering: added `script`, `shadow`, and `backdrop` enum values; origin-served Pinyon Script/Lora assets; data-attribute CSS mappings; Layout propagation; profile-style controls; license documentation; and regression tests. Commits `1e191a9` and `6f5d66e`.
+- QA: exact backend pattern passed 39 tests; exact AdminSettings pattern passed 1 test after adding its missing test; Layout tests passed 16; full backend passed 1,453/39 skipped; full frontend passed 242 files/2,737 tests; build, lint, format, typecheck, and action-pin checks passed.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Opencode/kimi-k3; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No runtime dependency or deployment mutation.
+- Reconciliation: GitHub QA comment [#643 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/643#issuecomment-5754243051) posted; issue is ready to close. #644 is next in dependency order.
+
 ## 2026-09-19 — Final backlog/session reconciliation (#622, #633, #634, #635)
 
 The final manifest contains four processed issues and zero remaining open

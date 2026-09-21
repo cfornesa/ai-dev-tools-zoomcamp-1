@@ -71,6 +71,46 @@ def _mistral_provider_returning(content: str) -> ArtPieceProvider:
     return ArtPieceProvider(client=_FakeClient(handler))
 
 
+@pytest.mark.parametrize(
+    ("library", "source", "search", "expected"),
+    [
+        (
+            "canvas2d",
+            "<canvas></canvas><script>const c = 'teal';</script>",
+            "teal",
+            "#e76f51",
+        ),
+        ("svg", '<svg fill="teal"></svg>', "teal", "#e76f51"),
+        (
+            "p5js",
+            "window.sketch = function () { p.background(42, 157, 143); };",
+            "42, 157, 143",
+            "231, 111, 81",
+        ),
+        ("c2js", "window.sketch = function () { return '#2a9d8f'; };", "#2a9d8f", "#e76f51"),
+        (
+            "c2js-interactive",
+            "window.sketch = function () { return '#2a9d8f'; };",
+            "#2a9d8f",
+            "#e76f51",
+        ),
+        ("threejs", "const material = { color: 0x2a9d8f };", "0x2a9d8f", "0xe76f51"),
+        ("aframe", '<a-scene><a-box color="#2a9d8f"></a-box></a-scene>', "#2a9d8f", "#e76f51"),
+    ],
+)
+@pytest.mark.django_db
+def test_fake_provider_refinement_is_observable_for_every_engine(
+    owner_client, monkeypatch, library, source, search, expected
+):
+    monkeypatch.setattr(art_piece_api, "use_fake_ai_provider", lambda: True)
+    provider = art_piece_api.get_art_piece_provider()
+
+    result = provider.refine("make the accent warmer", source, library, [])
+
+    assert result.error is None
+    assert result.edits == [{"search": search, "replace": expected}]
+
+
 _VALID_SNIPPET = (
     '<canvas id="art-piece-canvas"></canvas>'
     "<script>const c=document.getElementById('art-piece-canvas');"

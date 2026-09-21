@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from rest_framework.test import APIClient
 
+import scenes.art_piece_api as art_piece_api
 from ai_provider.art_piece_provider import ArtPieceRefineResult
 from ai_provider.interface import AIUsageMetadata
 from scenes import art_piece_refine
@@ -140,3 +141,24 @@ def test_refine_is_owner_only(monkeypatch, piece):
         format="json",
     )
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_fake_provider_reports_a_failed_refinement_when_its_fixture_token_is_absent(
+    monkeypatch, owner, piece
+):
+    monkeypatch.setattr(art_piece_api, "use_fake_ai_provider", lambda: True)
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.post(
+        f"/api/art-pieces/{piece.public_id}/refine/",
+        {"instruction": "make the accent warmer"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "failed"
+    assert response.json()["attempts"] == 1
+    piece.refresh_from_db()
+    assert piece.current_version.sequence == 1

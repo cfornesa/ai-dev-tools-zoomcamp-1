@@ -12,9 +12,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.art_piece_api import (
-    RATE_LIMIT_MAX_ATTEMPTS,
     RATE_LIMIT_WINDOW_SECONDS,
     _current_count,
+    _generation_rate_limit,
     _increment_and_check,
     _increment_quota,
     _provider_for_user,
@@ -146,7 +146,7 @@ def refine_art_piece(
     for attempt in range(1, max_retries + 2):
         if not _increment_and_check(
             _rate_limit_cache_key(owner.id),
-            limit=RATE_LIMIT_MAX_ATTEMPTS,
+            limit=_generation_rate_limit(),
             window_seconds=RATE_LIMIT_WINDOW_SECONDS,
         ):
             run.status = ArtPieceRefineRun.Status.FAILED

@@ -257,11 +257,27 @@ def get_art_piece_provider() -> ArtPieceProvider:
                 )
 
             def refine(self, instruction, source, library, target_references):
+                # Keep the fake refinement deterministic but observable.  These
+                # tokens are present in the fake generator's fixture for each
+                # engine, and each replacement remains valid source for that
+                # engine.  Returning the old source unchanged made it
+                # impossible for browser evidence to prove that an accepted
+                # AI refinement reached the stored version.
+                fake_refinement = {
+                    "canvas2d": ("teal", "#e76f51"),
+                    "svg": ("teal", "#e76f51"),
+                    "p5js": ("42, 157, 143", "231, 111, 81"),
+                    "c2js": ("#2a9d8f", "#e76f51"),
+                    "c2js-interactive": ("#2a9d8f", "#e76f51"),
+                    "threejs": ("0x2a9d8f", "0xe76f51"),
+                    "aframe": ("#2a9d8f", "#e76f51"),
+                }
+                search, replace = fake_refinement.get(library, ("", ""))
                 return ArtPieceRefineResult(
                     usage=AIUsageMetadata(
                         prompt_tokens=10, completion_tokens=20, estimated_cost_usd=0.0001
                     ),
-                    edits=[{"search": source, "replace": source}],
+                    edits=[{"search": search, "replace": replace}],
                 )
 
         return _FakeArtPieceProvider()  # type: ignore[return-value]

@@ -61,7 +61,7 @@ test.describe('immersive collection gallery (#557)', () => {
 
       const page = await browser.newPage();
       await page.setViewportSize(viewport);
-      await page.goto(`/users/@${handle}/${collection.slug}/immersive`);
+      await page.goto(`/users/@${handle}/collections/${collection.slug}/immersive`);
       await expect(
         page.getByRole('heading', { name: `Immersive room ${viewport.width}` }),
       ).toBeVisible();

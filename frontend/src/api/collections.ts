@@ -37,7 +37,10 @@ export function createCollection(title: string, description = '') {
   });
 }
 
-export function updateCollection(id: string, values: { title?: string; description?: string }) {
+export function updateCollection(
+  id: string,
+  values: { title?: string; description?: string; public_slug?: string },
+) {
   return apiFetch<Collection>(`/api/account/collections/${id}/`, {
     method: 'PATCH',
     body: JSON.stringify(values),

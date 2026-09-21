@@ -14,6 +14,7 @@ from scenes.models import (
     ArtPieceVersion,
     Collection,
     CollectionItem,
+    CollectionSlugRedirect,
     Project,
     Project3D,
     PublicProfile,
@@ -117,7 +118,7 @@ def _create_collection(client, title="My collection"):
 
 
 @pytest.mark.django_db
-def test_owner_can_create_stable_slug_and_update_collection(owner_client):
+def test_owner_can_create_stable_slug_and_update_collection(owner_client, owner):
     first = _create_collection(owner_client)
     second = _create_collection(owner_client)
     assert first["slug"] == "my-collection"
@@ -131,6 +132,20 @@ def test_owner_can_create_stable_slug_and_update_collection(owner_client):
     assert response.status_code == 200
     assert response.json()["slug"] == first["slug"]
     assert response.json()["title"] == "Renamed collection"
+
+    renamed = owner_client.patch(
+        f"/api/account/collections/{first['id']}/",
+        {"public_slug": "Curated / works"},
+        format="json",
+    )
+    assert renamed.status_code == 200
+    assert renamed.json()["slug"] == "curated-works"
+    assert CollectionSlugRedirect.objects.filter(owner=owner, old_slug="my-collection").exists()
+
+    old_response = owner_client.get("/api/account/collections/")
+    assert old_response.status_code == 200
+    renamed_payload = next(item for item in old_response.json() if item["id"] == first["id"])
+    assert renamed_payload["canonical_url"].endswith("/collections/curated-works")
 
 
 @pytest.mark.django_db
@@ -169,6 +184,39 @@ def test_items_require_owned_published_records_and_preserve_order(owner_client, 
         )
         assert response.status_code == 400
         assert CollectionItem.objects.filter(collection__public_id=collection["id"]).count() == 3
+
+
+@pytest.mark.django_db
+def test_public_collection_slug_change_redirects_and_exposes_canonical_links(
+    owner_client, anonymous_client
+):
+    collection = _create_collection(owner_client, "Canonical collection")
+    assert (
+        owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+        == 200
+    )
+    renamed = owner_client.patch(
+        f"/api/account/collections/{collection['id']}/",
+        {"public_slug": "Curated / Collection"},
+        format="json",
+    )
+    assert renamed.status_code == 200
+
+    old_response = anonymous_client.get(
+        "/api/public/collections/collection-owner/canonical-collection/",
+        follow=False,
+    )
+    assert old_response.status_code == 301
+    assert old_response["Location"].endswith(
+        "/api/public/collections/collection-owner/curated-collection/"
+    )
+
+    current = anonymous_client.get("/api/public/collections/collection-owner/curated-collection/")
+    assert current.status_code == 200
+    assert (
+        current.json()["canonical_url"] == "/users/@collection-owner/collections/curated-collection"
+    )
+    assert current.json()["immersive_url"].endswith("/collections/curated-collection/immersive")
 
 
 @pytest.mark.django_db
@@ -223,7 +271,7 @@ def test_public_collection_is_ordered_and_filters_items_that_become_private(
     )
     assert response.status_code == 200
     assert [item["kind"] for item in response.json()["items"]] == ["project", "art_piece"]
-    assert response.json()["items"][0]["viewer_url"].startswith("/p/")
+    assert response.json()["items"][0]["viewer_url"].startswith("/users/@collection-owner/pieces/")
 
     project.visibility = Project.Visibility.PRIVATE
     project.published_at = None
@@ -280,7 +328,7 @@ def test_public_item_detail_exposes_only_public_collection_context(
             "title": "Public work",
             "handle": "collection-owner",
             "slug": "public-work",
-            "url": "/users/@collection-owner/public-work",
+            "url": "/users/@collection-owner/collections/public-work",
         }
     ]
 

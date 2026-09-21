@@ -78,7 +78,7 @@ def _published_records() -> list[str]:
         lines.append(
             _line(
                 collection.title,
-                f"/users/@{profile.handle}/{collection.slug}",
+                f"/users/@{profile.handle}/collections/{collection.slug}",
                 _seo_description(collection.seo_config) or collection.description,
             )
         )

@@ -71,6 +71,14 @@ function App() {
                   Home/Gallery split. */}
               <Route path="gallery" element={<PublicGallery />} />
               <Route path="users/:handle" element={<PublicProfile />} />
+              <Route
+                path="users/:handle/collections/:collectionSlug"
+                element={<PublicCollection />}
+              />
+              <Route
+                path="users/:handle/collections/:collectionSlug/immersive"
+                element={<CollectionImmersiveViewer />}
+              />
               <Route path="users/:handle/:collectionSlug" element={<PublicCollection />} />
               <Route path="pages/:slug" element={<PublicCmsPage />} />
               <Route

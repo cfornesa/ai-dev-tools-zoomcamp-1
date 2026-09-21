@@ -87,6 +87,7 @@ describe('CollectionManagement', () => {
       expect(mockedUpdate).toHaveBeenCalledWith('collection-1', {
         title: 'Renamed',
         description: 'Small experiments',
+        public_slug: 'spring-studies',
       });
     });
 

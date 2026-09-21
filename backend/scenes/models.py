@@ -256,6 +256,30 @@ class Collection(models.Model):
         return self.title
 
 
+class CollectionSlugRedirect(models.Model):
+    """Owner-scoped permanent history for renamed public collections (#641)."""
+
+    collection = models.ForeignKey(
+        Collection, on_delete=models.CASCADE, related_name="slug_redirects"
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="collection_slug_redirects"
+    )
+    old_slug = models.SlugField(max_length=120)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "old_slug"], name="unique_collection_old_slug_per_owner"
+            ),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.old_slug} -> {self.collection_id}"
+
+
 class CollectionItem(models.Model):
     """One ordered public-art reference in an owner collection (#567).
 

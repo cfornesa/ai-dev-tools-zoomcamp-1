@@ -40,7 +40,10 @@ test.describe('collection management and public routes (#568)', () => {
 
       const publicLink = ownerPage.getByRole('link', { name: 'View public collection' });
       await expect(publicLink).toBeVisible();
-      await expect(publicLink).toHaveAttribute('href', `/users/@${handle}/${collection.slug}`);
+      await expect(publicLink).toHaveAttribute(
+        'href',
+        `/users/@${handle}/collections/${collection.slug}`,
+      );
       await ownerPage.screenshot({
         path: testInfo.outputPath(`collection-management-${viewport.width}.png`),
         fullPage: true,
@@ -49,7 +52,7 @@ test.describe('collection management and public routes (#568)', () => {
       const anonymousContext = await browser.newContext();
       const anonymousPage = await anonymousContext.newPage();
       await anonymousPage.setViewportSize(viewport);
-      await anonymousPage.goto(`/users/@${handle}/${collection.slug}`);
+      await anonymousPage.goto(`/users/@${handle}/collections/${collection.slug}`);
       await expect(
         anonymousPage.getByRole('heading', { name: `Responsive collection ${viewport.width}` }),
       ).toBeVisible();

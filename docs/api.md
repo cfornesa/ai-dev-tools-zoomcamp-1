@@ -842,7 +842,8 @@ because this repository has no shared server-side media table.
 `GET /api/account/collections/` lists the authenticated user's non-deleted
 collections. `POST /api/account/collections/` creates one with
 `{"title":"...", "description":"..."}`. Collection titles are required;
-slugs are generated deterministically and remain stable after creation.
+slugs are generated deterministically and remain stable after creation unless
+the owner explicitly edits the public slug.
 
 `GET/PATCH/DELETE /api/account/collections/<uuid>/` reads or mutates an
 owner's collection. `DELETE` is a soft delete. `POST
@@ -870,3 +871,25 @@ online JSON representation for the owner. It is not an offline export and no
 download or archival guarantee is implied. All account writes require the
 normal session and CSRF protection; anonymous account calls return `401`, and
 another user's collection is indistinguishable from not-found (`404`).
+
+### Canonical public collection routes (#641)
+
+Published collections are addressed by the owner-scoped canonical family
+`/users/@<handle>/collections/<slug>`. The corresponding immersive page is
+`/users/@<handle>/collections/<slug>/immersive`; the chrome-less immersive
+embed remains `/embed/collections/@<handle>/<slug>`. Existing
+`/users/@<handle>/<slug>`, its `/immersive` suffix, and the public API route
+`/api/public/collections/<handle>/<slug>/` remain compatibility shims and
+continue to resolve the same public collection. Canonical serializers emit
+the new routes and canonical item links; they never reconstruct links from
+collection or item IDs.
+
+Collection creation derives a normalized slug from the title and adds an
+owner-scoped numeric suffix on collision. Owners may set a custom normalized
+slug through `PATCH /api/account/collections/<uuid>/` using `public_slug`.
+Changing a slug records the previous slug in owner-scoped redirect history;
+legacy slug requests return a permanent redirect to the current canonical
+route. A failed collision or invalid value is atomic and leaves the current
+slug and membership unchanged. No slug migration rewrites existing rows
+destructively; removing a redirect is a rollback-safe administrative cleanup,
+not part of the owner mutation.

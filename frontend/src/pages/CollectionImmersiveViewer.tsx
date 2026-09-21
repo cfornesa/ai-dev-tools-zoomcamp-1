@@ -7,6 +7,9 @@ import { useReducedMotion } from '../a11y/reducedMotion';
 const LIVE_SLOT_BUDGET = 1;
 
 function embedViewerUrl(item: CollectionItem): string | null {
+  if (item.kind === 'project') return `/embed/p/${item.id}`;
+  if (item.kind === 'project3d') return `/embed/p3d/${item.id}`;
+  if (item.kind === 'art_piece') return `/embed/art-pieces/${item.id}`;
   if (item.viewer_url.startsWith('/p/')) return item.viewer_url.replace('/p/', '/embed/p/');
   if (item.viewer_url.startsWith('/p3d/')) return item.viewer_url.replace('/p3d/', '/embed/p3d/');
   if (item.viewer_url.startsWith('/art-pieces/p/')) {
@@ -128,7 +131,7 @@ function CollectionImmersiveViewer() {
       {!isEmbedRoute && (
         <header>
           <p>
-            <Link to={`/users/@${collection.handle ?? handle}/${collection.slug}`}>
+            <Link to={`/users/@${collection.handle ?? handle}/collections/${collection.slug}`}>
               Back to collection
             </Link>
           </p>

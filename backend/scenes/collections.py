@@ -5,11 +5,19 @@ from __future__ import annotations
 import uuid
 
 from django.db import transaction
-from django.utils.text import slugify
 
 from scenes.art_piece_persistence import eligible_art_pieces
+from scenes.canonical_piece_signals import normalize_public_slug
 from scenes.gallery import eligible_projects, eligible_projects3d
-from scenes.models import ArtPiece, Collection, CollectionItem, Project, Project3D, PublicProfile
+from scenes.models import (
+    ArtPiece,
+    Collection,
+    CollectionItem,
+    CollectionSlugRedirect,
+    Project,
+    Project3D,
+    PublicProfile,
+)
 
 
 class CollectionValidationError(Exception):
@@ -28,10 +36,13 @@ _KIND_TO_LABEL: dict[str, str] = {
 
 
 def _slug_for(owner, title: str) -> str:
-    base = slugify(title)[:110].strip("-") or "collection"
+    base = normalize_public_slug(title)[:110].strip("-") or "collection"
     candidate = base
     suffix = 2
-    while Collection.objects.filter(owner=owner, slug=candidate).exists():
+    while (
+        Collection.objects.filter(owner=owner, slug=candidate).exists()
+        or CollectionSlugRedirect.objects.filter(owner=owner, old_slug=candidate).exists()
+    ):
         suffix_text = f"-{suffix}"
         candidate = f"{base[: 120 - len(suffix_text)]}{suffix_text}"
         suffix += 1
@@ -62,6 +73,12 @@ def _item_record(owner, kind: str, item_id: uuid.UUID, *, public: bool):
 
 
 def _viewer_url(kind: str, item_id: uuid.UUID, record=None) -> str:
+    if isinstance(record, (Project, Project3D)):
+        profile = (
+            PublicProfile.objects.filter(user=record.owner).values_list("handle", flat=True).first()
+        )
+        if profile and record.public_slug:
+            return f"/users/@{profile}/pieces/{record.public_slug}"
     if kind == CollectionItem.Kind.PROJECT:
         return f"/p/{item_id}"
     if kind == CollectionItem.Kind.PROJECT3D:
@@ -118,6 +135,15 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
         "updated_at": collection.updated_at.isoformat(),
         "items": items,
         "seo_config": collection.seo_config,
+        "canonical_url": (
+            f"/users/@{profile.handle}/collections/{collection.slug}" if profile else None
+        ),
+        "immersive_url": (
+            f"/users/@{profile.handle}/collections/{collection.slug}/immersive" if profile else None
+        ),
+        "embed_url": (
+            f"/embed/collections/@{profile.handle}/{collection.slug}" if profile else None
+        ),
     }
 
 
@@ -149,7 +175,7 @@ def public_collection_context(kind: str, item_id) -> list[dict[str, str]]:
                 "title": row.collection.title,
                 "handle": profile.handle,
                 "slug": row.collection.slug,
-                "url": f"/users/@{profile.handle}/{row.collection.slug}",
+                "url": f"/users/@{profile.handle}/collections/{row.collection.slug}",
             }
         )
     return result
@@ -204,7 +230,9 @@ def create_collection(*, owner, title: str, description: str = "") -> Collection
 
 
 @transaction.atomic
-def update_collection(*, collection: Collection, title=None, description=None) -> Collection:
+def update_collection(
+    *, collection: Collection, title=None, description=None, public_slug=None
+) -> Collection:
     locked = Collection.objects.select_for_update().get(pk=collection.pk)
     if title is not None:
         title = title.strip() if isinstance(title, str) else ""
@@ -215,9 +243,33 @@ def update_collection(*, collection: Collection, title=None, description=None) -
         if not isinstance(description, str):
             raise CollectionValidationError("description must be text.")
         locked.description = description
+    if public_slug is not None:
+        normalized = normalize_public_slug(public_slug)
+        if not normalized:
+            raise CollectionValidationError("public_slug must contain a letter or number.")
+        if len(normalized) > 120:
+            raise CollectionValidationError("public_slug must be 120 characters or fewer.")
+        if (
+            Collection.objects.filter(owner=locked.owner, slug=normalized)
+            .exclude(pk=locked.pk)
+            .exists()
+        ):
+            raise CollectionValidationError("public_slug is already in use.")
+        if (
+            CollectionSlugRedirect.objects.filter(owner=locked.owner, old_slug=normalized)
+            .exclude(collection=locked)
+            .exists()
+        ):
+            raise CollectionValidationError("public_slug is already reserved by slug history.")
+        old_slug = locked.slug
+        if normalized != old_slug:
+            locked.slug = normalized
+            CollectionSlugRedirect.objects.update_or_create(
+                owner=locked.owner, old_slug=old_slug, defaults={"collection": locked}
+            )
     if hasattr(collection, "_seo_config_update"):
         locked.seo_config = collection._seo_config_update
-    locked.save(update_fields=["title", "description", "seo_config", "updated_at"])
+    locked.save(update_fields=["title", "description", "slug", "seo_config", "updated_at"])
     return locked
 
 
@@ -277,3 +329,19 @@ def public_collection(*, handle: str, slug: str) -> Collection | None:
         )
         .first()
     )
+
+
+def public_collection_redirect(*, handle: str, slug: str) -> Collection | None:
+    redirect = (
+        CollectionSlugRedirect.objects.select_related("collection", "collection__owner")
+        .filter(
+            owner__public_profile__handle=handle.lower(),
+            owner__public_profile__is_public=True,
+            old_slug=slug,
+            collection__visibility=Collection.Visibility.PUBLIC,
+            collection__is_deleted=False,
+            collection__published_at__isnull=False,
+        )
+        .first()
+    )
+    return redirect.collection if redirect else None

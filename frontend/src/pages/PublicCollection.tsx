@@ -118,7 +118,9 @@ export default function PublicCollection() {
         <h2 id="public-collection-heading">{collection.title}</h2>
         {collection.description && <p>{collection.description}</p>}
         <p>
-          <Link to={`/users/@${collection.handle ?? handle}/${collection.slug}/immersive`}>
+          <Link
+            to={`/users/@${collection.handle ?? handle}/collections/${collection.slug}/immersive`}
+          >
             Open immersive collection
           </Link>
         </p>

@@ -507,7 +507,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
     def get_viewer_url(self, obj) -> str:
         kind, record = self._entry(obj)
         if kind == "collection" and isinstance(record, Collection):
-            return f"/users/@{record.owner.public_profile.handle}/{record.slug}"
+            return f"/users/@{record.owner.public_profile.handle}/collections/{record.slug}"
         if isinstance(record, (Project, Project3D, ArtPiece)):
             handle = (
                 PublicProfile.objects.filter(user_id=record.owner_id)

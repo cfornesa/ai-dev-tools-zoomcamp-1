@@ -41,7 +41,7 @@ test.describe('public gallery collection mode (#565)', () => {
       await expect(card).toBeVisible();
       await expect(card.getByRole('link', { name: collection.title })).toHaveAttribute(
         'href',
-        `/users/@${handle}/${collection.slug}`,
+        `/users/@${handle}/collections/${collection.slug}`,
       );
       await anonymousPage.screenshot({
         path: testInfo.outputPath(`public-gallery-collections-${viewport.width}.png`),

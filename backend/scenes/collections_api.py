@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from django.http import HttpResponsePermanentRedirect
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +14,7 @@ from scenes.collections import (
     collection_payload,
     create_collection,
     public_collection,
+    public_collection_redirect,
     replace_items,
     set_collection_visibility,
     soft_delete_collection,
@@ -89,6 +91,7 @@ class CollectionDetailView(APIView):
                 collection=collection,
                 title=request.data.get("title"),
                 description=request.data.get("description"),
+                public_slug=request.data.get("public_slug"),
             )
         except CollectionValidationError as exc:
             return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
@@ -152,5 +155,10 @@ class PublicCollectionDetailView(APIView):
     def get(self, request, handle, slug):
         collection = public_collection(handle=handle, slug=slug)
         if collection is None:
+            redirected_collection = public_collection_redirect(handle=handle, slug=slug)
+            if redirected_collection:
+                return HttpResponsePermanentRedirect(
+                    f"/api/public/collections/{handle}/{redirected_collection.slug}/"
+                )
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         return Response(collection_payload(collection, public=True))

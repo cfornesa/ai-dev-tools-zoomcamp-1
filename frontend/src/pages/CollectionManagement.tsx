@@ -21,6 +21,7 @@ export default function CollectionManagement() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [publicSlug, setPublicSlug] = useState('');
   const [kind, setKind] = useState<CollectionItem['kind']>('project');
   const [itemId, setItemId] = useState('');
   const [busy, setBusy] = useState(false);
@@ -46,6 +47,7 @@ export default function CollectionManagement() {
     if (!selected) return;
     setTitle(selected.title);
     setDescription(selected.description);
+    setPublicSlug(selected.slug);
   }, [selected]);
 
   if (auth.status === 'loading') return <p role="status">Loading collections…</p>;
@@ -93,7 +95,7 @@ export default function CollectionManagement() {
   async function saveDetails() {
     if (!selected) return;
     await run(
-      () => updateCollection(selected.id, { title, description }),
+      () => updateCollection(selected.id, { title, description, public_slug: publicSlug }),
       'Collection details saved.',
     );
   }
@@ -206,6 +208,18 @@ export default function CollectionManagement() {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />
+            {selected && (
+              <>
+                <label htmlFor="collection-public-slug">Public URL slug</label>
+                <input
+                  id="collection-public-slug"
+                  value={publicSlug}
+                  onChange={(event) => setPublicSlug(event.target.value)}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                />
+              </>
+            )}
             <button type="submit" disabled={busy}>
               {selected ? 'Save details' : 'Create collection'}
             </button>
@@ -276,7 +290,9 @@ export default function CollectionManagement() {
                   Delete collection
                 </button>
                 {selected.visibility === 'public' && selected.handle && (
-                  <a href={`/users/@${selected.handle}/${selected.slug}`}>View public collection</a>
+                  <a href={`/users/@${selected.handle}/collections/${selected.slug}`}>
+                    View public collection
+                  </a>
                 )}
               </div>
               <details>

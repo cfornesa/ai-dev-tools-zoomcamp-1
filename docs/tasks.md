@@ -22,9 +22,9 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 4 | [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | CLOSED, QA PASS; stage 2a complete | 3D targeting and shared mention regressions are complete; continue to #663. |
 | 5 | [#663](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/663) | CLOSED, QA PASS; stage 2a complete | Generated-piece refinement targets, bounded plan/retries, and saved-version evidence are complete; continue to #664/#665. |
 | 6 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | CLOSED, QA PASS; stage 2a complete | Unified 2D/3D editor routes now use the corrected profile-nested, engine-neutral contract; continue with #666. |
-| 7 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | OPEN, stage 2a | Capability matrix before manual tools. |
-| 7a | [#696](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/696) | PROPOSED, discovered during #666 QA | Refresh the stale generated owner-editor E2E expectation from `Generate revision` to the current `Refine piece` affordance; deferred until the current #666 transaction reconciles. |
-| 8 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) / [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 2D then 3D manual tools after #666. |
+| 7 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | CLOSED, QA PASS; stage 2a complete | Engine-keyed editor tool matrix is complete; continue with #696. |
+| 8 | [#696](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/696) | OPEN, stage 2a; groomed from #666 discovery | Refresh the stale generated owner-editor E2E expectation from `Generate revision` to the current `Refine piece` affordance; then continue with #667/#668. |
+| 9 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) / [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 2D then 3D manual tools after #666. |
 | 9 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
 | 10 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
 | 11 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
@@ -46,7 +46,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #666; #640 remains publication-boundary blocked
+The next groomed issue is #696; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
 ### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE
@@ -176,7 +176,7 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   It is separate from #666 and is deferred until this capability-matrix
   transaction reaches reconciliation.
 
-### #666 transaction ledger — 2026-09-21 — QA PENDING
+### #666 transaction ledger — 2026-09-21 — CLOSED
 
 - PM/grooming: the live issue body was reread before implementation. Scope is
   limited to the declared editor-tool availability matrix and visible reasons;
@@ -197,8 +197,10 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   silently absorbed into #666.
 - Provenance: direct Codex/GPT-5 substitution because the rostered
   implementation/review services were unavailable; independent-family review
-  was not run. No production-publication claim is made. Final `make check`,
-  issue reread, QA comment, and closure remain pending.
+  was not run. No production-publication claim is made.
+- Reconciliation: final `make check` passed, the live issue was reread, and
+  QA PASS was posted at [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666#issuecomment-5763540607).
+  #666 is closed; the next groomed transaction is #696.
 
 ### #695 transaction ledger — 2026-09-21 — CLOSED
 

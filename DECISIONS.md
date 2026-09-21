@@ -48,6 +48,20 @@ ownership and read cadence.
 - #640 remains the only open issue in this batch and is an owner-controlled
   publication boundary; no Replit state was mutated.
 
+## 2026-09-21 — production-readiness remains open at publication boundary
+
+- Production-readiness/session-completion ran as an owner-authorized
+  Codex/GPT-5 substitution because the rostered readiness service was
+  unavailable. `make check`, Compose preflight, and published credential-free
+  smoke passed; deploy-check passed with five environment warnings.
+- The local authenticated smoke was not counted because host-side fixture
+  creation targeted the host `.env` database while the URL reached the Docker
+  backend, producing a mismatched 401 boundary. No product defect was inferred.
+- #640 remains open: the published asset/revision still needs owner-approved
+  publication, exact live regular/immersive/profile/collection/embed route
+  inspection, and post-publish smoke/revision evidence. No Replit mutation was
+  initiated.
+
 ## 2026-09-19 — QA reconciliation of residual browser families
 
 - #625 stage geometry and #628 admin/settings contracts were closed after

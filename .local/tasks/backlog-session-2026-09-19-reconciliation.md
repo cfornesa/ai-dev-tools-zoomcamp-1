@@ -92,3 +92,25 @@ among the closed refinement/provider issues.
 | [#698](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/698) | CLOSED / QA PASS | Closed after commit `50cb2ff`, seven-engine Chromium evidence, and full checks. | Stage 2b and stage 4: Codex / GPT-5 substitutions; stage 3 not run. |
 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | CLOSED / QA PASS | `editOutputConsistency.spec.ts` proves manual and fake-provider AI edits reach regular, immersive, and extracted ZIP outputs across all required engines. | Commit `48abed7`; stage 4 Codex / GPT-5 substitution; stage 3 not run. |
 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | PUBLICATION-BOUNDARY BLOCKED | Approved publication/import, then exact live route matrix and published smoke. | Owner-controlled external state; no mutation initiated. |
+
+## Production-readiness / session-completion result — 2026-09-21
+
+- Batch rollup: 3 discovered in this continuation, 2 completed (#698 and
+  #671), 1 blocked at the publication boundary (#640), 0 missing terminal
+  statuses, and 0 unlinked actionable follow-ups.
+- Local: `make check` passed; `make compose-preflight` passed; deploy-check
+  passed with five environment warnings. The disposable local authenticated
+  smoke was attempted against a Docker URL with host-side fixture creation and
+  failed at the expected identity boundary (401), so it is not counted as
+  product evidence and must be rerun with matching backend/database state.
+- Published: `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`
+  passed health, root, anonymous identity, and login checks. This does not
+  satisfy #640 because the deployed revision still needs owner-approved
+  publication plus exact regular/immersive/profile/collection/embed route
+  inspection and revision identity evidence.
+- Readiness: `OPEN FOLLOW-UP`; no Replit mutation was performed. Next action
+  is for the owner to approve the publication path, then rerun #640's exact
+  live route matrix and published smoke against the resulting revision.
+- Routing: scoping/implementation/QA and readiness were run by Codex/GPT-5
+  substitutions where the rostered services were unavailable; stage 3 was not
+  run. The readiness substitution is recorded in `DECISIONS.md`.

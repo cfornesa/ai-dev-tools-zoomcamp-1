@@ -14,6 +14,24 @@ technology identity is represented by the piece engine/capability contract;
 public profile-nested second-level namespaces are `edit`, `immersive`,
 `pieces`, and `collections`, with legacy route shims retained under Rule 5.
 
+### Production-readiness and session-completion — 2026-09-21
+
+Current batch rollup: 3 issues discovered, 2 completed (#698 and #671), 1
+publication-boundary blocked (#640), 0 missing terminal statuses, and 0
+unlinked actionable follow-ups. Local checks and the disposable Docker browser
+stack are green. `make compose-preflight` passed; `UV_CACHE_DIR=/tmp/codex-uv-cache
+make deploy-check` passed with the five expected environment warnings. The
+credential-free published smoke also passed against `https://augmentrart.com`.
+
+The local authenticated smoke was attempted but is not evidence of a product
+failure: host-side fixture login was created against the host `.env` database
+while `BASE_URL=http://127.0.0.1:5000` reached the running Docker backend, so
+post-login `/api/whoami/` remained 401. Re-run it only against a matching local
+backend/database pair. Production readiness is `OPEN FOLLOW-UP`, not PASS,
+because #640 still requires owner-approved publication, exact live route
+inspection, and post-publish smoke/revision evidence. No Replit state was
+mutated.
+
 | Order | Issue | Status / routing | Dependency and next action |
 | --- | --- | --- | --- |
 | 1 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | OPEN, publication-boundary blocked | Owner-controlled Replit publication; independent product work may proceed, but this remains the final live reconciliation gate. |

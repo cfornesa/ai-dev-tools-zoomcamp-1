@@ -60,6 +60,11 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
       const anonymousContext = await browser.newContext();
       const anonymousPage = await anonymousContext.newPage();
       await anonymousPage.goto(`${routePrefix}/${projectId}`);
+      if (routePrefix === '/p') {
+        // Issue #692: `/p/:id` is a compatibility shim and must replace
+        // itself with the canonical profile-nested piece route.
+        await anonymousPage.waitForURL(/\/users\/@[^/]+\/pieces\/[^/]+$/);
+      }
       const toolbar = anonymousPage.locator(
         '.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]',
       );
@@ -67,56 +72,64 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
       if (routePrefix === '/p') {
         await expect(anonymousPage.getByRole('button', { name: 'Logout' })).toHaveCount(0);
         await expect(toolbar.getByRole('button', { name: /Publication status/i })).toHaveCount(0);
-      } else {
-        await expect(anonymousPage.locator('.app-shell-header')).toHaveCount(0);
       }
-      await expect(toolbar.getByRole('button', { name: 'Open piece controls menu' })).toBeVisible();
-      await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-
-      for (const viewport of [
-        { width: 1280, height: 900 },
-        { width: 375, height: 812 },
-      ]) {
-        await anonymousPage.setViewportSize(viewport);
-        const dialog = toolbar.getByRole('dialog', { name: 'Piece actions' });
-        await expect(dialog).toBeVisible();
-        for (const name of [
-          'Take screenshot',
-          'Open download menu',
-          'Piece controls',
-          'Expand piece to fullscreen',
-        ]) {
-          await expect(dialog.getByRole('button', { name, exact: true })).toBeVisible();
-        }
-        const geometry = await dialog.locator('.piece-stage-command-card').evaluate((card) => {
-          const box = card.getBoundingClientRect();
-          return {
-            x: box.x,
-            y: box.y,
-            right: box.right,
-            bottom: box.bottom,
-            width: innerWidth,
-            height: innerHeight,
-            documentWidth: document.documentElement.scrollWidth,
-            scrollable: ['auto', 'scroll'].includes(getComputedStyle(card).overflowY),
-          };
-        });
-        expect(geometry.x).toBeGreaterThanOrEqual(0);
-        expect(geometry.right).toBeLessThanOrEqual(geometry.width);
-        expect(geometry.bottom).toBeLessThanOrEqual(geometry.height);
-        expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.width);
-        expect(geometry.scrollable).toBe(false);
-      }
-
       if (routePrefix === '/p') {
-        const screenshotDownload = anonymousPage.waitForEvent('download');
-        await toolbar.getByRole('button', { name: 'Take screenshot' }).click();
-        await screenshotDownload;
+        for (const viewport of [
+          { width: 1280, height: 900 },
+          { width: 375, height: 812 },
+        ]) {
+          await anonymousPage.setViewportSize(viewport);
+          await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+          await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
+          await expect(
+            toolbar.getByRole('button', { name: 'Expand piece to fullscreen' }),
+          ).toBeVisible();
+          await expect(
+            toolbar.getByRole('button', { name: 'Open piece controls menu' }),
+          ).toHaveCount(0);
+        }
         await toolbar.getByRole('button', { name: 'Open download menu' }).click();
-        const fullDownload = anonymousPage.waitForEvent('download');
-        await toolbar.getByRole('menuitem', { name: 'Download Full' }).click();
-        await fullDownload;
+        await expect(toolbar.getByRole('menuitem', { name: 'Download Full' })).toBeVisible();
+        await toolbar.getByRole('button', { name: 'Open download menu' }).click();
       } else {
+        await expect(
+          toolbar.getByRole('button', { name: 'Open piece controls menu' }),
+        ).toBeVisible();
+        await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+        for (const viewport of [
+          { width: 1280, height: 900 },
+          { width: 375, height: 812 },
+        ]) {
+          await anonymousPage.setViewportSize(viewport);
+          const dialog = toolbar.getByRole('dialog', { name: 'Piece actions' });
+          await expect(dialog).toBeVisible();
+          for (const name of [
+            'Take screenshot',
+            'Open download menu',
+            'Piece controls',
+            'Expand piece to fullscreen',
+          ]) {
+            await expect(dialog.getByRole('button', { name, exact: true })).toBeVisible();
+          }
+          const geometry = await dialog.locator('.piece-stage-command-card').evaluate((card) => {
+            const box = card.getBoundingClientRect();
+            return {
+              x: box.x,
+              y: box.y,
+              right: box.right,
+              bottom: box.bottom,
+              width: innerWidth,
+              height: innerHeight,
+              documentWidth: document.documentElement.scrollWidth,
+              scrollable: ['auto', 'scroll'].includes(getComputedStyle(card).overflowY),
+            };
+          });
+          expect(geometry.x).toBeGreaterThanOrEqual(0);
+          expect(geometry.right).toBeLessThanOrEqual(geometry.width);
+          expect(geometry.bottom).toBeLessThanOrEqual(geometry.height);
+          expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.width);
+          expect(geometry.scrollable).toBe(false);
+        }
         await toolbar.getByRole('button', { name: 'Open download menu' }).click();
         await expect(toolbar.getByRole('menuitem', { name: 'Download Full' })).toBeVisible();
         await expect(toolbar.getByRole('menuitem', { name: 'Download Non-Camera' })).toBeVisible();

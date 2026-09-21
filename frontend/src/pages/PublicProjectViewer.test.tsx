@@ -40,6 +40,7 @@ function basePublicProject(overrides: Partial<PublicProject> = {}): PublicProjec
     tags: [],
     allow_public_remix: false,
     thumbnail_url: '/api/public/projects/p1/thumbnail.png',
+    viewer_url: '/legacy/p1',
     remix_provenance: null,
     current_version: {
       sequence: 1,
@@ -58,6 +59,7 @@ function renderViewer(id = 'p1') {
       <Routes>
         <Route path="/gallery" element={<p>Gallery placeholder</p>} />
         <Route path="/p/:id" element={<PublicProjectViewer />} />
+        <Route path="/users/@alice/pieces/hand-follower" element={<p>Canonical piece</p>} />
         <Route path="/projects/:id" element={<p>Editor placeholder</p>} />
       </Routes>
     </MemoryRouter>,
@@ -85,7 +87,7 @@ describe('PublicProjectViewer load states', () => {
   });
 
   it('renders the title, attribution, and scene canvas once loaded', async () => {
-    mockedGetPublicProject.mockResolvedValue(basePublicProject());
+    mockedGetPublicProject.mockResolvedValue(basePublicProject({ viewer_url: '/legacy/p1' }));
 
     renderViewer();
 
@@ -93,6 +95,17 @@ describe('PublicProjectViewer load states', () => {
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(screen.getByTestId('public-scene-canvas')).toBeInTheDocument();
     expect(mockedGetPublicProject).toHaveBeenCalledWith('p1');
+  });
+
+  it('redirects the legacy ID route to the canonical profile-nested piece path', async () => {
+    mockedGetPublicProject.mockResolvedValue(
+      basePublicProject({ viewer_url: '/users/@alice/pieces/hand-follower' }),
+    );
+
+    renderViewer();
+
+    expect(await screen.findByText('Canonical piece')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Hand Follower' })).not.toBeInTheDocument();
   });
 
   it('applies configured SEO/AEO metadata to the public 2D viewer', async () => {

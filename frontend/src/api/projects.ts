@@ -393,6 +393,8 @@ export type PublicProject = {
   tags: string[];
   allow_public_remix: boolean;
   thumbnail_url: string | null;
+  /** Canonical profile-nested viewer path; legacy ID paths are shims only. */
+  viewer_url?: string;
   remix_provenance: RemixProvenance | null;
   current_version: PublicSceneVersion | null;
   created_at: string;

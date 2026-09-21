@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { forkProject, getPublicProject, type PublicProject } from '../api/projects';
@@ -121,6 +121,7 @@ function PublicProjectViewer({
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = routeId ?? initialProject?.id;
+  const location = useLocation();
   const navigate = useNavigate();
   const auth = useAuth();
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -258,6 +259,19 @@ function PublicProjectViewer({
     getPublicProject(id)
       .then((fetched) => {
         if (cancelled) return;
+        // `/p/:id` is retained only as a compatibility entry point. The
+        // public project API already supplies the canonical profile-nested
+        // path, so do not render a second legacy viewer shell here. This
+        // also keeps old bookmarks and shared links on the same surface as
+        // the slug route without changing the API's anonymous 404 behavior.
+        if (
+          routeId &&
+          !location.pathname.startsWith('/embed/') &&
+          fetched.viewer_url?.startsWith('/users/@')
+        ) {
+          navigate(fetched.viewer_url, { replace: true });
+          return;
+        }
         setProject(fetched);
         setLoadState('ready');
       })
@@ -273,7 +287,7 @@ function PublicProjectViewer({
     return () => {
       cancelled = true;
     };
-  }, [id, initialProject]);
+  }, [id, initialProject, location.pathname, navigate, routeId]);
 
   useEffect(() => {
     if (project) {

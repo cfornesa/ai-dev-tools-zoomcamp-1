@@ -75,6 +75,18 @@ ownership and read cadence.
   created and no second publish was started while the active operation remained
   live.
 
+## 2026-09-21 — final #640 promotion and #699 regression follow-up
+
+- The owner-authorized publication eventually promoted the verified bundle after
+  the temporary Bundle delay. Replit was aligned to `b737e5d` with the prior
+  checkpoint preserved as `backup-before-699-import`; public asset
+  `index-DVp0GEG1.js` and the canonical regular/immersive/profile routes were
+  then verified in Chrome.
+- Live QA exposed the remaining underlined immersive anchor, so closed #637 was
+  not reopened. Criterion-ready #699 owns the regression. Its canonical inline
+  viewer action is now a styled semantic button with keyboard/new-tab coverage;
+  legacy menu-mode link behavior remains compatible.
+
 ## 2026-09-19 — QA reconciliation of residual browser families
 
 - #625 stage geometry and #628 admin/settings contracts were closed after

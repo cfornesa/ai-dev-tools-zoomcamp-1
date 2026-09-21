@@ -79,9 +79,9 @@ manifest.
 ## 2026-09-21 continuation reconciliation — corrected live open set
 
 The earlier historical manifest above is retained as a record of its prior
-batch. A fresh GitHub read after the corrected #684 contract found three
-issues requiring reconciliation: #640, #671, and the newly scoped #698.
-#640 remains an owner-controlled publication boundary. #698's distinct
+batch. A fresh GitHub read after the corrected #684 contract found four issues
+requiring reconciliation: #640, #671, #698, and the newly scoped #699.
+#640's owner-authorized publication boundary is now live-verified. #698's distinct
 deterministic fake-provider prerequisite for generated art-piece refinement
 was implemented, QA-verified, and closed. #671's evidence-only matrix then
 passed QA and was closed. No duplicate was found
@@ -91,13 +91,13 @@ among the closed refinement/provider issues.
 | --- | --- | --- | --- |
 | [#698](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/698) | CLOSED / QA PASS | Closed after commit `50cb2ff`, seven-engine Chromium evidence, and full checks. | Stage 2b and stage 4: Codex / GPT-5 substitutions; stage 3 not run. |
 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | CLOSED / QA PASS | `editOutputConsistency.spec.ts` proves manual and fake-provider AI edits reach regular, immersive, and extracted ZIP outputs across all required engines. | Commit `48abed7`; stage 4 Codex / GPT-5 substitution; stage 3 not run. |
-| [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | PUBLICATION-BOUNDARY BLOCKED | Approved publication/import, then exact live route matrix and published smoke. | Owner-controlled external state; no mutation initiated. |
+| [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | CLOSED / QA PASS | Promoted revision, live route matrix, and published smoke reconciled. | Replit revision `6dc01ac6`; public asset `index-DVp0GEG1.js`; Chrome and smoke evidence pass. |
+| [#699](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/699) | CLOSED / QA PASS | Canonical structured 3D immersive action is a styled, keyboard-accessible button. | Commit `b737e5d`; live desktop/mobile browser evidence and full `make check` pass. |
 
 ## Production-readiness / session-completion result — 2026-09-21
 
-- Batch rollup: 3 discovered in this continuation, 2 completed (#698 and
-  #671), 1 blocked at the publication boundary (#640), 0 missing terminal
-  statuses, and 0 unlinked actionable follow-ups.
+- Batch rollup: 4 discovered in this continuation; all four are complete after
+  QA and final GitHub/task rereads.
 - Local: `make check` passed; `make compose-preflight` passed; deploy-check
   passed with five environment warnings. The disposable local authenticated
   smoke was attempted against a Docker URL with host-side fixture creation and
@@ -105,14 +105,12 @@ among the closed refinement/provider issues.
   product evidence and must be rerun with matching backend/database state.
 - Published: `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`
   passed health, root, anonymous identity, and login checks. The owner-authorized
-  Republish imported `c6ce160` and created Replit revision `6dc01ac6`, but its
-  Bundle phase is stalled at `Pushing nix-0 layer...`; all public domains still
-  serve the old `index-BQvbObdP.js` and legacy immersive link. This does not
-  satisfy #640's exact route/revision evidence.
-- Readiness: `OPEN FOLLOW-UP`; no Replit mutation was performed. Next action
-  is for the owner to approve the publication path, then rerun #640's exact
-  live route matrix and published smoke against the resulting revision after
-  the active Bundle operation completes or fails. No second publish was started.
+  import aligned Replit to `b737e5d`; the follow-up publication promoted the
+  bundle as `index-DVp0GEG1.js`. Live desktop and 375x812 checks show the
+  canonical regular-view button, new-tab behavior, canonical immersive route,
+  context, embeds, stage controls, movement, and zoom.
+- Readiness: `PASS` for this batch. #699 and #640 were reread after evidence,
+  their QA/publication comments were posted, and both issues were closed.
 - Routing: scoping/implementation/QA and readiness were run by Codex/GPT-5
   substitutions where the rostered services were unavailable; stage 3 was not
   run. The readiness substitution is recorded in `DECISIONS.md`.

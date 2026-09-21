@@ -3,7 +3,7 @@
 The current open-issue manifest and dependency reconciliation is recorded in
 `.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
 
-## 2026-09-21 — Current open backlog reconciliation (#640, #661–#698)
+## 2026-09-21 — Current open backlog reconciliation (#640, #661–#699)
 
 The live GitHub open-issue list was re-read after the AI preview correction and
 compared with `docs/distillation-2026-09-20-design-and-share-parity.md`,
@@ -16,28 +16,21 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 ### Production-readiness and session-completion — 2026-09-21
 
-Current batch rollup: 3 issues discovered, 2 completed (#698 and #671), 1
-publication-boundary blocked (#640), 0 missing terminal statuses, and 0
-unlinked actionable follow-ups. Local checks and the disposable Docker browser
-stack are green. `make compose-preflight` passed; `UV_CACHE_DIR=/tmp/codex-uv-cache
-make deploy-check` passed with the five expected environment warnings. The
-credential-free published smoke also passed against `https://augmentrart.com`.
+Current batch rollup: #698, #671, #699, and #640 are complete after QA and
+final GitHub/task rereads. Local checks and the credential-free published smoke
+are green.
 
-The local authenticated smoke was attempted but is not evidence of a product
-failure: host-side fixture login was created against the host `.env` database
-while `BASE_URL=http://127.0.0.1:5000` reached the running Docker backend, so
-post-login `/api/whoami/` remained 401. Re-run it only against a matching local
-backend/database pair. Production readiness is `OPEN FOLLOW-UP`, not PASS,
-because #640 still requires a completed owner-authorized publication, exact
-live route inspection, and post-publish smoke/revision evidence. The attempted
-Republish imported `c6ce160` and created Replit revision `6dc01ac6`, but its
-Bundle phase remains stalled at `Pushing nix-0 layer...`; all public domains
-still serve the old `index-BQvbObdP.js` and legacy immersive link. No second
-publish or Replit data mutation was performed.
+The local authenticated smoke remains excluded because its host-side fixture
+database did not match the Docker backend. Production readiness now depends
+only on the recorded non-blocking local authenticated-smoke mismatch; #640's
+Replit revision `6dc01ac6` eventually promoted the verified bundle, and the
+public domains now serve `index-DVp0GEG1.js`. Published regular, immersive,
+and profile routes were inspected after promotion.
 
 | Order | Issue | Status / routing | Dependency and next action |
 | --- | --- | --- | --- |
-| 1 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | OPEN, publication-boundary blocked | Owner-controlled Replit publication; independent product work may proceed, but this remains the final live reconciliation gate. |
+| 1 | [#699](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/699) | CLOSED, QA PASS; stage 2a complete | Canonical immersive action is a styled semantic button; closed after final reread. |
+| 2 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | CLOSED, QA evidence complete | Promoted revision and live route matrix reconciled; closed after final reread. |
 | 2 | [#673](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/673) | CLOSED, QA PASS; stage 2a complete | Header navigation now routes `/` by auth state and removes Home from primary navigation. |
 | 3 | [#661](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/661) | CLOSED, QA PASS; stage 2a complete | Shared mention field and stable-ID 2D targeting are complete; continue with #662. |
 | 4 | [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | CLOSED, QA PASS; stage 2a complete | 3D targeting and shared mention regressions are complete; continue to #663. |
@@ -71,9 +64,9 @@ publish or Replit data mutation was performed.
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next remaining open issue is #640, which remains publication-boundary
-blocked; #671 is closed after its evidence matrix passed, and #695 is now closed after the collection-specific follow-up was
-reconciled.
+The current batch has no remaining open issues; #671 is closed after its
+evidence matrix passed, and #695 is now closed after the collection-specific
+follow-up was reconciled.
 
 ### #667 transaction ledger — 2026-09-21 — CLOSED, QA PASS
 

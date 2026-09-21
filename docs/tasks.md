@@ -7,8 +7,16 @@ The current open-issue manifest and dependency reconciliation is recorded in
 
 Fourteen new PROPOSED-then-filed issues; see
 `docs/distillation-2026-09-20-design-and-share-parity.md` for the manifest,
-dependency order, and duplicate report. Next engineering issue after the
-canonical-route batch (#636 first): #642.
+dependency order, and duplicate report. #642 is complete and reconciled;
+#643 is the next engineering issue in the theme chain.
+
+### #642 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task ledger were re-read before implementation and again before QA; scope remained the paired persisted/API palette contract.
+- Engineering: added strict paired/legacy theme validation, per-mode resolution, additive `theme_palettes` API projections, TypeScript contract updates, API documentation, and regression coverage. Commits `0aa6c8b` and `fee52e3`.
+- QA: focused contract suite passed 47 tests; full backend gate passed 1,453 tests with 39 skips; ruff, format, mypy, frontend lint/format/typecheck, and the full frontend suite (241 files / 2,736 tests) passed. QA found and required the named `effective_theme` mode-resolution path, fixed in `fee52e3`, then reran the full backend gate.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Opencode/kimi-k3; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No migration or deployment mutation.
+- Reconciliation: GitHub QA comment [#642 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/642#issuecomment-5754115081) posted; issue is ready to close.
 
 ## 2026-09-19 — Final backlog/session reconciliation (#622, #633, #634, #635)
 

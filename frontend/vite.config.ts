@@ -49,7 +49,12 @@ function escapeHtml(value: string): string {
 }
 
 function publicOrigin(): string {
-  const origin = process.env.PUBLIC_SITE_ORIGIN ?? 'http://localhost:5000';
+  // Platform secrets are sometimes saved with surrounding whitespace or
+  // quotes; normalize those so a cosmetic typo cannot silently disable the
+  // server-rendered metadata (#700).
+  const origin = (process.env.PUBLIC_SITE_ORIGIN ?? 'http://localhost:5000')
+    .trim()
+    .replace(/^(["'])(.*)\1$/, '$2');
   const parsed = new URL(origin);
   if (
     !['http:', 'https:'].includes(parsed.protocol) ||
@@ -278,7 +283,10 @@ function shareMetadataPlugin(): Plugin {
         response.statusCode = 200;
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.end(html);
-      } catch {
+      } catch (error) {
+        // Never swallow this silently: a production run that quietly serves
+        // the bare SPA shell hides missing Open Graph/feed tags (#700).
+        console.error(`[share-metadata] injection failed for ${requestPath}:`, error);
         next();
       }
     });

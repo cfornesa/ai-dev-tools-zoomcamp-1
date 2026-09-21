@@ -129,5 +129,8 @@ fi
 printf 'PASS: GET / returned HTTP %s\n' "$root_status"
 
 probe "/api/whoami/" "401"
+# Issue #700: crawlers do not run JavaScript, so the anonymous HTML shell itself
+# must carry the server-rendered Open Graph tags. A bare SPA shell fails here.
+probe "/" "200" 'property="og:title"[^>]*data-server-metadata="true"'
 probe "/accounts/login/" "200" '<form|csrfmiddlewaretoken'
 printf 'Published routing smoke check passed: %s\n' "$published_url"

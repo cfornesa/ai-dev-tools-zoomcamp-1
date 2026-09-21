@@ -26,14 +26,14 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 8 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
 | 9 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
 | 10 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
-| 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) → [#683](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/683) | OPEN, shell/style chain | #673–#677 are closed; continue with 2D/3D AI panels, spacing/panels, profile-settings diagnosis, then evidence. |
+| 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete; the next independent shell transaction is #680/#681. |
 | 12 | [#685](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685) → [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Cards first, then Atom/RSS/JSON feeds, then feeds/discovery page. |
 | 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #674; #640 remains publication-boundary blocked and
+The next groomed issue is #680; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
 
 ### #674 transaction ledger — 2026-09-21 — CLOSED
@@ -117,6 +117,29 @@ The next groomed issue is #674; #640 remains publication-boundary blocked and
   tests/Chromium only; no production publication claim is made.
 - Reconciliation: issue closed after QA PASS; next independent transactions are
   #678 and #679. The separate collection metadata/legacy-shim follow-up is #695.
+
+### #678/#679 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: current issue bodies re-read after #677 closure; both issues
+  were confirmed as stage 2a responsive-shell work for the 2D and 3D AI
+  proposal panels. Direct Codex/GPT-5 substitution because the rostered
+  Opencode Go service was unavailable.
+- Engineering: stage 2a direct Codex/GPT-5 substitution; made prompt and
+  select fields full-width, added vertical prompt resizing and required
+  spacing, wrapped segmented/tool groups, and preserved mobile-safe 44px
+  controls. Added issue-specific Playwright coverage. Commit: \`3a9f35d\`.
+- QA: [#678 QA PASS](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678#issuecomment-5758079085)
+  and [#679 QA PASS](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679#issuecomment-5758079499).
+  Focused Vitest (37 passed), Chromium checks at 375px, 768px, and 1280px
+  for both panels (6 passed), and full \`make check\` (frontend 2751 passed;
+  backend 1471 passed, 39 skipped) all passed.
+- Provenance: Stage 3 second-opinion review was not run because Mistral Vibe
+  was unavailable; stage 4 QA was a direct Codex/GPT-5 substitution for the
+  unavailable Claude Sonnet 5 Medium service. Evidence is local/Docker/
+  Chromium only; no production publication claim is made.
+- Reconciliation: both issues closed after QA PASS; next independent
+  transaction is #680/#681. The separate collection metadata/legacy-shim
+  follow-up remains #695.
 
 ### #673 transaction ledger — 2026-09-21 — CLOSED
 

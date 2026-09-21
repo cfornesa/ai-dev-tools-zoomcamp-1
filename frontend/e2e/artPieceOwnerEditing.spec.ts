@@ -25,14 +25,17 @@ const RED_RECTANGLE =
   '<script>var c=document.getElementById("art-piece-canvas");' +
   'var x=c.getContext("2d");x.fillStyle="#dc2626";x.fillRect(0,0,320,240);</script>';
 
-async function generateRevision(page: Page, prompt: string): Promise<void> {
+async function generateRevision(page: Page, prompt: string): Promise<'manual-save' | 'auto-saved'> {
   await page.getByLabel('Describe the revision you want to generate').fill(prompt);
-  await page.getByRole('button', { name: 'Generate revision' }).click();
+  await page.getByRole('button', { name: 'Refine piece' }).click();
   await expect(page.getByTestId('art-piece-editor-preview')).toBeVisible();
   // #457 fixed: the shared sandbox's ready handshake now defers via
   // setTimeout, not requestAnimationFrame, so this reaches ready promptly
   // even off-screen -- no scrollIntoViewIfNeeded() workaround needed.
-  await expect(page.getByTestId('art-piece-editor-save-version')).toBeVisible();
+  const saveVersion = page.getByTestId('art-piece-editor-save-version');
+  const accepted = page.getByTestId('art-piece-refine-accepted');
+  await expect(saveVersion.or(accepted)).toBeVisible();
+  return (await accepted.isVisible()) ? 'auto-saved' : 'manual-save';
 }
 
 test.describe('Generated owner management: reopen and revise a saved piece (#429)', () => {
@@ -141,10 +144,15 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
           page.getByTestId('art-piece-editor-version-list').getByRole('listitem'),
         ).toHaveCount(1);
 
-        await generateRevision(page, 'a blue rectangle instead');
-        await page.getByTestId('art-piece-editor-capability-download').locator('input').check();
-        await page.getByTestId('art-piece-editor-save-version').click();
-        await expect(page.getByTestId('art-piece-editor-save-version')).toHaveCount(0);
+        const revisionMode = await generateRevision(page, 'a blue rectangle instead');
+        const saveVersion = page.getByTestId('art-piece-editor-save-version');
+        if (revisionMode === 'manual-save') {
+          await page.getByTestId('art-piece-editor-capability-download').locator('input').check();
+          await saveVersion.click();
+          await expect(saveVersion).toHaveCount(0);
+        } else {
+          await expect(page.getByTestId('art-piece-refine-accepted')).toBeVisible();
+        }
 
         const versionItems = page
           .getByTestId('art-piece-editor-version-list')
@@ -167,7 +175,9 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
         }>;
         expect(versions).toHaveLength(2);
         expect(versions.find((v) => v.sequence === 1)!.source).toBe(RED_RECTANGLE);
-        expect(versions.find((v) => v.sequence === 2)!.capabilities.download).toBe(true);
+        if (revisionMode === 'manual-save') {
+          expect(versions.find((v) => v.sequence === 2)!.capabilities.download).toBe(true);
+        }
 
         // Reload again after the new version -- the current version persisted.
         await page.goto(`/art-pieces/${piece.public_id}/edit`);

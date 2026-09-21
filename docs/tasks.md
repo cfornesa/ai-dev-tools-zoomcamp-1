@@ -3,6 +3,39 @@
 The current open-issue manifest and dependency reconciliation is recorded in
 `.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
 
+## 2026-09-21 — Current open backlog reconciliation (#640, #661–#694)
+
+The live GitHub open-issue list was re-read after the AI preview correction and
+compared with `docs/distillation-2026-09-20-design-and-share-parity.md`,
+`docs/distillation-2026-09-20-public-surface-parity.md`, this ledger, and the
+reference checkout at `../augment-humankind`. No duplicate was found for the
+open issues below. The owner-confirmed route/reference boundary is that
+technology identity is represented by the piece engine/capability contract;
+public profile-nested second-level namespaces are `edit`, `immersive`,
+`pieces`, and `collections`, with legacy route shims retained under Rule 5.
+
+| Order | Issue | Status / routing | Dependency and next action |
+| --- | --- | --- | --- |
+| 1 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | OPEN, publication-boundary blocked | Owner-controlled Replit publication; independent product work may proceed, but this remains the final live reconciliation gate. |
+| 2 | [#684](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/684) | OPEN, criterion-ready after route-plan confirmation; stage 2b complex | Canonical route grammar and compatibility shims; next independent engineering transaction. |
+| 3 | [#661](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/661) / [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | OPEN, stage 2a | 2D then 3D targeting; after shared editor contracts #664/#665 where applicable. |
+| 4 | [#663](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/663) | OPEN, stage 2a | Generated-piece refine UI after #658. |
+| 5 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | OPEN, stage 2a | Unified 2D then 3D editors; preserve legacy redirects and canonical route contract. |
+| 6 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | OPEN, stage 2a | Capability matrix before manual tools. |
+| 7 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) / [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 2D then 3D manual tools after #666. |
+| 8 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
+| 9 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
+| 10 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
+| 11 | [#673](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/673) → [#683](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/683) | OPEN, shell/style chain | Process in issue-body dependency order: navigation, chrome, default style, shell application, spacing/panels, profile-settings diagnosis, then evidence. |
+| 12 | [#685](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685) → [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Cards first, then Atom/RSS/JSON feeds, then feeds/discovery page. |
+| 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
+
+All issues have finite route/workflow boundaries and explicit focused/full
+verification in their current GitHub bodies or linked distillation document.
+The next groomed issue is #684; no implementation begins until its documented
+redirect/shim plan is confirmed against `docs/api.md` and the current route
+serializers.
+
 ## 2026-09-20 — Design, theme, profile, and share-thumbnail parity (#642–#655)
 
 Fourteen new PROPOSED-then-filed issues; see

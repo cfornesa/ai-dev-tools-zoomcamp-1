@@ -1175,3 +1175,10 @@ production route exposes the owner-only edit URL and slug-based immersive URL;
 anonymous access omits editing; and `scripts/smoke-published.sh` passed
 against `https://augmentrart.com`. No open issues or unlinked actionable
 follow-ups remain in the reconciled manifest.
+
+## 2026-09-21 — Readiness/completion pass and #700 handoff
+Claude Sonnet 5 / Medium ran the stage-5 gate and session completion on the
+rostered tier. #700 was implemented directly by Sonnet 5 (flagged substitution
+for the rostered stage 2b service; no second-opinion review). Production HTML
+lacked server-rendered metadata; local fixes shipped in `a7ff330`; verification
+of the production cause requires an owner Replit Publish and server log read.

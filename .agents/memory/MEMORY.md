@@ -96,3 +96,4 @@
 - [CSS hidden attribute silently overridden](css-hidden-attribute-silently-overridden.md) — a same-specificity author CSS rule can defeat `hidden` at every viewport, not just its own media query; verify with `getComputedStyle`, not DOM presence. Caused #584.
 - [QA batch untested handoffs](qa-batch-untested-handoffs.md) — a stage-2 handoff's "N tests passed" often means pre-existing regression tests, not new coverage of the issue's own criteria; diff the test file against the criteria list. Found across #571-#587.
 - [Design/share parity gaps](design-share-parity-gaps.md) — generated thumbnails are upload-only (always fallback), OG tags are client-JS only, no theme toggle/Pareto/Celestial; issues #642–#655.
+- [Production HTML missing share metadata](production-html-missing-share-metadata.md) — published HTML had no og:/feed-alternate tags while APIs worked; bundle hash ≠ vite.config.ts identity; see #700.

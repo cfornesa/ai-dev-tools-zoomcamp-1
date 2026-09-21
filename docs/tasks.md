@@ -23587,3 +23587,29 @@ into that implementation.
 - Engineering: added typed canonical collection links to the consumer surface, regular collection Embed and immersive actions with canonical embed snippets, owner/context presentation, immersive Custom/CMS embed actions, bounded zoom/fullscreen controls, and preserved item navigation and chrome-less embed behavior.
 - Verification: focused collection frontend tests 5 passed; Chromium collection matrix 4 passed at 1280x900 and 375x812 across regular, immersive, and embed entry points; full `make check` passed with backend 1448 passed/39 skipped and frontend 241 files/2736 tests passed. Existing lint warnings remain pre-existing and non-blocking.
 - QA/reconciliation: current issue and task specification were re-read after all checks; evidence covers canonical route consumers, title/description/owner/item context, regular and immersive embeds, item navigation, zoom/fullscreen controls, no duplicated app navigation, and fixed-viewport containment. #639 closed after the GitHub evidence comment.
+
+## 2026-09-21 — Independent readiness and completion pass (#700, #701)
+
+Run by Claude Sonnet 5 / Medium (rostered tier for stages 4 and 5; no
+substitution for readiness or completion). Prior Codex/GPT-5 stage runs are
+recorded in DECISIONS.md and earlier ledger rows.
+
+Evidence — local: `make check` green (backend 1490 passed / 39 skipped;
+frontend 254 files / 2779 tests; lint, format, typecheck, action pins).
+Local credential-free smoke against :5000 passed. Approved-browser: prior
+Chromium matrices (#671, #683, #694 etc.) not re-run in this pass. CI: not
+re-triggered (full matrix is scheduled; see full-matrix-scheduled-not-manual).
+Production: `scripts/smoke-published.sh` original probes pass; published
+bundle `index-DVp0GEG1.js` equals a fresh local build; feeds, share-meta and
+share-image APIs work; **published HTML carries no server-rendered Open Graph
+or feed-discovery tags** although `vite preview` locally injects them.
+
+| Issue | Status | Owner / next action |
+| --- | --- | --- |
+| [#700](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/700) | ENGINEERING+QA complete locally, commit `a7ff330`; HANDED-OFF | Owner: Replit Publish, then run `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` (new check must pass) and read the server log for `[share-metadata] injection failed` to classify the cause. |
+| [#701](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/701) | DEPENDENCY-BLOCKED (owner context) | Owner states per-stage provenance for #636, #641, #655, #692–#695. |
+
+Routing audit for #700: scoping Sonnet 5/Medium (rostered Codex/Luna: substituted: yes);
+implementation Sonnet 5/Medium (rostered stage 2b service: substituted: yes);
+second-opinion review not run (no independent family available); QA Sonnet 5/Medium
+(rostered, substituted: no); readiness Sonnet 5/Medium (rostered).

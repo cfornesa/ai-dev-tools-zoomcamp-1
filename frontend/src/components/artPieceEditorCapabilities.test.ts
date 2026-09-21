@@ -17,12 +17,16 @@ describe('art piece editor capability matrix (issue #666)', () => {
       'threejs',
       'aframe',
     ]);
-    for (const capabilities of Object.values(ART_PIECE_EDITOR_CAPABILITIES)) {
+    for (const [engine, capabilities] of Object.entries(ART_PIECE_EDITOR_CAPABILITIES)) {
       expect(Object.keys(capabilities)).toEqual(ART_PIECE_EDITOR_TOOL_KEYS);
       expect(capabilities['ai-edit'].enabled).toBe(true);
       for (const tool of ART_PIECE_EDITOR_TOOL_KEYS.slice(0, -1)) {
-        expect(capabilities[tool]).toMatchObject({ enabled: false });
-        expect(capabilities[tool].reason).toBeTruthy();
+        if (engine === 'canvas2d' || engine === 'svg') {
+          expect(capabilities[tool].reason || capabilities[tool].enabled).toBeTruthy();
+        } else {
+          expect(capabilities[tool]).toMatchObject({ enabled: false });
+          expect(capabilities[tool].reason).toBeTruthy();
+        }
       }
     }
   });

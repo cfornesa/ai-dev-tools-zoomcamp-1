@@ -2,6 +2,7 @@ import type { ArtPieceLibrary } from '../api/artPieces';
 
 export const ART_PIECE_EDITOR_TOOL_KEYS = [
   'add-shape',
+  'add-ellipse',
   'add-line',
   'freehand-draw',
   'erase',
@@ -28,11 +29,27 @@ const MANUAL_TOOL_REASON =
 function manualTools(): Omit<ArtPieceEditorCapabilities, 'ai-edit'> {
   return {
     'add-shape': { enabled: false, reason: MANUAL_TOOL_REASON },
+    'add-ellipse': { enabled: false, reason: MANUAL_TOOL_REASON },
     'add-line': { enabled: false, reason: MANUAL_TOOL_REASON },
     'freehand-draw': { enabled: false, reason: MANUAL_TOOL_REASON },
     erase: { enabled: false, reason: MANUAL_TOOL_REASON },
     transform: { enabled: false, reason: MANUAL_TOOL_REASON },
     media: { enabled: false, reason: MANUAL_TOOL_REASON },
+  };
+}
+
+function supported2DManualTools(): Omit<ArtPieceEditorCapabilities, 'ai-edit'> {
+  return {
+    'add-shape': { enabled: true },
+    'add-ellipse': { enabled: true },
+    'add-line': { enabled: true },
+    'freehand-draw': { enabled: true },
+    erase: { enabled: true },
+    transform: {
+      enabled: false,
+      reason: 'Transform editing is planned for a later manual-tool slice.',
+    },
+    media: { enabled: false, reason: 'Media editing is planned for a later manual-tool slice.' },
   };
 }
 
@@ -42,8 +59,8 @@ function manualTools(): Omit<ArtPieceEditorCapabilities, 'ai-edit'> {
  * change one engine's entry without changing the editor component's policy.
  */
 export const ART_PIECE_EDITOR_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEditorCapabilities> = {
-  canvas2d: { ...manualTools(), 'ai-edit': { enabled: true } },
-  svg: { ...manualTools(), 'ai-edit': { enabled: true } },
+  canvas2d: { ...supported2DManualTools(), 'ai-edit': { enabled: true } },
+  svg: { ...supported2DManualTools(), 'ai-edit': { enabled: true } },
   p5js: { ...manualTools(), 'ai-edit': { enabled: true } },
   c2js: { ...manualTools(), 'ai-edit': { enabled: true } },
   'c2js-interactive': { ...manualTools(), 'ai-edit': { enabled: true } },

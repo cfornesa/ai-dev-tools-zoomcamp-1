@@ -7,6 +7,7 @@ import type { ArtPieceLibrary } from '../api/artPieces';
 
 const LABELS: Record<ArtPieceEditorToolKey, string> = {
   'add-shape': 'Add shape',
+  'add-ellipse': 'Add ellipse',
   'add-line': 'Add line',
   'freehand-draw': 'Freehand draw',
   erase: 'Erase',
@@ -15,7 +16,13 @@ const LABELS: Record<ArtPieceEditorToolKey, string> = {
   'ai-edit': 'AI edit',
 };
 
-export default function ArtPieceEditorToolAvailability({ engine }: { engine: ArtPieceLibrary }) {
+export default function ArtPieceEditorToolAvailability({
+  engine,
+  onActivate,
+}: {
+  engine: ArtPieceLibrary;
+  onActivate?: (tool: ArtPieceEditorToolKey) => void;
+}) {
   const capabilities = getArtPieceEditorCapabilities(engine);
   return (
     <fieldset
@@ -33,6 +40,7 @@ export default function ArtPieceEditorToolAvailability({ engine }: { engine: Art
               <button
                 type="button"
                 disabled={!capability.enabled}
+                onClick={() => onActivate?.(tool)}
                 aria-describedby={!capability.enabled ? reasonId : undefined}
                 data-testid={`art-piece-editor-tool-${tool}`}
               >

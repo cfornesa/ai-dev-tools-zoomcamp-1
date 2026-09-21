@@ -30,6 +30,7 @@ import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbna
 import MentionPromptField from './MentionPromptField';
 import { buildArtPieceTargetOptions } from './artPieceTargets';
 import ArtPieceEditorToolAvailability from '../components/ArtPieceEditorToolAvailability';
+import { appendGenerated2DEdit, type Generated2DManualTool } from './generated2dManualTools';
 
 type RevisionPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
@@ -109,6 +110,8 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const [prompt, setPrompt] = useState('');
   const [revisePhase, setRevisePhase] = useState<RevisionPhase>('idle');
   const [reviseCode, setReviseCode] = useState<string | null>(null);
+  const [manualHistory, setManualHistory] = useState<string[]>([]);
+  const [manualHistoryIndex, setManualHistoryIndex] = useState(-1);
   const [reviseError, setReviseError] = useState<string | null>(null);
   const [refineRun, setRefineRun] = useState<import('../api/artPieces').ArtPieceRefineRun | null>(
     null,
@@ -258,6 +261,34 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     setCapabilities((current) => ({ ...current, [key]: !current[key] }));
   }
 
+  function applyManualTool(tool: Generated2DManualTool) {
+    if (!piece || (piece.engine !== 'canvas2d' && piece.engine !== 'svg')) return;
+    const current = reviseCode ?? piece.current_version?.source ?? '';
+    const next = appendGenerated2DEdit(current, piece.engine, tool);
+    setManualHistory((history) => {
+      const base = history.length === 0 ? [current] : history.slice(0, manualHistoryIndex + 1);
+      return [...base, next];
+    });
+    setManualHistoryIndex((index) => (manualHistory.length === 0 ? 1 : index + 1));
+    setReviseCode(next);
+    setRevisePhase('ready');
+    setRefineRun(null);
+  }
+
+  function undoManualEdit() {
+    if (manualHistoryIndex <= 0) return;
+    const nextIndex = manualHistoryIndex - 1;
+    setManualHistoryIndex(nextIndex);
+    setReviseCode(manualHistory[nextIndex]);
+  }
+
+  function redoManualEdit() {
+    if (manualHistoryIndex >= manualHistory.length - 1) return;
+    const nextIndex = manualHistoryIndex + 1;
+    setManualHistoryIndex(nextIndex);
+    setReviseCode(manualHistory[nextIndex]);
+  }
+
   async function handleSaveVersion() {
     if (!id || !piece || !reviseCode) return;
     setVersionSaving(true);
@@ -375,7 +406,38 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           scene layers in the AI editor.
         </p>
       )}
-      <ArtPieceEditorToolAvailability engine={piece.engine} />
+      <ArtPieceEditorToolAvailability
+        engine={piece.engine}
+        onActivate={(tool) => {
+          if (
+            tool === 'add-shape' ||
+            tool === 'add-ellipse' ||
+            tool === 'add-line' ||
+            tool === 'freehand-draw' ||
+            tool === 'erase'
+          ) {
+            applyManualTool(tool);
+          }
+        }}
+      />
+      {(piece.engine === 'canvas2d' || piece.engine === 'svg') && reviseCode && (
+        <div className="behavior-card-field" data-testid="art-piece-editor-code-panel">
+          <label htmlFor="art-piece-editor-code">Editable source preview</label>
+          <textarea id="art-piece-editor-code" value={reviseCode} readOnly rows={8} />
+          <div>
+            <button type="button" onClick={undoManualEdit} disabled={manualHistoryIndex <= 0}>
+              Undo
+            </button>
+            <button
+              type="button"
+              onClick={redoManualEdit}
+              disabled={manualHistoryIndex >= manualHistory.length - 1}
+            >
+              Redo
+            </button>
+          </div>
+        </div>
+      )}
       <p>
         <Link to="/art-pieces/manage">Back to your art pieces</Link>
       </p>

@@ -78,10 +78,12 @@ and production-safe migration sequence are owned by [#611](https://github.com/cf
 
 The owner editor uses one explicit matrix for all supported engines and keeps
 unsupported tools visible with an accessible reason. AI edit is currently
-available for every engine; add-shape, add-line, freehand draw, erase,
-transform, and media remain visibly disabled until the engine-specific manual
-tool issues land ([#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667)
-and [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668)).
+available for every engine. Canvas2D and SVG now support deterministic
+rectangle, ellipse, line, freehand, and erase source edits with undo/redo and
+explicit version saving ([#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667));
+transform and media remain disabled there, while all manual tools remain
+disabled for engines awaiting their own implementation slice, including the
+3D work in [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668).
 Support is keyed by the stable engine identifier, never inferred from the
 display label or family name.
 

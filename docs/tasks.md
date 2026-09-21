@@ -49,6 +49,21 @@ verification in their current GitHub bodies or linked distillation document.
 The next groomed issue is #667/#668; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
+### #667 transaction ledger — 2026-09-21 — IMPLEMENTED, QA PENDING
+
+- PM/grooming: the live issue was reread before implementation; scope stayed
+  limited to owner editing of generated Canvas2D and SVG pieces. The corrected
+  profile-nested editor route remains the entry point; p5.js, C2.js, 3D, and
+  public visitor drawing remain out of scope.
+- Engineering: added deterministic rectangle, ellipse, line, freehand, and
+  erase source patchers with engine-valid editable markers; added visible
+  capability-matrix actions, source preview, undo/redo, and explicit version
+  saving. Added the named Playwright fixed-entry-point coverage and screenshots.
+- Verification pending: focused Vitest/typecheck pass and live Chromium pass
+  are green; the live E2E global teardown still reports its existing fixture
+  cleanup command failure. Run the full `make check`, inspect screenshots, and
+  complete the independent QA reread before closure.
+
 ### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE
 
 - PM/grooming: the live issue body was reread before implementation and after

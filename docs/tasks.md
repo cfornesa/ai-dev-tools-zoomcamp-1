@@ -28,7 +28,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 10 | [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | CLOSED, QA PASS; stage 2a complete | Generated 3D manual tools are complete; continue with #669. |
 | 11 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) | CLOSED, QA PASS; stage 2a complete | Debounced unsaved source/tool preview with error recovery is complete; continue with #670. |
 | 12 | [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | CLOSED, QA PASS; stage 2a complete | Temporary visitor drawing and marked screenshots for C2.js Interactive are complete; continue with #671. |
-| 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
+| 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA BLOCKED | Required `editOutputConsistency.spec.ts` matrix is absent; existing evidence is fragmented and does not satisfy the issue. |
 | 13 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
 | 14 | [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697) | PROPOSED, discovery follow-up | Six-engine captured-thumbnail cards disappear from the owner profile; reconcile before closing the regression. |
 | 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete. |
@@ -49,7 +49,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #671; #640 remains publication-boundary blocked
+The next groomed issue is #672; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
 ### #667 transaction ledger — 2026-09-21 — CLOSED, QA PASS
@@ -93,7 +93,7 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   post-route-change failure is tracked at [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697).
 - Evidence: the SVG canonical profile-card locator is absent after the six
   published fixtures are created and thumbnail capture completes.
-- Next action: triage #697 before its implementation pass; #670 remains the
+- Next action: triage #697 before its implementation pass; #672 remains the
   next groomed implementation issue because this discovery item is explicitly
   recorded and deferred.
 
@@ -124,9 +124,22 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   passed, GitHub evidence posted, and issue closed at
   [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670#issuecomment-5765492174).
 
-### Next groomed issue — #669
+### #671 transaction ledger — 2026-09-21 — OPEN, QA BLOCKED
 
-- Generated-piece real-time preview; re-read the live issue before implementation
+- QA: the live issue was reread before review. The required
+  `frontend/e2e/editOutputConsistency.spec.ts` does not exist, and the
+  existing editor/output suites do not provide the required six-engine
+  manual-plus-AI edit → regular/immersive/ZIP matrix.
+- Reconciliation: no implementation changes were made because #671 is an
+  evidence-only QA boundary. It remains open and blocked pending the named
+  evidence artifact; the independent #697 thumbnail regression remains
+  separately tracked.
+- QA evidence: [#671 QA BLOCKED](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671#issuecomment-5765515374).
+- Next groomed issue: #672.
+
+### Next groomed issue — #672
+
+- Profile style inheritance defect; reread the live issue before implementation
   and keep the work scoped to its acceptance criteria.
 
 ### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE

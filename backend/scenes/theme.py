@@ -62,12 +62,13 @@ def sanitize_theme_config(value: object) -> dict[str, object]:
     return result
 
 
-def effective_theme(value: object) -> dict[str, str]:
-    try:
-        override = sanitize_theme(value)
-    except ValueError:
-        override = {}
-    return {**DEFAULT_THEME, **override}
+def effective_theme(
+    value: object, *, style_tokens: object = None, mode: str = "dark"
+) -> dict[str, str]:
+    """Resolve one mode using default, catalog style, then owner override."""
+    if mode not in {"light", "dark"}:
+        raise ValueError("mode must be light or dark")
+    return effective_theme_palettes(style_tokens, value)[mode]
 
 
 def effective_theme_palettes(style_tokens: object, overrides: object) -> dict[str, dict[str, str]]:

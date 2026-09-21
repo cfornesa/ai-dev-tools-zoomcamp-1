@@ -48,6 +48,25 @@ def test_effective_theme_applies_a_valid_partial_override_over_defaults():
     assert result["background"] == DEFAULT_THEME["background"]
 
 
+def test_effective_theme_resolves_default_style_and_override_per_mode():
+    assert (
+        effective_theme(
+            {"light": {"accent": "#333333"}},
+            style_tokens={"light": {"accent": "#222222"}},
+            mode="light",
+        )["accent"]
+        == "#333333"
+    )
+    assert (
+        effective_theme(
+            {"light": {"accent": "#333333"}},
+            style_tokens={"light": {"background": "#eeeeee"}},
+            mode="light",
+        )["background"]
+        == "#eeeeee"
+    )
+
+
 def test_paired_theme_config_resolves_modes_and_legacy_values_as_dark():
     paired = sanitize_theme_config({"light": {"accent": "#111111"}, "dark": {"accent": "#222222"}})
     assert paired["light"] == {"accent": "#111111"}

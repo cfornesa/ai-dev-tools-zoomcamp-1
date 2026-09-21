@@ -149,6 +149,20 @@ def test_owner_can_create_stable_slug_and_update_collection(owner_client, owner)
 
 
 @pytest.mark.django_db
+def test_collection_slugs_cannot_shadow_public_namespaces(owner_client):
+    generated = _create_collection(owner_client, "Pieces")
+    assert generated["slug"] == "pieces-2"
+
+    response = owner_client.patch(
+        f"/api/account/collections/{generated['id']}/",
+        {"public_slug": "immersive"},
+        format="json",
+    )
+    assert response.status_code == 400
+    assert "reserved" in str(response.json()["detail"])
+
+
+@pytest.mark.django_db
 def test_items_require_owned_published_records_and_preserve_order(owner_client, owner, other):
     collection = _create_collection(owner_client)
     project = _published_project(owner)

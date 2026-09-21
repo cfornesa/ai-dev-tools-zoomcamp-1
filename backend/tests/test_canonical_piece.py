@@ -43,6 +43,7 @@ def test_canonical_piece_resolves_public_piece_and_suffixes_collisions(client):
     assert response.json()["canonical_url"].endswith("/sunset-study")
     assert response.json()["type"] == "generated"
     assert response.json()["piece"]["public_slug"] == "sunset-study"
+    assert response.json()["viewer_url"] == "/users/@artist/pieces/sunset-study"
     assert second.public_slug == "sunset-study-2"
 
 
@@ -64,6 +65,7 @@ def test_canonical_and_legacy_generated_routes_resolve_the_same_public_piece(cli
     assert legacy.status_code == 200
     assert canonical.json()["piece"]["public_id"] == legacy.json()["public_id"]
     assert canonical.json()["piece"]["public_slug"] == piece.public_slug
+    assert canonical.json()["viewer_url"] == "/users/@legacy-artist/pieces/legacy-study"
 
 
 @pytest.mark.django_db
@@ -160,6 +162,7 @@ def test_profile_cards_expose_canonical_urls_for_authored_piece_families(client)
     assert canonical.status_code == 200
     assert canonical.json()["canonical_url"] == "/users/@profile-authored/pieces/spatial-study"
     assert canonical.json()["type"] == "3d"
+    assert canonical.json()["viewer_url"] == "/users/@profile-authored/pieces/spatial-study"
     assert canonical.json()["piece"]["id"] == str(project3d.public_id)
 
 

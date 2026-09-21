@@ -28,7 +28,7 @@ class PublicPieceBySlugView(APIView):
             return Response(
                 {
                     "canonical_url": f"/users/@{handle}/pieces/{project.public_slug}",
-                    "viewer_url": f"/p/{project.public_id}",
+                    "viewer_url": f"/users/@{handle}/pieces/{project.public_slug}",
                     "type": "2d",
                     "piece": ProjectSerializer(project).data,
                 }
@@ -38,7 +38,7 @@ class PublicPieceBySlugView(APIView):
             return Response(
                 {
                     "canonical_url": f"/users/@{handle}/pieces/{project3d.public_slug}",
-                    "viewer_url": f"/p3d/{project3d.public_id}",
+                    "viewer_url": f"/users/@{handle}/pieces/{project3d.public_slug}",
                     "type": "3d",
                     "piece": Project3DSerializer(project3d).data,
                 }
@@ -53,7 +53,7 @@ class PublicPieceBySlugView(APIView):
         if art_piece:
             response = {
                 "canonical_url": f"/users/@{handle}/pieces/{art_piece.public_slug}",
-                "viewer_url": f"/art-pieces/p/{art_piece.public_id}",
+                "viewer_url": f"/users/@{handle}/pieces/{art_piece.public_slug}",
                 "type": "generated",
                 "piece": _piece_data(art_piece, public=True),
             }

@@ -34,9 +34,15 @@ _KIND_TO_LABEL: dict[str, str] = {
     str(CollectionItem.Kind.ART_PIECE): "Generated art piece",
 }
 
+_RESERVED_COLLECTION_SLUGS = frozenset(
+    {"pieces", "collections", "immersive", "edit", "feed", "feeds"}
+)
+
 
 def _slug_for(owner, title: str) -> str:
     base = normalize_public_slug(title)[:110].strip("-") or "collection"
+    if base in _RESERVED_COLLECTION_SLUGS:
+        base = f"{base}-2"
     candidate = base
     suffix = 2
     while (
@@ -249,6 +255,8 @@ def update_collection(
             raise CollectionValidationError("public_slug must contain a letter or number.")
         if len(normalized) > 120:
             raise CollectionValidationError("public_slug must be 120 characters or fewer.")
+        if normalized in _RESERVED_COLLECTION_SLUGS:
+            raise CollectionValidationError("public_slug is reserved by the application.")
         if (
             Collection.objects.filter(owner=locked.owner, slug=normalized)
             .exclude(pk=locked.pk)

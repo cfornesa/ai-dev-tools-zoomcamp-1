@@ -1,5 +1,26 @@
 # Public gallery API contract
 
+## Canonical public piece and editor routes (#684)
+
+Public profile surfaces use the following canonical, profile-nested route
+grammar:
+
+- `/users/@<handle>/pieces/<slug>` — regular view for authored and generated pieces;
+- `/users/@<handle>/immersive/<slug>` — immersive view for a piece;
+- `/users/@<handle>/edit/<slug>` — the owner's piece editor entry point; and
+- `/users/@<handle>/collections/<slug>` plus `/users/@<handle>/collections/<slug>/immersive` — collection views.
+
+The piece engine is a capability/data value (Three.js, p5.js, C2.js, C2.js
+Interactive, A-Frame, or SVG), not a second URL namespace. Public gallery,
+profile, collection, feed, Open Graph, embed, and editor serializers emit the
+canonical paths above whenever a public handle and name-derived slug exist.
+The legacy `/p/:id`, `/p3d/:id`, `/art-pieces/p/:id`, `/art-pieces/immersive/:id`,
+`/immersive/p3d/:id`, and historical `/ai-projects/:id`,
+`/ai-projects3d/:id`, `/projects/:id`, and `/projects3d/:id` paths remain
+documented compatibility shims; they are not emitted as new public links.
+Reserved namespace words (`pieces`, `collections`, `immersive`, `edit`,
+`feed`, and `feeds`) cannot be allocated as public collection slugs.
+
 ## Published AI-agent guidance files (#585)
 
 `GET /llms.txt` and `GET /llms-full.txt` are anonymous, public

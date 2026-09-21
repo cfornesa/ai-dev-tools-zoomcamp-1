@@ -38,10 +38,10 @@ reconciled; #651 is the next engineering issue in the theme chain.
 ### #653 transaction ledger — 2026-09-20
 
 - PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained no-JS OG/Twitter tags for legacy and canonical public piece routes, safe absolute URLs, 1200×630 share images, fallback omission, privacy 404s, escaping, and client metadata compatibility.
-- Engineering: added documented anonymous share-metadata and share-image projections with the same public eligibility gates as the existing detail routes; share images fit stored thumbnails to 1200×630 without executing generated source. Added Vite dev/preview middleware that injects escaped metadata into the SPA shell using configured `PUBLIC_SITE_ORIGIN`, plus client-side preservation of server-provided images and production/Compose origin configuration. Added backend contract tests and source-backed no-JS Chromium coverage. Commit pending.
-- QA: focused backend share-metadata tests passed 2; source-backed Chromium no-JS metadata E2E passed 1; frontend production build passed; full checks are running.
+- Engineering: added documented anonymous share-metadata and share-image projections with the same public eligibility gates as the existing detail routes; share images fit stored thumbnails to 1200×630 without executing generated source. Added Vite dev/preview middleware that injects escaped metadata into the SPA shell using configured `PUBLIC_SITE_ORIGIN`, plus client-side preservation of server-provided images and production/Compose origin configuration. Added backend contract tests and source-backed no-JS Chromium coverage. Commit `7b914d3`.
+- QA: focused backend query `pytest tests/ -k "og or share_meta"` passed 80 (1,417 deselected); source-backed Chromium no-JS metadata E2E passed 1; production build passed; full checks passed with backend 1,458 passed/39 skipped and frontend 243 files/2,747 tests, plus lint, format, typecheck, and action-pin checks.
 - Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No new package dependency; additive API/HTML contract documented before implementation.
-- Reconciliation: GitHub QA comment pending after the final full-check result.
+- Reconciliation: GitHub QA comment [#653 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/653#issuecomment-5755589079) posted; issue is closed.
 
 ### #649 transaction ledger — 2026-09-20
 

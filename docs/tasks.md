@@ -26,7 +26,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 8 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
 | 9 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
 | 10 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
-| 11 | [#676](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/676) → [#683](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/683) | OPEN, shell/style chain | #673 navigation, #674 header chrome, and #675 default style resolution are closed; continue with shell application, spacing/panels, profile-settings diagnosis, then evidence. |
+| 11 | [#677](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/677) → [#683](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/683) | OPEN, shell/style chain | #673 navigation, #674 header chrome, #675 default style resolution, and #676 authenticated shell styling are closed; continue with spacing/panels, profile-settings diagnosis, then evidence. |
 | 12 | [#685](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685) → [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Cards first, then Atom/RSS/JSON feeds, then feeds/discovery page. |
 | 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
@@ -74,6 +74,27 @@ The next groomed issue is #674; #640 remains publication-boundary blocked and
   tests/Chromium only; no production publication claim is made.
 - Reconciliation: issue closed after QA PASS; next independent transaction is
   #676. The separate collection metadata/legacy-shim follow-up is #695.
+
+### #676 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: current issue body re-read after #675 closure; stage 2a scope
+  confirmed for authenticated Studio, editor-shell, and account surfaces at
+  both required widths. Direct Codex/GPT-5 substitution because the rostered
+  Opencode Go service was unavailable.
+- Engineering: stage 2a direct Codex/GPT-5 substitution; kept body text on the
+  readable Lora face, limited the Celestial script face to headings, extended
+  heading-token application across the shell, and added authenticated shell
+  browser coverage. Commit: `8f8cd0c`.
+- QA: [GitHub QA PASS comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/676#issuecomment-5757758156).
+  Focused frontend tests, Chromium checks for `/studio` and
+  `/account/settings` at 1280x900 and 375x812, and full `make check` all
+  passed. Screenshots were captured by the browser spec.
+- Provenance: Stage 3 second-opinion review was not run because Mistral Vibe
+  was unavailable; stage 4 QA was a direct Codex/GPT-5 substitution for the
+  unavailable Claude Sonnet 5 Medium service. Evidence is local/Docker/backend
+  tests/frontend tests/Chromium only; no production publication claim is made.
+- Reconciliation: issue closed after QA PASS; next independent transaction is
+  #677. The separate collection metadata/legacy-shim follow-up is #695.
 
 ### #673 transaction ledger — 2026-09-21 — CLOSED
 

@@ -8,8 +8,16 @@ The current open-issue manifest and dependency reconciliation is recorded in
 Fourteen new PROPOSED-then-filed issues; see
 `docs/distillation-2026-09-20-design-and-share-parity.md` for the manifest,
 dependency order, and duplicate report. #642, #643, and #644 are complete and
-reconciled; #645, #646, #647, #648, and #649 are complete and reconciled;
-#650 is the next engineering issue in the theme chain.
+reconciled; #645, #646, #647, #648, #649, and #650 are complete and
+reconciled; #651 is the next engineering issue in the theme chain.
+
+### #650 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained public collection/piece sections beneath the profile header, public-only membership/count filtering, shared cards, responsive 3/1 grids, and screenshots.
+- Engineering: extended the public profile projection with documented collection summaries and public-member counts, rendered collections before pieces through `PieceCard`, added empty-state/visibility filtering and responsive grid coverage. Commit `ed550c2`.
+- QA: focused profile API tests passed 9; focused profile UI tests passed 10; source-backed Chromium profile-sections E2E passed 2 scenarios with inspected `1280x900` and `375x812` screenshots; final `make check` passed with backend 1,456 passed/39 skipped and frontend 243 files/2,747 tests, plus lint, format, typecheck, and action-pin checks.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Ollama Cloud/kimi-k3 after the API-field requirement routed the issue to complex implementation; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No runtime dependency, migration, or deployment mutation.
+- Reconciliation: GitHub QA comment [#650 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/650#issuecomment-5755160149) posted; issue is ready to close.
 
 ### #649 transaction ledger — 2026-09-20
 

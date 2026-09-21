@@ -37,6 +37,8 @@ export default function PublicCollection() {
   const [collection, setCollection] = useState<Collection | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
   const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const [showEmbed, setShowEmbed] = useState(false);
+  const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   useEffect(() => {
     setState('loading');
@@ -61,6 +63,17 @@ export default function PublicCollection() {
         window.location.href,
       );
   }, [collection]);
+
+  async function copyEmbed() {
+    if (!collection?.embed_url) return;
+    const snippet = `<iframe src="${window.location.origin}${collection.embed_url}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`;
+    try {
+      await navigator.clipboard.writeText(snippet);
+      setEmbedCopyStatus('copied');
+    } catch {
+      setEmbedCopyStatus('failed');
+    }
+  }
 
   if (state === 'loading') return <p role="status">Loading collection…</p>;
   if (state === 'missing') {
@@ -113,17 +126,50 @@ export default function PublicCollection() {
     >
       <header>
         <p>
-          <Link to={`/users/@${collection.handle ?? handle}`}>@{collection.handle ?? handle}</Link>
+          <Link to={`/users/@${collection.handle ?? handle}`}>
+            {profile?.display_name || `@${collection.handle ?? handle}`}
+          </Link>
         </p>
         <h2 id="public-collection-heading">{collection.title}</h2>
         {collection.description && <p>{collection.description}</p>}
-        <p>
+        <div className="public-collection-actions" aria-label="Collection actions">
+          <button
+            type="button"
+            onClick={() => {
+              setShowEmbed((current) => !current);
+              setEmbedCopyStatus('idle');
+            }}
+            aria-expanded={showEmbed}
+          >
+            {showEmbed ? 'Hide embed code' : 'Embed'}
+          </button>
           <Link
-            to={`/users/@${collection.handle ?? handle}/collections/${collection.slug}/immersive`}
+            to={
+              collection.immersive_url ??
+              `/users/@${handle}/collections/${collection.slug}/immersive`
+            }
           >
             Open immersive collection
           </Link>
-        </p>
+        </div>
+        {showEmbed && collection.embed_url && (
+          <div className="public-collection-embed-snippet">
+            <label htmlFor="collection-embed-snippet">Embed this collection</label>
+            <textarea
+              id="collection-embed-snippet"
+              readOnly
+              value={`<iframe src="${window.location.origin}${collection.embed_url}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+            <button type="button" onClick={() => void copyEmbed()}>
+              Copy
+            </button>
+            {embedCopyStatus === 'copied' && <span role="status">Copied!</span>}
+            {embedCopyStatus === 'failed' && (
+              <span role="alert">Select the snippet and copy it manually.</span>
+            )}
+          </div>
+        )}
       </header>
       {collection.items.length === 0 ? (
         <p role="status">This collection has no public items yet.</p>

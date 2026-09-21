@@ -59,6 +59,14 @@ test.describe('collection management and public routes (#568)', () => {
       await expect(
         anonymousPage.getByText('This collection has no public items yet.', { exact: true }),
       ).toBeVisible();
+      await expect(anonymousPage.getByRole('button', { name: 'Embed' })).toBeVisible();
+      await expect(
+        anonymousPage.getByRole('link', { name: 'Open immersive collection' }),
+      ).toBeVisible();
+      await anonymousPage.getByRole('button', { name: 'Embed' }).click();
+      await expect(anonymousPage.locator('#collection-embed-snippet')).toHaveValue(
+        `<iframe src="${anonymousPage.url().split('/users/')[0]}/embed/collections/@${handle}/${collection.slug}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`,
+      );
       await anonymousPage.screenshot({
         path: testInfo.outputPath(`collection-public-${viewport.width}.png`),
         fullPage: true,

@@ -24,6 +24,9 @@ export type Collection = {
   updated_at: string;
   items: CollectionItem[];
   seo_config?: SeoConfig;
+  canonical_url?: string | null;
+  immersive_url?: string | null;
+  embed_url?: string | null;
 };
 
 export function fetchCollections() {

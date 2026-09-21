@@ -29,6 +29,10 @@ function CollectionImmersiveViewer() {
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
   const [activeIndex, setActiveIndex] = useState(0);
   const [captureState, setCaptureState] = useState<'idle' | 'saved' | 'unavailable'>('idle');
+  const [scale, setScale] = useState(1);
+  const [showEmbed, setShowEmbed] = useState(false);
+  const [embedVariant, setEmbedVariant] = useState<'custom' | 'cms'>('custom');
+  const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -107,6 +111,27 @@ function CollectionImmersiveViewer() {
     }
   }
 
+  async function copyEmbed(cms: boolean) {
+    if (!collection?.embed_url) return;
+    const url = `${window.location.origin}${collection.embed_url}${cms ? '?cms=1' : ''}`;
+    const snippet = `<iframe src="${url}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`;
+    try {
+      await navigator.clipboard.writeText(snippet);
+      setEmbedCopyStatus('copied');
+    } catch {
+      setEmbedCopyStatus('failed');
+    }
+  }
+
+  async function toggleFullscreen() {
+    if (!stageRef.current) return;
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await stageRef.current.requestFullscreen();
+    }
+  }
+
   if (state === 'loading') return <p role="status">Loading immersive collection…</p>;
   if (state === 'missing') {
     return (
@@ -140,6 +165,48 @@ function CollectionImmersiveViewer() {
             Use the arrow keys or controls to move through this collection. Home or Reset returns to
             the first item.
           </p>
+          <p className="public-project-attribution">By {collection.owner}</p>
+          {collection.description && (
+            <p className="public-project-context">{collection.description}</p>
+          )}
+          <div className="immersive-collection-embed-actions" aria-label="Embed options">
+            <button
+              type="button"
+              onClick={() => {
+                setEmbedVariant('custom');
+                setShowEmbed((current) => !current);
+              }}
+            >
+              {showEmbed && embedVariant === 'custom' ? 'Hide Embed (Custom)' : 'Embed (Custom)'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmbedVariant('cms');
+                setShowEmbed((current) => !current);
+              }}
+            >
+              {showEmbed && embedVariant === 'cms' ? 'Hide Embed (CMS)' : 'Embed (CMS)'}
+            </button>
+            {showEmbed && collection.embed_url && (
+              <div className="collection-embed-snippet">
+                <label htmlFor="immersive-collection-embed-snippet">Embed this collection</label>
+                <textarea
+                  id="immersive-collection-embed-snippet"
+                  readOnly
+                  value={`<iframe src="${window.location.origin}${collection.embed_url}${embedVariant === 'cms' ? '?cms=1' : ''}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <button type="button" onClick={() => void copyEmbed(embedVariant === 'cms')}>
+                  Copy
+                </button>
+                {embedCopyStatus === 'copied' && <span role="status">Copied!</span>}
+                {embedCopyStatus === 'failed' && (
+                  <span role="alert">Select the snippet and copy it manually.</span>
+                )}
+              </div>
+            )}
+          </div>
         </header>
       )}
 
@@ -158,6 +225,15 @@ function CollectionImmersiveViewer() {
         </button>
         <button type="button" onClick={() => void captureActive()} disabled={!activeItem}>
           Capture
+        </button>
+        <button type="button" onClick={() => setScale((current) => Math.min(1.5, current + 0.1))}>
+          Zoom in
+        </button>
+        <button type="button" onClick={() => setScale((current) => Math.max(0.75, current - 0.1))}>
+          Zoom out
+        </button>
+        <button type="button" onClick={() => void toggleFullscreen()}>
+          {document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen'}
         </button>
       </div>
       {captureState === 'saved' && <p role="status">Capture saved.</p>}
@@ -178,7 +254,14 @@ function CollectionImmersiveViewer() {
             src={embedViewerUrl(activeItem) ?? undefined}
             loading="eager"
             allow="fullscreen; camera; microphone"
-            style={{ border: 0, width: '100%', height: '100%', display: 'block' }}
+            style={{
+              border: 0,
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              transform: `scale(${scale})`,
+              transformOrigin: 'center',
+            }}
           />
         ) : (
           <div className="collection-immersive-placeholder" role="status">

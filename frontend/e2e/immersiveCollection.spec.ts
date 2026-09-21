@@ -43,6 +43,7 @@ test.describe('immersive collection gallery (#557)', () => {
 
       const created = await apiPost(ownerContext, '/api/account/collections/', {
         title: `Immersive room ${viewport.width}`,
+        description: 'A navigable immersive collection fixture.',
       });
       expect(created.status()).toBe(201);
       const collection = (await created.json()) as { id: string; slug: string };
@@ -65,6 +66,15 @@ test.describe('immersive collection gallery (#557)', () => {
       await expect(
         page.getByRole('heading', { name: `Immersive room ${viewport.width}` }),
       ).toBeVisible();
+      await expect(page.getByText('By e2e_owner', { exact: true })).toBeVisible();
+      await expect(
+        page.getByText('A navigable immersive collection fixture.', { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Embed (Custom)' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Embed (CMS)' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Zoom in' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Zoom out' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Fullscreen' })).toBeVisible();
       await expect(page.locator('[data-live-slot-budget="1"]')).toBeVisible();
       await expect(page.getByTitle('Live view of Immersive first')).toHaveAttribute(
         'src',
@@ -85,6 +95,7 @@ test.describe('immersive collection gallery (#557)', () => {
         embedPage.getByRole('heading', { name: `Immersive room ${viewport.width}` }),
       ).toHaveCount(0);
       await expect(embedPage.getByRole('button', { name: 'Next' })).toBeVisible();
+      await expect(embedPage.getByRole('button', { name: 'Embed (Custom)' })).toHaveCount(0);
 
       await apiDelete(ownerContext, `/api/account/collections/${collection.id}/`);
       for (const id of projects) await apiDelete(ownerContext, `/api/projects/${id}/`);

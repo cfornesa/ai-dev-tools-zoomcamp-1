@@ -102,7 +102,7 @@ time after QA and reconciliation.
 
 #636, #637, #638, and #641 are closed with canonical route/API behavior, slug/privacy tests,
 legacy compatibility evidence, fixed-viewport Chromium evidence, and full
-checks. #639 is now the next collection-surface transaction; #640 remains
+checks. #639 is the active collection-surface transaction; #640 remains
 deferred until the relevant public surfaces are reconciled.
 
 ## Re-distillation of agent-created follow-ups — 2026-09-20

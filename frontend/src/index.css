@@ -3598,6 +3598,30 @@ select.ai-proposal-field-full-width {
   background: var(--code-bg);
 }
 
+.public-collection-actions,
+.immersive-collection-embed-actions,
+.collection-immersive-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.public-collection-embed-snippet,
+.collection-embed-snippet {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 48rem;
+  margin-top: 0.75rem;
+}
+
+.public-collection-embed-snippet textarea,
+.collection-embed-snippet textarea {
+  width: 100%;
+  min-height: 4rem;
+  box-sizing: border-box;
+}
+
 .public-collection-card [role='img'] {
   display: grid;
   place-items: center;
@@ -4107,6 +4131,14 @@ select.ai-proposal-field-full-width {
   border-radius: 0.5rem;
   background: #111;
   outline-offset: 4px;
+}
+
+.collection-immersive-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
 }
 
 .collection-immersive-placeholder {

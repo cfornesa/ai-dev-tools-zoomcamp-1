@@ -5,6 +5,14 @@ import ReducedMotionControl from './ReducedMotionControl';
 import { useIsMobileHeader } from './useIsMobileHeader';
 import { useAuth } from '../auth/useAuth';
 import { fetchSiteTheme } from '../api/siteTheme';
+import {
+  applyThemePreference,
+  persistThemePreference,
+  readThemePreference,
+  resolveThemeMode,
+  subscribeToSystemTheme,
+  type ThemePreference,
+} from '../theme';
 
 /**
  * Task 64 (issue #64): app-shell skip link, per `_docs/plan.md`'s
@@ -32,67 +40,88 @@ function Layout() {
   const navigate = useNavigate();
   const isMobileHeader = useIsMobileHeader();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [themePreference, setThemePreference] = useState<ThemePreference>(() =>
+    readThemePreference(),
+  );
+  const [systemThemeRevision, setSystemThemeRevision] = useState(0);
+  const [siteTheme, setSiteTheme] = useState<Awaited<ReturnType<typeof fetchSiteTheme>> | null>(
+    null,
+  );
 
   useEffect(() => {
-    let mounted = true;
     fetchSiteTheme()
-      .then((theme) => {
-        if (!mounted) return;
-        const root = document.documentElement;
-        const mapping: Record<string, string> = {
-          background: '--bg',
-          surface: '--code-bg',
-          text: '--text-h',
-          muted: '--text',
-          accent: '--accent',
-        };
-        Object.entries(mapping).forEach(([key, variable]) => {
-          const value = theme[key];
-          if (value) root.style.setProperty(variable, value);
-        });
-        const fonts: Record<string, string> = {
-          system: "system-ui, 'Segoe UI', Roboto, sans-serif",
-          serif: "Georgia, 'Times New Roman', serif",
-          mono: 'ui-monospace, Consolas, monospace',
-          script: "'Pinyon Script', Georgia, 'Times New Roman', serif",
-        };
-        const presentation = theme.presentation;
-        if (presentation?.font_family && fonts[presentation.font_family]) {
-          root.style.setProperty('--site-font', fonts[presentation.font_family]);
-          root.dataset.siteFont = presentation.font_family;
-        }
-        if (presentation?.density) {
-          root.style.setProperty(
-            '--site-density',
-            presentation.density === 'compact' ? '12px' : '20px',
-          );
-        }
-        if (presentation?.radius) {
-          root.style.setProperty(
-            '--site-radius',
-            presentation.radius === 'sharp'
-              ? '2px'
-              : presentation.radius === 'pill'
-                ? '999px'
-                : '8px',
-          );
-        }
-        if (presentation?.border_style) {
-          root.style.setProperty(
-            '--site-border-style',
-            presentation.border_style === 'none' ? 'none' : presentation.border_style,
-          );
-        }
-        if (presentation?.shadow) root.dataset.siteShadow = presentation.shadow;
-        if (presentation?.backdrop) root.dataset.siteBackdrop = presentation.backdrop;
-      })
+      .then(setSiteTheme)
       .catch(() => {
         /* keep the compiled safe defaults */
       });
-    return () => {
-      mounted = false;
-    };
   }, []);
+
+  useEffect(() => {
+    applyThemePreference(themePreference);
+    if (themePreference !== 'system') return undefined;
+    return subscribeToSystemTheme(() => {
+      applyThemePreference('system');
+      setSystemThemeRevision((revision) => revision + 1);
+    });
+  }, [themePreference]);
+
+  useEffect(() => {
+    if (!siteTheme) return;
+    const root = document.documentElement;
+    const mode = resolveThemeMode(themePreference);
+    const palette = siteTheme.theme_palettes?.[mode] ?? siteTheme;
+    const mapping: Record<string, string> = {
+      background: '--bg',
+      surface: '--code-bg',
+      text: '--text-h',
+      muted: '--text',
+      accent: '--accent',
+    };
+    Object.entries(mapping).forEach(([key, variable]) => {
+      const value = palette[key];
+      if (value) root.style.setProperty(variable, value);
+    });
+    const fonts: Record<string, string> = {
+      system: "system-ui, 'Segoe UI', Roboto, sans-serif",
+      serif: "Georgia, 'Times New Roman', serif",
+      mono: 'ui-monospace, Consolas, monospace',
+      script: "'Pinyon Script', Georgia, 'Times New Roman', serif",
+    };
+    const presentation = siteTheme.presentation;
+    if (presentation?.font_family && fonts[presentation.font_family]) {
+      root.style.setProperty('--site-font', fonts[presentation.font_family]);
+      root.dataset.siteFont = presentation.font_family;
+    }
+    if (presentation?.density) {
+      root.style.setProperty(
+        '--site-density',
+        presentation.density === 'compact' ? '12px' : '20px',
+      );
+    }
+    if (presentation?.radius) {
+      root.style.setProperty(
+        '--site-radius',
+        presentation.radius === 'sharp' ? '2px' : presentation.radius === 'pill' ? '999px' : '8px',
+      );
+    }
+    if (presentation?.border_style) {
+      root.style.setProperty(
+        '--site-border-style',
+        presentation.border_style === 'none' ? 'none' : presentation.border_style,
+      );
+    }
+    if (presentation?.shadow) root.dataset.siteShadow = presentation.shadow;
+    if (presentation?.backdrop) root.dataset.siteBackdrop = presentation.backdrop;
+  }, [siteTheme, themePreference, systemThemeRevision]);
+
+  function updateThemePreference(next: ThemePreference) {
+    setThemePreference(next);
+    persistThemePreference(next);
+  }
+
+  function toggleExplicitTheme() {
+    updateThemePreference(resolveThemeMode(themePreference) === 'dark' ? 'light' : 'dark');
+  }
 
   // Issue #90: collapsing back to desktop width while the mobile menu is
   // open would otherwise leave menuOpen stuck true, showing the (now
@@ -169,6 +198,35 @@ function Layout() {
               <span aria-hidden="true">☰</span>
             </button>
           )}
+        </div>
+        <div className="app-shell-theme-controls" aria-label="Color mode">
+          <button
+            type="button"
+            className="shell-action"
+            onClick={toggleExplicitTheme}
+            aria-label={
+              resolveThemeMode(themePreference) === 'dark'
+                ? 'Switch to light mode'
+                : 'Switch to dark mode'
+            }
+            title="Toggle light and dark mode"
+          >
+            <span aria-hidden="true">
+              {resolveThemeMode(themePreference) === 'dark' ? '☀' : '☾'}
+            </span>
+          </button>
+          <label>
+            <span className="visually-hidden">Color mode preference</span>
+            <select
+              aria-label="Color mode preference"
+              value={themePreference}
+              onChange={(event) => updateThemePreference(event.target.value as ThemePreference)}
+            >
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
         </div>
         {isMobileHeader ? (
           <>

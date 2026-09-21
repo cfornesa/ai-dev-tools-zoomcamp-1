@@ -68,8 +68,9 @@ The next groomed issue is #693; #640 remains publication-boundary blocked and
 - Provenance: direct Codex/GPT-5 substitution because rostered external
   implementation/review services were unavailable; no new dependency,
   migration, or production-publication claim.
-- Reconciliation: GitHub QA PASS and closure follow after this ledger update;
-  next transaction is #693. No new actionable issue was found in scope.
+- Reconciliation: [GitHub QA PASS](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/692#issuecomment-5760938220)
+  was posted after the final issue reread; #692 is closed and the next
+  transaction is #693. No new actionable issue was found in scope.
 
 ### #674 transaction ledger — 2026-09-21 — CLOSED
 

@@ -114,6 +114,8 @@ export type PublicProject3D = {
   title: string;
   seo_config?: SeoConfig;
   thumbnail_url: string | null;
+  /** Canonical profile-nested viewer path; legacy ID paths are shims only. */
+  viewer_url?: string;
   current_version: SceneVersion3D | null;
   created_at: string;
   updated_at: string;

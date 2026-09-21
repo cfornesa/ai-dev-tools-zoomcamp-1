@@ -773,6 +773,7 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source="owner.username", read_only=True)
     current_version = PublicSceneVersion3DSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
+    viewer_url = serializers.SerializerMethodField()
     collections = serializers.SerializerMethodField()
 
     class Meta:
@@ -783,6 +784,7 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
             "title",
             "seo_config",
             "thumbnail_url",
+            "viewer_url",
             "collections",
             "current_version",
             "created_at",
@@ -794,6 +796,9 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_viewer_url(self, project: Project3D) -> str:
+        return piece_viewer_path(project, "3d")
 
     def get_collections(self, project: Project3D) -> list[dict[str, str]]:
         from scenes.collections import public_collection_context

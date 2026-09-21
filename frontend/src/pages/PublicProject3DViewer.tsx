@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { getPublicProject3D, type PublicProject3D } from '../api/projects3d';
@@ -39,6 +39,8 @@ function PublicProject3DViewer({
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = routeId ?? initialProject?.id;
+  const location = useLocation();
+  const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<PublicProject3D | null>(initialProject ?? null);
   // Issue #296 (mirrors #293's 2D embed snippet exactly): reaching this
@@ -63,6 +65,17 @@ function PublicProject3DViewer({
     getPublicProject3D(id)
       .then((fetched) => {
         if (cancelled) return;
+        // `/p3d/:id` is a compatibility entry point. Keep the embed route's
+        // chrome-less contract intact while moving the public viewer to the
+        // canonical profile-nested slug surface.
+        if (
+          routeId &&
+          !location.pathname.startsWith('/embed/') &&
+          fetched.viewer_url?.startsWith('/users/@')
+        ) {
+          navigate(fetched.viewer_url, { replace: true });
+          return;
+        }
         setProject(fetched);
         setLoadState('ready');
       })
@@ -78,7 +91,7 @@ function PublicProject3DViewer({
     return () => {
       cancelled = true;
     };
-  }, [id, initialProject]);
+  }, [id, initialProject, location.pathname, navigate, routeId]);
 
   useEffect(() => {
     if (project) {

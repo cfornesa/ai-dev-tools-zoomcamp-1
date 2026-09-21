@@ -25,6 +25,7 @@ function basePublicProject3D(overrides: Partial<PublicProject3D> = {}): PublicPr
     owner: 'alice',
     title: 'Rotating Cube',
     thumbnail_url: '/api/public/projects3d/p1/thumbnail.png',
+    viewer_url: '/legacy/p3d/p1',
     current_version: {
       id: 1,
       sequence: 1,
@@ -61,6 +62,7 @@ function renderViewer(id = 'p1') {
       <Routes>
         <Route path="/gallery" element={<p>Gallery placeholder</p>} />
         <Route path="/p3d/:id" element={<PublicProject3DViewer />} />
+        <Route path="/users/@alice/pieces/rotating-cube" element={<p>Canonical 3D piece</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -89,6 +91,17 @@ describe('PublicProject3DViewer load states', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     expect(screen.getByRole('button', { name: 'Open download menu' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View in immersive mode' })).toBeInTheDocument();
+  });
+
+  it('redirects the legacy ID route to the canonical profile-nested piece path', async () => {
+    mockedGetPublicProject3D.mockResolvedValue(
+      basePublicProject3D({ viewer_url: '/users/@alice/pieces/rotating-cube' }),
+    );
+
+    renderViewer();
+
+    expect(await screen.findByText('Canonical 3D piece')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Rotating Cube' })).not.toBeInTheDocument();
   });
 
   it('applies configured SEO/AEO metadata to the public 3D viewer', async () => {

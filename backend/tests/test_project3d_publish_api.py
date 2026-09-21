@@ -148,6 +148,7 @@ def test_public_detail_returns_the_current_version_for_a_published_project_anony
     assert body["title"] == "A real scene"
     assert body["current_version"]["sequence"] == 1
     assert body["owner"] == "alice3d-publish"
+    assert body["viewer_url"].endswith(f"/p3d/{public_id}")
     # No internal/owner-private fields leak through.
     assert "is_deleted" not in body
     assert "visibility" not in body

@@ -112,8 +112,12 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  */
 function PublicProjectViewer({
   initialProject,
+  toolbarMode = 'menu',
+  authorDisplayName,
 }: {
   initialProject?: PublicProject;
+  toolbarMode?: 'menu' | 'inline';
+  authorDisplayName?: string;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = routeId ?? initialProject?.id;
@@ -459,7 +463,7 @@ function PublicProjectViewer({
             </span>
           )}
           {project.description && <p>{project.description}</p>}
-          <p className="public-project-attribution">By {project.owner}</p>
+          <p className="public-project-attribution">By {authorDisplayName || project.owner}</p>
 
           {provenance &&
             (provenance.source_public_id ? (
@@ -581,6 +585,7 @@ function PublicProjectViewer({
                 onScreenshot={() => void handleTakeScreenshot()}
                 onDownload={(variant) => handleDownload(variant)}
                 capabilities={TWO_D_STAGE_CAPABILITIES}
+                toolbarMode={toolbarMode}
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={() => void toggleFullscreen()}
                 controlsControl={

@@ -100,13 +100,12 @@ time after QA and reconciliation.
 
 ## Next issue closure contract
 
-#636 is closed with canonical piece route/API behavior, slug/privacy tests,
+#636 and #641 are closed with canonical route/API behavior, slug/privacy tests,
 legacy compatibility evidence, fixed-viewport Chromium evidence, and full
-checks. #641 is the active collection transaction and must finish with
-canonical collection route/API behavior, slug mutation/history/privacy tests,
-legacy redirect/shim evidence, fixed-viewport Chromium evidence,
-`docs/api.md` updated before the endpoint contract, and full checks. #637–#640
-remain deferred until their dependencies are reconciled.
+checks. #637 is now the active regular piece-surface transaction and must
+finish with canonical public rendering, named control/button evidence,
+profile/context assertions, fixed-viewport Chromium evidence, and full checks.
+#638–#640 remain deferred until their dependencies are reconciled.
 
 ## Re-distillation of agent-created follow-ups — 2026-09-20
 

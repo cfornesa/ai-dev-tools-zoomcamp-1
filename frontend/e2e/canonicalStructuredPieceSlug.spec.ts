@@ -39,6 +39,7 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
   const publicProfileResponse = await apiGet(page.context(), `/api/users/@${profile.handle}/`);
   expect(publicProfileResponse.status()).toBe(200);
   const publicProfile = (await publicProfileResponse.json()) as {
+    profile: { display_name: string };
     pieces: Array<{ id: string; slug: string; type: string; title: string }>;
   };
   const piece2d = publicProfile.pieces.find((piece) => piece.id === project2d.id);
@@ -62,6 +63,15 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
         anonymousPage.getByRole('heading', { name: piece2d.title, exact: true }),
       ).toBeVisible();
       await expect(anonymousPage.getByTestId('public-scene-canvas')).toBeVisible();
+      await expect(
+        anonymousPage.getByText(`By ${publicProfile.profile.display_name}`, { exact: true }),
+      ).toBeVisible();
+      await expect(
+        anonymousPage.getByRole('button', { name: 'Open piece controls menu' }),
+      ).toHaveCount(0);
+      await expect(anonymousPage.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+      await expect(anonymousPage.getByRole('button', { name: 'Open download menu' })).toBeVisible();
+      await expect(anonymousPage.getByText('Canonical structured 2D route fixture.')).toBeVisible();
       expect(anonymousPage.url()).toContain(`/users/@${profile.handle}/pieces/${piece2d.slug}`);
 
       await anonymousPage.goto(`/users/@${profile.handle}/pieces/${piece3d.slug}`);
@@ -69,6 +79,20 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
         anonymousPage.getByRole('heading', { name: piece3d.title, exact: true }),
       ).toBeVisible();
       await expect(anonymousPage.getByTestId('scene3d-preview-canvas-frame')).toBeVisible();
+      await expect(
+        anonymousPage.getByText(`By ${publicProfile.profile.display_name}`, { exact: true }),
+      ).toBeVisible();
+      await expect(
+        anonymousPage.getByRole('button', { name: 'Open piece controls menu' }),
+      ).toHaveCount(0);
+      await expect(anonymousPage.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+      await expect(anonymousPage.getByRole('button', { name: 'Open download menu' })).toBeVisible();
+      await expect(
+        anonymousPage.getByRole('button', { name: 'View immersive piece' }),
+      ).toBeVisible();
+      await expect(anonymousPage.getByRole('link', { name: 'View immersive piece' })).toHaveCount(
+        0,
+      );
       expect(anonymousPage.url()).toContain(`/users/@${profile.handle}/pieces/${piece3d.slug}`);
     }
   } finally {

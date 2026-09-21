@@ -28,8 +28,12 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  */
 function PublicProject3DViewer({
   initialProject,
+  toolbarMode = 'menu',
+  authorDisplayName,
 }: {
   initialProject?: PublicProject3D;
+  toolbarMode?: 'menu' | 'inline';
+  authorDisplayName?: string;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = routeId ?? initialProject?.id;
@@ -159,7 +163,10 @@ function PublicProject3DViewer({
     <div className="public-project-viewer" data-project-kind="original">
       <header>
         <h2>{project.title}</h2>
-        <p className="public-project-attribution">By {project.owner}</p>
+        <p className="public-project-attribution">By {authorDisplayName || project.owner}</p>
+        {!!project.seo_config?.description && (
+          <p className="public-project-context">{project.seo_config.description}</p>
+        )}
 
         <p>
           <button
@@ -213,6 +220,7 @@ function PublicProject3DViewer({
             screenshotBaseName={project.title}
             onDownload={(variant) => void handleDownload(variant)}
             immersiveHref={`/immersive/p3d/${id}`}
+            toolbarMode={toolbarMode}
           />
         )}
       </section>

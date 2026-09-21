@@ -222,6 +222,7 @@ function Scene3DPreview({
   onDownload,
   downloadFormat = 'zip',
   immersiveHref,
+  toolbarMode = 'menu',
   editorControls,
   createGestureCameraProvider,
 }: {
@@ -244,6 +245,7 @@ function Scene3DPreview({
   downloadFormat?: 'html' | 'zip';
   /** Optional public immersive entry point rendered in the stage toolbar. */
   immersiveHref?: string;
+  toolbarMode?: 'menu' | 'inline';
   /** Optional authoring actions rendered inside the same stage toolbar. */
   editorControls?: ReactNode;
   /** Test seam mirroring `CameraControl.tsx`'s own `createProvider` prop
@@ -762,6 +764,7 @@ function Scene3DPreview({
           <PieceStageToolbar
             ariaLabel="Preview actions"
             immersiveHref={immersiveHref}
+            toolbarMode={toolbarMode}
             onDownload={onDownload}
             downloadFormat={downloadFormat}
             capabilities={THREE_D_STAGE_CAPABILITIES}
@@ -820,6 +823,7 @@ function Scene3DPreview({
           downloadFormat={downloadFormat}
           capabilities={THREE_D_STAGE_CAPABILITIES}
           immersiveHref={immersiveHref}
+          toolbarMode={toolbarMode}
           isFullscreen={isFullscreen}
           onToggleFullscreen={toggleFullscreen}
           soundControl={

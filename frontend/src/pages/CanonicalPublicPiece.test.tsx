@@ -7,6 +7,7 @@ import CanonicalPublicPiece from './CanonicalPublicPiece';
 
 vi.mock('../api/profile', () => ({
   fetchCanonicalPublicPiece: vi.fn(),
+  fetchPublicProfile: vi.fn().mockRejectedValue(new Error('profile unavailable')),
 }));
 
 vi.mock('./PublicProject3DViewer', () => ({

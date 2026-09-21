@@ -36,13 +36,14 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 17 | [#688](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/688) | CLOSED, QA PASS | Per-profile JSON Feed 1.1 is complete; continue with the feeds/discovery page at #689. |
 | 18 | [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | CLOSED, QA PASS | Feeds/discovery page and server-rendered profile feed alternates are complete; continue with #690. |
 | 19 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) | CLOSED, QA PASS | Generated-piece regular inline toolset is complete; continue with #691. |
-| 20 | [#691](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/691) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Immersive generated-piece parity, then remaining toolset consumers and evidence matrix. |
+| 20 | [#691](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/691) | CLOSED, QA PASS | Generated immersive inline toolset is complete; continue with #692. |
+| 21 | [#692](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/692) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Remaining generated/legacy consumers and final evidence matrix. |
 | 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #691; #640 remains publication-boundary blocked and
+The next groomed issue is #692; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
 
 ### #674 transaction ledger — 2026-09-21 — CLOSED
@@ -412,6 +413,33 @@ The next groomed issue is #691; #640 remains publication-boundary blocked and
   local/Docker/Chromium only; no production publication claim is made.
 - Reconciliation: issue closed after the QA PASS; the next independent
   transaction is #691. The separate collection metadata/legacy-shim follow-up
+  remains #695.
+
+### #691 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: the live issue body was reread before implementation. Scope was
+  limited to the canonical `/users/@<handle>/immersive/<slug>` generated-piece
+  viewer, inline labelled toolbar, engine capability gating, full-viewport
+  overlay behavior, Back to regular viewer navigation, and screenshots for
+  Canvas 2D, Three.js, and A-Frame. Regular parity and structured immersive
+  surfaces remain separate issues.
+- Engineering: reused the inline generated-piece toolbar in immersive mode,
+  exposed the reference `VR` label for the immersive action, preserved
+  fullscreen/download/screenshot and engine-gated controls, and added
+  issue-specific Chromium coverage. Commit: `6d868d5`.
+- QA: [GitHub QA PASS comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/691#issuecomment-5760577681).
+  Focused immersive/toolbar tests passed 8/8; Chromium passed 3/3 for Canvas
+  2D, Three.js, and A-Frame at 375px with screenshots inspected; and `make
+  check` passed with backend 1,476 passed/39 skipped and frontend 245
+  files/2,758 tests. The known Docker fixture-cleanup mismatch remains
+  documented.
+- Provenance: Stage 2a implementation and stage 4 QA were direct Codex/GPT-5
+  substitutions because the rostered external services were unavailable; the
+  stage 3 independent-family review was not run because Mistral Vibe was
+  unavailable. Intake outcome: ACCEPTED. Evidence is local/Docker/Chromium
+  only; no production publication claim is made.
+- Reconciliation: issue closed after the QA PASS; the next independent
+  transaction is #692. The separate collection metadata/legacy-shim follow-up
   remains #695.
 
 ### #673 transaction ledger — 2026-09-21 — CLOSED

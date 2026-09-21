@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
 import Studio from './pages/Studio';
+import { useAuth } from './auth/useAuth';
 
 /** Task 130 (issue #162): these routes pull in the app's heaviest
  * dependencies (p5.js, React Flow, JSZip/export, the AI proposal stack) --
@@ -58,6 +59,18 @@ function ProjectSettingsRedirect() {
   return <Navigate to={`/projects/${id}`} replace />;
 }
 
+function RootRedirect() {
+  const auth = useAuth();
+  if (auth.status === 'loading') {
+    return (
+      <p role="status" aria-live="polite">
+        Loading…
+      </p>
+    );
+  }
+  return <Navigate to={auth.status === 'signed-in' ? '/studio' : '/gallery'} replace />;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -65,7 +78,7 @@ function App() {
         <Suspense fallback={null}>
           <Routes>
             <Route path="/" element={<Layout />}>
-              <Route index element={<Home />} />
+              <Route index element={<RootRedirect />} />
               <Route path="home" element={<Home />} />
               <Route path="studio" element={<Studio />} />
               {/* Task 50: reachable without authentication -- this route

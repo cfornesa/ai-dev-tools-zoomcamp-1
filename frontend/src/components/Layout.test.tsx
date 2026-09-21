@@ -99,18 +99,18 @@ describe('Layout: authentication control and attribution', () => {
 });
 
 describe('Layout: public navigation (#645)', () => {
-  it('renders Home, Gallery, and published CMS navigation pages', async () => {
+  it('renders Gallery and published CMS navigation pages without a Home item', async () => {
     vi.mocked(publicPagesApi.fetchPublicPageNavigation).mockResolvedValueOnce([
       { id: 1, title: 'About the studio', slug: 'about', nav_label: 'About', sort_order: 1 },
     ]);
 
     renderWithAuth({ status: 'signed-out', user: null });
 
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Public gallery' })).toHaveAttribute(
       'href',
       '/gallery',
     );
+    expect(screen.queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
     expect(await screen.findByRole('link', { name: 'About' })).toHaveAttribute(
       'href',
       '/pages/about',
@@ -206,6 +206,7 @@ describe('Layout: mobile hamburger menu', () => {
     expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Public gallery' })).toBeVisible();
     expect(screen.getByRole('link', { name: 'Login' })).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
   });
 
   it('shows a hamburger toggle instead of inline actions below the breakpoint', () => {
@@ -230,6 +231,7 @@ describe('Layout: mobile hamburger menu', () => {
     const menu = screen.getByRole('navigation', { name: 'Primary navigation' });
     expect(menu).toBeVisible();
     expect(screen.getByRole('link', { name: 'Public gallery' })).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Login' })).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Account settings' })).not.toBeInTheDocument();
 

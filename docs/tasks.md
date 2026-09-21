@@ -29,12 +29,26 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 11 | [#673](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/673) → [#683](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/683) | OPEN, shell/style chain | Process in issue-body dependency order: navigation, chrome, default style, shell application, spacing/panels, profile-settings diagnosis, then evidence. |
 | 12 | [#685](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685) → [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Cards first, then Atom/RSS/JSON feeds, then feeds/discovery page. |
 | 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
+| 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #684; no implementation begins until its documented
-redirect/shim plan is confirmed against `docs/api.md` and the current route
-serializers.
+The next groomed issue is #673; #640 remains publication-boundary blocked and
+#695 is a linked collection-specific follow-up discovered after #684 closure.
+
+### #695 discovered follow-up — 2026-09-21 — PROPOSED
+
+- Discovery gate: after #684, the live issue inventory identified that
+  collection-specific server-rendered OG/canonical metadata and a permanent
+  redirect from `/users/@<handle>/<collectionSlug>` remain distinct from
+  #684's general route grammar/link-emission contract.
+- Duplicate search: #684 documents canonical collection links and reserves
+  namespace slugs, while #653/#654 own the shared metadata mechanism; no
+  existing open issue owns the collection legacy redirect plus metadata
+  correction. Closed #654 remains historical and is not reopened.
+- Filed and linked: [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1).
+  The issue is criterion-ready, stage 2b complex, and deferred until its
+  dependency/order slot.
 
 ## 2026-09-20 — Design, theme, profile, and share-thumbnail parity (#642–#655)
 

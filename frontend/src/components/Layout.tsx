@@ -262,9 +262,6 @@ function Layout() {
               aria-label="Primary navigation"
               hidden={!menuOpen}
             >
-              <NavLink className="shell-action" to="/" end>
-                Home
-              </NavLink>
               <NavLink
                 className="shell-action"
                 to={auth.status === 'signed-in' ? '/studio' : '/gallery'}
@@ -288,9 +285,6 @@ function Layout() {
           </>
         ) : (
           <nav className="app-shell-nav" aria-label="Primary navigation">
-            <NavLink className="shell-action" to="/" end>
-              Home
-            </NavLink>
             <NavLink
               className="shell-action"
               to={auth.status === 'signed-in' ? '/studio' : '/gallery'}

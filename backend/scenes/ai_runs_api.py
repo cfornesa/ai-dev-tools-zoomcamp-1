@@ -59,6 +59,7 @@ def _serialize_run(run: AIRun) -> dict:
         "candidate_patch": run.candidate_patch,
         "change_summary": run.change_summary,
         "plan_summary": run.plan_summary,
+        "plan": run.plan,
         "validation_summary": run.validation_summary,
         "error_reason": run.error_reason,
         "usage": {

@@ -2114,6 +2114,9 @@ class AIRun(models.Model):
     candidate_patch = models.JSONField(null=True, blank=True)
     change_summary = models.TextField(blank=True, default="")
     plan_summary = models.TextField(blank=True, default="")
+    # Structured, server-validated plan captured before the first provider
+    # attempt. Nullable for backwards compatibility with pre-#656 rows.
+    plan = models.JSONField(null=True, blank=True)
     validation_summary = models.TextField(blank=True, default="")
     error_reason = models.CharField(max_length=64, blank=True, default="")
 

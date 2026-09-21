@@ -40,6 +40,14 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - Discovery gate: #655's required Celestial/Pareto screenshot matrix showed that the no-override `e2e_other` profile renders the default dark profile panel instead of inheriting the active site-wide Celestial palette. Search found the related closed cascade contract #577 but no open duplicate covering this inherited-default behavior.
 - Filed and linked: [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672). This is outside #655's evidence-only scope; it is not fixed here.
 
+### #656 transaction ledger — 2026-09-21
+
+- PM/groom: live GitHub issue was re-read before implementation and remains authoritative; scope stayed additive structured plans for AI runs, finite success-criteria types, stable target-ID validation, pre-provider persistence, API exposure, and legacy-row readability.
+- Engineering: documented the plan contract before endpoint changes; added nullable `AIRun.plan`, migration `0083_airun_plan`, server-side plan generation/validation at run start, stable-ID selection checks, API serialization, and focused regression coverage for 2D/3D/API lifecycles. Commit pending.
+- QA: focused AI-run suite passed 24/1 skipped; full `make check` passed with backend 1,461/39 skipped and frontend 2,747 tests across 243 files; lint, format, typecheck, migration check, frontend build/test, and action-pin checks passed.
+- Provenance: scoping and implementation Codex/GPT-5 substitutions for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substitution for Claude Sonnet 5 Medium. Additive migration documented before implementation.
+- Reconciliation: GitHub QA comment pending after commit and final live issue re-read.
+
 ### #655 transaction ledger — 2026-09-21
 
 - PM/groom: live GitHub issue was re-read before QA; this remained an evidence-only pass for Celestial/Pareto across home, gallery, two profiles, both modes, both viewports, and reduced motion. No product fix was authorized by the issue.

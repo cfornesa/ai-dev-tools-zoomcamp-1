@@ -82,6 +82,84 @@ _REPAIRABLE_CATEGORIES = (
     AIErrorCategory.PROVIDER_REJECTION,
 )
 
+PLAN_CRITERION_TYPES = frozenset(
+    {"object_exists", "property_equals", "count_between", "renders_nonblank"}
+)
+
+
+def _stable_scene_ids(scene_json: dict[str, Any] | None) -> set[str]:
+    ids: set[str] = set()
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            if isinstance(value.get("id"), str):
+                ids.add(value["id"])
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(scene_json or {})
+    return ids
+
+
+def validate_plan(plan: dict[str, Any], scene_json: dict[str, Any] | None = None) -> None:
+    """Validate the bounded structured plan contract before implementation."""
+    if not isinstance(plan, dict) or plan.get("revision") != 1:
+        raise InvalidTarget("plan revision must be 1.")
+    steps = plan.get("steps")
+    target_ids = plan.get("target_ids")
+    criteria = plan.get("success_criteria")
+    if not isinstance(steps, list) or not steps:
+        raise InvalidTarget("plan steps must be a non-empty list.")
+    if not isinstance(target_ids, list) or any(
+        not isinstance(target_id, str) or not target_id for target_id in target_ids
+    ):
+        raise InvalidTarget("plan target_ids must be a list of stable string IDs.")
+    if len(set(target_ids)) != len(target_ids):
+        raise InvalidTarget("plan target_ids must be unique.")
+    if not isinstance(criteria, list) or not criteria:
+        raise InvalidTarget("plan success_criteria must be a non-empty list.")
+    for step in steps:
+        if not isinstance(step, dict) or not isinstance(step.get("id"), str):
+            raise InvalidTarget("every plan step requires a stable string id.")
+        step_targets = step.get("target_ids", [])
+        if not isinstance(step_targets, list) or not set(step_targets).issubset(target_ids):
+            raise InvalidTarget("plan step target_ids must be declared by the plan.")
+    for criterion in criteria:
+        if not isinstance(criterion, dict) or criterion.get("type") not in PLAN_CRITERION_TYPES:
+            raise InvalidTarget("plan contains an unsupported success criterion type.")
+        if not isinstance(criterion.get("parameters", {}), dict):
+            raise InvalidTarget("plan criterion parameters must be an object.")
+    if scene_json is not None and not set(target_ids).issubset(_stable_scene_ids(scene_json)):
+        raise InvalidTarget("plan references an ID that is not present in the target scene.")
+
+
+def _build_plan(
+    *, operation: str, scope: str, selected_target_ids: list[Any], scene_json: dict[str, Any] | None
+) -> dict[str, Any]:
+    target_ids = (
+        [str(target_id) for target_id in selected_target_ids]
+        if scope == AIRun.Scope.SELECTION
+        else []
+    )
+    action = "generate_scene" if operation == AIRun.Operation.CREATE else "edit_scene"
+    criteria: list[dict[str, Any]] = [
+        {"type": "renders_nonblank", "parameters": {"target": "scene"}}
+    ]
+    criteria.extend(
+        {"type": "object_exists", "parameters": {"id": target_id}} for target_id in target_ids
+    )
+    plan = {
+        "revision": 1,
+        "steps": [{"id": "step-1", "action": action, "target_ids": target_ids}],
+        "target_ids": target_ids,
+        "success_criteria": criteria,
+    }
+    validate_plan(plan, scene_json if operation == AIRun.Operation.EDIT_PATCH else None)
+    return plan
+
 
 class AIRunError(Exception):
     """Base for every `scenes.ai_runs` domain error. `code` is a short,
@@ -319,6 +397,12 @@ def start_run(
     )
     if operation == AIRun.Operation.EDIT_PATCH and scene_json is None:
         raise InvalidTarget("Cannot start an edit run against a project with no saved version.")
+    plan = _build_plan(
+        operation=operation,
+        scope=scope,
+        selected_target_ids=list(selected_target_ids or []),
+        scene_json=scene_json,
+    )
 
     project: Project | None = None
     project3d: Project3D | None = None
@@ -343,6 +427,7 @@ def start_run(
         status=AIRun.Status.RUNNING,
         base_version_id=(target.current_version_id if scene_json is not None else None),
         input_digest=_digest(scene_json or {}),
+        plan=plan,
         start_request_id=start_request_id,
         # `created_at` is only assigned by `auto_now_add` once the row is
         # actually inserted above, so the real deadline is computed and

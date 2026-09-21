@@ -180,6 +180,42 @@ def _start_create_run(owner, project) -> AIRun:
     )
 
 
+@pytest.mark.django_db
+def test_start_persists_structured_plan_before_provider_attempt(owner, project):
+    run = _start_create_run(owner, project)
+
+    assert run.plan == {
+        "revision": 1,
+        "steps": [{"id": "step-1", "action": "generate_scene", "target_ids": []}],
+        "target_ids": [],
+        "success_criteria": [{"type": "renders_nonblank", "parameters": {"target": "scene"}}],
+    }
+
+
+@pytest.mark.django_db
+def test_selection_plan_rejects_unknown_scene_ids(owner, project):
+    base = SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=BLANK_SCENE,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project.current_version = base
+    project.save(update_fields=["current_version"])
+
+    with pytest.raises(ai_runs.InvalidTarget, match="not present"):
+        ai_runs.start_run(
+            owner=owner,
+            target_type=AIRun.TargetType.PROJECT,
+            target=project,
+            operation=AIRun.Operation.EDIT_PATCH,
+            scope=AIRun.Scope.SELECTION,
+            selected_target_ids=["missing-id"],
+            prompt="make it blue",
+        )
+
+
 # --- Happy path: 2D and 3D create runs --------------------------------------
 
 
@@ -252,13 +288,13 @@ def test_3d_edit_selection_invalid_material_then_repaired(monkeypatch, owner, pr
         target=project3d,
         operation=AIRun.Operation.EDIT_PATCH,
         scope=AIRun.Scope.SELECTION,
-        selected_target_ids=["cube-1"],
+        selected_target_ids=["scene3d-minimal"],
         prompt="make the cube blue",
     )
     run = ai_runs.advance_run(run)
     assert run.status == AIRun.Status.RUNNING
     assert run.repairs == 1
-    assert "cube-1" in ai_runs._augmented_prompt(run)
+    assert "scene3d-minimal" in ai_runs._augmented_prompt(run)
 
     run = ai_runs.advance_run(run)
     assert run.status == AIRun.Status.AWAITING_REVIEW
@@ -427,12 +463,12 @@ def test_selection_scope_augments_prompt_with_target_ids(monkeypatch, owner, pro
         target=project,
         operation=AIRun.Operation.EDIT_PATCH,
         scope=AIRun.Scope.SELECTION,
-        selected_target_ids=["node-1", "node-2"],
+        selected_target_ids=["scene-blank", "layer-1"],
         prompt="make it blue",
     )
     prompt = ai_runs._augmented_prompt(run)
-    assert "node-1" in prompt
-    assert "node-2" in prompt
+    assert "scene-blank" in prompt
+    assert "layer-1" in prompt
 
 
 @pytest.mark.django_db
@@ -462,8 +498,8 @@ def test_out_of_scope_patch_rejection_is_repairable_then_succeeds(monkeypatch, o
         target=project,
         operation=AIRun.Operation.EDIT_PATCH,
         scope=AIRun.Scope.SELECTION,
-        selected_target_ids=["node-1"],
-        prompt="make node-1 blue",
+        selected_target_ids=["layer-1"],
+        prompt="make layer-1 blue",
     )
     run = ai_runs.advance_run(run)
     assert run.status == AIRun.Status.RUNNING
@@ -660,6 +696,8 @@ def test_full_api_lifecycle_start_advance_accept(monkeypatch, owner_client, proj
     assert start.status_code == 201
     run_id = start.json()["id"]
     assert start.json()["status"] == AIRun.Status.RUNNING
+    assert start.json()["plan"]["revision"] == 1
+    assert start.json()["plan"]["success_criteria"][0]["type"] == "renders_nonblank"
 
     advance = owner_client.post(f"/api/ai/runs/{run_id}/advance/")
     assert advance.status_code == 200
@@ -687,6 +725,7 @@ def test_detail_get_never_triggers_a_provider_call(monkeypatch, owner_client, ow
     response = owner_client.get(f"/api/ai/runs/{run.pk}/")
     assert response.status_code == 200
     assert response.json()["status"] == AIRun.Status.RUNNING
+    assert response.json()["plan"] == run.plan
 
 
 # --- PostgreSQL-only: genuine concurrent advance lease enforcement ----------

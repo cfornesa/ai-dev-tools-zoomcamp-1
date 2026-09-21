@@ -16,6 +16,30 @@ provider-identity, billing, admin, account-management, and other internal
 data or routes are excluded. Existing routes and API contracts remain
 backward-compatible.
 
+## Structured AI-run plans (#656)
+
+`GET /api/ai/runs/<id>/` and the response from `POST /api/ai/runs/` expose a
+persisted `plan` object before any provider attempt is made:
+
+```json
+{
+  "revision": 1,
+  "steps": [{"id": "step-1", "action": "generate_scene", "target_ids": []}],
+  "target_ids": [],
+  "success_criteria": [
+    {"type": "renders_nonblank", "parameters": {"target": "scene"}}
+  ]
+}
+```
+
+The only success-criteria types are `object_exists`, `property_equals`,
+`count_between`, and `renders_nonblank`. Target IDs are stable scene element
+IDs and are validated against the current target scene for edit/selection runs;
+unknown IDs or criterion types are rejected before implementation. Existing
+runs created before this field was added remain readable with `plan: null`.
+Plan revisions are additive and immutable once stored; a future revision is a
+new plan object rather than an in-place mutation.
+
 ## Global site metadata settings (#586)
 
 The application-admin-only `GET|PATCH /api/admin/settings/` contract includes

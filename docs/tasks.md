@@ -24,10 +24,11 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 6 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | CLOSED, QA PASS; stage 2a complete | Unified 2D/3D editor routes now use the corrected profile-nested, engine-neutral contract; continue with #666. |
 | 7 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | CLOSED, QA PASS; stage 2a complete | Engine-keyed editor tool matrix is complete; the discovered #696 follow-up is reconciled. |
 | 8 | [#696](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/696) | CLOSED, QA PASS; stage 2a complete | Generated owner-editor E2E now matches the current refinement/auto-save contract; continue with #667/#668. |
-| 9 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) / [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 2D then 3D manual tools. |
-| 9 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
-| 10 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
-| 11 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
+| 9 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) | CLOSED, QA PASS; stage 2a complete | Generated Canvas2D/SVG manual source tools, preview, version save, canonical surfaces, and ZIP evidence are complete; continue with #668. |
+| 10 | [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 3D manual tools. |
+| 11 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
+| 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
+| 13 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
 | 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete. |
 | 12 | [#680](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/680) / [#681](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/681) | CLOSED, QA PASS | Shared account/admin spacing tokens and responsive form/card layouts are complete. |
 | 13 | [#682](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/682) | CLOSED, QA PASS; diagnosis recorded | Current checkout creates/loads missing profiles successfully; profile failures now have safe status-specific messaging and Retry. |
@@ -46,10 +47,10 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #667/#668; #640 remains publication-boundary blocked
+The next groomed issue is #668; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
-### #667 transaction ledger — 2026-09-21 — IMPLEMENTED, QA PENDING
+### #667 transaction ledger — 2026-09-21 — CLOSED, QA PASS
 
 - PM/grooming: the live issue was reread before implementation; scope stayed
   limited to owner editing of generated Canvas2D and SVG pieces. The corrected
@@ -59,10 +60,13 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   erase source patchers with engine-valid editable markers; added visible
   capability-matrix actions, source preview, undo/redo, and explicit version
   saving. Added the named Playwright fixed-entry-point coverage and screenshots.
-- Verification pending: focused Vitest/typecheck pass and live Chromium pass
-  are green; the live E2E global teardown still reports its existing fixture
-  cleanup command failure. Run the full `make check`, inspect screenshots, and
-  complete the independent QA reread before closure.
+- Verification: focused Vitest/typecheck, full `make check`, live Chromium,
+  stored-version, canonical regular/immersive, and downloaded-ZIP assertions
+  are green. Screenshots were inspected before and after for both engines.
+  The host-side E2E teardown cannot import Django, so disposable fixture cleanup
+  was run successfully inside the backend container.
+- QA: PASS; live issue reread after implementation, comment posted, and issue
+  closed at [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667#issuecomment-5764030488).
 
 ### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE
 

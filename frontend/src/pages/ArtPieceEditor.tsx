@@ -29,6 +29,7 @@ import {
 import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
 import MentionPromptField from './MentionPromptField';
 import { buildArtPieceTargetOptions } from './artPieceTargets';
+import ArtPieceEditorToolAvailability from '../components/ArtPieceEditorToolAvailability';
 
 type RevisionPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
@@ -374,6 +375,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           scene layers in the AI editor.
         </p>
       )}
+      <ArtPieceEditorToolAvailability engine={piece.engine} />
       <p>
         <Link to="/art-pieces/manage">Back to your art pieces</Link>
       </p>

@@ -74,6 +74,17 @@ coercing the source into another engine.
 The schema, embeddability identifiers, capability fields, ordering constraints,
 and production-safe migration sequence are owned by [#611](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/611).
 
+## Owner editor tool matrix (#666)
+
+The owner editor uses one explicit matrix for all supported engines and keeps
+unsupported tools visible with an accessible reason. AI edit is currently
+available for every engine; add-shape, add-line, freehand draw, erase,
+transform, and media remain visibly disabled until the engine-specific manual
+tool issues land ([#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667)
+and [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668)).
+Support is keyed by the stable engine identifier, never inferred from the
+display label or family name.
+
 ## Surface-to-follow-up map
 
 | Gap discovered by this inventory | Class | Follow-up |

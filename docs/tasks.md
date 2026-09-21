@@ -21,8 +21,9 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 3 | [#661](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/661) | CLOSED, QA PASS; stage 2a complete | Shared mention field and stable-ID 2D targeting are complete; continue with #662. |
 | 4 | [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | CLOSED, QA PASS; stage 2a complete | 3D targeting and shared mention regressions are complete; continue to #663. |
 | 5 | [#663](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/663) | CLOSED, QA PASS; stage 2a complete | Generated-piece refinement targets, bounded plan/retries, and saved-version evidence are complete; continue to #664/#665. |
-| 6 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | READY FOR CLOSURE, QA PASS; stage 2a complete | Unified 2D/3D editor routes now use the corrected profile-nested, engine-neutral contract; next is #666. |
+| 6 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | CLOSED, QA PASS; stage 2a complete | Unified 2D/3D editor routes now use the corrected profile-nested, engine-neutral contract; continue with #666. |
 | 7 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | OPEN, stage 2a | Capability matrix before manual tools. |
+| 7a | [#696](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/696) | PROPOSED, discovered during #666 QA | Refresh the stale generated owner-editor E2E expectation from `Generate revision` to the current `Refine piece` affordance; deferred until the current #666 transaction reconciles. |
 | 8 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) / [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 2D then 3D manual tools after #666. |
 | 9 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
 | 10 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
@@ -134,7 +135,7 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
 - Reconciliation: final GitHub issue reread is required immediately before the
   QA comment; next independent transaction is #664/#665.
 
-### #664/#665 transaction ledger — 2026-09-21 — READY FOR CLOSURE
+### #664/#665 transaction ledger — 2026-09-21 — CLOSED
 
 - PM/grooming: the live issue bodies were reread after the owner-corrected #684
   contract. The canonical editor entry is profile-nested at
@@ -159,7 +160,45 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   production-publication claim is made. No new actionable issue was found.
 - Reconciliation: #684 was reread immediately before this QA pass and its
   corrected route grammar is now reflected in the implementation and tests.
-  Final GitHub QA comments and closure remain the next action; then #666.
+  GitHub QA comments were posted to [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664#issuecomment-5763278746)
+  and [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665#issuecomment-5763279058),
+  and both issues were closed after verification. The next transaction is #666.
+
+### #696 discovered follow-up — 2026-09-21 — PROPOSED
+
+- Discovery: while browser-QA-running #666's generated-editor integration, the
+  existing #429 owner-editing E2E timed out because it searches for the retired
+  `Generate revision` label while the current editor and #663 suite use
+  `Refine piece`.
+- Deduplication: #429 is closed and no open GitHub issue or local task record
+  covers this exact stale expectation.
+- Linkage: filed as [#696](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/696).
+  It is separate from #666 and is deferred until this capability-matrix
+  transaction reaches reconciliation.
+
+### #666 transaction ledger — 2026-09-21 — QA PENDING
+
+- PM/grooming: the live issue body was reread before implementation. Scope is
+  limited to the declared editor-tool availability matrix and visible reasons;
+  implementing the manual tools remains #667/#668.
+- Engineering: added a stable engine-keyed matrix for all seven supported
+  engines, a shared accessible visible-but-disabled tool presentation, and
+  parity-documentation entries. Integrated it into the generated-piece owner
+  editor without changing the existing AI refinement flow. No API, migration,
+  or dependency change was made.
+- Focused evidence: capability matrix/UI tests passed 4; frontend typecheck,
+  lint, and format checks passed. Full frontend Vitest passed `251 files / 2773
+  tests`. Chromium `artPiece3dEditor.spec.ts` passed 1/1 across Three.js and
+  A-Frame at 1280x900 and 375x812, with screenshots inspected under
+  `frontend/test-results/editor-tool-matrix-{threejs,aframe}-{1280,375}.png`.
+- Discovery: the existing #429 owner-editing E2E still expects the retired
+  `Generate revision` label. It was deduplicated and filed separately as
+  [#696](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/696), not
+  silently absorbed into #666.
+- Provenance: direct Codex/GPT-5 substitution because the rostered
+  implementation/review services were unavailable; independent-family review
+  was not run. No production-publication claim is made. Final `make check`,
+  issue reread, QA comment, and closure remain pending.
 
 ### #695 transaction ledger — 2026-09-21 — CLOSED
 

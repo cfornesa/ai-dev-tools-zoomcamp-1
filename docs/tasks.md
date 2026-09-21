@@ -23613,3 +23613,18 @@ Routing audit for #700: scoping Sonnet 5/Medium (rostered Codex/Luna: substitute
 implementation Sonnet 5/Medium (rostered stage 2b service: substituted: yes);
 second-opinion review not run (no independent family available); QA Sonnet 5/Medium
 (rostered, substituted: no); readiness Sonnet 5/Medium (rostered).
+
+### Provenance reconciliation for #701 (owner-stated, 2026-09-21)
+
+Owner statement: "For the others, I simply do not know. If you did not do it,
+then Codex did it." Applied literally, with Claude's own session knowledge:
+
+| Issue | Scoping | Implementation | Second opinion | QA | Effort |
+| --- | --- | --- | --- | --- | --- |
+| #636, #641 | Codex / GPT-5 | Codex / GPT-5 | not run | Codex / GPT-5 | unrecoverable |
+| #655, #692, #693, #694, #695 | Claude Sonnet 5 / Medium (substituted for Codex scoping) | Codex / GPT-5 | not run | Codex / GPT-5 | unrecoverable (except scoping) |
+
+All Codex entries are substitutions authorized at session level in
+`DECISIONS.md`. Effort values and exact model revisions for Codex stages are
+permanently unrecoverable; this is an accepted, recorded gap, not an inferred
+value.

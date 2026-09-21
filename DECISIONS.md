@@ -1182,3 +1182,11 @@ rostered tier. #700 was implemented directly by Sonnet 5 (flagged substitution
 for the rostered stage 2b service; no second-opinion review). Production HTML
 lacked server-rendered metadata; local fixes shipped in `a7ff330`; verification
 of the production cause requires an owner Replit Publish and server log read.
+
+## 2026-09-21 — #701 provenance reconciled by owner statement
+Owner stated that stages Claude did not run were run by Codex. Recorded in
+`docs/tasks.md` for #636, #641, #655, #692–#695: Codex/GPT-5 for implementation
+and QA (and scoping for #636/#641), Claude Sonnet 5/Medium scoping for the
+others, no second-opinion review. Effort values are unrecoverable and accepted
+as a documented gap. The owner asked to wait on Replit Publish; #702 stays
+handed-off.

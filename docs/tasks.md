@@ -43,10 +43,10 @@ reconciled; #651 is the next engineering issue in the theme chain.
 ### #656 transaction ledger — 2026-09-21
 
 - PM/groom: live GitHub issue was re-read before implementation and remains authoritative; scope stayed additive structured plans for AI runs, finite success-criteria types, stable target-ID validation, pre-provider persistence, API exposure, and legacy-row readability.
-- Engineering: documented the plan contract before endpoint changes; added nullable `AIRun.plan`, migration `0083_airun_plan`, server-side plan generation/validation at run start, stable-ID selection checks, API serialization, and focused regression coverage for 2D/3D/API lifecycles. Commit pending.
+- Engineering: documented the plan contract before endpoint changes; added nullable `AIRun.plan`, migration `0083_airun_plan`, server-side plan generation/validation at run start, stable-ID selection checks, API serialization, and focused regression coverage for 2D/3D/API lifecycles. Commit `38ae88d`.
 - QA: focused AI-run suite passed 24/1 skipped; full `make check` passed with backend 1,461/39 skipped and frontend 2,747 tests across 243 files; lint, format, typecheck, migration check, frontend build/test, and action-pin checks passed.
 - Provenance: scoping and implementation Codex/GPT-5 substitutions for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substitution for Claude Sonnet 5 Medium. Additive migration documented before implementation.
-- Reconciliation: GitHub QA comment pending after commit and final live issue re-read.
+- Reconciliation: GitHub QA comment [#656 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/656#issuecomment-5755870456) posted; issue is closed.
 
 ### #655 transaction ledger — 2026-09-21
 

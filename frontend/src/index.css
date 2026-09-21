@@ -589,6 +589,18 @@ button:disabled {
   background: color-mix(in srgb, var(--bg) 88%, var(--accent-bg));
 }
 
+.account-settings-layout-item.is-dragging {
+  opacity: 0.45;
+}
+
+.account-settings-drop-placeholder {
+  box-sizing: border-box;
+  min-height: 96px;
+  border: 2px dashed var(--accent);
+  border-radius: 10px;
+  background: var(--accent-bg);
+}
+
 .account-settings-layout-header {
   display: flex;
   align-items: center;
@@ -612,11 +624,21 @@ button:disabled {
 }
 
 .account-settings-layout-controls button {
-  width: 40px;
-  min-height: 36px;
+  width: 44px;
+  min-height: 44px;
   padding: 4px 8px;
   font-size: 20px;
   line-height: 1;
+}
+
+.account-settings-drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.account-settings-drag-handle:active,
+.account-settings-layout-item.is-dragging .account-settings-drag-handle {
+  cursor: grabbing;
 }
 
 .account-settings-collapse-toggle {

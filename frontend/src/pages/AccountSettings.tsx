@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
 import { Link } from 'react-router-dom';
 
 import {
@@ -77,6 +85,10 @@ function SettingsSection({
   expanded,
   onToggle,
   onMove,
+  dragging,
+  onDragStart,
+  onDragKeyDown,
+  handleRef,
   children,
 }: {
   id: SettingsSectionId;
@@ -84,12 +96,16 @@ function SettingsSection({
   expanded: boolean;
   onToggle: () => void;
   onMove: (direction: -1 | 1) => void;
+  dragging: boolean;
+  onDragStart: (event: ReactPointerEvent<HTMLButtonElement>) => void;
+  onDragKeyDown: (event: ReactKeyboardEvent<HTMLButtonElement>) => void;
+  handleRef: (element: HTMLButtonElement | null) => void;
   children: ReactNode;
 }) {
   const headingId = `account-settings-${id}-heading`;
   return (
     <section
-      className="account-settings-layout-item"
+      className={`account-settings-layout-item${dragging ? ' is-dragging' : ''}`}
       data-settings-section={id}
       aria-labelledby={headingId}
     >
@@ -103,6 +119,18 @@ function SettingsSection({
             title={`Move ${label} up`}
           >
             <span aria-hidden="true">↑</span>
+          </button>
+          <button
+            type="button"
+            className="account-settings-drag-handle"
+            aria-label={`Reorder ${label}`}
+            aria-grabbed={dragging}
+            title="Drag to reorder"
+            onPointerDown={onDragStart}
+            onKeyDown={onDragKeyDown}
+            ref={handleRef}
+          >
+            <span aria-hidden="true">⠿</span>
           </button>
           <button
             type="button"
@@ -136,6 +164,12 @@ function AccountSettings() {
     auth.status === 'signed-in' ? auth.user.email || auth.user.username : 'unknown';
   const storageKey = `${SETTINGS_LAYOUT_KEY}:${accountKey}`;
   const [layout, setLayout] = useState<SettingsLayout>(() => readSettingsLayout(storageKey));
+  const [draggingId, setDraggingId] = useState<SettingsSectionId | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [placeholderHeight, setPlaceholderHeight] = useState(0);
+  const [dragAnnouncement, setDragAnnouncement] = useState('');
+  const dragOrigin = useRef<SettingsSectionId[] | null>(null);
+  const dragPointerId = useRef<number | null>(null);
 
   useEffect(() => {
     setLayout(readSettingsLayout(storageKey));
@@ -160,7 +194,84 @@ function AccountSettings() {
     });
   }
 
+  function startDrag(id: SettingsSectionId, pointerId?: number) {
+    if (draggingId) return;
+    const item = document.querySelector<HTMLElement>(`[data-settings-section="${id}"]`);
+    dragOrigin.current = [...layout.order];
+    setDraggingId(id);
+    setDropIndex(layout.order.indexOf(id));
+    setPlaceholderHeight(item?.getBoundingClientRect().height ?? 96);
+    setDragAnnouncement(`Picked up ${sections[id].label}. Use arrows to move, then Space to drop.`);
+    dragPointerId.current = pointerId ?? null;
+  }
+
+  function finishDrag() {
+    if (!draggingId || dropIndex === null) return;
+    setLayout((current) => {
+      const fromIndex = current.order.indexOf(draggingId);
+      const targetIndex = Math.max(
+        0,
+        Math.min(current.order.length - 1, dropIndex > fromIndex ? dropIndex - 1 : dropIndex),
+      );
+      if (fromIndex < 0 || fromIndex === targetIndex) return current;
+      const order = [...current.order];
+      order.splice(fromIndex, 1);
+      order.splice(targetIndex, 0, draggingId);
+      return { ...current, order };
+    });
+    setDragAnnouncement('Layout order saved.');
+    setDraggingId(null);
+    setDropIndex(null);
+    dragOrigin.current = null;
+    dragPointerId.current = null;
+  }
+
+  function cancelDrag() {
+    if (!draggingId) return;
+    if (dragOrigin.current) {
+      setLayout((current) => ({ ...current, order: dragOrigin.current ?? current.order }));
+    }
+    setDragAnnouncement('Reordering cancelled.');
+    setDraggingId(null);
+    setDropIndex(null);
+    dragOrigin.current = null;
+    dragPointerId.current = null;
+  }
+
+  function updateDropPosition(clientY: number) {
+    if (!draggingId) return;
+    const items = [...document.querySelectorAll<HTMLElement>('[data-settings-section]')];
+    const nextIndex = items.findIndex((item) => {
+      if (item.dataset.settingsSection === draggingId) return false;
+      const rect = item.getBoundingClientRect();
+      return clientY < rect.top + rect.height / 2;
+    });
+    setDropIndex(nextIndex < 0 ? layout.order.length : nextIndex);
+  }
+
+  useEffect(() => {
+    if (!draggingId) return undefined;
+    const onPointerMove = (event: PointerEvent) => {
+      if (dragPointerId.current !== null && event.pointerId !== dragPointerId.current) return;
+      event.preventDefault();
+      updateDropPosition(event.clientY);
+    };
+    const onPointerUp = () => finishDrag();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') cancelDrag();
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [draggingId, dropIndex, layout.order]);
+
   function resetLayout() {
+    cancelDrag();
     setLayout({ order: [...DEFAULT_SECTION_ORDER], expanded: { profile: true } });
   }
 
@@ -259,24 +370,67 @@ function AccountSettings() {
           Reset layout
         </button>
       </div>
+      <p className="visually-hidden" role="status" aria-live="polite">
+        {dragAnnouncement}
+      </p>
       <div className="account-settings-grid">
-        {layout.order.map((id) => (
-          <SettingsSection
-            key={id}
-            id={id}
-            label={sections[id].label}
-            expanded={layout.expanded[id] === true}
-            onToggle={() =>
-              setLayout((current) => ({
-                ...current,
-                expanded: { ...current.expanded, [id]: current.expanded[id] !== true },
-              }))
-            }
-            onMove={(direction) => move(id, direction)}
-          >
-            {sections[id].content}
-          </SettingsSection>
+        {layout.order.map((id, index) => (
+          <Fragment key={id}>
+            {draggingId && dropIndex === index && draggingId !== id && (
+              <div
+                className="account-settings-drop-placeholder"
+                style={{ height: placeholderHeight }}
+                aria-hidden="true"
+              />
+            )}
+            <SettingsSection
+              id={id}
+              label={sections[id].label}
+              expanded={layout.expanded[id] === true}
+              dragging={draggingId === id}
+              onToggle={() =>
+                setLayout((current) => ({
+                  ...current,
+                  expanded: { ...current.expanded, [id]: current.expanded[id] !== true },
+                }))
+              }
+              onMove={(direction) => move(id, direction)}
+              onDragStart={(event) => {
+                event.preventDefault();
+                startDrag(id, event.pointerId);
+              }}
+              onDragKeyDown={(event) => {
+                if (event.key === ' ') {
+                  event.preventDefault();
+                  if (draggingId === id) finishDrag();
+                  else startDrag(id);
+                } else if (
+                  draggingId === id &&
+                  (event.key === 'ArrowUp' || event.key === 'ArrowDown')
+                ) {
+                  event.preventDefault();
+                  const direction = event.key === 'ArrowUp' ? -1 : 1;
+                  setDropIndex((current) =>
+                    Math.max(0, Math.min(layout.order.length, (current ?? index) + direction)),
+                  );
+                  setDragAnnouncement(
+                    `${sections[id].label} moved ${direction < 0 ? 'up' : 'down'} in the preview order.`,
+                  );
+                }
+              }}
+              handleRef={() => undefined}
+            >
+              {sections[id].content}
+            </SettingsSection>
+          </Fragment>
         ))}
+        {draggingId && dropIndex === layout.order.length && (
+          <div
+            className="account-settings-drop-placeholder"
+            style={{ height: placeholderHeight }}
+            aria-hidden="true"
+          />
+        )}
       </div>
     </section>
   );

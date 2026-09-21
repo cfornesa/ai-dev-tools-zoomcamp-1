@@ -42,6 +42,10 @@
   --site-radius: 8px;
   --site-border-style: solid;
   --site-backdrop: var(--bg);
+  --space-2: 8px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
@@ -453,7 +457,7 @@ button:disabled {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 10px;
+  gap: var(--space-4);
   width: 100%;
   max-width: 640px;
 }
@@ -471,7 +475,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 6px;
+  gap: var(--space-2);
   width: 100%;
 }
 
@@ -538,8 +542,8 @@ button:disabled {
 
 /* Issue #257/#261: saved Mistral models and Personas management sections. */
 .account-settings-section {
-  margin-top: 24px;
-  padding-top: 24px;
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
   border-top: 1px solid var(--border);
 }
 
@@ -547,7 +551,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 10px;
+  gap: var(--space-4);
 }
 
 .account-settings-card > .account-settings-section > input {
@@ -559,19 +563,19 @@ button:disabled {
 }
 
 .account-settings-header {
-  padding: 28px 32px 8px;
+  padding: var(--space-8) var(--space-8) var(--space-2);
 }
 
 .account-settings-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-  padding: 8px 32px 32px;
+  gap: var(--space-6);
+  padding: var(--space-2) var(--space-8) var(--space-8);
 }
 
 .account-settings-card {
   min-width: 0;
-  padding: 20px;
+  padding: var(--space-6);
   border: 1px solid var(--border);
   border-radius: 10px;
   background: color-mix(in srgb, var(--bg) 88%, var(--accent-bg));
@@ -583,7 +587,7 @@ button:disabled {
 
 .account-settings-layout-item {
   min-width: 0;
-  padding: 20px;
+  padding: var(--space-6);
   border: 1px solid var(--border);
   border-radius: 10px;
   background: color-mix(in srgb, var(--bg) 88%, var(--accent-bg));
@@ -649,7 +653,7 @@ button:disabled {
 
 @media (max-width: 600px) {
   .account-settings-layout-item {
-    padding: 16px;
+    padding: var(--space-6);
   }
 
   .account-settings-layout-header {
@@ -659,7 +663,7 @@ button:disabled {
 
 .account-settings-actions {
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -706,7 +710,7 @@ button:disabled {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   width: 100%;
   max-width: 480px;
 }
@@ -3850,12 +3854,12 @@ select.ai-proposal-field-full-width {
    competing for one row's worth of space. */
 @media (max-width: 600px) {
   .account-settings-header {
-    padding: 20px 16px 4px;
+    padding: var(--space-8) var(--space-6) var(--space-2);
   }
 
   .account-settings-grid {
     grid-template-columns: 1fr;
-    padding: 4px 16px 20px;
+    padding: var(--space-2) var(--space-6) var(--space-8);
   }
 
   .account-settings-form {

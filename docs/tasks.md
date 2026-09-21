@@ -35,6 +35,20 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No dependency, migration, or public API contract change.
 - Reconciliation: GitHub QA comment [#652 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/652#issuecomment-5755406274) posted; issue is closed.
 
+### #672 discovered follow-up — 2026-09-21 — PROPOSED
+
+- Discovery gate: #655's required Celestial/Pareto screenshot matrix showed that the no-override `e2e_other` profile renders the default dark profile panel instead of inheriting the active site-wide Celestial palette. Search found the related closed cascade contract #577 but no open duplicate covering this inherited-default behavior.
+- Filed and linked: [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672). This is outside #655's evidence-only scope; it is not fixed here.
+
+### #655 transaction ledger — 2026-09-21
+
+- PM/groom: live GitHub issue was re-read before QA; this remained an evidence-only pass for Celestial/Pareto across home, gallery, two profiles, both modes, both viewports, and reduced motion. No product fix was authorized by the issue.
+- Engineering: added the requested `frontend/e2e/designSchemeMatrix.spec.ts` evidence harness, fixture-style setup/restore, and 16 screenshot captures. No product implementation change.
+- QA: Chromium matrix passed 1 test covering all 16 route/mode/viewport combinations; visible style/mode signatures were logged and screenshots were captured under `frontend/test-results/designSchemeMatrix-Design--682d9-in-both-modes-and-viewport-chromium/`. Typecheck and Prettier passed; the preceding full `make check` gate for the same product state passed with backend 1,459/39 skipped and frontend 2,747 tests/243 files.
+- Discovery: found the no-override profile inheritance defect and filed [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) after duplicate search; #655 remains evidence-complete despite that out-of-scope defect.
+- Provenance: QA/evidence pass was completed as a direct Codex/GPT-5 substitution for the rostered QA service; no second-opinion service was available. No runtime dependency or product migration was added.
+- Reconciliation: GitHub QA comment pending after commit.
+
 ### #654 transaction ledger — 2026-09-21
 
 - PM/groom: live GitHub issue was re-read before implementation and remains the authority; scope stayed server-rendered metadata for home, public profiles, and public collections, with generic privacy-safe fallbacks, escaped canonical links, and reuse of #653's injector.

@@ -3,7 +3,10 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import { getProject3D, type SceneVersion3D } from '../api/projects3d';
 import AIRunPanel, { type AIRunSelectableObject } from './AIRunPanel';
+import MentionPromptField from './MentionPromptField';
 import Scene3DPreview from './Scene3DPreview';
+import { build3DAITargetOptions } from './aiTargeting3d';
+import { targetIdsFor } from './aiTargeting';
 import { object3DLabel, type Scene3DDocument } from './scene3dTypes';
 import { useAIProposal3D, type ProposalMode3D } from './useAIProposal3D';
 import { useAIRun } from './useAIRun';
@@ -95,6 +98,8 @@ function AIProposalPanel3D({
   }, []);
   const aiRun = useAIRun<SceneVersion3D>('project3d', projectId, fetchAccepted3DVersion);
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>('one-shot');
+  const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
+  const targetOptions = workingCopy ? build3DAITargetOptions(workingCopy) : [];
 
   function handleWorkflowModeChange(next: WorkflowMode) {
     if (next === workflowMode) return;
@@ -139,7 +144,9 @@ function AIProposalPanel3D({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    await generate(workingCopyRef.current, currentVersionId);
+    await generate(workingCopyRef.current, currentVersionId, {
+      targetIds: targetIdsFor(targetOptions, selectedTargetIds),
+    });
   }
 
   async function handleAccept() {
@@ -231,16 +238,19 @@ function AIProposalPanel3D({
 
           <form aria-label={MODE_LABELS[mode]} onSubmit={handleSubmit}>
             <div className="behavior-card-field">
-              <label htmlFor="ai-proposal-3d-prompt">
-                {mode === 'create'
-                  ? 'Describe the scene you want to generate'
-                  : 'Describe the change you want to make'}
-              </label>
-              <textarea
+              <MentionPromptField
                 id="ai-proposal-3d-prompt"
+                label={
+                  mode === 'create'
+                    ? 'Describe the scene you want to generate'
+                    : 'Describe the change you want to make'
+                }
                 value={prompt}
+                onChange={setPrompt}
+                options={targetOptions}
+                selectedIds={selectedTargetIds}
+                onSelectedIdsChange={setSelectedTargetIds}
                 disabled={pending}
-                onChange={(event) => setPrompt(event.target.value)}
               />
             </div>
             <div className="behavior-card-field ai-proposal-field-full-width">

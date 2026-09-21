@@ -60,6 +60,17 @@ an ID. Plain text that merely resembles a label is not treated as a target.
 The field is additive and omitted by older clients. The agent-run request
 continues to use its existing `selected_target_ids` field.
 
+### 3D AI edit target references (#662)
+
+The 3D AI create/edit request bodies accept the same optional `target_ids`
+array. For edits, the server validates every submitted ID against the
+validated `scene3d` document before calling the provider; invalid or
+cross-scene IDs receive the existing request-invalid response. The provider
+prompt receives validated stable IDs so the patch reference guard scopes the
+edit to selected objects, groups, lights, camera, materials, or declared
+media assets. Create requests accept the additive field for client symmetry
+but have no existing scene against which to validate it.
+
 ### Profile JSON Feeds (#688)
 
 `GET /users/@<handle>/feed.json` returns the same privacy-filtered,

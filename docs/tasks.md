@@ -18,14 +18,15 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | --- | --- | --- | --- |
 | 1 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | OPEN, publication-boundary blocked | Owner-controlled Replit publication; independent product work may proceed, but this remains the final live reconciliation gate. |
 | 2 | [#673](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/673) | CLOSED, QA PASS; stage 2a complete | Header navigation now routes `/` by auth state and removes Home from primary navigation. |
-| 3 | [#661](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/661) / [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | OPEN, stage 2a | 2D then 3D targeting; after shared editor contracts #664/#665 where applicable. |
-| 4 | [#663](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/663) | OPEN, stage 2a | Generated-piece refine UI after #658. |
-| 5 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | OPEN, stage 2a | Unified 2D then 3D editors; preserve legacy redirects and canonical route contract. |
-| 6 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | OPEN, stage 2a | Capability matrix before manual tools. |
-| 7 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) / [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 2D then 3D manual tools after #666. |
-| 8 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
-| 9 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
-| 10 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
+| 3 | [#661](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/661) | CLOSED, QA PASS; stage 2a complete | Shared mention field and stable-ID 2D targeting are complete; continue with #662. |
+| 4 | [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | OPEN, stage 2a | 3D targeting; preserve the shared 2D mention regression and continue to #663 after closure. |
+| 5 | [#663](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/663) | OPEN, stage 2a | Generated-piece refine UI after #658. |
+| 6 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | OPEN, stage 2a | Unified 2D then 3D editors; preserve legacy redirects and canonical route contract. |
+| 7 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | OPEN, stage 2a | Capability matrix before manual tools. |
+| 8 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) / [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 2D then 3D manual tools after #666. |
+| 9 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
+| 10 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
+| 11 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
 | 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete. |
 | 12 | [#680](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/680) / [#681](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/681) | CLOSED, QA PASS | Shared account/admin spacing tokens and responsive form/card layouts are complete. |
 | 13 | [#682](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/682) | CLOSED, QA PASS; diagnosis recorded | Current checkout creates/loads missing profiles successfully; profile failures now have safe status-specific messaging and Retry. |
@@ -78,6 +79,35 @@ The next groomed issue is #661; #640 remains publication-boundary blocked and
   claim is made. No new actionable issue was found in scope.
 - Reconciliation: final GitHub issue reread is complete; next independent
   transaction is #662.
+
+### #662 transaction ledger — 2026-09-21 — READY FOR CLOSURE
+
+- PM/grooming: the live issue body was reread before implementation and after
+  QA. Scope stayed limited to the 3D AI request box; unified editor routing
+  remains #665 and generated pieces remain #663.
+- Engineering: extended the shared mention field with caret-safe triggering,
+  prefix-ranked case-insensitive filtering, category headings, highlighted
+  matches, an eight-row cap, no-match state, `Tab` insertion, chip Backspace,
+  active-descendant/listbox semantics, and a polite match-count region. Added
+  3D target discovery for objects, groups, lights, camera, materials, and
+  declared assets, including effective-lock reasons. Added additive 3D
+  `target_ids` API plumbing and server validation against the submitted
+  scene3d document before provider execution. Updated `docs/api.md` before
+  the API contract addition. No migration or dependency was added.
+- QA matrix: focused 3D panel/mention/target/hook tests passed 23; backend
+  `test_ai_scene3d_api.py` passed 19; the shared 2D regression passed in the
+  combined browser run. Full `make check` passed with backend `1479 passed,
+  39 skipped` and frontend `248 files / 2768 tests`, with lint, format,
+  typecheck, and action-pin checks green. Rebuilt Docker frontend and
+  Chromium passed 4/4 at 1280x900 and 375x812 for `aiMention2d.spec.ts` and
+  `aiMention3d.spec.ts`. Fresh bare-@, filtered, no-match, and chip
+  screenshots were captured; the no-match states were inspected at both
+  widths under `frontend/test-results/aiMention3d-*`.
+- Provenance: direct Codex/GPT-5 substitution because the rostered
+  implementation/review services were unavailable; no production-publication
+  claim is made. No new actionable issue was found in scope.
+- Reconciliation: final GitHub issue reread is complete; next independent
+  transaction is #663.
 
 ### #695 transaction ledger — 2026-09-21 — CLOSED
 

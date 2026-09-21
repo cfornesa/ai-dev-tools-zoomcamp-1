@@ -206,6 +206,29 @@ def _invalid_current_scene3d_response(validation) -> Response:
     )
 
 
+def _stable_scene3d_ids(scene: dict) -> set[str]:
+    ids = {"camera"}
+    for key in ("objects", "groups", "lights", "mediaAssets", "assets", "textures"):
+        values = scene.get(key, [])
+        if not isinstance(values, list):
+            continue
+        for value in values:
+            if not isinstance(value, dict) or not isinstance(value.get("id"), str):
+                continue
+            value_id = value["id"]
+            ids.add(value_id)
+            if key == "objects":
+                ids.add(f"material:{value_id}")
+    return ids
+
+
+def _augment_prompt_with_target_ids(prompt: str, target_ids: list[str]) -> str:
+    unique_ids = list(dict.fromkeys(target_ids))
+    if not unique_ids:
+        return prompt
+    return f"{prompt}\nOnly modify the selected element id(s): {', '.join(unique_ids)}."
+
+
 class AICreateScene3DRequestSerializer(serializers.Serializer):
     prompt = serializers.CharField(
         max_length=MAX_PROMPT_CHARS, allow_blank=False, trim_whitespace=True
@@ -219,6 +242,9 @@ class AICreateScene3DRequestSerializer(serializers.Serializer):
         default="",
     )
     persona_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    target_ids = serializers.ListField(
+        child=serializers.CharField(max_length=128), required=False, allow_empty=True, default=list
+    )
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
@@ -242,6 +268,9 @@ class AIEditScene3DRequestSerializer(serializers.Serializer):
         default="",
     )
     persona_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    target_ids = serializers.ListField(
+        child=serializers.CharField(max_length=128), required=False, allow_empty=True, default=list
+    )
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
@@ -338,6 +367,7 @@ class AIEditScene3DView(APIView):
             return _request_invalid_response(input_serializer.errors)
         prompt = input_serializer.validated_data["prompt"]
         current_scene = input_serializer.validated_data["current_scene"]
+        target_ids = input_serializer.validated_data.get("target_ids", [])
         base_version_id = input_serializer.validated_data["base_version_id"]
         model = input_serializer.validated_data.get("model") or None
         vendor = input_serializer.validated_data.get("vendor", "mistral")
@@ -357,6 +387,19 @@ class AIEditScene3DView(APIView):
         current_scene_validation = validate_scene3d(current_scene)
         if not current_scene_validation.valid:
             return _invalid_current_scene3d_response(current_scene_validation)
+        invalid_target_ids = sorted(set(target_ids) - _stable_scene3d_ids(current_scene))
+        if invalid_target_ids:
+            return Response(
+                {
+                    "error": "request_invalid",
+                    "detail": {
+                        "target_ids": [
+                            f"Unknown scene target id(s): {', '.join(invalid_target_ids)}"
+                        ]
+                    },
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if base_version_id != project.current_version_id:
             return _stale_base_response(project.current_version_id)
@@ -383,7 +426,10 @@ class AIEditScene3DView(APIView):
         except UnsupportedProvider:
             return _unsupported_provider_response()
         outcome = provider.edit_scene3d_with_patch(
-            AIEditScene3DRequest(prompt=prompt, current_scene=current_scene)
+            AIEditScene3DRequest(
+                prompt=_augment_prompt_with_target_ids(prompt, target_ids),
+                current_scene=current_scene,
+            )
         )
         result = outcome.result
 

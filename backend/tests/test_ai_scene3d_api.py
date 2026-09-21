@@ -250,6 +250,59 @@ def test_edit_scene3d_success_returns_patch_and_draft_scene(owner_client, projec
 
 
 @pytest.mark.django_db
+def test_edit_scene3d_validates_and_forwards_selected_target_ids(
+    owner_client, project, monkeypatch
+):
+    captured = {}
+
+    def handler(**kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=10, completion_tokens=20),
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content=json.dumps([{"op": "replace", "path": "/camera/fov", "value": 70}])
+                    )
+                )
+            ],
+        )
+
+    _use_provider(monkeypatch, MistralSceneProvider(client=_FakeClient(handler)))
+    response = owner_client.post(
+        _edit_url(project),
+        {
+            "prompt": "zoom out",
+            "current_scene": MINIMAL_SCENE_3D,
+            "base_version_id": None,
+            "target_ids": ["camera"],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert "camera" in json.dumps(captured["messages"])
+
+
+@pytest.mark.django_db
+def test_edit_scene3d_rejects_unknown_selected_target_id(owner_client, project, monkeypatch):
+    _use_provider(monkeypatch, _provider_returning(json.dumps([])))
+    response = owner_client.post(
+        _edit_url(project),
+        {
+            "prompt": "zoom out",
+            "current_scene": MINIMAL_SCENE_3D,
+            "base_version_id": None,
+            "target_ids": ["missing-object"],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "request_invalid"
+
+
+@pytest.mark.django_db
 def test_edit_scene3d_stale_base_is_rejected(owner_client, project, monkeypatch):
     _use_provider(
         monkeypatch,

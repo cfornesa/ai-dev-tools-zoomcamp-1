@@ -5,7 +5,17 @@ import { getEditableShapes, type Shape } from './sceneShapes';
 export type AITargetOption = {
   id: string;
   label: string;
-  type: 'layer' | 'group' | 'shape' | 'media' | 'drawio-node';
+  type:
+    | 'layer'
+    | 'group'
+    | 'shape'
+    | 'media'
+    | 'drawio-node'
+    | 'object'
+    | 'light'
+    | 'camera'
+    | 'material';
+  category?: string;
   disabled?: boolean;
   disabledReason?: string;
   descendantIds: string[];

@@ -3773,6 +3773,29 @@ textarea:disabled {
 }
 
 .ai-target-listbox {
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.ai-target-category {
+  padding: 0.35rem 0.65rem 0.2rem;
+  color: var(--muted-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ai-target-listbox mark {
+  color: inherit;
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.ai-target-no-matches {
+  padding: 0.65rem;
+  color: var(--muted-text);
+}
+
+.ai-target-listbox {
   background: var(--panel-background, #15161d);
   border: 1px solid var(--accent, #c084fc);
   border-radius: 0.45rem;

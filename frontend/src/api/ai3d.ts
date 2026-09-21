@@ -37,6 +37,7 @@ export function createAIScene3D(
   model?: string,
   personaId?: number,
   vendor?: 'mistral' | 'gemini' | 'deepseek',
+  targetIds: string[] = [],
 ): Promise<AICreateScene3DResponse> {
   return apiFetch<AICreateScene3DResponse>(`/api/projects3d/${projectId}/ai/create-scene/`, {
     method: 'POST',
@@ -45,6 +46,7 @@ export function createAIScene3D(
       ...(model ? { model } : {}),
       ...(personaId ? { persona_id: personaId } : {}),
       ...(vendor && vendor !== 'mistral' ? { vendor } : {}),
+      ...(targetIds.length > 0 ? { target_ids: targetIds } : {}),
     }),
     signal,
   });
@@ -59,6 +61,7 @@ export function editAIScene3D(
   model?: string,
   personaId?: number,
   vendor?: 'mistral' | 'gemini' | 'deepseek',
+  targetIds: string[] = [],
 ): Promise<AIEditScene3DResponse> {
   return apiFetch<AIEditScene3DResponse>(`/api/projects3d/${projectId}/ai/edit-scene/`, {
     method: 'POST',
@@ -69,6 +72,7 @@ export function editAIScene3D(
       ...(model ? { model } : {}),
       ...(personaId ? { persona_id: personaId } : {}),
       ...(vendor && vendor !== 'mistral' ? { vendor } : {}),
+      ...(targetIds.length > 0 ? { target_ids: targetIds } : {}),
     }),
     signal,
   });

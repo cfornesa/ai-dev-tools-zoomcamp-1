@@ -120,6 +120,14 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - Duplicate search: closed #636/#641 cover canonical public piece/collection slugs, but no tracked issue covers technology-root editor namespace grammar and cross-surface redirects.
 - Filed and linked: [#684](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1). This public-interface change is outside the AI plan-review fixes; it is not implemented here pending criterion-ready scoping and an owner-confirmed compatibility plan.
 
+### #684 transaction ledger — 2026-09-21
+
+- PM/groom: the live issue was re-read after the owner's correction. The canonical route family is profile-nested (`pieces`, `immersive`, `edit`, `collections`); engine identity remains in piece data, and legacy paths are documented compatibility shims. The route/public-serializer scope remains distinct from editor unification (#664/#665) and consumer toolbar parity (#690–#694).
+- Engineering: documented the route grammar and legacy map in `docs/api.md`; canonical piece resolution now emits profile-nested viewer URLs for authored 2D, authored 3D, and generated pieces; collection slugs cannot shadow `pieces`, `collections`, `immersive`, `edit`, `feed`, or `feeds`; canonical 3D immersive links no longer fall back to the legacy header URL when a canonical target is supplied. Commits `da62895` and `c3bae65`.
+- Verification: focused backend route/collection/gallery checks passed 70; full `make check` passed with backend 1,469 passed/39 skipped and frontend 244 files/2,750 tests; fixed-viewport Chromium route/collection matrix passed 3; canonical generated/structured and six-engine regular/immersive suites passed 4. One stale collection-context expected URL was corrected as an in-scope canonical-route test expectation before rerun; commit `b99e653`.
+- Provenance: direct Codex/GPT-5 substitutions for the rostered external implementation and QA services; second-opinion review not run because Mistral Vibe was unavailable. QA found and fixed the canonical 3D header link before PASS.
+- Reconciliation: QA comment [#684 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/684#issuecomment-5757148190) is posted after the final issue read; close #684 after this ledger commit. Evidence is local/disposable-stack only; production readiness and Replit publication remain deferred.
+
 ### #655 transaction ledger — 2026-09-21
 
 - PM/groom: live GitHub issue was re-read before QA; this remained an evidence-only pass for Celestial/Pareto across home, gallery, two profiles, both modes, both viewports, and reduced motion. No product fix was authorized by the issue.

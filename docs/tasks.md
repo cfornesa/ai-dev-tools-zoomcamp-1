@@ -69,6 +69,14 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - QA: focused panel/hook/workflow tests passed 50; full `make check` passed with backend 1,468 passed/39 skipped and frontend 244 files/2,749 tests, plus action-pin check, lint, format, typecheck, and production build. The browser test first exposed the documented macOS `localhost` IPv6 collision with a stale host Vite/backend; rerunning through `E2E_DOCKER_COMPOSE=true E2E_BASE_URL=http://127.0.0.1:5000` passed 1 Chromium scenario. Active Chrome was then checked against the same Docker-backed IPv4 origin: plan-ready and approved-candidate states were inspected at the live responsive layout, with the plan, keyboard-accessible labelled controls, no pre-approval attempt, `Attempts (1 of 3)`, passed criterion, and unsaved candidate message visible. The live issue was re-read before QA.
 - Reconciliation: implementation commit `5fa55a6` and QA reconciliation commit `fdeb2f4` are present; GitHub QA comment [#659 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/659#issuecomment-5756644178) posted after the final live-issue check; issue is closed.
 
+### #660 transaction ledger — 2026-09-21
+
+- PM/groom: live GitHub issue was re-read before implementation and remains authoritative; scope is the shared plan-review/approval/attempt behavior on `/ai-projects3d/<id>`, with 3D-specific criteria filtering and browser evidence. 2D and @ targeting remain out of scope.
+- Engineering: the shared `AIRunPanel`/`useAIRun` implementation from #659 already serves the structured 3D route; added the focused `aiPlanReview3d.spec.ts` contract and retained the existing 3D workflow regression updates for explicit approval.
+- QA: focused shared-panel/3D workflow tests passed 25; `aiPlanReview3d.spec.ts` passed 1 Chromium scenario against the rebuilt Docker stack at `http://127.0.0.1:5000`; the full #659 `make check` gate remains valid for the shared source, with no backend changes in #660. Active Chrome inspected the 3D plan-ready and approved-candidate states, including `Attempts (1 of 3)`, passed `renders_nonblank`, and the unsaved-candidate message. No 3D-inapplicable criterion was introduced.
+- Provenance: direct Codex/GPT-5 mechanical implementation and QA substitution because the rostered external frontend/reviewer services are unavailable; no dependency, migration, or API contract change.
+- Reconciliation: pending.
+
 ### #655 transaction ledger — 2026-09-21
 
 - PM/groom: live GitHub issue was re-read before QA; this remained an evidence-only pass for Celestial/Pareto across home, gallery, two profiles, both modes, both viewports, and reduced motion. No product fix was authorized by the issue.

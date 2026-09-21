@@ -37,6 +37,7 @@ export type Project = {
   allow_public_remix: boolean;
   export_attribution: boolean;
   thumbnail_url: string | null;
+  viewer_url?: string;
   current_version: number | null;
   // How the current version was produced -- a SceneVersion.Origin value
   // ('manual' | 'ai_create' | 'ai_edit' | 'restore' | 'fork'), or null
@@ -203,9 +204,9 @@ export function deleteSceneVersion(projectId: string, versionId: number): Promis
  *   source project's current owner username — the "snapshot-or-live"
  *   policy is LIVE, so this can change if the creator's username changes,
  *   but is never unavailable, even after the source goes private).
- * - `source_public_id` is the source's id *only when it is currently
- *   public, published, and not deleted* — build a link to `/p/<id>` when
- *   it is non-null, and render plain unlinked text when it is `null`
+ * - `source_viewer_url` is the canonical source link when the source is
+ *   currently public, published, and not deleted; render plain unlinked text
+ *   when the canonical URL is unavailable
  *   (private/unpublished/deleted source: durable attribution, no link,
  *   no other private source data exposed).
  * - Nested remixes report the *immediate* fork source, not the root of a
@@ -213,6 +214,7 @@ export function deleteSceneVersion(projectId: string, versionId: number): Promis
 export type RemixProvenance = {
   source_creator: string;
   source_public_id: string | null;
+  source_viewer_url?: string | null;
 };
 
 /** Task 50: one public-gallery card (`PublicProjectListItemSerializer`).
@@ -224,6 +226,7 @@ export type PublicGalleryProject = {
   title: string;
   owner: string;
   thumbnail_url: string | null;
+  viewer_url: string;
   remix_provenance: RemixProvenance | null;
   published_at: string;
   renderer: '2d' | '3d';

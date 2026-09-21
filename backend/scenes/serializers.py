@@ -11,13 +11,13 @@ from scenes.models import (
     EditSessionDraft,
     Project,
     Project3D,
-    PublicProfile,
     Scene,
     SceneVersion,
     SceneVersion3D,
     Template,
     Thumbnail3D,
 )
+from scenes.public_urls import canonical_piece_viewer_path, piece_viewer_path
 
 MAX_TAGS = 10
 MAX_TAG_LENGTH = 30
@@ -57,9 +57,8 @@ def remix_provenance_data(project: Project) -> dict | None:
 
     ## Privacy: durable text, no live/private link
 
-    `source_public_id` is the only field that can ever point back at the
-    source (the frontend builds a `/p/<source_public_id>` link from it) --
-    and it is only ever populated when the source is *currently* public,
+    `source_public_id` identifies the source for compatibility and auditing;
+    `source_viewer_url` is the canonical link when the source is *currently* public,
     non-soft-deleted, and published, checked fresh on every call. The
     moment a source project goes private, is unpublished, or is
     soft-deleted, this flips to `None` on the very next request: the
@@ -93,10 +92,14 @@ def remix_provenance_data(project: Project) -> dict | None:
         and source.visibility == Project.Visibility.PUBLIC
         and source.published_at is not None
     )
-    return {
+    result = {
         "source_creator": source.owner.username,
         "source_public_id": str(source.public_id) if source_available else None,
     }
+    source_viewer_url = canonical_piece_viewer_path(source) if source_available else None
+    if source_viewer_url:
+        result["source_viewer_url"] = source_viewer_url
+    return result
 
 
 class TagListField(serializers.ListField):
@@ -297,6 +300,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
     owner = serializers.CharField(source="owner.username", read_only=True)
     current_version = PublicSceneVersionSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
+    viewer_url = serializers.SerializerMethodField()
     remix_provenance = serializers.SerializerMethodField()
     collections = serializers.SerializerMethodField()
 
@@ -311,6 +315,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "tags",
             "allow_public_remix",
             "thumbnail_url",
+            "viewer_url",
             "remix_provenance",
             "collections",
             "current_version",
@@ -327,6 +332,9 @@ class PublicProjectSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("public-project-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_viewer_url(self, project: Project) -> str:
+        return piece_viewer_path(project, "2d")
 
     def get_remix_provenance(self, project: Project) -> dict | None:
         # Task 53 (issue #52): see `remix_provenance_data`'s own docstring
@@ -366,6 +374,7 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.CharField(source="owner.username", read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
+    viewer_url = serializers.SerializerMethodField()
     remix_provenance = serializers.SerializerMethodField()
 
     class Meta:
@@ -375,6 +384,7 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
             "title",
             "owner",
             "thumbnail_url",
+            "viewer_url",
             "remix_provenance",
             "published_at",
             "renderer",
@@ -391,6 +401,9 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
     def get_remix_provenance(self, project: Project) -> dict | None:
         return remix_provenance_data(project)
 
+    def get_viewer_url(self, project: Project) -> str:
+        return piece_viewer_path(project, "2d")
+
 
 class PublicProject3DListItemSerializer(serializers.ModelSerializer):
     """The safe card payload for a published 3D authored piece."""
@@ -398,11 +411,20 @@ class PublicProject3DListItemSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.CharField(source="owner.username", read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
+    viewer_url = serializers.SerializerMethodField()
     renderer = serializers.CharField(default="3d", read_only=True)
 
     class Meta:
         model = Project3D
-        fields = ["id", "title", "owner", "thumbnail_url", "published_at", "renderer"]
+        fields = [
+            "id",
+            "title",
+            "owner",
+            "thumbnail_url",
+            "viewer_url",
+            "published_at",
+            "renderer",
+        ]
         read_only_fields = fields
 
     def get_thumbnail_url(self, project: Project3D) -> str | None:
@@ -410,17 +432,14 @@ class PublicProject3DListItemSerializer(serializers.ModelSerializer):
             return None
         return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
 
+    def get_viewer_url(self, project: Project3D) -> str:
+        return piece_viewer_path(project, "3d")
+
 
 # The stable kind-rank order documented for `GET /api/public/gallery/`
 # (#491): "2d" < "3d" < "generated", applied only between rows sharing the
 # exact same `published_at` instant. Must stay in sync with
 # `scenes.gallery.GALLERY_KIND_RANK`.
-_GALLERY_VIEWER_URLS = {
-    "2d": "/p/{}",
-    "3d": "/p3d/{}",
-    "generated": "/art-pieces/p/{}",
-}
-
 _GALLERY_THUMBNAIL_URLS = {
     "2d": "public-project-thumbnail",
     "3d": "project3d-thumbnail",
@@ -509,14 +528,8 @@ class PublicGalleryItemSerializer(serializers.Serializer):
         if kind == "collection" and isinstance(record, Collection):
             return f"/users/@{record.owner.public_profile.handle}/collections/{record.slug}"
         if isinstance(record, (Project, Project3D, ArtPiece)):
-            handle = (
-                PublicProfile.objects.filter(user_id=record.owner_id)
-                .values_list("handle", flat=True)
-                .first()
-            )
-            if handle and record.public_slug:
-                return f"/users/@{handle}/pieces/{record.public_slug}"
-        return _GALLERY_VIEWER_URLS[kind].format(record.public_id)
+            return piece_viewer_path(record, kind)
+        raise serializers.ValidationError("Unsupported public gallery item kind.")
 
     def get_thumbnail_is_fallback(self, obj) -> bool | None:
         kind, record = self._entry(obj)

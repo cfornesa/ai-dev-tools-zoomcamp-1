@@ -310,7 +310,11 @@ describe('PublicProjectViewer remix provenance (Task 53, issue #52)', () => {
   it('shows "Remixed from [creator]" linked to the source when the source is available', async () => {
     mockedGetPublicProject.mockResolvedValue(
       basePublicProject({
-        remix_provenance: { source_creator: 'alice', source_public_id: 'source-1' },
+        remix_provenance: {
+          source_creator: 'alice',
+          source_public_id: 'source-1',
+          source_viewer_url: '/users/@alice/pieces/source-study',
+        },
       }),
     );
 
@@ -318,7 +322,7 @@ describe('PublicProjectViewer remix provenance (Task 53, issue #52)', () => {
     await screen.findByRole('heading', { name: 'Hand Follower' });
 
     const link = screen.getByRole('link', { name: 'alice' });
-    expect(link).toHaveAttribute('href', '/p/source-1');
+    expect(link).toHaveAttribute('href', '/users/@alice/pieces/source-study');
     expect(screen.getByText(/remixed from/i)).toBeInTheDocument();
     expect(document.querySelector('[data-project-kind]')).toHaveAttribute(
       'data-project-kind',

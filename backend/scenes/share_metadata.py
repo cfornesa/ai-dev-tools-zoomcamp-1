@@ -22,6 +22,7 @@ from scenes.models import (
     Thumbnail,
     Thumbnail3D,
 )
+from scenes.public_urls import piece_viewer_path
 from scenes.thumbnail_generation import ensure_thumbnail_for_version
 from scenes.thumbnail_generation3d import ensure_thumbnail_for_version3d
 
@@ -61,15 +62,7 @@ def _thumbnail_for(record, kind: str):
 
 
 def _canonical_path(record, kind: str) -> str:
-    handle = (
-        record.owner.public_profile.handle
-        if hasattr(record.owner, "public_profile") and record.owner.public_profile.is_public
-        else None
-    )
-    if handle and record.public_slug:
-        return f"/users/@{quote(handle, safe='@')}/pieces/{quote(record.public_slug, safe='-')}"
-    prefix = {"2d": "/p", "3d": "/p3d", "generated": "/art-pieces/p"}[kind]
-    return f"{prefix}/{record.public_id}"
+    return piece_viewer_path(record, kind)
 
 
 def _metadata(record, kind: str) -> dict[str, str | None]:

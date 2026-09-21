@@ -335,6 +335,11 @@ Public profile piece entries additionally expose `slug` and `regular_url` for
 every published piece family (authored 2D/3D and generated), so profile
 consumers never need to reconstruct a route from an ID.
 
+Public gallery list items additionally expose `viewer_url`; remix provenance
+includes `source_viewer_url` whenever the immediate source remains public.
+Clients must use those API-owned URLs rather than reconstructing renderer- or
+identifier-based paths.
+
 ### Canonical immersive art-piece route (#606)
 
 Published generated art pieces may be opened at
@@ -791,7 +796,7 @@ Every item carries a **`kind`** discriminator with value `"2d"`, `"3d"`, or
 | `owner`        | Owner display value (username, never email).                                                                       |
 | `published_at` | Publication timestamp (ISO 8601).                                                                                  |
 | `thumbnail_url`| URL of the piece's gallery-card thumbnail.                                                                         |
-| `viewer_url`   | Path of the piece's public viewer route: `/p/:id` (`2d`), `/p3d/:id` (`3d`), `/art-pieces/p/:id` (`generated`).    |
+| `viewer_url`   | Canonical profile-nested path `/users/@<handle>/pieces/<slug>`; legacy identifier paths are compatibility fallbacks only. |
 
 Generated (`"kind": "generated"`) items additionally expose **`engine`** —
 the piece's stable engine identifier — and **`engine_label`**, its display
@@ -813,7 +818,7 @@ Example items:
   "owner": "alice",
   "published_at": "2026-09-08T10:00:00Z",
   "thumbnail_url": "/api/public/projects/6f9619ff-…/thumbnail.png",
-  "viewer_url": "/p/6f9619ff-…"
+  "viewer_url": "/users/@alice/pieces/bouncing-balls"
 }
 ```
 
@@ -825,7 +830,7 @@ Example items:
   "owner": "alice",
   "published_at": "2026-09-08T09:30:00Z",
   "thumbnail_url": "/api/projects3d/7b1c2d3e-…/thumbnail/",
-  "viewer_url": "/p3d/7b1c2d3e-…"
+  "viewer_url": "/users/@alice/pieces/orbit-study"
 }
 ```
 
@@ -838,7 +843,7 @@ Example items:
   "published_at": "2026-09-08T09:00:00Z",
   "thumbnail_url": "/api/public/art-pieces/9c4d5e6f-…/thumbnail.png",
   "thumbnail_is_fallback": true,
-  "viewer_url": "/art-pieces/p/9c4d5e6f-…",
+  "viewer_url": "/users/@alice/pieces/calm-blue-field",
   "engine": "canvas2d"
 }
 ```

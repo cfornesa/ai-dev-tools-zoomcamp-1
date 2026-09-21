@@ -88,8 +88,8 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * renders for that case. When present, the header carries
  * `data-project-kind="remix"` (an original carries `"original"`) plus a
  * visible "Remix" badge for programmatic/visual distinguishability, and a
- * "Remixed from [creator]" line linking to `/p/<source id>` when the
- * source is still public (`source_public_id` non-null), or the same
+ * "Remixed from [creator]" line linking to the API-owned canonical
+ * `source_viewer_url` when the source is still public, or the same
  * wording as plain unlinked text when the source has gone private,
  * unpublished, or deleted (`source_public_id` is `null`, but
  * `source_creator` is always durable — see `RemixProvenance`'s docstring
@@ -466,10 +466,10 @@ function PublicProjectViewer({
           <p className="public-project-attribution">By {authorDisplayName || project.owner}</p>
 
           {provenance &&
-            (provenance.source_public_id ? (
+            (provenance.source_public_id && provenance.source_viewer_url ? (
               <p className="public-project-provenance" data-testid="provenance">
                 Remixed from{' '}
-                <Link to={`/p/${provenance.source_public_id}`}>{provenance.source_creator}</Link>
+                <Link to={provenance.source_viewer_url}>{provenance.source_creator}</Link>
               </p>
             ) : (
               <p className="public-project-provenance" data-testid="provenance">

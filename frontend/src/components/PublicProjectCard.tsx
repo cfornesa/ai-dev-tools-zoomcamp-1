@@ -16,9 +16,7 @@ import type { PublicGalleryProject } from '../api/projects';
  *   leaving a broken-image icon on screen.
  *
  * Task 51 (issue #53): the whole card is now a link to the public project
- * viewer at `/p/<id>` — the route Task 50 deliberately left this card not
- * pointing anywhere for (see this file's previous docstring/PublicGallery's
- * own).
+ * viewer, using the API-owned canonical `viewer_url` destination.
  *
  * ## Remix provenance (Task 53, issue #52)
  *
@@ -32,8 +30,8 @@ import type { PublicGalleryProject } from '../api/projects';
  *   visible text.
  * - A visible "Remix" badge (`role="status"`, its own text, not just
  *   color) next to the title.
- * - A "Remixed from [creator]" line: a `<Link>` to `/p/<source id>` when
- *   `source_public_id` is present (the source is still public), or the
+ * - A "Remixed from [creator]" line: a `<Link>` to `source_viewer_url` when
+ *   the source is still public, or the
  *   same wording as plain unlinked text when it's `null` (source went
  *   private/unpublished/deleted — attribution stays, without a broken or
  *   privacy-leaking link). `source_creator` is always present per
@@ -44,7 +42,7 @@ function PublicProjectCard({ project }: { project: PublicGalleryProject }) {
   const titleId = `public-project-${project.id}-title`;
   const showFallback = !project.thumbnail_url || thumbnailFailed;
   const provenance = project.remix_provenance;
-  const viewerPath = project.renderer === '3d' ? `/p3d/${project.id}` : `/p/${project.id}`;
+  const viewerPath = project.viewer_url;
   const rendererLabel = project.renderer === '3d' ? '3D' : '2D';
 
   return (
@@ -82,10 +80,9 @@ function PublicProjectCard({ project }: { project: PublicGalleryProject }) {
       <p className="public-project-attribution">By {project.owner}</p>
 
       {provenance &&
-        (provenance.source_public_id ? (
+        (provenance.source_public_id && provenance.source_viewer_url ? (
           <p className="public-project-provenance" data-testid={`provenance-${project.id}`}>
-            Remixed from{' '}
-            <Link to={`/p/${provenance.source_public_id}`}>{provenance.source_creator}</Link>
+            Remixed from <Link to={provenance.source_viewer_url}>{provenance.source_creator}</Link>
           </p>
         ) : (
           <p className="public-project-provenance" data-testid={`provenance-${project.id}`}>

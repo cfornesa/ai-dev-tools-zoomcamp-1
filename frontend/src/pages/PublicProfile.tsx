@@ -99,14 +99,7 @@ export default function PublicProfile() {
             {data.pieces.map((piece) => (
               <PieceCard
                 key={`${piece.type}-${piece.id}`}
-                href={
-                  piece.regular_url ??
-                  (piece.type === '2d'
-                    ? `/p/${piece.id}`
-                    : piece.type === '3d'
-                      ? `/p3d/${piece.id}`
-                      : `/art-pieces/p/${piece.id}`)
-                }
+                href={piece.regular_url ?? `/users/@${handle}/pieces/${piece.slug ?? piece.id}`}
                 title={piece.title}
                 thumbnailUrl={piece.thumbnail_url}
                 thumbnailIsFallback={piece.thumbnail_is_fallback}

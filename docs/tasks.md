@@ -217,6 +217,25 @@ The next groomed issue is #685; #640 remains publication-boundary blocked and
 - Reconciliation: issue closed after QA PASS; next independent transaction is
   #685. The separate collection metadata/legacy-shim follow-up remains #695.
 
+### #684 reconciliation — 2026-09-21 — REOPENED
+
+- Intake: the corrected GitHub body was reread after closure. It confirms that
+  `pieces`, `immersive`, `edit`, and `collections` are profile-nested
+  namespaces and that engine identity is data, not a URL segment.
+- Finding: the prior implementation covered canonical resolver/unified-gallery
+  paths but left legacy URL emitters in the older gallery serializers, remix
+  attribution, collection/share fallbacks, and frontend card fallbacks. This
+  contradicted #684's “not emitted as new public links” requirement.
+- Reconciliation: #684 was reopened and the fix is scoped to canonical URL
+  emission plus additive API-owned `viewer_url`/`source_viewer_url` fields.
+  Legacy routes remain documented compatibility shims; viewer UI behavior is
+  still delegated to #690–#694. Direct Codex/GPT-5 substitution is being used
+  because the rostered implementation/review services are unavailable.
+- Current verification: focused backend canonical gallery/collection/remix/
+  share tests 72 passed; frontend typecheck passed; focused public viewer and
+  gallery tests 60 passed. Full `make check`, browser route coverage, QA, and
+  issue closure remain pending.
+
 ### #673 transaction ledger — 2026-09-21 — CLOSED
 
 - PM/grooming: issue body re-read and acceptance matrix confirmed before

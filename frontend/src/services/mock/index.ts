@@ -94,6 +94,7 @@ function toPublicGalleryProject(project: Project): PublicGalleryProject {
     title: project.title,
     owner: project.owner,
     thumbnail_url: project.thumbnail_url,
+    viewer_url: project.viewer_url ?? `/users/@${project.owner}/pieces/${project.id}`,
     remix_provenance: null,
     published_at: project.updated_at,
     renderer: '2d',

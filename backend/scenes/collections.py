@@ -18,6 +18,7 @@ from scenes.models import (
     Project3D,
     PublicProfile,
 )
+from scenes.public_urls import piece_viewer_path
 
 
 class CollectionValidationError(Exception):
@@ -79,22 +80,12 @@ def _item_record(owner, kind: str, item_id: uuid.UUID, *, public: bool):
 
 
 def _viewer_url(kind: str, item_id: uuid.UUID, record=None) -> str:
-    if isinstance(record, (Project, Project3D)):
-        profile = (
-            PublicProfile.objects.filter(user=record.owner).values_list("handle", flat=True).first()
-        )
-        if profile and record.public_slug:
-            return f"/users/@{profile}/pieces/{record.public_slug}"
-    if kind == CollectionItem.Kind.PROJECT:
-        return f"/p/{item_id}"
-    if kind == CollectionItem.Kind.PROJECT3D:
-        return f"/p3d/{item_id}"
     if isinstance(record, ArtPiece):
-        profile = (
-            PublicProfile.objects.filter(user=record.owner).values_list("handle", flat=True).first()
-        )
-        if profile and record.public_slug:
-            return f"/users/@{profile}/pieces/{record.public_slug}"
+        return piece_viewer_path(record, "generated")
+    if isinstance(record, Project):
+        return piece_viewer_path(record, "2d")
+    if isinstance(record, Project3D):
+        return piece_viewer_path(record, "3d")
     return f"/art-pieces/p/{item_id}"
 
 

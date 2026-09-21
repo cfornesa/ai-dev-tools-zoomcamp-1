@@ -429,7 +429,15 @@ def test_3d_card_excludes_scene_and_owner_fields(anon_client, owner):
 
     item = anon_client.get(LIST_URL).json()["results"][0]
 
-    assert set(item) == {"id", "title", "owner", "thumbnail_url", "published_at", "renderer"}
+    assert set(item) == {
+        "id",
+        "title",
+        "owner",
+        "thumbnail_url",
+        "viewer_url",
+        "published_at",
+        "renderer",
+    }
     assert item["id"] == str(project.public_id)
     assert item["renderer"] == "3d"
     assert "scene_json" not in json.dumps(item)
@@ -476,6 +484,7 @@ def test_response_excludes_private_and_internal_fields(owner_client, anon_client
         "title",
         "owner",
         "thumbnail_url",
+        "viewer_url",
         "remix_provenance",
         "published_at",
         "renderer",

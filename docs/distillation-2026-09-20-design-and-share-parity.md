@@ -131,3 +131,19 @@ no feed endpoints at all.
 
 Out of scope, not filed: collection feeds, site-wide aggregate feeds, mf2,
 email subscriptions. Feed thumbnails will show fallbacks until #651/#652 land.
+
+## Addendum — full public tool set, remaining routes (#690–#694)
+
+Attempted before: #637/#638 (closed) delivered the inline toolbar only through
+`CanonicalPublicPiece.tsx` (`toolbarMode="inline"`). `PieceStageToolbar`
+defaults to `menu`, so `/art-pieces/p/:id` (the gallery's `viewer_url`),
+`/art-pieces/immersive/:id`, `/p/:id` and `/p3d/:id` still show icon-only or
+hamburger controls (live check of `/art-pieces/p/6307c5a9-…`, 2026-09-21).
+
+| Order | Issue | Routing |
+|---|---|---|
+| 1 | #690 generated regular viewer | 2a |
+| 2 | #691 generated immersive viewer | 2a |
+| 3 | #692 legacy 2D `/p/:id` (inline or 301; Rule 5) | 2a |
+| 4 | #693 legacy 3D `/p3d/:id` | 2a |
+| 5 | #694 evidence matrix, reached via gallery/profile cards (needs #690–#693) | stage 4 |

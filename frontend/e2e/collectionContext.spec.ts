@@ -62,7 +62,7 @@ test.describe('public collection context (#566)', () => {
       });
       await expect(collectionLink).toHaveAttribute(
         'href',
-        `/users/@${handle}/context-collection-${viewport.width}`,
+        `/users/@${handle}/collections/context-collection-${viewport.width}`,
       );
       await ownerPage.screenshot({
         path: testInfo.outputPath(`collection-context-${viewport.width}.png`),

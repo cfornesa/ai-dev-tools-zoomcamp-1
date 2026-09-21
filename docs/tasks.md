@@ -68,6 +68,21 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
 - QA: PASS; live issue reread after implementation, comment posted, and issue
   closed at [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667#issuecomment-5764030488).
 
+### #668 transaction ledger — 2026-09-21 — IMPLEMENTED, QA PENDING
+
+- PM/grooming: the live issue was reread before implementation; scope stayed
+  limited to owner editing of generated Three.js and A-Frame pieces. The
+  canonical profile-nested editor route remains the entry point; 2D pieces and
+  AI refinement remain out of scope.
+- Engineering: added deterministic box/sphere/plane patchers, visible outline
+  geometry, object selection, numeric translation/rotation/scale controls,
+  source preview, undo/redo, and explicit version saving. Added the named
+  Chromium WebGL Playwright coverage, stored-version/regular/immersive/ZIP
+  assertions, and inspected before/after plus preview screenshots.
+- Verification pending: focused Vitest/typecheck and live Chromium pass are
+  green; run the full `make check`, inspect the preview screenshots, and
+  complete the independent QA reread before closure.
+
 ### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE
 
 - PM/grooming: the live issue body was reread before implementation and after

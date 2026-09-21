@@ -398,6 +398,16 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     document.addEventListener('DOMContentLoaded', function () {
       var sceneEl = document.querySelector('a-scene');
       if (!sceneEl) return;
+      function renderAframeFirstFrame() {
+        // A-Frame's render loop can be deferred in an opaque, sandboxed
+        // preview until an external frame or resize occurs. Paint one
+        // deterministic frame as soon as the scene is ready so generated
+        // edits are visible immediately and thumbnail/screenshot capture
+        // never observes a blank canvas.
+        if (sceneEl.renderer && sceneEl.camera) {
+          sceneEl.renderer.render(sceneEl.object3D, sceneEl.camera);
+        }
+      }
       function registerAframeCamera() {
         // Issue #480: sceneEl.camera is A-Frame's raw underlying
         // THREE.Camera object -- its own .position is a *local* offset
@@ -433,8 +443,12 @@ function buildListenerScript(library: ArtPieceLibrary): string {
           }
         });
       }
-      if (sceneEl.hasLoaded) registerAframeCamera();
-      else sceneEl.addEventListener('loaded', registerAframeCamera);
+      function initializeAframeScene() {
+        registerAframeCamera();
+        renderAframeFirstFrame();
+      }
+      if (sceneEl.hasLoaded) initializeAframeScene();
+      else sceneEl.addEventListener('loaded', initializeAframeScene);
     });
   }
   window.addEventListener('pagehide', function () {

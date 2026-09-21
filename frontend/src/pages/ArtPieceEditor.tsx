@@ -31,6 +31,13 @@ import MentionPromptField from './MentionPromptField';
 import { buildArtPieceTargetOptions } from './artPieceTargets';
 import ArtPieceEditorToolAvailability from '../components/ArtPieceEditorToolAvailability';
 import { appendGenerated2DEdit, type Generated2DManualTool } from './generated2dManualTools';
+import Generated3DManualTools from '../components/Generated3DManualTools';
+import {
+  appendGenerated3DPrimitive,
+  applyGenerated3DTransform,
+  type Generated3DPrimitive,
+  type Generated3DTransform,
+} from './generated3dManualTools';
 
 type RevisionPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
@@ -112,6 +119,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const [reviseCode, setReviseCode] = useState<string | null>(null);
   const [manualHistory, setManualHistory] = useState<string[]>([]);
   const [manualHistoryIndex, setManualHistoryIndex] = useState(-1);
+  const [selected3DId, setSelected3DId] = useState<string | null>(null);
   const [reviseError, setReviseError] = useState<string | null>(null);
   const [refineRun, setRefineRun] = useState<import('../api/artPieces').ArtPieceRefineRun | null>(
     null,
@@ -244,6 +252,9 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       }
       setReviseCode(result.candidate_source);
       setRevisePhase('previewing');
+      setManualHistory([]);
+      setManualHistoryIndex(-1);
+      setSelected3DId(null);
       const [updatedPiece, updatedVersions] = await Promise.all([
         getArtPiece(piece.public_id),
         listArtPieceVersions(piece.public_id),
@@ -265,6 +276,11 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     if (!piece || (piece.engine !== 'canvas2d' && piece.engine !== 'svg')) return;
     const current = reviseCode ?? piece.current_version?.source ?? '';
     const next = appendGenerated2DEdit(current, piece.engine, tool);
+    applyManualCode(next);
+  }
+
+  function applyManualCode(next: string) {
+    const current = reviseCode ?? piece?.current_version?.source ?? '';
     setManualHistory((history) => {
       const base = history.length === 0 ? [current] : history.slice(0, manualHistoryIndex + 1);
       return [...base, next];
@@ -273,6 +289,30 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     setReviseCode(next);
     setRevisePhase('ready');
     setRefineRun(null);
+  }
+
+  function addManual3DPrimitive(primitive: Generated3DPrimitive) {
+    if (!piece || (piece.engine !== 'threejs' && piece.engine !== 'aframe')) return;
+    const result = appendGenerated3DPrimitive(
+      reviseCode ?? piece.current_version?.source ?? '',
+      piece.engine,
+      primitive,
+    );
+    setSelected3DId(result.id);
+    applyManualCode(result.source);
+  }
+
+  function transformManual3DObject(transform: Generated3DTransform) {
+    if (!piece || !selected3DId || (piece.engine !== 'threejs' && piece.engine !== 'aframe'))
+      return;
+    applyManualCode(
+      applyGenerated3DTransform(
+        reviseCode ?? piece.current_version?.source ?? '',
+        piece.engine,
+        selected3DId,
+        transform,
+      ),
+    );
   }
 
   function undoManualEdit() {
@@ -410,34 +450,54 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         engine={piece.engine}
         onActivate={(tool) => {
           if (
-            tool === 'add-shape' ||
-            tool === 'add-ellipse' ||
-            tool === 'add-line' ||
-            tool === 'freehand-draw' ||
-            tool === 'erase'
+            ((piece.engine === 'canvas2d' || piece.engine === 'svg') && tool === 'add-shape') ||
+            ((piece.engine === 'canvas2d' || piece.engine === 'svg') &&
+              (tool === 'add-ellipse' ||
+                tool === 'add-line' ||
+                tool === 'freehand-draw' ||
+                tool === 'erase'))
           ) {
             applyManualTool(tool);
+          } else if (
+            tool === 'add-shape' &&
+            (piece.engine === 'threejs' || piece.engine === 'aframe')
+          ) {
+            addManual3DPrimitive('add-box');
           }
         }}
       />
-      {(piece.engine === 'canvas2d' || piece.engine === 'svg') && reviseCode && (
-        <div className="behavior-card-field" data-testid="art-piece-editor-code-panel">
-          <label htmlFor="art-piece-editor-code">Editable source preview</label>
-          <textarea id="art-piece-editor-code" value={reviseCode} readOnly rows={8} />
-          <div>
-            <button type="button" onClick={undoManualEdit} disabled={manualHistoryIndex <= 0}>
-              Undo
-            </button>
-            <button
-              type="button"
-              onClick={redoManualEdit}
-              disabled={manualHistoryIndex >= manualHistory.length - 1}
-            >
-              Redo
-            </button>
-          </div>
-        </div>
+      {(piece.engine === 'threejs' || piece.engine === 'aframe') && (
+        <Generated3DManualTools
+          engine={piece.engine}
+          source={reviseCode ?? piece.current_version?.source ?? ''}
+          selectedId={selected3DId}
+          onSelect={setSelected3DId}
+          onAdd={addManual3DPrimitive}
+          onTransform={transformManual3DObject}
+        />
       )}
+      {(piece.engine === 'canvas2d' ||
+        piece.engine === 'svg' ||
+        piece.engine === 'threejs' ||
+        piece.engine === 'aframe') &&
+        reviseCode && (
+          <div className="behavior-card-field" data-testid="art-piece-editor-code-panel">
+            <label htmlFor="art-piece-editor-code">Editable source preview</label>
+            <textarea id="art-piece-editor-code" value={reviseCode} readOnly rows={8} />
+            <div>
+              <button type="button" onClick={undoManualEdit} disabled={manualHistoryIndex <= 0}>
+                Undo
+              </button>
+              <button
+                type="button"
+                onClick={redoManualEdit}
+                disabled={manualHistoryIndex >= manualHistory.length - 1}
+              >
+                Redo
+              </button>
+            </div>
+          </div>
+        )}
       <p>
         <Link to="/art-pieces/manage">Back to your art pieces</Link>
       </p>

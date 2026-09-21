@@ -94,6 +94,7 @@ describe('buildArtPieceSandboxDocument', () => {
     const scene = '<a-scene id="art-piece-scene" embedded><a-box></a-box></a-scene>';
     const doc = buildArtPieceSandboxDocument(scene, 'aframe');
     expect(doc).toContain('<script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2');
+    expect(doc).toContain('renderAframeFirstFrame');
     expect(doc).toMatch(/script-src 'unsafe-inline' 'unsafe-eval' https:\/\/cdn\.jsdelivr\.net;/);
     expect(doc).toContain(scene);
   });

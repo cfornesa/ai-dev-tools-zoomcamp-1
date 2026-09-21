@@ -23,6 +23,13 @@ describe('art piece editor capability matrix (issue #666)', () => {
       for (const tool of ART_PIECE_EDITOR_TOOL_KEYS.slice(0, -1)) {
         if (engine === 'canvas2d' || engine === 'svg') {
           expect(capabilities[tool].reason || capabilities[tool].enabled).toBeTruthy();
+        } else if (engine === 'threejs' || engine === 'aframe') {
+          if (tool === 'add-shape' || tool === 'transform') {
+            expect(capabilities[tool].enabled).toBe(true);
+          } else {
+            expect(capabilities[tool]).toMatchObject({ enabled: false });
+            expect(capabilities[tool].reason).toBeTruthy();
+          }
         } else {
           expect(capabilities[tool]).toMatchObject({ enabled: false });
           expect(capabilities[tool].reason).toBeTruthy();

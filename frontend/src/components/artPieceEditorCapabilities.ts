@@ -53,6 +53,21 @@ function supported2DManualTools(): Omit<ArtPieceEditorCapabilities, 'ai-edit'> {
   };
 }
 
+function supported3DManualTools(): Omit<ArtPieceEditorCapabilities, 'ai-edit'> {
+  return {
+    'add-shape': { enabled: true },
+    'add-ellipse': { enabled: false, reason: 'Ellipse editing is only available for 2D engines.' },
+    'add-line': { enabled: false, reason: 'Line editing is only available for 2D engines.' },
+    'freehand-draw': {
+      enabled: false,
+      reason: 'Freehand editing is only available for 2D engines.',
+    },
+    erase: { enabled: false, reason: 'Erase editing is only available for 2D engines.' },
+    transform: { enabled: true },
+    media: { enabled: false, reason: 'Media editing is planned for a later manual-tool slice.' },
+  };
+}
+
 /**
  * Issue #666: the editor tool contract is explicit per engine. Unsupported
  * manual tools stay visible and explain the boundary; later tool issues may
@@ -64,8 +79,8 @@ export const ART_PIECE_EDITOR_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEdit
   p5js: { ...manualTools(), 'ai-edit': { enabled: true } },
   c2js: { ...manualTools(), 'ai-edit': { enabled: true } },
   'c2js-interactive': { ...manualTools(), 'ai-edit': { enabled: true } },
-  threejs: { ...manualTools(), 'ai-edit': { enabled: true } },
-  aframe: { ...manualTools(), 'ai-edit': { enabled: true } },
+  threejs: { ...supported3DManualTools(), 'ai-edit': { enabled: true } },
+  aframe: { ...supported3DManualTools(), 'ai-edit': { enabled: true } },
 };
 
 export function getArtPieceEditorCapabilities(engine: ArtPieceLibrary): ArtPieceEditorCapabilities {

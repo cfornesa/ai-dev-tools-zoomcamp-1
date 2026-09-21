@@ -51,8 +51,8 @@ test.describe('3D AI editor engine modes (#620)', () => {
           engine,
         );
         await expect(page.getByTestId('art-piece-editor-source-only')).toHaveCount(0);
-        await expect(page.getByTestId('art-piece-editor-tool-add-shape')).toBeDisabled();
-        await expect(page.getByTestId('art-piece-editor-tool-transform')).toBeDisabled();
+        await expect(page.getByTestId('art-piece-editor-tool-add-shape')).toBeEnabled();
+        await expect(page.getByTestId('art-piece-editor-tool-transform')).toBeEnabled();
         await expect(page.getByTestId('art-piece-editor-tool-ai-edit')).toBeEnabled();
         await page.screenshot({
           path: `test-results/editor-tool-matrix-${engine}-${viewport.width}.png`,

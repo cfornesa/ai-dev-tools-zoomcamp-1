@@ -80,10 +80,10 @@ The owner editor uses one explicit matrix for all supported engines and keeps
 unsupported tools visible with an accessible reason. AI edit is currently
 available for every engine. Canvas2D and SVG now support deterministic
 rectangle, ellipse, line, freehand, and erase source edits with undo/redo and
-explicit version saving ([#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667));
-transform and media remain disabled there, while all manual tools remain
-disabled for engines awaiting their own implementation slice, including the
-3D work in [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668).
+explicit version saving ([#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667)).
+Three.js and A-Frame now expose the 3D primitive/transform slice in
+[#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668); 2D
+transform/media and 3D 2D-only tools remain visibly disabled with reasons.
 Support is keyed by the stable engine identifier, never inferred from the
 display label or family name.
 

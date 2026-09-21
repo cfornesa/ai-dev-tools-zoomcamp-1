@@ -40,12 +40,38 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 21 | [#692](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/692) | CLOSED, QA PASS | Legacy `/p/:id` now resolves to the canonical profile-nested slug route and receives the inline public 2D toolset. Continue with #693. |
 | 22 | [#693](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/693) | CLOSED, QA PASS | Legacy `/p3d/:id` now resolves to the canonical profile-nested slug route and receives the canonical 3D toolset. Continue with #694. |
 | 23 | [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | CLOSED, QA PASS | Public toolset evidence matrix passed for generated, structured, immersive, and legacy routes; no stage hamburger defect remains. |
-| 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
+| 24 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | CLOSED, QA PASS | Collection server metadata remains canonical and both legacy collection paths now permanently redirect; reserved namespaces remain enforced. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
 The next groomed issue is #695; #640 remains publication-boundary blocked and
-#695 is a linked collection-specific follow-up discovered after #684 closure.
+#695 is now closed after the collection-specific follow-up was reconciled.
+
+### #695 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: the live issue body was reread after #694 closure. Scope stayed
+  limited to canonical collection Open Graph/canonical metadata and regular /
+  immersive legacy collection shims; piece/profile tags and feeds remained out
+  of scope.
+- Engineering: preserved the existing server metadata canonical path and added
+  Vite middleware 301 redirects for `/users/@<handle>/<slug>` and its
+  `/immersive` suffix after resolving the public collection API. The React
+  collection viewers retain `replace` navigation as a client-side fallback.
+  Existing reserved namespace validation (`pieces`, `collections`,
+  `immersive`, `edit`, `feed`, `feeds`) remains covered by the collection
+  contract tests. Added browser assertions to the collection workflow.
+- QA: focused collection/share-metadata backend tests passed 28; focused
+  collection React tests passed 6; typecheck and production build passed; the
+  collection browser workflow passed 2/2 at 1280x900 and 375x812, including
+  HTTP 301 + canonical `Location` assertions for both legacy paths. A fresh
+  375px collection screenshot was inspected. Full `make check` passed with
+  backend 1,476 passed/39 skipped and frontend 245 files/2,761 tests. Known
+  browser teardown warning: fixture cleanup failed after assertions; no
+  cleanup success is claimed.
+- Provenance: direct Codex/GPT-5 substitution for the unavailable rostered
+  complex implementation/review services; no migration or new dependency.
+- Reconciliation: GitHub QA PASS and closure follow after this ledger update;
+  no new actionable issue was found in scope.
 
 ### #694 transaction ledger — 2026-09-21 — CLOSED
 

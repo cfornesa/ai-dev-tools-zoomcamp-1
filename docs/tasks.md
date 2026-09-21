@@ -60,7 +60,7 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - PM/groom: live GitHub issue was re-read before implementation and remains authoritative; scope stayed owner-only generated-piece refinement for all registered engines, plan plus provider `edits[]`, exact-once whitespace-tolerant find/replace, all-or-none validation, immutable version creation, retry preference/quota/rate-limit handling, and private-data protection. UI, @ targeting, and manual tools remained out of scope.
 - Engineering: documented the additive refine contract; added `ArtPieceRefineRun`, migration `0085_artpiecerefinerun`, the owner-scoped refine and detail routes, provider refinement output, atomic source application/engine validation/version persistence, retry snapshots, and focused acceptance tests. Direct Codex/GPT-5 was used as the required complex-implementation substitution because the rostered external implementation service was unavailable.
 - QA: focused `pytest tests/ -k "art_piece and refine"` passed 4; full `make check` passed with backend 1,468/39 skipped and frontend 2,747 tests across 243 files; explicit frontend production build and migration drift check passed. The full live issue will be re-read immediately before QA comment/closure; no second-opinion service is available.
-- Reconciliation: pending final live-issue QA read, comment, closure, and commit handoff.
+- Reconciliation: GitHub QA comment [#658 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/658#issuecomment-5756135082) posted after the final live-issue check; issue is closed.
 
 ### #655 transaction ledger — 2026-09-21
 

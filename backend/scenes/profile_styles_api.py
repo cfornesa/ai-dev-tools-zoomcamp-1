@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from scenes.admin_authorization import is_application_admin
 from scenes.models import ProfileStyle
-from scenes.theme import sanitize_presentation, sanitize_theme
+from scenes.theme import sanitize_presentation, sanitize_theme_config
 
 
 def _denied(request):
@@ -45,7 +45,7 @@ class ProfileStyleSerializer(serializers.Serializer):
 
     def validate_tokens(self, value):
         try:
-            tokens = sanitize_theme(value)
+            tokens = sanitize_theme_config(value)
         except ValueError as exc:
             raise serializers.ValidationError(str(exc)) from exc
         if not tokens:

@@ -7,9 +7,14 @@ export type SiteSettings = {
   revision: number;
   cloud_sync_enabled: boolean;
   theme_config?: Record<string, string>;
+  theme_palettes?: ThemePalettes;
   style_key?: string | null;
   presentation?: PresentationOptions;
 };
+
+export type ThemePalette = Record<string, string>;
+export type ThemePalettes = { light: ThemePalette; dark: ThemePalette };
+export type ThemeConfig = ThemePalette | Partial<ThemePalettes>;
 
 export type PresentationOptions = {
   font_family: 'system' | 'serif' | 'mono';
@@ -89,7 +94,7 @@ export async function fetchSiteSettings(): Promise<SiteSettings> {
 export async function updateSiteSettings(
   siteTitle: string,
   revision: number,
-  themeConfig?: Record<string, string>,
+  themeConfig?: ThemeConfig,
   styleKey?: string,
   siteDescription?: string,
   metadataTags?: string[],

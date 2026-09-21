@@ -18,7 +18,7 @@ from django.db import transaction
 
 from scenes.entitlements import FEATURE_KEYS
 from scenes.models import EntitlementRole, Plan, ProfileStyle, SiteSettings
-from scenes.theme import effective_presentation, sanitize_theme
+from scenes.theme import effective_presentation, sanitize_theme_config
 
 
 class RevisionConflict(Exception):
@@ -61,7 +61,7 @@ class SiteSettingsView:
     metadata_tags: list[str]
     cloud_sync_enabled: bool
     revision: int
-    theme_config: dict[str, str]
+    theme_config: dict[str, object]
     style_key: str | None
     presentation: dict[str, str]
 
@@ -108,7 +108,7 @@ def update_site_settings(
     site_description: str | None = None,
     metadata_tags: list[str] | None = None,
     cloud_sync_enabled: bool | None = None,
-    theme_config: dict[str, str] | None = None,
+    theme_config: dict[str, object] | None = None,
     style_key: str | None = None,
 ) -> SiteSettingsView:
     if not isinstance(site_title, str) or not site_title.strip():
@@ -124,7 +124,7 @@ def update_site_settings(
     )
     if theme_config is not None:
         try:
-            theme_config = sanitize_theme(theme_config)
+            theme_config = sanitize_theme_config(theme_config)
         except ValueError as exc:
             raise ValidationFailed(str(exc)) from exc
     style = None

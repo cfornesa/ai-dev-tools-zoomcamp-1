@@ -82,6 +82,22 @@ def test_settings_get_allowed_for_admin(client, admin_a):
         "cloud_sync_enabled": False,
         "revision": 1,
         "theme_config": {},
+        "theme_palettes": {
+            "light": {
+                "background": "#f8fafc",
+                "surface": "#ffffff",
+                "text": "#111827",
+                "muted": "#64748b",
+                "accent": "#7c3aed",
+            },
+            "dark": {
+                "background": "#0b0d12",
+                "surface": "#151923",
+                "text": "#f3f4f6",
+                "muted": "#9ca3af",
+                "accent": "#c084fc",
+            },
+        },
         "style_key": None,
         "presentation": {
             "font_family": "system",
@@ -169,6 +185,29 @@ def test_theme_tokens_are_finite_and_invalid_values_do_not_apply(client, admin_a
     assert client.get(reverse("site-theme")).json()["accent"] == "#c084fc"
 
 
+@pytest.mark.django_db
+def test_admin_can_save_paired_theme_config_and_site_theme_exposes_resolved_modes(client, admin_a):
+    client.force_login(admin_a)
+    response = client.patch(
+        reverse("admin-settings"),
+        {
+            "site_title": "AugmentrART",
+            "revision": 1,
+            "theme_config": {
+                "light": {"background": "#ffffff"},
+                "dark": {"background": "#000000"},
+            },
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.json()["theme_palettes"]["light"]["background"] == "#ffffff"
+    assert response.json()["theme_palettes"]["dark"]["background"] == "#000000"
+    site_theme = client.get(reverse("site-theme")).json()
+    assert site_theme["theme_palettes"]["light"]["background"] == "#ffffff"
+    assert site_theme["theme_palettes"]["dark"]["background"] == "#000000"
+
+
 # --- Site settings: read/update/validation/concurrency ---
 
 
@@ -188,6 +227,22 @@ def test_admin_can_update_site_title(client, admin_a):
         "cloud_sync_enabled": False,
         "revision": 2,
         "theme_config": {},
+        "theme_palettes": {
+            "light": {
+                "background": "#f8fafc",
+                "surface": "#ffffff",
+                "text": "#111827",
+                "muted": "#64748b",
+                "accent": "#7c3aed",
+            },
+            "dark": {
+                "background": "#0b0d12",
+                "surface": "#151923",
+                "text": "#f3f4f6",
+                "muted": "#9ca3af",
+                "accent": "#c084fc",
+            },
+        },
         "style_key": None,
         "presentation": {
             "font_family": "system",

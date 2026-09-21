@@ -9,6 +9,13 @@ DEFAULT_THEME = {
     "muted": "#9ca3af",
     "accent": "#c084fc",
 }
+DEFAULT_LIGHT_THEME = {
+    "background": "#f8fafc",
+    "surface": "#ffffff",
+    "text": "#111827",
+    "muted": "#64748b",
+    "accent": "#7c3aed",
+}
 DEFAULT_PRESENTATION = {
     "font_family": "system",
     "density": "comfortable",
@@ -37,12 +44,56 @@ def sanitize_theme(value: object) -> dict[str, str]:
     return {key: value[key] for key in value}
 
 
+def sanitize_theme_config(value: object) -> dict[str, object]:
+    """Validate either the legacy flat override or paired mode overrides."""
+    if not isinstance(value, dict):
+        raise ValueError("theme_config must be an object")
+    if not value:
+        return {}
+    if set(value) & THEME_KEYS:
+        return dict(sanitize_theme(value))
+    unknown = set(value) - {"light", "dark"}
+    if unknown:
+        raise ValueError("Unknown theme palette")
+    result: dict[str, object] = {}
+    for mode in ("light", "dark"):
+        if mode in value:
+            result[mode] = sanitize_theme(value[mode])
+    return result
+
+
 def effective_theme(value: object) -> dict[str, str]:
     try:
         override = sanitize_theme(value)
     except ValueError:
         override = {}
     return {**DEFAULT_THEME, **override}
+
+
+def effective_theme_palettes(style_tokens: object, overrides: object) -> dict[str, dict[str, str]]:
+    """Resolve independent light/dark palettes without changing legacy storage."""
+    try:
+        style = sanitize_theme_config(style_tokens)
+    except ValueError:
+        style = {}
+    try:
+        override = sanitize_theme_config(overrides)
+    except ValueError:
+        override = {}
+
+    palettes = {
+        "light": {**DEFAULT_LIGHT_THEME},
+        "dark": {**DEFAULT_THEME},
+    }
+    for source in (style, override):
+        if set(source) & THEME_KEYS:
+            palettes["dark"].update(source)  # type: ignore[arg-type]
+        else:
+            for mode in ("light", "dark"):
+                mode_values = source.get(mode, {})
+                if isinstance(mode_values, dict):
+                    palettes[mode].update(mode_values)
+    return palettes
 
 
 def sanitize_presentation(value: object) -> dict[str, str]:
@@ -67,12 +118,4 @@ def effective_presentation(value: object) -> dict[str, str]:
 
 def effective_profile_theme(style_tokens: object, legacy_overrides: object) -> dict[str, str]:
     """Resolve a catalog style plus the legacy safe token override contract."""
-    try:
-        style = sanitize_theme(style_tokens)
-    except ValueError:
-        style = {}
-    try:
-        legacy = sanitize_theme(legacy_overrides)
-    except ValueError:
-        legacy = {}
-    return {**DEFAULT_THEME, **style, **legacy}
+    return effective_theme_palettes(style_tokens, legacy_overrides)["dark"]

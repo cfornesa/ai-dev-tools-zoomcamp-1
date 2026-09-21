@@ -11,7 +11,12 @@ from rest_framework.views import APIView
 
 from scenes.gallery import eligible_projects, eligible_projects3d
 from scenes.models import ArtPiece, ProfileStyle, PublicProfile, PublicProfileHandleRedirect
-from scenes.theme import effective_presentation, effective_profile_theme, sanitize_theme
+from scenes.theme import (
+    effective_presentation,
+    effective_profile_theme,
+    effective_theme_palettes,
+    sanitize_theme_config,
+)
 
 RESERVED_HANDLES = {"admin", "api", "account", "accounts", "users", "gallery"}
 HANDLE_MAX_LENGTH = 32
@@ -69,6 +74,9 @@ def _profile_payload(profile: PublicProfile) -> dict:
         "is_public": profile.is_public,
         "revision": profile.revision,
         "theme_config": effective_profile_theme(
+            style.tokens if style else {}, profile.theme_config
+        ),
+        "theme_palettes": effective_theme_palettes(
             style.tokens if style else {}, profile.theme_config
         ),
         "presentation": effective_presentation(style.presentation if style else {}),
@@ -166,7 +174,7 @@ class AccountProfileView(APIView):
         values = serializer.validated_data
         if "theme_config" in values:
             try:
-                values["theme_config"] = sanitize_theme(values["theme_config"])
+                values["theme_config"] = sanitize_theme_config(values["theme_config"])
             except ValueError as exc:
                 return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
         profile = PublicProfile.objects.get_or_create(user=request.user)[0]

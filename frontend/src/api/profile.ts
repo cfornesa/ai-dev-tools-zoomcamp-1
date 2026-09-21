@@ -3,6 +3,7 @@ import type { ArtPiece } from './artPieces';
 import type { PublicProject } from './projects';
 import type { PublicProject3D } from './projects3d';
 import type { PresentationOptions } from './adminSettings';
+import type { ThemePalettes } from './adminSettings';
 
 export type PublicProfile = {
   handle: string | null;
@@ -23,6 +24,7 @@ export type PublicProfile = {
   is_public: boolean;
   revision: number;
   theme_config: Record<string, string>;
+  theme_palettes?: ThemePalettes;
 };
 
 export async function fetchProfile(): Promise<PublicProfile> {

@@ -1,13 +1,16 @@
 """Finite, CSS-injection-safe theme/presentation token validation (#521/#576)."""
 
 from scenes.theme import (
+    DEFAULT_LIGHT_THEME,
     DEFAULT_PRESENTATION,
     DEFAULT_THEME,
     effective_presentation,
     effective_profile_theme,
     effective_theme,
+    effective_theme_palettes,
     sanitize_presentation,
     sanitize_theme,
+    sanitize_theme_config,
 )
 
 
@@ -43,6 +46,30 @@ def test_effective_theme_applies_a_valid_partial_override_over_defaults():
     result = effective_theme({"accent": "#dc2626"})
     assert result["accent"] == "#dc2626"
     assert result["background"] == DEFAULT_THEME["background"]
+
+
+def test_paired_theme_config_resolves_modes_and_legacy_values_as_dark():
+    paired = sanitize_theme_config({"light": {"accent": "#111111"}, "dark": {"accent": "#222222"}})
+    assert paired["light"] == {"accent": "#111111"}
+    assert paired["dark"] == {"accent": "#222222"}
+    palettes = effective_theme_palettes({"accent": "#333333"}, {"light": {"text": "#444444"}})
+    assert palettes["light"]["accent"] == DEFAULT_LIGHT_THEME["accent"]
+    assert palettes["light"]["text"] == "#444444"
+    assert palettes["dark"]["accent"] == "#333333"
+
+
+def test_paired_theme_config_rejects_mixed_and_injection_values():
+    for bad in (
+        {"light": {"accent": "red"}},
+        {"dark": {"unknown": "#123456"}},
+        {"light": {"accent": "#123456"}, "accent": "#654321"},
+        {"light": {"accent": "url(javascript:alert(1))"}},
+    ):
+        try:
+            sanitize_theme_config(bad)
+            raise AssertionError(f"expected ValueError for {bad!r}")
+        except ValueError:
+            pass
 
 
 def test_sanitize_presentation_accepts_only_documented_choices():

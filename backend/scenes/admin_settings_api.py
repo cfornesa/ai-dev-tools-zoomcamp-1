@@ -23,7 +23,7 @@ from scenes.admin_settings import (
     update_site_settings,
 )
 from scenes.models import SiteSettings
-from scenes.theme import effective_presentation, effective_profile_theme
+from scenes.theme import effective_presentation, effective_profile_theme, effective_theme_palettes
 
 
 def _admin_required_response(request) -> Response | None:
@@ -63,6 +63,12 @@ class AdminSiteSettingsView(APIView):
                 "cloud_sync_enabled": site_settings.cloud_sync_enabled,
                 "revision": site_settings.revision,
                 "theme_config": site_settings.theme_config,
+                "theme_palettes": effective_theme_palettes(
+                    SiteSettings.get_solo().style.tokens
+                    if SiteSettings.get_solo().style_id
+                    else {},
+                    site_settings.theme_config,
+                ),
                 "style_key": site_settings.style_key,
                 "presentation": site_settings.presentation,
             }
@@ -122,6 +128,12 @@ class AdminSiteSettingsView(APIView):
                 "cloud_sync_enabled": updated.cloud_sync_enabled,
                 "revision": updated.revision,
                 "theme_config": updated.theme_config,
+                "theme_palettes": effective_theme_palettes(
+                    SiteSettings.get_solo().style.tokens
+                    if SiteSettings.get_solo().style_id
+                    else {},
+                    updated.theme_config,
+                ),
                 "style_key": updated.style_key,
                 "presentation": updated.presentation,
             }
@@ -137,6 +149,9 @@ class SiteThemeView(APIView):
         return Response(
             {
                 **effective_profile_theme(style.tokens if style else {}, row.theme_config),
+                "theme_palettes": effective_theme_palettes(
+                    style.tokens if style else {}, row.theme_config
+                ),
                 "style_key": style.key if style else None,
                 "presentation": effective_presentation(style.presentation if style else {}),
                 "site_title": row.site_title,

@@ -98,6 +98,49 @@ Unknown keys, malformed values, arbitrary CSS/HTML/JavaScript, and disabled
 new selections are rejected or fall back to the documented defaults. Existing
 legacy `theme_config` color overrides remain backward-compatible.
 
+### Paired light/dark theme palettes (#642)
+
+The site-settings and public-profile responses retain the legacy resolved
+`theme_config` flat palette for existing consumers and additionally expose
+`theme_palettes`:
+
+```json
+{
+  "theme_config": {
+    "background": "#0b0d12",
+    "surface": "#151923",
+    "text": "#f3f4f6",
+    "muted": "#9ca3af",
+    "accent": "#c084fc"
+  },
+  "theme_palettes": {
+    "light": {
+      "background": "#f8fafc",
+      "surface": "#ffffff",
+      "text": "#111827",
+      "muted": "#64748b",
+      "accent": "#7c3aed"
+    },
+    "dark": {
+      "background": "#0b0d12",
+      "surface": "#151923",
+      "text": "#f3f4f6",
+      "muted": "#9ca3af",
+      "accent": "#c084fc"
+    }
+  }
+}
+```
+
+`theme_config` updates accept either the legacy flat five-token object or an
+object containing optional `light` and `dark` five-token objects. Legacy flat
+values are treated as dark overrides; missing light values use the documented
+default light palette. Resolution is `default palette < enabled catalog style
+tokens < owner/site override`, independently for each mode. All tokens remain
+exactly six-digit hexadecimal colors; unknown keys and malformed values are
+rejected. The JSON fields are additive, so existing rows require no destructive
+rewrite or migration.
+
 ### Canonical public piece URLs (#578)
 
 `GET /api/users/@<handle>/pieces/<piece-slug>/` resolves a published public

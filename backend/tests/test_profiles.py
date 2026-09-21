@@ -26,7 +26,30 @@ def test_owner_can_create_and_update_profile_with_revision(client):
     assert updated.status_code == 200
     assert updated.json()["handle"] == "alice"
     assert updated.json()["theme_config"]["accent"] == "#00ff00"
+    assert set(updated.json()["theme_palettes"]) == {"light", "dark"}
     assert client.get("/api/users/@alice/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_owner_can_save_paired_theme_config_and_resolved_palettes_are_exposed(client):
+    user = get_user_model().objects.create_user(username="paired", password="x")
+    client.force_login(user)
+    profile = client.get(reverse("account-profile")).json()
+    response = client.patch(
+        reverse("account-profile"),
+        {
+            "revision": profile["revision"],
+            "theme_config": {
+                "light": {"accent": "#111111"},
+                "dark": {"accent": "#222222"},
+            },
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["theme_palettes"]["light"]["accent"] == "#111111"
+    assert payload["theme_palettes"]["dark"]["accent"] == "#222222"
 
 
 @pytest.mark.django_db

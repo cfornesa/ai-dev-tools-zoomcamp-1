@@ -8,8 +8,16 @@ The current open-issue manifest and dependency reconciliation is recorded in
 Fourteen new PROPOSED-then-filed issues; see
 `docs/distillation-2026-09-20-design-and-share-parity.md` for the manifest,
 dependency order, and duplicate report. #642, #643, and #644 are complete and
-reconciled; #645 is complete and reconciled; #646 is the next engineering
-issue in the theme chain.
+reconciled; #645 and #646 are complete and reconciled; #647 is the next
+engineering issue in the theme chain.
+
+### #646 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained the built-in Pareto style, paired palettes, offset/sharp presentation, owner catalog visibility, and safe fallback behavior.
+- Engineering: added additive migration `0081_seed_pareto_style` with idempotent paired indigo palettes and approved presentation tokens; updated the global site-theme resolver to fall back to enabled `default` when a selected style is disabled; updated the AdminSettings paired-token preview and Pareto shell-button/card styling; added regression coverage and API documentation. Commit `00d5d8d`.
+- QA: focused profile-style backend tests passed 4; AdminSettings tests passed 2; full `make check` passed with backend 1,455 passed/39 skipped and frontend 243 files/2,742 tests, plus lint, format, typecheck, and action-pin checks. Pareto light/dark 1280x900 screenshots were captured and inspected.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Opencode/kimi-k3; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No runtime dependency; migration publication remains subject to the repository's Replit schema-diff process.
+- Reconciliation: GitHub QA comment [#646 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/646#issuecomment-5754668925) posted; issue is ready to close.
 
 ### #645 transaction ledger — 2026-09-20
 

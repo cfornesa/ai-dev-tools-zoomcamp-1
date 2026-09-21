@@ -70,6 +70,10 @@ test.describe('legacy 2D compatibility route (#692)', () => {
       await expect(toolbar.getByRole('button', { name: 'Open piece controls menu' })).toHaveCount(
         0,
       );
+      await expect(anonymousPage.getByRole('button', { name: 'Embed', exact: true })).toBeVisible();
+      // Structured 2D's capability matrix does not advertise VR, sound, or
+      // hand-tracking controls, so those unsupported actions stay absent.
+      await expect(toolbar.getByRole('button', { name: /VR|Sound|Hand tracking/i })).toHaveCount(0);
       await expect(anonymousPage.getByRole('link', { name: /immersive/i })).toHaveCount(0);
     } finally {
       await anonymousContext.close();

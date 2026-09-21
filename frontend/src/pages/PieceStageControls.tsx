@@ -12,6 +12,9 @@ import { categorizeProviderError } from '../components/cameraFailure';
 import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
 import { createMediaPipeTrackingProvider } from '../tracking/mediapipeProvider';
 import type { TrackingProvider, TrackingProviderError } from '../tracking/types';
+import PieceStageIcon from '../components/PieceStageIcon';
+import PieceStageToolbar from '../components/PieceStageToolbar';
+import type { PieceStageCapabilities } from '../components/pieceStageCapabilities';
 import { useFullscreenToggle } from './useFullscreenToggle';
 
 // Issue #479: real camera capture and hand-tracking now run entirely in
@@ -348,6 +351,19 @@ function PieceStageControls({
       setDownloadError(error instanceof Error ? error.message : 'Download failed.');
     }
   }
+  const toolbarCapabilities: PieceStageCapabilities = {
+    screenshot: capabilities.screenshot !== false,
+    download: capabilities.download === true ? ('zip' as const) : false,
+    immersive: capabilities.immersive === true,
+    sound: capabilities.sound === true,
+    pieceControls:
+      capabilities.camera_view === true ||
+      capabilities.microphone === true ||
+      capabilities.keyboard === true,
+    gesture: capabilities.hand_steering === true,
+    gestureGuide: capabilities.hand_steering === true,
+    fullscreen: capabilities.fullscreen !== false,
+  };
   return (
     <>
       {capabilities.camera_view && (
@@ -373,70 +389,79 @@ function PieceStageControls({
           }}
         />
       )}
-      <div className="piece-stage-toolbar" role="toolbar" aria-label="Piece actions">
-        {capabilities.screenshot !== false && (
-          <button type="button" aria-label="Take screenshot" onClick={() => command('screenshot')}>
-            ⌗
-          </button>
-        )}
-        {capabilities.download !== false && (
-          <button
-            type="button"
-            aria-label="Open download menu"
-            onClick={() => setOpen((value) => !value)}
-          >
-            ↓
-          </button>
-        )}
-        {capabilities.sound && (
-          <button
-            type="button"
-            aria-pressed={soundOn}
-            aria-label={soundOn ? 'Mute sound' : 'Unmute sound'}
-            onClick={() => command('toggle-sound')}
-          >
-            ♪
-          </button>
-        )}
-        {capabilities.immersive && (
-          <a href={immersiveHref} aria-label="View immersive piece">
-            ◈
-          </a>
-        )}
-        {capabilities.fullscreen !== false && (
-          <button
-            type="button"
-            aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand fullscreen'}
-            onClick={toggleFullscreen}
-          >
-            ⛶
-          </button>
-        )}
-        <button
-          type="button"
-          aria-haspopup="true"
-          aria-expanded={open}
-          aria-label="Piece controls"
-          onClick={() => setOpen((value) => !value)}
-        >
-          ☰
-        </button>
-        <button type="button" aria-label="Show hand gesture guide" onClick={() => setGuide(true)}>
-          ✋
-        </button>
-      </div>
+      <PieceStageToolbar
+        onScreenshot={() => command('screenshot')}
+        onDownload={(variant) =>
+          void downloadPiece(variant === 'non-camera' ? 'non-camera' : 'full')
+        }
+        immersiveHref={immersiveHref}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={() => void toggleFullscreen()}
+        downloadFormat="zip"
+        capabilities={toolbarCapabilities}
+        toolbarMode="inline"
+        soundControl={
+          toolbarCapabilities.sound ? (
+            <button
+              type="button"
+              className="piece-stage-icon-button"
+              aria-pressed={soundOn}
+              aria-label={soundOn ? 'Mute sound' : 'Unmute sound'}
+              onClick={() => command('toggle-sound')}
+            >
+              <PieceStageIcon name="sound" />
+              <span className="piece-stage-action-label">Sound</span>
+            </button>
+          ) : undefined
+        }
+        controlsControl={
+          toolbarCapabilities.pieceControls ? (
+            <button
+              type="button"
+              className="piece-stage-icon-button"
+              aria-expanded={open}
+              aria-label="Camera controls"
+              onClick={() => setOpen((value) => !value)}
+            >
+              <PieceStageIcon name="controls" />
+              <span className="piece-stage-action-label">Camera</span>
+            </button>
+          ) : undefined
+        }
+        gestureControl={
+          toolbarCapabilities.gesture ? (
+            <button
+              type="button"
+              className="piece-stage-icon-button"
+              aria-pressed={steeringState === 'active'}
+              aria-label={steeringState === 'active' ? 'Stop hand tracking' : 'Hand tracking'}
+              onClick={() =>
+                command(
+                  steeringState === 'active' ? 'disable-hand-steering' : 'enable-hand-steering',
+                )
+              }
+            >
+              <PieceStageIcon name="steer" />
+              <span className="piece-stage-action-label">Hand tracking</span>
+            </button>
+          ) : undefined
+        }
+        gestureGuide={
+          toolbarCapabilities.gestureGuide ? (
+            <button
+              type="button"
+              className="piece-stage-icon-button"
+              aria-label="Hand tracking guide"
+              onClick={() => setGuide(true)}
+            >
+              <PieceStageIcon name="guide" />
+              <span className="piece-stage-action-label">Guide</span>
+            </button>
+          ) : undefined
+        }
+      />
       {open && (
         <div role="region" aria-label="Piece controls">
-          {capabilities.download !== false && (
-            <div role="group" aria-label="Download options">
-              <button type="button" onClick={() => void downloadPiece('full')}>
-                Download full piece
-              </button>
-              <button type="button" onClick={() => void downloadPiece('non-camera')}>
-                Download non-camera piece
-              </button>
-            </div>
-          )}
           {capabilities.sound && (
             <div role="group" aria-label="Sound">
               <p data-testid="sound-status">

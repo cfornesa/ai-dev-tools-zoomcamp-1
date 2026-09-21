@@ -155,7 +155,9 @@ export default function PieceStageToolbar({
             onClick={() => setDownloadOpen((current) => !current)}
           >
             <PieceStageIcon name="download" />
-            <StageActionLabel>Download</StageActionLabel>
+            <StageActionLabel>
+              {downloadFormat === 'zip' ? 'Download ZIP' : 'Download'}
+            </StageActionLabel>
             <span className="piece-stage-tooltip" role="tooltip">
               Open download menu
             </span>

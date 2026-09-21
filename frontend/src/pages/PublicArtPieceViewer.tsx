@@ -99,9 +99,10 @@ export default function PublicArtPieceViewer({
   }, [auth.status, piece]);
 
   async function handleCopyEmbedSnippet() {
-    if (!id) return;
+    const embedPieceId = id ?? piece?.public_id;
+    if (!embedPieceId) return;
     try {
-      await navigator.clipboard.writeText(embedSnippetFor(id));
+      await navigator.clipboard.writeText(embedSnippetFor(embedPieceId));
       setEmbedCopyStatus('copied');
     } catch {
       setEmbedCopyStatus('failed');
@@ -118,6 +119,7 @@ export default function PublicArtPieceViewer({
     );
 
   const isEmbedRoute = isEmbedPath();
+  const pieceId = id ?? piece.public_id;
 
   return (
     <section
@@ -142,7 +144,7 @@ export default function PublicArtPieceViewer({
               {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
             </button>
           </p>
-          {showEmbedSnippet && id && (
+          {showEmbedSnippet && pieceId && (
             <div className="public-art-piece-embed-snippet" data-testid="embed-snippet-panel">
               <label htmlFor="art-piece-embed-snippet-textarea">
                 Embed this piece on another site
@@ -150,7 +152,7 @@ export default function PublicArtPieceViewer({
               <textarea
                 id="art-piece-embed-snippet-textarea"
                 readOnly
-                value={embedSnippetFor(id)}
+                value={embedSnippetFor(pieceId)}
                 onFocus={(event) => event.currentTarget.select()}
               />
               <button type="button" onClick={() => void handleCopyEmbedSnippet()}>

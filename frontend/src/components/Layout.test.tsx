@@ -98,6 +98,23 @@ describe('Layout: authentication control and attribution', () => {
   });
 });
 
+describe('Layout: responsive header chrome (#674)', () => {
+  it('uses one accessible color-mode control and keeps motion in the toolbar', () => {
+    renderWithAuth({ status: 'signed-out', user: null });
+
+    expect(
+      screen.getByRole('combobox', { name: 'Color mode, currently system' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    expect(
+      screen.queryByRole('button', { name: /switch to (light|dark) mode/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('radiogroup', { name: 'Reduce motion' }).closest('.app-shell-toolbar'),
+    ).not.toBeNull();
+  });
+});
+
 describe('Layout: public navigation (#645)', () => {
   it('renders Gallery and published CMS navigation pages without a Home item', async () => {
     vi.mocked(publicPagesApi.fetchPublicPageNavigation).mockResolvedValueOnce([

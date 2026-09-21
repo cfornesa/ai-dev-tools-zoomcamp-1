@@ -208,13 +208,12 @@ body {
 /* #645: public routes use the reference-style brand/navigation row. */
 .app-shell-header {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   padding: 24px;
   border-bottom: 1px solid var(--border);
-  text-align: left;
-  flex-wrap: wrap;
+  text-align: center;
 }
 
 /* Issue #95, point 1: the heading + (mobile-only) hamburger toggle share
@@ -243,11 +242,21 @@ body {
 .app-shell-theme-controls {
   align-items: center;
   display: inline-flex;
-  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .app-shell-theme-controls select {
-  min-height: 2.25rem;
+  min-height: 44px;
+  min-width: 108px;
+}
+
+.app-shell-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .visually-hidden {
@@ -334,7 +343,7 @@ body {
 
 .app-shell-nav {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
   gap: 10px;
@@ -350,8 +359,7 @@ body {
 .app-shell-motion {
   display: flex;
   justify-content: center;
-  flex: 1 0 100%;
-  margin-left: 0;
+  flex: 0 0 auto;
 }
 
 /* Issue #90: harmonizes ReducedMotionControl's radio-pill buttons with the
@@ -413,7 +421,7 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: 44px;
   box-sizing: border-box;
   padding: 8px 16px;
   border: 1px solid var(--accent-border);
@@ -1431,7 +1439,6 @@ code {
   }
 
   .app-shell-header {
-    flex-direction: column;
     gap: 16px;
     padding: 32px 16px;
     border-bottom: 1px solid var(--border);
@@ -1458,6 +1465,23 @@ code {
     flex-wrap: wrap;
     align-items: stretch;
     width: 100%;
+  }
+
+  .app-shell-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app-shell-theme-controls,
+  .app-shell-theme-controls label,
+  .app-shell-theme-controls select,
+  .app-shell-motion,
+  .app-shell-motion .reduced-motion-control {
+    width: 100%;
+  }
+
+  .app-shell-theme-controls select {
+    min-width: 0;
   }
 
   .app-shell-auth-actions {

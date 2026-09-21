@@ -134,10 +134,6 @@ function Layout() {
     persistThemePreference(next);
   }
 
-  function toggleExplicitTheme() {
-    updateThemePreference(resolveThemeMode(themePreference) === 'dark' ? 'light' : 'dark');
-  }
-
   // Issue #90: collapsing back to desktop width while the mobile menu is
   // open would otherwise leave menuOpen stuck true, showing the (now
   // hidden-by-layout) menu markup with stale aria-expanded state next time
@@ -225,43 +221,52 @@ function Layout() {
             </button>
           )}
         </div>
-        <div className="app-shell-theme-controls" aria-label="Color mode">
-          <button
-            type="button"
-            className="shell-action"
-            onClick={toggleExplicitTheme}
-            aria-label={
-              resolveThemeMode(themePreference) === 'dark'
-                ? 'Switch to light mode'
-                : 'Switch to dark mode'
-            }
-            title="Toggle light and dark mode"
-          >
-            <span aria-hidden="true">
-              {resolveThemeMode(themePreference) === 'dark' ? '☀' : '☾'}
-            </span>
-          </button>
-          <label>
-            <span className="visually-hidden">Color mode preference</span>
-            <select
-              aria-label="Color mode preference"
-              value={themePreference}
-              onChange={(event) => updateThemePreference(event.target.value as ThemePreference)}
-            >
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
-        </div>
-        {isMobileHeader ? (
-          <>
-            <nav
-              id="app-shell-mobile-menu"
-              className="app-shell-nav app-shell-mobile-menu"
-              aria-label="Primary navigation"
-              hidden={!menuOpen}
-            >
+        <div className="app-shell-toolbar">
+          <div className="app-shell-theme-controls">
+            <label>
+              <span className="visually-hidden">Color mode</span>
+              <select
+                aria-label={`Color mode, currently ${themePreference}`}
+                value={themePreference}
+                onChange={(event) => updateThemePreference(event.target.value as ThemePreference)}
+              >
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+          </div>
+          {isMobileHeader ? (
+            <>
+              <nav
+                id="app-shell-mobile-menu"
+                className="app-shell-nav app-shell-mobile-menu"
+                aria-label="Primary navigation"
+                hidden={!menuOpen}
+              >
+                <NavLink
+                  className="shell-action"
+                  to={auth.status === 'signed-in' ? '/studio' : '/gallery'}
+                  end
+                >
+                  {auth.status === 'signed-in' ? 'Studio' : 'Public gallery'}
+                </NavLink>
+                {auth.status === 'signed-in' && (
+                  <NavLink className="shell-action" to="/gallery">
+                    Public gallery
+                  </NavLink>
+                )}
+                {publicPageLinks}
+                {signInOrOutAction}
+                {auth.logoutError && (
+                  <p className="auth-error" role="alert">
+                    {auth.logoutError}
+                  </p>
+                )}
+              </nav>
+            </>
+          ) : (
+            <nav className="app-shell-nav" aria-label="Primary navigation">
               <NavLink
                 className="shell-action"
                 to={auth.status === 'signed-in' ? '/studio' : '/gallery'}
@@ -275,39 +280,17 @@ function Layout() {
                 </NavLink>
               )}
               {publicPageLinks}
-              {signInOrOutAction}
+              <span className="app-shell-auth-actions">{signInOrOutAction}</span>
               {auth.logoutError && (
                 <p className="auth-error" role="alert">
                   {auth.logoutError}
                 </p>
               )}
             </nav>
-          </>
-        ) : (
-          <nav className="app-shell-nav" aria-label="Primary navigation">
-            <NavLink
-              className="shell-action"
-              to={auth.status === 'signed-in' ? '/studio' : '/gallery'}
-              end
-            >
-              {auth.status === 'signed-in' ? 'Studio' : 'Public gallery'}
-            </NavLink>
-            {auth.status === 'signed-in' && (
-              <NavLink className="shell-action" to="/gallery">
-                Public gallery
-              </NavLink>
-            )}
-            {publicPageLinks}
-            <span className="app-shell-auth-actions">{signInOrOutAction}</span>
-            {auth.logoutError && (
-              <p className="auth-error" role="alert">
-                {auth.logoutError}
-              </p>
-            )}
-          </nav>
-        )}
-        <div className="app-shell-motion">
-          <ReducedMotionControl />
+          )}
+          <div className="app-shell-motion">
+            <ReducedMotionControl />
+          </div>
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>

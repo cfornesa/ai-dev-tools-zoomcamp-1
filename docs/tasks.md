@@ -68,7 +68,7 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
 - QA: PASS; live issue reread after implementation, comment posted, and issue
   closed at [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667#issuecomment-5764030488).
 
-### #668 transaction ledger — 2026-09-21 — IMPLEMENTED, QA PENDING
+### #668 transaction ledger — 2026-09-21 — CLOSED, QA PASS
 
 - PM/grooming: the live issue was reread before implementation; scope stayed
   limited to owner editing of generated Three.js and A-Frame pieces. The
@@ -79,9 +79,14 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   source preview, undo/redo, and explicit version saving. Added the named
   Chromium WebGL Playwright coverage, stored-version/regular/immersive/ZIP
   assertions, and inspected before/after plus preview screenshots.
-- Verification pending: focused Vitest/typecheck and live Chromium pass are
-  green; run the full `make check`, inspect the preview screenshots, and
-  complete the independent QA reread before closure.
+- QA: PASS; live issue reread after implementation, preview screenshots
+  inspected, full `make check` passed, GitHub evidence posted, and issue closed
+  at [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668#issuecomment-5764702969).
+
+### Next groomed issue — #669
+
+- Generated-piece real-time preview; re-read the live issue before implementation
+  and keep the work scoped to its acceptance criteria.
 
 ### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE
 

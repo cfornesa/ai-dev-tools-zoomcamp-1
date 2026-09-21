@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
 import { ART_PIECE_BRIDGE_VERSION } from '../generative/artPieceSandbox';
@@ -107,13 +107,16 @@ function PieceStageControls({
   const visitorOverlayRef = useRef<HTMLCanvasElement | null>(null);
   const visitorStrokesRef = useRef<VisitorStroke[]>([]);
   const visitorPointerIdRef = useRef<number | null>(null);
+  const compositeAndDownloadScreenshotRef = useRef<
+    (artworkDataUrl: string, filename: string) => Promise<void>
+  >(async () => {});
   const micStreamRef = useRef<MediaStream | null>(null);
   cameraOpacityRef.current = cameraOpacity;
   cameraStateRef.current = cameraState;
   steeringActiveRef.current = steeringState === 'active';
   visitorStrokesRef.current = visitorStrokes;
 
-  function drawVisitorOverlay() {
+  const drawVisitorOverlay = useCallback(() => {
     const canvas = visitorOverlayRef.current;
     if (!canvas) return;
     const context = canvas.getContext('2d');
@@ -132,9 +135,9 @@ function PieceStageControls({
       }
       context.stroke();
     }
-  }
+  }, []);
 
-  function updateVisitorOverlaySize() {
+  const updateVisitorOverlaySize = useCallback(() => {
     const canvas = visitorOverlayRef.current;
     const stage = stageRef.current;
     if (!canvas || !stage) return;
@@ -146,7 +149,7 @@ function PieceStageControls({
       canvas.height = height;
     }
     drawVisitorOverlay();
-  }
+  }, [drawVisitorOverlay, stageRef]);
 
   useEffect(() => {
     if (library !== 'c2js-interactive') return;
@@ -155,11 +158,11 @@ function PieceStageControls({
     const observer = new ResizeObserver(updateVisitorOverlaySize);
     if (stageRef.current) observer.observe(stageRef.current);
     return () => observer.disconnect();
-  }, [library, stageRef]);
+  }, [library, stageRef, updateVisitorOverlaySize]);
 
   useEffect(() => {
     drawVisitorOverlay();
-  }, [visitorStrokes]);
+  }, [drawVisitorOverlay, visitorStrokes]);
 
   function visitorPoint(event: React.PointerEvent<HTMLCanvasElement>): VisitorPoint {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -214,12 +217,11 @@ function PieceStageControls({
         setScreenshotError(data.message || 'The art piece could not complete that action.');
       }
       if (data.status === 'screenshot' && data.data) {
-        void compositeAndDownloadScreenshot(
-          data.data,
-          data.filename || 'art-piece-screenshot.png',
-        ).catch(() => {
-          setScreenshotError('Screenshot failed: the captured artwork was not a valid image.');
-        });
+        void compositeAndDownloadScreenshotRef
+          .current(data.data, data.filename || 'art-piece-screenshot.png')
+          .catch(() => {
+            setScreenshotError('Screenshot failed: the captured artwork was not a valid image.');
+          });
       }
       // Issue #430: these reflect the sandbox's *acknowledged* runtime
       // state (posted only after the AudioContext/getUserMedia call
@@ -268,57 +270,58 @@ function PieceStageControls({
   // same opacity the live overlay uses) before downloading, matching
   // #431's original "visibly composites overlay/background" criterion.
   // With no active camera, the artwork downloads unchanged.
-  async function compositeAndDownloadScreenshot(
-    artworkDataUrl: string,
-    filename: string,
-  ): Promise<void> {
-    if (
-      library !== 'c2js-interactive' &&
-      (cameraStateRef.current !== 'active' || !cameraVideoRef.current)
-    ) {
-      const [header, encoded] = artworkDataUrl.split(',', 2);
-      const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
-      const mime = header.match(/data:([^;]+)/)?.[1] || 'image/png';
-      downloadBlob(new Blob([bytes], { type: mime }), filename);
-      return;
-    }
-    const image = new Image();
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error('The captured artwork was not a valid image.'));
-      image.src = artworkDataUrl;
-    });
-    const canvas = document.createElement('canvas');
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('Could not create a canvas context to composite the camera.');
-    context.drawImage(image, 0, 0);
-    if (library === 'c2js-interactive') {
-      context.strokeStyle = '#fbbf24';
-      context.lineWidth = Math.max(2, (image.width / 320) * 3);
-      context.lineCap = 'round';
-      context.lineJoin = 'round';
-      for (const stroke of visitorStrokesRef.current) {
-        if (stroke.length === 0) continue;
-        context.beginPath();
-        context.moveTo(stroke[0].x * image.width, stroke[0].y * image.height);
-        for (const point of stroke.slice(1)) {
-          context.lineTo(point.x * image.width, point.y * image.height);
-        }
-        context.stroke();
+  const compositeAndDownloadScreenshot = useCallback(
+    async (artworkDataUrl: string, filename: string): Promise<void> => {
+      if (
+        library !== 'c2js-interactive' &&
+        (cameraStateRef.current !== 'active' || !cameraVideoRef.current)
+      ) {
+        const [header, encoded] = artworkDataUrl.split(',', 2);
+        const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+        const mime = header.match(/data:([^;]+)/)?.[1] || 'image/png';
+        downloadBlob(new Blob([bytes], { type: mime }), filename);
+        return;
       }
-    }
-    if (cameraStateRef.current === 'active' && cameraVideoRef.current) {
-      context.save();
-      context.globalAlpha = cameraOpacityRef.current;
-      context.drawImage(cameraVideoRef.current, 0, 0, canvas.width, canvas.height);
-      context.restore();
-    }
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-    if (!blob) throw new Error('Could not encode the composited screenshot.');
-    downloadBlob(blob, filename);
-  }
+      const image = new Image();
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error('The captured artwork was not a valid image.'));
+        image.src = artworkDataUrl;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Could not create a canvas context to composite the camera.');
+      context.drawImage(image, 0, 0);
+      if (library === 'c2js-interactive') {
+        context.strokeStyle = '#fbbf24';
+        context.lineWidth = Math.max(2, (image.width / 320) * 3);
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        for (const stroke of visitorStrokesRef.current) {
+          if (stroke.length === 0) continue;
+          context.beginPath();
+          context.moveTo(stroke[0].x * image.width, stroke[0].y * image.height);
+          for (const point of stroke.slice(1)) {
+            context.lineTo(point.x * image.width, point.y * image.height);
+          }
+          context.stroke();
+        }
+      }
+      if (cameraStateRef.current === 'active' && cameraVideoRef.current) {
+        context.save();
+        context.globalAlpha = cameraOpacityRef.current;
+        context.drawImage(cameraVideoRef.current, 0, 0, canvas.width, canvas.height);
+        context.restore();
+      }
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('Could not encode the composited screenshot.');
+      downloadBlob(blob, filename);
+    },
+    [library],
+  );
+  compositeAndDownloadScreenshotRef.current = compositeAndDownloadScreenshot;
 
   // Issue #479: creates the shared MediaPipe tracking provider at most
   // once per mount (mirroring `CameraControl.tsx`'s own `getProvider`

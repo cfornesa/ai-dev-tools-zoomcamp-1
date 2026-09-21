@@ -22438,7 +22438,7 @@ closure contracts are in
 | [#641](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/641) | CLOSED / QA-passed | Canonical editable name-derived collection routes with legacy shims | Complete |
 | [#637](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/637) | CLOSED / QA-passed | Regular structured piece controls, context, embed placement, and profile identity parity | Complete |
 | [#638](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/638) | CLOSED / QA-passed | Immersive structured piece full-screen, controls, context, and embed parity | Complete |
-| [#639](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/639) | OPEN / QA-pending | Collection regular/immersive/embed parity and canonical item context | Reconcile and close after current evidence |
+| [#639](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/639) | CLOSED / QA-passed | Collection regular/immersive/embed parity and canonical item context | Complete |
 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | PROPOSED / dependency-blocked | Reconcile published revision and live profile/piece/collection evidence | Run after #636–#639 and #641; no product implementation in this issue |
 
 Distillation is complete for this intake. #636–#638 and #641 are closed;
@@ -22496,4 +22496,4 @@ into that implementation.
 - PM/groom: current GitHub #639 and this task entry were re-read before implementation and again before QA; scope remained criterion-ready Stage 2a. Collection route/data persistence remained in #641 and piece runtime behavior remained in #637/#638.
 - Engineering: added typed canonical collection links to the consumer surface, regular collection Embed and immersive actions with canonical embed snippets, owner/context presentation, immersive Custom/CMS embed actions, bounded zoom/fullscreen controls, and preserved item navigation and chrome-less embed behavior.
 - Verification: focused collection frontend tests 5 passed; Chromium collection matrix 4 passed at 1280x900 and 375x812 across regular, immersive, and embed entry points; full `make check` passed with backend 1448 passed/39 skipped and frontend 241 files/2736 tests passed. Existing lint warnings remain pre-existing and non-blocking.
-- QA/reconciliation: current issue and task specification were re-read after all checks; evidence covers canonical route consumers, title/description/owner/item context, regular and immersive embeds, item navigation, zoom/fullscreen controls, no duplicated app navigation, and fixed-viewport containment. Ready to close #639.
+- QA/reconciliation: current issue and task specification were re-read after all checks; evidence covers canonical route consumers, title/description/owner/item context, regular and immersive embeds, item navigation, zoom/fullscreen controls, no duplicated app navigation, and fixed-viewport containment. #639 closed after the GitHub evidence comment.

@@ -25,6 +25,9 @@ const PublicGallery = lazy(() => import('./pages/PublicGallery'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
 const PublicProject3DViewer = lazy(() => import('./pages/PublicProject3DViewer'));
 const ImmersiveProject3DViewer = lazy(() => import('./pages/ImmersiveProject3DViewer'));
+const CanonicalImmersiveStructuredPiece = lazy(
+  () => import('./pages/CanonicalImmersiveStructuredPiece'),
+);
 const ImmersiveArtPieceViewer = lazy(() => import('./pages/ImmersiveArtPieceViewer'));
 const Templates = lazy(() => import('./pages/Templates'));
 const CreateChooser = lazy(() => import('./pages/CreateChooser'));
@@ -41,7 +44,6 @@ const AdminContent = lazy(() => import('./pages/AdminContent'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 const CanonicalPublicPiece = lazy(() => import('./pages/CanonicalPublicPiece'));
 const CanonicalArtPieceEditor = lazy(() => import('./pages/CanonicalArtPieceEditor'));
-const CanonicalImmersiveArtPiece = lazy(() => import('./pages/CanonicalImmersiveArtPiece'));
 const PublicCmsPage = lazy(() => import('./pages/PublicCmsPage'));
 const CollectionManagement = lazy(() => import('./pages/CollectionManagement'));
 const PublicCollection = lazy(() => import('./pages/PublicCollection'));
@@ -113,10 +115,6 @@ function App() {
               <Route path="art-pieces/p/:id" element={<PublicArtPieceViewer />} />
               <Route path="users/:handle/pieces/:pieceSlug" element={<CanonicalPublicPiece />} />
               <Route path="users/:handle/edit/:pieceSlug" element={<CanonicalArtPieceEditor />} />
-              <Route
-                path="users/:handle/immersive/:pieceSlug"
-                element={<CanonicalImmersiveArtPiece />}
-              />
               <Route path="art-pieces/immersive/:id" element={<ImmersiveArtPieceViewer />} />
               <Route path="account/settings" element={<AccountSettings />} />
               <Route path="account/billing" element={<AccountBilling />} />
@@ -161,6 +159,12 @@ function App() {
                   keeps precedence. */}
               <Route path="*" element={<NotFound />} />
             </Route>
+            {/* Canonical immersive pieces own the viewport like the reference
+                immersive surface; keep app-shell navigation out of this route. */}
+            <Route
+              path="users/:handle/immersive/:pieceSlug"
+              element={<CanonicalImmersiveStructuredPiece />}
+            />
             {/* Issue #292: a chrome-less counterpart of `p/:id` above, for
                 embedding a published project's public view in an
                 `<iframe>` from another origin -- deliberately a *sibling*

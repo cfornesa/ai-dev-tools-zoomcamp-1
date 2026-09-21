@@ -53,6 +53,7 @@ export default function CanonicalPublicPiece() {
         initialProject={resolved.piece as PublicProject3D}
         toolbarMode="inline"
         authorDisplayName={profile?.display_name}
+        immersiveHref={`/users/@${handle.replace(/^@/, '')}/immersive/${pieceSlug}`}
       />
     );
   }

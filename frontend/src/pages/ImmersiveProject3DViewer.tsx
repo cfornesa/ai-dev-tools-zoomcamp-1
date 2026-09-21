@@ -42,16 +42,29 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
  * reference exactly (it has no dedicated in-page exit affordance beyond
  * that, only an unrelated "reset view" convenience).
  */
-function ImmersiveProject3DViewer() {
+function ImmersiveProject3DViewer({
+  initialProject,
+  authorDisplayName,
+  canonicalHref,
+}: {
+  initialProject?: PublicProject3D;
+  authorDisplayName?: string;
+  canonicalHref?: string;
+} = {}) {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const isEmbed = searchParams.get('embed') === '1';
   const isCmsEmbed = isEmbed && searchParams.get('cms') === '1';
   const [loadState, setLoadState] = useState<LoadState>('loading');
-  const [project, setProject] = useState<PublicProject3D | null>(null);
+  const [project, setProject] = useState<PublicProject3D | null>(initialProject ?? null);
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   useEffect(() => {
+    if (initialProject) {
+      setProject(initialProject);
+      setLoadState('ready');
+      return;
+    }
     if (!id) return;
     let cancelled = false;
     setLoadState('loading');
@@ -75,7 +88,7 @@ function ImmersiveProject3DViewer() {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, initialProject]);
 
   if (loadState === 'loading') {
     return (
@@ -116,7 +129,7 @@ function ImmersiveProject3DViewer() {
 
   function embedSnippetFor(cms: boolean): string {
     const query = cms ? '?embed=1&cms=1' : '?embed=1';
-    const src = `${window.location.origin}/immersive/p3d/${readyProject.id}${query}`;
+    const src = `${window.location.origin}${canonicalHref ?? `/immersive/p3d/${readyProject.id}`}${query}`;
     return `<iframe src="${src}" width="800" height="600" frameborder="0" allow="fullscreen; camera; microphone" allowfullscreen></iframe>`;
   }
 
@@ -148,7 +161,10 @@ function ImmersiveProject3DViewer() {
       {!isEmbed && (
         <header>
           <h2>{readyProject.title}</h2>
-          <p className="public-project-attribution">By {readyProject.owner}</p>
+          <p className="public-project-attribution">By {authorDisplayName || readyProject.owner}</p>
+          {!!readyProject.seo_config?.description && (
+            <p className="public-project-context">{readyProject.seo_config.description}</p>
+          )}
           <p role="note">
             Drag to look around, scroll/pinch to zoom, and use the arrow keys to fly through the
             piece.
@@ -180,6 +196,7 @@ function ImmersiveProject3DViewer() {
             screenshotBaseName={readyProject.title}
             flyControls
             onDownload={(variant) => void handleDownload(variant)}
+            toolbarMode="inline"
           />
         )}
       </section>

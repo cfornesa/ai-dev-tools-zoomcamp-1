@@ -142,7 +142,9 @@ describe('ImmersiveProject3DViewer load states', () => {
     expect(await screen.findByRole('heading', { name: 'Rotating Cube' })).toBeInTheDocument();
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    expect(
+      screen.queryByRole('button', { name: 'Open piece controls menu' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /steer the piece/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /show hand gesture guide/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Embed (Custom)' })).toBeInTheDocument();
@@ -171,9 +173,9 @@ describe('ImmersiveProject3DViewer load states', () => {
     mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
     renderViewerAt('/immersive/p3d/p1?embed=1&cms=1');
 
-    await userEvent
-      .setup()
-      .click(await screen.findByRole('button', { name: 'Open piece controls menu' }));
+    expect(
+      screen.queryByRole('button', { name: 'Open piece controls menu' }),
+    ).not.toBeInTheDocument();
     await screen.findByRole('button', { name: /show hand gesture guide/i });
     expect(screen.queryByRole('heading', { name: 'Rotating Cube' })).not.toBeInTheDocument();
     expect(screen.getByTestId('immersive-project3d-viewer')).toHaveAttribute(

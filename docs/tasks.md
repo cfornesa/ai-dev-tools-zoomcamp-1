@@ -22437,13 +22437,13 @@ closure contracts are in
 | [#636](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/636) | CLOSED / QA-passed | Canonical editable name-derived piece routes with legacy shims | Complete |
 | [#641](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/641) | CLOSED / QA-passed | Canonical editable name-derived collection routes with legacy shims | Complete |
 | [#637](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/637) | CLOSED / QA-passed | Regular structured piece controls, context, embed placement, and profile identity parity | Complete |
-| [#638](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/638) | PROPOSED / dependency-blocked | Immersive structured piece full-screen, controls, context, and embed parity | Start after #636 |
+| [#638](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/638) | CLOSED / QA-passed | Immersive structured piece full-screen, controls, context, and embed parity | Complete |
 | [#639](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/639) | PROPOSED / dependency-blocked | Collection regular/immersive/embed parity and canonical item context | Start after #641 and #636 |
 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | PROPOSED / dependency-blocked | Reconcile published revision and live profile/piece/collection evidence | Run after #636–#639 and #641; no product implementation in this issue |
 
-Distillation is complete for this intake. #636, #637, and #641 are closed;
-#638 is the next independent piece-surface transaction. #639–#640 remain
-deferred until their dependencies are reconciled.
+Distillation is complete for this intake. #636–#638 and #641 are closed;
+#639 is the next collection-surface transaction. #640 remains deferred until
+the relevant public surfaces are reconciled.
 
 ### #636 transaction ledger — 2026-09-20
 
@@ -22460,8 +22460,8 @@ current GitHub bodies were re-read before engineering resumed and reconciled
 in [`docs/distillation-2026-09-20-public-surface-parity.md`](distillation-2026-09-20-public-surface-parity.md).
 No duplicates were found. The remaining work is ordered as follows:
 
-- #641 is next: canonical collection persistence/resolution/privacy and link serializers.
-- #637 is closed; #638 is the next independent piece-surface consumer after #636.
+- #641 is closed: canonical collection persistence/resolution/privacy and link serializers.
+- #637 and #638 are closed; #639 is next after the piece and collection route prerequisites.
 - #639 follows #641 and the relevant piece consumers; #640 is final live publication reconciliation only.
 - #642 → #643 → #646/#647 is the theme/preset chain; #644 and #645 are shell consumers, with #648 after the shell contract.
 - #649 → #650 is the profile header/card chain.
@@ -22483,3 +22483,10 @@ into that implementation.
 - Engineering: added an inline canonical-route variant to the shared stage toolbar, retaining the legacy hamburger menu for UUID viewers; canonical structured viewers now use named keyboard-reachable controls, a button-based immersive action for 3D, current public display-name projection, and 3D context text. Added fixed-viewport browser assertions for action visibility, menu absence, context, and profile identity.
 - Verification: focused frontend tests 46 passed; Chromium canonical 2D/3D route matrix passed at 1280x900 and 375x812; full `make check` passed with backend 1448 passed/39 skipped and frontend 241 files/2736 tests passed. Existing lint warnings remain pre-existing and non-blocking.
 - QA/reconciliation: current issue and task specification were re-read after all checks; evidence covers public regular rendering, named controls, no hamburger, button semantics, context visibility, current profile display name, and compatibility-preserving legacy behavior. Ready to close #637.
+
+### #638 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub #638 and this task entry were re-read before implementation and again before QA; scope remained criterion-ready Stage 2a. No route/API or capability-contract change was required beyond composing existing canonical piece/profile projections and the shared stage controls.
+- Engineering: added the chrome-less canonical immersive resolver for structured and generated pieces, preserved the legacy immersive UUID route, routed canonical regular 3D immersive actions to the readable slug, made immersive embed snippets canonical, and switched structured immersive stages to named inline controls without the hamburger.
+- Verification: focused immersive viewer tests 16 passed; canonical immersive Chromium regression passed at 1280x900 and 375x812 with title, author, instructions, named controls, arrow/zoom buttons, embed actions, Escape, and no horizontal overflow; full `make check` passed with backend 1448 passed/39 skipped and frontend 241 files/2736 tests passed. Existing lint warnings remain pre-existing and non-blocking.
+- QA/reconciliation: current issue and task specification were re-read after all checks; evidence covers readable canonical immersive routing, chrome-less viewport ownership, profile/context text, capability-appropriate controls, canonical embed targets, legacy compatibility, and fixed-viewport interactions. Ready to close #638.

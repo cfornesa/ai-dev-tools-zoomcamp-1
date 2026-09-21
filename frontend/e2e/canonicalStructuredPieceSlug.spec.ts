@@ -64,7 +64,9 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
       ).toBeVisible();
       await expect(anonymousPage.getByTestId('public-scene-canvas')).toBeVisible();
       await expect(
-        anonymousPage.getByText(`By ${publicProfile.profile.display_name}`, { exact: true }),
+        anonymousPage.getByText(`By ${publicProfile.profile.display_name || profile.handle}`, {
+          exact: true,
+        }),
       ).toBeVisible();
       await expect(
         anonymousPage.getByRole('button', { name: 'Open piece controls menu' }),
@@ -80,7 +82,9 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
       ).toBeVisible();
       await expect(anonymousPage.getByTestId('scene3d-preview-canvas-frame')).toBeVisible();
       await expect(
-        anonymousPage.getByText(`By ${publicProfile.profile.display_name}`, { exact: true }),
+        anonymousPage.getByText(`By ${publicProfile.profile.display_name || profile.handle}`, {
+          exact: true,
+        }),
       ).toBeVisible();
       await expect(
         anonymousPage.getByRole('button', { name: 'Open piece controls menu' }),

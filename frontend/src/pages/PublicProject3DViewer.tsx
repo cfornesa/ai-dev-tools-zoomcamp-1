@@ -30,10 +30,12 @@ function PublicProject3DViewer({
   initialProject,
   toolbarMode = 'menu',
   authorDisplayName,
+  immersiveHref,
 }: {
   initialProject?: PublicProject3D;
   toolbarMode?: 'menu' | 'inline';
   authorDisplayName?: string;
+  immersiveHref?: string;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = routeId ?? initialProject?.id;
@@ -219,7 +221,7 @@ function PublicProject3DViewer({
             scene={project.current_version.scene_json as unknown as Scene3DDocument}
             screenshotBaseName={project.title}
             onDownload={(variant) => void handleDownload(variant)}
-            immersiveHref={`/immersive/p3d/${id}`}
+            immersiveHref={immersiveHref ?? `/immersive/p3d/${id}`}
             toolbarMode={toolbarMode}
           />
         )}

@@ -44,6 +44,9 @@ type Props = {
   presentation?: 'regular' | 'immersive';
 };
 
+type VisitorPoint = { x: number; y: number };
+type VisitorStroke = VisitorPoint[];
+
 function PieceStageControls({
   stageRef,
   iframeRef,
@@ -74,6 +77,8 @@ function PieceStageControls({
   const [steeringPose, setSteeringPose] = useState<{ x: number; y: number; z: number } | null>(
     null,
   );
+  const [visitorDrawOn, setVisitorDrawOn] = useState(false);
+  const [visitorStrokes, setVisitorStrokes] = useState<VisitorStroke[]>([]);
   // Issue #479: model preparation status is now derived directly from the
   // local `TrackingProvider`'s own onFrame/onError channels -- no longer
   // reported through the sandbox at all, since hand-tracking never runs
@@ -99,10 +104,93 @@ function PieceStageControls({
   const cameraStateRef = useRef<'off' | 'active' | 'denied' | 'unavailable' | 'ended'>('off');
   const steeringActiveRef = useRef(false);
   const commandRef = useRef<(type: string, extra?: Record<string, unknown>) => void>(() => {});
+  const visitorOverlayRef = useRef<HTMLCanvasElement | null>(null);
+  const visitorStrokesRef = useRef<VisitorStroke[]>([]);
+  const visitorPointerIdRef = useRef<number | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   cameraOpacityRef.current = cameraOpacity;
   cameraStateRef.current = cameraState;
   steeringActiveRef.current = steeringState === 'active';
+  visitorStrokesRef.current = visitorStrokes;
+
+  function drawVisitorOverlay() {
+    const canvas = visitorOverlayRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.strokeStyle = '#fbbf24';
+    context.lineWidth = Math.max(3, (canvas.width / 320) * 3);
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    for (const stroke of visitorStrokesRef.current) {
+      if (stroke.length === 0) continue;
+      context.beginPath();
+      context.moveTo(stroke[0].x * canvas.width, stroke[0].y * canvas.height);
+      for (const point of stroke.slice(1)) {
+        context.lineTo(point.x * canvas.width, point.y * canvas.height);
+      }
+      context.stroke();
+    }
+  }
+
+  function updateVisitorOverlaySize() {
+    const canvas = visitorOverlayRef.current;
+    const stage = stageRef.current;
+    if (!canvas || !stage) return;
+    const scale = window.devicePixelRatio || 1;
+    const width = Math.max(1, Math.floor(stage.clientWidth * scale));
+    const height = Math.max(1, Math.floor(stage.clientHeight * scale));
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    drawVisitorOverlay();
+  }
+
+  useEffect(() => {
+    if (library !== 'c2js-interactive') return;
+    updateVisitorOverlaySize();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(updateVisitorOverlaySize);
+    if (stageRef.current) observer.observe(stageRef.current);
+    return () => observer.disconnect();
+  }, [library, stageRef]);
+
+  useEffect(() => {
+    drawVisitorOverlay();
+  }, [visitorStrokes]);
+
+  function visitorPoint(event: React.PointerEvent<HTMLCanvasElement>): VisitorPoint {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
+      y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
+    };
+  }
+
+  function startVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!visitorDrawOn) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    visitorPointerIdRef.current = event.pointerId;
+    const stroke = [visitorPoint(event)];
+    visitorStrokesRef.current = [...visitorStrokesRef.current, stroke];
+    setVisitorStrokes(visitorStrokesRef.current);
+  }
+
+  function continueVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
+    if (!visitorDrawOn || visitorPointerIdRef.current !== event.pointerId) return;
+    const strokes = visitorStrokesRef.current;
+    const current = strokes[strokes.length - 1];
+    if (!current) return;
+    current.push(visitorPoint(event));
+    setVisitorStrokes([...strokes]);
+  }
+
+  function clearVisitorStrokes() {
+    visitorStrokesRef.current = [];
+    setVisitorStrokes([]);
+  }
 
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -184,7 +272,10 @@ function PieceStageControls({
     artworkDataUrl: string,
     filename: string,
   ): Promise<void> {
-    if (cameraStateRef.current !== 'active' || !cameraVideoRef.current) {
+    if (
+      library !== 'c2js-interactive' &&
+      (cameraStateRef.current !== 'active' || !cameraVideoRef.current)
+    ) {
       const [header, encoded] = artworkDataUrl.split(',', 2);
       const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
       const mime = header.match(/data:([^;]+)/)?.[1] || 'image/png';
@@ -203,10 +294,27 @@ function PieceStageControls({
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Could not create a canvas context to composite the camera.');
     context.drawImage(image, 0, 0);
-    context.save();
-    context.globalAlpha = cameraOpacityRef.current;
-    context.drawImage(cameraVideoRef.current, 0, 0, canvas.width, canvas.height);
-    context.restore();
+    if (library === 'c2js-interactive') {
+      context.strokeStyle = '#fbbf24';
+      context.lineWidth = Math.max(2, (image.width / 320) * 3);
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      for (const stroke of visitorStrokesRef.current) {
+        if (stroke.length === 0) continue;
+        context.beginPath();
+        context.moveTo(stroke[0].x * image.width, stroke[0].y * image.height);
+        for (const point of stroke.slice(1)) {
+          context.lineTo(point.x * image.width, point.y * image.height);
+        }
+        context.stroke();
+      }
+    }
+    if (cameraStateRef.current === 'active' && cameraVideoRef.current) {
+      context.save();
+      context.globalAlpha = cameraOpacityRef.current;
+      context.drawImage(cameraVideoRef.current, 0, 0, canvas.width, canvas.height);
+      context.restore();
+    }
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!blob) throw new Error('Could not encode the composited screenshot.');
     downloadBlob(blob, filename);
@@ -460,7 +568,60 @@ function PieceStageControls({
             </button>
           ) : undefined
         }
+        visitorDrawControl={
+          library === 'c2js-interactive' ? (
+            <div
+              className="piece-stage-visitor-draw-controls"
+              role="group"
+              aria-label="Visitor drawing"
+            >
+              <button
+                type="button"
+                className="piece-stage-icon-button"
+                aria-pressed={visitorDrawOn}
+                aria-label={visitorDrawOn ? 'Stop drawing' : 'Draw on piece'}
+                onClick={() => setVisitorDrawOn((current) => !current)}
+              >
+                <span className="piece-stage-action-label">
+                  {visitorDrawOn ? 'Stop drawing' : 'Draw'}
+                </span>
+              </button>
+              <button
+                type="button"
+                className="piece-stage-icon-button"
+                aria-label="Clear visitor drawing"
+                onClick={clearVisitorStrokes}
+                disabled={visitorStrokes.length === 0}
+              >
+                <span className="piece-stage-action-label">Clear</span>
+              </button>
+            </div>
+          ) : undefined
+        }
       />
+      {library === 'c2js-interactive' && (
+        <canvas
+          ref={visitorOverlayRef}
+          aria-label="Temporary visitor drawing overlay"
+          onPointerDown={startVisitorStroke}
+          onPointerMove={continueVisitorStroke}
+          onPointerUp={(event) => {
+            visitorPointerIdRef.current = null;
+            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.releasePointerCapture(event.pointerId);
+            }
+          }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 10,
+            width: presentation === 'immersive' ? '100%' : '320px',
+            height: presentation === 'immersive' ? '100%' : '240px',
+            pointerEvents: visitorDrawOn ? 'auto' : 'none',
+            touchAction: 'none',
+          }}
+        />
+      )}
       {open && (
         <div role="region" aria-label="Piece controls">
           {capabilities.sound && (

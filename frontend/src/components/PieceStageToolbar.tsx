@@ -15,6 +15,7 @@ export type PieceStageToolbarProps = {
   controlsControl?: ReactNode;
   gestureControl?: ReactNode;
   gestureGuide?: ReactNode;
+  visitorDrawControl?: ReactNode;
   editorControls?: ReactNode;
   ariaLabel?: string;
   className?: string;
@@ -46,6 +47,7 @@ export default function PieceStageToolbar({
   controlsControl,
   gestureControl,
   gestureGuide,
+  visitorDrawControl,
   editorControls,
   ariaLabel = 'Piece actions',
   className,
@@ -239,6 +241,7 @@ export default function PieceStageToolbar({
       {capabilities.pieceControls && controlsControl}
       {capabilities.gesture && gestureControl}
       {capabilities.gestureGuide && gestureGuide}
+      {visitorDrawControl}
       {editorControls}
       {capabilities.fullscreen && onToggleFullscreen && (
         <button

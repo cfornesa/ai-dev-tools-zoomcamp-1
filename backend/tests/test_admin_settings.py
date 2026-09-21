@@ -84,28 +84,28 @@ def test_settings_get_allowed_for_admin(client, admin_a):
         "theme_config": {},
         "theme_palettes": {
             "light": {
-                "background": "#f8fafc",
-                "surface": "#ffffff",
-                "text": "#111827",
-                "muted": "#64748b",
-                "accent": "#7c3aed",
+                "background": "#f4ead3",
+                "surface": "#fff8e7",
+                "text": "#2b1e1a",
+                "muted": "#6f6258",
+                "accent": "#b8892e",
             },
             "dark": {
-                "background": "#0b0d12",
-                "surface": "#151923",
-                "text": "#f3f4f6",
-                "muted": "#9ca3af",
-                "accent": "#c084fc",
+                "background": "#071b2a",
+                "surface": "#2a1238",
+                "text": "#f8edd3",
+                "muted": "#c8bca5",
+                "accent": "#e4b95c",
             },
         },
         "style_key": None,
         "presentation": {
-            "font_family": "system",
+            "font_family": "script",
             "density": "comfortable",
             "radius": "soft",
             "border_style": "solid",
-            "shadow": "none",
-            "backdrop": "plain",
+            "shadow": "soft",
+            "backdrop": "cosmic",
         },
     }
 
@@ -184,7 +184,7 @@ def test_theme_tokens_are_finite_and_invalid_values_do_not_apply(client, admin_a
     )
     assert response.status_code == 400
     assert SiteSettings.get_solo().theme_config == {}
-    assert client.get(reverse("site-theme")).json()["accent"] == "#c084fc"
+    assert client.get(reverse("site-theme")).json()["accent"] == "#e4b95c"
 
 
 @pytest.mark.django_db
@@ -231,28 +231,28 @@ def test_admin_can_update_site_title(client, admin_a):
         "theme_config": {},
         "theme_palettes": {
             "light": {
-                "background": "#f8fafc",
-                "surface": "#ffffff",
-                "text": "#111827",
-                "muted": "#64748b",
-                "accent": "#7c3aed",
+                "background": "#f4ead3",
+                "surface": "#fff8e7",
+                "text": "#2b1e1a",
+                "muted": "#6f6258",
+                "accent": "#b8892e",
             },
             "dark": {
-                "background": "#0b0d12",
-                "surface": "#151923",
-                "text": "#f3f4f6",
-                "muted": "#9ca3af",
-                "accent": "#c084fc",
+                "background": "#071b2a",
+                "surface": "#2a1238",
+                "text": "#f8edd3",
+                "muted": "#c8bca5",
+                "accent": "#e4b95c",
             },
         },
         "style_key": None,
         "presentation": {
-            "font_family": "system",
+            "font_family": "script",
             "density": "comfortable",
             "radius": "soft",
             "border_style": "solid",
-            "shadow": "none",
-            "backdrop": "plain",
+            "shadow": "soft",
+            "backdrop": "cosmic",
         },
     }
     assert SiteSettings.get_solo().site_title == "New Studio Name"

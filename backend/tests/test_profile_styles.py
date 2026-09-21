@@ -121,3 +121,30 @@ def test_disabled_global_style_falls_back_to_default_site_theme(client):
     assert response.status_code == 200
     assert response.json()["theme_palettes"]["dark"]["accent"] == default.tokens["accent"]
     assert response.json()["presentation"]["shadow"] == "none"
+
+
+@pytest.mark.django_db
+def test_unset_global_style_uses_celestial_without_mutating_site_settings(client):
+    settings = SiteSettings.get_solo()
+    assert settings.style_id is None
+
+    response = client.get(reverse("site-theme"))
+
+    assert response.status_code == 200
+    assert response.json()["style_key"] == "celestial"
+    assert response.json()["theme_palettes"]["dark"]["accent"] == "#e4b95c"
+    assert response.json()["presentation"]["font_family"] == "script"
+    assert SiteSettings.get_solo().style_id is None
+
+
+@pytest.mark.django_db
+def test_explicit_plain_global_style_remains_authoritative(client):
+    plain = ProfileStyle.objects.get(key="default")
+    SiteSettings.objects.update_or_create(pk=1, defaults={"style": plain})
+
+    response = client.get(reverse("site-theme"))
+
+    assert response.status_code == 200
+    assert response.json()["style_key"] == "default"
+    assert response.json()["theme_palettes"]["dark"]["accent"] == plain.tokens["accent"]
+    assert response.json()["presentation"]["font_family"] == "system"

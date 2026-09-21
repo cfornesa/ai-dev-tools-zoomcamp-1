@@ -17,12 +17,13 @@ from scenes.admin_authorization import is_application_admin
 from scenes.admin_settings import (
     RevisionConflict,
     ValidationFailed,
+    effective_site_style,
     get_site_settings,
     list_plans,
     update_plan,
     update_site_settings,
 )
-from scenes.models import ProfileStyle, SiteSettings
+from scenes.models import SiteSettings
 from scenes.theme import effective_presentation, effective_profile_theme, effective_theme_palettes
 
 
@@ -35,13 +36,6 @@ def _admin_required_response(request) -> Response | None:
             status=status.HTTP_403_FORBIDDEN,
         )
     return None
-
-
-def _effective_site_style(site_settings: SiteSettings) -> ProfileStyle | None:
-    style = site_settings.style if site_settings.style_id else None
-    if style is not None and style.enabled:
-        return style
-    return ProfileStyle.objects.filter(key="default", enabled=True).first()
 
 
 class SiteSettingsUpdateSerializer(serializers.Serializer):
@@ -62,7 +56,7 @@ class AdminSiteSettingsView(APIView):
         if denied:
             return denied
         site_settings = get_site_settings()
-        style = _effective_site_style(SiteSettings.get_solo())
+        style = effective_site_style(SiteSettings.get_solo())
         return Response(
             {
                 "site_title": site_settings.site_title,
@@ -135,8 +129,8 @@ class AdminSiteSettingsView(APIView):
                 "revision": updated.revision,
                 "theme_config": updated.theme_config,
                 "theme_palettes": effective_theme_palettes(
-                    SiteSettings.get_solo().style.tokens
-                    if SiteSettings.get_solo().style_id
+                    effective_site_style(SiteSettings.get_solo()).tokens
+                    if effective_site_style(SiteSettings.get_solo())
                     else {},
                     updated.theme_config,
                 ),
@@ -151,7 +145,7 @@ class SiteThemeView(APIView):
 
     def get(self, request):
         row = SiteSettings.get_solo()
-        style = _effective_site_style(row)
+        style = effective_site_style(row)
         return Response(
             {
                 **effective_profile_theme(style.tokens if style else {}, row.theme_config),

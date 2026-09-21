@@ -33,6 +33,7 @@ class ValidationFailed(Exception):
 
 MAX_METADATA_TAGS = 20
 MAX_METADATA_TAG_LENGTH = 48
+DEFAULT_SITE_STYLE_KEY = "celestial"
 
 
 def sanitize_metadata_tags(value: object) -> list[str]:
@@ -84,9 +85,25 @@ class PlanView:
     role_key: str | None
 
 
+def effective_site_style(settings_row: SiteSettings) -> ProfileStyle | None:
+    """Resolve the effective global style without mutating the setting.
+
+    A null selection is the fresh-install state and uses the vivid Celestial
+    preset. An explicit selection remains authoritative; a disabled selected
+    style retains the historical safe fallback to the plain default preset.
+    """
+    if settings_row.style_id:
+        style = settings_row.style
+        if style is not None and style.enabled:
+            return style
+        return ProfileStyle.objects.filter(key="default", enabled=True).first()
+    celestial = ProfileStyle.objects.filter(key=DEFAULT_SITE_STYLE_KEY, enabled=True).first()
+    return celestial or ProfileStyle.objects.filter(key="default", enabled=True).first()
+
+
 def get_site_settings() -> SiteSettingsView:
     settings_row = SiteSettings.get_solo()
-    style = settings_row.style if settings_row.style_id else None
+    style = effective_site_style(settings_row)
     return SiteSettingsView(
         site_title=settings_row.site_title,
         site_description=settings_row.site_description,
@@ -94,7 +111,7 @@ def get_site_settings() -> SiteSettingsView:
         cloud_sync_enabled=settings_row.cloud_sync_enabled,
         revision=settings_row.revision,
         theme_config=settings_row.theme_config,
-        style_key=style.key if style else None,
+        style_key=style.key if style is not None and settings_row.style_id else None,
         presentation=effective_presentation(style.presentation if style else {}),
     )
 
@@ -154,7 +171,7 @@ def update_site_settings(
     row.revision += 1
     row.updated_by = actor
     row.save()
-    style = row.style if row.style_id else None
+    style = effective_site_style(row)
     return SiteSettingsView(
         site_title=row.site_title,
         site_description=row.site_description,
@@ -162,7 +179,7 @@ def update_site_settings(
         cloud_sync_enabled=row.cloud_sync_enabled,
         revision=row.revision,
         theme_config=row.theme_config,
-        style_key=style.key if style else None,
+        style_key=style.key if style is not None and row.style_id else None,
         presentation=effective_presentation(style.presentation if style else {}),
     )
 

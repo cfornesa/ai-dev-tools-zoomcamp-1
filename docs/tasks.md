@@ -8,8 +8,16 @@ The current open-issue manifest and dependency reconciliation is recorded in
 Fourteen new PROPOSED-then-filed issues; see
 `docs/distillation-2026-09-20-design-and-share-parity.md` for the manifest,
 dependency order, and duplicate report. #642, #643, and #644 are complete and
-reconciled; #645, #646, and #647 are complete and reconciled; #648 is the next
-engineering issue in the theme chain.
+reconciled; #645, #646, #647, and #648 are complete and reconciled; #649 is
+the next engineering issue in the theme chain.
+
+### #648 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained the anonymous home hero, configurable site title/description, CMS `home` content, safe fallback, gallery CTA, responsive title wrapping, and required screenshots.
+- Engineering: replaced the anonymous home redirect with a site-theme-backed hero, reused the public CMS page endpoint and shared CMS content renderer, added the gallery anchor target and responsive hero/header styles, and added unit/browser coverage. Commit `8d001bd`.
+- QA: focused Home/CMS tests passed 5; source-backed Chromium Home E2E passed 2 scenarios with inspected `1280x900` and `375x812` screenshots; final `make check` passed with backend 1,455 passed/39 skipped and frontend 243 files/2,743 tests, plus lint, format, typecheck, and action-pin checks.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Opencode/kimi-k3; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No runtime dependency, schema change, or deployment mutation.
+- Reconciliation: GitHub QA comment [#648 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/648#issuecomment-5754982480) posted; issue is ready to close.
 
 ### #647 transaction ledger — 2026-09-20
 

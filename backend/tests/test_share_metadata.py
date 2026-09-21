@@ -1,4 +1,4 @@
-"""Issue #653 public share metadata/image privacy and dimension contracts."""
+"""Issues #653/#654 public share metadata/image privacy contracts."""
 
 import json
 from io import BytesIO
@@ -14,10 +14,14 @@ from scenes.models import (
     ArtPiece,
     ArtPieceThumbnail,
     ArtPieceVersion,
+    Collection,
+    CollectionItem,
     Project,
     Project3D,
+    PublicProfile,
     SceneVersion,
     SceneVersion3D,
+    SiteSettings,
 )
 
 FIXTURES = Path(__file__).resolve().parent.parent.parent / "schema" / "fixtures"
@@ -86,6 +90,64 @@ def public_records(db):
         is_fallback=False,
     )
     return project, project3d, piece
+
+
+@pytest.mark.django_db(transaction=True)
+def test_site_profile_collection_and_home_metadata_are_public_and_canonical(public_records):
+    project, _, _ = public_records
+    PublicProfile.objects.create(
+        user=project.owner,
+        handle="share-artist",
+        display_name='Artist "A"',
+        bio="A long profile bio. " * 30,
+        is_public=True,
+    )
+    collection = Collection.objects.create(
+        owner=project.owner,
+        title='Collection <script>alert(1)</script>',
+        description="Collection description",
+        slug="featured",
+        visibility=Collection.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    CollectionItem.objects.create(
+        collection=collection,
+        kind=CollectionItem.Kind.PROJECT,
+        item_id=project.public_id,
+        position=0,
+    )
+    SiteSettings.objects.create(
+        site_title="Configured Site",
+        site_description="Configured description",
+    )
+    client = APIClient()
+
+    home = client.get("/api/public/share-meta/site/home/")
+    assert home.status_code == 200
+    assert home.data["title"] == "Configured Site"
+    assert home.data["canonical_path"] == "/"
+    assert home.data["image_url"] == "/favicon.svg"
+
+    profile_response = client.get("/api/public/share-meta/site/profile/share-artist/")
+    assert profile_response.status_code == 200
+    assert profile_response.data["title"] == 'Artist "A" on AugmentrART'
+    assert len(profile_response.data["description"]) <= 200
+    assert profile_response.data["canonical_path"] == "/users/@share-artist"
+    assert profile_response.data["image_url"].startswith("/api/public/share-image/")
+
+    collection_response = client.get(
+        "/api/public/share-meta/site/collection/share-artist/featured/"
+    )
+    assert collection_response.status_code == 200
+    assert collection_response.data["canonical_path"] == "/users/@share-artist/collections/featured"
+    assert collection_response.data["image_url"].endswith(
+        f"/api/public/share-image/2d/{project.public_id}.png"
+    )
+
+    missing = client.get("/api/public/share-meta/site/profile/missing/")
+    assert missing.status_code == 200
+    assert missing.data["title"] == "Configured Site"
+    assert "Artist" not in json.dumps(missing.data)
 
 
 @pytest.mark.django_db(transaction=True)

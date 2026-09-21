@@ -69,4 +69,23 @@ test.describe('Server-rendered public share metadata (#653)', () => {
 
     await context.close();
   });
+
+  test('injects generic home, profile, and collection metadata without leaking missing records', async ({
+    request,
+  }) => {
+    for (const path of [
+      '/',
+      '/users/@missing-profile',
+      '/users/@missing-profile/collections/missing',
+    ]) {
+      const response = await request.get(path);
+      expect(response.status()).toBe(200);
+      const body = await response.text();
+      expect(body).toContain('property="og:title"');
+      expect(body).toContain('property="og:description"');
+      expect(body).toContain('property="og:url"');
+      expect(body).toContain('rel="canonical"');
+      expect(body).not.toContain('missing-profile bio');
+    }
+  });
 });

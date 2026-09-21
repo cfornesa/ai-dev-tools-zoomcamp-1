@@ -74,7 +74,28 @@ function routeDescriptor(pathname: string): { kind: string; publicId: string } |
   return null;
 }
 
+function siteMetadataDescriptor(pathname: string): string | null {
+  if (pathname === '/' || pathname === '/home') return '/api/public/share-meta/site/home/';
+  const profile = pathname.match(/^\/users\/@([^/]+)\/?$/);
+  if (profile) {
+    return `/api/public/share-meta/site/profile/${encodeURIComponent(profile[1])}/`;
+  }
+  const collection = pathname.match(/^\/users\/@([^/]+)\/collections\/([^/]+)\/?$/);
+  if (collection) {
+    return `/api/public/share-meta/site/collection/${encodeURIComponent(collection[1])}/${encodeURIComponent(collection[2])}/`;
+  }
+  return null;
+}
+
 async function fetchShareMetadata(pathname: string): Promise<ShareMetadata | null> {
+  const sitePath = siteMetadataDescriptor(pathname);
+  if (sitePath) {
+    const response = await fetch(`${backendProxyTarget}${sitePath}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as ShareMetadata;
+  }
   const direct = routeDescriptor(pathname);
   let kind: string;
   let publicId: string;
@@ -115,6 +136,7 @@ function metadataTags(metadata: ShareMetadata | null, requestPath: string): stri
     `<meta property="og:description" content="${escapeHtml(description)}" data-server-metadata="true" />`,
     `<meta property="og:type" content="article" data-server-metadata="true" />`,
     `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" data-server-metadata="true" />`,
+    `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" data-server-metadata="true" />`,
     '<meta name="twitter:card" content="summary_large_image" data-server-metadata="true" />',
   ];
   if (imageUrl) {
@@ -132,7 +154,7 @@ function shareMetadataPlugin(): Plugin {
   const install = (
     server: {
       middlewares: { use: (handler: (...args: any[]) => void) => void };
-      config: { root: string };
+      config: { root: string; build: { outDir: string } };
     },
     preview: boolean,
   ) => {
@@ -141,14 +163,15 @@ function shareMetadataPlugin(): Plugin {
       const requestPath = new URL(request.url ?? '/', 'http://localhost').pathname;
       if (
         !routeDescriptor(requestPath) &&
-        !/^\/users\/@[^/]+\/pieces\/[^/]+\/?$/.test(requestPath)
+        !/^\/users\/@[^/]+\/pieces\/[^/]+\/?$/.test(requestPath) &&
+        !siteMetadataDescriptor(requestPath)
       ) {
         return next();
       }
       try {
         const metadata = await fetchShareMetadata(requestPath);
         const indexPath = preview
-          ? resolve(server.config.root, 'dist/index.html')
+          ? resolve(server.config.root, server.config.build.outDir, 'index.html')
           : resolve(server.config.root, 'index.html');
         let html = await fs.readFile(indexPath, 'utf8');
         if (!preview && 'transformIndexHtml' in server) {

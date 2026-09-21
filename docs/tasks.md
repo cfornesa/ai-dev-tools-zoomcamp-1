@@ -35,6 +35,14 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No dependency, migration, or public API contract change.
 - Reconciliation: GitHub QA comment [#652 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/652#issuecomment-5755406274) posted; issue is closed.
 
+### #654 transaction ledger — 2026-09-21
+
+- PM/groom: live GitHub issue was re-read before implementation and remains the authority; scope stayed server-rendered metadata for home, public profiles, and public collections, with generic privacy-safe fallbacks, escaped canonical links, and reuse of #653's injector.
+- Engineering: extended the documented share-metadata service for site/home, profile, and collection projections; selected profile avatar or best public-piece thumbnail, collection first real member thumbnail, configured site defaults, and canonical `<link>` injection. Fixed preview middleware to read the configured Vite build output directory. Added backend and Chromium coverage. Commit pending.
+- QA: focused metadata tests passed 3; source-backed Chromium metadata scenarios passed 2; backend full suite passed 1,459/39 skipped; frontend full suite passed 2,747 tests across 243 files; lint, format, typecheck, build, and action-pin checks passed with existing non-blocking lint warnings.
+- Provenance: scoping and implementation Codex/GPT-5 substitutions for the rostered complex service; second opinion not run; QA Codex/GPT-5 substitution for Claude Sonnet 5 Medium. No new package dependency or migration.
+- Reconciliation: GitHub QA comment pending after commit and live issue re-read.
+
 ### #653 transaction ledger — 2026-09-20
 
 - PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained no-JS OG/Twitter tags for legacy and canonical public piece routes, safe absolute URLs, 1200×630 share images, fallback omission, privacy 404s, escaping, and client metadata compatibility.

@@ -42,6 +42,23 @@ thumbnail into the share-card dimensions. It applies the same publication
 gate as the metadata endpoint and never executes generated art source. These
 routes are additive; the existing card thumbnail URLs remain unchanged.
 
+The same metadata service provides anonymous projections for the site shell:
+
+- `GET /api/public/share-meta/site/home/` returns configured site title,
+  description, `/` canonical path, and the default share image.
+- `GET /api/public/share-meta/site/profile/<handle>/` returns a public
+  profile title (`<display name> on AugmentrART`), a bio truncated to 200
+  characters, and the profile avatar or best available public-piece image.
+- `GET /api/public/share-meta/site/collection/<handle>/<slug>/` returns the
+  public collection title, description, canonical path, and the first real
+  member thumbnail when available.
+
+Missing or private profile/collection lookups receive generic site metadata;
+they never expose profile or collection fields. The Vite dev/preview server
+injects these projections into `/`, `/users/@<handle>`, and
+`/users/@<handle>/collections/<slug>` together with an escaped canonical
+`<link>` tag.
+
 ## Public profile handles (#551)
 
 `GET /api/account/profile/` assigns a deterministic handle on first access when

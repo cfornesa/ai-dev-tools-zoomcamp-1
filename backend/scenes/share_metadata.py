@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from io import BytesIO
 from urllib.parse import quote
 
@@ -11,14 +12,23 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.art_piece_persistence import eligible_art_pieces, regenerate_thumbnail
-from scenes.gallery import eligible_projects, eligible_projects3d
-from scenes.models import ArtPieceThumbnail, Thumbnail, Thumbnail3D
+from scenes.collections import _item_record
+from scenes.gallery import eligible_collections, eligible_projects, eligible_projects3d
+from scenes.models import (
+    ArtPieceThumbnail,
+    CollectionItem,
+    PublicProfile,
+    SiteSettings,
+    Thumbnail,
+    Thumbnail3D,
+)
 from scenes.thumbnail_generation import ensure_thumbnail_for_version
 from scenes.thumbnail_generation3d import ensure_thumbnail_for_version3d
 
 SHARE_IMAGE_WIDTH = 1200
 SHARE_IMAGE_HEIGHT = 630
 KINDS = frozenset({"2d", "3d", "generated"})
+DEFAULT_SHARE_IMAGE_PATH = "/favicon.svg"
 
 
 def _record_or_404(kind: str, public_id: str):
@@ -78,6 +88,106 @@ def _metadata(record, kind: str) -> dict[str, str | None]:
     }
 
 
+def _thumbnail_image(record, kind: str) -> tuple[str, bool]:
+    thumbnail = _thumbnail_for(record, kind)
+    return (
+        f"/api/public/share-image/{kind}/{record.public_id}.png",
+        bool(thumbnail is None or thumbnail.is_fallback),
+    )
+
+
+def _profile_image(profile) -> str:
+    if profile.profile_image_url:
+        return profile.profile_image_url
+    candidates: list[tuple[datetime | None, str, bool]] = []
+    for project in eligible_projects().filter(owner=profile.user):
+        image, fallback = _thumbnail_image(project, "2d")
+        candidates.append((project.published_at, image, fallback))
+    for project3d in eligible_projects3d().filter(owner=profile.user):
+        image, fallback = _thumbnail_image(project3d, "3d")
+        candidates.append((project3d.published_at, image, fallback))
+    for piece in eligible_art_pieces().filter(owner=profile.user):
+        image, fallback = _thumbnail_image(piece, "generated")
+        candidates.append((piece.published_at, image, fallback))
+    candidates.sort(key=lambda candidate: candidate[0] or datetime.min, reverse=True)
+    for _, image, fallback in candidates:
+        if not fallback:
+            return image
+    return candidates[0][1] if candidates else DEFAULT_SHARE_IMAGE_PATH
+
+
+def _collection_image(collection) -> str:
+    candidates: list[tuple[int, str, bool]] = []
+    for item in collection.items.order_by("position", "id"):
+        record = _item_record(collection.owner, item.kind, item.item_id, public=True)
+        if record is None:
+            continue
+        kind = {
+            CollectionItem.Kind.PROJECT: "2d",
+            CollectionItem.Kind.PROJECT3D: "3d",
+            CollectionItem.Kind.ART_PIECE: "generated",
+        }[item.kind]
+        image, fallback = _thumbnail_image(record, kind)
+        candidates.append((item.position, image, fallback))
+    for _, image, fallback in candidates:
+        if not fallback:
+            return image
+    return candidates[0][1] if candidates else DEFAULT_SHARE_IMAGE_PATH
+
+
+def _site_metadata(path: str) -> dict[str, str | None]:
+    settings = SiteSettings.get_solo()
+    return {
+        "kind": "site",
+        "title": settings.site_title or "AugmentrART",
+        "description": settings.site_description
+        or "A public gallery for creative work and living ideas.",
+        "canonical_path": path,
+        "image_url": DEFAULT_SHARE_IMAGE_PATH,
+    }
+
+
+def _profile_metadata(handle: str) -> dict[str, str | None]:
+    profile = (
+        PublicProfile.objects.filter(handle=handle.lower(), is_public=True, user__is_active=True)
+        .select_related("user")
+        .first()
+    )
+    if profile is None:
+        return _site_metadata(f"/users/@{quote(handle, safe='@')}")
+    display_name = profile.display_name or profile.handle or "Public profile"
+    description = " ".join(profile.bio.split())[:200]
+    return {
+        "kind": "profile",
+        "title": f"{display_name} on AugmentrART",
+        "description": description or "Public profile on AugmentrART.",
+        "canonical_path": f"/users/@{quote(profile.handle or handle, safe='@')}",
+        "image_url": _profile_image(profile),
+    }
+
+
+def _collection_metadata(handle: str, slug: str) -> dict[str, str | None]:
+    collection = (
+        eligible_collections()
+        .filter(owner__public_profile__handle=handle.lower(), slug=slug)
+        .first()
+    )
+    if collection is None:
+        return _site_metadata(
+            f"/users/@{quote(handle, safe='@')}/collections/{quote(slug, safe='-')}"
+        )
+    seo_config = collection.seo_config if isinstance(collection.seo_config, dict) else {}
+    return {
+        "kind": "collection",
+        "title": str(seo_config.get("og_title") or collection.title),
+        "description": str(seo_config.get("og_description") or collection.description),
+        "canonical_path": (
+            f"/users/@{quote(handle, safe='@')}/collections/{quote(collection.slug, safe='-')}"
+        ),
+        "image_url": _collection_image(collection),
+    }
+
+
 class PublicShareMetadataView(APIView):
     """Returns only metadata for a currently public record; all other states 404."""
 
@@ -120,3 +230,16 @@ class PublicShareImageView(APIView):
         response = HttpResponse(output.getvalue(), content_type="image/png")
         response["Cache-Control"] = "public, max-age=60"
         return response
+
+
+class PublicSiteShareMetadataView(APIView):
+    permission_classes: list = []
+
+    def get(self, request, scope, handle=None, slug=None):
+        if scope == "home":
+            return Response(_site_metadata("/"))
+        if scope == "profile" and handle is not None:
+            return Response(_profile_metadata(handle))
+        if scope == "collection" and handle is not None and slug is not None:
+            return Response(_collection_metadata(handle, slug))
+        raise Http404

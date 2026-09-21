@@ -117,7 +117,11 @@ from scenes.scene_conversion_api import (
     SceneConversionDetailView,
     SceneConversionListCreateView,
 )
-from scenes.share_metadata import PublicShareImageView, PublicShareMetadataView
+from scenes.share_metadata import (
+    PublicShareImageView,
+    PublicShareMetadataView,
+    PublicSiteShareMetadataView,
+)
 from scenes.sync_mutation_api import SyncMutationReceiptView
 
 urlpatterns = [
@@ -150,6 +154,21 @@ urlpatterns = [
         "public/share-image/<str:kind>/<uuid:public_id>.png",
         PublicShareImageView.as_view(),
         name="public-share-image",
+    ),
+    path(
+        "public/share-meta/site/<str:scope>/",
+        PublicSiteShareMetadataView.as_view(),
+        name="public-site-share-metadata",
+    ),
+    path(
+        "public/share-meta/site/<str:scope>/<str:handle>/",
+        PublicSiteShareMetadataView.as_view(),
+        name="public-profile-share-metadata",
+    ),
+    path(
+        "public/share-meta/site/<str:scope>/<str:handle>/<slug:slug>/",
+        PublicSiteShareMetadataView.as_view(),
+        name="public-collection-share-metadata",
     ),
     path("admin/plans/", AdminPlansView.as_view(), name="admin-plans"),
     path("admin/roles/", AdminRolesView.as_view(), name="admin-roles"),

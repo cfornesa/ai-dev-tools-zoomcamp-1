@@ -69,6 +69,7 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - QA: focused panel/hook/workflow tests passed 50; full `make check` passed with backend 1,468 passed/39 skipped and frontend 244 files/2,749 tests, plus action-pin check, lint, format, typecheck, and production build. The browser test first exposed the documented macOS `localhost` IPv6 collision with a stale host Vite/backend; rerunning through `E2E_DOCKER_COMPOSE=true E2E_BASE_URL=http://127.0.0.1:5000` passed 1 Chromium scenario. Active Chrome was then checked against the same Docker-backed IPv4 origin: plan-ready and approved-candidate states were inspected at the live responsive layout, with the plan, keyboard-accessible labelled controls, no pre-approval attempt, `Attempts (1 of 3)`, passed criterion, and unsaved candidate message visible. The live issue was re-read before QA.
 - Correction: visual QA reopened this issue after finding that the deterministic success provider returned a schema-valid but empty scene, making the `renders_nonblank` result misleading. The fake success fixture now includes a visible circle, and backend regression coverage asserts success payloads contain shapes. Final QA/closure is pending.
 - Final correction QA: updated the deterministic 2D success fixture with a visible circle; focused fake-provider regressions passed 29; both corrected 2D/3D Chromium plan-review scenarios passed against rebuilt Docker; active Chrome visually confirmed the pink circle candidate. Full repository gate is in progress.
+- Reconciliation: corrected fixture commit `48a2e7a`; final QA comment [#659 correction](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/659#issuecomment-5756844888) posted after the final live-issue read; issue is closed.
 
 ### #660 transaction ledger — 2026-09-21
 
@@ -78,6 +79,7 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - Provenance: direct Codex/GPT-5 mechanical implementation and QA substitution because the rostered external frontend/reviewer services are unavailable; no dependency, migration, or API contract change.
 - Correction: visual QA reopened the shared acceptance pass after finding that the deterministic 3D success provider returned `objects: []`, making the `renders_nonblank` result misleading. The 3D fake success fixture now includes a lit visible box, and backend regression coverage asserts success payloads contain objects. Final QA/closure is pending.
 - Final correction QA: updated the deterministic 3D success fixture with a lit visible box; focused fake-provider regressions passed 29; both corrected 2D/3D Chromium plan-review scenarios passed against rebuilt Docker; active Chrome visually confirmed the pink box candidate. Full repository gate is in progress.
+- Reconciliation: corrected fixture commit `48a2e7a`; final QA comment [#660 correction](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/660#issuecomment-5756845153) posted after the final live-issue read; issue is closed.
 
 ### #684 discovered route-taxonomy follow-up — 2026-09-21 — PROPOSED
 

@@ -42,7 +42,7 @@ from ai_provider.interface3d import (
 )
 from ai_provider.mistral_provider import AIEditScene3DPatchResult, AIEditScenePatchResult
 from scenes import ai_runs
-from scenes.models import AIRun, Project, Project3D, SceneVersion, SceneVersion3D
+from scenes.models import AIRetryPreference, AIRun, Project, Project3D, SceneVersion, SceneVersion3D
 from tests._postgres_routing import close_thread_connections, route_default_to_postgres_test
 
 _BLANK_SCENE_PATH = (
@@ -180,6 +180,10 @@ def _start_create_run(owner, project) -> AIRun:
     )
 
 
+def _enable_retries(owner, max_retries: int = 2) -> None:
+    AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=True, max_retries=max_retries)
+
+
 @pytest.mark.django_db
 def test_start_persists_structured_plan_before_provider_attempt(owner, project):
     run = _start_create_run(owner, project)
@@ -190,6 +194,26 @@ def test_start_persists_structured_plan_before_provider_attempt(owner, project):
         "target_ids": [],
         "success_criteria": [{"type": "renders_nonblank", "parameters": {"target": "scene"}}],
     }
+
+
+def test_evaluate_criteria_supports_all_plan_criterion_types():
+    scene = copy.deepcopy(BLANK_SCENE)
+    scene["canvas"]["backgroundColor"] = "#123456"
+    plan = {
+        "success_criteria": [
+            {"type": "object_exists", "parameters": {"id": "layer-1"}},
+            {
+                "type": "property_equals",
+                "parameters": {"path": "/canvas/backgroundColor", "value": "#123456"},
+            },
+            {"type": "count_between", "parameters": {"path": "/layers", "min": 1, "max": 1}},
+            {"type": "renders_nonblank", "parameters": {"target": "scene"}},
+        ]
+    }
+
+    results = ai_runs.evaluate_criteria(plan, scene)
+
+    assert [result["passed"] for result in results] == [True, True, True, True]
 
 
 @pytest.mark.django_db
@@ -281,6 +305,7 @@ def test_3d_edit_selection_invalid_material_then_repaired(monkeypatch, owner, pr
 
     repaired_scene = copy.deepcopy(MINIMAL_SCENE_3D)
     _install_fake_provider(monkeypatch, [AIErrorCategory.INVALID_STRUCTURED_OUTPUT, repaired_scene])
+    _enable_retries(owner)
 
     run = ai_runs.start_run(
         owner=owner,
@@ -379,6 +404,7 @@ def test_3d_stale_base_at_accept_fails_the_run_and_creates_no_version(
 @pytest.mark.django_db
 def test_invalid_output_then_successful_repair(monkeypatch, owner, project):
     _install_fake_provider(monkeypatch, [AIErrorCategory.INVALID_STRUCTURED_OUTPUT, BLANK_SCENE])
+    _enable_retries(owner)
 
     run = _start_create_run(owner, project)
     run = ai_runs.advance_run(run)
@@ -394,11 +420,71 @@ def test_invalid_output_then_successful_repair(monkeypatch, owner, project):
 
 
 @pytest.mark.django_db
+def test_criteria_failure_retries_from_preference_and_charges_each_attempt(
+    monkeypatch, owner, project
+):
+    passing_scene = copy.deepcopy(BLANK_SCENE)
+    passing_scene["canvas"]["backgroundColor"] = "#123456"
+    _install_fake_provider(monkeypatch, [BLANK_SCENE, passing_scene])
+    _enable_retries(owner, max_retries=1)
+
+    run = _start_create_run(owner, project)
+    run.plan = {
+        **run.plan,
+        "success_criteria": [
+            {
+                "type": "property_equals",
+                "parameters": {"path": "/canvas/backgroundColor", "value": "#123456"},
+            }
+        ],
+    }
+    run.save(update_fields=["plan"])
+
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.RUNNING
+    assert run.candidate_scene_json is None
+    assert run.criterion_results[0]["results"][0]["passed"] is False
+    assert "backgroundColor" in run.validation_summary
+
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    assert run.candidate_scene_json == passing_scene
+    assert len(run.criterion_results) == 2
+    assert all(result["passed"] for result in run.criterion_results[1]["results"])
+    assert ai_api._current_count(ai_api._quota_cache_key(owner.id, operation="run_create")) == 2
+
+
+@pytest.mark.django_db
+def test_disabled_retry_preference_fails_after_one_criterion_attempt(monkeypatch, owner, project):
+    _install_fake_provider(monkeypatch, [BLANK_SCENE])
+    run = _start_create_run(owner, project)
+    run.plan = {
+        **run.plan,
+        "success_criteria": [
+            {
+                "type": "property_equals",
+                "parameters": {"path": "/canvas/backgroundColor", "value": "#123456"},
+            }
+        ],
+    }
+    run.save(update_fields=["plan"])
+
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.FAILED
+    assert run.error_reason == "criteria_failed"
+    assert run.attempts == 1
+    assert run.candidate_scene_json is None
+    with pytest.raises(ai_runs.NotRunning):
+        ai_runs.advance_run(run)
+
+
+@pytest.mark.django_db
 def test_repeated_invalid_output_exhausts_attempts_and_fails(monkeypatch, owner, project):
     _install_fake_provider(
         monkeypatch,
         [AIErrorCategory.INVALID_STRUCTURED_OUTPUT] * 3,
     )
+    _enable_retries(owner)
 
     run = _start_create_run(owner, project)
     for _ in range(2):
@@ -409,12 +495,13 @@ def test_repeated_invalid_output_exhausts_attempts_and_fails(monkeypatch, owner,
     assert run.status == AIRun.Status.FAILED
     assert run.error_reason == "repeated_invalid_output"
     assert run.attempts == 3
-    assert run.charged is False
+    assert run.charged is True
 
 
 @pytest.mark.django_db
 def test_repeated_timeout_exhausts_attempts_and_fails(monkeypatch, owner, project):
     _install_fake_provider(monkeypatch, [AIErrorCategory.TIMEOUT] * 3)
+    _enable_retries(owner)
 
     run = _start_create_run(owner, project)
     for _ in range(2):
@@ -491,6 +578,7 @@ def test_out_of_scope_patch_rejection_is_repairable_then_succeeds(monkeypatch, o
 
     edited_scene = copy.deepcopy(BLANK_SCENE)
     _install_fake_provider(monkeypatch, [AIErrorCategory.PROVIDER_REJECTION, edited_scene])
+    _enable_retries(owner)
 
     run = ai_runs.start_run(
         owner=owner,

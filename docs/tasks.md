@@ -48,6 +48,13 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - Provenance: scoping and implementation Codex/GPT-5 substitutions for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substitution for Claude Sonnet 5 Medium. Additive migration documented before implementation.
 - Reconciliation: GitHub QA comment [#656 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/656#issuecomment-5755870456) posted; issue is closed.
 
+### #657 transaction ledger — 2026-09-21
+
+- PM/groom: live GitHub issue was re-read before implementation and remains authoritative; scope stayed preference-snapshotted plan evaluation, per-criterion attempt history, bounded automatic retries, current-scene/failure feedback for repairs, per-provider-call quota charging, cancellation/exhaustion handling, and no partial candidates on failed attempts. UI and generated code remained out of scope.
+- Engineering: documented the retry/evaluation contract before changing the run API; added `AIRun` retry snapshots and criterion history, migration `0084_airun_auto_retry_enabled_airun_criterion_results_and_more`, server evaluation for all four plan criterion types, preference-driven retry limits, structured repair feedback, per-provider-call quota charging, API detail fields, and focused regression coverage. Implementation was completed as a direct Codex/GPT-5 substitution for the rostered complex implementation service.
+- QA: focused AI-run suite passed 27/1 skipped; full `make check` passed with backend 1,464/39 skipped and frontend 243 files/2,747 tests, plus lint, format, typecheck, build/test, and action-pin checks. The live issue was re-read before QA; no second-opinion service was available, so QA was a direct Codex/GPT-5 substitution for the rostered reviewer.
+- Reconciliation: GitHub QA comment and closure are pending the final live-issue check and commit handoff.
+
 ### #655 transaction ledger — 2026-09-21
 
 - PM/groom: live GitHub issue was re-read before QA; this remained an evidence-only pass for Celestial/Pareto across home, gallery, two profiles, both modes, both viewports, and reduced motion. No product fix was authorized by the issue.

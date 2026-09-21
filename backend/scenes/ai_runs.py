@@ -61,6 +61,7 @@ from scenes.models import (
     AI_RUN_MAX_PROVIDER_ATTEMPTS,
     AI_RUN_MAX_REPAIR_ATTEMPTS,
     AIProviderModel,
+    AIRetryPreference,
     AIRun,
     Project,
     Project3D,
@@ -134,6 +135,82 @@ def validate_plan(plan: dict[str, Any], scene_json: dict[str, Any] | None = None
             raise InvalidTarget("plan criterion parameters must be an object.")
     if scene_json is not None and not set(target_ids).issubset(_stable_scene_ids(scene_json)):
         raise InvalidTarget("plan references an ID that is not present in the target scene.")
+
+
+def _criterion_value(scene_json: Any, path: str) -> Any:
+    """Read a bounded JSON-pointer-like path from a candidate scene."""
+    if path in ("", "/"):
+        return scene_json
+    current = scene_json
+    for component in path.lstrip("/").split("/"):
+        component = component.replace("~1", "/").replace("~0", "~")
+        if isinstance(current, dict):
+            if component not in current:
+                return None
+            current = current[component]
+        elif isinstance(current, list) and component.isdigit():
+            index = int(component)
+            if index >= len(current):
+                return None
+            current = current[index]
+        else:
+            return None
+    return current
+
+
+def evaluate_criteria(
+    plan: dict[str, Any] | None, scene_json: dict[str, Any] | None
+) -> list[dict[str, Any]]:
+    """Evaluate the server-owned success criteria without mutating the scene."""
+    criteria = plan.get("success_criteria", []) if isinstance(plan, dict) else []
+    results: list[dict[str, Any]] = []
+    for criterion in criteria:
+        criterion_type = criterion.get("type")
+        parameters = criterion.get("parameters", {})
+        passed = False
+        detail = "Criterion did not pass."
+        if criterion_type == "object_exists":
+            target_id = parameters.get("id")
+            passed = isinstance(target_id, str) and target_id in _stable_scene_ids(scene_json)
+            detail = f"Object {target_id!r} {'exists' if passed else 'was not found'}."
+        elif criterion_type == "property_equals":
+            actual = _criterion_value(scene_json, str(parameters.get("path", "")))
+            expected = parameters.get("value")
+            passed = actual == expected
+            detail = (
+                f"Property {parameters.get('path', '')!r} was {actual!r}; expected {expected!r}."
+            )
+        elif criterion_type == "count_between":
+            actual = _criterion_value(scene_json, str(parameters.get("path", "")))
+            lower = parameters.get("min", 0)
+            upper = parameters.get("max", lower)
+            passed = (
+                isinstance(actual, list)
+                and isinstance(lower, int)
+                and isinstance(upper, int)
+                and lower <= len(actual) <= upper
+            )
+            detail = (
+                f"Count at {parameters.get('path', '')!r} was "
+                f"{len(actual) if isinstance(actual, list) else None}; "
+                f"expected {lower}..{upper}."
+            )
+        elif criterion_type == "renders_nonblank":
+            passed = isinstance(scene_json, dict) and bool(scene_json)
+            detail = (
+                "Candidate contains renderable scene data."
+                if passed
+                else "Candidate scene was blank."
+            )
+        results.append(
+            {"type": criterion_type, "parameters": parameters, "passed": passed, "detail": detail}
+        )
+    return results
+
+
+def _criteria_feedback(results: list[dict[str, Any]]) -> str:
+    failures = [result["detail"] for result in results if not result.get("passed")]
+    return "All success criteria must pass. " + " ".join(failures)
 
 
 def _build_plan(
@@ -290,6 +367,11 @@ def _augmented_prompt(run: AIRun) -> str:
             "Your previous attempt was rejected for this reason: "
             f"{run.validation_summary}. Correct this and resend a complete, valid result."
         )
+    if run.operation == AIRun.Operation.EDIT_PATCH and _target_scene_json(run) is not None:
+        parts.append(
+            "The current scene is included as the source for this repair attempt; "
+            "preserve valid existing content."
+        )
     return " ".join(parts)
 
 
@@ -403,6 +485,9 @@ def start_run(
         selected_target_ids=list(selected_target_ids or []),
         scene_json=scene_json,
     )
+    retry_preference = AIRetryPreference.objects.filter(owner=owner).first()
+    auto_retry_enabled = retry_preference.auto_retry_enabled if retry_preference else False
+    max_retries = retry_preference.max_retries if retry_preference else 0
 
     project: Project | None = None
     project3d: Project3D | None = None
@@ -428,6 +513,8 @@ def start_run(
         base_version_id=(target.current_version_id if scene_json is not None else None),
         input_digest=_digest(scene_json or {}),
         plan=plan,
+        auto_retry_enabled=auto_retry_enabled,
+        max_retries=max_retries,
         start_request_id=start_request_id,
         # `created_at` is only assigned by `auto_now_add` once the row is
         # actually inserted above, so the real deadline is computed and
@@ -478,10 +565,23 @@ def advance_run(run: AIRun) -> AIRun:
         ):
             raise RateLimited("Too many advance attempts; wait a moment and try again.")
 
+        quota_key = _quota_cache_key(locked.owner_id, operation=_quota_operation(locked))
+        cap = get_effective_cap(locked.owner, _feature_key(locked.operation))
+        if not is_unlimited(locked.owner) and _current_count(quota_key) >= cap:
+            locked.status = AIRun.Status.FAILED
+            locked.error_reason = "quota_exceeded"
+            locked.validation_summary = (
+                "The AI run quota was exhausted before this provider attempt."
+            )
+            locked.save(update_fields=["status", "error_reason", "validation_summary"])
+            return locked
+        _increment_quota(quota_key, timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS)
+        locked.charged = True
+
         lease_token = uuid.uuid4()
         locked.advance_lease_token = lease_token
         locked.advance_lease_expires_at = now + timedelta(seconds=AI_RUN_ADVANCE_LEASE_SECONDS)
-        locked.save(update_fields=["advance_lease_token", "advance_lease_expires_at"])
+        locked.save(update_fields=["advance_lease_token", "advance_lease_expires_at", "charged"])
         run = locked
 
     # The provider call itself happens with no transaction open.
@@ -528,21 +628,31 @@ def advance_run(run: AIRun) -> AIRun:
         locked.advance_lease_expires_at = None
 
         if outcome.success:
-            locked.candidate_scene_json = outcome.scene_json
-            locked.candidate_patch = outcome.patch
-            locked.change_summary = outcome.change_summary
-            locked.plan_summary = (
-                f"Generated a {locked.get_operation_display().lower()} candidate "
-                f"in {locked.attempts} attempt(s)."
-            )
-            locked.validation_summary = ""
-            locked.status = AIRun.Status.AWAITING_REVIEW
+            results = evaluate_criteria(locked.plan, outcome.scene_json)
+            history = list(locked.criterion_results or [])
+            history.append({"attempt": locked.attempts, "results": results})
+            locked.criterion_results = history
+            if not results or all(result["passed"] for result in results):
+                locked.candidate_scene_json = outcome.scene_json
+                locked.candidate_patch = outcome.patch
+                locked.change_summary = outcome.change_summary
+                locked.plan_summary = (
+                    f"Generated a {locked.get_operation_display().lower()} candidate "
+                    f"in {locked.attempts} attempt(s)."
+                )
+                locked.validation_summary = ""
+                locked.status = AIRun.Status.AWAITING_REVIEW
+                locked.save()
+                return locked
+            locked.validation_summary = _criteria_feedback(results)
+            if not locked.auto_retry_enabled or locked.attempts >= min(
+                locked.max_retries + 1, AI_RUN_MAX_PROVIDER_ATTEMPTS
+            ):
+                locked.status = AIRun.Status.FAILED
+                locked.error_reason = "criteria_failed"
+            else:
+                locked.repairs += 1
             locked.save()
-            if not locked.charged:
-                quota_key = _quota_cache_key(locked.owner_id, operation=_quota_operation(locked))
-                _increment_quota(quota_key, timeout=DAILY_QUOTA_RESET_TIMEOUT_SECONDS)
-                locked.charged = True
-                locked.save(update_fields=["charged"])
             return locked
 
         # Unsuccessful: decide repairable vs terminal.
@@ -550,11 +660,15 @@ def advance_run(run: AIRun) -> AIRun:
         if outcome.error_category == AIErrorCategory.QUOTA_EXCEEDED:
             terminal_reason = "provider_quota_exceeded"
         elif outcome.error_category == AIErrorCategory.TIMEOUT:
-            if locked.attempts >= AI_RUN_MAX_PROVIDER_ATTEMPTS:
+            if not locked.auto_retry_enabled or locked.attempts >= min(
+                locked.max_retries + 1, AI_RUN_MAX_PROVIDER_ATTEMPTS
+            ):
                 terminal_reason = "timeout"
         elif outcome.error_category in _REPAIRABLE_CATEGORIES:
-            if locked.attempts >= AI_RUN_MAX_PROVIDER_ATTEMPTS or locked.repairs >= (
-                AI_RUN_MAX_REPAIR_ATTEMPTS
+            if (
+                not locked.auto_retry_enabled
+                or locked.attempts >= min(locked.max_retries + 1, AI_RUN_MAX_PROVIDER_ATTEMPTS)
+                or locked.repairs >= AI_RUN_MAX_REPAIR_ATTEMPTS
             ):
                 terminal_reason = "repeated_invalid_output"
             else:

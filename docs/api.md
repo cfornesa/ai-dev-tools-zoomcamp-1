@@ -40,6 +40,26 @@ runs created before this field was added remain readable with `plan: null`.
 Plan revisions are additive and immutable once stored; a future revision is a
 new plan object rather than an in-place mutation.
 
+## AI-run plan evaluation and retries (#657)
+
+Each run snapshots the owner's `AIRetryPreference` at start as
+`auto_retry_enabled` and `max_retries`; changing the preference never changes
+an already-running run. A disabled preference permits exactly one provider
+attempt. An enabled preference permits one initial attempt plus the stored
+retry count, bounded by the server's maximum attempt policy. The run detail
+includes `criterion_results` (one entry per attempt), `retries_remaining`, and
+the snapshotted retry settings.
+
+After every schema-valid provider result, the server evaluates every
+`plan.success_criteria` item. A run becomes `awaiting_review` only when all
+criteria pass. A failed evaluation stores per-criterion feedback in
+`validation_summary`, includes that feedback and the current edit scene in the
+next provider prompt, and retries only while the run's retry budget remains.
+Failed attempts never populate `candidate_scene` or `candidate_patch`; only a
+fully passing attempt can be accepted. Cancellation and exhausted retry
+budgets are terminal. The run quota counter is charged once for every provider
+call, including failed and automatically retried calls.
+
 ## Global site metadata settings (#586)
 
 The application-admin-only `GET|PATCH /api/admin/settings/` contract includes

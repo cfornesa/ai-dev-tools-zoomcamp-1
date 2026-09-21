@@ -60,6 +60,14 @@ def _serialize_run(run: AIRun) -> dict:
         "change_summary": run.change_summary,
         "plan_summary": run.plan_summary,
         "plan": run.plan,
+        "auto_retry_enabled": run.auto_retry_enabled,
+        "max_retries": run.max_retries,
+        "retries_remaining": max(
+            0,
+            min(run.max_retries, ai_runs.AI_RUN_MAX_PROVIDER_ATTEMPTS - 1)
+            - max(0, run.attempts - 1),
+        ),
+        "criterion_results": run.criterion_results,
         "validation_summary": run.validation_summary,
         "error_reason": run.error_reason,
         "usage": {

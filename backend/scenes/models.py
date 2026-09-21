@@ -2117,16 +2117,21 @@ class AIRun(models.Model):
     # Structured, server-validated plan captured before the first provider
     # attempt. Nullable for backwards compatibility with pre-#656 rows.
     plan = models.JSONField(null=True, blank=True)
+    # Retry policy is snapshotted at start so a preference edit cannot change
+    # the behavior of a run already in flight.
+    auto_retry_enabled = models.BooleanField(default=False)
+    max_retries = models.PositiveSmallIntegerField(default=0)
+    # A history of {attempt, results} entries, one for every provider result.
+    criterion_results = models.JSONField(default=list, blank=True)
     validation_summary = models.TextField(blank=True, default="")
     error_reason = models.CharField(max_length=64, blank=True, default="")
 
     usage_prompt_tokens = models.PositiveIntegerField(default=0)
     usage_completion_tokens = models.PositiveIntegerField(default=0)
     usage_cost_usd = models.FloatField(default=0.0)
-    # Set exactly once, the moment this run's daily-quota successful-use
-    # counter is incremented (the first time a candidate reaches
-    # awaiting_review) -- guards against a later repair/re-advance ever
-    # charging a second time for the same run.
+    # Indicates that this run has reserved at least one daily-quota attempt.
+    # The quota itself is incremented once per provider call, including failed
+    # and automatically retried calls.
     charged = models.BooleanField(default=False)
     accepted_version_id = models.PositiveIntegerField(null=True, blank=True)
 

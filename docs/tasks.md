@@ -47,7 +47,7 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - QA: Chromium matrix passed 1 test covering all 16 route/mode/viewport combinations; visible style/mode signatures were logged and screenshots were captured under `frontend/test-results/designSchemeMatrix-Design--682d9-in-both-modes-and-viewport-chromium/`. Typecheck and Prettier passed; the preceding full `make check` gate for the same product state passed with backend 1,459/39 skipped and frontend 2,747 tests/243 files.
 - Discovery: found the no-override profile inheritance defect and filed [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) after duplicate search; #655 remains evidence-complete despite that out-of-scope defect.
 - Provenance: QA/evidence pass was completed as a direct Codex/GPT-5 substitution for the rostered QA service; no second-opinion service was available. No runtime dependency or product migration was added.
-- Reconciliation: GitHub QA comment pending after commit.
+- Reconciliation: GitHub QA comment [#655 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/655#issuecomment-5755791076) posted; issue is closed with follow-up #672 tracked separately.
 
 ### #654 transaction ledger — 2026-09-21
 

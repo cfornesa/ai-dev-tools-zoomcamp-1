@@ -22436,14 +22436,14 @@ closure contracts are in
 |---|---|---|---|
 | [#636](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/636) | CLOSED / QA-passed | Canonical editable name-derived piece routes with legacy shims | Complete |
 | [#641](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/641) | CLOSED / QA-passed | Canonical editable name-derived collection routes with legacy shims | Complete |
-| [#637](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/637) | OPEN / QA-pending | Regular structured piece controls, context, embed placement, and profile identity parity | Reconcile and close after current evidence |
+| [#637](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/637) | CLOSED / QA-passed | Regular structured piece controls, context, embed placement, and profile identity parity | Complete |
 | [#638](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/638) | PROPOSED / dependency-blocked | Immersive structured piece full-screen, controls, context, and embed parity | Start after #636 |
 | [#639](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/639) | PROPOSED / dependency-blocked | Collection regular/immersive/embed parity and canonical item context | Start after #641 and #636 |
 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | PROPOSED / dependency-blocked | Reconcile published revision and live profile/piece/collection evidence | Run after #636–#639 and #641; no product implementation in this issue |
 
-Distillation is complete for this intake. #636 and #641 are closed; #637 is
-the active single transaction. #638–#640 remain deferred until their
-dependencies are reconciled.
+Distillation is complete for this intake. #636, #637, and #641 are closed;
+#638 is the next independent piece-surface transaction. #639–#640 remain
+deferred until their dependencies are reconciled.
 
 ### #636 transaction ledger — 2026-09-20
 
@@ -22461,7 +22461,7 @@ in [`docs/distillation-2026-09-20-public-surface-parity.md`](distillation-2026-0
 No duplicates were found. The remaining work is ordered as follows:
 
 - #641 is next: canonical collection persistence/resolution/privacy and link serializers.
-- #637 and #638 remain independent piece-surface consumers after #636.
+- #637 is closed; #638 is the next independent piece-surface consumer after #636.
 - #639 follows #641 and the relevant piece consumers; #640 is final live publication reconciliation only.
 - #642 → #643 → #646/#647 is the theme/preset chain; #644 and #645 are shell consumers, with #648 after the shell contract.
 - #649 → #650 is the profile header/card chain.

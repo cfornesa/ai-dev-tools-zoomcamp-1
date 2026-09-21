@@ -25,6 +25,7 @@ def test_success_scenario_create_scene3d_returns_a_valid_scene():
 
     assert result.success
     assert validate_scene3d(result.scene).valid
+    assert result.scene["objects"]
 
 
 def test_success_scenario_edit_scene3d_returns_an_applied_patch():
@@ -124,6 +125,8 @@ def test_2d_and_3d_scenarios_are_independent_on_the_same_provider_instance():
 
     assert result_2d.success
     assert result_3d.success
+    assert result_2d.scene["shapes"]
+    assert result_3d.scene["objects"]
 
 
 # --- Issue #528: convert_scene_2d_to_3d -------------------------------------

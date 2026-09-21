@@ -153,7 +153,37 @@ _CREATE_SCENE_3D_INVALID: dict[str, Any] = {
 }
 
 _CREATE_SCENE_3D_BY_SCENARIO: dict[str, dict[str, Any]] = {
-    "success": _MINIMAL_SCENE_3D,
+    "success": {
+        **copy.deepcopy(_MINIMAL_SCENE_3D),
+        "lights": [
+            {
+                "id": "light-ai-fake",
+                "name": "AI generated light",
+                "type": "ambient",
+                "color": "#ffffff",
+                "intensity": 1,
+            }
+        ],
+        "objects": [
+            {
+                "id": "object-ai-fake-box",
+                "name": "AI generated box",
+                "type": "box",
+                "groupId": None,
+                "transform": {
+                    "position": {"x": 0, "y": 0, "z": 0},
+                    "rotation": {"x": 0, "y": 0, "z": 0},
+                    "scale": {"x": 1, "y": 1, "z": 1},
+                    "opacity": 1,
+                },
+                "material": {"color": "#ff3366"},
+                "visible": True,
+                "width": 2,
+                "height": 2,
+                "depth": 2,
+            }
+        ],
+    },
     "invalid_structured_output": _CREATE_SCENE_3D_INVALID,
 }
 

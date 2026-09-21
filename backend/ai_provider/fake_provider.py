@@ -30,15 +30,34 @@ from ai_provider.interface import (
     execute,
 )
 
-# A minimal, always-schema-valid scene (mirrors schema/fixtures/valid/blank.json).
-# Deterministic and fixed: the fake provider never invents random content.
+# A minimal, always-schema-valid scene with one visible object. Deterministic
+# and fixed: the fake provider never invents random content, but its success
+# path must still give browser QA a meaningful rendered candidate.
 _VALID_SCENE_TEMPLATE: dict[str, Any] = {
     "schemaVersion": 1,
     "id": "scene-ai-fake",
     "canvas": {"width": 800, "height": 600, "backgroundColor": "#ffffff"},
     "renderer": {"preferred": "p5"},
     "layers": [{"id": "layer-1", "name": "Layer 1", "order": 0, "visible": True, "locked": False}],
-    "shapes": [],
+    "shapes": [
+        {
+            "id": "shape-ai-fake-circle",
+            "type": "circle",
+            "layerId": "layer-1",
+            "groupId": None,
+            "transform": {
+                "x": 400,
+                "y": 300,
+                "scaleX": 1,
+                "scaleY": 1,
+                "rotation": 0,
+                "opacity": 1,
+            },
+            "style": {"fill": "#ff3366", "stroke": None, "strokeWidth": 0},
+            "name": "AI generated circle",
+            "radius": 90,
+        }
+    ],
     "groups": [],
     "bindings": [],
     "graph": {"nodes": [], "connections": []},

@@ -128,6 +128,19 @@ function PieceStageControls({
     context.lineJoin = 'round';
     for (const stroke of visitorStrokesRef.current) {
       if (stroke.length === 0) continue;
+      if (stroke.length === 1) {
+        context.beginPath();
+        context.arc(
+          stroke[0].x * canvas.width,
+          stroke[0].y * canvas.height,
+          context.lineWidth / 2,
+          0,
+          Math.PI * 2,
+        );
+        context.fillStyle = '#fbbf24';
+        context.fill();
+        continue;
+      }
       context.beginPath();
       context.moveTo(stroke[0].x * canvas.width, stroke[0].y * canvas.height);
       for (const point of stroke.slice(1)) {
@@ -301,6 +314,19 @@ function PieceStageControls({
         context.lineJoin = 'round';
         for (const stroke of visitorStrokesRef.current) {
           if (stroke.length === 0) continue;
+          if (stroke.length === 1) {
+            context.beginPath();
+            context.arc(
+              stroke[0].x * image.width,
+              stroke[0].y * image.height,
+              context.lineWidth / 2,
+              0,
+              Math.PI * 2,
+            );
+            context.fillStyle = '#fbbf24';
+            context.fill();
+            continue;
+          }
           context.beginPath();
           context.moveTo(stroke[0].x * image.width, stroke[0].y * image.height);
           for (const point of stroke.slice(1)) {

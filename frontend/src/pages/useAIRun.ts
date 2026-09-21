@@ -226,7 +226,9 @@ export function useAIRun<TVersion>(
         if (!mountedRef.current || token !== loopTokenRef.current) return;
         if (fetched.status === 'running' || fetched.status === 'awaiting_review') {
           setRun(fetched);
-          if (fetched.status === 'running') void runAdvanceLoop(storedId, token);
+          if (fetched.status === 'running' && fetched.attempts > 0) {
+            void runAdvanceLoop(storedId, token);
+          }
         } else {
           persistRunId(projectId, null);
         }
@@ -292,8 +294,6 @@ export function useAIRun<TVersion>(
         void currentVersionId; // captured server-side via the project's own current version at start time
         persistRunId(projectId, started.id);
         setRun(started);
-        const token = ++loopTokenRef.current;
-        if (started.status === 'running') void runAdvanceLoop(started.id, token);
       } catch (err) {
         if (!mountedRef.current) return;
         setStartError(classifyRunError(err));
@@ -313,6 +313,12 @@ export function useAIRun<TVersion>(
       runAdvanceLoop,
     ],
   );
+
+  const approve = useCallback(() => {
+    if (!run || run.status !== 'running' || run.attempts > 0) return;
+    const token = ++loopTokenRef.current;
+    void runAdvanceLoop(run.id, token);
+  }, [run, runAdvanceLoop]);
 
   /** Stops an in-progress run (Stop) or discards an awaiting-review
    * candidate (Reject) -- both are the same server call: `cancel_run`
@@ -392,6 +398,7 @@ export function useAIRun<TVersion>(
     acceptError,
     reconnecting,
     start,
+    approve,
     stop,
     accept,
     dismiss,

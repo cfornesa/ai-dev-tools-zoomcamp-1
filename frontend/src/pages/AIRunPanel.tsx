@@ -88,6 +88,7 @@ function AIRunPanel<TVersion>({
     acceptError,
     reconnecting,
     start,
+    approve,
     stop,
     accept,
     dismiss,
@@ -275,13 +276,18 @@ function AIRunPanel<TVersion>({
   // fabricated progress percentage or hidden reasoning trace: only the
   // real attempt/repair counters and the server's own concise summaries.
   const isTerminal = ['accepted', 'cancelled', 'failed', 'expired'].includes(run.status);
+  const awaitingPlanApproval = run.status === 'running' && run.attempts === 0;
+  const attemptLimit =
+    1 + Math.min(run.max_retries ?? MAX_REPAIR_ATTEMPTS_DISPLAY, MAX_PROVIDER_ATTEMPTS_DISPLAY - 1);
 
   return (
     <div className="ai-run-panel" data-testid="ai-run-active">
       <p data-testid="ai-run-status" role="status" aria-live="polite">
         {run.status === 'running' &&
-          `Working… attempt ${run.attempts || 1} of ${MAX_PROVIDER_ATTEMPTS_DISPLAY}` +
+          !awaitingPlanApproval &&
+          `Working… attempt ${run.attempts || 1} of ${attemptLimit}` +
             (run.repairs > 0 ? ` (repair ${run.repairs} of ${MAX_REPAIR_ATTEMPTS_DISPLAY})` : '')}
+        {awaitingPlanApproval && 'Plan ready for approval.'}
         {run.status === 'awaiting_review' && 'A candidate is ready for review.'}
         {run.status === 'accepted' && 'Accepted.'}
         {run.status === 'cancelled' && 'Stopped. Nothing was saved.'}
@@ -297,7 +303,58 @@ function AIRunPanel<TVersion>({
 
       {run.plan_summary && <p data-testid="ai-run-plan-summary">{run.plan_summary}</p>}
 
-      {run.status === 'running' && (
+      {run.plan && awaitingPlanApproval && (
+        <section aria-label="AI run plan" data-testid="ai-run-plan-review">
+          <h3>Plan</h3>
+          <ol>
+            {run.plan.steps.map((step) => (
+              <li key={step.id}>
+                {step.action}
+                {step.target_ids.length > 0 && ` (${step.target_ids.join(', ')})`}
+              </li>
+            ))}
+          </ol>
+          <h4>Success criteria</h4>
+          <ul>
+            {run.plan.success_criteria.map((criterion, index) => (
+              <li key={`${criterion.type}-${index}`}>{criterion.type}</li>
+            ))}
+          </ul>
+          <div className="editor-tool-group">
+            <button type="button" data-testid="ai-run-approve-plan" onClick={() => approve()}>
+              Approve plan
+            </button>
+            <button type="button" data-testid="ai-run-edit-request" onClick={dismiss}>
+              Edit request
+            </button>
+          </div>
+        </section>
+      )}
+
+      {run.criterion_results && run.criterion_results.length > 0 && (
+        <section aria-label="AI run attempts" data-testid="ai-run-attempts">
+          <h3>
+            Attempts ({run.attempts} of {attemptLimit})
+          </h3>
+          {run.criterion_results.map((attempt) => (
+            <div key={attempt.attempt} data-testid={`ai-run-attempt-${attempt.attempt}`}>
+              <strong>Attempt {attempt.attempt}</strong>
+              <ul>
+                {attempt.results.map((criterion, index) => (
+                  <li key={`${criterion.type}-${index}`}>
+                    <span aria-label={criterion.passed ? 'Passed' : 'Failed'}>
+                      {criterion.passed ? '✓' : '✕'}
+                    </span>{' '}
+                    {criterion.type}: {criterion.detail}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {run.status === 'running' && !awaitingPlanApproval && (
         <button type="button" data-testid="ai-run-stop" onClick={() => void stop()}>
           Stop
         </button>

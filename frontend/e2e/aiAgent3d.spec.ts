@@ -146,6 +146,7 @@ test.describe('AI 3D editor: Agent workflow (#463)', () => {
       .getByLabel('Describe the scene you want to generate')
       .fill('a small cube next to a sphere');
     await page.getByTestId('ai-run-start').click();
+    await page.getByTestId('ai-run-approve-plan').click();
 
     await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 15000 });
     await page.getByTestId('ai-run-accept').click();
@@ -187,6 +188,7 @@ test.describe('AI 3D editor: Agent workflow (#463)', () => {
     await objectSelect.selectOption({ label: 'Box 1' });
     await page.getByLabel('Describe the change you want to make').fill('make the cube blue');
     await page.getByTestId('ai-run-start').click();
+    await page.getByTestId('ai-run-approve-plan').click();
 
     await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 15000 });
     await page.getByTestId('ai-run-accept').click();
@@ -211,6 +213,7 @@ test.describe('AI 3D editor: Agent workflow (#463)', () => {
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page.getByLabel('Describe the scene you want to generate').fill('an impossible geometry');
     await page.getByTestId('ai-run-start').click();
+    await page.getByTestId('ai-run-approve-plan').click();
 
     await expect(page.getByTestId('ai-run-status')).toContainText(/failed/i, { timeout: 20000 });
     await expect(page.getByTestId('ai-run-start-new')).toBeVisible();
@@ -235,6 +238,7 @@ test.describe('AI 3D editor: Agent workflow (#463)', () => {
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page.getByLabel('Describe the scene you want to generate').fill('a simple scene');
     await page.getByTestId('ai-run-start').click();
+    await page.getByTestId('ai-run-approve-plan').click();
 
     await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 15000 });
     const statusBefore = await page.getByTestId('ai-run-status').textContent();

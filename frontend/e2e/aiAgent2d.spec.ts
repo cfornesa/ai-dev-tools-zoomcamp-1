@@ -124,6 +124,7 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
       .getByLabel('Describe the scene you want to generate')
       .fill('a bright red circle on a white background');
     await page.getByTestId('ai-run-start').click();
+    await page.getByTestId('ai-run-approve-plan').click();
 
     await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('ai-run-change-summary')).toHaveCount(0); // create has no patch summary
@@ -167,6 +168,7 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
     await objectSelect.selectOption({ label: 'Editable rectangle' });
     await page.getByLabel('Describe the change you want to make').fill('make it blue');
     await page.getByTestId('ai-run-start').click();
+    await page.getByTestId('ai-run-approve-plan').click();
 
     await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 15000 });
     await page.getByTestId('ai-run-accept').click();
@@ -193,6 +195,7 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page.getByLabel('Describe the scene you want to generate').fill('an impossible scene');
     await page.getByTestId('ai-run-start').click();
+    await page.getByTestId('ai-run-approve-plan').click();
 
     await expect(page.getByTestId('ai-run-status')).toContainText(/failed/i, { timeout: 20000 });
     await expect(page.getByTestId('ai-run-start-new')).toBeVisible();
@@ -217,6 +220,7 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page.getByLabel('Describe the scene you want to generate').fill('a simple scene');
     await page.getByTestId('ai-run-start').click();
+    await page.getByTestId('ai-run-approve-plan').click();
 
     await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 15000 });
     const statusBefore = await page.getByTestId('ai-run-status').textContent();

@@ -552,6 +552,16 @@ function makeRun(overrides: Partial<AIRun> = {}): AIRun {
     candidate_patch: null,
     change_summary: '',
     plan_summary: '',
+    plan: {
+      revision: 1,
+      steps: [{ id: 'step-1', action: 'generate_scene', target_ids: [] }],
+      target_ids: [],
+      success_criteria: [{ type: 'renders_nonblank', parameters: {} }],
+    },
+    auto_retry_enabled: true,
+    max_retries: 2,
+    retries_remaining: 2,
+    criterion_results: [],
     validation_summary: '',
     error_reason: '',
     usage: { prompt_tokens: 0, completion_tokens: 0, estimated_cost_usd: 0 },
@@ -609,6 +619,7 @@ describe('AIProposalPanel Agent workflow', () => {
       expect.objectContaining({ target_type: 'project', project_id: 'p1', operation: 'create' }),
     );
 
+    await userEvent.click(screen.getByTestId('ai-run-approve-plan'));
     await screen.findByTestId('ai-run-preview');
     expect(screen.getByTestId('ai-run-change-summary')).toHaveTextContent('Generated a scene.');
 

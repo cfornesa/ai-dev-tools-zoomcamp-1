@@ -24,6 +24,23 @@ export type AIRunUsage = {
   estimated_cost_usd: number;
 };
 
+export type AIRunCriterion = {
+  type: string;
+  parameters: Record<string, unknown>;
+  passed: boolean;
+  detail: string;
+};
+
+export type AIRunPlan = {
+  revision: number;
+  steps: Array<{ id: string; action: string; target_ids: string[] }>;
+  target_ids: string[];
+  success_criteria: Array<{
+    type: string;
+    parameters: Record<string, unknown>;
+  }>;
+};
+
 export type AIRun = {
   id: number;
   status: AIRunStatus;
@@ -39,6 +56,11 @@ export type AIRun = {
   candidate_patch: unknown | null;
   change_summary: string;
   plan_summary: string;
+  plan?: AIRunPlan | null;
+  auto_retry_enabled?: boolean;
+  max_retries?: number;
+  retries_remaining?: number;
+  criterion_results?: Array<{ attempt: number; results: AIRunCriterion[] }>;
   validation_summary: string;
   error_reason: string;
   usage: AIRunUsage;

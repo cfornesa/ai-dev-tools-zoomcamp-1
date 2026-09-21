@@ -62,6 +62,13 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - QA: focused `pytest tests/ -k "art_piece and refine"` passed 4; full `make check` passed with backend 1,468/39 skipped and frontend 2,747 tests across 243 files; explicit frontend production build and migration drift check passed. The full live issue will be re-read immediately before QA comment/closure; no second-opinion service is available.
 - Reconciliation: GitHub QA comment [#658 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/658#issuecomment-5756135082) posted after the final live-issue check; issue is closed.
 
+### #659 transaction ledger — 2026-09-21
+
+- PM/groom: live GitHub issue was re-read before implementation and remains authoritative; scope stayed the 2D `/ai-projects/<id>` plan-review gate, explicit approval/edit-request controls, no pre-approval provider advance, visible bounded attempts, per-criterion results, distinct terminal labels, and responsive browser evidence. 3D and @ targeting remained out of scope.
+- Engineering: extended the typed AI-run contract for plans/retry snapshots/criterion history; changed the shared run hook so a newly created run waits for approval, resumes only already-attempted runs, and exposes an approval action; added accessible plan review and attempt/criterion rendering to `AIRunPanel`; added the focused `aiPlanReview2d.spec.ts` browser contract plus panel, hook, and existing 2D/3D workflow regressions. Direct Codex/GPT-5 was used as the mechanical-implementation substitution because the rostered external frontend service was unavailable.
+- QA: focused panel/hook/workflow tests passed 50; full `make check` passed with backend 1,468 passed/39 skipped and frontend 244 files/2,749 tests, plus action-pin check, lint, format, typecheck, and production build. Chromium launched with host permission but the focused browser test self-skipped because the host fixture command cannot access the Docker-only database; teardown reported the same environment mismatch. Active Chrome reached the local authenticated editor shell, but the live agent request could not use the Docker fake-provider boundary, so no browser screenshot is being claimed as acceptance evidence. The live issue was re-read before QA.
+- Reconciliation: code is committed below; issue remains open pending browser evidence in a host-connected E2E environment and final QA comment/closure.
+
 ### #655 transaction ledger — 2026-09-21
 
 - PM/groom: live GitHub issue was re-read before QA; this remained an evidence-only pass for Celestial/Pareto across home, gallery, two profiles, both modes, both viewports, and reduced motion. No product fix was authorized by the issue.

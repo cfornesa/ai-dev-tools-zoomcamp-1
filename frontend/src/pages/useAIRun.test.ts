@@ -51,6 +51,16 @@ function makeRun(overrides: Partial<AIRun> = {}): AIRun {
     candidate_patch: null,
     change_summary: '',
     plan_summary: '',
+    plan: {
+      revision: 1,
+      steps: [{ id: 'step-1', action: 'generate_scene', target_ids: [] }],
+      target_ids: [],
+      success_criteria: [{ type: 'renders_nonblank', parameters: {} }],
+    },
+    auto_retry_enabled: true,
+    max_retries: 2,
+    retries_remaining: 2,
+    criterion_results: [],
     validation_summary: '',
     error_reason: '',
     usage: { prompt_tokens: 0, completion_tokens: 0, estimated_cost_usd: 0 },
@@ -108,6 +118,9 @@ describe('useAIRun', () => {
       await result.current.start(null, null);
     });
 
+    await act(async () => {
+      result.current.approve();
+    });
     await waitFor(() => expect(result.current.run?.status).toBe('awaiting_review'));
     expect(result.current.run?.candidate_scene).toEqual(VALID_SCENE);
     expect(window.localStorage.getItem('gesture-studio:ai-run:p1')).toBe('1');
@@ -115,7 +128,7 @@ describe('useAIRun', () => {
 
   it('reconnects to a stored running run on mount without starting a new one', async () => {
     window.localStorage.setItem('gesture-studio:ai-run:p1', '42');
-    mockedGet.mockResolvedValue(makeRun({ id: 42, status: 'running' }));
+    mockedGet.mockResolvedValue(makeRun({ id: 42, status: 'running', attempts: 1 }));
     mockedAdvance.mockResolvedValue(
       makeRun({ id: 42, status: 'awaiting_review', candidate_scene: VALID_SCENE }),
     );
@@ -161,6 +174,7 @@ describe('useAIRun', () => {
     await act(async () => {
       await result.current.start(null, null);
     });
+    await act(async () => result.current.approve());
     await waitFor(() => expect(result.current.run?.status).toBe('running'));
 
     await act(async () => {
@@ -199,6 +213,7 @@ describe('useAIRun', () => {
     await act(async () => {
       await result.current.start(null, null);
     });
+    await act(async () => result.current.approve());
     await waitFor(() => expect(result.current.run?.status).toBe('awaiting_review'));
 
     let accepted: SceneVersion | null = null;
@@ -224,6 +239,7 @@ describe('useAIRun', () => {
     await act(async () => {
       await result.current.start(null, null);
     });
+    await act(async () => result.current.approve());
     await waitFor(() => expect(result.current.run?.status).toBe('awaiting_review'));
 
     let accepted: SceneVersion | null = null;
@@ -245,6 +261,7 @@ describe('useAIRun', () => {
     await act(async () => {
       await result.current.start(null, null);
     });
+    await act(async () => result.current.approve());
     await waitFor(() => expect(result.current.run?.status).toBe('failed'));
 
     act(() => result.current.dismiss());

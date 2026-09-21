@@ -59,7 +59,8 @@
 }
 
 :root[data-site-font='script'] {
-  --site-font: 'Pinyon Script', Georgia, 'Times New Roman', serif;
+  --site-font: Lora, Georgia, 'Times New Roman', serif;
+  --heading: 'Pinyon Script', Georgia, 'Times New Roman', serif;
 }
 
 :root[data-site-backdrop='gradient'] {
@@ -1289,7 +1290,11 @@ button:disabled {
 }
 
 h1,
-h2 {
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--heading);
   font-weight: 500;
   color: var(--text-h);

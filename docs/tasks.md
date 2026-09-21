@@ -30,13 +30,14 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 12 | [#680](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/680) / [#681](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/681) | CLOSED, QA PASS | Shared account/admin spacing tokens and responsive form/card layouts are complete. |
 | 13 | [#682](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/682) | CLOSED, QA PASS; diagnosis recorded | Current checkout creates/loads missing profiles successfully; profile failures now have safe status-specific messaging and Retry. |
 | 14 | [#683](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/683) | CLOSED, QA PASS; stage 4 complete | Vivid-design evidence matrix captured and inspected across default/Pareto, light/dark, and 375/768/1280. |
-| 12 | [#685](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685) → [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Cards first, then Atom/RSS/JSON feeds, then feeds/discovery page. |
+| 12 | [#685](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685) | CLOSED, QA PASS | Editorial public-profile cards are complete; continue with the feed chain at #686. |
+| 15 | [#686](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/686) → [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Atom, RSS, JSON feed endpoints, then the feeds/discovery page. |
 | 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #685; #640 remains publication-boundary blocked and
+The next groomed issue is #686; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
 
 ### #674 transaction ledger — 2026-09-21 — CLOSED
@@ -239,6 +240,35 @@ The next groomed issue is #685; #640 remains publication-boundary blocked and
 - Reconciliation: issue closed after the corrected QA PASS; next independent
   transaction is #685. The separate collection metadata/legacy-shim follow-up
   remains #695.
+
+### #685 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: the live issue body was reread before implementation. Scope was
+  limited to public profile piece cards: thumbnail/fallback, publication-date
+  eyebrow, single title link, bounded description excerpt, engine/kind chips,
+  responsive grid, active Pareto/Celestial tokens, contrast, and publication
+  filtering. Collections and feeds remain separate issues.
+- Engineering: extended the privacy-safe profile payload with description,
+  published timestamp, and engine projections; added the editorial card
+  treatment, word-boundary excerpt helper, decorative-thumbnail/link-name
+  accessibility contract, responsive/style matrix, and focused regressions.
+  The 3D description is sourced from its existing SEO description because the
+  `Project3D` model intentionally has no standalone description field.
+  Commit: `512c0e6`.
+- QA: [GitHub QA PASS comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685#issuecomment-5759496243).
+  Focused Vitest passed 36/36; `make check` passed with backend 1,471
+  passed/39 skipped and frontend 244 files/2,755 tests; Chromium passed 4/4
+  at 1280x900 and 375x812 in light/dark and none/offset styles. Screenshots
+  were visually inspected. The browser teardown emitted the known host-local
+  Docker fixture-cleanup mismatch after passing assertions; no cleanup success
+  is claimed.
+- Provenance: Stage 2a implementation and stage 4 QA were direct Codex/GPT-5
+  substitutions because the rostered external services were unavailable; the
+  stage 3 independent-family review was not run because Mistral Vibe was
+  unavailable. Intake outcome: ACCEPTED-WITH-FIXES.
+- Reconciliation: issue closed after the QA PASS; the next independent
+  transaction is #686. Evidence is local/Docker/Chromium only; no production
+  publication claim is made.
 
 ### #673 transaction ledger — 2026-09-21 — CLOSED
 

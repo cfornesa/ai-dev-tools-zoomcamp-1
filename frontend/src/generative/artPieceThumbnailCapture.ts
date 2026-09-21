@@ -11,8 +11,14 @@
  * best-effort: a network hiccup, a slow render, or a crashed piece must
  * never block or fail the save/revise flow that triggers this.
  */
-import { uploadArtPieceThumbnail } from '../api/artPieces';
-import { ART_PIECE_BRIDGE_VERSION, ART_PIECE_SANDBOX_MESSAGE_SOURCE } from './artPieceSandbox';
+import { uploadArtPieceThumbnail, type ArtPieceLibrary } from '../api/artPieces';
+import {
+  ART_PIECE_BRIDGE_VERSION,
+  ART_PIECE_SANDBOX_MESSAGE_SOURCE,
+  buildArtPieceSandboxDocument,
+  parseArtPieceSandboxMessage,
+  ART_PIECE_IFRAME_SANDBOX,
+} from './artPieceSandbox';
 
 export const THUMBNAIL_WIDTH = 320;
 export const THUMBNAIL_HEIGHT = 240;
@@ -115,5 +121,53 @@ export async function captureAndUploadArtPieceThumbnail(
     return true;
   } catch {
     return false;
+  }
+}
+
+/** Renders a version in the same opaque-origin sandbox used by the public
+ * viewer, captures its first frame, and removes the temporary iframe. This
+ * is used when an owner opens a published piece whose capture was missed at
+ * publish time; generated source never executes in Django or the parent
+ * document. */
+export async function captureArtPieceThumbnailFromSource(
+  publicId: string,
+  versionId: number,
+  source: string,
+  engine: ArtPieceLibrary,
+): Promise<boolean> {
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('sandbox', ART_PIECE_IFRAME_SANDBOX);
+  iframe.style.position = 'fixed';
+  iframe.style.top = '0';
+  iframe.style.left = '0';
+  iframe.style.width = `${THUMBNAIL_WIDTH}px`;
+  iframe.style.height = `${THUMBNAIL_HEIGHT}px`;
+  iframe.style.opacity = '0';
+  iframe.style.pointerEvents = 'none';
+  iframe.srcdoc = buildArtPieceSandboxDocument(source, engine);
+  document.body.appendChild(iframe);
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        window.removeEventListener('message', onMessage);
+        reject(new Error('The piece did not finish rendering.'));
+      }, CAPTURE_TIMEOUT_MS);
+      function onMessage(event: MessageEvent) {
+        if (event.source !== iframe.contentWindow) return;
+        const parsed = parseArtPieceSandboxMessage(event.data);
+        if (!parsed) return;
+        window.clearTimeout(timeoutId);
+        window.removeEventListener('message', onMessage);
+        if (parsed.status === 'ready') resolve();
+        else reject(new Error(parsed.message));
+      }
+      window.addEventListener('message', onMessage);
+    });
+    return await captureAndUploadArtPieceThumbnail(iframe, publicId, versionId);
+  } catch {
+    return false;
+  } finally {
+    iframe.remove();
   }
 }

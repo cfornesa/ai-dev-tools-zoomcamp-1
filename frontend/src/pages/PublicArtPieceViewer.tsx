@@ -1,14 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
-import { getPublicArtPiece, type ArtPiece } from '../api/artPieces';
+import {
+  ART_PIECE_ENGINE_CAPABILITIES,
+  getArtPiece,
+  getPublicArtPiece,
+  type ArtPiece,
+} from '../api/artPieces';
+import { useAuth } from '../auth/useAuth';
 import {
   ART_PIECE_IFRAME_ALLOW,
   ART_PIECE_IFRAME_SANDBOX,
   buildArtPieceSandboxDocument,
 } from '../generative/artPieceSandbox';
-import PieceStageControls from './PieceStageControls';
 import { applyContentMetadata } from '../metadata';
+import { captureArtPieceThumbnailFromSource } from '../generative/artPieceThumbnailCapture';
+import PieceStageControls from './PieceStageControls';
+
+function isEmbedPath(): boolean {
+  return window.location.pathname.startsWith('/embed/art-pieces/');
+}
 
 /** Issue #435: `PublicProjectViewer.tsx`'s own `embed/p/:id` convention,
  * adapted for art pieces -- one component serves both the full-chrome
@@ -37,6 +48,7 @@ export default function PublicArtPieceViewer({
   const [error, setError] = useState(false);
   const [showEmbedSnippet, setShowEmbedSnippet] = useState(false);
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const auth = useAuth();
   const stageRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
@@ -50,6 +62,41 @@ export default function PublicArtPieceViewer({
     if (piece)
       applyContentMetadata(piece.seo_config, piece.title, piece.description, window.location.href);
   }, [piece]);
+
+  useEffect(() => {
+    // A publish can happen from the management list without an editor
+    // preview being mounted. If that left a 2D piece with its explicit
+    // fallback, let only the authenticated owner repair it on first public
+    // view. Anonymous viewers never receive the owner-only source and never
+    // gain upload permission through this path.
+    if (
+      !piece ||
+      isEmbedPath() ||
+      auth.status !== 'signed-in' ||
+      !piece.current_version?.thumbnail_is_fallback ||
+      ART_PIECE_ENGINE_CAPABILITIES[piece.engine]?.family !== '2d'
+    ) {
+      return;
+    }
+    let cancelled = false;
+    getArtPiece(piece.public_id)
+      .then((ownerPiece) => {
+        // The owner-only endpoint is the authorization check; public
+        // viewers cannot resolve this request and therefore cannot reach
+        // the upload path.
+        if (cancelled || !ownerPiece.current_version) return;
+        void captureArtPieceThumbnailFromSource(
+          ownerPiece.public_id,
+          ownerPiece.current_version.id,
+          ownerPiece.current_version.source,
+          ownerPiece.engine,
+        );
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.status, piece]);
 
   async function handleCopyEmbedSnippet() {
     if (!id) return;
@@ -70,7 +117,7 @@ export default function PublicArtPieceViewer({
       </div>
     );
 
-  const isEmbedRoute = window.location.pathname.startsWith('/embed/art-pieces/');
+  const isEmbedRoute = isEmbedPath();
 
   return (
     <section

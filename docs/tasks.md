@@ -19,6 +19,14 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Ollama Cloud/kimi-k3 after the API-field requirement routed the issue to complex implementation; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No runtime dependency, migration, or deployment mutation.
 - Reconciliation: GitHub QA comment [#650 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/650#issuecomment-5755160149) posted; issue is ready to close.
 
+### #651 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained browser-only rendered thumbnails for published 2D generated pieces, fallback preservation/retry, current-version replacement, and gallery/profile consumption. Existing #438/#602 capture work was retained as the baseline rather than duplicated.
+- Engineering: added a first-public-view repair path for authenticated owners whose published 2D piece still has the explicit fallback. The owner-only detail request supplies the current source; a temporary opaque-origin sandbox renders it, captures the first frame, uploads against the exact version, and removes the iframe. Anonymous viewers and 3D pieces do not enter this path. Existing editor regeneration remains the documented retry path. Commit pending.
+- QA: focused backend thumbnail tests passed 5; existing Chromium thumbnail capture/retry E2E passed 2; full `make check` backend passed 1,456/39 skipped and frontend checks are in progress. Source-backed first-public-view E2E could not be completed because the local Vite/Docker hostname split prevented authenticated browser setup on the source origin; Docker-served browser evidence exercises the pre-existing capture suite, not this new viewer bundle.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No dependency, migration, or public API contract change.
+- Reconciliation: GitHub QA comment pending after the final format/frontend checks; do not close until the source-backed browser limitation is either resolved or explicitly accepted.
+
 ### #649 transaction ledger — 2026-09-20
 
 - PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained the public profile header order, optional-field omission, plain-text multiline bio, safe external links, unknown/private fallback, and responsive screenshot evidence.

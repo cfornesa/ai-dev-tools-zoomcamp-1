@@ -8,8 +8,16 @@ The current open-issue manifest and dependency reconciliation is recorded in
 Fourteen new PROPOSED-then-filed issues; see
 `docs/distillation-2026-09-20-design-and-share-parity.md` for the manifest,
 dependency order, and duplicate report. #642, #643, and #644 are complete and
-reconciled; #645, #646, #647, and #648 are complete and reconciled; #649 is
-the next engineering issue in the theme chain.
+reconciled; #645, #646, #647, #648, and #649 are complete and reconciled;
+#650 is the next engineering issue in the theme chain.
+
+### #649 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained the public profile header order, optional-field omission, plain-text multiline bio, safe external links, unknown/private fallback, and responsive screenshot evidence.
+- Engineering: added ordered avatar/display-name/handle/bio/website/social rendering with safe external-link attributes, newline-preserving bio styling, responsive wrapping, and focused unit/browser coverage. Commit `a1a3bfd`.
+- QA: focused PublicProfile tests passed 5; source-backed Chromium profile E2E passed 2 scenarios with inspected `1280x900` and `375x812` screenshots; final `make check` passed with backend 1,455 passed/39 skipped and frontend 243 files/2,745 tests, plus lint, format, typecheck, and action-pin checks.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Opencode/kimi-k3; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No runtime dependency, schema change, or deployment mutation.
+- Reconciliation: GitHub QA comment [#649 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/649#issuecomment-5755056364) posted; issue is ready to close.
 
 ### #648 transaction ledger — 2026-09-20
 

@@ -39,13 +39,37 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 20 | [#691](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/691) | CLOSED, QA PASS | Generated immersive inline toolset is complete; continue with #692. |
 | 21 | [#692](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/692) | CLOSED, QA PASS | Legacy `/p/:id` now resolves to the canonical profile-nested slug route and receives the inline public 2D toolset. Continue with #693. |
 | 22 | [#693](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/693) | CLOSED, QA PASS | Legacy `/p3d/:id` now resolves to the canonical profile-nested slug route and receives the canonical 3D toolset. Continue with #694. |
-| 23 | [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Remaining generated/legacy consumers and final evidence matrix. |
+| 23 | [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | CLOSED, QA PASS | Public toolset evidence matrix passed for generated, structured, immersive, and legacy routes; no stage hamburger defect remains. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #694; #640 remains publication-boundary blocked and
+The next groomed issue is #695; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
+
+### #694 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: the live issue body was reread after #693 closure. This is an
+  evidence-only stage-4 QA pass; fixing a newly found route defect is out of
+  scope and would require a new linked issue.
+- QA matrix: Chromium passed 9 scenarios across canonical structured 2D/3D,
+  generated regular Canvas2D/Three.js/A-Frame, generated immersive
+  Canvas2D/Three.js/A-Frame, and legacy `/p/:id` plus `/p3d/:id` redirects.
+  The labelled Screenshot, Download/ZIP, Fullscreen, Embed, immersive, and
+  permitted sound/camera/hand controls were asserted by capability; unsupported
+  controls and stage hamburger/popover controls were asserted absent at 375px
+  and 1280px where applicable. Fresh 375px screenshots were inspected for
+  generated regular and immersive Three.js/Canvas2D surfaces.
+- Verification: `make check` was already green at the final #693 product
+  state (backend 1,476 passed/39 skipped; frontend 245 files/2,760 tests).
+  The combined evidence command passed 9/9. Known browser teardown warning:
+  fixture cleanup failed after assertions; no cleanup success is claimed.
+- Discovery: the hamburger visible at the top-right of generated screenshots
+  is the app-wide responsive shell navigation, not the piece-stage toolset;
+  no in-scope defect was filed. No new actionable issue was found.
+- Reconciliation: [GitHub QA PASS](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694#issuecomment-5761171664)
+  was posted after the final evidence pass; #694 is closed and the next
+  transaction is #695.
 
 ### #693 transaction ledger — 2026-09-21 — CLOSED
 

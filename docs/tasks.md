@@ -37,14 +37,39 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 18 | [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | CLOSED, QA PASS | Feeds/discovery page and server-rendered profile feed alternates are complete; continue with #690. |
 | 19 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) | CLOSED, QA PASS | Generated-piece regular inline toolset is complete; continue with #691. |
 | 20 | [#691](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/691) | CLOSED, QA PASS | Generated immersive inline toolset is complete; continue with #692. |
-| 21 | [#692](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/692) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Remaining generated/legacy consumers and final evidence matrix. |
-| 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
+| 21 | [#692](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/692) | CLOSED, QA PASS | Legacy `/p/:id` now resolves to the canonical profile-nested slug route and receives the inline public 2D toolset. Continue with #693. |
+| 22 | [#693](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/693) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Remaining generated/legacy consumers and final evidence matrix. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #692; #640 remains publication-boundary blocked and
+The next groomed issue is #693; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
+
+### #692 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: the updated live issue body was reread before implementation.
+  It explicitly permits either an inline legacy viewer or a compatibility
+  redirect; the repository route contract and canonical profile-nested URL
+  decision make redirecting `/p/:id` the authoritative choice. `/embed/p/:id`
+  remains a separate chrome-less compatibility surface and is not redirected.
+- Engineering: the legacy 2D route now follows the API-owned canonical
+  `viewer_url` when it is profile-nested, using `replace` navigation so old ID
+  links do not produce a second viewer shell. Added the dedicated
+  `legacy2dToolset.spec.ts` and updated the older public 2D route spec to
+  assert the redirect and canonical inline controls. No API field was added;
+  `viewer_url` was already emitted by `PublicProjectSerializer`.
+- QA: focused `PublicProjectViewer.test.tsx` passed 28 tests; Chromium
+  `legacy2dToolset.spec.ts` and `public2dRouteStageChrome.spec.ts` passed 2/2
+  against a rebuilt disposable Docker stack; `make check` passed with backend
+  1,476 passed/39 skipped and frontend 245 files/2,759 tests. Known browser
+  teardown warning: fixture cleanup failed after assertions; no cleanup
+  success is claimed.
+- Provenance: direct Codex/GPT-5 substitution because rostered external
+  implementation/review services were unavailable; no new dependency,
+  migration, or production-publication claim.
+- Reconciliation: GitHub QA PASS and closure follow after this ledger update;
+  next transaction is #693. No new actionable issue was found in scope.
 
 ### #674 transaction ledger — 2026-09-21 — CLOSED
 

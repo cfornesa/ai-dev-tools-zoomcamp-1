@@ -230,3 +230,32 @@ def test_owner_editor_slug_resolver_is_owner_only(client):
     assert response.status_code == 200
     assert response.json()["canonical_url"] == "/users/@editor-artist/edit/editor-study"
     assert response.json()["piece"]["owner_id"] == user.id
+
+
+@pytest.mark.django_db
+def test_owner_editor_slug_resolver_mounts_structured_2d_and_3d_pieces(client):
+    user = get_user_model().objects.create_user(username="structured-editor")
+    PublicProfile.objects.create(user=user, handle="structured-editor", is_public=True)
+    project = Project.objects.create(owner=user, title="Canvas Study")
+    project3d = Project3D.objects.create(owner=user, title="Spatial Study")
+    client.force_login(user)
+
+    two_d = client.get(
+        reverse(
+            "owner-art-piece-by-slug",
+            kwargs={"handle": "structured-editor", "piece_slug": project.public_slug},
+        )
+    )
+    three_d = client.get(
+        reverse(
+            "owner-art-piece-by-slug",
+            kwargs={"handle": "structured-editor", "piece_slug": project3d.public_slug},
+        )
+    )
+
+    assert two_d.status_code == 200
+    assert two_d.json()["type"] == "2d"
+    assert two_d.json()["piece"]["id"] == str(project.public_id)
+    assert three_d.status_code == 200
+    assert three_d.json()["type"] == "3d"
+    assert three_d.json()["piece"]["id"] == str(project3d.public_id)

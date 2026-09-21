@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import {
-  createAiAssisted3DProject,
-  createAiAssistedAnimation,
-  createNew3DProject,
-  createNewAnimation,
-} from './galleryCreateActions';
+import { createNew3DProject, createNewAnimation } from './galleryCreateActions';
 
 type ChooserAction = { id: string; label: string; description: string; run: () => Promise<string> };
 
@@ -25,22 +20,10 @@ const ACTIONS: ChooserAction[] = [
     run: () => createNewAnimation('p5'),
   },
   {
-    id: 'create-2d-ai',
-    label: 'Create an AI-assisted animation',
-    description: 'Start a blank 2D scene in the AI-assisted editor.',
-    run: () => createAiAssistedAnimation('p5'),
-  },
-  {
     id: 'create-3d',
     label: 'Create a new 3D project',
     description: 'Start a blank 3D scene in the manual editor.',
     run: createNew3DProject,
-  },
-  {
-    id: 'create-3d-ai',
-    label: 'Create an AI-assisted 3D project',
-    description: 'Start a blank 3D scene in the AI-assisted editor.',
-    run: createAiAssisted3DProject,
   },
 ];
 

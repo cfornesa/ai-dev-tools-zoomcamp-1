@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from scenes.art_piece_persistence import _piece_data
 from scenes.gallery import eligible_projects, eligible_projects3d
-from scenes.models import ArtPiece, PublicProfile
+from scenes.models import ArtPiece, Project, Project3D, PublicProfile
 from scenes.serializers import Project3DSerializer, ProjectSerializer
 
 
@@ -64,13 +64,56 @@ class PublicPieceBySlugView(APIView):
 
 
 class OwnerArtPieceBySlugView(APIView):
-    """Resolve an owner's slug to the private editor payload without leakage."""
+    """Resolve an owner's slug to the private editor payload without leakage.
+
+    Despite the historical class name, this is the owner editor resolver for
+    every authored piece family. The response keeps the generated-piece
+    payload unchanged and adds a ``type`` discriminator for structured
+    projects so the canonical editor route can mount the unified 2D or 3D
+    workspace without exposing private records to anyone else.
+    """
 
     permission_classes: list = []
 
     def get(self, request, handle, piece_slug):
         if not request.user.is_authenticated:
             raise Http404
+        project = (
+            Project.objects.select_related("owner", "current_version")
+            .filter(
+                owner=request.user,
+                owner__public_profile__handle=handle,
+                public_slug=piece_slug,
+                is_deleted=False,
+            )
+            .first()
+        )
+        if project is not None:
+            return Response(
+                {
+                    "canonical_url": f"/users/@{handle}/edit/{project.public_slug}",
+                    "type": "2d",
+                    "piece": ProjectSerializer(project).data,
+                }
+            )
+        project3d = (
+            Project3D.objects.select_related("owner", "current_version")
+            .filter(
+                owner=request.user,
+                owner__public_profile__handle=handle,
+                public_slug=piece_slug,
+                is_deleted=False,
+            )
+            .first()
+        )
+        if project3d is not None:
+            return Response(
+                {
+                    "canonical_url": f"/users/@{handle}/edit/{project3d.public_slug}",
+                    "type": "3d",
+                    "piece": Project3DSerializer(project3d).data,
+                }
+            )
         piece = (
             ArtPiece.objects.select_related("owner", "current_version")
             .filter(

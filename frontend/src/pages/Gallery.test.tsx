@@ -6,11 +6,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
 import * as projects3dApi from '../api/projects3d';
+import * as profileApi from '../api/profile';
 import * as authModule from '../auth/useAuth';
 import Gallery from './Gallery';
 
 vi.mock('../api/projects');
 vi.mock('../api/projects3d');
+vi.mock('../api/profile');
 vi.mock('../auth/useAuth');
 
 const mockedListProjects = vi.mocked(projectsApi.listProjects);
@@ -18,6 +20,7 @@ const mockedCreateBlankProject = vi.mocked(projectsApi.createBlankProject);
 const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
 const mockedCreateProject3D = vi.mocked(projects3dApi.createProject3D);
 const mockedDeleteProject3D = vi.mocked(projects3dApi.deleteProject3D);
+const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
 
 function baseProject3D(overrides: Partial<projects3dApi.Project3D> = {}): projects3dApi.Project3D {
@@ -27,6 +30,7 @@ function baseProject3D(overrides: Partial<projects3dApi.Project3D> = {}): projec
     visibility: 'private',
     title: 'Untitled 3D scene',
     thumbnail_url: null,
+    editor_url: '/users/@alice/edit/untitled-3d-scene',
     current_version: null,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -45,6 +49,7 @@ function baseProject(overrides: Partial<projectsApi.Project> = {}): projectsApi.
     allow_public_remix: false,
     export_attribution: false,
     thumbnail_url: null,
+    editor_url: '/users/@alice/edit/my-animation',
     current_version: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z',
@@ -57,10 +62,7 @@ function renderGallery() {
     <MemoryRouter initialEntries={['/']}>
       <Routes>
         <Route path="/" element={<Gallery />} />
-        <Route path="/projects/:id" element={<p>Editor placeholder</p>} />
-        <Route path="/ai-projects/:id" element={<p>AI editor placeholder</p>} />
-        <Route path="/projects3d/:id" element={<p>3D editor placeholder</p>} />
-        <Route path="/ai-projects3d/:id" element={<p>3D AI editor placeholder</p>} />
+        <Route path="/users/@alice/edit/:slug" element={<p>Editor placeholder</p>} />
         <Route path="/templates" element={<p>Templates placeholder</p>} />
         <Route path="/create" element={<p>Create chooser placeholder</p>} />
       </Routes>
@@ -82,6 +84,7 @@ beforeEach(() => {
     status: 'signed-in',
     user: { username: 'alice', email: 'alice@example.com', is_application_admin: false },
   });
+  mockedFetchProfile.mockResolvedValue({ handle: 'alice' } as never);
   // Default to no 3D projects; individual tests override when they need
   // to assert 3D-specific rendering.
   mockedListProjects3D.mockResolvedValue([]);
@@ -252,9 +255,7 @@ describe('Gallery keyboard accessibility', () => {
     expect(firstItem).toHaveFocus();
 
     await user.keyboard('{ArrowDown}');
-    expect(
-      screen.getByRole('menuitem', { name: /^create an ai-assisted animation$/i }),
-    ).toHaveFocus();
+    expect(screen.getByRole('menuitem', { name: /^create a new 3d project$/i })).toHaveFocus();
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
@@ -327,23 +328,6 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     expect(screen.getByRole('button', { name: /more creation options/i })).toBeEnabled();
   });
 
-  // Issue #223: a distinct creation entry point routing to the 2D
-  // AI-assisted editor instead of the manual editor.
-  it('navigates to the AI-assisted editor on success', async () => {
-    mockedListProjects.mockResolvedValue([]);
-    mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-ai-id' }));
-    const user = userEvent.setup();
-
-    renderGallery();
-    await screen.findByText('You have not created any projects.');
-    await openCreateMenu(user);
-
-    await user.click(screen.getByRole('menuitem', { name: /^create an ai-assisted animation$/i }));
-
-    await waitFor(() => expect(screen.getByText('AI editor placeholder')).toBeInTheDocument());
-    expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'p5');
-  });
-
   // Issue #226: a distinct creation entry point routing to the 3D manual
   // editor, backed by the genuinely separate Project3D document family.
   it('navigates to the 3D editor on success', async () => {
@@ -354,6 +338,7 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
       visibility: 'private',
       title: 'Untitled 3D scene',
       thumbnail_url: null,
+      editor_url: '/users/@alice/edit/untitled-3d-scene',
       current_version: null,
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
@@ -366,33 +351,7 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
 
     await user.click(screen.getByRole('menuitem', { name: /^create a new 3d project$/i }));
 
-    await waitFor(() => expect(screen.getByText('3D editor placeholder')).toBeInTheDocument());
-    expect(mockedCreateProject3D).toHaveBeenCalled();
-  });
-
-  // Issue #231: a distinct creation entry point routing to the 3D
-  // AI-assisted editor instead of the 3D manual editor.
-  it('navigates to the 3D AI-assisted editor on success', async () => {
-    mockedListProjects.mockResolvedValue([]);
-    mockedCreateProject3D.mockResolvedValue({
-      id: 'new-3d-ai-id',
-      owner: 'alice',
-      visibility: 'private',
-      title: 'Untitled 3D scene',
-      thumbnail_url: null,
-      current_version: null,
-      created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
-    });
-    const user = userEvent.setup();
-
-    renderGallery();
-    await screen.findByText('You have not created any projects.');
-    await openCreateMenu(user);
-
-    await user.click(screen.getByRole('menuitem', { name: /^create an ai-assisted 3d project$/i }));
-
-    await waitFor(() => expect(screen.getByText('3D AI editor placeholder')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
     expect(mockedCreateProject3D).toHaveBeenCalled();
   });
 

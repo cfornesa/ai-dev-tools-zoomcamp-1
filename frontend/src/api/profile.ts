@@ -1,7 +1,7 @@
 import { apiFetch } from './client';
 import type { ArtPiece } from './artPieces';
-import type { PublicProject } from './projects';
-import type { PublicProject3D } from './projects3d';
+import type { Project, PublicProject } from './projects';
+import type { Project3D, PublicProject3D } from './projects3d';
 import type { PresentationOptions } from './adminSettings';
 import type { ThemePalettes } from './adminSettings';
 
@@ -83,11 +83,16 @@ export async function fetchCanonicalPublicPiece(
   );
 }
 
+export type OwnerEditorPiece =
+  | { type: '2d'; piece: Project }
+  | { type: '3d'; piece: Project3D }
+  | { type: 'generated'; piece: ArtPiece };
+
 export async function fetchOwnerArtPiece(
   handle: string,
   pieceSlug: string,
-): Promise<{ canonical_url: string; piece: ArtPiece }> {
-  return apiFetch<{ canonical_url: string; piece: ArtPiece }>(
+): Promise<{ canonical_url: string } & OwnerEditorPiece> {
+  return apiFetch<{ canonical_url: string } & OwnerEditorPiece>(
     `/api/users/@${encodeURIComponent(handle)}/edit/${encodeURIComponent(pieceSlug)}/`,
   );
 }

@@ -136,8 +136,9 @@ function EditableProject3DTitle({
  * inspector's own explicit Save action -- until now its edits were only
  * ever held in memory. No real Three.js/A-Frame rendering yet.
  */
-function Project3DWorkspace() {
-  const { id } = useParams<{ id: string }>();
+function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } = {}) {
+  const { id: routeId } = useParams<{ id: string }>();
+  const id = initialProjectId ?? routeId;
   const auth = useAuth();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<Project3D | null>(null);

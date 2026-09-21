@@ -1028,8 +1028,9 @@ function localizePreviewError(message: string): { pointer: string; detail: strin
  * `beginDrag`, so the drag keeps tracking the pointer even outside the
  * canvas element's own bounds and Escape can cancel it from anywhere.
  */
-function EditorWorkspace() {
-  const { id } = useParams<{ id: string }>();
+function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {}) {
+  const { id: routeId } = useParams<{ id: string }>();
+  const id = initialProjectId ?? routeId;
   const navigate = useNavigate();
   const auth = useAuth();
   // Issue #528: "Convert to 3D" -- its own hook instance, mirroring how

@@ -37,6 +37,7 @@ export type Project = {
   allow_public_remix: boolean;
   export_attribution: boolean;
   thumbnail_url: string | null;
+  editor_url?: string | null;
   viewer_url?: string;
   current_version: number | null;
   // How the current version was produced -- a SceneVersion.Origin value

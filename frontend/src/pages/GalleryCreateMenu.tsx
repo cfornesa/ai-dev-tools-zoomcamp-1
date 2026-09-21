@@ -2,8 +2,6 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { useMenuButton } from '../a11y/useMenuButton';
 import {
-  createAiAssisted3DProject,
-  createAiAssistedAnimation,
   createNew3DProject,
   createNewAnimation,
   type NewProjectRenderer,
@@ -38,17 +36,7 @@ function GalleryCreateMenu({
 
   const actions: MenuAction[] = [
     { id: 'create-2d', label: 'Create a new animation', run: () => createNewAnimation(renderer) },
-    {
-      id: 'create-2d-ai',
-      label: 'Create an AI-assisted animation',
-      run: () => createAiAssistedAnimation(renderer),
-    },
     { id: 'create-3d', label: 'Create a new 3D project', run: createNew3DProject },
-    {
-      id: 'create-3d-ai',
-      label: 'Create an AI-assisted 3D project',
-      run: createAiAssisted3DProject,
-    },
   ];
 
   const { isOpen, toggle, close, triggerRef, onTriggerKeyDown, onMenuKeyDown, getItemRef } =

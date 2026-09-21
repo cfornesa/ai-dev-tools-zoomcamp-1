@@ -12,16 +12,12 @@ import { useAuth } from './auth/useAuth';
  * dependencies (p5.js, React Flow, JSZip/export, the AI proposal stack) --
  * lazy-loading them keeps that weight out of the initial bundle so a
  * first-time visitor to `/` only pays for routing + the public gallery. */
-const AiEditorWorkspace = lazy(() => import('./pages/AiEditorWorkspace'));
-const AiProject3DWorkspace = lazy(() => import('./pages/AiProject3DWorkspace'));
 const ArtPieceStudio = lazy(() => import('./pages/ArtPieceStudio'));
 const ArtPieceEditor = lazy(() => import('./pages/ArtPieceEditor'));
 const PublicArtPieceGallery = lazy(() => import('./pages/PublicArtPieceGallery'));
 const PublicArtPieceViewer = lazy(() => import('./pages/PublicArtPieceViewer'));
 const ArtPieceManagement = lazy(() => import('./pages/ArtPieceManagement'));
-const EditorWorkspace = lazy(() => import('./pages/EditorWorkspace'));
 const LocalEditorWorkspace = lazy(() => import('./pages/LocalEditorWorkspace'));
-const Project3DWorkspace = lazy(() => import('./pages/Project3DWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
 const PublicProject3DViewer = lazy(() => import('./pages/PublicProject3DViewer'));
@@ -46,6 +42,7 @@ const PublicProfile = lazy(() => import('./pages/PublicProfile'));
 const PublicProfileFeeds = lazy(() => import('./pages/PublicProfileFeeds'));
 const CanonicalPublicPiece = lazy(() => import('./pages/CanonicalPublicPiece'));
 const CanonicalArtPieceEditor = lazy(() => import('./pages/CanonicalArtPieceEditor'));
+const LegacyStructuredEditorRedirect = lazy(() => import('./pages/LegacyStructuredEditorRedirect'));
 const PublicCmsPage = lazy(() => import('./pages/PublicCmsPage'));
 const CollectionManagement = lazy(() => import('./pages/CollectionManagement'));
 const PublicCollection = lazy(() => import('./pages/PublicCollection'));
@@ -142,7 +139,7 @@ function App() {
               <Route path="admin/settings" element={<AdminSettings />} />
               <Route path="admin/pages" element={<AdminPages />} />
               <Route path="admin/content" element={<AdminContent />} />
-              <Route path="projects/:id" element={<EditorWorkspace />} />
+              <Route path="projects/:id" element={<LegacyStructuredEditorRedirect kind="2d" />} />
               <Route path="local-projects/:id" element={<LocalEditorWorkspace />} />
               {/* Issue #223: the 2D AI-assisted editor -- a distinct route
                   over the same Project/SceneVersion document family as
@@ -150,15 +147,21 @@ function App() {
                   (contrast with the genuinely separate 3D document
                   family). No layers/manual-editing UI; that's the manual
                   editor's concept. */}
-              <Route path="ai-projects/:id" element={<AiEditorWorkspace />} />
+              <Route
+                path="ai-projects/:id"
+                element={<LegacyStructuredEditorRedirect kind="2d" />}
+              />
               {/* Issue #226: the 3D manual editor -- a genuinely separate
                   document family (Project3D/SceneVersion3D, #208's
                   decision), not a variant of the 2D routes above. */}
-              <Route path="projects3d/:id" element={<Project3DWorkspace />} />
+              <Route path="projects3d/:id" element={<LegacyStructuredEditorRedirect kind="3d" />} />
               {/* Issue #231: the 3D AI-assisted editor -- sibling route to
                   the 3D manual editor above, reusing the same Project3D/
                   SceneVersion3D document family. */}
-              <Route path="ai-projects3d/:id" element={<AiProject3DWorkspace />} />
+              <Route
+                path="ai-projects3d/:id"
+                element={<LegacyStructuredEditorRedirect kind="3d" />}
+              />
               {/* Task 94 (issue #94): project-metadata editing folded into
                   the editor itself as a "Details" panel (EditorWorkspace.tsx)
                   — the old standalone `ProjectMetadataForm.tsx` page is

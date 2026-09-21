@@ -204,6 +204,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     current_version_origin = serializers.SerializerMethodField()
     active_scene = serializers.SerializerMethodField()
     scenes = serializers.SerializerMethodField()
+    editor_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -226,6 +227,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             # fields are unaffected.
             "active_scene",
             "scenes",
+            "editor_url",
             "created_at",
             "updated_at",
         ]
@@ -239,6 +241,12 @@ class ProjectSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("project-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_editor_url(self, project: Project) -> str | None:
+        handle = getattr(getattr(project.owner, "public_profile", None), "handle", None)
+        if not handle or not project.public_slug:
+            return None
+        return f"/users/@{handle}/edit/{project.public_slug}"
 
     def get_current_version_origin(self, project: Project) -> str | None:
         # Gallery "Manual"/"AI" badge: `current_version` above is only the
@@ -693,6 +701,7 @@ class Project3DSerializer(serializers.ModelSerializer):
     # still no separate public-only 3D thumbnail route needed.
     thumbnail_url = serializers.SerializerMethodField()
     thumbnail_is_fallback = serializers.SerializerMethodField()
+    editor_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Project3D
@@ -705,6 +714,7 @@ class Project3DSerializer(serializers.ModelSerializer):
             "thumbnail_url",
             "thumbnail_is_fallback",
             "current_version",
+            "editor_url",
             "created_at",
             "updated_at",
         ]
@@ -714,6 +724,12 @@ class Project3DSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_editor_url(self, project: Project3D) -> str | None:
+        handle = getattr(getattr(project.owner, "public_profile", None), "handle", None)
+        if not handle or not project.public_slug:
+            return None
+        return f"/users/@{handle}/edit/{project.public_slug}"
 
     def get_thumbnail_is_fallback(self, project: Project3D) -> bool:
         if project.current_version_id is None:

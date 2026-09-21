@@ -50,6 +50,20 @@ documented compatibility shims; they are not emitted as new public links.
 Reserved namespace words (`pieces`, `collections`, `immersive`, `edit`,
 `feed`, and `feeds`) cannot be allocated as public collection slugs.
 
+The authenticated owner editor resolver
+`GET /api/users/@<handle>/edit/<slug>/` returns the private owner payload for
+the matching structured 2D project, structured 3D project, or generated art
+piece. Its response includes `type` (`2d`, `3d`, or `generated`) and the
+existing resource `piece`; it never exposes a private piece to another user.
+The frontend uses this resolver to keep the canonical editor URL stable while
+mounting the appropriate unified workspace. Legacy ID editor routes remain
+compatibility shims and do not become new links.
+
+Authenticated 2D and 3D project serializers also expose `editor_url` when the
+owner has a profile handle and a generated public slug. Gallery creation
+initializes the profile before creating a project and uses this canonical URL
+directly; it does not emit the historical project-ID editor paths.
+
 ### AI edit target references (#661)
 
 The 2D AI create/edit request bodies may include an optional `target_ids`

@@ -21,7 +21,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 3 | [#661](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/661) | CLOSED, QA PASS; stage 2a complete | Shared mention field and stable-ID 2D targeting are complete; continue with #662. |
 | 4 | [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | CLOSED, QA PASS; stage 2a complete | 3D targeting and shared mention regressions are complete; continue to #663. |
 | 5 | [#663](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/663) | CLOSED, QA PASS; stage 2a complete | Generated-piece refinement targets, bounded plan/retries, and saved-version evidence are complete; continue to #664/#665. |
-| 6 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | OPEN, stage 2a | Unified 2D then 3D editors; preserve legacy redirects and canonical route contract. |
+| 6 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | READY FOR CLOSURE, QA PASS; stage 2a complete | Unified 2D/3D editor routes now use the corrected profile-nested, engine-neutral contract; next is #666. |
 | 7 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | OPEN, stage 2a | Capability matrix before manual tools. |
 | 8 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) / [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 2D then 3D manual tools after #666. |
 | 9 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
@@ -45,7 +45,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #664/#665; #640 remains publication-boundary blocked
+The next groomed issue is #666; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
 ### #661 transaction ledger — 2026-09-21 — READY FOR CLOSURE
@@ -133,6 +133,33 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   claim is made. No new actionable issue was found in scope.
 - Reconciliation: final GitHub issue reread is required immediately before the
   QA comment; next independent transaction is #664/#665.
+
+### #664/#665 transaction ledger — 2026-09-21 — READY FOR CLOSURE
+
+- PM/grooming: the live issue bodies were reread after the owner-corrected #684
+  contract. The canonical editor entry is profile-nested at
+  `/users/@<handle>/edit/<slug>`; engine identity remains piece data, and the
+  old project/AI editor paths remain compatibility shims.
+- Engineering: added the authenticated owner resolver for structured 2D and 3D
+  pieces, mounted the existing manual-plus-AI workspaces from the canonical
+  editor route, and retained legacy route shims. Creation menus no longer
+  split AI versus manual; creation initializes the profile and navigates using
+  the API-owned canonical `editor_url`. Updated focused tests and browser
+  evidence for both editor families. No migration or dependency was added.
+- QA matrix: focused backend canonical resolver tests passed 10; focused
+  frontend create/gallery tests passed 22; full `make check` passed with
+  backend `1480 passed, 39 skipped` and frontend `249 files / 2769 tests`,
+  with lint, format, typecheck, and action-pin checks green. Chromium passed
+  4/4 at 1280x900 and 375x812 for the unified 2D/3D route specs; screenshots
+  were captured under `frontend/test-results/unifiedEditor2d-*/` and
+  `frontend/test-results/unifiedEditor3d-*/`.
+- Provenance: direct Codex/GPT-5 substitution because the rostered
+  implementation/review services were unavailable; independent-family review
+  was not run. Evidence is local source and disposable Docker only; no
+  production-publication claim is made. No new actionable issue was found.
+- Reconciliation: #684 was reread immediately before this QA pass and its
+  corrected route grammar is now reflected in the implementation and tests.
+  Final GitHub QA comments and closure remain the next action; then #666.
 
 ### #695 transaction ledger — 2026-09-21 — CLOSED
 

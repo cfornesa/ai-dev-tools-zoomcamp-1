@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
-import { fetchOwnerArtPiece } from '../api/profile';
+import { fetchOwnerArtPiece, type OwnerEditorPiece } from '../api/profile';
 import ArtPieceEditor from './ArtPieceEditor';
+import EditorWorkspace from './EditorWorkspace';
+import Project3DWorkspace from './Project3DWorkspace';
 
 export default function CanonicalArtPieceEditor() {
   const { handle = '', pieceSlug = '' } = useParams<{ handle: string; pieceSlug: string }>();
-  const [piece, setPiece] = useState<
-    Awaited<ReturnType<typeof fetchOwnerArtPiece>>['piece'] | null
-  >(null);
+  const [piece, setPiece] = useState<OwnerEditorPiece | null>(null);
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
     fetchOwnerArtPiece(handle.replace(/^@/, ''), pieceSlug)
-      .then((response) => setPiece(response.piece))
+      .then((response) => setPiece(response))
       .catch(() => setMissing(true));
   }, [handle, pieceSlug]);
 
@@ -26,5 +26,7 @@ export default function CanonicalArtPieceEditor() {
     );
   }
   if (!piece) return <p role="status">Loading art piece editor…</p>;
-  return <ArtPieceEditor initialPiece={piece} />;
+  if (piece.type === '2d') return <EditorWorkspace initialProjectId={piece.piece.id} />;
+  if (piece.type === '3d') return <Project3DWorkspace initialProjectId={piece.piece.id} />;
+  return <ArtPieceEditor initialPiece={piece.piece} />;
 }

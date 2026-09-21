@@ -10,27 +10,33 @@
  */
 import { createBlankProject } from '../api/projects';
 import { createProject3D } from '../api/projects3d';
+import { fetchProfile } from '../api/profile';
 
 export type NewProjectRenderer = 'p5' | 'canvas2d' | 'svg';
 
 export async function createNewAnimation(renderer: NewProjectRenderer): Promise<string> {
+  const profile = await fetchProfile();
   const requestId = crypto.randomUUID();
   const project = await createBlankProject(requestId, renderer);
-  return `/projects/${project.id}`;
+  if (!project.editor_url || !profile.handle) {
+    throw new Error('The canonical editor URL was not returned for the new project.');
+  }
+  return project.editor_url;
 }
 
 export async function createAiAssistedAnimation(renderer: NewProjectRenderer): Promise<string> {
-  const requestId = crypto.randomUUID();
-  const project = await createBlankProject(requestId, renderer);
-  return `/ai-projects/${project.id}`;
+  return createNewAnimation(renderer);
 }
 
 export async function createNew3DProject(): Promise<string> {
+  const profile = await fetchProfile();
   const project = await createProject3D();
-  return `/projects3d/${project.id}`;
+  if (!project.editor_url || !profile.handle) {
+    throw new Error('The canonical editor URL was not returned for the new project.');
+  }
+  return project.editor_url;
 }
 
 export async function createAiAssisted3DProject(): Promise<string> {
-  const project = await createProject3D();
-  return `/ai-projects3d/${project.id}`;
+  return createNew3DProject();
 }

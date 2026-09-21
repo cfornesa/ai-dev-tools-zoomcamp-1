@@ -36,6 +36,7 @@ export type Project3D = {
   visibility: Project3DVisibility;
   /** Issue #243: gallery-card thumbnail URL, mirroring 2D `Project.thumbnail_url`. */
   thumbnail_url: string | null;
+  editor_url?: string | null;
   /** True when the stored render is the explicit safe fallback. */
   thumbnail_is_fallback?: boolean;
   current_version: SceneVersion3D | null;

@@ -3,7 +3,7 @@
 The current open-issue manifest and dependency reconciliation is recorded in
 `.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
 
-## 2026-09-21 — Current open backlog reconciliation (#640, #661–#694)
+## 2026-09-21 — Current open backlog reconciliation (#640, #661–#695)
 
 The live GitHub open-issue list was re-read after the AI preview correction and
 compared with `docs/distillation-2026-09-20-design-and-share-parity.md`,
@@ -17,7 +17,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | Order | Issue | Status / routing | Dependency and next action |
 | --- | --- | --- | --- |
 | 1 | [#640](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/640) | OPEN, publication-boundary blocked | Owner-controlled Replit publication; independent product work may proceed, but this remains the final live reconciliation gate. |
-| 2 | [#684](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/684) | OPEN, criterion-ready after route-plan confirmation; stage 2b complex | Canonical route grammar and compatibility shims; next independent engineering transaction. |
+| 2 | [#673](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/673) | CLOSED, QA PASS; stage 2a complete | Header navigation now routes `/` by auth state and removes Home from primary navigation. |
 | 3 | [#661](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/661) / [#662](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/662) | OPEN, stage 2a | 2D then 3D targeting; after shared editor contracts #664/#665 where applicable. |
 | 4 | [#663](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/663) | OPEN, stage 2a | Generated-piece refine UI after #658. |
 | 5 | [#664](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/664) / [#665](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/665) | OPEN, stage 2a | Unified 2D then 3D editors; preserve legacy redirects and canonical route contract. |
@@ -33,8 +33,28 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #673; #640 remains publication-boundary blocked and
+The next groomed issue is #674; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
+
+### #673 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: issue body re-read and acceptance matrix confirmed before
+  implementation; direct Codex/GPT-5 substitution because the rostered
+  Opencode Go service was unavailable.
+- Engineering: stage 2a direct Codex/GPT-5 substitution; removed Home from
+  desktop/mobile primary navigation and made `/` resolve to `/studio` for
+  signed-in users or `/gallery` for signed-out users while preserving `/home`.
+  Commit: `895f834`.
+- QA: [GitHub QA PASS comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/673#issuecomment-5757299428).
+  Focused tests, 4 Chromium checks at
+  1280x900 and 375x812, `make compose-preflight`, and full `make check` all
+  passed. A stale Docker image was rebuilt before the final browser run.
+- Provenance: Stage 3 second-opinion review was not run because Mistral Vibe
+  was unavailable; stage 4 QA was a direct Codex/GPT-5 substitution for the
+  unavailable Claude Sonnet 5 Medium service. Evidence is local/Docker/Chromium
+  only; no production publication claim is made.
+- Reconciliation: issue closed after QA PASS; next independent transaction is
+  #674. The separate collection metadata/legacy-shim follow-up is #695.
 
 ### #695 discovered follow-up — 2026-09-21 — PROPOSED
 

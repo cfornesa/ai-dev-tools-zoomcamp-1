@@ -105,7 +105,7 @@ from scenes.collections_api import (
     CollectionVisibilityView,
     PublicCollectionDetailView,
 )
-from scenes.pages_api import PublicPageDetailView
+from scenes.pages_api import PublicPageDetailView, PublicPageNavigationView
 from scenes.profile_api import AccountProfileView, PublicProfileView
 from scenes.profile_styles_api import AdminProfileStyleDetailView, AdminProfileStyleListCreateView
 from scenes.provider_credentials_api import ProviderCredentialView
@@ -120,6 +120,7 @@ from scenes.scene_conversion_api import (
 from scenes.sync_mutation_api import SyncMutationReceiptView
 
 urlpatterns = [
+    path("pages/", PublicPageNavigationView.as_view(), name="public-page-navigation"),
     path("pages/<slug:slug>/", PublicPageDetailView.as_view(), name="public-page-detail"),
     path("admin/pages/", AdminPageListCreateView.as_view(), name="admin-page-list-create"),
     path("admin/pages/<int:pk>/", AdminPageDetailView.as_view(), name="admin-page-detail"),

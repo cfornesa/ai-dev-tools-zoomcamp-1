@@ -4,6 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ReducedMotionControl from './ReducedMotionControl';
 import { useIsMobileHeader } from './useIsMobileHeader';
 import { useAuth } from '../auth/useAuth';
+import { fetchPublicPageNavigation, type PublicPageNavigation } from '../api/publicPages';
 import { fetchSiteTheme } from '../api/siteTheme';
 import {
   applyThemePreference,
@@ -47,6 +48,7 @@ function Layout() {
   const [siteTheme, setSiteTheme] = useState<Awaited<ReturnType<typeof fetchSiteTheme>> | null>(
     null,
   );
+  const [publicPages, setPublicPages] = useState<PublicPageNavigation[]>([]);
 
   useEffect(() => {
     fetchSiteTheme()
@@ -54,6 +56,12 @@ function Layout() {
       .catch(() => {
         /* keep the compiled safe defaults */
       });
+  }, []);
+
+  useEffect(() => {
+    fetchPublicPageNavigation()
+      .then(setPublicPages)
+      .catch(() => setPublicPages([]));
   }, []);
 
   useEffect(() => {
@@ -171,6 +179,13 @@ function Layout() {
       </a>
     );
 
+  const siteTitle = siteTheme?.site_title || 'AugmentrART';
+  const publicPageLinks = publicPages.map((page) => (
+    <NavLink key={page.id} className="shell-action" to={`/pages/${page.slug}`}>
+      {page.nav_label || page.title}
+    </NavLink>
+  ));
+
   return (
     <div
       className={`app-shell${location.pathname.startsWith('/projects/') ? ' app-shell-editor' : ''}`}
@@ -185,7 +200,11 @@ function Layout() {
             see `.app-shell-header-row`'s `justify-content: space-between`
             below that breakpoint. */}
         <div className="app-shell-header-row">
-          <h1>AugmentrART</h1>
+          <h1>
+            <NavLink className="app-shell-brand" to="/" aria-label={siteTitle}>
+              {siteTitle}
+            </NavLink>
+          </h1>
           {isMobileHeader && (
             <button
               type="button"
@@ -236,6 +255,9 @@ function Layout() {
               aria-label="Primary navigation"
               hidden={!menuOpen}
             >
+              <NavLink className="shell-action" to="/" end>
+                Home
+              </NavLink>
               <NavLink
                 className="shell-action"
                 to={auth.status === 'signed-in' ? '/studio' : '/gallery'}
@@ -248,6 +270,7 @@ function Layout() {
                   Public gallery
                 </NavLink>
               )}
+              {publicPageLinks}
               {signInOrOutAction}
               {auth.logoutError && (
                 <p className="auth-error" role="alert">
@@ -258,6 +281,9 @@ function Layout() {
           </>
         ) : (
           <nav className="app-shell-nav" aria-label="Primary navigation">
+            <NavLink className="shell-action" to="/" end>
+              Home
+            </NavLink>
             <NavLink
               className="shell-action"
               to={auth.status === 'signed-in' ? '/studio' : '/gallery'}
@@ -270,7 +296,8 @@ function Layout() {
                 Public gallery
               </NavLink>
             )}
-            {signInOrOutAction}
+            {publicPageLinks}
+            <span className="app-shell-auth-actions">{signInOrOutAction}</span>
             {auth.logoutError && (
               <p className="auth-error" role="alert">
                 {auth.logoutError}

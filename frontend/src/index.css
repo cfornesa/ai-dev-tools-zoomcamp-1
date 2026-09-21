@@ -172,8 +172,12 @@ body,
    studio workspace gets more vertical room without changing the more
    spacious presentation used by Home, Gallery, and Settings. */
 .app-shell-editor .app-shell-header {
+  flex-direction: column;
+  align-items: center;
   gap: 12px;
   padding-block: 20px;
+  border-bottom: 0;
+  text-align: center;
 }
 
 body {
@@ -181,18 +185,16 @@ body {
   background: var(--site-backdrop);
 }
 
-/* Issue #90: the header is a simple centered vertical stack — heading,
- * then the primary nav/auth actions (or the hamburger toggle below the
- * mobile breakpoint), then the reduced-motion control — rather than a
- * multi-column row, so nothing has to compete for horizontal space at
- * any width. */
+/* #645: public routes use the reference-style brand/navigation row. */
 .app-shell-header {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 20px;
-  padding: 40px 24px;
-  text-align: center;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  flex-wrap: wrap;
 }
 
 /* Issue #95, point 1: the heading + (mobile-only) hamburger toggle share
@@ -202,8 +204,20 @@ body {
 .app-shell-header-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
+  flex: 0 0 auto;
+}
+
+.app-shell-header-row h1 {
+  margin: 0;
+  line-height: 1;
+}
+
+.app-shell-brand {
+  color: var(--text-h);
+  font-size: clamp(1.6rem, 3vw, 2.25rem);
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .app-shell-theme-controls {
@@ -246,15 +260,24 @@ body {
 
 .app-shell-nav {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
+}
+
+.app-shell-auth-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: auto;
 }
 
 .app-shell-motion {
   display: flex;
   justify-content: center;
+  flex: 1 0 100%;
+  margin-left: 0;
 }
 
 /* Issue #90: harmonizes ReducedMotionControl's radio-pill buttons with the
@@ -1242,11 +1265,15 @@ code {
   }
 
   .app-shell-header {
+    flex-direction: column;
     gap: 16px;
     padding: 32px 16px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
   }
 
   .app-shell-header-row {
+    width: 100%;
     justify-content: space-between;
   }
 
@@ -1256,8 +1283,18 @@ code {
 
   .app-shell-mobile-menu {
     flex-direction: column;
+    flex-wrap: wrap;
     align-items: stretch;
     width: 100%;
+  }
+
+  .app-shell-auth-actions {
+    flex-direction: column;
+    margin-left: 0;
+  }
+
+  .app-shell-motion {
+    margin-left: 0;
   }
 }
 

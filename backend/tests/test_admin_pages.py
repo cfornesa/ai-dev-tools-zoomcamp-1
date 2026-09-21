@@ -81,6 +81,59 @@ def test_admin_can_create_publish_rename_and_audit_page(client, admin_a):
 
 
 @pytest.mark.django_db
+def test_public_page_navigation_lists_only_published_navigation_pages(client, admin_a):
+    Page.objects.create(
+        title="Draft hidden",
+        slug="draft-hidden",
+        status=Page.Status.DRAFT,
+        show_in_nav=True,
+        author=admin_a,
+    )
+    Page.objects.create(
+        title="Published hidden",
+        slug="published-hidden",
+        status=Page.Status.PUBLISHED,
+        show_in_nav=False,
+        author=admin_a,
+    )
+    about = Page.objects.create(
+        title="About the studio",
+        slug="about",
+        status=Page.Status.PUBLISHED,
+        nav_label="About",
+        show_in_nav=True,
+        sort_order=2,
+        author=admin_a,
+    )
+    contact = Page.objects.create(
+        title="Contact",
+        slug="contact",
+        status=Page.Status.PUBLISHED,
+        nav_label="Contact",
+        show_in_nav=True,
+        sort_order=1,
+        author=admin_a,
+    )
+
+    assert client.get(reverse("public-page-navigation")).json() == [
+        {
+            "title": "Contact",
+            "slug": "contact",
+            "nav_label": "Contact",
+            "sort_order": 1,
+            "id": contact.id,
+        },
+        {
+            "title": "About the studio",
+            "slug": "about",
+            "nav_label": "About",
+            "sort_order": 2,
+            "id": about.id,
+        },
+    ]
+
+
+@pytest.mark.django_db
 def test_draft_and_deleted_pages_are_not_public(client, admin_a):
     client.force_login(admin_a)
     created = client.post(

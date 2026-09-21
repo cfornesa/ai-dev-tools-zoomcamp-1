@@ -5,12 +5,17 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import * as siteThemeApi from '../api/siteTheme';
+import * as publicPagesApi from '../api/publicPages';
 import { AuthContext } from '../auth/context';
 import Layout from './Layout';
 import { MOBILE_HEADER_BREAKPOINT_PX } from './useIsMobileHeader';
 
 vi.mock('../api/siteTheme', () => ({
   fetchSiteTheme: vi.fn().mockRejectedValue(new Error('no theme in this test')),
+}));
+
+vi.mock('../api/publicPages', () => ({
+  fetchPublicPageNavigation: vi.fn().mockRejectedValue(new Error('no pages in this test')),
 }));
 
 /**
@@ -90,6 +95,26 @@ describe('Layout: authentication control and attribution', () => {
 
     await user.click(screen.getByRole('button', { name: 'Logout' }));
     expect(logout).toHaveBeenCalledOnce();
+  });
+});
+
+describe('Layout: public navigation (#645)', () => {
+  it('renders Home, Gallery, and published CMS navigation pages', async () => {
+    vi.mocked(publicPagesApi.fetchPublicPageNavigation).mockResolvedValueOnce([
+      { id: 1, title: 'About the studio', slug: 'about', nav_label: 'About', sort_order: 1 },
+    ]);
+
+    renderWithAuth({ status: 'signed-out', user: null });
+
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Public gallery' })).toHaveAttribute(
+      'href',
+      '/gallery',
+    );
+    expect(await screen.findByRole('link', { name: 'About' })).toHaveAttribute(
+      'href',
+      '/pages/about',
+    );
   });
 });
 

@@ -7,6 +7,7 @@ export type ThemeTokens = Record<string, string> & {
     light: Record<string, string>;
     dark: Record<string, string>;
   };
+  site_title?: string;
 };
 
 export async function fetchSiteTheme(): Promise<ThemeTokens> {

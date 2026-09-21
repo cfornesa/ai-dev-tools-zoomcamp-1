@@ -363,6 +363,7 @@ the canonical page is addressed by its current slug.
 
 | Endpoint | Contract |
 | --- | --- |
+| `GET /api/pages/` | Anonymous navigation projection of published CMS pages marked `show_in_nav`, ordered by `sort_order`, title, and id; returns only `title`, `slug`, `nav_label`, and `sort_order`. Draft, deleted, and non-navigation pages are omitted. |
 | `GET /api/pages/<slug>/` | Anonymous published-page read; returns `200` for the canonical page, `301` for a recorded old slug, and `404` for missing/draft/deleted pages. |
 | `GET /api/admin/pages/` | Application-admin-only list of active published/draft pages with title, slug, status, updated time, author, navigation metadata, and revision. Anonymous callers receive `401`; non-admins receive `403`. |
 | `POST /api/admin/pages/` | CSRF-protected application-admin create with bounded title, slug, description, status, navigation metadata, and optional system key. |

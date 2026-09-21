@@ -112,3 +112,22 @@ unless an admin selects it (#675).
 | 9 | #683 vivid-design evidence matrix (needs 1–8) | stage 4 |
 
 Verification boundary: #682's cause is unclassified until reproduced.
+
+## Addendum — blog-style piece cards and per-profile feeds (#685–#689)
+
+Owner question: can the reference blog cards be the basis for profile piece
+cards, and can the reference feeds inspire per-profile feeds? Answer: yes to
+both. The reference `_post-card.php` (featured image, date eyebrow, linked
+title, ~240-char excerpt, chips) maps directly onto piece cards. This repo has
+no feed endpoints at all.
+
+| Order | Issue | Routing |
+|---|---|---|
+| 1 | #685 blog-card layout for profile piece cards (builds on #650) | 2a |
+| 2 | #686 Atom feed `/users/@handle/feed.xml` | 2b |
+| 3 | #687 RSS 2.0 `/users/@handle/feed.rss` (after #686) | 2b |
+| 4 | #688 JSON Feed `/users/@handle/feed.json` (after #686) | 2b |
+| 5 | #689 Feeds page, copy URLs, feed-card preview, `rel=alternate` (needs #685–#688, head mechanism from #654) | 2a |
+
+Out of scope, not filed: collection feeds, site-wide aggregate feeds, mf2,
+email subscriptions. Feed thumbnails will show fallbacks until #651/#652 land.

@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 
 import { fetchPublicCollection, type Collection, type CollectionItem } from '../api/collections';
 import { fetchPublicProfile, type PublicProfile } from '../api/profile';
@@ -34,6 +34,7 @@ export default function PublicCollection() {
     collectionSlug: string;
   }>();
   const handle = rawHandle.replace(/^@/, '');
+  const location = useLocation();
   const [collection, setCollection] = useState<Collection | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
   const [profile, setProfile] = useState<PublicProfile | null>(null);
@@ -53,7 +54,8 @@ export default function PublicCollection() {
     fetchPublicProfile(handle)
       .then((page) => setProfile(page.profile))
       .catch(() => undefined);
-  }, [collectionSlug, handle]);
+  }, [collectionSlug, handle, location.pathname]);
+
   useEffect(() => {
     if (collection)
       applyContentMetadata(
@@ -63,6 +65,10 @@ export default function PublicCollection() {
         window.location.href,
       );
   }, [collection]);
+
+  if (collection && !location.pathname.includes('/collections/') && collection.canonical_url) {
+    return <Navigate to={collection.canonical_url} replace />;
+  }
 
   async function copyEmbed() {
     if (!collection?.embed_url) return;

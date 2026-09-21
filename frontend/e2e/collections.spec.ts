@@ -63,6 +63,22 @@ test.describe('collection management and public routes (#568)', () => {
       await expect(
         anonymousPage.getByRole('link', { name: 'Open immersive collection' }),
       ).toBeVisible();
+      const legacyRegular = await anonymousContext.request.get(
+        `/users/@${handle}/${collection.slug}`,
+        { maxRedirects: 0 },
+      );
+      expect(legacyRegular.status()).toBe(301);
+      expect(legacyRegular.headers().location).toBe(
+        `/users/@${handle}/collections/${collection.slug}`,
+      );
+      const legacyImmersive = await anonymousContext.request.get(
+        `/users/@${handle}/${collection.slug}/immersive`,
+        { maxRedirects: 0 },
+      );
+      expect(legacyImmersive.status()).toBe(301);
+      expect(legacyImmersive.headers().location).toBe(
+        `/users/@${handle}/collections/${collection.slug}/immersive`,
+      );
       await anonymousPage.getByRole('button', { name: 'Embed' }).click();
       await expect(anonymousPage.locator('#collection-embed-snippet')).toHaveValue(
         `<iframe src="${anonymousPage.url().split('/users/')[0]}/embed/collections/@${handle}/${collection.slug}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`,

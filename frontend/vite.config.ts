@@ -133,6 +133,16 @@ function siteMetadataDescriptor(pathname: string): string | null {
   return null;
 }
 
+function legacyCollectionDescriptor(pathname: string): {
+  handle: string;
+  slug: string;
+  immersive: boolean;
+} | null {
+  const match = pathname.match(/^\/users\/@([^/]+)\/([^/]+)(\/immersive)?\/?$/);
+  if (!match || match[2] === 'feeds') return null;
+  return { handle: match[1], slug: match[2], immersive: Boolean(match[3]) };
+}
+
 async function fetchShareMetadata(pathname: string): Promise<ShareMetadata | null> {
   const sitePath = siteMetadataDescriptor(pathname);
   if (sitePath) {
@@ -217,6 +227,33 @@ function shareMetadataPlugin(): Plugin {
     server.middlewares.use(async (request, response, next) => {
       if (request.method !== 'GET') return next();
       const requestPath = new URL(request.url ?? '/', 'http://localhost').pathname;
+      const legacyCollection = legacyCollectionDescriptor(requestPath);
+      if (legacyCollection) {
+        try {
+          const collectionResponse = await fetch(
+            `${backendProxyTarget}/api/public/collections/${encodeURIComponent(legacyCollection.handle)}/${encodeURIComponent(legacyCollection.slug)}/`,
+            { headers: { Accept: 'application/json' } },
+          );
+          if (collectionResponse.ok) {
+            const collection = (await collectionResponse.json()) as {
+              canonical_url?: string | null;
+              immersive_url?: string | null;
+            };
+            const target = legacyCollection.immersive
+              ? collection.immersive_url
+              : collection.canonical_url;
+            if (target && target !== requestPath) {
+              response.statusCode = 301;
+              response.setHeader('Location', target);
+              response.end();
+              return;
+            }
+          }
+        } catch {
+          // Fall through to the SPA compatibility redirect if the API is
+          // temporarily unavailable during local development.
+        }
+      }
       if (
         !routeDescriptor(requestPath) &&
         !/^\/users\/@[^/]+\/pieces\/[^/]+\/?$/.test(requestPath) &&

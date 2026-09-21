@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 
 import { fetchPublicCollection, type Collection, type CollectionItem } from '../api/collections';
 import { useReducedMotion } from '../a11y/reducedMotion';
@@ -24,6 +24,7 @@ function CollectionImmersiveViewer() {
     collectionSlug: string;
   }>();
   const handle = rawHandle.replace(/^@/, '');
+  const location = useLocation();
   const { effective: reducedMotion } = useReducedMotion();
   const [collection, setCollection] = useState<Collection | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
@@ -46,7 +47,7 @@ function CollectionImmersiveViewer() {
       .catch((error: unknown) => {
         setState(error instanceof Error && error.message.includes('404') ? 'missing' : 'error');
       });
-  }, [collectionSlug, handle]);
+  }, [collectionSlug, handle, location.pathname]);
 
   const isEmbedRoute = window.location.pathname.startsWith('/embed/collections/');
   const items = collection?.items ?? [];
@@ -80,6 +81,10 @@ function CollectionImmersiveViewer() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   });
+
+  if (collection && !location.pathname.includes('/collections/') && collection.immersive_url) {
+    return <Navigate to={collection.immersive_url} replace />;
+  }
 
   async function captureActive() {
     if (!activeItem?.thumbnail_url) {

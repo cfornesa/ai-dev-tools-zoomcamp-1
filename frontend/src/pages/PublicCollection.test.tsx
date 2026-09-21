@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as collectionsApi from '../api/collections';
@@ -29,6 +29,8 @@ const SAMPLE: collectionsApi.Collection = {
   published_at: '2026-01-01T00:00:00Z',
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
+  canonical_url: '/users/@alice/collections/spring-studies',
+  immersive_url: '/users/@alice/collections/spring-studies/immersive',
   items: [
     {
       kind: 'art_piece',
@@ -42,11 +44,24 @@ const SAMPLE: collectionsApi.Collection = {
   ],
 };
 
-function renderPage() {
+function renderPage(path = '/users/@alice/collections/spring-studies') {
+  function LocationProbe() {
+    return <output data-testid="location-path">{useLocation().pathname}</output>;
+  }
   return render(
-    <MemoryRouter initialEntries={['/users/@alice/spring-studies']}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
+        <Route
+          path="/users/@alice/collections/spring-studies"
+          element={
+            <>
+              <PublicCollection />
+              <LocationProbe />
+            </>
+          }
+        />
         <Route path="/users/:handle/:collectionSlug" element={<PublicCollection />} />
+        <Route path="/users/@alice/collections/spring-studies/target" element={<p>Target</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -68,6 +83,14 @@ describe('PublicCollection', () => {
     expect(screen.getByRole('link', { name: /No thumbnail piece/ })).toHaveAttribute(
       'href',
       '/art-pieces/p/piece-1',
+    );
+  });
+
+  it('replaces the legacy collection route with the canonical route', async () => {
+    renderPage('/users/@alice/spring-studies');
+    expect(await screen.findByRole('heading', { name: 'Spring studies' })).toBeInTheDocument();
+    expect(screen.getByTestId('location-path')).toHaveTextContent(
+      '/users/@alice/collections/spring-studies',
     );
   });
 

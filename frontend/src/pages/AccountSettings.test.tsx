@@ -73,6 +73,65 @@ beforeEach(() => {
 });
 
 describe('AccountSettings', () => {
+  it('distinguishes a profile service failure and retries the profile request', async () => {
+    mockedFetchProfile.mockReset();
+    mockedFetchProfile
+      .mockRejectedValueOnce(new ApiError(503, { detail: 'temporarily unavailable' }))
+      .mockResolvedValueOnce({
+        handle: 'artist',
+        display_name: 'Artist',
+        bio: '',
+        website_url: '',
+        social_links: {},
+        profile_image_url: '',
+        theme_config: {},
+        is_public: true,
+        revision: 1,
+      });
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText(
+        'Profile settings are temporarily unavailable. Please retry in a moment.',
+      ),
+    ).toHaveAttribute('role', 'alert');
+    const profileError = screen
+      .getByText('Profile settings are temporarily unavailable. Please retry in a moment.')
+      .closest('.account-settings-load-error') as HTMLElement;
+    await user.click(within(profileError).getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByLabelText('Handle')).toHaveValue('artist');
+    expect(mockedFetchProfile).toHaveBeenCalledTimes(2);
+  });
+
+  it('distinguishes a network failure and offers Retry without leaking details', async () => {
+    mockedFetchProfile.mockReset();
+    mockedFetchProfile.mockRejectedValue(new TypeError('secret network internals'));
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText(
+        'Profile settings could not be reached. Check your connection and retry.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('secret network internals')).not.toBeInTheDocument();
+    expect(
+      within(
+        screen
+          .getByText('Profile settings could not be reached. Check your connection and retry.')
+          .closest('.account-settings-load-error') as HTMLElement,
+      ).getByRole('button', { name: 'Retry' }),
+    ).toBeInTheDocument();
+  });
+
   it('collapses every module by default', async () => {
     localStorage.removeItem('augmentrart:account-settings-layout:v1:unknown');
     render(

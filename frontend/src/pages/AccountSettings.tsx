@@ -441,17 +441,60 @@ function ProfileSettings() {
   const profileDirtyRef = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
+  const [profileLoadAttempt, setProfileLoadAttempt] = useState(0);
   const [handleError, setHandleError] = useState<string | null>(null);
   useEffect(() => {
+    let cancelled = false;
+    setProfileLoadError(null);
     fetchProfile()
       .then((loadedProfile) => {
+        if (cancelled) return;
         // A duplicate/late development fetch must not overwrite edits in the
         // controlled form while the user is already working on them.
         if (!profileDirtyRef.current) setProfile(loadedProfile);
       })
-      .catch(() => setError('Could not load profile settings.'));
-  }, []);
-  if (!profile) return error ? <p role="alert">{error}</p> : <p role="status">Loading profile…</p>;
+      .catch((caught: unknown) => {
+        if (cancelled) return;
+        if (caught instanceof ApiError) {
+          if (caught.status >= 500) {
+            setProfileLoadError(
+              'Profile settings are temporarily unavailable. Please retry in a moment.',
+            );
+          } else if (caught.status === 401 || caught.status === 403) {
+            setProfileLoadError(
+              'Your session no longer has access to profile settings. Please sign in again.',
+            );
+          } else if (caught.status === 404) {
+            setProfileLoadError(
+              'Profile settings were not found. Retry to create or reload your profile.',
+            );
+          } else {
+            setProfileLoadError('Profile settings could not be loaded. Please retry.');
+          }
+        } else {
+          setProfileLoadError(
+            'Profile settings could not be reached. Check your connection and retry.',
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [profileLoadAttempt]);
+  if (!profile) {
+    if (profileLoadError) {
+      return (
+        <div className="account-settings-load-error">
+          <p role="alert">{profileLoadError}</p>
+          <button type="button" onClick={() => setProfileLoadAttempt((attempt) => attempt + 1)}>
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return <p role="status">Loading profile…</p>;
+  }
   async function save(event: React.FormEvent) {
     event.preventDefault();
     const current = profile as PublicProfile;

@@ -3,7 +3,7 @@
 The current open-issue manifest and dependency reconciliation is recorded in
 `.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
 
-## 2026-09-21 — Current open backlog reconciliation (#640, #661–#695)
+## 2026-09-21 — Current open backlog reconciliation (#640, #661–#697)
 
 The live GitHub open-issue list was re-read after the AI preview correction and
 compared with `docs/distillation-2026-09-20-design-and-share-parity.md`,
@@ -25,10 +25,11 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 7 | [#666](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/666) | CLOSED, QA PASS; stage 2a complete | Engine-keyed editor tool matrix is complete; the discovered #696 follow-up is reconciled. |
 | 8 | [#696](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/696) | CLOSED, QA PASS; stage 2a complete | Generated owner-editor E2E now matches the current refinement/auto-save contract; continue with #667/#668. |
 | 9 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) | CLOSED, QA PASS; stage 2a complete | Generated Canvas2D/SVG manual source tools, preview, version save, canonical surfaces, and ZIP evidence are complete; continue with #668. |
-| 10 | [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | OPEN, stage 2a | Generated 3D manual tools. |
+| 10 | [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | CLOSED, QA PASS; stage 2a complete | Generated 3D manual tools are complete; continue with #669. |
 | 11 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
 | 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
 | 13 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
+| 14 | [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697) | PROPOSED, discovery follow-up | Six-engine captured-thumbnail cards disappear from the owner profile; reconcile before closing the regression. |
 | 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete. |
 | 12 | [#680](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/680) / [#681](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/681) | CLOSED, QA PASS | Shared account/admin spacing tokens and responsive form/card layouts are complete. |
 | 13 | [#682](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/682) | CLOSED, QA PASS; diagnosis recorded | Current checkout creates/loads missing profiles successfully; profile failures now have safe status-specific messaging and Retry. |
@@ -47,7 +48,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #668; #640 remains publication-boundary blocked
+The next groomed issue is #669; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
 ### #667 transaction ledger — 2026-09-21 — CLOSED, QA PASS
@@ -82,6 +83,18 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
 - QA: PASS; live issue reread after implementation, preview screenshots
   inspected, full `make check` passed, GitHub evidence posted, and issue closed
   at [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668#issuecomment-5764702969).
+
+### #697 transaction ledger — 2026-09-21 — PROPOSED, discovery follow-up
+
+- Discovery: the Docker-backed `artPieceSixEngineThumbnails.spec.ts` regression
+  was reproduced after #668, while the existing closed #602 evidence was
+  confirmed as a distinct earlier pass. No duplicate was created; this new
+  post-route-change failure is tracked at [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697).
+- Evidence: the SVG canonical profile-card locator is absent after the six
+  published fixtures are created and thumbnail capture completes.
+- Next action: triage #697 before its implementation pass; #669 remains the
+  next groomed implementation issue because this discovery item is explicitly
+  recorded and deferred.
 
 ### Next groomed issue — #669
 

@@ -41,6 +41,8 @@ import {
 
 type RevisionPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
+const LIVE_PREVIEW_DEBOUNCE_MS = 350;
+
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime()) ? iso : date.toLocaleString();
@@ -117,10 +119,12 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const [prompt, setPrompt] = useState('');
   const [revisePhase, setRevisePhase] = useState<RevisionPhase>('idle');
   const [reviseCode, setReviseCode] = useState<string | null>(null);
+  const [previewCode, setPreviewCodeState] = useState<string | null>(null);
   const [manualHistory, setManualHistory] = useState<string[]>([]);
   const [manualHistoryIndex, setManualHistoryIndex] = useState(-1);
   const [selected3DId, setSelected3DId] = useState<string | null>(null);
   const [reviseError, setReviseError] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [refineRun, setRefineRun] = useState<import('../api/artPieces').ArtPieceRefineRun | null>(
     null,
   );
@@ -130,6 +134,9 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const [versionSaveError, setVersionSaveError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const previewTimerRef = useRef<number | null>(null);
+  const previewCodeRef = useRef<string | null>(null);
+  const lastGoodPreviewRef = useRef<string | null>(null);
 
   const [thumbnailBust, setThumbnailBust] = useState(0);
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
@@ -167,14 +174,30 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (previewTimerRef.current !== null) window.clearTimeout(previewTimerRef.current);
+    };
+  }, []);
+
+  function setPreviewCode(next: string | null) {
+    previewCodeRef.current = next;
+    setPreviewCodeState(next);
+  }
+
+  useEffect(() => {
     function onMessage(event: MessageEvent) {
       if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
       const parsed = parseArtPieceSandboxMessage(event.data);
       if (!parsed) return;
-      if (parsed.status === 'ready') setRevisePhase('ready');
-      else {
+      if (parsed.status === 'ready') {
+        lastGoodPreviewRef.current = previewCodeRef.current;
+        setRevisePhase('ready');
+      } else {
         setRevisePhase('crashed');
-        setReviseError(parsed.message);
+        setPreviewError(parsed.message);
+        if (lastGoodPreviewRef.current && lastGoodPreviewRef.current !== previewCodeRef.current) {
+          setPreviewCode(lastGoodPreviewRef.current);
+        }
       }
     }
     window.addEventListener('message', onMessage);
@@ -231,7 +254,10 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
 
     setRevisePhase('pending');
     setReviseError(null);
+    setPreviewError(null);
     setReviseCode(null);
+    setPreviewCode(null);
+    lastGoodPreviewRef.current = null;
 
     try {
       const result = await refineArtPiece(
@@ -251,6 +277,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         return;
       }
       setReviseCode(result.candidate_source);
+      setPreviewCode(result.candidate_source);
       setRevisePhase('previewing');
       setManualHistory([]);
       setManualHistoryIndex(-1);
@@ -287,8 +314,21 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     });
     setManualHistoryIndex((index) => (manualHistory.length === 0 ? 1 : index + 1));
     setReviseCode(next);
+    setPreviewCode(next);
+    setPreviewError(null);
     setRevisePhase('ready');
     setRefineRun(null);
+  }
+
+  function handleSourceChange(next: string) {
+    setReviseCode(next);
+    setPreviewError(null);
+    setRevisePhase('previewing');
+    if (previewTimerRef.current !== null) window.clearTimeout(previewTimerRef.current);
+    previewTimerRef.current = window.setTimeout(() => {
+      previewTimerRef.current = null;
+      setPreviewCode(next);
+    }, LIVE_PREVIEW_DEBOUNCE_MS);
   }
 
   function addManual3DPrimitive(primitive: Generated3DPrimitive) {
@@ -330,7 +370,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   }
 
   async function handleSaveVersion() {
-    if (!id || !piece || !reviseCode) return;
+    if (!id || !piece || !reviseCode || previewError) return;
     setVersionSaving(true);
     setVersionSaveError(null);
     try {
@@ -422,7 +462,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     }
   }
 
-  const sandboxDoc = reviseCode ? buildArtPieceSandboxDocument(reviseCode, piece.engine) : null;
+  const sandboxDoc = previewCode ? buildArtPieceSandboxDocument(previewCode, piece.engine) : null;
   const currentVersion = piece.current_version;
   const targetOptions = buildArtPieceTargetOptions(currentVersion?.source ?? '');
   const engineCapability = ART_PIECE_ENGINE_CAPABILITIES[piece.engine];
@@ -483,7 +523,12 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         reviseCode && (
           <div className="behavior-card-field" data-testid="art-piece-editor-code-panel">
             <label htmlFor="art-piece-editor-code">Editable source preview</label>
-            <textarea id="art-piece-editor-code" value={reviseCode} readOnly rows={8} />
+            <textarea
+              id="art-piece-editor-code"
+              value={reviseCode}
+              onChange={(event) => handleSourceChange(event.target.value)}
+              rows={8}
+            />
             <div>
               <button type="button" onClick={undoManualEdit} disabled={manualHistoryIndex <= 0}>
                 Undo
@@ -619,6 +664,11 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           <p>The generated revision could not render: {reviseError}</p>
         </div>
       )}
+      {previewError && (
+        <div role="alert" aria-live="polite" data-testid="art-piece-editor-preview-error">
+          <p>The unsaved preview could not render: {previewError}</p>
+        </div>
+      )}
 
       {sandboxDoc &&
         (revisePhase === 'previewing' || revisePhase === 'ready' || revisePhase === 'crashed') && (
@@ -659,7 +709,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
                   <button
                     type="button"
                     onClick={handleSaveVersion}
-                    disabled={versionSaving}
+                    disabled={versionSaving || Boolean(previewError)}
                     data-testid="art-piece-editor-save-version"
                   >
                     {versionSaving ? 'Saving…' : 'Save as new version'}

@@ -3520,7 +3520,49 @@ textarea:disabled {
    ("Ask AI to fix this") that reuses this exact class, so this fix
    applies to both mount points with no extra selector. */
 .ai-proposal-panel {
+  width: 100%;
+  min-width: 0;
   text-align: left;
+}
+
+.ai-proposal-panel form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.ai-proposal-panel .behavior-card-field {
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+}
+
+.ai-proposal-panel textarea,
+.ai-proposal-panel .ai-proposal-field-full-width,
+.ai-proposal-panel .behavior-card-field select {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.ai-proposal-panel textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.ai-proposal-panel > .editor-tool-group,
+.ai-proposal-panel form > .editor-tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 8px;
+}
+
+.ai-proposal-panel .editor-tool-group button {
+  min-height: 44px;
 }
 
 .ai-proposal-preview {

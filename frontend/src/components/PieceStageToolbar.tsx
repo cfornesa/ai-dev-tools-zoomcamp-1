@@ -8,6 +8,7 @@ export type PieceStageToolbarProps = {
   onScreenshot?: () => void | Promise<void>;
   onDownload?: (variant?: 'full' | 'non-camera') => void | Promise<void>;
   immersiveHref?: string;
+  immersiveLabel?: string;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void | Promise<void>;
   soundControl?: ReactNode;
@@ -38,6 +39,7 @@ export default function PieceStageToolbar({
   onScreenshot,
   onDownload,
   immersiveHref,
+  immersiveLabel = 'Immersive',
   isFullscreen = false,
   onToggleFullscreen,
   soundControl,
@@ -212,7 +214,7 @@ export default function PieceStageToolbar({
             onClick={() => window.open(immersiveHref, '_blank', 'noopener,noreferrer')}
           >
             <PieceStageIcon name="immersive" />
-            <StageActionLabel>Immersive</StageActionLabel>
+            <StageActionLabel>{immersiveLabel}</StageActionLabel>
             <span className="piece-stage-tooltip" role="tooltip">
               View immersive piece
             </span>

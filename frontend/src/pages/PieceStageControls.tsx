@@ -395,6 +395,7 @@ function PieceStageControls({
           void downloadPiece(variant === 'non-camera' ? 'non-camera' : 'full')
         }
         immersiveHref={immersiveHref}
+        immersiveLabel={presentation === 'immersive' ? 'VR' : 'Immersive'}
         isFullscreen={isFullscreen}
         onToggleFullscreen={() => void toggleFullscreen()}
         downloadFormat="zip"

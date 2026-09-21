@@ -30,7 +30,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 12 | [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | CLOSED, QA PASS; stage 2a complete | Temporary visitor drawing and marked screenshots for C2.js Interactive are complete; continue with #671. |
 | 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA BLOCKED | Required `editOutputConsistency.spec.ts` matrix is absent; existing evidence is fragmented and does not satisfy the issue. |
 | 13 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | CLOSED, QA PASS; stage 2b complete | Default/unset profile styles now inherit the effective site style across profile and collection surfaces. |
-| 14 | [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697) | PROPOSED, discovery follow-up | Six-engine captured-thumbnail cards disappear from the owner profile; reconcile before closing the regression. |
+| 14 | [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697) | CLOSED, QA PASS; discovery follow-up reconciled | Six-engine profile thumbnail evidence now matches the authoritative decorative-image/link accessibility contract. |
 | 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete. |
 | 12 | [#680](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/680) / [#681](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/681) | CLOSED, QA PASS | Shared account/admin spacing tokens and responsive form/card layouts are complete. |
 | 13 | [#682](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/682) | CLOSED, QA PASS; diagnosis recorded | Current checkout creates/loads missing profiles successfully; profile failures now have safe status-specific messaging and Retry. |
@@ -49,7 +49,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #697; #640 remains publication-boundary blocked
+The next groomed issue is #671; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
 ### #667 transaction ledger — 2026-09-21 — CLOSED, QA PASS
@@ -85,17 +85,23 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   inspected, full `make check` passed, GitHub evidence posted, and issue closed
   at [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668#issuecomment-5764702969).
 
-### #697 transaction ledger — 2026-09-21 — PROPOSED, discovery follow-up
+### #697 transaction ledger — 2026-09-21 — CLOSED, QA PASS
 
-- Discovery: the Docker-backed `artPieceSixEngineThumbnails.spec.ts` regression
-  was reproduced after #668, while the existing closed #602 evidence was
-  confirmed as a distinct earlier pass. No duplicate was created; this new
-  post-route-change failure is tracked at [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697).
-- Evidence: the SVG canonical profile-card locator is absent after the six
-  published fixtures are created and thumbnail capture completes.
-- Next action: triage #697 before its implementation pass; #672 remains the
-  next groomed implementation issue because this discovery item is explicitly
-  recorded and deferred.
+- Discovery/PM: the Docker-backed regression was reproduced and compared with
+  closed #602 and #685. The card was present; the six-engine test still
+  required the pre-#685 image accessible name, so the issue remained a distinct
+  post-route/test-contract follow-up.
+- Engineering: updated the named browser regression to assert canonical
+  profile-nested hrefs, title-bearing links, visible captured thumbnail images,
+  and viewport screenshots without weakening the authoritative decorative-image
+  contract. Commit: `e4a832b`.
+- Verification: the focused Docker Chromium test passed 1/1 across 1280x900
+  and 375x812; screenshots were inspected; full `make check` passed with
+  backend 1,482 passed/39 skipped and frontend 2,777 passed.
+- QA: PASS; [#697 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697#issuecomment-5766017231).
+- Reconciliation: #697 was closed after QA. Evidence is local/disposable-stack
+  only; production readiness and Replit publication remain deferred. Next
+  groomed issue: #671.
 
 ### #669 transaction ledger — 2026-09-21 — CLOSED, QA PASS
 

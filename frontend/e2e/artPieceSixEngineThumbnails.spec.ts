@@ -31,6 +31,35 @@ const fixtures = [
   ],
 ] as const;
 
+async function thumbnailContainsColor(
+  page: import('@playwright/test').Page,
+  publicId: string,
+  engine: 'threejs' | 'aframe',
+) {
+  return page.evaluate(
+    async ({ url, expectedEngine }) => {
+      const response = await fetch(url);
+      const bitmap = await createImageBitmap(await response.blob());
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext('2d');
+      if (!context) return false;
+      context.drawImage(bitmap, 0, 0);
+      const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+      for (let index = 0; index < pixels.length; index += 4) {
+        const yellow = pixels[index] > 150 && pixels[index + 1] > 80 && pixels[index + 2] < 120;
+        const pink = pixels[index] > 150 && pixels[index + 1] < 160 && pixels[index + 2] > 120;
+        if ((expectedEngine === 'threejs' && yellow) || (expectedEngine === 'aframe' && pink)) {
+          return true;
+        }
+      }
+      return false;
+    },
+    { url: `/api/public/art-pieces/${publicId}/thumbnail.png`, expectedEngine: engine },
+  );
+}
+
 test.describe('Six-engine captured thumbnails (#602)', () => {
   const e2eFixtures = requireE2EFixtures();
 
@@ -84,6 +113,9 @@ test.describe('Six-engine captured thumbnails (#602)', () => {
           { timeout: 15_000 },
         )
         .toBe(false);
+      if (engine === 'threejs') {
+        expect(await thumbnailContainsColor(page, piece.public_id, engine)).toBe(true);
+      }
     }
 
     for (const viewport of [

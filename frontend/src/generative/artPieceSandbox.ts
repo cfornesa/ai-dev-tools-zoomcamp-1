@@ -104,6 +104,26 @@ const LIBRARY_CDN: Partial<Record<ArtPieceLibrary, string>> = {
 // to an unintended host.
 const ALLOWED_CDN_ORIGIN = 'https://cdn.jsdelivr.net';
 
+/** Installs before generated Three.js/A-Frame code runs so the first rendered
+ * WebGL frame remains readable by the sandbox screenshot command. This is a
+ * browser-only runtime adaptation; generated source still cannot escape the
+ * opaque iframe and Django never executes it. */
+function webglCapturePrelude(library: ArtPieceLibrary): string {
+  if (library !== 'threejs' && library !== 'aframe') return '';
+  return `<script>(function () {
+  var three = window.THREE;
+  var OriginalRenderer = three && three.WebGLRenderer;
+  if (!OriginalRenderer || OriginalRenderer.__artPieceCaptureReady) return;
+  function CapturableRenderer(parameters) {
+    var options = Object.assign({}, parameters || {}, { preserveDrawingBuffer: true });
+    return new OriginalRenderer(options);
+  }
+  CapturableRenderer.prototype = OriginalRenderer.prototype;
+  CapturableRenderer.__artPieceCaptureReady = true;
+  window.THREE.WebGLRenderer = CapturableRenderer;
+}());</script>`;
+}
+
 function buildCsp(library: ArtPieceLibrary): string {
   const cdnUrl = LIBRARY_CDN[library];
   if (cdnUrl && !cdnUrl.startsWith(`${ALLOWED_CDN_ORIGIN}/`)) {
@@ -672,6 +692,7 @@ export function buildArtPieceSandboxDocument(
   a-scene { position: absolute; inset: 0; }
 </style>
 ${cdnScriptTag}
+${webglCapturePrelude(library)}
 ${buildListenerScript(library)}
 </head>
 <body>

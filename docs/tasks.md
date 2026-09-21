@@ -26,7 +26,8 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 8 | [#696](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/696) | CLOSED, QA PASS; stage 2a complete | Generated owner-editor E2E now matches the current refinement/auto-save contract; continue with #667/#668. |
 | 9 | [#667](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/667) | CLOSED, QA PASS; stage 2a complete | Generated Canvas2D/SVG manual source tools, preview, version save, canonical surfaces, and ZIP evidence are complete; continue with #668. |
 | 10 | [#668](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/668) | CLOSED, QA PASS; stage 2a complete | Generated 3D manual tools are complete; continue with #669. |
-| 11 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) / [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Preview and visitor interaction; independent after editor/runtime contracts. |
+| 11 | [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669) | CLOSED, QA PASS; stage 2a complete | Debounced unsaved source/tool preview with error recovery is complete; continue with #670. |
+| 12 | [#670](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/670) | OPEN, stage 2a | Visitor C2 Interactive draw/screenshot behavior. |
 | 12 | [#671](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/671) | OPEN, QA/evidence | Final edit-to-output matrix after editor/manual work. |
 | 13 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
 | 14 | [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697) | PROPOSED, discovery follow-up | Six-engine captured-thumbnail cards disappear from the owner profile; reconcile before closing the regression. |
@@ -48,7 +49,7 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #669; #640 remains publication-boundary blocked
+The next groomed issue is #670; #640 remains publication-boundary blocked
 and #695 is now closed after the collection-specific follow-up was reconciled.
 
 ### #667 transaction ledger — 2026-09-21 — CLOSED, QA PASS
@@ -92,9 +93,22 @@ and #695 is now closed after the collection-specific follow-up was reconciled.
   post-route-change failure is tracked at [#697](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/697).
 - Evidence: the SVG canonical profile-card locator is absent after the six
   published fixtures are created and thumbnail capture completes.
-- Next action: triage #697 before its implementation pass; #669 remains the
+- Next action: triage #697 before its implementation pass; #670 remains the
   next groomed implementation issue because this discovery item is explicitly
   recorded and deferred.
+
+### #669 transaction ledger — 2026-09-21 — CLOSED, QA PASS
+
+- PM/grooming: the live issue was reread before implementation and again before
+  QA; scope stayed limited to unsaved owner-editor preview updates for Canvas2D
+  and Three.js. Manual tool implementation remained out of scope.
+- Engineering: made the source panel editable, added a 350ms debounced
+  sandbox-preview candidate path, preserved the last confirmed frame on runtime
+  errors, surfaced inline preview errors, and blocked saving invalid unsaved
+  source. Added the named Docker-backed Playwright timing/error-recovery test
+  with screenshot and rendered-pixel/data evidence.
+- QA: PASS; full `make check` passed, GitHub evidence posted, and issue closed
+  at [#669](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/669#issuecomment-5765096761).
 
 ### Next groomed issue — #669
 

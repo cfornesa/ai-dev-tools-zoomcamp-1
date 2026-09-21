@@ -23607,7 +23607,7 @@ or feed-discovery tags** although `vite preview` locally injects them.
 | Issue | Status | Owner / next action |
 | --- | --- | --- |
 | [#700](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/700) | ENGINEERING+QA complete locally, commit `a7ff330`; HANDED-OFF | Owner: Replit Publish, then run `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` (new check must pass) and read the server log for `[share-metadata] injection failed` to classify the cause. |
-| [#701](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/701) | DEPENDENCY-BLOCKED (owner context) | Owner states per-stage provenance for #636, #641, #655, #692–#695. |
+| [#701](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/701) | DEPENDENCY-BLOCKED (owner context) | Owner fills the prefilled table on the issue (or marks entries unrecoverable). |
 
 Routing audit for #700: scoping Sonnet 5/Medium (rostered Codex/Luna: substituted: yes);
 implementation Sonnet 5/Medium (rostered stage 2b service: substituted: yes);

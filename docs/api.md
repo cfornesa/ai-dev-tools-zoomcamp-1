@@ -60,6 +60,24 @@ fully passing attempt can be accepted. Cancellation and exhausted retry
 budgets are terminal. The run quota counter is charged once for every provider
 call, including failed and automatically retried calls.
 
+## Generated art-piece refinement (#658)
+
+`POST /api/art-pieces/<public_id>/refine/` is owner-only and accepts an
+`instruction` plus optional `target_references`. It creates a persisted refine
+run containing a bounded plan, retry snapshot, attempt count, and the latest
+provider `edits` result. Each edit is `{search, replace}`; the server requires
+every search to match exactly once after whitespace normalization and applies
+the complete edit set to a copy of the current source. Ambiguous, unmatched,
+engine-invalid, or validation-failing output rejects the whole attempt and
+feeds the real current source plus failure feedback into the next attempt.
+
+Only an all-valid attempt creates the next immutable `ArtPieceVersion` and
+moves the piece's `current_version` pointer. Failed or cancelled runs leave
+the stored source unchanged. The run snapshots `AIRetryPreference`, charges
+the art-piece rate and daily quota counters once per provider call, and
+supports all registered generative engines. Private pieces and runs remain
+owner-scoped and return `404` to other users.
+
 ## Global site metadata settings (#586)
 
 The application-admin-only `GET|PATCH /api/admin/settings/` contract includes

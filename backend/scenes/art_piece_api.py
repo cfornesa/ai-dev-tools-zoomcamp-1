@@ -159,7 +159,7 @@ def get_art_piece_provider() -> ArtPieceProvider:
     same way) -- kept as its own function rather than a shared import
     since the two providers construct genuinely different classes."""
     if use_fake_ai_provider():
-        from ai_provider.art_piece_provider import ArtPieceResult
+        from ai_provider.art_piece_provider import ArtPieceRefineResult, ArtPieceResult
         from ai_provider.interface import AIUsageMetadata
 
         # Issue #428: distinct, library-shaped fake code per requested
@@ -254,6 +254,14 @@ def get_art_piece_provider() -> ArtPieceProvider:
                         prompt_tokens=10, completion_tokens=20, estimated_cost_usd=0.0001
                     ),
                     code=code,
+                )
+
+            def refine(self, instruction, source, library, target_references):
+                return ArtPieceRefineResult(
+                    usage=AIUsageMetadata(
+                        prompt_tokens=10, completion_tokens=20, estimated_cost_usd=0.0001
+                    ),
+                    edits=[{"search": source, "replace": source}],
                 )
 
         return _FakeArtPieceProvider()  # type: ignore[return-value]

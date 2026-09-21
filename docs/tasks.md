@@ -55,6 +55,13 @@ reconciled; #651 is the next engineering issue in the theme chain.
 - QA: focused AI-run suite passed 27/1 skipped; full `make check` passed with backend 1,464/39 skipped and frontend 243 files/2,747 tests, plus lint, format, typecheck, build/test, and action-pin checks. The live issue was re-read before QA; no second-opinion service was available, so QA was a direct Codex/GPT-5 substitution for the rostered reviewer.
 - Reconciliation: GitHub QA comment [#657 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/657#issuecomment-5756009392) posted after the final live-issue check; issue is closed.
 
+### #658 transaction ledger — 2026-09-21
+
+- PM/groom: live GitHub issue was re-read before implementation and remains authoritative; scope stayed owner-only generated-piece refinement for all registered engines, plan plus provider `edits[]`, exact-once whitespace-tolerant find/replace, all-or-none validation, immutable version creation, retry preference/quota/rate-limit handling, and private-data protection. UI, @ targeting, and manual tools remained out of scope.
+- Engineering: documented the additive refine contract; added `ArtPieceRefineRun`, migration `0085_artpiecerefinerun`, the owner-scoped refine and detail routes, provider refinement output, atomic source application/engine validation/version persistence, retry snapshots, and focused acceptance tests. Direct Codex/GPT-5 was used as the required complex-implementation substitution because the rostered external implementation service was unavailable.
+- QA: focused `pytest tests/ -k "art_piece and refine"` passed 4; full `make check` passed with backend 1,468/39 skipped and frontend 2,747 tests across 243 files; explicit frontend production build and migration drift check passed. The full live issue will be re-read immediately before QA comment/closure; no second-opinion service is available.
+- Reconciliation: pending final live-issue QA read, comment, closure, and commit handoff.
+
 ### #655 transaction ledger — 2026-09-21
 
 - PM/groom: live GitHub issue was re-read before QA; this remained an evidence-only pass for Celestial/Pareto across home, gallery, two profiles, both modes, both viewports, and reduced motion. No product fix was authorized by the issue.

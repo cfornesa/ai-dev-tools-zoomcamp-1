@@ -32,6 +32,7 @@ result *likely*; it is not a security control.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -233,6 +234,17 @@ class ArtPieceResult:
             raise ValueError("ArtPieceResult must carry exactly one of `code` or `error`.")
 
 
+@dataclass(frozen=True)
+class ArtPieceRefineResult:
+    usage: AIUsageMetadata
+    edits: list[dict[str, str]] | None = None
+    error: str | None = None
+
+    def __post_init__(self) -> None:
+        if (self.edits is None) == (self.error is None):
+            raise ValueError("ArtPieceRefineResult must carry exactly one of `edits` or `error`.")
+
+
 class ArtPieceProvider:
     """Issue #199: generates one raw Canvas2D snippet per call. Every
     caller already holds the requesting user's own personal Mistral
@@ -375,6 +387,74 @@ class ArtPieceProvider:
             )
 
         return ArtPieceResult(usage=usage, code=snippet)
+
+    def refine(
+        self, instruction: str, source: str, library: str, target_references: list[str]
+    ) -> ArtPieceRefineResult:
+        """Return bounded find/replace edits for an existing source."""
+        zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
+        if library not in SUPPORTED_LIBRARIES:
+            raise ValueError(f"Unsupported library: {library!r}")
+        system_prompt = (
+            "You refine an existing generative art source. Return ONLY valid JSON with this exact "
+            'shape: {"edits":[{"search":"exact source text","replace":"replacement text"}]}.'
+            " Each search must be copied exactly from the source and must match once. "
+            "Do not return prose, markdown, or a complete replacement source."
+        )
+        prompt = json.dumps(
+            {
+                "instruction": instruction,
+                "engine": library,
+                "target_references": target_references,
+                "current_source": source,
+            },
+            ensure_ascii=False,
+        )
+        try:
+            response = self.client.chat.complete(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0.4,
+                timeout_ms=self.timeout_ms,
+            )
+        except httpx.TimeoutException:
+            return ArtPieceRefineResult(
+                usage=zero_usage, error=f"Mistral did not respond within {self.timeout_ms}ms."
+            )
+        except httpx.HTTPError:
+            return ArtPieceRefineResult(usage=zero_usage, error="Mistral request failed.")
+        except Exception as exc:
+            from mistralai.client.errors import MistralError
+
+            if not isinstance(exc, MistralError):
+                raise
+            return ArtPieceRefineResult(usage=zero_usage, error="Mistral provider request failed.")
+
+        usage_info = getattr(response, "usage", None)
+        usage = AIUsageMetadata(
+            prompt_tokens=int(getattr(usage_info, "prompt_tokens", 0) or 0),
+            completion_tokens=int(getattr(usage_info, "completion_tokens", 0) or 0),
+            estimated_cost_usd=0.0,
+        )
+        try:
+            content = response.choices[0].message.content
+            payload = json.loads(content if isinstance(content, str) else str(content))
+            edits = payload["edits"]
+            if not isinstance(edits, list) or not all(
+                isinstance(edit, dict)
+                and isinstance(edit.get("search"), str)
+                and isinstance(edit.get("replace"), str)
+                for edit in edits
+            ):
+                raise ValueError
+        except (AttributeError, IndexError, TypeError, KeyError, ValueError, json.JSONDecodeError):
+            return ArtPieceRefineResult(
+                usage=usage, error="Provider returned invalid refinement edits."
+            )
+        return ArtPieceRefineResult(usage=usage, edits=edits)
 
     @staticmethod
     def _error_result(usage: AIUsageMetadata, exc: Exception) -> ArtPieceResult:

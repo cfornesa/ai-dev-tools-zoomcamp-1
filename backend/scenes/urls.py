@@ -88,6 +88,7 @@ from scenes.art_piece_persistence import (
     PublicArtPieceListView,
     PublicArtPieceThumbnailView,
 )
+from scenes.art_piece_refine import ArtPieceRefineDetailView, ArtPieceRefineView
 from scenes.billing_api import AccountBillingView, PayPalWebhookView
 from scenes.canonical_piece_api import OwnerArtPieceBySlugView, PublicPieceBySlugView
 from scenes.cloud_backup_api import (
@@ -479,6 +480,16 @@ urlpatterns = [
         "ai/art-pieces/generate/",
         ArtPieceGenerateView.as_view(),
         name="art-piece-generate",
+    ),
+    path(
+        "art-pieces/<uuid:public_id>/refine/",
+        ArtPieceRefineView.as_view(),
+        name="art-piece-refine",
+    ),
+    path(
+        "art-piece-refine-runs/<int:pk>/",
+        ArtPieceRefineDetailView.as_view(),
+        name="art-piece-refine-detail",
     ),
     path("art-pieces/", ArtPieceListCreateView.as_view(), name="art-piece-list-create"),
     path("art-pieces/<uuid:public_id>/", ArtPieceDetailView.as_view(), name="art-piece-detail"),

@@ -2002,6 +2002,57 @@ class ArtPieceVersion(models.Model):
         super().save(*args, **kwargs)
 
 
+class ArtPieceRefineRun(models.Model):
+    """Owner-scoped bounded plan/find-replace refinement for one piece."""
+
+    class Status(models.TextChoices):
+        RUNNING = "running", "Running"
+        ACCEPTED = "accepted", "Accepted"
+        FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    piece = models.ForeignKey(ArtPiece, on_delete=models.CASCADE, related_name="refine_runs")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="art_piece_refine_runs"
+    )
+    instruction = models.TextField(max_length=4000)
+    target_references = models.JSONField(default=list, blank=True)
+    plan = models.JSONField(default=dict)
+    auto_retry_enabled = models.BooleanField(default=False)
+    max_retries = models.PositiveSmallIntegerField(default=0)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.RUNNING)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    repairs = models.PositiveSmallIntegerField(default=0)
+    edits = models.JSONField(default=list, blank=True)
+    attempt_results = models.JSONField(default=list, blank=True)
+    candidate_source = models.TextField(blank=True, default="")
+    accepted_version = models.ForeignKey(
+        ArtPieceVersion,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="refine_runs",
+    )
+    validation_summary = models.TextField(blank=True, default="")
+    error_reason = models.CharField(max_length=64, blank=True, default="")
+    usage_prompt_tokens = models.PositiveIntegerField(default=0)
+    usage_completion_tokens = models.PositiveIntegerField(default=0)
+    usage_cost_usd = models.FloatField(default=0.0)
+    charged = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"ArtPieceRefineRun({self.pk}) {self.status} for piece {self.piece_id}"
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.status in {self.Status.ACCEPTED, self.Status.FAILED, self.Status.CANCELLED}
+
+
 class ArtPieceThumbnail(models.Model):
     version = models.OneToOneField(
         ArtPieceVersion, on_delete=models.CASCADE, related_name="thumbnail"

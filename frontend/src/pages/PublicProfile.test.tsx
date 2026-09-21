@@ -23,10 +23,13 @@ const SAMPLE: profileApi.PublicProfilePage = {
       border_style: 'none',
     },
     display_name: 'The Artist',
-    bio: 'A public bio.',
-    website_url: '',
-    social_links: {},
-    profile_image_url: '',
+    bio: 'A public bio.\nWith a second line.',
+    website_url: 'https://example.com/a-very-long-profile-url',
+    social_links: {
+      Mastodon: 'https://social.example/@artist',
+      GitHub: 'https://github.com/artist',
+    },
+    profile_image_url: 'https://example.com/avatar.png',
     is_public: true,
     revision: 1,
     theme_config: {
@@ -80,6 +83,53 @@ describe('PublicProfile theme cascade (#577)', () => {
     expect(section.style.getPropertyValue('--profile-font')).toContain('system-ui');
     expect(section.style.getPropertyValue('--profile-radius')).toBe('8px');
     expect(section.style.getPropertyValue('--profile-density')).toBe('20px');
+  });
+
+  it('renders the ordered public profile header details as plain text and safe external links', async () => {
+    mockedFetch.mockResolvedValue(SAMPLE);
+
+    renderAt('artist');
+
+    const heading = await screen.findByRole('heading', { name: 'The Artist' });
+    expect(screen.getByRole('img', { name: 'The Artist avatar' })).toHaveAttribute(
+      'src',
+      'https://example.com/avatar.png',
+    );
+    expect(screen.getByText('@artist')).toBeInTheDocument();
+    expect(screen.getByText(/A public bio\./).textContent).toBe(
+      'A public bio.\nWith a second line.',
+    );
+    expect(
+      screen.getByRole('link', { name: 'https://example.com/a-very-long-profile-url' }),
+    ).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.getByRole('link', { name: 'Mastodon' })).toHaveAttribute(
+      'rel',
+      'noopener noreferrer',
+    );
+    expect(
+      screen.getByRole('img', { name: 'The Artist avatar' }).compareDocumentPosition(heading),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('omits empty optional header fields', async () => {
+    mockedFetch.mockResolvedValue({
+      ...SAMPLE,
+      profile: {
+        ...SAMPLE.profile,
+        bio: '',
+        website_url: '',
+        social_links: {},
+        profile_image_url: '',
+      },
+    });
+
+    renderAt('artist');
+
+    await screen.findByRole('heading', { name: 'The Artist' });
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.queryByText('A public bio.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /example\.com/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Social links' })).not.toBeInTheDocument();
   });
 
   it('redirects home for a missing or private profile without rendering any theme', async () => {

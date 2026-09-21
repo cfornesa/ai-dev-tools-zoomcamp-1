@@ -23,6 +23,10 @@ export default function PublicProfile() {
   if (missing) return <Navigate to="/" replace />;
   if (!data) return <p role="status">Loading profile…</p>;
   const theme = data.profile.theme_config;
+  const displayName = data.profile.display_name || data.profile.handle || 'Public profile';
+  const socialLinks = Object.entries(data.profile.social_links ?? {}).filter(
+    ([label, url]) => label.trim() && url.trim(),
+  );
   return (
     <section
       className="content-panel public-profile"
@@ -41,15 +45,31 @@ export default function PublicProfile() {
       }
     >
       <div className="public-profile-heading">
-        {data.profile.profile_image_url && <img src={data.profile.profile_image_url} alt="" />}
+        {data.profile.profile_image_url && (
+          <img src={data.profile.profile_image_url} alt={`${displayName} avatar`} />
+        )}
         <div>
-          <h2>{data.profile.display_name || data.profile.handle}</h2>
-          <p>@{data.profile.handle}</p>
-          <p>{data.profile.bio}</p>
+          <h2>{displayName}</h2>
+          {data.profile.handle && <p className="public-profile-handle">@{data.profile.handle}</p>}
+          {data.profile.bio && <p className="public-profile-bio">{data.profile.bio}</p>}
           {data.profile.website_url && (
-            <a href={data.profile.website_url} rel="noreferrer">
-              Website
+            <a
+              href={data.profile.website_url}
+              rel="noopener noreferrer"
+              target="_blank"
+              className="public-profile-website"
+            >
+              {data.profile.website_url}
             </a>
+          )}
+          {socialLinks.length > 0 && (
+            <nav className="public-profile-social" aria-label="Social links">
+              {socialLinks.map(([label, url]) => (
+                <a key={`${label}-${url}`} href={url} rel="noopener noreferrer" target="_blank">
+                  {label}
+                </a>
+              ))}
+            </nav>
           )}
         </div>
       </div>

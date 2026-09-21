@@ -8,7 +8,16 @@ The current open-issue manifest and dependency reconciliation is recorded in
 Fourteen new PROPOSED-then-filed issues; see
 `docs/distillation-2026-09-20-design-and-share-parity.md` for the manifest,
 dependency order, and duplicate report. #642, #643, and #644 are complete and
-reconciled; #645 is the next engineering issue in the theme chain.
+reconciled; #645 is complete and reconciled; #646 is the next engineering
+issue in the theme chain.
+
+### #645 transaction ledger — 2026-09-20
+
+- PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained the public reference-style shell at `/` and `/gallery`, responsive behavior, active navigation, and configured public CMS links.
+- Engineering: replaced the centered public header with a responsive brand/navigation row, preserved the mobile hamburger and skip-link behavior, consumed the site title setting with a text fallback, added the minimal anonymous published-navigation projection at `GET /api/pages/`, documented that public API contract, and added Layout/backend/browser coverage. Commit `d58f39f`.
+- QA: focused Layout tests passed 17 tests; focused CMS-page backend tests passed 14; Chromium public-shell E2E passed 2 scenarios; full `make check` passed with backend 1,454 passed/39 skipped and frontend 243 files/2,741 tests, plus lint, format, typecheck, and action-pin checks. Required 1280x900 and 375x812 screenshots were captured and inspected.
+- Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for Opencode/kimi-k3; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No migration, runtime dependency, or deployment mutation.
+- Reconciliation: GitHub QA comment [#645 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/645#issuecomment-5754521592) posted; issue is ready to close. The issue's React/CSS-only routing hint conflicted with its explicit `/api/pages` acceptance criterion; the additive endpoint is recorded as part of this issue and in `docs/api.md`.
 
 ### #644 transaction ledger — 2026-09-20
 

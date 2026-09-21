@@ -30,10 +30,10 @@ reconciled; #651 is the next engineering issue in the theme chain.
 ### #652 transaction ledger — 2026-09-20
 
 - PM/groom: current GitHub issue and this task specification were re-read before implementation and again before QA; scope remained rendered Three.js/A-Frame thumbnails, WebGL readiness/preservation, fallback/retry behavior, current-version regeneration, and gallery/profile cards. 2D, Open Graph, and real camera permissions remained out of scope.
-- Engineering: added a sandbox-owned WebGL renderer wrapper that forces `preserveDrawingBuffer: true` before generated Three.js code or A-Frame scene initialization. No generated source runs in Django, and the existing bounded ready handshake, upload endpoint, fallback reset, and retry flow remain the shared implementation. Added 3D pixel-color assertions to the six-engine browser coverage. Commit pending.
-- QA: focused backend thumbnail tests passed 5; source-backed Chromium six-engine E2E passed 1 with non-black mesh-color assertions for both Three.js and A-Frame; full checks are running.
+- Engineering: added a sandbox-owned WebGL renderer wrapper that forces `preserveDrawingBuffer: true` before generated Three.js code or A-Frame scene initialization. No generated source runs in Django, and the existing bounded ready handshake, upload endpoint, fallback reset, and retry flow remain the shared implementation. Added 3D pixel-color assertions to the six-engine browser coverage. Commit `325462f`.
+- QA: focused backend thumbnail tests passed 5; source-backed Chromium six-engine E2E passed 1 with non-black mesh-color assertions for both Three.js and A-Frame; full checks passed with backend 1,456/39 skipped and frontend 243 files/2,747 tests, plus lint, format, typecheck, and action-pin checks.
 - Provenance: scoping Codex/GPT-5 (no substitution); implementation Codex/GPT-5 substituted for the rostered complex implementation service; second opinion not run; QA Codex/GPT-5 substituted for Claude Sonnet 5 Medium. No dependency, migration, or public API contract change.
-- Reconciliation: GitHub QA comment pending after the final full-check result.
+- Reconciliation: GitHub QA comment [#652 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/652#issuecomment-5755406274) posted; issue is closed.
 
 ### #649 transaction ledger — 2026-09-20
 

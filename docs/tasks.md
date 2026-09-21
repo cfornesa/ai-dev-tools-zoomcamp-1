@@ -28,13 +28,14 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 10 | [#672](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/672) | OPEN, stage 2b | Profile style inheritance defect; independent settings-domain transaction. |
 | 11 | [#678](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/678) / [#679](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/679) | CLOSED, QA PASS | Responsive 2D/3D AI panels are complete. |
 | 12 | [#680](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/680) / [#681](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/681) | CLOSED, QA PASS | Shared account/admin spacing tokens and responsive form/card layouts are complete. |
+| 13 | [#682](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/682) | CLOSED, QA PASS; diagnosis recorded | Current checkout creates/loads missing profiles successfully; profile failures now have safe status-specific messaging and Retry. |
 | 12 | [#685](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/685) → [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Cards first, then Atom/RSS/JSON feeds, then feeds/discovery page. |
 | 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #682; #640 remains publication-boundary blocked and
+The next groomed issue is #683; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
 
 ### #674 transaction ledger — 2026-09-21 — CLOSED
@@ -165,6 +166,33 @@ The next groomed issue is #682; #640 remains publication-boundary blocked and
 - Reconciliation: both issues closed after QA PASS; next independent
   transaction is #682. The separate collection metadata/legacy-shim follow-up
   remains #695.
+
+### #682 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: current issue body re-read after #680/#681 closure; diagnosis
+  requirements and the owner-equivalent authenticated entry point were
+  confirmed. Direct Codex/GPT-5 substitution because the rostered Opencode Go
+  service was unavailable.
+- Diagnosis: the current backend endpoint uses get_or_create, assigns a
+  collision-safe handle for missing profiles, and is covered by 9 passing
+  profile tests. The reported generic failure was not reproducible in the
+  current Docker browser path; this was classified as a verification-boundary
+  report for the current checkout.
+- Engineering: stage 2a direct Codex/GPT-5 substitution; added safe
+  network/401/403/404/4xx/5xx profile-load messages, an explicit Retry
+  action, stale-request cancellation, and regression coverage. Commit:
+  08f6a0c.
+- QA: [GitHub QA PASS comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/682#issuecomment-5758559047).
+  Focused AccountSettings tests (15 passed), backend profile tests (9
+  passed), authenticated Chromium smoke at 375x812 and 1280x900 (4 passed),
+  and full make check (backend 1471 passed / 39 skipped; frontend 2753
+  passed) all passed.
+- Provenance: Stage 3 second-opinion review was not run because Mistral Vibe
+  was unavailable; stage 4 QA was a direct Codex/GPT-5 substitution for the
+  unavailable Claude Sonnet 5 Medium service. Evidence is local/Docker/
+  Chromium only; no production publication claim is made.
+- Reconciliation: issue closed after QA PASS; next independent transaction is
+  #683. The separate collection metadata/legacy-shim follow-up remains #695.
 
 ### #673 transaction ledger — 2026-09-21 — CLOSED
 

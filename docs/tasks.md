@@ -34,13 +34,14 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 15 | [#686](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/686) | CLOSED, QA PASS | Per-profile Atom feed is complete; continue with RSS at #687. |
 | 16 | [#687](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/687) | CLOSED, QA PASS | Per-profile RSS 2.0 feed is complete; continue with JSON Feed at #688. |
 | 17 | [#688](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/688) | CLOSED, QA PASS | Per-profile JSON Feed 1.1 is complete; continue with the feeds/discovery page at #689. |
-| 18 | [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | OPEN, public profile/feed chain | Feeds/discovery page after the Atom, RSS, and JSON endpoints. |
+| 18 | [#689](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689) | CLOSED, QA PASS | Feeds/discovery page and server-rendered profile feed alternates are complete; continue with #690. |
+| 19 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
 | 13 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Generated/legacy regular and immersive consumers first; evidence matrix last. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #689; #640 remains publication-boundary blocked and
+The next groomed issue is #690; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
 
 ### #674 transaction ledger — 2026-09-21 — CLOSED
@@ -355,6 +356,34 @@ The next groomed issue is #689; #640 remains publication-boundary blocked and
   only; no production publication claim is made.
 - Reconciliation: issue closed after the QA PASS; the next independent
   transaction is #689. The separate collection metadata/legacy-shim follow-up
+  remains #695.
+
+### #689 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: the live issue body was reread before implementation. Scope was
+  limited to `/users/@<handle>/feeds`, three public feed subscriptions with
+  copy/open actions, latest-five preview cards, profile Subscribe discovery,
+  server-rendered Atom/RSS/JSON alternate links, responsive/accessibility
+  behavior, not-found handling, and documentation. Collection and aggregate
+  feeds remain out of scope.
+- Engineering: added the responsive feeds page and profile Subscribe link,
+  extended the existing share-metadata head injection with absolute feed
+  alternates, added unit/Playwright coverage, and kept the public profile
+  projection as the page data source. Commit: `9dff7be`.
+- QA: [GitHub QA PASS comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/689#issuecomment-5760258129).
+  Focused frontend tests passed 3/3; focused backend feed/share-metadata tests
+  passed 8/8; Chromium passed 2/2 at 1280x900 and 375x812 with screenshots
+  inspected; and `make check` passed with backend 1,476 passed/39 skipped and
+  frontend 245 files/2,758 tests. The first browser launch hit a macOS
+  permission boundary and the final run required elevated browser permissions;
+  the known Docker fixture-cleanup mismatch remains documented.
+- Provenance: Stage 2a implementation and stage 4 QA were direct Codex/GPT-5
+  substitutions because the rostered external services were unavailable; the
+  stage 3 independent-family review was not run because Mistral Vibe was
+  unavailable. Intake outcome: ACCEPTED-WITH-FIXES. Evidence is
+  local/Docker/Chromium only; no production publication claim is made.
+- Reconciliation: issue closed after the QA PASS; the next independent
+  transaction is #690. The separate collection metadata/legacy-shim follow-up
   remains #695.
 
 ### #673 transaction ledger — 2026-09-21 — CLOSED

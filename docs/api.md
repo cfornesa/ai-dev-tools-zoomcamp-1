@@ -443,6 +443,12 @@ detail gate. Private, draft, deleted, unpublished, and unauthorized projects
 continue to return the existing not-found/authorization behavior without
 exposing the field.
 
+Both public detail responses also expose `viewer_url`. When the owner has a
+public profile and generated slug, it is the canonical
+`/users/@<handle>/pieces/<slug>` path; legacy identifier paths are retained
+only as compatibility fallbacks for records that cannot yet resolve a
+canonical profile route.
+
 The frontend public 2D and 3D viewers apply the shared content-metadata
 renderer to the returned configuration, including bounded title,
 description, robots, canonical, Open Graph, Twitter, and JSON-LD output.

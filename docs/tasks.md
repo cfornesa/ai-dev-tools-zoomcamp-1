@@ -38,13 +38,35 @@ public profile-nested second-level namespaces are `edit`, `immersive`,
 | 19 | [#690](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/690) | CLOSED, QA PASS | Generated-piece regular inline toolset is complete; continue with #691. |
 | 20 | [#691](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/691) | CLOSED, QA PASS | Generated immersive inline toolset is complete; continue with #692. |
 | 21 | [#692](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/692) | CLOSED, QA PASS | Legacy `/p/:id` now resolves to the canonical profile-nested slug route and receives the inline public 2D toolset. Continue with #693. |
-| 22 | [#693](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/693) → [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Remaining generated/legacy consumers and final evidence matrix. |
+| 22 | [#693](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/693) | CLOSED, QA PASS | Legacy `/p3d/:id` now resolves to the canonical profile-nested slug route and receives the canonical 3D toolset. Continue with #694. |
+| 23 | [#694](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/694) | OPEN, public toolset chain | Remaining generated/legacy consumers and final evidence matrix. |
 | 14 | [#695](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/695) | OPEN, stage 2b follow-up | Distinct from closed #684: collection-specific server-rendered OG/canonical tags and permanent legacy collection redirect; after #684 and #653/#654. |
 
 All issues have finite route/workflow boundaries and explicit focused/full
 verification in their current GitHub bodies or linked distillation document.
-The next groomed issue is #693; #640 remains publication-boundary blocked and
+The next groomed issue is #694; #640 remains publication-boundary blocked and
 #695 is a linked collection-specific follow-up discovered after #684 closure.
+
+### #693 transaction ledger — 2026-09-21 — CLOSED
+
+- PM/grooming: the live issue body was reread before implementation. The
+  corrected route contract makes `/p3d/:id` a compatibility shim that resolves
+  to the canonical profile-nested slug route; `/embed/p3d/:id` remains out of
+  scope and keeps its chrome-less behavior.
+- Engineering: added the additive `viewer_url` field to the public 3D detail
+  serializer/API type, then made the legacy 3D viewer replace itself with that
+  canonical path. Added `legacy3dToolset.spec.ts` and a 3D viewer redirect
+  regression test. Updated `docs/api.md` before the API contract change.
+- QA: focused 3D viewer tests passed 11; focused backend public-3D tests
+  passed 13; dedicated Chromium `legacy3dToolset.spec.ts` passed 1 against a
+  rebuilt disposable Docker stack; `make check` passed with backend 1,476
+  passed/39 skipped and frontend 245 files/2,760 tests. Known browser teardown
+  warning: fixture cleanup failed after assertions; no cleanup success is
+  claimed.
+- Provenance: direct Codex/GPT-5 substitution for the unavailable rostered
+  complex implementation/review services; no migration or new dependency.
+- Reconciliation: GitHub QA PASS and closure follow after this ledger update;
+  next transaction is #694. No new actionable issue was found in scope.
 
 ### #692 transaction ledger — 2026-09-21 — CLOSED
 

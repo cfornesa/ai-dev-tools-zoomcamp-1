@@ -92,8 +92,15 @@ def test_paired_theme_config_rejects_mixed_and_injection_values():
 
 
 def test_sanitize_presentation_accepts_only_documented_choices():
-    value = sanitize_presentation({"font_family": "serif", "density": "compact"})
-    assert value == {"font_family": "serif", "density": "compact"}
+    value = sanitize_presentation(
+        {"font_family": "script", "density": "compact", "shadow": "offset", "backdrop": "cosmic"}
+    )
+    assert value == {
+        "font_family": "script",
+        "density": "compact",
+        "shadow": "offset",
+        "backdrop": "cosmic",
+    }
 
 
 def test_sanitize_presentation_rejects_unknown_keys_and_invalid_choices():
@@ -101,6 +108,8 @@ def test_sanitize_presentation_rejects_unknown_keys_and_invalid_choices():
         {"font_family": "comic-sans"},
         {"unknown_option": "value"},
         {"radius": "javascript:alert(1)"},
+        {"shadow": "box-shadow: url(https://evil.example)"},
+        {"backdrop": "url(https://evil.example)"},
         "not-a-dict",
         None,
     ):

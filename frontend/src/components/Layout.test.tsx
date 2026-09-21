@@ -258,10 +258,12 @@ describe('Layout: global site theme cascade (#577)', () => {
       muted: '#999999',
       accent: '#22c55e',
       presentation: {
-        font_family: 'mono',
+        font_family: 'script',
         density: 'compact',
         radius: 'pill',
         border_style: 'solid',
+        shadow: 'offset',
+        backdrop: 'cosmic',
       },
     } as unknown as siteThemeApi.ThemeTokens;
     vi.mocked(siteThemeApi.fetchSiteTheme).mockResolvedValueOnce(theme);
@@ -271,9 +273,12 @@ describe('Layout: global site theme cascade (#577)', () => {
     const root = document.documentElement;
     await vi.waitFor(() => expect(root.style.getPropertyValue('--bg')).toBe('#101014'));
     expect(root.style.getPropertyValue('--accent')).toBe('#22c55e');
-    expect(root.style.getPropertyValue('--site-font')).toContain('Consolas');
+    expect(root.style.getPropertyValue('--site-font')).toContain('Pinyon Script');
     expect(root.style.getPropertyValue('--site-density')).toBe('12px');
     expect(root.style.getPropertyValue('--site-radius')).toBe('999px');
+    expect(root.dataset.siteFont).toBe('script');
+    expect(root.dataset.siteShadow).toBe('offset');
+    expect(root.dataset.siteBackdrop).toBe('cosmic');
   });
 
   it('leaves document-root theme variables untouched when the fetch fails', async () => {

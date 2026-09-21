@@ -104,6 +104,8 @@ def test_settings_get_allowed_for_admin(client, admin_a):
             "density": "comfortable",
             "radius": "soft",
             "border_style": "solid",
+            "shadow": "none",
+            "backdrop": "plain",
         },
     }
 
@@ -249,6 +251,8 @@ def test_admin_can_update_site_title(client, admin_a):
             "density": "comfortable",
             "radius": "soft",
             "border_style": "solid",
+            "shadow": "none",
+            "backdrop": "plain",
         },
     }
     assert SiteSettings.get_solo().site_title == "New Studio Name"

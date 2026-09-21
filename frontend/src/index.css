@@ -1,3 +1,27 @@
+@font-face {
+  font-family: 'Pinyon Script';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/assets/fonts/pinyon-script-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: Lora;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/assets/fonts/lora-normal-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: Lora;
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/assets/fonts/lora-italic-latin.woff2') format('woff2');
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -17,12 +41,13 @@
   --site-density: 20px;
   --site-radius: 8px;
   --site-border-style: solid;
+  --site-backdrop: var(--bg);
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--text);
-  background: var(--bg);
+  background: var(--site-backdrop);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -31,6 +56,21 @@
   @media (max-width: 1024px) {
     font-size: 16px;
   }
+}
+
+:root[data-site-font='script'] {
+  --site-font: 'Pinyon Script', Georgia, 'Times New Roman', serif;
+}
+
+:root[data-site-backdrop='gradient'] {
+  --site-backdrop: linear-gradient(135deg, var(--bg), var(--code-bg));
+}
+
+:root[data-site-backdrop='cosmic'] {
+  --site-backdrop:
+    radial-gradient(circle at 18% 15%, rgb(192 132 252 / 22%) 0 1px, transparent 2px),
+    radial-gradient(circle at 76% 28%, rgb(255 255 255 / 18%) 0 1px, transparent 2px),
+    linear-gradient(135deg, #071b2a, #2a1238 70%, var(--bg));
 }
 
 body,
@@ -71,6 +111,19 @@ body,
   }
 }
 
+/* #643: Layout writes these finite presentation values as data attributes. */
+:root[data-site-shadow='none'] {
+  --shadow: none;
+}
+
+:root[data-site-shadow='soft'] {
+  --shadow: rgba(0, 0, 0, 0.18) 0 8px 18px -4px;
+}
+
+:root[data-site-shadow='offset'] {
+  --shadow: 4px 4px 0 var(--border);
+}
+
 #root {
   width: 100%;
   margin: 0 auto;
@@ -99,6 +152,7 @@ body,
 
 body {
   margin: 0;
+  background: var(--site-backdrop);
 }
 
 /* Issue #90: the header is a simple centered vertical stack — heading,

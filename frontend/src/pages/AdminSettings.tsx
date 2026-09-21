@@ -952,6 +952,8 @@ function ProfileStyleCatalogSettings({
           density: 'comfortable',
           radius: 'soft',
           border_style: 'solid',
+          shadow: 'none',
+          backdrop: 'plain',
         },
         enabled: true,
       });
@@ -982,6 +984,77 @@ function ProfileStyleCatalogSettings({
             onBlur={(event) => void rename(style, event.target.value)}
           />
           <span>{style.key}</span>
+          <label>
+            Font family
+            <select
+              aria-label={`${style.label} font family`}
+              value={style.presentation.font_family}
+              onChange={(event) =>
+                void updateProfileStyle({
+                  ...style,
+                  presentation: {
+                    ...style.presentation,
+                    font_family: event.target.value as ProfileStyle['presentation']['font_family'],
+                  },
+                }).then((next) =>
+                  onStyles(styles.map((item) => (item.id === next.id ? next : item))),
+                )
+              }
+            >
+              <option value="system">System</option>
+              <option value="serif">Serif</option>
+              <option value="mono">Monospace</option>
+              <option value="script">Script</option>
+            </select>
+          </label>
+          <label>
+            Shadow
+            <select
+              aria-label={`${style.label} shadow`}
+              value={style.presentation.shadow ?? 'none'}
+              onChange={(event) =>
+                void updateProfileStyle({
+                  ...style,
+                  presentation: {
+                    ...style.presentation,
+                    shadow: event.target.value as NonNullable<
+                      ProfileStyle['presentation']['shadow']
+                    >,
+                  },
+                }).then((next) =>
+                  onStyles(styles.map((item) => (item.id === next.id ? next : item))),
+                )
+              }
+            >
+              <option value="none">None</option>
+              <option value="soft">Soft</option>
+              <option value="offset">Offset</option>
+            </select>
+          </label>
+          <label>
+            Backdrop
+            <select
+              aria-label={`${style.label} backdrop`}
+              value={style.presentation.backdrop ?? 'plain'}
+              onChange={(event) =>
+                void updateProfileStyle({
+                  ...style,
+                  presentation: {
+                    ...style.presentation,
+                    backdrop: event.target.value as NonNullable<
+                      ProfileStyle['presentation']['backdrop']
+                    >,
+                  },
+                }).then((next) =>
+                  onStyles(styles.map((item) => (item.id === next.id ? next : item))),
+                )
+              }
+            >
+              <option value="plain">Plain</option>
+              <option value="gradient">Gradient</option>
+              <option value="cosmic">Cosmic</option>
+            </select>
+          </label>
           <button
             className="admin-action-secondary"
             type="button"

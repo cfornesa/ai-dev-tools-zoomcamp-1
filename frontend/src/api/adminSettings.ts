@@ -17,10 +17,12 @@ export type ThemePalettes = { light: ThemePalette; dark: ThemePalette };
 export type ThemeConfig = ThemePalette | Partial<ThemePalettes>;
 
 export type PresentationOptions = {
-  font_family: 'system' | 'serif' | 'mono';
+  font_family: 'system' | 'serif' | 'mono' | 'script';
   density: 'comfortable' | 'compact';
   radius: 'sharp' | 'soft' | 'pill';
   border_style: 'solid' | 'dashed' | 'none';
+  shadow?: 'none' | 'soft' | 'offset';
+  backdrop?: 'plain' | 'gradient' | 'cosmic';
 };
 
 export type Plan = {

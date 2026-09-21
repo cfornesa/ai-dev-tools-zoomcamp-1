@@ -54,10 +54,12 @@ function Layout() {
           system: "system-ui, 'Segoe UI', Roboto, sans-serif",
           serif: "Georgia, 'Times New Roman', serif",
           mono: 'ui-monospace, Consolas, monospace',
+          script: "'Pinyon Script', Georgia, 'Times New Roman', serif",
         };
         const presentation = theme.presentation;
         if (presentation?.font_family && fonts[presentation.font_family]) {
           root.style.setProperty('--site-font', fonts[presentation.font_family]);
+          root.dataset.siteFont = presentation.font_family;
         }
         if (presentation?.density) {
           root.style.setProperty(
@@ -81,6 +83,8 @@ function Layout() {
             presentation.border_style === 'none' ? 'none' : presentation.border_style,
           );
         }
+        if (presentation?.shadow) root.dataset.siteShadow = presentation.shadow;
+        if (presentation?.backdrop) root.dataset.siteBackdrop = presentation.backdrop;
       })
       .catch(() => {
         /* keep the compiled safe defaults */

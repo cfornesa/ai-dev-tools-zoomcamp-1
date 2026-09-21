@@ -21,12 +21,16 @@ DEFAULT_PRESENTATION = {
     "density": "comfortable",
     "radius": "soft",
     "border_style": "solid",
+    "shadow": "none",
+    "backdrop": "plain",
 }
 PRESENTATION_CHOICES = {
-    "font_family": frozenset({"system", "serif", "mono"}),
+    "font_family": frozenset({"system", "serif", "mono", "script"}),
     "density": frozenset({"comfortable", "compact"}),
     "radius": frozenset({"sharp", "soft", "pill"}),
     "border_style": frozenset({"solid", "dashed", "none"}),
+    "shadow": frozenset({"none", "soft", "offset"}),
+    "backdrop": frozenset({"plain", "gradient", "cosmic"}),
 }
 THEME_KEYS = frozenset(DEFAULT_THEME)
 _HEX_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")

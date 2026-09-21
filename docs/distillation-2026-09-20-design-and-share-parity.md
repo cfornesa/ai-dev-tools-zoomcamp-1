@@ -55,3 +55,37 @@ share-button issue was filed.
 - #646/#647 add seed migrations: follow
   `.agents/memory/replit-production-schema-publishing.md`.
 - #643 adds self-hosted fonts: Rule 8 note in `docs/dependencies.md`.
+
+## Addendum — layered AI workflow and unified editor (#656–#671)
+
+Owner request: `@` layer/asset targeting, plan then implementation, a
+user-configurable self-improvement retry loop with stored code, one editor for
+AI and manual work, and edits reflected in every output. Existing new-only rule
+still applied.
+
+Audit: structured editors already have a plan-validate-revise run service
+(#461) and an `AIRetryPreference` (#266), but `ai_runs.py` ignores the
+preference and validates schema only; plans carry no success criteria; targeting
+is a checkbox list of shapes; generated art pieces have only whole-piece
+regenerate; editors are split (`projects` vs `ai-projects`, `projects3d` vs
+`ai-projects3d`); no visitor drawing was found for `c2js-interactive`.
+
+| Order | Issue | Routing |
+|---|---|---|
+| 1 | #656 plan with success criteria | 2b |
+| 2 | #657 evaluate vs plan, honor retry preference | 2b (needs #656) |
+| 3 | #658 generated-piece refine backend, stored versions | 2b |
+| 4 | #664 / #665 merge 2D / 3D AI+manual editors (Rule 5 redirects need owner confirmation) | 2a |
+| 5 | #659 / #660 plan review UI 2D / 3D (need #656, #657) | 2a |
+| 6 | #661 / #662 `@` targeting 2D / 3D | 2a |
+| 7 | #663 art-piece editor refine UI (needs #658) | 2a |
+| 8 | #666 per-engine tool capability matrix | 2a |
+| 9 | #667 / #668 manual tools for generated 2D / 3D pieces (need #666) | 2a |
+| 10 | #669 real-time preview | 2a |
+| 11 | #670 public temporary drawing on C2.js Interactive | 2a |
+| 12 | #671 edit-to-output evidence matrix (needs 3, 4, 9) | stage 4 |
+
+Already covered, not re-filed: engine integration into AI editors (#610,
+#618–#620), runtime/immersive/download parity for six engines (#607–#609),
+collection immersive parity (#639). Verification boundary: reference repos read
+as source only; no live provider was run.

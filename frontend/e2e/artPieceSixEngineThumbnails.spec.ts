@@ -65,7 +65,7 @@ test.describe('Six-engine captured thumbnails (#602)', () => {
 
   test('captures real thumbnails for every engine and renders them on the public profile', async ({
     browser,
-  }) => {
+  }, testInfo) => {
     test.setTimeout(120_000);
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -125,12 +125,19 @@ test.describe('Six-engine captured thumbnails (#602)', () => {
       await page.setViewportSize(viewport);
       await page.goto(`/users/@${profile.handle}`);
       for (const piece of pieces) {
-        await expect(
-          page
-            .locator(`a[href="/users/@${profile.handle}/pieces/${piece.slug}"]`)
-            .getByRole('img', { name: `Preview of ${piece.title}`, exact: true }),
-        ).toBeVisible();
+        const cardLink = page.locator(`a[href="/users/@${profile.handle}/pieces/${piece.slug}"]`);
+        await expect(cardLink).toHaveAttribute('aria-label', piece.title);
+        const thumbnail = cardLink.locator('img.piece-card-thumbnail');
+        await expect(thumbnail).toBeVisible();
+        await expect(thumbnail).toHaveAttribute(
+          'src',
+          /\/api\/public\/art-pieces\/[^/]+\/thumbnail\.png$/,
+        );
       }
+      await page.screenshot({
+        path: testInfo.outputPath(`six-engine-profile-${viewport.width}.png`),
+        fullPage: true,
+      });
     }
     await context.close();
   });

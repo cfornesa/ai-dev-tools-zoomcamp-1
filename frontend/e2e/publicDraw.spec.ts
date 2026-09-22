@@ -60,6 +60,13 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
       const overlay = page.getByLabel('Temporary visitor drawing overlay');
       await page.getByRole('button', { name: 'Draw on piece' }).click();
       await expect(page.getByRole('button', { name: 'Stop drawing' })).toBeVisible();
+      const colorGroup = page.getByRole('radiogroup', { name: 'Stroke color' });
+      await expect(colorGroup).toBeVisible();
+      await expect(colorGroup.getByRole('radio')).toHaveCount(8);
+      await expect(colorGroup.getByRole('radio', { name: 'White' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
       await expect(page.getByRole('radiogroup', { name: 'Drawing tool' })).toBeVisible();
       await expect(page.getByRole('radio', { name: 'Pencil' })).toHaveAttribute(
         'aria-checked',
@@ -114,6 +121,7 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
       };
       await drawStroke(0.25, 0.7, 1);
       await page.getByRole('radio', { name: 'Brush' }).click();
+      await colorGroup.getByRole('radio', { name: 'Red' }).click();
       await sizeSlider.fill('24');
       await expect(page.getByRole('radio', { name: 'Brush' })).toHaveAttribute(
         'aria-checked',
@@ -121,6 +129,10 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
       );
       await expect(page.locator('output[for="visitor-drawing-size"]')).toHaveText('24px');
       await drawStroke(0.55, 0.9, 2);
+      const customColor = page.getByLabel('Custom stroke color');
+      await customColor.fill('#22c55e');
+      await expect(customColor).toHaveValue('#22c55e');
+      await drawStroke(0.15, 0.35, 3);
       await expect(page.getByRole('button', { name: 'Clear visitor drawing' })).toBeEnabled();
       await page.waitForTimeout(100);
       const firstScreenshot = page.waitForEvent('download');

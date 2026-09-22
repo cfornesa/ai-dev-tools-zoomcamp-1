@@ -51,11 +51,30 @@ type Props = {
 
 type VisitorPoint = { x: number; y: number };
 type VisitorTool = 'pencil' | 'brush';
+const VISITOR_SWATCHES = [
+  { name: 'Black', value: '#000000' },
+  { name: 'White', value: '#ffffff' },
+  { name: 'Red', value: '#ef4444' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Yellow', value: '#facc15' },
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Purple', value: '#a855f7' },
+] as const;
 type VisitorStroke = {
   points: VisitorPoint[];
   tool: VisitorTool;
   size: number;
+  color: string;
 };
+
+function contrastingVisitorColor(background: string): string {
+  const channels = background.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!channels) return '#ffffff';
+  const [red, green, blue] = channels.slice(1, 4).map(Number);
+  const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+  return luminance > 0.55 ? '#000000' : '#ffffff';
+}
 
 function PieceStageControls({
   stageRef,
@@ -92,6 +111,7 @@ function PieceStageControls({
   const [visitorDrawOn, setVisitorDrawOn] = useState(false);
   const [visitorTool, setVisitorTool] = useState<VisitorTool>('pencil');
   const [visitorSize, setVisitorSize] = useState(4);
+  const [visitorColor, setVisitorColor] = useState('#ffffff');
   const [visitorStrokes, setVisitorStrokes] = useState<VisitorStroke[]>([]);
   // Issue #479: model preparation status is now derived directly from the
   // local `TrackingProvider`'s own onFrame/onError channels -- no longer
@@ -143,8 +163,8 @@ function PieceStageControls({
   ) {
     if (stroke.points.length === 0) return;
     const first = stroke.points[0];
-    context.strokeStyle = '#fbbf24';
-    context.fillStyle = '#fbbf24';
+    context.strokeStyle = stroke.color;
+    context.fillStyle = stroke.color;
     context.lineWidth = width;
     context.lineCap = stroke.tool === 'brush' ? 'round' : 'butt';
     context.lineJoin = stroke.tool === 'brush' ? 'round' : 'miter';
@@ -204,6 +224,10 @@ function PieceStageControls({
 
   useEffect(() => {
     if (library !== 'c2js-interactive') return;
+    const stage = stageRef.current;
+    if (stage) {
+      setVisitorColor(contrastingVisitorColor(getComputedStyle(stage).backgroundColor));
+    }
     updateVisitorOverlaySize();
     if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(updateVisitorOverlaySize);
@@ -227,7 +251,12 @@ function PieceStageControls({
     if (!visitorDrawOn) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     visitorPointerIdRef.current = event.pointerId;
-    const stroke = { points: [visitorPoint(event)], tool: visitorTool, size: visitorSize };
+    const stroke = {
+      points: [visitorPoint(event)],
+      tool: visitorTool,
+      size: visitorSize,
+      color: visitorColor,
+    };
     visitorStrokesRef.current = [...visitorStrokesRef.current, stroke];
     setVisitorStrokes(visitorStrokesRef.current);
   }
@@ -598,6 +627,34 @@ function PieceStageControls({
             aria-label="Visitor drawing"
           >
             <div
+              className="piece-stage-visitor-color-group"
+              role="radiogroup"
+              aria-label="Stroke color"
+            >
+              {VISITOR_SWATCHES.map((swatch) => (
+                <button
+                  key={swatch.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={visitorColor === swatch.value}
+                  aria-label={swatch.name}
+                  className="piece-stage-color-swatch"
+                  style={{ backgroundColor: swatch.value }}
+                  onClick={() => setVisitorColor(swatch.value)}
+                />
+              ))}
+            </div>
+            <label className="piece-stage-custom-color-control" htmlFor="visitor-stroke-color">
+              Custom color
+              <input
+                id="visitor-stroke-color"
+                type="color"
+                value={visitorColor}
+                onChange={(event) => setVisitorColor(event.target.value)}
+                aria-label="Custom stroke color"
+              />
+            </label>
+            <div
               className="piece-stage-visitor-tool-group"
               role="radiogroup"
               aria-label="Drawing tool"
@@ -707,8 +764,8 @@ function PieceStageControls({
             position: 'absolute',
             inset: 0,
             zIndex: 10,
-            width: presentation === 'immersive' ? '100%' : '320px',
-            height: presentation === 'immersive' ? '100%' : '240px',
+            width: '100%',
+            height: '100%',
             pointerEvents: visitorDrawOn ? 'auto' : 'none',
             touchAction: 'none',
           }}

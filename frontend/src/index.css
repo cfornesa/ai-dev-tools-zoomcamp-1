@@ -5282,6 +5282,50 @@ select.ai-proposal-field-full-width {
   gap: 0.25rem;
 }
 
+.piece-stage-visitor-color-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  align-items: center;
+}
+
+.piece-stage-color-swatch {
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.piece-stage-color-swatch[aria-checked='true'] {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.piece-stage-custom-color-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.5rem;
+  padding: 0 0.45rem;
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--surface-strong, #737373) 92%, black);
+  color: white;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.piece-stage-custom-color-control input {
+  width: 2rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
 .piece-stage-visitor-tool-group [aria-checked='true'] {
   outline: 2px solid currentColor;
   outline-offset: -2px;

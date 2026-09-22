@@ -6,6 +6,19 @@ import PieceCard from './PieceCard';
 import { truncateExcerpt } from './pieceCardUtils';
 
 describe('PieceCard', () => {
+  it('reserves the thumbnail area with an accessible preview placeholder', () => {
+    render(
+      <MemoryRouter>
+        <PieceCard href="/users/@alice/pieces/empty" title="Empty piece" />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole('img', { name: 'No preview available for Empty piece' }),
+    ).toHaveTextContent('No preview yet');
+    expect(document.querySelector('.piece-card-placeholder-icon')).toBeInTheDocument();
+  });
+
   it('renders a stored fallback thumbnail instead of hiding the available image', () => {
     render(
       <MemoryRouter>

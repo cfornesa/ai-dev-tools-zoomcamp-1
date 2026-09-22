@@ -61,7 +61,13 @@ export default function PieceCard({
             role="img"
             aria-label={`No preview available for ${title}`}
           >
-            No preview available
+            <span className="piece-card-placeholder-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13Z" />
+                <path d="m7 16 3.1-3.4a1 1 0 0 1 1.5 0l1.8 2 1.3-1.4a1 1 0 0 1 1.5 0L18 16.2M8 9h.01" />
+              </svg>
+            </span>
+            <span>No preview yet</span>
           </div>
         ) : (
           <img

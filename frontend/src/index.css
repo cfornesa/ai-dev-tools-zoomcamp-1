@@ -4424,10 +4424,29 @@ select.ai-proposal-field-full-width {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  gap: 8px;
   background: var(--code-bg);
   color: var(--text);
   font-size: 13px;
   text-align: center;
+}
+
+.piece-card-placeholder-icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  color: currentColor;
+}
+
+.piece-card-placeholder-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
 }
 
 .public-project-attribution {

@@ -88,7 +88,10 @@ test.describe('public profile piece cards (#685)', () => {
         await expect(page.getByText('Sep 19, 2026')).toBeVisible();
         await expect(page.locator('.renderer-badge', { hasText: 'Generated' })).toBeVisible();
         await expect(page.getByText('p5js')).toBeVisible();
-        await expect(page.getByText('No preview available')).toBeVisible();
+        await expect(page.getByText('No preview yet')).toBeVisible();
+        await expect(
+          page.locator('[data-testid="profile-piece-piece-3d"] .piece-card-placeholder-icon'),
+        ).toBeVisible();
         await expect(
           page.locator('[data-testid="profile-piece-piece-3d"] .piece-card-excerpt'),
         ).toHaveCount(0);

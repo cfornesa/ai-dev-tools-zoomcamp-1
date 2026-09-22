@@ -23,9 +23,12 @@ capture from a placeholder.
 
 from __future__ import annotations
 
+from io import BytesIO
+
 from django.db import IntegrityError, transaction
 from django.http import Http404, HttpResponse
 from django.utils import timezone
+from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers, status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
@@ -41,6 +44,9 @@ from scenes.thumbnails import FALLBACK_PNG_BYTES
 
 THUMBNAIL_WIDTH = 320
 THUMBNAIL_HEIGHT = 240
+MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024
+_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+_JPEG_MAGIC = b"\xff\xd8\xff"
 CAPABILITY_KEYS = frozenset(
     {
         "sound",
@@ -125,19 +131,52 @@ def regenerate_thumbnail(version: ArtPieceVersion) -> ArtPieceThumbnail:
 
 
 class ArtPieceThumbnailUploadSerializer(serializers.Serializer):
-    image = serializers.ImageField()
+    image = serializers.FileField()
 
     def validate_image(self, value):
-        pil_image = getattr(value, "image", None)
-        if pil_image is None:
-            raise serializers.ValidationError("Uploaded file is not a valid image.")
-        if pil_image.format != "PNG":
-            raise serializers.ValidationError("Thumbnail must be a PNG image.")
-        if pil_image.size != (THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT):
+        content_type = getattr(value, "content_type", "")
+        if content_type not in {"image/png", "image/jpeg"}:
+            raise serializers.ValidationError("Thumbnail must be a PNG or JPEG image.")
+        if value.size is not None and value.size > MAX_THUMBNAIL_BYTES:
+            raise serializers.ValidationError(
+                f"Thumbnail must be no larger than {MAX_THUMBNAIL_BYTES} bytes."
+            )
+        value.seek(0)
+        image_bytes = value.read()
+        if len(image_bytes) > MAX_THUMBNAIL_BYTES:
+            raise serializers.ValidationError(
+                f"Thumbnail must be no larger than {MAX_THUMBNAIL_BYTES} bytes."
+            )
+        expected_magic = _PNG_MAGIC if content_type == "image/png" else _JPEG_MAGIC
+        if not image_bytes.startswith(expected_magic):
+            raise serializers.ValidationError("Thumbnail content does not match its MIME type.")
+        try:
+            with Image.open(BytesIO(image_bytes)) as pil_image:
+                image_format = pil_image.format
+                image_size = pil_image.size
+                pil_image.verify()
+        except (Image.DecompressionBombError, OSError, UnidentifiedImageError) as exc:
+            raise serializers.ValidationError("Uploaded file is not a valid image.") from exc
+        if image_format != ("PNG" if content_type == "image/png" else "JPEG"):
+            raise serializers.ValidationError("Thumbnail content does not match its MIME type.")
+        if image_size != (THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT):
             raise serializers.ValidationError(
                 f"Thumbnail must be exactly {THUMBNAIL_WIDTH}x{THUMBNAIL_HEIGHT} pixels "
-                f"(got {pil_image.size[0]}x{pil_image.size[1]})."
+                f"(got {image_size[0]}x{image_size[1]})."
             )
+        if image_format == "JPEG":
+            try:
+                with Image.open(BytesIO(image_bytes)) as pil_image:
+                    normalized = BytesIO()
+                    pil_image.convert("RGB").save(normalized, format="PNG", optimize=True)
+                    image_bytes = normalized.getvalue()
+            except (Image.DecompressionBombError, OSError, UnidentifiedImageError) as exc:
+                raise serializers.ValidationError("Uploaded file is not a valid image.") from exc
+            if len(image_bytes) > MAX_THUMBNAIL_BYTES:
+                raise serializers.ValidationError(
+                    f"Normalized thumbnail must be no larger than {MAX_THUMBNAIL_BYTES} bytes."
+                )
+        value._normalized_image_bytes = image_bytes
         value.seek(0)
         return value
 
@@ -485,7 +524,7 @@ class ArtPieceThumbnailUploadView(APIView):
             thumbnail, _ = ArtPieceThumbnail.objects.update_or_create(
                 version=locked_version,
                 defaults={
-                    "image_data": uploaded.read(),
+                    "image_data": uploaded._normalized_image_bytes,
                     "content_type": "image/png",
                     "width": THUMBNAIL_WIDTH,
                     "height": THUMBNAIL_HEIGHT,

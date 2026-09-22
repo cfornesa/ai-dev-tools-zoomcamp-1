@@ -9,7 +9,7 @@ from django.core.management.base import CommandError
 from django.test import override_settings
 
 from scenes.management.commands.import_reference_pieces import IMPORT_NAME
-from scenes.models import ArtPiece, PublicProfile
+from scenes.models import ArtPiece, ArtPieceThumbnail, PublicProfile
 
 
 @pytest.mark.django_db
@@ -48,6 +48,15 @@ def test_reference_import_is_idempotent_owner_scoped_and_reversible():
         and piece.current_version.capabilities.get("download") is True
         for piece in ArtPiece.objects.filter(owner=owner)
     )
+    assert all(
+        piece.current_version.thumbnail.is_fallback is False
+        and bytes(piece.current_version.thumbnail.image_data).startswith(b"\x89PNG\r\n\x1a\n")
+        for piece in ArtPiece.objects.filter(owner=owner)
+    )
+    first_thumbnails = {
+        piece.public_slug: bytes(piece.current_version.thumbnail.image_data)
+        for piece in ArtPiece.objects.filter(owner=owner)
+    }
 
     call_command(
         "import_reference_pieces",
@@ -62,6 +71,11 @@ def test_reference_import_is_idempotent_owner_scoped_and_reversible():
         ArtPiece.objects.filter(owner=owner).values_list("public_id", "public_slug", "engine")
     )
     assert second == first
+    assert ArtPieceThumbnail.objects.filter(version__piece__owner=owner).count() == 6
+    assert {
+        piece.public_slug: bytes(piece.current_version.thumbnail.image_data)
+        for piece in ArtPiece.objects.filter(owner=owner)
+    } == first_thumbnails
 
     call_command(
         "import_reference_pieces",
@@ -176,3 +190,31 @@ def test_production_import_reports_slug_conflict_and_keeps_existing_owner():
 
     assert "reference-svg-study" in output.getvalue()
     assert ArtPiece.objects.filter(owner=owner).count() == 1
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=True)
+def test_reference_import_leaves_non_reference_piece_untouched():
+    User = get_user_model()
+    owner = User.objects.create_user(username="reference_owner")
+    unrelated = ArtPiece.objects.create(
+        owner=owner,
+        title="Unrelated",
+        prompt="unrelated",
+        engine="svg",
+        public_slug="unrelated",
+    )
+
+    call_command(
+        "import_reference_pieces",
+        "import",
+        "--username",
+        "reference_owner",
+        "--handle",
+        "reference-owner",
+    )
+
+    unrelated.refresh_from_db()
+    assert ArtPiece.objects.filter(owner=owner).count() == 7
+    assert unrelated.title == "Unrelated"
+    assert unrelated.current_version_id is None

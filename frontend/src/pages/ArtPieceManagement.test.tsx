@@ -5,11 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as artPiecesApi from '../api/artPieces';
 import * as profileApi from '../api/profile';
 import * as authModule from '../auth/useAuth';
+import * as thumbnailCapture from '../generative/artPieceThumbnailCapture';
 import ArtPieceManagement from './ArtPieceManagement';
 
 vi.mock('../api/artPieces');
 vi.mock('../api/profile');
 vi.mock('../auth/useAuth');
+vi.mock('../generative/artPieceThumbnailCapture');
 
 const piece = {
   public_id: 'piece-1',
@@ -31,8 +33,9 @@ const piece = {
   updated_at: '2026-09-18T00:00:00Z',
 };
 
-describe('ArtPieceManagement (#605)', () => {
+describe('ArtPieceManagement (#716)', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(authModule.useAuth).mockReturnValue({
       status: 'signed-in',
       user: { username: 'artist', email: 'artist@example.com', is_application_admin: false },
@@ -56,5 +59,78 @@ describe('ArtPieceManagement (#605)', () => {
       'href',
       '/users/@artist/pieces/sunset-study',
     );
+  });
+
+  it('refreshes only current fallback thumbnails through the opaque-sandbox helper', async () => {
+    const fallbackPiece = {
+      ...piece,
+      public_id: 'piece-fallback',
+      title: 'Fallback study',
+      current_version: {
+        ...piece.current_version!,
+        id: 2,
+        source: '<svg />',
+        thumbnail_is_fallback: true,
+      },
+    };
+    const currentPiece = {
+      ...piece,
+      public_id: 'piece-current',
+      title: 'Already rendered',
+    };
+    vi.mocked(artPiecesApi.listArtPieces)
+      .mockResolvedValueOnce([fallbackPiece, currentPiece])
+      .mockResolvedValueOnce([fallbackPiece, currentPiece]);
+    vi.mocked(thumbnailCapture.captureArtPieceThumbnailFromSource).mockResolvedValue(true);
+
+    render(
+      <MemoryRouter>
+        <ArtPieceManagement />
+      </MemoryRouter>,
+    );
+
+    const refreshButton = await screen.findByRole('button', { name: 'Refresh thumbnails' });
+    expect(refreshButton).toBeEnabled();
+    await refreshButton.click();
+
+    expect(thumbnailCapture.captureArtPieceThumbnailFromSource).toHaveBeenCalledWith(
+      'piece-fallback',
+      2,
+      '<svg />',
+      'canvas2d',
+    );
+    expect(thumbnailCapture.captureArtPieceThumbnailFromSource).not.toHaveBeenCalledWith(
+      'piece-current',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      '1 thumbnail refreshed successfully.',
+    );
+  });
+
+  it('prevents concurrent refreshes and reports failed captures', async () => {
+    const deferred = Promise.resolve(false);
+    vi.mocked(artPiecesApi.listArtPieces).mockResolvedValue([
+      {
+        ...piece,
+        current_version: { ...piece.current_version!, thumbnail_is_fallback: true },
+      },
+    ]);
+    vi.mocked(thumbnailCapture.captureArtPieceThumbnailFromSource).mockReturnValue(deferred);
+
+    render(
+      <MemoryRouter>
+        <ArtPieceManagement />
+      </MemoryRouter>,
+    );
+
+    const refreshButton = await screen.findByRole('button', { name: 'Refresh thumbnails' });
+    await refreshButton.click();
+    expect(refreshButton).toBeDisabled();
+    await screen.findByRole('alert');
+    expect(screen.getByRole('alert')).toHaveTextContent('could not be refreshed');
+    expect(thumbnailCapture.captureArtPieceThumbnailFromSource).toHaveBeenCalledTimes(1);
   });
 });

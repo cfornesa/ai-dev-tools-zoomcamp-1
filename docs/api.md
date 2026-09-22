@@ -1,5 +1,25 @@
 # Public gallery API contract
 
+## Generated art-piece thumbnails (#716)
+
+`POST /api/art-pieces/<public_id>/versions/<version_id>/thumbnail/` is an
+owner-only multipart upload for a browser-captured thumbnail of that exact,
+immutable version. Other users and anonymous callers receive the existing
+not-found privacy response. The `image` part must contain a real PNG or JPEG
+whose MIME type matches its magic bytes, be exactly `320x240` pixels, and be
+no larger than `2 MiB`. JPEG uploads are decoded and normalized to PNG before
+storage; the response and subsequent thumbnail URL therefore remain
+`image/png`. Django validates and stores raster bytes only and never executes
+the generated art-piece source.
+
+The six canonical reference fixtures imported by
+`import_reference_pieces import` receive deterministic trusted PNG rasters
+derived from fixture metadata. Re-running the import reconciles only rows
+marked with the stable `source_id`/`reference_import` marker, preserves
+non-reference `ArtPiece` rows, and is idempotent. The owner-only browser
+refresh flow may subsequently replace a fixture raster through the same
+version-bound upload contract.
+
 ## Share-metadata diagnostic (`#717`)
 
 `GET /__share-metadata-status` is an anonymous, credential-free diagnostic

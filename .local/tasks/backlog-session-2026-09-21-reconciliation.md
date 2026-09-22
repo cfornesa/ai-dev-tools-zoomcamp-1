@@ -18,16 +18,16 @@ closure-ready terminal evidence while leaving every GitHub issue open.
 
 | Order | Issue | Scope / entry point | Dependencies | Routing | Status |
 | --- | --- | --- | --- | --- | --- |
-| 1 | [#703](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/703) | Regular generated-piece responsive stage; canonical public piece route | none | 2a mechanical | GROOMED |
-| 2 | [#704](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/704) | Three.js/A-Frame canvas fill and resize | #703 | 2a mechanical | GROOMED |
-| 2 | [#705](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/705) | Canvas2D/SVG/p5/C2 surfaces fill and resize | #703 | 2a mechanical | GROOMED |
-| 3 | [#706](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/706) | Regular-view toolbar row and fullscreen overlay | none | 2a mechanical | GROOMED |
-| 4 | [#707](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/707) | C2 Interactive pencil/brush and size controls | none | 2a mechanical | GROOMED |
-| 5 | [#708](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/708) | C2 Interactive palette and custom colour | none | 2a mechanical | GROOMED |
-| 6 | [#709](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/709) | C2 Interactive eraser | #707 | 2a mechanical | DEPENDENCY-BLOCKED until #707 |
-| 7 | [#710](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/710) | C2 Interactive undo/redo/clear history | #709 | 2a mechanical | DEPENDENCY-BLOCKED until #709 |
-| 8 | [#711](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/711) | C2 Interactive touch/stylus continuity and scroll behavior | #707 | 2a mechanical | DEPENDENCY-BLOCKED until #707 |
-| 9 | [#712](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/712) | Unset site style resolves to Celestial | #647 seeded style | 2b complex | DEPENDENCY-BLOCKED if #647 seed is absent |
+| 1 | [#703](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/703) | Regular generated-piece responsive stage; canonical public piece route | none | 2a mechanical | TERMINAL-READY LOCAL |
+| 2 | [#704](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/704) | Three.js/A-Frame canvas fill and resize | #703 | 2a mechanical | TERMINAL-READY LOCAL |
+| 2 | [#705](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/705) | Canvas2D/SVG/p5/C2 surfaces fill and resize | #703 | 2a mechanical | TERMINAL-READY LOCAL |
+| 3 | [#706](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/706) | Regular-view toolbar row and fullscreen overlay | none | 2a mechanical | TERMINAL-READY LOCAL |
+| 4 | [#707](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/707) | C2 Interactive pencil/brush and size controls | none | 2a mechanical | TERMINAL-READY LOCAL |
+| 5 | [#708](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/708) | C2 Interactive palette and custom colour | none | 2a mechanical | TERMINAL-READY LOCAL |
+| 6 | [#709](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/709) | C2 Interactive eraser | #707 | 2a mechanical | TERMINAL-READY LOCAL |
+| 7 | [#710](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/710) | C2 Interactive undo/redo/clear history | #709 | 2a mechanical | TERMINAL-READY LOCAL |
+| 8 | [#711](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/711) | C2 Interactive touch/stylus continuity and scroll behavior | #707 | 2a mechanical | TERMINAL-READY LOCAL |
+| 9 | [#712](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/712) | Unset site style resolves to Celestial | #647 seeded style | 2b complex | TERMINAL-READY LOCAL |
 | 10 | [#713](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/713) | Compact mobile header at 375px | none | 2a mechanical | GROOMED |
 | 11 | [#714](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/714) | Public profile header/grid alignment | none | 2a mechanical | GROOMED |
 | 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | GROOMED |
@@ -172,3 +172,14 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Browser evidence:** the inspected 375px touch screenshots show the drawing controls and marks remain within the responsive stage; the page does not scroll during touch drawing. Pointer capture and cancel paths are covered in the implementation.
 - **QA result:** `## QA: PASS`. No route/API/schema/dependency change.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue: #712.
+
+## Transaction ledger — #712 (existing implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING (pre-existing commit) → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** unset global site style resolution to seeded Celestial while preserving explicit Plain/other style selections; no new migration was required because the authoritative Celestial seed is already migration `0082_seed_celestial_style` from #647.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation provenance is the existing owner-authored/local commit `700c2b2` (not produced in this transaction); second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Existing implementation:** `700c2b2` adds non-mutating `effective_site_style`, keeps explicit admin choices authoritative, adds regression coverage, and documents the API contract in `docs/api.md`.
+- **Focused checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-712 uv run pytest tests/ -k "theme or profile_style"` passed `24 passed, 1505 deselected`; Chromium `celestialStyle.spec.ts` passed `2/2` at 1280×900 dark/reduced-motion and 375px light viewports. The two rendered screenshots were inspected.
+- **Full checks:** covered by the subsequent green `make check` gates for #709–#711 on the same codebase: backend `1490 passed, 39 skipped`; frontend `257 files, 2791 tests passed`; format/typecheck/action-pin checks passed.
+- **QA result:** `## QA: PASS`. The dark screenshot shows the script heading and cosmic backdrop; the mobile light screenshot remains legible; reduced-motion is explicitly exercised. The backend tests confirm unset resolution does not mutate `SiteSettings.style` and explicit Plain wins.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue: #713.

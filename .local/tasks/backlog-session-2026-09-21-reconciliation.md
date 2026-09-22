@@ -148,3 +148,15 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Browser evidence:** the inspected post-erase desktop screenshot omits the red brush stroke while preserving the white pencil mark, green custom-color mark, and underlying artwork; the 375px touch scenario also passed. The eraser help text is visibly backed for contrast.
 - **QA result:** `## QA: PASS`. Eraser removal is stroke-level and stated in the UI; the source artwork is never mutated.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; dependent #710 and #711 may now advance. Next groomed issue: #710.
+
+## Transaction ledger — #710 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** temporary C2.js Interactive visitor history: Undo/Redo buttons, Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z on the focused surface, stroke/erase/Clear snapshots, redo invalidation, and undoable Clear.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k3: `yes` because no callable independent implementation service was available in this session; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commit:** `c7c8a89`.
+- **Focused checks:** visitor history and hit-testing tests plus PieceStageToolbar/PublicArtPieceViewer `14 passed`; TypeScript and Prettier passed; Chromium `publicDraw.spec.ts` passed `1/1` at regular/immersive 1280×900 and regular/immersive 375×812 touch scenarios. Browser assertions cover disabled/enabled history controls, erase undo/redo, keyboard undo/redo, and Clear undo/redo.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-710 make check` passed: backend `1490 passed, 39 skipped`; frontend `257 files, 2791 tests passed`; format/typecheck/action-pin checks passed; lint has only the repository's established non-blocking warnings.
+- **Browser evidence:** `public-draw-pieces-1280-erased.png` was inspected: the red erased mark is absent, the white/green marks and underlying artwork remain, the eraser ring is visible, and the explanatory help has sufficient contrast. Toolbar wrapping was constrained so controls stay within the responsive row.
+- **QA result:** `## QA: PASS`. Marks remain temporary; no persistence or API contract changed.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue: #711.

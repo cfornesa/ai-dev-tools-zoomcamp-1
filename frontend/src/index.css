@@ -4700,7 +4700,7 @@ select.ai-proposal-field-full-width {
   width: 100%;
   aspect-ratio: var(--art-piece-aspect-ratio, 16 / 9);
   max-height: calc(100dvh - 8rem);
-  background: var(--code-bg);
+  background: var(--code-bg, #f4f3ec);
 }
 
 .public-art-piece-stage > iframe {

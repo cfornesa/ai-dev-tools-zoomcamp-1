@@ -206,7 +206,12 @@ export default function PublicArtPieceViewer({
         className="art-piece-stage public-art-piece-stage"
         role="region"
         aria-label="Art piece stage"
-        style={{ '--art-piece-aspect-ratio': aspectRatio } as CSSProperties}
+        style={
+          {
+            '--art-piece-aspect-ratio': aspectRatio,
+            background: 'var(--code-bg, #f4f3ec)',
+          } as CSSProperties
+        }
       >
         <iframe
           ref={iframeRef}
@@ -232,7 +237,7 @@ export default function PublicArtPieceViewer({
             width: '100%',
             height: '100%',
             border: 'none',
-            background: 'var(--code-bg)',
+            background: 'var(--code-bg, #f4f3ec)',
           }}
         />
         <PieceStageControls

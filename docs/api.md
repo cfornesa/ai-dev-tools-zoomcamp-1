@@ -415,6 +415,42 @@ exactly six-digit hexadecimal colors; unknown keys and malformed values are
 rejected. The JSON fields are additive, so existing rows require no destructive
 rewrite or migration.
 
+### Shared parity theme design system (#724)
+
+The authenticated profile and application-admin settings payloads additionally
+expose the shared design contract:
+
+- `style_key` selects one of the ten enabled layout styles;
+- `palette_key` selects one of the ten named color palettes;
+- `palette_overrides` contains optional per-mode semantic color overrides; and
+- `presentation_overrides` contains optional validated layout overrides; and
+- `design_palettes` contains the resolved semantic palettes used by the
+  preview and public profile surfaces.
+
+The semantic palette keys are `background`, `foreground`, `muted`,
+`muted_foreground`, `primary`, `primary_foreground`, `secondary`,
+`secondary_foreground`, `accent`, `accent_foreground`, `destructive`, and
+`destructive_foreground`. Each key exists independently under `light` and
+`dark`. Palette values are validated CSS colors limited to six-digit hex or
+the bounded HSL form used by the original theme implementation; CSS, HTML,
+JavaScript, URLs, and arbitrary declarations are rejected.
+
+`GET /api/account/profile/` includes `available_palettes` and the selected
+`palette_key`, `palette_overrides`, and `design_palettes`. Its `PATCH` accepts
+those fields together with the existing optimistic `revision`; invalid palette
+keys or values reject the whole update without changing the profile.
+
+`GET|PATCH /api/admin/settings/` includes and accepts the same palette fields,
+using the existing optimistic `revision` contract. `GET /api/site-theme/`
+returns the effective `palette_key` and resolved `design_palettes` for
+anonymous shell/profile consumers, while retaining the legacy five-token
+`theme_config` and `theme_palettes` fields for older clients.
+
+Both settings surfaces render the same iframe-backed preview document. The
+preview is an inspection surface only: it receives the resolved style and
+palette definition through a sandboxed `srcDoc`, and it must not execute
+arbitrary application code or make network requests.
+
 ### Canonical public piece URLs (#578)
 
 `GET /api/users/@<handle>/pieces/<piece-slug>/` resolves a published public

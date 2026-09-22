@@ -1,5 +1,24 @@
 # AugmentrART Backlog
 
+## 2026-09-22 — shared parity theme system (#724 → #725)
+
+The owner selected the shared parity theme-system direction after comparison
+with `augment-humankind` and `augment-humankind-react-node`. Issue #724 is the
+current groomed transaction for the shared ten-style catalog, ten palettes,
+light/dark iframe previews, account profile-design editor, admin editor parity,
+readability, and single-column account settings. Issue #725 is the linked,
+criterion-ready follow-up for the bounded AI generate/refine/accept/reject/
+retry/snapshot workflow.
+
+| Order | Issue | Status / routing | Evidence and next action |
+| --- | --- | --- | --- |
+| 1 | [#724](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/724) | IMPLEMENTED / QA pending | Focused and full checks pass; run fixed-viewport browser QA, then post the issue verdict and close. |
+| 2 | [#725](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/725) | GROOMED / Stage 2b, depends on #724 | Implement the source-of-truth AI theme workflow only after #724 closes. |
+
+The exact #724 transaction record is in
+`.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and
+#723 remain immutable; this is new follow-up work.
+
 ## 2026-09-22 — backlog-session priority gate (#722–#723)
 
 The live issue contracts for #722 and #723 were reread before work. Both are

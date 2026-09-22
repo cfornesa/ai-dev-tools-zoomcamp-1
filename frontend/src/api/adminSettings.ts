@@ -8,6 +8,11 @@ export type SiteSettings = {
   cloud_sync_enabled: boolean;
   theme_config?: Record<string, string>;
   theme_palettes?: ThemePalettes;
+  palette_key?: string;
+  palette_overrides?: PaletteOverrides;
+  presentation_overrides?: Partial<PresentationOptions>;
+  design_palettes?: DesignPalettes;
+  available_palettes?: PaletteDefinition[];
   style_key?: string | null;
   presentation?: PresentationOptions;
 };
@@ -15,6 +20,14 @@ export type SiteSettings = {
 export type ThemePalette = Record<string, string>;
 export type ThemePalettes = { light: ThemePalette; dark: ThemePalette };
 export type ThemeConfig = ThemePalette | Partial<ThemePalettes>;
+export type DesignPalettes = { light: ThemePalette; dark: ThemePalette };
+export type PaletteOverrides = Partial<DesignPalettes>;
+export type PaletteDefinition = {
+  key: string;
+  label: string;
+  description: string;
+  values: DesignPalettes;
+};
 
 export type PresentationOptions = {
   font_family: 'system' | 'serif' | 'mono' | 'script';
@@ -100,6 +113,9 @@ export async function updateSiteSettings(
   styleKey?: string,
   siteDescription?: string,
   metadataTags?: string[],
+  paletteKey?: string,
+  paletteOverrides?: PaletteOverrides,
+  presentationOverrides?: Partial<PresentationOptions>,
 ): Promise<SiteSettings> {
   return apiFetch<SiteSettings>('/api/admin/settings/', {
     method: 'PATCH',
@@ -110,6 +126,9 @@ export async function updateSiteSettings(
       ...(metadataTags !== undefined ? { metadata_tags: metadataTags } : {}),
       ...(themeConfig ? { theme_config: themeConfig } : {}),
       ...(styleKey ? { style_key: styleKey } : {}),
+      ...(paletteKey ? { palette_key: paletteKey } : {}),
+      ...(paletteOverrides ? { palette_overrides: paletteOverrides } : {}),
+      ...(presentationOverrides ? { presentation_overrides: presentationOverrides } : {}),
     }),
   });
 }

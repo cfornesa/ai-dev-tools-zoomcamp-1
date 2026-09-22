@@ -4,10 +4,13 @@ from scenes.theme import (
     DEFAULT_LIGHT_THEME,
     DEFAULT_PRESENTATION,
     DEFAULT_THEME,
+    available_palettes,
+    effective_design_palettes,
     effective_presentation,
     effective_profile_theme,
     effective_theme,
     effective_theme_palettes,
+    sanitize_palette_overrides,
     sanitize_presentation,
     sanitize_theme,
     sanitize_theme_config,
@@ -86,6 +89,40 @@ def test_paired_theme_config_rejects_mixed_and_injection_values():
     ):
         try:
             sanitize_theme_config(bad)
+            raise AssertionError(f"expected ValueError for {bad!r}")
+        except ValueError:
+            pass
+
+
+def test_shared_design_palettes_separate_named_palettes_from_style_colors():
+    celestial = effective_design_palettes(
+        {"light": {"background": "#f4ead3"}, "dark": {"background": "#071b2a"}},
+        "ocean",
+        {},
+    )
+    assert celestial["light"]["background"] != "#f4ead3"
+    assert celestial["dark"]["background"].startswith("hsl(")
+    original = effective_design_palettes(
+        {"light": {"background": "#f4ead3"}, "dark": {"background": "#071b2a"}},
+        "original",
+        {},
+    )
+    assert original["light"]["background"] == "#f4ead3"
+
+
+def test_shared_design_palette_overrides_are_finite_and_catalogued():
+    assert {item["key"] for item in available_palettes()} >= {
+        "bauhaus",
+        "ocean",
+        "celestial",
+        "pastel",
+    }
+    assert sanitize_palette_overrides({"light": {"primary": "#123456"}}) == {
+        "light": {"primary": "#123456"}
+    }
+    for bad in ({"light": {"primary": "red"}}, {"light": {"primary": "url(x)"}}):
+        try:
+            sanitize_palette_overrides(bad)
             raise AssertionError(f"expected ValueError for {bad!r}")
         except ValueError:
             pass

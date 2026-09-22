@@ -22,9 +22,14 @@ from scenes.models import (
 )
 from scenes.public_identity import public_author_name
 from scenes.theme import (
+    PALETTE_DEFINITIONS,
+    available_palettes,
+    effective_design_palettes,
+    effective_legacy_theme_palettes,
     effective_presentation,
     effective_profile_theme,
-    effective_theme_palettes,
+    sanitize_palette_overrides,
+    sanitize_presentation,
     sanitize_theme_config,
 )
 
@@ -69,6 +74,9 @@ class ProfileSerializer(serializers.Serializer):
     revision = serializers.IntegerField(min_value=1)
     style_key = serializers.SlugField(max_length=48, required=False)
     theme_config = serializers.DictField(required=False)
+    palette_key = serializers.SlugField(max_length=32, required=False)
+    palette_overrides = serializers.DictField(required=False)
+    presentation_overrides = serializers.DictField(required=False)
 
 
 def _profile_payload(profile: PublicProfile) -> dict:
@@ -87,6 +95,9 @@ def _profile_payload(profile: PublicProfile) -> dict:
     return {
         "handle": profile.handle,
         "style_key": style.key if style else None,
+        "palette_key": profile.palette_key,
+        "palette_overrides": profile.palette_overrides,
+        "presentation_overrides": profile.presentation_overrides,
         "display_name": profile.display_name,
         "bio": profile.bio,
         "website_url": profile.website_url,
@@ -97,11 +108,22 @@ def _profile_payload(profile: PublicProfile) -> dict:
         "theme_config": effective_profile_theme(
             resolved_style.tokens if resolved_style else {}, profile.theme_config
         ),
-        "theme_palettes": effective_theme_palettes(
-            resolved_style.tokens if resolved_style else {}, profile.theme_config
+        "theme_palettes": effective_legacy_theme_palettes(
+            resolved_style.tokens if resolved_style else {},
+            profile.palette_key,
+            profile.palette_overrides,
+            profile.theme_config,
+        ),
+        "design_palettes": effective_design_palettes(
+            resolved_style.tokens if resolved_style else {},
+            profile.palette_key,
+            profile.palette_overrides,
         ),
         "presentation": effective_presentation(
-            resolved_style.presentation if resolved_style else {}
+            {
+                **(resolved_style.presentation if resolved_style else {}),
+                **profile.presentation_overrides,
+            }
         ),
     }
 
@@ -217,6 +239,7 @@ class AccountProfileView(APIView):
                         profile.save(update_fields=["handle", "updated_at"])
             payload = _profile_payload(profile)
             payload["available_styles"] = _available_styles()
+            payload["available_palettes"] = available_palettes()
         except (OperationalError, ProgrammingError):
             # A schema-drift deployment (a pending migration not yet applied
             # to this database) must fail safely, not surface an unhandled
@@ -234,6 +257,25 @@ class AccountProfileView(APIView):
         if "theme_config" in values:
             try:
                 values["theme_config"] = sanitize_theme_config(values["theme_config"])
+            except ValueError as exc:
+                return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
+        if "palette_overrides" in values:
+            try:
+                values["palette_overrides"] = sanitize_palette_overrides(
+                    values["palette_overrides"]
+                )
+            except ValueError as exc:
+                return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
+        if "palette_key" in values and values["palette_key"] not in PALETTE_DEFINITIONS:
+            return Response(
+                {"error": "validation_failed", "detail": {"palette_key": ["Unknown palette."]}},
+                status=400,
+            )
+        if "presentation_overrides" in values:
+            try:
+                values["presentation_overrides"] = sanitize_presentation(
+                    values["presentation_overrides"]
+                )
             except ValueError as exc:
                 return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
         profile = PublicProfile.objects.get_or_create(user=request.user)[0]
@@ -318,6 +360,9 @@ class AccountProfileView(APIView):
                 "profile_image_url",
                 "is_public",
                 "theme_config",
+                "palette_key",
+                "palette_overrides",
+                "presentation_overrides",
             ):
                 if field in values:
                     setattr(profile, field, style if field == "style" else values[field])
@@ -333,6 +378,7 @@ class AccountProfileView(APIView):
                 )
         payload = _profile_payload(profile)
         payload["available_styles"] = _available_styles()
+        payload["available_palettes"] = available_palettes()
         return Response(payload)
 
 

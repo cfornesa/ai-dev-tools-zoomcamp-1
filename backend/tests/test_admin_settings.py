@@ -75,7 +75,21 @@ def test_settings_get_allowed_for_admin(client, admin_a):
     client.force_login(admin_a)
     response = client.get(reverse("admin-settings"))
     assert response.status_code == 200
-    assert response.json() == {
+    payload = response.json()
+    assert {
+        key: payload[key]
+        for key in (
+            "site_title",
+            "site_description",
+            "metadata_tags",
+            "cloud_sync_enabled",
+            "revision",
+            "theme_config",
+            "theme_palettes",
+            "style_key",
+            "presentation",
+        )
+    } == {
         "site_title": "AugmentrART",
         "site_description": "",
         "metadata_tags": [],
@@ -108,6 +122,12 @@ def test_settings_get_allowed_for_admin(client, admin_a):
             "backdrop": "cosmic",
         },
     }
+    assert payload["palette_key"] == "original"
+    assert payload["palette_overrides"] == {}
+    assert payload["presentation_overrides"] == {}
+    assert len(payload["available_palettes"]) == 11
+    assert set(payload["available_palettes"][0]) == {"key", "label", "description", "values"}
+    assert set(payload["design_palettes"]) == {"light", "dark"}
 
 
 @pytest.mark.django_db
@@ -222,7 +242,21 @@ def test_admin_can_update_site_title(client, admin_a):
         content_type="application/json",
     )
     assert response.status_code == 200
-    assert response.json() == {
+    payload = response.json()
+    assert {
+        key: payload[key]
+        for key in (
+            "site_title",
+            "site_description",
+            "metadata_tags",
+            "cloud_sync_enabled",
+            "revision",
+            "theme_config",
+            "theme_palettes",
+            "style_key",
+            "presentation",
+        )
+    } == {
         "site_title": "New Studio Name",
         "site_description": "",
         "metadata_tags": [],
@@ -255,6 +289,10 @@ def test_admin_can_update_site_title(client, admin_a):
             "backdrop": "cosmic",
         },
     }
+    assert payload["palette_key"] == "original"
+    assert payload["palette_overrides"] == {}
+    assert payload["presentation_overrides"] == {}
+    assert len(payload["available_palettes"]) == 11
     assert SiteSettings.get_solo().site_title == "New Studio Name"
 
 
@@ -506,6 +544,10 @@ def test_get_site_settings_and_list_plans_expose_only_named_fields():
         "theme_config",
         "style_key",
         "presentation",
+        "palette_key",
+        "palette_overrides",
+        "presentation_overrides",
+        "design_palettes",
     }
 
     plans = list_plans()

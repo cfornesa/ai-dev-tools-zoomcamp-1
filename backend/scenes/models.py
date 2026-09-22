@@ -129,9 +129,9 @@ class SiteSettings(models.Model):
     # Issue #509: cloud backup is disabled until an administrator enables it.
     cloud_sync_enabled = models.BooleanField(default=False)
     theme_config = models.JSONField(default=dict, blank=True)
-    palette_key = models.SlugField(max_length=32, default="original")
-    palette_overrides = models.JSONField(default=dict, blank=True)
-    presentation_overrides = models.JSONField(default=dict, blank=True)
+    palette_key = models.SlugField(max_length=32, default="original", db_default="original")
+    palette_overrides = models.JSONField(default=dict, blank=True, db_default={})
+    presentation_overrides = models.JSONField(default=dict, blank=True, db_default={})
     style = models.ForeignKey(
         "ProfileStyle",
         on_delete=models.SET_NULL,
@@ -175,9 +175,9 @@ class PublicProfile(models.Model):
     profile_image_url = models.URLField(max_length=500, blank=True, default="")
     is_public = models.BooleanField(default=True)
     theme_config = models.JSONField(default=dict, blank=True)
-    palette_key = models.SlugField(max_length=32, default="original")
-    palette_overrides = models.JSONField(default=dict, blank=True)
-    presentation_overrides = models.JSONField(default=dict, blank=True)
+    palette_key = models.SlugField(max_length=32, default="original", db_default="original")
+    palette_overrides = models.JSONField(default=dict, blank=True, db_default={})
+    presentation_overrides = models.JSONField(default=dict, blank=True, db_default={})
     revision = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)
 

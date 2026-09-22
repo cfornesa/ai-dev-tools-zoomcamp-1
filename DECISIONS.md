@@ -1288,6 +1288,16 @@ API and rendered artwork in gallery/profile surfaces. Focused security tests
 passed 29/29; QA was posted through active Chrome and #716 was closed. Stage 3
 second opinion was not run.
 
+## 2026-09-22 — final verification boundary
+
+The final `UV_CACHE_DIR=/tmp/codex-final-uv-cache make check` run passed action
+pin checks, backend lint/format/typecheck/tests (1,508 passed, 39 skipped),
+frontend lint/format/typecheck, and 2,803 of 2,804 frontend tests. One full-run
+frontend test transiently timed out while waiting for the Tools region in
+`EditorWorkspace.draftSyncError.test.tsx`; the focused rerun passed 4/4 in
+4.34s without code changes. This is classified as a non-reproducible test
+timing boundary, not an unresolved product defect.
+
 ## 2026-09-22 — #717 and #718 terminal published gates closed
 
 #717's live diagnostic satisfied its explicit fallback criterion by naming the

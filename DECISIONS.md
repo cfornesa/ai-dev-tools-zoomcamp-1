@@ -1258,3 +1258,12 @@ tests passed 18/18, with frontend typecheck and format checks passing.
 Existing fixed-viewport Chromium evidence covered 375px and the 768px
 boundary. The QA self-review was posted through the authenticated active
 Chrome session and the issue was closed.
+
+## 2026-09-22 — #712 Celestial default closed
+
+Reviewed existing commits `700c2b2`, `c6bf366`, and `46e540c` for #712.
+Focused backend theme/profile tests passed 29/29, with frontend typecheck and
+format checks passing. Existing fixed-viewport style evidence covers the
+Celestial default, readable serif body text, cosmic backdrop, reduced motion,
+and mobile/desktop shell behavior. The QA self-review was posted through the
+authenticated active Chrome session and the issue was closed.

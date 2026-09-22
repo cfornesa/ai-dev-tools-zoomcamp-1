@@ -32,6 +32,9 @@ transaction record is in `.local/tasks/issue-714-profile-alignment.md`.
 Issue #713 was subsequently closed after its mobile-header self-review; its
 transaction record is in `.local/tasks/issue-713-mobile-header.md`.
 
+Issue #712 was subsequently closed after the Celestial-default self-review;
+its transaction record is in `.local/tasks/issue-712-celestial-default.md`.
+
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and
 #723 remain immutable; this is new follow-up work.

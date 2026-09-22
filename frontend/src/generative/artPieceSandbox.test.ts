@@ -115,7 +115,11 @@ describe('buildArtPieceSandboxDocument', () => {
 
   it('#705: regular flat engines fill the stage, contain their aspect, and remap pointer coordinates', () => {
     for (const library of ['canvas2d', 'svg', 'p5js', 'c2js', 'c2js-interactive'] as const) {
-      const doc = buildArtPieceSandboxDocument('window.sketch = function () {};', library, 'regular');
+      const doc = buildArtPieceSandboxDocument(
+        'window.sketch = function () {};',
+        library,
+        'regular',
+      );
       expect(doc).toContain("surface.style.objectFit = 'contain'");
       expect(doc).toContain("surface.style.width = '100%'");
       expect(doc).toContain("window.addEventListener('resize', fit)");

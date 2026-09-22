@@ -35,6 +35,20 @@ transaction record is in `.local/tasks/issue-713-mobile-header.md`.
 Issue #712 was subsequently closed after the Celestial-default self-review;
 its transaction record is in `.local/tasks/issue-712-celestial-default.md`.
 
+## Deferred open backlog items
+
+- **#718** — production evidence pass remains open because its current report
+  still lists unresolved published defects and requires a fresh owner publish.
+- **#717** — local implementation checks pass, but published smoke reports
+  `backend_reachable=false` / `fetch failed`; owner deployment investigation
+  and republish are required.
+- **#716** — implementation is blocked on the owner's explicit choice among
+  anonymous capture token, owner-only batch refresh, or import-time assets.
+- **#715** — focused component checks pass, but fixed-viewport screenshot
+  execution is blocked by the local Playwright Chromium Mach-port sandbox.
+- **#711** — touch-drawing implementation/spec exists, but the required touch
+  browser verification is blocked by the same host limitation.
+
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and
 #723 remain immutable; this is new follow-up work.

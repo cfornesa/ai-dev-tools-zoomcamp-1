@@ -1,14 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useMenuButton } from '../a11y/useMenuButton';
-import {
-  createNew3DProject,
-  createNewAnimation,
-  type NewProjectRenderer,
-} from './galleryCreateActions';
+import { createNew3DProject, createNewAnimation } from './galleryCreateActions';
 
 type GalleryCreateMenuProps = {
-  renderer: NewProjectRenderer;
   creating: boolean;
   onCreatingChange: (creating: boolean) => void;
   onError: (message: string | null) => void;
@@ -20,22 +15,31 @@ type MenuAction = { id: string; label: string; run: () => Promise<string> };
  * Issue #268: replaces `Gallery.tsx`'s 4 inline "Create X" buttons + the
  * "Browse templates" link with a single split-button -- a "+" that
  * navigates to the full `/create` chooser page (`CreateChooser.tsx`), and
- * an adjacent arrow that opens an accessible dropdown offering the exact
- * same 5 actions inline, via `useMenuButton`'s WAI-ARIA menu-button
+ * an adjacent arrow that opens an accessible dropdown offering renderer-
+ * specific 2D actions plus 3D and templates, via `useMenuButton`'s WAI-ARIA menu-button
  * behavior. Every action here calls the same shared functions
  * (`galleryCreateActions.ts`) `CreateChooser.tsx` calls, so both paths
  * stay behaviorally identical to each other and to the pre-#268 buttons.
  */
-function GalleryCreateMenu({
-  renderer,
-  creating,
-  onCreatingChange,
-  onError,
-}: GalleryCreateMenuProps) {
+function GalleryCreateMenu({ creating, onCreatingChange, onError }: GalleryCreateMenuProps) {
   const navigate = useNavigate();
 
   const actions: MenuAction[] = [
-    { id: 'create-2d', label: 'Create a new 2D project', run: () => createNewAnimation(renderer) },
+    {
+      id: 'create-2d-p5',
+      label: 'Create a new 2D project with p5.js',
+      run: () => createNewAnimation('p5'),
+    },
+    {
+      id: 'create-2d-canvas2d',
+      label: 'Create a new 2D project with Canvas2D',
+      run: () => createNewAnimation('canvas2d'),
+    },
+    {
+      id: 'create-2d-svg',
+      label: 'Create a new 2D project with SVG',
+      run: () => createNewAnimation('svg'),
+    },
     { id: 'create-3d', label: 'Create a new 3D project', run: createNew3DProject },
   ];
 

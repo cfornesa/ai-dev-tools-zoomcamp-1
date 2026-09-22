@@ -122,7 +122,9 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(plusLink).toHaveAttribute('href', '/create');
 
     await openCreateMenu(user);
-    const createMenuItem = screen.getByRole('menuitem', { name: /^create a new 2d project$/i });
+    const createMenuItem = screen.getByRole('menuitem', {
+      name: /^create a new 2d project with p5\.js$/i,
+    });
     expect(createMenuItem).toBeInTheDocument();
     expect(createMenuItem.tagName).toBe('BUTTON'); // native focusable element, no tabindex hacks
   });
@@ -172,7 +174,7 @@ describe('Gallery loading/error/empty/populated states', () => {
     renderGallery();
 
     await screen.findByRole('heading', { name: 'Flat study' });
-    const filter = screen.getByRole('combobox', { name: 'Filter by renderer' });
+    const filter = screen.getByRole('combobox', { name: 'Renderer' });
     expect(filter).toHaveValue('all');
     expect(
       within(filter)
@@ -199,7 +201,7 @@ describe('Gallery loading/error/empty/populated states', () => {
 
     renderGallery();
 
-    const filter = await screen.findByRole('combobox', { name: 'Filter by renderer' });
+    const filter = await screen.findByRole('combobox', { name: 'Renderer' });
     await user.selectOptions(filter, '3d');
 
     expect(screen.getByText('No 3D projects match this filter.')).toBeInTheDocument();
@@ -272,9 +274,6 @@ describe('Gallery keyboard accessibility', () => {
     expect(screen.getByRole('button', { name: /more creation options/i })).toHaveFocus();
 
     await user.tab();
-    expect(screen.getByRole('combobox', { name: 'Filter by renderer' })).toHaveFocus();
-
-    await user.tab();
     expect(screen.getAllByRole('link', { name: /^edit$/i })[0]).toHaveFocus();
 
     await user.tab();
@@ -298,11 +297,15 @@ describe('Gallery keyboard accessibility', () => {
     arrowButton.focus();
     await user.keyboard('{ArrowDown}');
 
-    const firstItem = await screen.findByRole('menuitem', { name: /^create a new 2d project$/i });
+    const firstItem = await screen.findByRole('menuitem', {
+      name: /^create a new 2d project with p5\.js$/i,
+    });
     expect(firstItem).toHaveFocus();
 
     await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('menuitem', { name: /^create a new 3d project$/i })).toHaveFocus();
+    expect(
+      screen.getByRole('menuitem', { name: /^create a new 2d project with canvas2d$/i }),
+    ).toHaveFocus();
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
@@ -320,46 +323,39 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     await screen.findByText('You have not created any projects.');
     await openCreateMenu(user);
 
-    await user.click(screen.getByRole('menuitem', { name: /^create a new 2d project$/i }));
+    await user.click(
+      screen.getByRole('menuitem', { name: /^create a new 2d project with p5\.js$/i }),
+    );
 
     await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
-    // Issue #206: defaults to the p5 renderer unless the picker is changed.
+    // Issue #206: the p5 creation option remains available in the dropdown.
     expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'p5');
   });
 
-  it('passes the selected renderer through to createBlankProject (issue #206)', async () => {
-    mockedListProjects.mockResolvedValue([]);
-    mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-id' }));
-    const user = userEvent.setup();
+  it.each([
+    ['canvas2d', 'Canvas2D'],
+    ['svg', 'SVG'],
+  ] as const)(
+    'keeps the %s creation renderer available in the dropdown',
+    async (renderer, label) => {
+      mockedListProjects.mockResolvedValue([]);
+      mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-id' }));
+      const user = userEvent.setup();
 
-    renderGallery();
-    const rendererSelect = await screen.findByLabelText<HTMLSelectElement>('Renderer');
-    await user.selectOptions(rendererSelect, 'canvas2d');
-    await openCreateMenu(user);
+      renderGallery();
+      await openCreateMenu(user);
 
-    await user.click(screen.getByRole('menuitem', { name: /^create a new 2d project$/i }));
+      const createAction = screen.getByRole('menuitem', {
+        name: new RegExp(`^create a new 2d project with ${label}$`, 'i'),
+      });
+      expect(createAction).toBeInTheDocument();
+      await user.click(createAction);
 
-    await waitFor(() =>
-      expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'canvas2d'),
-    );
-  });
-
-  it('passes the svg renderer through to createBlankProject (issue #207)', async () => {
-    mockedListProjects.mockResolvedValue([]);
-    mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-id' }));
-    const user = userEvent.setup();
-
-    renderGallery();
-    const rendererSelect = await screen.findByLabelText<HTMLSelectElement>('Renderer');
-    await user.selectOptions(rendererSelect, 'svg');
-    await openCreateMenu(user);
-
-    await user.click(screen.getByRole('menuitem', { name: /^create a new 2d project$/i }));
-
-    await waitFor(() =>
-      expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'svg'),
-    );
-  });
+      await waitFor(() =>
+        expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), renderer),
+      );
+    },
+  );
 
   it('shows an accessible error and re-enables the arrow trigger on failure', async () => {
     mockedListProjects.mockResolvedValue([]);
@@ -369,7 +365,9 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     renderGallery();
     await screen.findByText('You have not created any projects.');
     await openCreateMenu(user);
-    await user.click(screen.getByRole('menuitem', { name: /^create a new 2d project$/i }));
+    await user.click(
+      screen.getByRole('menuitem', { name: /^create a new 2d project with p5\.js$/i }),
+    );
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not create/i);
     expect(screen.getByRole('button', { name: /more creation options/i })).toBeEnabled();

@@ -23,10 +23,6 @@ function Gallery() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [projectRenderer, setProjectRenderer] = useState<ProjectRendererFilter>('all');
-  // Issue #206/#207: the only point in the app where a new project's
-  // renderer is chosen -- there is no later "change this scene's renderer"
-  // flow.
-  const [newProjectRenderer, setNewProjectRenderer] = useState<'p5' | 'canvas2d' | 'svg'>('p5');
 
   useEffect(() => {
     let cancelled = false;
@@ -79,35 +75,8 @@ function Gallery() {
     <section className="content-panel gallery-panel" aria-labelledby="gallery-heading">
       <div className="gallery-header">
         <h2 id="gallery-heading">Your projects</h2>
-        <label htmlFor="new-project-renderer" className="gallery-renderer-label">
-          Renderer
-        </label>
-        <select
-          id="new-project-renderer"
-          value={newProjectRenderer}
-          disabled={creating}
-          onChange={(event) =>
-            setNewProjectRenderer(event.target.value as 'p5' | 'canvas2d' | 'svg')
-          }
-        >
-          <option value="p5">p5.js</option>
-          <option value="canvas2d">Canvas2D</option>
-          <option value="svg">SVG</option>
-        </select>
-        {/* Issue #268: the 4 "Create X" buttons + "Browse templates" link
-            that used to live here (and that narrow-width overflow fix
-            once needed for them) are replaced by a single split-button:
-            the renderer select above stays put, directly to the left of
-            the "+"/arrow pair, which is right-aligned in this row via the
-            gallery-header container's own `justify-content: space-between`. */}
-        <GalleryCreateMenu
-          renderer={newProjectRenderer}
-          creating={creating}
-          onCreatingChange={setCreating}
-          onError={setCreateError}
-        />
         <label htmlFor="project-renderer-filter" className="gallery-renderer-label">
-          Filter by renderer
+          Renderer
         </label>
         <select
           id="project-renderer-filter"
@@ -118,6 +87,11 @@ function Gallery() {
           <option value="2d">2D</option>
           <option value="3d">3D</option>
         </select>
+        <GalleryCreateMenu
+          creating={creating}
+          onCreatingChange={setCreating}
+          onError={setCreateError}
+        />
       </div>
 
       {createError && (

@@ -1,5 +1,14 @@
 # AugmentrART Backlog
 
+## 2026-09-21 — backlog-session manifest (#703–#718)
+
+The live open issue inventory contains sixteen post-publish issues (#703–#718).
+The reconciled manifest, duplicate report, dependency order, closure contract,
+and evidence boundaries are recorded in
+`.local/tasks/backlog-session-2026-09-21-reconciliation.md`. The next groomed
+transaction is #703. Per the owner's explicit instruction, this session leaves
+all GitHub issues open even after their scoped evidence is closure-ready.
+
 The current open-issue manifest and dependency reconciliation is recorded in
 `.local/tasks/backlog-session-2026-09-19-reconciliation.md`.
 

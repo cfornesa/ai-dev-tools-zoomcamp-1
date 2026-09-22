@@ -1224,3 +1224,12 @@ Create/Gallery/Templates tests passed 31/31, with frontend typecheck and
 format checks also passing. The QA self-review was posted through the
 authenticated active Chrome session and the issue was closed. The change is
 UI-only; no production data mutation was required.
+
+## 2026-09-22 — #720 unified gallery closed
+
+Reviewed existing implementation commits `9dc300d` and `7fc48f2` for #720.
+Focused Gallery/PublicGallery tests passed 45/45, with frontend typecheck and
+format checks also passing. The QA self-review was posted through the
+authenticated active Chrome session and the issue was closed. The change is
+UI-only and preserves owner scoping, card actions, creation actions, and
+public filter behavior.

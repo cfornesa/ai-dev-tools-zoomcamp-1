@@ -19,6 +19,10 @@ The next backlog pass closed [#721](https://github.com/cfornesa/ai-dev-tools-zoo
 after self-review of its existing UI commit; its transaction record is in
 `.local/tasks/issue-721-create-wording-spacing.md`.
 
+Issue #720 was subsequently closed after the unified-gallery self-review;
+its transaction record is in
+`.local/tasks/issue-720-unified-gallery.md`.
+
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and
 #723 remain immutable; this is new follow-up work.

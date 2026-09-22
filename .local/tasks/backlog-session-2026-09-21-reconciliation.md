@@ -183,3 +183,15 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Full checks:** covered by the subsequent green `make check` gates for #709–#711 on the same codebase: backend `1490 passed, 39 skipped`; frontend `257 files, 2791 tests passed`; format/typecheck/action-pin checks passed.
 - **QA result:** `## QA: PASS`. The dark screenshot shows the script heading and cosmic backdrop; the mobile light screenshot remains legible; reduced-motion is explicitly exercised. The backend tests confirm unset resolution does not mutate `SiteSettings.style` and explicit Plain wins.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue: #713.
+
+## Transaction ledger — #713 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** compact mobile shell header only: mode and motion settings move into the hamburger menu, motion status remains accessible but visually hidden, and the desktop/768px header remains unchanged.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k3: `yes` because no callable independent implementation service was available in this session; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commit:** `e4f05a6`.
+- **Focused checks:** Layout Vitest `18 passed`; TypeScript and Prettier passed; Chromium `headerMobile.spec.ts` passed `2/2` at 375×812 and the 768×1024 boundary.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-713 make check` passed: backend `1490 passed, 39 skipped`; frontend `257 files, 2791 tests passed`; format/typecheck/action-pin checks passed; lint remains green with established non-blocking warnings.
+- **Browser evidence:** `header-mobile-open.png` and `header-tablet.png` were captured and visually inspected. The closed 375px header stays well under 25% of the first viewport; opened settings retain reachable 44px controls; tablet retains inline desktop controls.
+- **QA result:** `## QA: PASS`. No route/API/schema/dependency change.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue: #714.

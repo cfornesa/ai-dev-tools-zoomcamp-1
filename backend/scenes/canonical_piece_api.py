@@ -7,7 +7,12 @@ from rest_framework.views import APIView
 from scenes.art_piece_persistence import _piece_data
 from scenes.gallery import eligible_projects, eligible_projects3d
 from scenes.models import ArtPiece, Project, Project3D, PublicProfile
-from scenes.serializers import Project3DSerializer, ProjectSerializer
+from scenes.serializers import (
+    Project3DSerializer,
+    ProjectSerializer,
+    PublicProject3DSerializer,
+    PublicProjectSerializer,
+)
 
 
 def _profile_or_404(handle):
@@ -30,7 +35,7 @@ class PublicPieceBySlugView(APIView):
                     "canonical_url": f"/users/@{handle}/pieces/{project.public_slug}",
                     "viewer_url": f"/users/@{handle}/pieces/{project.public_slug}",
                     "type": "2d",
-                    "piece": ProjectSerializer(project).data,
+                    "piece": PublicProjectSerializer(project).data,
                 }
             )
         project3d = eligible_projects3d().filter(owner=owner, public_slug=piece_slug).first()
@@ -40,7 +45,7 @@ class PublicPieceBySlugView(APIView):
                     "canonical_url": f"/users/@{handle}/pieces/{project3d.public_slug}",
                     "viewer_url": f"/users/@{handle}/pieces/{project3d.public_slug}",
                     "type": "3d",
-                    "piece": Project3DSerializer(project3d).data,
+                    "piece": PublicProject3DSerializer(project3d).data,
                 }
             )
         art_piece = ArtPiece.objects.filter(

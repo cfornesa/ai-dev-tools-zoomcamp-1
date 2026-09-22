@@ -40,6 +40,7 @@ from scenes.canonical_piece_signals import normalize_public_slug
 from scenes.content_metadata import sanitize_content_seo
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
 from scenes.permissions import Action, can
+from scenes.public_identity import public_author_name
 from scenes.thumbnails import FALLBACK_PNG_BYTES
 
 THUMBNAIL_WIDTH = 320
@@ -220,6 +221,7 @@ def _piece_data(piece: ArtPiece, *, public: bool):
         "updated_at": piece.updated_at,
     }
     if public:
+        data["owner"] = public_author_name(piece.owner)
         from scenes.collections import public_collection_context
 
         data["collections"] = public_collection_context("art_piece", piece.public_id)

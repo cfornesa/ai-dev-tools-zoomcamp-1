@@ -305,6 +305,11 @@ exists, and `item_count`; `item_count` and the thumbnail are computed from
 publicly eligible members only, so private or unpublished members are never
 leaked through the profile projection.
 
+Each entry in the profile's `pieces` array includes `owner`, using the same
+public attribution rule as gallery items: display name first, current public
+handle as the fallback. Public piece detail payloads use that same resolved
+attribution for visible author text and metadata.
+
 `GET /api/account/profile/` returns `503 {"detail": "Profile settings are
 temporarily unavailable."}` instead of an unhandled `500` when the database
 is missing a schema element the view depends on (a pending migration not yet
@@ -941,7 +946,7 @@ Every item carries a **`kind`** discriminator with value `"2d"`, `"3d"`, or
 | -------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `id`           | Stable public id (the record's `public_id` UUID as a string). Internal database pks never appear.                 |
 | `title`        | Piece title.                                                                                                      |
-| `owner`        | Owner display value (username, never email).                                                                       |
+| `owner`        | Owner attribution: the chosen display name, falling back to the current public handle; never the historical account username or email. |
 | `published_at` | Publication timestamp (ISO 8601).                                                                                  |
 | `thumbnail_url`| URL of the piece's gallery-card thumbnail.                                                                         |
 | `viewer_url`   | Canonical profile-nested path `/users/@<handle>/pieces/<slug>`; legacy identifier paths are compatibility fallbacks only. |

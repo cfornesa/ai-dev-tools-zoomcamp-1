@@ -20,6 +20,7 @@ from scenes.models import (
     PublicProfileHandleRedirect,
     SiteSettings,
 )
+from scenes.public_identity import public_author_name
 from scenes.theme import (
     effective_presentation,
     effective_profile_theme,
@@ -128,6 +129,7 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 "slug": project.public_slug,
                 "title": project.title,
                 "description": project.description,
+                "owner": public_author_name(owner),
                 "type": "2d",
                 "engine": "canvas2d",
                 "published_at": project.published_at.isoformat() if project.published_at else None,
@@ -146,6 +148,7 @@ def _piece_payload(profile: PublicProfile) -> dict:
                     if isinstance(project3d.seo_config, dict)
                     else ""
                 ),
+                "owner": public_author_name(owner),
                 "type": "3d",
                 "engine": "threejs",
                 "published_at": project3d.published_at.isoformat()
@@ -164,6 +167,7 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 "slug": piece.public_slug,
                 "title": piece.title,
                 "description": piece.description,
+                "owner": public_author_name(owner),
                 "type": "generated",
                 "engine": piece.engine,
                 "published_at": piece.published_at.isoformat() if piece.published_at else None,

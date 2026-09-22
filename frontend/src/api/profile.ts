@@ -53,6 +53,7 @@ export type PublicProfilePage = {
     slug?: string;
     title: string;
     description?: string;
+    owner?: string;
     type: string;
     engine?: string;
     published_at?: string;

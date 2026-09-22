@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from scenes.art_piece_persistence import eligible_art_pieces
 from scenes.gallery import eligible_projects, eligible_projects3d
 from scenes.models import PublicProfile
+from scenes.public_identity import public_author_name
 from scenes.serializers import PublicGalleryItemSerializer
 
 
@@ -40,7 +41,7 @@ class PublicGallerySearchView(APIView):
                             "id": str(profile.user_id),
                             "kind": "account",
                             "title": profile.display_name or profile.handle,
-                            "owner": profile.user.get_username(),
+                            "owner": public_author_name(profile.user),
                             "handle": profile.handle,
                             "viewer_url": f"/users/@{profile.handle}",
                         }

@@ -92,6 +92,7 @@ export default function PublicProfile() {
                 href={piece.regular_url ?? `/users/@${handle}/pieces/${piece.slug ?? piece.id}`}
                 title={piece.title}
                 description={piece.description}
+                owner={piece.owner ?? displayName}
                 publishedAt={piece.published_at}
                 thumbnailUrl={piece.thumbnail_url}
                 thumbnailIsFallback={piece.thumbnail_is_fallback}

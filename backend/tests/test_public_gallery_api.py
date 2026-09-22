@@ -509,9 +509,29 @@ def test_response_excludes_private_and_internal_fields(owner_client, anon_client
     assert "tags" not in raw_body
     assert "visibility" not in raw_body
 
-    # Creator attribution is the owner's username, never their email.
+    # Creator attribution uses the current public handle when no display name
+    # is configured, never the historical account username or email.
     assert item["owner"] == "alice"
     assert owner.email not in raw_body
+
+
+@pytest.mark.django_db
+def test_public_attribution_prefers_display_name_and_falls_back_to_handle(
+    owner_client, anon_client, owner
+):
+    profile = PublicProfile.objects.create(user=owner, handle="current-handle", is_public=True)
+    profile.handle = "current-handle"
+    profile.display_name = "Chosen Display Name"
+    profile.save(update_fields=["handle", "display_name"])
+    project = _make_project(owner, title="Named attribution", description="d")
+    _publish_via_api(owner_client, project)
+
+    item = anon_client.get(LIST_URL).json()["results"][0]
+    assert item["owner"] == "Chosen Display Name"
+
+    profile.display_name = ""
+    profile.save(update_fields=["display_name"])
+    assert anon_client.get(LIST_URL).json()["results"][0]["owner"] == "current-handle"
 
 
 @pytest.mark.django_db

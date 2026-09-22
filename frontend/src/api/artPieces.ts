@@ -152,6 +152,7 @@ export type ArtPieceVersion = {
 export type ArtPiece = {
   public_id: string;
   public_slug?: string;
+  owner?: string;
   title: string;
   description: string;
   prompt?: string;

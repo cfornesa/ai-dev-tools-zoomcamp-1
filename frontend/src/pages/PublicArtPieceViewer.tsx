@@ -68,10 +68,12 @@ export default function PublicArtPieceViewer({
   initialPiece,
   canonicalHref,
   editHref,
+  authorDisplayName,
 }: {
   initialPiece?: ArtPiece;
   canonicalHref?: string;
   editHref?: string;
+  authorDisplayName?: string;
 } = {}) {
   const { id } = useParams<{ id: string }>();
   const [piece, setPiece] = useState<ArtPiece | null>(initialPiece ?? null);
@@ -164,6 +166,9 @@ export default function PublicArtPieceViewer({
           <h2 id="public-art-piece-heading">{piece.title}</h2>
           {editHref && <Link to={editHref}>Edit piece</Link>}
           <p>{piece.description}</p>
+          <p className="public-project-attribution">
+            By {authorDisplayName || piece.owner || 'Public artist'}
+          </p>
           <p>
             <button
               type="button"

@@ -35,6 +35,7 @@ export default function CanonicalPublicPiece() {
         initialPiece={resolved.piece as ArtPiece}
         canonicalHref={resolved.canonical_url}
         editHref={resolved.edit_url}
+        authorDisplayName={profile?.display_name}
       />
     );
   }

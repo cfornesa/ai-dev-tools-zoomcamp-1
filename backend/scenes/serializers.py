@@ -17,6 +17,7 @@ from scenes.models import (
     Template,
     Thumbnail3D,
 )
+from scenes.public_identity import public_author_name
 from scenes.public_urls import canonical_piece_viewer_path, piece_viewer_path
 
 MAX_TAGS = 10
@@ -41,11 +42,10 @@ def remix_provenance_data(project: Project) -> dict | None:
     "referencing the source project ... by stable FK rather than by a
     copied/editable snapshot of attribution fields." This task follows
     that existing design choice rather than overriding it with a new
-    snapshot column: the original creator's public display name (their
-    `username` -- the same value every other public serializer in this
-    file already exposes as `owner`) is read fresh, live, from
-    `source_project.owner.username` on every request. If a creator's
-    username changes after a fork exists, every remix pointing at them
+    snapshot column: the original creator's public display name, falling
+    back to their current public handle, is read fresh, live, from the
+    owner's profile on every request. If the attribution changes after a
+    fork exists, every remix pointing at them
     picks up the new name on its very next request; there is no frozen
     copy anywhere to fall out of sync.
 
@@ -53,7 +53,7 @@ def remix_provenance_data(project: Project) -> dict | None:
     is `on_delete=models.PROTECT` on `ForkProvenance`, so the source
     project row (and therefore its owner) can never be hard-deleted while
     a fork's provenance still references it -- reading
-    `source_project.owner.username` never 404s or raises.
+    resolving the owner's public attribution never 404s or raises.
 
     ## Privacy: durable text, no live/private link
 
@@ -63,7 +63,7 @@ def remix_provenance_data(project: Project) -> dict | None:
     moment a source project goes private, is unpublished, or is
     soft-deleted, this flips to `None` on the very next request: the
     "Remixed from [creator]" text keeps rendering (from the still-durable
-    `source_creator` username) but with no link and no other private
+    `source_creator` attribution) but with no link and no other private
     source data (title, description, scene content) ever included here.
 
     ## Nested remixes: immediate source, not root
@@ -93,7 +93,7 @@ def remix_provenance_data(project: Project) -> dict | None:
         and source.published_at is not None
     )
     result = {
-        "source_creator": source.owner.username,
+        "source_creator": public_author_name(source.owner),
         "source_public_id": str(source.public_id) if source_available else None,
     }
     source_viewer_url = canonical_piece_viewer_path(source) if source_available else None
@@ -305,7 +305,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
     """
 
     id = serializers.UUIDField(source="public_id", read_only=True)
-    owner = serializers.CharField(source="owner.username", read_only=True)
+    owner = serializers.SerializerMethodField()
     current_version = PublicSceneVersionSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
@@ -340,6 +340,9 @@ class PublicProjectSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("public-project-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_owner(self, project: Project) -> str:
+        return public_author_name(project.owner)
 
     def get_viewer_url(self, project: Project) -> str:
         return piece_viewer_path(project, "2d")
@@ -380,7 +383,7 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
     """
 
     id = serializers.UUIDField(source="public_id", read_only=True)
-    owner = serializers.CharField(source="owner.username", read_only=True)
+    owner = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
     remix_provenance = serializers.SerializerMethodField()
@@ -406,6 +409,9 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
             return None
         return reverse("public-project-thumbnail", kwargs={"public_id": project.public_id})
 
+    def get_owner(self, project: Project) -> str:
+        return public_author_name(project.owner)
+
     def get_remix_provenance(self, project: Project) -> dict | None:
         return remix_provenance_data(project)
 
@@ -417,7 +423,7 @@ class PublicProject3DListItemSerializer(serializers.ModelSerializer):
     """The safe card payload for a published 3D authored piece."""
 
     id = serializers.UUIDField(source="public_id", read_only=True)
-    owner = serializers.CharField(source="owner.username", read_only=True)
+    owner = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
     renderer = serializers.CharField(default="3d", read_only=True)
@@ -439,6 +445,9 @@ class PublicProject3DListItemSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_owner(self, project: Project3D) -> str:
+        return public_author_name(project.owner)
 
     def get_viewer_url(self, project: Project3D) -> str:
         return piece_viewer_path(project, "3d")
@@ -465,7 +474,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
     already merged in global order, so the view sorts three querysets once
     and never re-derives a row's kind. Every item exposes only the public
     fields `docs/api.md` documents -- a stable public id, title, owner
-    display value (username, never email), publication timestamp, thumbnail
+    display value (display name then current handle, never email), publication timestamp, thumbnail
     URL, and the viewer path -- plus `engine` on generated rows. No
     scene/prompt/draft/visibility internal ever passes through this
     serializer: its field set is a fixed enumeration below, so adding a
@@ -517,7 +526,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
 
     def get_owner(self, obj) -> str:
         _, record = self._entry(obj)
-        return record.owner.username
+        return public_author_name(record.owner)
 
     def get_published_at(self, obj):
         _, record = self._entry(obj)
@@ -787,7 +796,7 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
     `visibility` isn't public, regardless of who's asking."""
 
     id = serializers.UUIDField(source="public_id", read_only=True)
-    owner = serializers.CharField(source="owner.username", read_only=True)
+    owner = serializers.SerializerMethodField()
     current_version = PublicSceneVersion3DSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
@@ -813,6 +822,9 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return None
         return reverse("project3d-thumbnail", kwargs={"public_id": project.public_id})
+
+    def get_owner(self, project: Project3D) -> str:
+        return public_author_name(project.owner)
 
     def get_viewer_url(self, project: Project3D) -> str:
         return piece_viewer_path(project, "3d")

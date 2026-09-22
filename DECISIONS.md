@@ -1250,3 +1250,11 @@ Focused backend/API/renderer tests passed 33/33 and Project3DCard tests passed
 independent production evidence confirmed radial sphere shading. The QA
 self-review was posted through the authenticated active Chrome session and the
 issue was closed; no additional production mutation was performed.
+
+## 2026-09-22 — #713 mobile header closed
+
+Reviewed existing implementation commit `e4f05a6` for #713. Focused Layout
+tests passed 18/18, with frontend typecheck and format checks passing.
+Existing fixed-viewport Chromium evidence covered 375px and the 768px
+boundary. The QA self-review was posted through the authenticated active
+Chrome session and the issue was closed.

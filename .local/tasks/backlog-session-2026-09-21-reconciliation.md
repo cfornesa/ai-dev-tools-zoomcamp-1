@@ -30,7 +30,7 @@ closure-ready terminal evidence while leaving every GitHub issue open.
 | 9 | [#712](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/712) | Unset site style resolves to Celestial | #647 seeded style | 2b complex | TERMINAL-READY LOCAL |
 | 10 | [#713](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/713) | Compact mobile header at 375px | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 11 | [#714](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/714) | Public profile header/grid alignment | none | 2a mechanical | TERMINAL-READY LOCAL |
-| 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | GROOMED |
+| 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 13 | [#717](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/717) | Share-metadata diagnostic and safe origin handling | owner publish required for final criterion | 2b complex | HANDED-OFF after local implementation/QA |
 | 14 | [#716](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/716) | Generated thumbnail capture options and chosen secure path | Rule 2 gallery/owner choice required | 2b complex | HANDED-OFF pending owner decision |
 | 15 | [#718](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/718) | Published design evidence matrix, no fixes | #703–#715, #717, #716, owner publish | QA/readiness | DEPENDENCY-BLOCKED |
@@ -208,3 +208,16 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Browser evidence:** `profile-alignment-1440.png` and `profile-alignment-375.png` were captured and inspected. Both show the profile heading, “Pieces” heading, and card grid sharing the same left edge; the empty mobile profile has no blank bio/website/avatar gap.
 - **QA result:** `## QA: PASS`. No route/API/schema/dependency change.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue is #715.
+
+## Transaction ledger — #715 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** public/profile piece cards reserve a 16:9 thumbnail slot; missing previews use an accessible image icon and “No preview yet” placeholder; real thumbnail capture remains #716.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k3: `yes` because no callable independent implementation service was available in this session; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commit:** `af8cedb`.
+- **Changed files:** `frontend/src/components/PieceCard.tsx`, its focused test, `frontend/src/index.css`, and the profile/card Playwright coverage.
+- **Focused checks:** PieceCard Vitest `4 passed`; TypeScript and Prettier passed; Chromium card-thumbnail/profile-card coverage passed `5/5` at 1440×900 and 375×812, including 16:9 geometry, equal desktop-row heights, placeholder semantics, and no horizontal overflow.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-715 make check` passed: backend `1490 passed, 39 skipped`; frontend `257 files, 2792 tests passed`; format/typecheck/action-pin checks passed; lint remains green with established non-blocking warnings.
+- **Browser evidence:** `card-thumbnail-area-1440.png` and `card-thumbnail-area-375.png` were captured and inspected. Preview and fallback tiles have matching 16:9 geometry; the fallback icon/text is centered and mobile cards remain contained.
+- **QA result:** `## QA: PASS`. No route/API/schema/dependency change.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; #716 now requires the owner’s Rule 2 choice.

@@ -58,6 +58,11 @@ its transaction record is in `.local/tasks/issue-712-celestial-default.md`.
 - **#706** — the existing implementation has prior reported browser evidence,
   but this QA pass cannot independently rerun its rendered desktop/mobile
   contract on the current host.
+- **#705** — 2D bundle/sandbox checks pass 46/46, but the required five-engine
+  rendered screenshot run is blocked by the same host limitation.
+- **#704 / #703** — 3D bundle checks pass 18/18 and stage-sizing checks pass
+  3/3, but their required rendered WebGL/viewport screenshot runs are blocked
+  by the same host limitation.
 
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and

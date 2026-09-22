@@ -17,6 +17,12 @@ import PieceStageIcon from '../components/PieceStageIcon';
 import PieceStageToolbar from '../components/PieceStageToolbar';
 import type { PieceStageCapabilities } from '../components/pieceStageCapabilities';
 import { useFullscreenToggle } from './useFullscreenToggle';
+import {
+  visitorStrokeIntersects,
+  type VisitorPoint,
+  type VisitorStroke,
+  type VisitorTool,
+} from './visitorDrawing';
 
 // Issue #479: real camera capture and hand-tracking now run entirely in
 // this trusted parent frame (never inside the sandboxed iframe --
@@ -49,8 +55,6 @@ type Props = {
   presentation?: 'regular' | 'immersive';
 };
 
-export type VisitorPoint = { x: number; y: number };
-type VisitorTool = 'pencil' | 'brush' | 'eraser';
 const VISITOR_SWATCHES = [
   { name: 'Black', value: '#000000' },
   { name: 'White', value: '#ffffff' },
@@ -61,38 +65,6 @@ const VISITOR_SWATCHES = [
   { name: 'Blue', value: '#3b82f6' },
   { name: 'Purple', value: '#a855f7' },
 ] as const;
-export type VisitorStroke = {
-  points: VisitorPoint[];
-  tool: VisitorTool;
-  size: number;
-  color: string;
-};
-
-export function visitorStrokeIntersects(
-  stroke: VisitorStroke,
-  point: VisitorPoint,
-  radius: number,
-): boolean {
-  for (let index = 0; index < stroke.points.length; index += 1) {
-    const start = stroke.points[index];
-    const end = stroke.points[index + 1] ?? start;
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const lengthSquared = dx * dx + dy * dy;
-    const projection =
-      lengthSquared === 0
-        ? 0
-        : Math.max(
-            0,
-            Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared),
-          );
-    const closestX = start.x + projection * dx;
-    const closestY = start.y + projection * dy;
-    if (Math.hypot(point.x - closestX, point.y - closestY) <= radius) return true;
-  }
-  return false;
-}
-
 function contrastingVisitorColor(background: string): string {
   const channels = background.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (!channels) return '#ffffff';

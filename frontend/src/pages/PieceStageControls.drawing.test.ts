@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { visitorStrokeIntersects, type VisitorStroke } from './PieceStageControls';
+import { visitorStrokeIntersects, type VisitorStroke } from './visitorDrawing';
 
 const stroke: VisitorStroke = {
   points: [

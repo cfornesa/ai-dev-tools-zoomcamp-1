@@ -106,6 +106,31 @@ while true; do
   sleep 1
 done
 
+diagnostic_body="$(mktemp)"
+trap 'rm -f "$diagnostic_body"' EXIT
+if ! diagnostic_status="$(
+  curl \
+    --silent \
+    --show-error \
+    --location \
+    --max-time "$timeout_seconds" \
+    --output "$diagnostic_body" \
+    --write-out '%{http_code}' \
+    "${published_url}/__share-metadata-status"
+)"; then
+  printf 'FAIL: share-metadata diagnostic could not be reached\n' >&2
+  exit 1
+fi
+diagnostic_result="$(tr -d '\n' <"$diagnostic_body")"
+printf 'Share-metadata diagnostic: %s\n' "$diagnostic_result"
+if [[ "$diagnostic_status" != "200" ]] ||
+  ! grep -Eiq '"middleware_active"[[:space:]]*:[[:space:]]*true' "$diagnostic_body" ||
+  ! grep -Eiq '"origin_valid"[[:space:]]*:[[:space:]]*true' "$diagnostic_body" ||
+  ! grep -Eiq '"backend_reachable"[[:space:]]*:[[:space:]]*true' "$diagnostic_body"; then
+  printf 'FAIL: share-metadata diagnostic reported an unhealthy deployment\n' >&2
+  exit 1
+fi
+
 root_body="$(mktemp)"
 trap 'rm -f "$root_body"' EXIT
 if ! root_status="$(

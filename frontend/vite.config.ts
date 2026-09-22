@@ -35,6 +35,10 @@ type ShareMetadata = {
   image_url: string | null;
 };
 
+type ShareMetadataError = { name: string; message: string } | null;
+
+let lastShareMetadataError: ShareMetadataError = null;
+
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => {
     const entities: Record<string, string> = {
@@ -48,26 +52,76 @@ function escapeHtml(value: string): string {
   });
 }
 
-function publicOrigin(): string {
+function fallbackPublicOrigin(): string {
+  const hosts = (process.env.DJANGO_ALLOWED_HOSTS ?? '').split(',');
+  for (const value of hosts) {
+    const host = value.trim();
+    if (!host || host === '*' || host.includes('/') || host.includes('://')) continue;
+    const local = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(host);
+    try {
+      const parsed = new URL(`${local ? 'http' : 'https'}://${host}`);
+      if (parsed.hostname) return parsed.origin;
+    } catch {
+      // Ignore malformed allow-list entries and try the next one.
+    }
+  }
+  return 'http://localhost:5000';
+}
+
+function normalizedPublicOrigin(): { origin: string; valid: boolean } {
   // Platform secrets are sometimes saved with surrounding whitespace or
-  // quotes; normalize those so a cosmetic typo cannot silently disable the
-  // server-rendered metadata (#700).
-  const origin = (process.env.PUBLIC_SITE_ORIGIN ?? 'http://localhost:5000')
+  // quotes. Bare hosts are treated as HTTPS, and paths are discarded so a
+  // harmless deployment-console suffix cannot disable metadata injection.
+  const configured = (process.env.PUBLIC_SITE_ORIGIN ?? 'http://localhost:5000')
     .trim()
     .replace(/^(["'])(.*)\1$/, '$2');
-  const parsed = new URL(origin);
-  if (
-    !['http:', 'https:'].includes(parsed.protocol) ||
-    !parsed.hostname ||
-    parsed.username ||
-    parsed.password ||
-    parsed.pathname !== '/' ||
-    parsed.search ||
-    parsed.hash
-  ) {
-    throw new Error('PUBLIC_SITE_ORIGIN must be an origin such as https://augmentrart.com');
+  const candidate = /^[a-z][a-z\d+.-]*:\/\//i.test(configured)
+    ? configured
+    : `https://${configured}`;
+  try {
+    const parsed = new URL(candidate);
+    if (
+      !['http:', 'https:'].includes(parsed.protocol) ||
+      !parsed.hostname ||
+      parsed.username ||
+      parsed.password
+    ) {
+      throw new Error('invalid public origin');
+    }
+    return { origin: parsed.origin, valid: true };
+  } catch {
+    return { origin: fallbackPublicOrigin(), valid: false };
   }
-  return parsed.origin;
+}
+
+function publicOrigin(): string {
+  return normalizedPublicOrigin().origin;
+}
+
+function safeShareMetadataError(error: unknown): ShareMetadataError {
+  const name = error instanceof Error && error.name ? error.name : 'Error';
+  const rawMessage = error instanceof Error ? error.message : String(error);
+  const message = rawMessage
+    .replace(/https?:\/\/[^\s/]+/gi, '[redacted-origin]')
+    .replace(/\b(token|secret|password|key)\s*[=:]\s*[^\s]+/gi, '$1=[redacted]')
+    .slice(0, 240);
+  return { name, message };
+}
+
+async function backendReachable(): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2000);
+  try {
+    const response = await fetch(`${backendProxyTarget}/health/`, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function profileFeedPath(pathname: string): boolean {
@@ -232,6 +286,20 @@ function shareMetadataPlugin(): Plugin {
     server.middlewares.use(async (request, response, next) => {
       if (request.method !== 'GET') return next();
       const requestPath = new URL(request.url ?? '/', 'http://localhost').pathname;
+      if (requestPath === '/__share-metadata-status') {
+        const origin = normalizedPublicOrigin();
+        const payload = {
+          middleware_active: true,
+          origin_valid: origin.valid,
+          last_error: lastShareMetadataError,
+          backend_reachable: await backendReachable(),
+        };
+        response.statusCode = 200;
+        response.setHeader('Content-Type', 'application/json; charset=utf-8');
+        response.setHeader('Cache-Control', 'no-store');
+        response.end(JSON.stringify(payload));
+        return;
+      }
       const legacyCollection = legacyCollectionDescriptor(requestPath);
       if (legacyCollection) {
         try {
@@ -284,6 +352,7 @@ function shareMetadataPlugin(): Plugin {
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.end(html);
       } catch (error) {
+        lastShareMetadataError = safeShareMetadataError(error);
         // Never swallow this silently: a production run that quietly serves
         // the bare SPA shell hides missing Open Graph/feed tags (#700).
         console.error(`[share-metadata] injection failed for ${requestPath}:`, error);

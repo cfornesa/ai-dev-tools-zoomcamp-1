@@ -1,5 +1,20 @@
 # Public gallery API contract
 
+## Share-metadata diagnostic (`#717`)
+
+`GET /__share-metadata-status` is an anonymous, credential-free diagnostic
+served by the Vite web process. It reports whether the server-rendered share
+metadata middleware is installed, whether `PUBLIC_SITE_ORIGIN` normalized to a
+valid origin (or required the configured allow-list fallback), the last
+sanitized injection error if one occurred, and whether the Django backend was
+reachable when the diagnostic was requested. It never returns environment
+values, URLs containing credentials, request contents, or stack traces.
+
+The response is JSON and is intended for deployment smoke checks, not product
+data consumption. A successful HTTP response does not imply metadata
+injection succeeded; callers must inspect `middleware_active`, `origin_valid`,
+and `backend_reachable`, and should report `last_error` when present.
+
 ## Canonical public piece and editor routes (#684)
 
 Public profile surfaces use the following canonical, profile-nested route

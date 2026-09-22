@@ -19,6 +19,11 @@ describe('vite preview share metadata (production run path)', () => {
   beforeAll(async () => {
     backend = createServer((request, response) => {
       response.setHeader('Content-Type', 'application/json');
+      if (request.url === '/health/') {
+        response.statusCode = 200;
+        response.end(JSON.stringify({ status: 'ok' }));
+        return;
+      }
       if (request.url?.startsWith('/api/public/share-meta/site/profile/')) {
         response.end(
           JSON.stringify({
@@ -76,5 +81,29 @@ describe('vite preview share metadata (production run path)', () => {
     const html = await (await fetch(`${baseUrl}/`)).text();
     expect(html).toContain('og:title');
     expect(html).toContain('https://example.test/');
+  });
+
+  it('accepts a bare host and removes a deployment-console path', async () => {
+    process.env.PUBLIC_SITE_ORIGIN = 'bare.example.test/preview/';
+
+    const html = await (await fetch(`${baseUrl}/`)).text();
+    expect(html).toContain('https://bare.example.test/');
+  });
+
+  it('exposes a credential-free diagnostic and safely falls back for invalid origins', async () => {
+    process.env.PUBLIC_SITE_ORIGIN = 'not a valid origin';
+    process.env.DJANGO_ALLOWED_HOSTS = 'diagnostic.example.test';
+
+    const response = await fetch(`${baseUrl}/__share-metadata-status`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    await expect(response.json()).resolves.toMatchObject({
+      middleware_active: true,
+      origin_valid: false,
+      backend_reachable: true,
+      last_error: null,
+    });
+    const html = await (await fetch(`${baseUrl}/`)).text();
+    expect(html).toContain('https://diagnostic.example.test/');
   });
 });

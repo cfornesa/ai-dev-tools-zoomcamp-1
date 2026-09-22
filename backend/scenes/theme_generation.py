@@ -204,11 +204,10 @@ def create_attempt(
 
 @transaction.atomic
 def accept_attempt(*, actor, attempt_id: int, expected_revision: int) -> dict[str, Any]:
-    row = (
-        ThemeGenerationAttempt.objects.select_for_update()
-        .select_related("style")
-        .get(pk=attempt_id, actor=actor)
-    )
+    # PostgreSQL rejects FOR UPDATE across a nullable outer join, so the row
+    # must be locked on its own; the nullable `style` relation is then
+    # resolved as a separate, unlocked lookup.
+    row = ThemeGenerationAttempt.objects.select_for_update().get(pk=attempt_id, actor=actor)
     if row.state != ThemeGenerationAttempt.State.DRAFT or row.revision != expected_revision:
         raise ThemeGenerationError("This draft is stale or is no longer editable.")
     definition = validate_theme_definition(row.definition)
@@ -259,11 +258,8 @@ def reject_attempt(*, actor, attempt_id: int, expected_revision: int) -> dict[st
 
 @transaction.atomic
 def restore_attempt(*, actor, attempt_id: int) -> dict[str, Any]:
-    row = (
-        ThemeGenerationAttempt.objects.select_for_update()
-        .select_related("style")
-        .get(pk=attempt_id, actor=actor)
-    )
+    # See accept_attempt: FOR UPDATE cannot join the nullable style relation.
+    row = ThemeGenerationAttempt.objects.select_for_update().get(pk=attempt_id, actor=actor)
     if row.state != ThemeGenerationAttempt.State.ACCEPTED or not row.previous_definition:
         raise ThemeGenerationError("No accepted snapshot is available to restore.")
     if row.style is None:

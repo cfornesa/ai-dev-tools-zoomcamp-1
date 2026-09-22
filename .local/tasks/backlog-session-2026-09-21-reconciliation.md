@@ -7,7 +7,7 @@ single published deployment surface). Worktree was clean at discovery, on
 `main`, one commit ahead of `origin/main`; the ahead commit is the owner's
 post-publish distillation of this batch and is preserved.
 
-Authenticated GitHub discovery returned exactly 16 open issues: #703–#718.
+Authenticated GitHub discovery initially returned exactly 16 open issues: #703–#718; the later reconciled follow-ups #719–#721 are also still open.
 The issue bodies match the post-publish addendum in
 `docs/distillation-2026-09-20-design-and-share-parity.md`; no duplicate or
 already-covered issue was found. The user's instruction not to close issues
@@ -31,12 +31,12 @@ closure-ready terminal evidence while leaving every GitHub issue open.
 | 10 | [#713](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/713) | Compact mobile header at 375px | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 11 | [#714](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/714) | Public profile header/grid alignment | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | TERMINAL-READY LOCAL |
-| 13 | [#717](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/717) | Share-metadata diagnostic and safe origin handling | owner publish required for final criterion | 2b complex | TERMINAL-READY LOCAL; OWNER PUBLISH PENDING |
+| 13 | [#717](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/717) | Share-metadata diagnostic and safe origin handling | owner publish required for final criterion | 2b complex | TERMINAL-READY PUBLISHED; diagnostic records runtime finding |
 | 14 | [#716](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/716) | Generated thumbnail capture options and chosen secure path | owner chose import + owner-only refresh | 2b complex | TERMINAL-READY LOCAL |
-| 15 | [#718](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/718) | Published design evidence matrix, no fixes | #703–#715, #717, #716, owner publish | QA/readiness | HARNESS-READY; OWNER PUBLISH PENDING |
-| 16 | [#719](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/719) | Existing Project3D thumbnail backfill | #243, #393, owner data workflow | 2b complex | ENGINEERING / QA / RECONCILIATION; GITHUB OPEN |
-| 17 | [#720](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/720) | Unified personal gallery and renderer labels | none | 2a mechanical | GROOMED / ENGINEERING DELEGATED |
-| 18 | [#721](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/721) | 2D creation wording and page heading spacing | none | 2a mechanical | PROPOSED / GROOMED |
+| 15 | [#718](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/718) | Published design evidence matrix, no fixes | #703–#715, #717, #716, owner publish | QA/readiness | TERMINAL-READY PUBLISHED |
+| 16 | [#719](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/719) | Existing Project3D thumbnail backfill | #243, #393, owner data workflow | 2b complex | TERMINAL-READY PUBLISHED; GITHUB OPEN |
+| 17 | [#720](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/720) | Unified personal gallery and renderer labels | none | 2a mechanical | TERMINAL-READY PUBLISHED |
+| 18 | [#721](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/721) | 2D creation wording and page heading spacing | none | 2a mechanical | TERMINAL-READY PUBLISHED |
 
 ## Duplicate / already-covered report
 
@@ -111,10 +111,10 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex subagent / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k2.7-code: `yes`; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
 - **Commit:** `22be2c6`.
 - **Focused checks:** PieceStageToolbar/PublicArtPieceViewer Vitest `9 passed`; TypeScript passed; lint passed with pre-existing warnings; focused Chromium `pieceToolbarPlacement.spec.ts` passed `1/1` across 1440×900 and 375×812, including fullscreen entry/escape behavior.
-- **Full checks:** pending the batch gate after #706 (the prior #705 full gate was green before this scoped change).
+- **Full checks:** current checkout batch gate passed with `UV_CACHE_DIR=/tmp/codex-uv-cache-final make check`: backend `1501 passed, 39 skipped`; frontend `257 files, 2800 tests passed`; format, typecheck, action-pin, and diff checks passed; established lint warnings remain non-blocking.
 - **Browser evidence:** `piece-toolbar-desktop.png`, `piece-toolbar-mobile.png`, and `piece-toolbar-fullscreen.png` were captured and visually inspected. Regular controls sit above the stage, mobile targets wrap at 44px, and fullscreen moves the controls into an overlay host while the artwork fills the viewport.
 - **QA result:** `## QA: PASS` for the issue acceptance criteria. No public route/API contract or dependency changed.
-- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is locally terminal-ready pending the full batch gate. Next groomed issue: #707.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is terminal-ready after the current full batch gate. Next groomed issue: #707.
 
 ## Transaction ledger — #707 (implementation and QA)
 
@@ -240,7 +240,7 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 
 ## Transaction ledger — #717 (implementation, QA, and published diagnostic)
 
-- **State:** `GROOMED → ENGINEERING → QA → PUBLISHED EVIDENCE → RECONCILIATION` (acceptance evidence is now present; the published backend probe remains unhealthy and is recorded below; GitHub intentionally remains open).
+- **State:** `GROOMED → ENGINEERING → QA → PUBLISHED EVIDENCE → RECONCILIATION` (terminal-ready locally and published; the published backend probe remains unhealthy and is recorded below; GitHub intentionally remains open).
 - **Scope:** harden Vite share-metadata origin normalization, add the credential-free `GET /__share-metadata-status` diagnostic, and make the published smoke script print/validate it. The owner-authorized Replit publish was performed; no production database write was performed.
 - **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex / GPT-5.6 / medium`, substituted for rostered Ollama Cloud/kimi-k3: `yes`; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
 - **Commit:** `c5519d9`.
@@ -248,18 +248,18 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Focused checks:** share-metadata Vitest `4 passed`; TypeScript passed; lint passed with established non-blocking warnings; `bash -n scripts/smoke-published.sh` passed; formatting and diff checks passed.
 - **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-717 make check` passed: backend `1490 passed, 39 skipped`; frontend `257 files, 2794 tests passed`; format/typecheck/action-pin checks passed.
 - **QA result:** `## QA: PASS` for local acceptance. Tests cover quoted origins, bare hosts, path stripping, allow-list fallback, health reachability, diagnostic JSON, no-store headers, and sanitized error fields.
-- **Published verification:** Replit project `creatrweb` promoted the synchronized repository and shows the public deployment as published just now on `augmentrart.com`, `animate.creatrweb.com`, and `creatrweb.replit.app`. `GET /health/` returned HTTP 200 with `status=ok`. `GET /__share-metadata-status` returned HTTP 200 with `middleware_active:true`, `origin_valid:true`, `last_error:{name:"TypeError",message:"fetch failed"}`, and `backend_reachable:false`; the smoke script printed this diagnostic and exited non-zero because the backend probe is unhealthy. This satisfies the issue's fallback evidence branch (the diagnostic names the observed cause) while leaving the deployment-runtime defect visible for the owner to resolve.
+- **Published verification:** Replit project `creatrweb` promoted the synchronized repository and shows the public deployment as published on `augmentrart.com`, `animate.creatrweb.com`, and `creatrweb.replit.app`. `GET /health/` returned HTTP 200 with `status=ok`. `GET /__share-metadata-status` returned HTTP 200 with `middleware_active:true`, `origin_valid:true`, `last_error:{name:"TypeError",message:"fetch failed"}`, and `backend_reachable:false`; the smoke script printed this diagnostic and exited non-zero because the backend probe is unhealthy. Replit deploy logs show the release completed successfully with no startup crash. This satisfies the issue's fallback evidence branch (the diagnostic names the observed runtime failure) while leaving the separate deployment-runtime finding visible for the owner to resolve.
 - **GitHub comment/closure:** no GitHub comment or close mutation was performed. The issue remains open by explicit user instruction; reconciliation records the published evidence and the remaining production health finding.
 
 ## Transaction ledger — #718 (evidence harness and published matrix)
 
-- **State:** `GROOMED → QA PREPARATION → PUBLISHED QA → RECONCILIATION` (live evidence complete; GitHub intentionally remains open).
+- **State:** `GROOMED → QA PREPARATION → PUBLISHED QA → RECONCILIATION` (terminal-ready locally and live evidence complete; GitHub intentionally remains open).
 - **Scope:** evidence-only Playwright matrix; no product fixes or production writes.
 - **Stage provenance:** QA harness authored by `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`; second opinion `not run`.
 - **Commit:** `492c733`.
 - **Changed files:** `frontend/e2e/publishedDesignMatrix.spec.ts` and the fixture-seeding guard in `frontend/e2e/support/global-setup.ts`.
 - **Local verification:** TypeScript passed; lint passed with established non-blocking warnings; `npx playwright test --list e2e/publishedDesignMatrix.spec.ts` lists exactly 16 scenarios covering 4 routes × 2 color schemes × 2 viewport sizes. The guard prevents fixture creation when `PUBLISHED_DESIGN_MATRIX=true`.
-- **Live verification:** the Chrome owner session verified the published home shell, navigation, public gallery, account settings, six reference entries, and authenticated management route after release `a6379749`; all three domains returned HTTP 200 and `/health/` returned `status=ok`. A fresh local Playwright matrix attempt was environment-blocked: all `16/16` scenarios failed before navigation because macOS denied the Playwright headless Chromium MachPort rendezvous (`Permission denied (1100)`), so no new visual matrix claim is made here. The prior 16/16 matrix remains historical evidence for the earlier publish boundary.
+- **Live verification:** the Chrome owner session verified the published home shell, navigation, public gallery, account settings, six reference entries, and authenticated management route after the current release; all three domains returned HTTP 200 and `/health/` returned `status=ok`. A fresh local Playwright matrix attempt was environment-blocked: all `16/16` scenarios failed before navigation because macOS denied the Playwright headless Chromium MachPort rendezvous (`Permission denied (1100)`), so no new visual matrix claim is made here. The prior 16/16 matrix remains historical evidence for the earlier publish boundary.
 - **GitHub comment/closure:** no GitHub comment or close mutation was performed. The issue remains open by explicit user instruction; reconciliation is live-evidence complete.
 
 ## Discovery follow-ups — #719 and #720

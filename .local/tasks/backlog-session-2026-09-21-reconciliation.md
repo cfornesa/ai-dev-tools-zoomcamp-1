@@ -403,3 +403,40 @@ during the preceding `qa-self-review`). No duplicates found. Manifest
 remains 21 open issues, each with a recorded current status and exact next
 action; missing-terminal-status count in the GitHub comment sense is zero
 (every issue's comment states its evidence and next action explicitly).
+
+## Push/deploy reconciliation (2026-09-22, Claude Sonnet 5 / Medium, production-readiness rerun)
+
+Rerunning `production-readiness` found `origin/main` was 28 commits behind
+this checkout (`git rev-list --left-right --count origin/main...HEAD` → `0
+28`), stuck at `5001282`. Every closure comment posted in this session and
+the prior task-distillation pass, plus #724/#725's implementing commits
+(`c6bf366`, `46e540c`, `5760cdf`, `64115f2`, `3d14f81`), existed only
+locally. Production (`augmentrart.com`) already reflected #712/#716's data
+fixes (verified live: `style_key: celestial`, `thumbnail_is_fallback: false`
+on all six reference pieces) because those needed only a production data
+action, not a code deploy — but a fresh `npm run build` from `HEAD` produced
+`index-D1_M6WfD.js`, which matched neither the stale local `dist/`
+(`index-DYlRPTtc.js`) nor the live bundle (`index-rNSf5RPL.js`). This
+confirmed #724/#725's feature code was never deployed, despite both being
+closed `QA: PASS` on GitHub (#725's own comment already disclosed
+"local; not pushed"; #724 did not disclose the same gap).
+
+Owner authorized pushing immediately. `git push origin main` fast-forwarded
+cleanly (`5001282..5194eb9`, no force needed, no conflicts) — confirms this
+was a pure push gap, not a divergent-history problem. Immediately after the
+push, production still served the pre-push bundle (`index-rNSf5RPL.js`),
+confirming Replit's Publish step is a separate, owner-triggered action from
+a GitHub push (consistent with `[[replit-migrations-ledger-not-updated-by-publish]]`
+and this repo's documented deploy flow).
+
+Owner authorized attempting the Replit publish via an authenticated Chrome
+session (`mcp__claude-in-chrome__*`), matching the pattern used by prior
+sessions ("authenticated owner session" in the #703-#721 ledger). The
+extension was not connected in this session
+(`tabs_context_mcp` returned "Claude in Chrome is not connected") — a tool
+availability boundary, not a declined permission. **#724 and #725's
+deployed-evidence criteria remain an open verification boundary**; the
+owner needs to trigger the Replit Publish themselves (or reconnect Claude in
+Chrome in a future session) before those two issues' closures can be
+considered deployment-verified. Recommend reopening #724 (#725 already
+self-disclosed the gap) pending explicit owner authorization to do so.

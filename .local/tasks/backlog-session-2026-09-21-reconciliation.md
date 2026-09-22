@@ -28,8 +28,8 @@ closure-ready terminal evidence while leaving every GitHub issue open.
 | 7 | [#710](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/710) | C2 Interactive undo/redo/clear history | #709 | 2a mechanical | TERMINAL-READY LOCAL |
 | 8 | [#711](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/711) | C2 Interactive touch/stylus continuity and scroll behavior | #707 | 2a mechanical | TERMINAL-READY LOCAL |
 | 9 | [#712](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/712) | Unset site style resolves to Celestial | #647 seeded style | 2b complex | TERMINAL-READY LOCAL |
-| 10 | [#713](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/713) | Compact mobile header at 375px | none | 2a mechanical | GROOMED |
-| 11 | [#714](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/714) | Public profile header/grid alignment | none | 2a mechanical | GROOMED |
+| 10 | [#713](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/713) | Compact mobile header at 375px | none | 2a mechanical | TERMINAL-READY LOCAL |
+| 11 | [#714](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/714) | Public profile header/grid alignment | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | GROOMED |
 | 13 | [#717](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/717) | Share-metadata diagnostic and safe origin handling | owner publish required for final criterion | 2b complex | HANDED-OFF after local implementation/QA |
 | 14 | [#716](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/716) | Generated thumbnail capture options and chosen secure path | Rule 2 gallery/owner choice required | 2b complex | HANDED-OFF pending owner decision |
@@ -195,3 +195,16 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Browser evidence:** `header-mobile-open.png` and `header-tablet.png` were captured and visually inspected. The closed 375px header stays well under 25% of the first viewport; opened settings retain reachable 44px controls; tablet retains inline desktop controls.
 - **QA result:** `## QA: PASS`. No route/API/schema/dependency change.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue: #714.
+
+## Transaction ledger — #714 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** public profile heading, section heading, and piece grid share one responsive content column; empty profiles remain compact without overflow at desktop and mobile sizes.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k3: `yes` because no callable independent implementation service was available in this session; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commit:** `0641f71`.
+- **Changed files:** `frontend/src/index.css` and `frontend/e2e/profileAlignment.spec.ts`.
+- **Focused checks:** PublicProfile Vitest `7 passed`; TypeScript and Prettier passed; Chromium `profileAlignment.spec.ts` passed `2/2` at 1440×900 and 375×812, including ≤1px left-edge alignment and no horizontal overflow assertions.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-714 make check` passed: backend `1490 passed, 39 skipped`; frontend `257 files, 2791 tests passed`; format/typecheck/action-pin checks passed; lint remains green with established non-blocking warnings.
+- **Browser evidence:** `profile-alignment-1440.png` and `profile-alignment-375.png` were captured and inspected. Both show the profile heading, “Pieces” heading, and card grid sharing the same left edge; the empty mobile profile has no blank bio/website/avatar gap.
+- **QA result:** `## QA: PASS`. No route/API/schema/dependency change.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue is #715.

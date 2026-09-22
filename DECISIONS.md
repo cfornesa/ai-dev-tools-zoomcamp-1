@@ -1278,3 +1278,12 @@ regular/immersive desktop and touch-sized scenarios. Focused checks were also
 recorded in each issue ledger. QA comments were posted through active Chrome
 and the issues were closed. Stage 3 second opinion was not run, and no
 production evidence is claimed.
+
+## 2026-09-22 — #716 generated thumbnails closed after #723
+
+#716's prior production blocker was the missing trusted-thumbnail data, not an
+implementation defect. After the owner-only #723 refresh completed, the six
+stable-marker reference pieces returned non-fallback thumbnails from the live
+API and rendered artwork in gallery/profile surfaces. Focused security tests
+passed 29/29; QA was posted through active Chrome and #716 was closed. Stage 3
+second opinion was not run.

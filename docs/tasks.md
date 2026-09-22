@@ -42,8 +42,8 @@ its transaction record is in `.local/tasks/issue-712-celestial-default.md`.
 - **#717** — local implementation checks pass, but published smoke reports
   `backend_reachable=false` / `fetch failed`; owner deployment investigation
   and republish are required.
-- **#716** — implementation is blocked on the owner's explicit choice among
-  anonymous capture token, owner-only batch refresh, or import-time assets.
+- **#716** — closed after the linked owner-only production refresh in #723
+  completed and the live API/gallery recheck showed generated thumbnails.
 
 Issues #703–#715 that had been deferred on the local Mach-port limitation are
 now closed after the repository-owned Docker Compose Chromium run succeeded.
@@ -68,6 +68,10 @@ fill, toolbar, card-thumbnail, palette, eraser, history, and touch-drawing
 scenarios passed, so the issues were self-reviewed in the active Chrome
 session with `## QA: PASS` comments and closed. Stage 3 second-opinion review
 was not run; evidence is local Compose, not production.
+
+Issue #716 was then closed after the #723 production refresh resolved its
+explicit data dependency. Its focused security checks and live thumbnail/API
+evidence are recorded in `.local/tasks/issue-716-generated-thumbnails.md`.
 
 ## 2026-09-22 — backlog-session priority gate (#722–#723)
 

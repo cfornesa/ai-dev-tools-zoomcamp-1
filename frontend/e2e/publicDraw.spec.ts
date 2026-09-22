@@ -141,6 +141,20 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
       await expect(page.getByText('Eraser removes touched strokes.')).toBeVisible();
       await drawStroke(0.55, 0.55, 4);
       await expect(page.getByRole('button', { name: 'Clear visitor drawing' })).toBeEnabled();
+      await expect(page.getByRole('button', { name: 'Undo visitor drawing' })).toBeEnabled();
+      await expect(page.getByRole('button', { name: 'Redo visitor drawing' })).toBeDisabled();
+      await page.screenshot({
+        path: `test-results/public-draw-${surface}-${viewport.width}-erased.png`,
+        fullPage: true,
+      });
+      await page.getByRole('button', { name: 'Undo visitor drawing' }).click();
+      await expect(page.getByRole('button', { name: 'Redo visitor drawing' })).toBeEnabled();
+      await page.getByRole('button', { name: 'Redo visitor drawing' }).click();
+      await overlay.focus();
+      await page.keyboard.press('Control+z');
+      await expect(page.getByRole('button', { name: 'Redo visitor drawing' })).toBeEnabled();
+      await page.keyboard.press('Control+Shift+z');
+      await expect(page.getByRole('button', { name: 'Redo visitor drawing' })).toBeDisabled();
       await page.waitForTimeout(100);
       const firstScreenshot = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Take screenshot' }).click();
@@ -153,6 +167,10 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
       });
 
       await page.getByRole('button', { name: 'Clear visitor drawing' }).click();
+      await expect(page.getByRole('button', { name: 'Clear visitor drawing' })).toBeDisabled();
+      await page.getByRole('button', { name: 'Undo visitor drawing' }).click();
+      await expect(page.getByRole('button', { name: 'Clear visitor drawing' })).toBeEnabled();
+      await page.getByRole('button', { name: 'Redo visitor drawing' }).click();
       await expect(page.getByRole('button', { name: 'Clear visitor drawing' })).toBeDisabled();
       await page.screenshot({
         path: `test-results/public-draw-${surface}-${viewport.width}.png`,

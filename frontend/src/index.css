@@ -4723,6 +4723,12 @@ select.ai-proposal-field-full-width {
 
 .public-art-piece-toolbar-row .piece-stage-toolbar {
   position: static;
+  width: 100%;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.public-art-piece-toolbar-row .piece-stage-toolbar-group {
   max-width: 100%;
 }
 

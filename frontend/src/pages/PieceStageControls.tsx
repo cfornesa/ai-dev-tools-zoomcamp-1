@@ -23,6 +23,13 @@ import {
   type VisitorStroke,
   type VisitorTool,
 } from './visitorDrawing';
+import {
+  commitVisitorHistory,
+  createVisitorHistory,
+  redoVisitorHistory,
+  undoVisitorHistory,
+  type VisitorHistory,
+} from './visitorDrawingHistory';
 
 // Issue #479: real camera capture and hand-tracking now run entirely in
 // this trusted parent frame (never inside the sandboxed iframe --
@@ -110,6 +117,9 @@ function PieceStageControls({
   const [visitorSize, setVisitorSize] = useState(4);
   const [visitorColor, setVisitorColor] = useState('#ffffff');
   const [visitorStrokes, setVisitorStrokes] = useState<VisitorStroke[]>([]);
+  const [visitorHistory, setVisitorHistory] = useState<VisitorHistory<VisitorStroke>>(() =>
+    createVisitorHistory(),
+  );
   const [eraserPoint, setEraserPoint] = useState<VisitorPoint | null>(null);
   // Issue #479: model preparation status is now derived directly from the
   // local `TrackingProvider`'s own onFrame/onError channels -- no longer
@@ -252,6 +262,26 @@ function PieceStageControls({
     return eraserRadius + visitorStrokeWidth(stroke, stageWidth / 320) / (2 * stageWidth);
   }
 
+  function commitVisitorStrokes(next: VisitorStroke[]) {
+    setVisitorHistory((history) => commitVisitorHistory(history, next));
+    visitorStrokesRef.current = next;
+    setVisitorStrokes(next);
+  }
+
+  function applyVisitorHistory(nextHistory: VisitorHistory<VisitorStroke>) {
+    setVisitorHistory(nextHistory);
+    visitorStrokesRef.current = nextHistory.present;
+    setVisitorStrokes(nextHistory.present);
+  }
+
+  function undoVisitorStrokes() {
+    applyVisitorHistory(undoVisitorHistory(visitorHistory));
+  }
+
+  function redoVisitorStrokes() {
+    applyVisitorHistory(redoVisitorHistory(visitorHistory));
+  }
+
   function startVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!visitorDrawOn) return;
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -261,8 +291,7 @@ function PieceStageControls({
       const remaining = visitorStrokesRef.current.filter(
         (stroke) => !visitorStrokeIntersects(stroke, point, visitorEraseRadius(stroke)),
       );
-      visitorStrokesRef.current = remaining;
-      setVisitorStrokes(remaining);
+      if (remaining.length !== visitorStrokesRef.current.length) commitVisitorStrokes(remaining);
       setEraserPoint(point);
       return;
     }
@@ -272,8 +301,7 @@ function PieceStageControls({
       size: visitorSize,
       color: visitorColor,
     };
-    visitorStrokesRef.current = [...visitorStrokesRef.current, stroke];
-    setVisitorStrokes(visitorStrokesRef.current);
+    commitVisitorStrokes([...visitorStrokesRef.current, stroke]);
   }
 
   function continueVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -283,8 +311,7 @@ function PieceStageControls({
       const remaining = visitorStrokesRef.current.filter(
         (stroke) => !visitorStrokeIntersects(stroke, point, visitorEraseRadius(stroke)),
       );
-      visitorStrokesRef.current = remaining;
-      setVisitorStrokes(remaining);
+      if (remaining.length !== visitorStrokesRef.current.length) commitVisitorStrokes(remaining);
       setEraserPoint(point);
       return;
     }
@@ -296,8 +323,14 @@ function PieceStageControls({
   }
 
   function clearVisitorStrokes() {
-    visitorStrokesRef.current = [];
-    setVisitorStrokes([]);
+    if (visitorStrokesRef.current.length > 0) commitVisitorStrokes([]);
+  }
+
+  function handleVisitorKeyDown(event: React.KeyboardEvent<HTMLCanvasElement>) {
+    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') return;
+    event.preventDefault();
+    if (event.shiftKey) redoVisitorStrokes();
+    else undoVisitorStrokes();
   }
 
   useEffect(() => {
@@ -737,6 +770,24 @@ function PieceStageControls({
             >
               <span className="piece-stage-action-label">Clear</span>
             </button>
+            <button
+              type="button"
+              className="piece-stage-icon-button"
+              aria-label="Undo visitor drawing"
+              onClick={undoVisitorStrokes}
+              disabled={visitorHistory.past.length === 0}
+            >
+              <span className="piece-stage-action-label">Undo</span>
+            </button>
+            <button
+              type="button"
+              className="piece-stage-icon-button"
+              aria-label="Redo visitor drawing"
+              onClick={redoVisitorStrokes}
+              disabled={visitorHistory.future.length === 0}
+            >
+              <span className="piece-stage-action-label">Redo</span>
+            </button>
           </div>
         ) : undefined
       }
@@ -784,6 +835,8 @@ function PieceStageControls({
           aria-label="Temporary visitor drawing overlay"
           onPointerDown={startVisitorStroke}
           onPointerMove={continueVisitorStroke}
+          tabIndex={0}
+          onKeyDown={handleVisitorKeyDown}
           onPointerEnter={(event) => {
             if (visitorTool === 'eraser') setEraserPoint(visitorPoint(event));
           }}

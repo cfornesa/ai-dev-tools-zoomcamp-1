@@ -209,7 +209,7 @@ export default function PublicArtPieceViewer({
         style={
           {
             '--art-piece-aspect-ratio': aspectRatio,
-            background: 'var(--code-bg, #f4f3ec)',
+            background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
           } as CSSProperties
         }
       >
@@ -237,7 +237,7 @@ export default function PublicArtPieceViewer({
             width: '100%',
             height: '100%',
             border: 'none',
-            background: 'var(--code-bg, #f4f3ec)',
+            background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
           }}
         />
         <PieceStageControls

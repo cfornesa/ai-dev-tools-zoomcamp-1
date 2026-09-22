@@ -48,11 +48,11 @@ describe('PublicArtPieceViewer stage sizing (#703)', () => {
     expect(stage).toHaveClass('art-piece-stage', 'public-art-piece-stage');
     expect(stage).toHaveStyle({
       '--art-piece-aspect-ratio': '16 / 9',
-      background: 'var(--code-bg, #f4f3ec)',
+      background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
     });
     expect(iframe).toHaveStyle({
       height: '100%',
-      background: 'var(--code-bg, #f4f3ec)',
+      background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
     });
     expect(iframe).toHaveAttribute('srcdoc', expect.stringContaining('background: transparent'));
     expect(iframe).not.toHaveAttribute('style', expect.stringContaining('480'));

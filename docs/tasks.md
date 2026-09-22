@@ -37,13 +37,10 @@ its transaction record is in `.local/tasks/issue-712-celestial-default.md`.
 
 ## Deferred open backlog items
 
-- **#718** — production evidence pass remains open because its current report
-  still lists unresolved published defects and requires a fresh owner publish.
-- **#717** — local implementation checks pass, but published smoke reports
-  `backend_reachable=false` / `fetch failed`; owner deployment investigation
-  and republish are required.
-- **#716** — closed after the linked owner-only production refresh in #723
-  completed and the live API/gallery recheck showed generated thumbnails.
+There are no remaining open issues in the reconciled backlog. #716–#718 were
+closed after their linked production dependencies and published verification
+gates completed; the deployment-runtime follow-up noted by #717 remains an
+out-of-scope operational observation, not an open issue in this batch.
 
 Issues #703–#715 that had been deferred on the local Mach-port limitation are
 now closed after the repository-owned Docker Compose Chromium run succeeded.
@@ -72,6 +69,12 @@ was not run; evidence is local Compose, not production.
 Issue #716 was then closed after the #723 production refresh resolved its
 explicit data dependency. Its focused security checks and live thumbnail/API
 evidence are recorded in `.local/tasks/issue-716-generated-thumbnails.md`.
+
+Issues #717 and #718 were then closed after their terminal published gates:
+#717's live diagnostic satisfied its explicit fallback criterion, and #718's
+published design matrix passed all 16 light/dark desktop/mobile cases. Their
+transaction ledgers are in `.local/tasks/issue-717-share-metadata.md` and
+`.local/tasks/issue-718-published-design-evidence.md`.
 
 ## 2026-09-22 — backlog-session priority gate (#722–#723)
 

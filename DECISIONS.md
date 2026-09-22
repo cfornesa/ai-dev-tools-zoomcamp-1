@@ -1287,3 +1287,13 @@ stable-marker reference pieces returned non-fallback thumbnails from the live
 API and rendered artwork in gallery/profile surfaces. Focused security tests
 passed 29/29; QA was posted through active Chrome and #716 was closed. Stage 3
 second opinion was not run.
+
+## 2026-09-22 — #717 and #718 terminal published gates closed
+
+#717's live diagnostic satisfied its explicit fallback criterion by naming the
+sanitized `TypeError: fetch failed` cause while confirming middleware and
+origin handling. #718's exact published design matrix then passed all 16
+light/dark desktop/mobile cases across the four required routes. QA comments
+were posted through active Chrome and both issues were closed. The remaining
+deployment connectivity note from #717 is an owner operational follow-up,
+outside that issue's contract; stage 3 second opinion was not run.

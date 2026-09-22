@@ -364,3 +364,42 @@ By owner instruction, #722/#723 are recorded as known non-blocking
 production-data follow-ups rather than reopening #712/#716's engineering
 stage — the code in both cases is correct; only a one-time owner-authorized
 production action remains outstanding.
+
+## task-distillation refinement pass (2026-09-22, Claude Sonnet 5 / Medium)
+
+Per owner instruction, ran `task-distillation` to refine all 21 open issues
+(#703-#723) so a future Codex backlog-session pass has accurate, current
+status rather than re-deriving it from this local ledger (which an external
+service cannot read without repository access assumptions).
+
+Posted a GitHub comment on every issue rather than closing any (owner chose
+"post QA-complete comments, leave open" for the 15 already-verified issues):
+
+- **#703-#711, #713-#715, #719-#721 (15 issues):** posted `## QA: PASS`
+  comments naming the exact implementing commit(s), focused/browser test
+  counts, and (for #713/#715/#719/#720) this session's independent live
+  spot-check confirmation. Each states "ready to close whenever the owner
+  confirms; no further engineering needed" — these are already well-scoped
+  (named entry point, fixed viewports, finite criteria, verification
+  commands, routing hint, out-of-scope) and require no further distillation.
+- **#712, #716 (2 issues):** posted `## QA: PARTIAL` comments stating the
+  code is correct but production evidence fails the issue's own acceptance
+  criterion, linking the new #722/#723 follow-ups, and explicitly warning
+  against re-implementing the already-correct code.
+- **#717 (1 issue):** posted the diagnostic finding as a GitHub comment,
+  satisfying the issue's own written fallback criterion ("...or the
+  diagnostic route names the exact cause, which is recorded on the issue").
+  Next action is owner-side network/deployment investigation, out of this
+  issue's own scope.
+- **#718 (1 issue):** posted a comment noting the prescribed Playwright
+  matrix still has not run successfully (local MachPort environment
+  blocker) and that this session's manual live inspection substantively
+  covered the issue's defect-finding purpose instead, producing #722/#723.
+  Left open pending an owner decision on whether to accept that in place of
+  the matrix or re-run it in CI/Linux.
+
+No new issues were created in this pass beyond #722/#723 (already filed
+during the preceding `qa-self-review`). No duplicates found. Manifest
+remains 21 open issues, each with a recorded current status and exact next
+action; missing-terminal-status count in the GitHub comment sense is zero
+(every issue's comment states its evidence and next action explicitly).

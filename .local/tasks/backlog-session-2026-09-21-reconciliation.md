@@ -18,19 +18,19 @@ closure-ready terminal evidence while leaving every GitHub issue open.
 
 | Order | Issue | Scope / entry point | Dependencies | Routing | Status |
 | --- | --- | --- | --- | --- | --- |
-| 1 | [#703](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/703) | Regular generated-piece responsive stage; canonical public piece route | none | 2a mechanical | TERMINAL-READY LOCAL |
-| 2 | [#704](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/704) | Three.js/A-Frame canvas fill and resize | #703 | 2a mechanical | TERMINAL-READY LOCAL |
-| 2 | [#705](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/705) | Canvas2D/SVG/p5/C2 surfaces fill and resize | #703 | 2a mechanical | TERMINAL-READY LOCAL |
-| 3 | [#706](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/706) | Regular-view toolbar row and fullscreen overlay | none | 2a mechanical | TERMINAL-READY LOCAL |
-| 4 | [#707](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/707) | C2 Interactive pencil/brush and size controls | none | 2a mechanical | TERMINAL-READY LOCAL |
-| 5 | [#708](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/708) | C2 Interactive palette and custom colour | none | 2a mechanical | TERMINAL-READY LOCAL |
-| 6 | [#709](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/709) | C2 Interactive eraser | #707 | 2a mechanical | TERMINAL-READY LOCAL |
-| 7 | [#710](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/710) | C2 Interactive undo/redo/clear history | #709 | 2a mechanical | TERMINAL-READY LOCAL |
-| 8 | [#711](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/711) | C2 Interactive touch/stylus continuity and scroll behavior | #707 | 2a mechanical | TERMINAL-READY LOCAL |
-| 9 | [#712](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/712) | Unset site style resolves to Celestial | #647 seeded style | 2b complex | TERMINAL-READY LOCAL |
-| 10 | [#713](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/713) | Compact mobile header at 375px | none | 2a mechanical | TERMINAL-READY LOCAL |
-| 11 | [#714](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/714) | Public profile header/grid alignment | none | 2a mechanical | TERMINAL-READY LOCAL |
-| 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | TERMINAL-READY LOCAL |
+| 1 | [#703](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/703) | Regular generated-piece responsive stage; canonical public piece route | none | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 2 | [#704](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/704) | Three.js/A-Frame canvas fill and resize | #703 | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 2 | [#705](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/705) | Canvas2D/SVG/p5/C2 surfaces fill and resize | #703 | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 3 | [#706](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/706) | Regular-view toolbar row and fullscreen overlay | none | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 4 | [#707](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/707) | C2 Interactive pencil/brush and size controls | none | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 5 | [#708](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/708) | C2 Interactive palette and custom colour | none | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 6 | [#709](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/709) | C2 Interactive eraser | #707 | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 7 | [#710](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/710) | C2 Interactive undo/redo/clear history | #709 | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 8 | [#711](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/711) | C2 Interactive touch/stylus continuity and scroll behavior | #707 | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 9 | [#712](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/712) | Unset site style resolves to Celestial | #647 seeded style | 2b complex | COMPLETED LOCALLY; GITHUB OPEN |
+| 10 | [#713](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/713) | Compact mobile header at 375px | none | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 11 | [#714](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/714) | Public profile header/grid alignment | none | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
+| 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | COMPLETED LOCALLY; GITHUB OPEN |
 | 13 | [#717](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/717) | Share-metadata diagnostic and safe origin handling | owner publish required for final criterion | 2b complex | TERMINAL-READY PUBLISHED; diagnostic records runtime finding |
 | 14 | [#716](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/716) | Generated thumbnail capture options and chosen secure path | owner chose import + owner-only refresh | 2b complex | TERMINAL-READY LOCAL |
 | 15 | [#718](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/718) | Published design evidence matrix, no fixes | #703–#715, #717, #716, owner publish | QA/readiness | TERMINAL-READY PUBLISHED |
@@ -73,7 +73,7 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **State:** `GROOMED → ENGINEERING → QA` (re-entered engineering once for the required screenshot evidence).
 - **Scope:** regular generated-piece stage only; no route/API/schema/dependency change.
 - **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, rostered Codex/Luna substitution: `yes`; implementation `Codex subagent / GPT-5.6 / medium`, rostered Opencode Go/kimi-k2.7-code substitution: `yes`; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, rostered Claude Sonnet 5 substitution: `yes`.
-- **Commits:** `ffe97d6` responsive stage, `a2f3a63` and `1f54687` theme-derived non-white background corrections; screenshot evidence addition pending.
+- **Commits:** `ffe97d6` responsive stage, `a2f3a63` and `1f54687` theme-derived non-white background corrections; screenshot evidence captured and inspected.
 - **Focused checks:** Vitest `28 passed`; frontend typecheck passed; focused lint/diff checks passed.
 - **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-703 make check` passed: backend `1490 passed, 39 skipped`; frontend `255 files, 2783 tests passed`; lint/format/typecheck passed with pre-existing lint warnings.
 - **Browser QA:** `E2E_DOCKER_COMPOSE=true npm run test:e2e -- e2e/pieceStageSizing.spec.ts --project=chromium` passed `1/1` after source synchronization. The initial managed-sandbox browser launch failure was classified as a host permission boundary; a subsequent escalated run reached and fixed the product assertion.
@@ -275,3 +275,37 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Current publish verification:** The authenticated Chrome owner tab was refreshed after Replit release `aa0ae5cc` and visibly showed one `Renderer` control with value `All`, 2D and 3D projects in the same grid, and no `Filter by renderer` control. The same live tab showed `Create a new 2D project` on `/create` and `Gallery engine` with value `All` on `/gallery?type=all`. Replit `creatrweb` fetched the pushed `origin/main` commit and promoted the release; no Replit-local push was needed because the source commit was already safely pushed to `origin/main`.
 - **Latest publish verification:** Replit `creatrweb` pulled the safely pushed `019533a` renderer correction and promoted the final release through the authenticated Chrome session. The authenticated owner tab verified the refresh controls, invoked the affected sphere refresh, and confirmed the uncached shaded output. `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` passed `/health/` with HTTP 200 and `status=ok`, but remains non-zero because `/__share-metadata-status` reports `backend_reachable:false` with sanitized `TypeError: fetch failed`.
 - **Theme control:** the requested relocation of the System/Light/Dark control from the header to a lower-right icon is pending the owner's choice among header, floating, and hybrid options; no implementation or issue was created before that design decision.
+
+## Batch completion audit
+
+- **Manifest:** 19 discovered open issues (#703–#721); 19 have terminal
+  `completed` evidence in this ledger, with GitHub intentionally left OPEN per
+  the owner's instruction. No issue-close or issue-comment mutation was made.
+- **Local readiness:** `UV_CACHE_DIR=/tmp/codex-uv-cache-final make check`
+  passed: backend `1501 passed, 39 skipped`; frontend `257 files, 2800 tests
+  passed`; formatting, typecheck, action-pin, and diff checks passed. The
+  initial cache-path failure was an environment permission boundary, not a
+  product failure; the documented temporary cache rerun passed.
+- **Approved-browser production evidence:** authenticated Chrome/Replit
+  publication completed successfully. The live studio, create, gallery,
+  owner-refresh, and uncached shaded-sphere paths were inspected. Replit deploy
+  logs show no startup crash. `/health/` returned HTTP 200 with `status=ok`.
+- **Production boundary:** `/__share-metadata-status` returned
+  `middleware_active:true`, `origin_valid:true`, sanitized
+  `TypeError: fetch failed`, and `backend_reachable:false`. This is the exact
+  diagnostic fallback accepted by #717; it remains a production-runtime
+  follow-up rather than an unclassified backlog gap. The published smoke
+  script therefore remains non-zero by design until that deployment boundary
+  is repaired.
+- **Matrix boundary:** the fresh local 16-scenario Playwright run remains a
+  macOS MachPort startup verification boundary (`Permission denied (1100)`),
+  while the prior published matrix and current Chrome route inspection cover
+  the released UI. No new product defect was inferred from the host failure.
+- **Routing audit:** each transaction records scoping, implementation, QA,
+  and readiness provenance with substitutions flagged; second-opinion review
+  is explicitly `not run` where unavailable. The stage-5 readiness gate uses
+  the owner-authorized Codex/GPT-5 substitution recorded in `DECISIONS.md`.
+- **Follow-up audit:** no duplicate or unlinked actionable backlog item was
+  found. Theme-control relocation is outside #721 and remains pending the
+  owner's floating-versus-hybrid design choice; no issue was created because
+  the design contract is not yet selected.

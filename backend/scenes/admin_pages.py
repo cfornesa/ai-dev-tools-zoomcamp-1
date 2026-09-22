@@ -221,7 +221,10 @@ def create_page(*, actor, data: dict) -> PageView:
 @transaction.atomic
 def update_page(*, actor, page_id: int, expected_revision: int, data: dict) -> PageView:
     fields = _clean_fields(data, partial=True)
-    page = Page.objects.select_for_update().select_related("author", "updated_by").get(pk=page_id)
+    # PostgreSQL rejects FOR UPDATE across a nullable outer join (author and
+    # updated_by are both nullable); lock the row alone and let page_view()
+    # resolve those relations lazily instead.
+    page = Page.objects.select_for_update().get(pk=page_id)
     if page.revision != expected_revision:
         raise PageRevisionConflict("The page changed since it was loaded.")
     old_slug = page.slug

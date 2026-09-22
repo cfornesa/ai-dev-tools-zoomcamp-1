@@ -33,7 +33,7 @@ closure-ready terminal evidence while leaving every GitHub issue open.
 | 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 13 | [#717](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/717) | Share-metadata diagnostic and safe origin handling | owner publish required for final criterion | 2b complex | TERMINAL-READY LOCAL; OWNER PUBLISH PENDING |
 | 14 | [#716](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/716) | Generated thumbnail capture options and chosen secure path | Rule 2 gallery/owner choice required | 2b complex | HANDED-OFF pending owner decision |
-| 15 | [#718](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/718) | Published design evidence matrix, no fixes | #703–#715, #717, #716, owner publish | QA/readiness | DEPENDENCY-BLOCKED |
+| 15 | [#718](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/718) | Published design evidence matrix, no fixes | #703–#715, #717, #716, owner publish | QA/readiness | HARNESS-READY; OWNER PUBLISH PENDING |
 
 ## Duplicate / already-covered report
 
@@ -233,3 +233,14 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-717 make check` passed: backend `1490 passed, 39 skipped`; frontend `257 files, 2794 tests passed`; format/typecheck/action-pin checks passed.
 - **QA result:** `## QA: PASS` for local acceptance. Tests cover quoted origins, bare hosts, path stripping, allow-list fallback, health reachability, diagnostic JSON, no-store headers, and sanitized error fields.
 - **Remaining criterion:** owner must publish the committed implementation, run `PUBLISHED_APP_URL=... scripts/smoke-published.sh`, and confirm either server-rendered metadata or the diagnostic’s named cause. No GitHub comment/closure mutation was performed.
+
+## Transaction ledger — #718 (evidence harness)
+
+- **State:** `GROOMED → QA PREPARATION → RECONCILIATION` (harness-ready; live evidence blocked by owner publish; GitHub intentionally remains open).
+- **Scope:** evidence-only Playwright matrix; no product fixes or production writes.
+- **Stage provenance:** QA harness authored by `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`; second opinion `not run`.
+- **Commit:** `492c733`.
+- **Changed files:** `frontend/e2e/publishedDesignMatrix.spec.ts` and the fixture-seeding guard in `frontend/e2e/support/global-setup.ts`.
+- **Local verification:** TypeScript passed; lint passed with established non-blocking warnings; `npx playwright test --list e2e/publishedDesignMatrix.spec.ts` lists exactly 16 scenarios covering 4 routes × 2 color schemes × 2 viewport sizes. The guard prevents fixture creation when `PUBLISHED_DESIGN_MATRIX=true`.
+- **Live verification:** not run because the current published origin is stale. Read-only probes on 2026-09-21 returned HTTP 200 for `/__share-metadata-status` but served the old SPA shell, and `/` contained zero `data-server-metadata="true"` tags; this is not acceptance evidence.
+- **Remaining criterion:** owner must publish #703–#717, run the 16-screenshot matrix against the published HTTPS origin, inspect every screenshot, and file any newly observed defects as separate issues. No GitHub comment/closure mutation was performed.

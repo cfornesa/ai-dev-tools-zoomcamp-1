@@ -1298,6 +1298,18 @@ frontend test transiently timed out while waiting for the Tools region in
 4.34s without code changes. This is classified as a non-reproducible test
 timing boundary, not an unresolved product defect.
 
+## 2026-09-22 — production-readiness gate
+
+The complete backlog has no remaining open GitHub issues. Local backend and
+frontend checks, Compose browser verification, and the published #718 matrix
+are recorded separately above. `UV_CACHE_DIR=/tmp/codex-final-uv-cache make
+deploy-check` passes with five warnings from the development `.env`:
+HSTS/SSL redirect, secure session/CSRF cookies, and DEBUG. These are a
+deployment-configuration verification boundary, not evidence about the
+published environment; production readiness is therefore not claimed from
+this local gate. No new issue was created because the warnings are local
+development configuration and no production defect was established.
+
 ## 2026-09-22 — #717 and #718 terminal published gates closed
 
 #717's live diagnostic satisfied its explicit fallback criterion by naming the

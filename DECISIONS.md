@@ -1319,3 +1319,18 @@ light/dark desktop/mobile cases across the four required routes. QA comments
 were posted through active Chrome and both issues were closed. The remaining
 deployment connectivity note from #717 is an owner operational follow-up,
 outside that issue's contract; stage 3 second opinion was not run.
+
+## 2026-09-22 — #727 production schema-diff outage remains blocked
+
+The live `augmentrart.com` `/api/site-theme/` and `/api/public/gallery/` routes
+returned HTTP 500 while `/health/` remained HTTP 200. Replit `main` matched
+`origin/main` at `370c9d1c...`, so revision drift was ruled out. A supported,
+non-destructive Republish completed as release `fc631d4e` but did not repair the
+routes. Read-only Production Database inspection confirmed that the 0086 palette
+columns are missing from `PublicProfile` and `SiteSettings`, and the 0088
+`ThemeGenerationAttempt` table is absent; the 0087 seven-row `ProfileStyle` seed
+is present. This is the documented missed schema-diff pattern. No direct
+production SQL, destructive resolution, deployment-build change, or startup
+migration was used. Evidence was posted to #727; the issue remains open pending
+a supported Replit schema-diff repair and post-repair endpoint/schema/smoke
+verification.

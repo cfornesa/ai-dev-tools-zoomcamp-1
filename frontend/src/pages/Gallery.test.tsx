@@ -122,7 +122,7 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(plusLink).toHaveAttribute('href', '/create');
 
     await openCreateMenu(user);
-    const createMenuItem = screen.getByRole('menuitem', { name: /^create a new animation$/i });
+    const createMenuItem = screen.getByRole('menuitem', { name: /^create a new 2d project$/i });
     expect(createMenuItem).toBeInTheDocument();
     expect(createMenuItem.tagName).toBe('BUTTON'); // native focusable element, no tabindex hacks
   });
@@ -298,7 +298,7 @@ describe('Gallery keyboard accessibility', () => {
     arrowButton.focus();
     await user.keyboard('{ArrowDown}');
 
-    const firstItem = await screen.findByRole('menuitem', { name: /^create a new animation$/i });
+    const firstItem = await screen.findByRole('menuitem', { name: /^create a new 2d project$/i });
     expect(firstItem).toHaveFocus();
 
     await user.keyboard('{ArrowDown}');
@@ -320,7 +320,7 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     await screen.findByText('You have not created any projects.');
     await openCreateMenu(user);
 
-    await user.click(screen.getByRole('menuitem', { name: /^create a new animation$/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create a new 2d project$/i }));
 
     await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
     // Issue #206: defaults to the p5 renderer unless the picker is changed.
@@ -337,7 +337,7 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     await user.selectOptions(rendererSelect, 'canvas2d');
     await openCreateMenu(user);
 
-    await user.click(screen.getByRole('menuitem', { name: /^create a new animation$/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create a new 2d project$/i }));
 
     await waitFor(() =>
       expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'canvas2d'),
@@ -354,7 +354,7 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     await user.selectOptions(rendererSelect, 'svg');
     await openCreateMenu(user);
 
-    await user.click(screen.getByRole('menuitem', { name: /^create a new animation$/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create a new 2d project$/i }));
 
     await waitFor(() =>
       expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'svg'),
@@ -369,7 +369,7 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     renderGallery();
     await screen.findByText('You have not created any projects.');
     await openCreateMenu(user);
-    await user.click(screen.getByRole('menuitem', { name: /^create a new animation$/i }));
+    await user.click(screen.getByRole('menuitem', { name: /^create a new 2d project$/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not create/i);
     expect(screen.getByRole('button', { name: /more creation options/i })).toBeEnabled();

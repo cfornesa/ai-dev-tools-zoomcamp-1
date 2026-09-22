@@ -1840,6 +1840,17 @@ code {
   text-align: left;
 }
 
+/* Issue #721: heading-led page shells need an intentional, responsive gap
+   below the shared header. Keep the horizontal alignment with their grids
+   while leaving content-panel pages on their existing spacing contract. */
+.page-shell {
+  padding-block-start: clamp(24px, 4vw, 48px);
+}
+
+.page-shell > h2 {
+  margin-inline: 24px;
+}
+
 .template-card {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -4190,6 +4201,10 @@ select.ai-proposal-field-full-width {
    it never got the same breakpoint-specific padding/margin tightening;
    this brings it in line with that existing precedent. */
 @media (max-width: 600px) {
+  .page-shell > h2 {
+    margin-inline: 16px;
+  }
+
   .template-grid {
     grid-template-columns: 1fr;
     margin: 16px;

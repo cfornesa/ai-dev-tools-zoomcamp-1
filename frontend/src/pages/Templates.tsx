@@ -77,7 +77,7 @@ function Templates() {
   }
 
   return (
-    <section aria-labelledby="templates-heading">
+    <section className="page-shell" aria-labelledby="templates-heading">
       <h2 id="templates-heading">Browse templates</h2>
 
       {cloneError && (

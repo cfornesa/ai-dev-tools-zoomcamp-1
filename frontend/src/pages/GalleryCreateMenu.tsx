@@ -35,7 +35,7 @@ function GalleryCreateMenu({
   const navigate = useNavigate();
 
   const actions: MenuAction[] = [
-    { id: 'create-2d', label: 'Create a new animation', run: () => createNewAnimation(renderer) },
+    { id: 'create-2d', label: 'Create a new 2D project', run: () => createNewAnimation(renderer) },
     { id: 'create-3d', label: 'Create a new 3D project', run: createNew3DProject },
   ];
 

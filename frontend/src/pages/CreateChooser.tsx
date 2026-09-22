@@ -15,7 +15,7 @@ type ChooserAction = { id: string; label: string; description: string; run: () =
 const ACTIONS: ChooserAction[] = [
   {
     id: 'create-2d',
-    label: 'Create a new animation',
+    label: 'Create a new 2D project',
     description: 'Start a blank 2D scene in the manual editor.',
     run: () => createNewAnimation('p5'),
   },
@@ -44,7 +44,7 @@ function CreateChooser() {
   }
 
   return (
-    <section aria-labelledby="create-chooser-heading">
+    <section className="page-shell" aria-labelledby="create-chooser-heading">
       <h2 id="create-chooser-heading">Create</h2>
 
       {error && (

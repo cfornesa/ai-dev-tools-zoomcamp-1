@@ -72,6 +72,7 @@ describe('Templates catalog rendering', () => {
     expect(screen.getByRole('heading', { name: 'Blank canvas' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Hand follower' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Pinch particle burst' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Browse templates' })).toHaveClass('page-shell');
   });
 
   it('labels a private template distinctly from built-in ones', async () => {

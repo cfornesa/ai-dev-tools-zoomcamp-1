@@ -37,9 +37,14 @@ describe('CreateChooser (issue #268)', () => {
   it('shows one unified action for each editor family plus templates', () => {
     renderChooser();
 
-    expect(screen.getByRole('heading', { name: /^create a new animation$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^create$/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^create a new 2d project$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /^create a new 3d project$/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /^browse templates$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^create a new 2d project$/i })).toBeInTheDocument();
+    expect(screen.getByText('Start a blank 2D scene in the manual editor.')).toBeInTheDocument();
+    expect(screen.queryByText(/^create a new animation$/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Create' })).toHaveClass('page-shell');
   });
 
   it('creates a blank 2D project with the default renderer and navigates to the manual editor', async () => {
@@ -61,7 +66,7 @@ describe('CreateChooser (issue #268)', () => {
     const user = userEvent.setup();
 
     renderChooser();
-    await user.click(screen.getAllByRole('button', { name: /^create a new animation$/i })[0]);
+    await user.click(screen.getAllByRole('button', { name: /^create a new 2d project$/i })[0]);
 
     await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
     expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'p5');
@@ -102,9 +107,9 @@ describe('CreateChooser (issue #268)', () => {
     const user = userEvent.setup();
 
     renderChooser();
-    await user.click(screen.getAllByRole('button', { name: /^create a new animation$/i })[0]);
+    await user.click(screen.getAllByRole('button', { name: /^create a new 2d project$/i })[0]);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not create/i);
-    expect(screen.getAllByRole('button', { name: /^create a new animation$/i })[0]).toBeEnabled();
+    expect(screen.getAllByRole('button', { name: /^create a new 2d project$/i })[0]).toBeEnabled();
   });
 });

@@ -60,11 +60,13 @@ function previewDocument(
 
 export function DesignPreview({
   label,
+  ariaLabel,
   presentation,
   palettes,
   availablePalette,
 }: {
   label: string;
+  ariaLabel?: string;
   presentation: PresentationOptions;
   palettes: DesignPalettes;
   availablePalette?: PaletteDefinition;
@@ -77,7 +79,7 @@ export function DesignPreview({
   );
   const swatches = ['background', 'foreground', 'primary', 'secondary', 'accent'] as const;
   return (
-    <div className="design-preview" aria-label={`${label} design preview`}>
+    <div className="design-preview" aria-label={ariaLabel ?? `${label} design preview`}>
       <div className="design-preview-toolbar">
         <div>
           <strong>{label}</strong>

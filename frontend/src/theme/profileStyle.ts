@@ -13,6 +13,11 @@ function presentationFont(value: PresentationOptions['font_family'] | undefined)
   return "system-ui, 'Segoe UI', Roboto, sans-serif";
 }
 
+function presentationHeadingFont(value: PresentationOptions['font_family'] | undefined): string {
+  if (value === 'script') return "'Pinyon Script', Georgia, 'Times New Roman', serif";
+  return presentationFont(value);
+}
+
 function presentationRadius(value: PresentationOptions['radius'] | undefined): string {
   if (value === 'sharp') return '2px';
   if (value === 'pill') return '999px';
@@ -37,6 +42,7 @@ export function profileStyleVars(profile: PublicProfile): CSSProperties {
     '--profile-muted-light': value(light, 'muted'),
     '--profile-accent-light': value(light, 'accent'),
     '--profile-font': presentationFont(profile.presentation?.font_family),
+    '--profile-heading-font': presentationHeadingFont(profile.presentation?.font_family),
     '--profile-radius': presentationRadius(profile.presentation?.radius),
     '--profile-density': profile.presentation?.density === 'compact' ? '12px' : '20px',
     '--profile-border-style': profile.presentation?.border_style ?? 'solid',

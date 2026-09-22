@@ -1215,6 +1215,7 @@ function ProfileStyleCatalogSettings({
           </button>
           <DesignPreview
             label="Profile style preview"
+            ariaLabel={`${style.label} preview`}
             presentation={style.presentation}
             palettes={previewPalettes(style)}
           />

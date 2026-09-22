@@ -618,6 +618,7 @@ function ProfileSettings() {
           <label htmlFor="profile-style">Layout style</label>
           <select
             id="profile-style"
+            aria-label="Profile style"
             value={profile.style_key ?? ''}
             onChange={(event) =>
               updateDraft({
@@ -704,6 +705,7 @@ function ProfileSettings() {
             ))}
           </fieldset>
           <DesignPreview
+            ariaLabel="Profile style preview"
             label={
               profile.available_styles.find((style) => style.key === profile.style_key)?.label ??
               'Profile design'
@@ -725,6 +727,7 @@ function ProfileSettings() {
           />
           <button
             type="button"
+            aria-label="Reset style"
             onClick={() =>
               updateDraft({
                 ...profile,

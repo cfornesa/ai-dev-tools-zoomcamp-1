@@ -1379,6 +1379,7 @@ button:disabled {
 .public-profile-heading h2 {
   margin: 0;
   overflow-wrap: anywhere;
+  font-family: var(--profile-heading-font, var(--heading));
 }
 
 .public-profile-handle,

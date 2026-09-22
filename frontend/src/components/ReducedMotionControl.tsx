@@ -31,7 +31,7 @@ const OPTIONS: Array<{ value: MotionOverride; label: string }> = [
  * explicit, current answer to "is motion reduced right now?" without
  * having to cross-reference the system preference themselves.
  */
-function ReducedMotionControl() {
+function ReducedMotionControl({ compact = false }: { compact?: boolean }) {
   const { override, effective, setOverride } = useReducedMotion();
   const roving = useRovingRadioGroup(
     OPTIONS.map((option) => ({ value: option.value })),
@@ -56,7 +56,11 @@ function ReducedMotionControl() {
           </button>
         ))}
       </div>
-      <p role="status" aria-live="polite" className="reduced-motion-status">
+      <p
+        role="status"
+        aria-live="polite"
+        className={`reduced-motion-status${compact ? ' visually-hidden' : ''}`}
+      >
         Motion is currently {effective ? 'reduced' : 'full'}.
       </p>
     </div>

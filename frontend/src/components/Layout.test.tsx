@@ -251,6 +251,9 @@ describe('Layout: mobile hamburger menu', () => {
     expect(screen.queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Login' })).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Account settings' })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Color mode, currently system' })).toBeVisible();
+    expect(screen.getByRole('radiogroup', { name: 'Reduce motion' })).toBeVisible();
+    expect(screen.getByRole('status')).toHaveClass('visually-hidden');
 
     await user.click(screen.getByRole('button', { name: 'Close menu' }));
     expect(toggle).toHaveAttribute('aria-expanded', 'false');

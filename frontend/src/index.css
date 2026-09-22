@@ -1693,6 +1693,23 @@ code {
     width: 100%;
   }
 
+  .app-shell-mobile-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .app-shell-mobile-settings label,
+  .app-shell-mobile-settings select,
+  .app-shell-mobile-settings .reduced-motion-control {
+    width: 100%;
+  }
+
+  .app-shell-mobile-settings select {
+    min-width: 0;
+  }
+
   .app-shell-toolbar {
     align-items: stretch;
     flex-direction: column;

@@ -222,20 +222,22 @@ function Layout() {
           )}
         </div>
         <div className="app-shell-toolbar">
-          <div className="app-shell-theme-controls">
-            <label>
-              <span className="visually-hidden">Color mode</span>
-              <select
-                aria-label={`Color mode, currently ${themePreference}`}
-                value={themePreference}
-                onChange={(event) => updateThemePreference(event.target.value as ThemePreference)}
-              >
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-            </label>
-          </div>
+          {!isMobileHeader && (
+            <div className="app-shell-theme-controls">
+              <label>
+                <span className="visually-hidden">Color mode</span>
+                <select
+                  aria-label={`Color mode, currently ${themePreference}`}
+                  value={themePreference}
+                  onChange={(event) => updateThemePreference(event.target.value as ThemePreference)}
+                >
+                  <option value="system">System</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </label>
+            </div>
+          )}
           {isMobileHeader ? (
             <>
               <nav
@@ -263,6 +265,23 @@ function Layout() {
                     {auth.logoutError}
                   </p>
                 )}
+                <div className="app-shell-mobile-settings" aria-label="Display settings">
+                  <label>
+                    <span className="visually-hidden">Color mode</span>
+                    <select
+                      aria-label={`Color mode, currently ${themePreference}`}
+                      value={themePreference}
+                      onChange={(event) =>
+                        updateThemePreference(event.target.value as ThemePreference)
+                      }
+                    >
+                      <option value="system">System</option>
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                    </select>
+                  </label>
+                  <ReducedMotionControl compact />
+                </div>
               </nav>
             </>
           ) : (
@@ -288,9 +307,11 @@ function Layout() {
               )}
             </nav>
           )}
-          <div className="app-shell-motion">
-            <ReducedMotionControl />
-          </div>
+          {!isMobileHeader && (
+            <div className="app-shell-motion">
+              <ReducedMotionControl />
+            </div>
+          )}
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>

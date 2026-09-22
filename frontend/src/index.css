@@ -5269,6 +5269,57 @@ select.ai-proposal-field-full-width {
   }
 }
 
+.piece-stage-visitor-draw-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.piece-stage-visitor-tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.piece-stage-visitor-tool-group [aria-checked='true'] {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+
+.piece-stage-visitor-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  padding: 0 0.55rem;
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--surface-strong, #737373) 92%, black);
+  color: white;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.piece-stage-visitor-size-control input {
+  width: 6rem;
+  accent-color: #fbbf24;
+}
+
+.piece-stage-visitor-size-control output {
+  min-width: 3.25rem;
+  text-align: right;
+}
+
+@media (max-width: 767px) {
+  .piece-stage-visitor-draw-controls {
+    width: 100%;
+  }
+
+  .piece-stage-visitor-size-control {
+    flex: 1 1 12rem;
+  }
+}
+
 .piece-stage-controls {
   position: relative;
 }

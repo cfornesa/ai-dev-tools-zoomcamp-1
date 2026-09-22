@@ -50,7 +50,12 @@ type Props = {
 };
 
 type VisitorPoint = { x: number; y: number };
-type VisitorStroke = VisitorPoint[];
+type VisitorTool = 'pencil' | 'brush';
+type VisitorStroke = {
+  points: VisitorPoint[];
+  tool: VisitorTool;
+  size: number;
+};
 
 function PieceStageControls({
   stageRef,
@@ -85,6 +90,8 @@ function PieceStageControls({
     null,
   );
   const [visitorDrawOn, setVisitorDrawOn] = useState(false);
+  const [visitorTool, setVisitorTool] = useState<VisitorTool>('pencil');
+  const [visitorSize, setVisitorSize] = useState(4);
   const [visitorStrokes, setVisitorStrokes] = useState<VisitorStroke[]>([]);
   // Issue #479: model preparation status is now derived directly from the
   // local `TrackingProvider`'s own onFrame/onError channels -- no longer
@@ -123,37 +130,61 @@ function PieceStageControls({
   steeringActiveRef.current = steeringState === 'active';
   visitorStrokesRef.current = visitorStrokes;
 
+  function visitorStrokeWidth(stroke: VisitorStroke, scale: number) {
+    return stroke.size * scale * (stroke.tool === 'brush' ? 1.75 : 1);
+  }
+
+  function drawVisitorStroke(
+    context: CanvasRenderingContext2D,
+    stroke: VisitorStroke,
+    width: number,
+    canvasWidth: number,
+    canvasHeight: number,
+  ) {
+    if (stroke.points.length === 0) return;
+    const first = stroke.points[0];
+    context.strokeStyle = '#fbbf24';
+    context.fillStyle = '#fbbf24';
+    context.lineWidth = width;
+    context.lineCap = stroke.tool === 'brush' ? 'round' : 'butt';
+    context.lineJoin = stroke.tool === 'brush' ? 'round' : 'miter';
+    if (stroke.points.length === 1) {
+      context.beginPath();
+      if (stroke.tool === 'brush') {
+        context.arc(first.x * canvasWidth, first.y * canvasHeight, width / 2, 0, Math.PI * 2);
+        context.fill();
+      } else {
+        context.fillRect(
+          first.x * canvasWidth - width / 2,
+          first.y * canvasHeight - width / 2,
+          width,
+          width,
+        );
+      }
+      return;
+    }
+    context.beginPath();
+    context.moveTo(first.x * canvasWidth, first.y * canvasHeight);
+    for (const point of stroke.points.slice(1)) {
+      context.lineTo(point.x * canvasWidth, point.y * canvasHeight);
+    }
+    context.stroke();
+  }
+
   const drawVisitorOverlay = useCallback(() => {
     const canvas = visitorOverlayRef.current;
     if (!canvas) return;
     const context = canvas.getContext('2d');
     if (!context) return;
     context.clearRect(0, 0, canvas.width, canvas.height);
-    context.strokeStyle = '#fbbf24';
-    context.lineWidth = Math.max(3, (canvas.width / 320) * 3);
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
     for (const stroke of visitorStrokesRef.current) {
-      if (stroke.length === 0) continue;
-      if (stroke.length === 1) {
-        context.beginPath();
-        context.arc(
-          stroke[0].x * canvas.width,
-          stroke[0].y * canvas.height,
-          context.lineWidth / 2,
-          0,
-          Math.PI * 2,
-        );
-        context.fillStyle = '#fbbf24';
-        context.fill();
-        continue;
-      }
-      context.beginPath();
-      context.moveTo(stroke[0].x * canvas.width, stroke[0].y * canvas.height);
-      for (const point of stroke.slice(1)) {
-        context.lineTo(point.x * canvas.width, point.y * canvas.height);
-      }
-      context.stroke();
+      drawVisitorStroke(
+        context,
+        stroke,
+        visitorStrokeWidth(stroke, canvas.width / 320),
+        canvas.width,
+        canvas.height,
+      );
     }
   }, []);
 
@@ -196,7 +227,7 @@ function PieceStageControls({
     if (!visitorDrawOn) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     visitorPointerIdRef.current = event.pointerId;
-    const stroke = [visitorPoint(event)];
+    const stroke = { points: [visitorPoint(event)], tool: visitorTool, size: visitorSize };
     visitorStrokesRef.current = [...visitorStrokesRef.current, stroke];
     setVisitorStrokes(visitorStrokesRef.current);
   }
@@ -204,7 +235,7 @@ function PieceStageControls({
   function continueVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!visitorDrawOn || visitorPointerIdRef.current !== event.pointerId) return;
     const strokes = visitorStrokesRef.current;
-    const current = strokes[strokes.length - 1];
+    const current = strokes[strokes.length - 1]?.points;
     if (!current) return;
     current.push(visitorPoint(event));
     setVisitorStrokes([...strokes]);
@@ -315,31 +346,14 @@ function PieceStageControls({
       if (!context) throw new Error('Could not create a canvas context to composite the camera.');
       context.drawImage(image, 0, 0);
       if (library === 'c2js-interactive') {
-        context.strokeStyle = '#fbbf24';
-        context.lineWidth = Math.max(2, (image.width / 320) * 3);
-        context.lineCap = 'round';
-        context.lineJoin = 'round';
         for (const stroke of visitorStrokesRef.current) {
-          if (stroke.length === 0) continue;
-          if (stroke.length === 1) {
-            context.beginPath();
-            context.arc(
-              stroke[0].x * image.width,
-              stroke[0].y * image.height,
-              context.lineWidth / 2,
-              0,
-              Math.PI * 2,
-            );
-            context.fillStyle = '#fbbf24';
-            context.fill();
-            continue;
-          }
-          context.beginPath();
-          context.moveTo(stroke[0].x * image.width, stroke[0].y * image.height);
-          for (const point of stroke.slice(1)) {
-            context.lineTo(point.x * image.width, point.y * image.height);
-          }
-          context.stroke();
+          drawVisitorStroke(
+            context,
+            stroke,
+            visitorStrokeWidth(stroke, image.width / 320),
+            image.width,
+            image.height,
+          );
         }
       }
       if (cameraStateRef.current === 'active' && cameraVideoRef.current) {
@@ -583,6 +597,39 @@ function PieceStageControls({
             role="group"
             aria-label="Visitor drawing"
           >
+            <div
+              className="piece-stage-visitor-tool-group"
+              role="radiogroup"
+              aria-label="Drawing tool"
+            >
+              {(['pencil', 'brush'] as const).map((tool) => (
+                <button
+                  key={tool}
+                  type="button"
+                  role="radio"
+                  aria-checked={visitorTool === tool}
+                  className="piece-stage-icon-button"
+                  onClick={() => setVisitorTool(tool)}
+                >
+                  <span className="piece-stage-action-label">
+                    {tool === 'pencil' ? 'Pencil' : 'Brush'}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <label className="piece-stage-visitor-size-control" htmlFor="visitor-drawing-size">
+              Size <output htmlFor="visitor-drawing-size">{visitorSize}px</output>
+              <input
+                id="visitor-drawing-size"
+                type="range"
+                min="1"
+                max="40"
+                step="1"
+                value={visitorSize}
+                onChange={(event) => setVisitorSize(Number(event.target.value))}
+                aria-label="Drawing size"
+              />
+            </label>
             <button
               type="button"
               className="piece-stage-icon-button"

@@ -60,38 +60,67 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
       const overlay = page.getByLabel('Temporary visitor drawing overlay');
       await page.getByRole('button', { name: 'Draw on piece' }).click();
       await expect(page.getByRole('button', { name: 'Stop drawing' })).toBeVisible();
+      await expect(page.getByRole('radiogroup', { name: 'Drawing tool' })).toBeVisible();
+      await expect(page.getByRole('radio', { name: 'Pencil' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      await expect(page.getByRole('radio', { name: 'Brush' })).toHaveAttribute(
+        'aria-checked',
+        'false',
+      );
+      const sizeSlider = page.getByRole('slider', { name: 'Drawing size' });
+      await expect(sizeSlider).toHaveValue('4');
+      await expect(page.locator('output[for="visitor-drawing-size"]')).toHaveText('4px');
       const bounds = await overlay.boundingBox();
       expect(bounds).not.toBeNull();
-      const start = { x: bounds!.x + bounds!.width * 0.25, y: bounds!.y + bounds!.height * 0.35 };
-      const end = { x: bounds!.x + bounds!.width * 0.7, y: bounds!.y + bounds!.height * 0.65 };
-      if (pointerType === 'mouse') {
-        await page.mouse.move(start.x, start.y);
-        await page.mouse.down();
-        await page.mouse.move(end.x, end.y, { steps: 5 });
-        await page.mouse.up();
-      } else {
-        await overlay.dispatchEvent('pointerdown', {
-          bubbles: true,
-          clientX: start.x,
-          clientY: start.y,
-          pointerId: 1,
-          pointerType: 'touch',
-        });
-        await overlay.dispatchEvent('pointermove', {
-          bubbles: true,
-          clientX: end.x,
-          clientY: end.y,
-          pointerId: 1,
-          pointerType: 'touch',
-        });
-        await overlay.dispatchEvent('pointerup', {
-          bubbles: true,
-          clientX: end.x,
-          clientY: end.y,
-          pointerId: 1,
-          pointerType: 'touch',
-        });
-      }
+      const drawStroke = async (startRatio: number, endRatio: number, pointerId: number) => {
+        const start = {
+          x: bounds!.x + bounds!.width * startRatio,
+          y: bounds!.y + bounds!.height * 0.35,
+        };
+        const end = {
+          x: bounds!.x + bounds!.width * endRatio,
+          y: bounds!.y + bounds!.height * 0.65,
+        };
+        if (pointerType === 'mouse') {
+          await page.mouse.move(start.x, start.y);
+          await page.mouse.down();
+          await page.mouse.move(end.x, end.y, { steps: 5 });
+          await page.mouse.up();
+        } else {
+          await overlay.dispatchEvent('pointerdown', {
+            bubbles: true,
+            clientX: start.x,
+            clientY: start.y,
+            pointerId,
+            pointerType: 'touch',
+          });
+          await overlay.dispatchEvent('pointermove', {
+            bubbles: true,
+            clientX: end.x,
+            clientY: end.y,
+            pointerId,
+            pointerType: 'touch',
+          });
+          await overlay.dispatchEvent('pointerup', {
+            bubbles: true,
+            clientX: end.x,
+            clientY: end.y,
+            pointerId,
+            pointerType: 'touch',
+          });
+        }
+      };
+      await drawStroke(0.25, 0.7, 1);
+      await page.getByRole('radio', { name: 'Brush' }).click();
+      await sizeSlider.fill('24');
+      await expect(page.getByRole('radio', { name: 'Brush' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      await expect(page.locator('output[for="visitor-drawing-size"]')).toHaveText('24px');
+      await drawStroke(0.55, 0.9, 2);
       await expect(page.getByRole('button', { name: 'Clear visitor drawing' })).toBeEnabled();
       await page.waitForTimeout(100);
       const firstScreenshot = page.waitForEvent('download');

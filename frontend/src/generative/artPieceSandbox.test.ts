@@ -113,6 +113,20 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).not.toContain('renderer.__artPieceOriginalSetPixelRatio(ratio)');
   });
 
+  it('#705: regular flat engines fill the stage, contain their aspect, and remap pointer coordinates', () => {
+    for (const library of ['canvas2d', 'svg', 'p5js', 'c2js', 'c2js-interactive'] as const) {
+      const doc = buildArtPieceSandboxDocument('window.sketch = function () {};', library, 'regular');
+      expect(doc).toContain("surface.style.objectFit = 'contain'");
+      expect(doc).toContain("surface.style.width = '100%'");
+      expect(doc).toContain("window.addEventListener('resize', fit)");
+      expect(doc).toContain("if (property === 'offsetX') return pointer.x");
+      expect(doc).toContain("if (property === 'offsetY') return pointer.y");
+    }
+    expect(buildArtPieceSandboxDocument('<svg />', 'svg', 'immersive')).not.toContain(
+      "surface.style.objectFit = 'contain'",
+    );
+  });
+
   it("aframe loads the pinned CDN script, allows only that origin plus 'unsafe-eval' in the CSP, and places the snippet directly", () => {
     // 'unsafe-eval' regression for #236: A-Frame's own system
     // initialization calls a dynamic eval/Function-constructor

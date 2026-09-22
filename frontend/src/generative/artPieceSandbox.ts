@@ -224,6 +224,116 @@ function webglResponsivePrelude(
 }());</script>`;
 }
 
+/** Issue #705: keep regular flat-engine artwork contained by the responsive
+ * parent stage while leaving each engine's logical drawing coordinates alone.
+ * The event wrapper maps pointer coordinates back through the object-fit
+ * letterbox, so an interactive C2 sketch continues to receive its authored
+ * 320x240 (or SVG viewBox) coordinates after the stage is scaled. */
+function flatResponsivePrelude(
+  library: ArtPieceLibrary,
+  presentation: 'regular' | 'immersive',
+): string {
+  if (
+    presentation !== 'regular' ||
+    !['canvas2d', 'svg', 'p5js', 'c2js', 'c2js-interactive'].includes(library)
+  ) {
+    return '';
+  }
+  return `<script>(function () {
+  var patched = false;
+  var originalAddEventListener = EventTarget.prototype.addEventListener;
+  var originalRemoveEventListener = EventTarget.prototype.removeEventListener;
+  var listenerWrappers = new WeakMap();
+
+  function surfaceDimensions(surface) {
+    if (surface instanceof SVGElement) {
+      var viewBox = surface.viewBox && surface.viewBox.baseVal;
+      if (viewBox && viewBox.width && viewBox.height) return { width: viewBox.width, height: viewBox.height };
+    }
+    return {
+      width: Number(surface.getAttribute('width')) || surface.width || 300,
+      height: Number(surface.getAttribute('height')) || surface.height || 150
+    };
+  }
+
+  function surfaceFor(target) {
+    return target instanceof HTMLCanvasElement || target instanceof SVGElement ? target : null;
+  }
+
+  function logicalPointer(surface, event) {
+    var dimensions = surfaceDimensions(surface);
+    var rect = surface.getBoundingClientRect();
+    var scale = Math.min(rect.width / dimensions.width, rect.height / dimensions.height) || 1;
+    var contentWidth = dimensions.width * scale;
+    var contentHeight = dimensions.height * scale;
+    var contentLeft = rect.left + (rect.width - contentWidth) / 2;
+    var contentTop = rect.top + (rect.height - contentHeight) / 2;
+    return {
+      x: Math.max(0, Math.min(dimensions.width, ((event.clientX - contentLeft) / scale))),
+      y: Math.max(0, Math.min(dimensions.height, ((event.clientY - contentTop) / scale)))
+    };
+  }
+
+  function wrapListener(surface, listener) {
+    if (typeof listener !== 'function') return listener;
+    var wrapped = function (event) {
+      var pointer = logicalPointer(surface, event);
+      var proxy = new Proxy(event, { get: function (target, property) {
+        if (property === 'offsetX') return pointer.x;
+        if (property === 'offsetY') return pointer.y;
+        return Reflect.get(target, property, target);
+      }});
+      return listener.call(this, proxy);
+    };
+    var wrappers = listenerWrappers.get(surface) || new Map();
+    wrappers.set(listener, wrapped);
+    listenerWrappers.set(surface, wrappers);
+    return wrapped;
+  }
+
+  EventTarget.prototype.addEventListener = function (type, listener, options) {
+    var surface = surfaceFor(this);
+    var pointerEvent = type === 'pointerdown' || type === 'pointermove' || type === 'pointerup' || type === 'pointercancel' || type === 'mousedown' || type === 'mousemove' || type === 'mouseup';
+    if (surface && pointerEvent) listener = wrapListener(surface, listener);
+    return originalAddEventListener.call(this, type, listener, options);
+  };
+  EventTarget.prototype.removeEventListener = function (type, listener, options) {
+    var surface = surfaceFor(this);
+    var wrapped = surface && listenerWrappers.get(surface) && listenerWrappers.get(surface).get(listener);
+    return originalRemoveEventListener.call(this, type, wrapped || listener, options);
+  };
+
+  function fit() {
+    var surfaces = document.querySelectorAll('canvas, svg');
+    document.documentElement.style.width = '100%';
+    document.documentElement.style.height = '100%';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+    document.body.style.position = 'relative';
+    var mount = document.getElementById('art-piece-container');
+    if (mount) { mount.style.position = 'absolute'; mount.style.inset = '0'; }
+    for (var i = 0; i < surfaces.length; i += 1) {
+      var surface = surfaces[i];
+      surface.style.position = 'absolute';
+      surface.style.inset = '0';
+      surface.style.width = '100%';
+      surface.style.height = '100%';
+      surface.style.maxWidth = 'none';
+      surface.style.objectFit = 'contain';
+      surface.style.display = 'block';
+    }
+  }
+
+  function observe() {
+    fit();
+    if (typeof ResizeObserver === 'function') new ResizeObserver(fit).observe(document.body);
+  }
+  window.addEventListener('resize', fit);
+  if (document.body) observe();
+  else document.addEventListener('DOMContentLoaded', observe);
+}());</script>`;
+}
+
 function buildCsp(library: ArtPieceLibrary): string {
   const cdnUrl = LIBRARY_CDN[library];
   if (cdnUrl && !cdnUrl.startsWith(`${ALLOWED_CDN_ORIGIN}/`)) {
@@ -810,6 +920,7 @@ export function buildArtPieceSandboxDocument(
 ${cdnScriptTag}
 ${webglCapturePrelude(library)}
 ${webglResponsivePrelude(library, presentation)}
+${flatResponsivePrelude(library, presentation)}
 ${buildListenerScript(library)}
 </head>
 <body>

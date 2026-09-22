@@ -12,14 +12,16 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from io import BytesIO
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
+from PIL import Image, ImageDraw
 
-from scenes.art_piece_persistence import regenerate_thumbnail
+from scenes.art_piece_persistence import THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH
 from scenes.canonical_piece_signals import normalize_public_slug
 from scenes.models import ArtPiece, ArtPieceVersion, PublicProfile
 
@@ -123,6 +125,7 @@ FIXTURES = (
         {"screenshot": True, "fullscreen": True, "immersive": True, "download": True},
     ),
 )
+REFERENCE_SOURCE_IDS = frozenset(fixture.source_id for fixture in FIXTURES)
 
 
 def _fixture_marker(source_id: str) -> dict[str, str]:
@@ -132,6 +135,57 @@ def _fixture_marker(source_id: str) -> dict[str, str]:
         "source_repository": "augment-humankind-react-node/legacy",
         "source_contract": "art-piece-generation.php",
     }
+
+
+def _is_reference_piece(piece: ArtPiece) -> bool:
+    version = piece.current_version
+    marker = version.generation_metadata.get("reference_import") if version else None
+    return (
+        isinstance(marker, dict)
+        and marker.get("source_id") in REFERENCE_SOURCE_IDS
+        and marker == _fixture_marker(marker["source_id"])
+    )
+
+
+def _trusted_thumbnail_bytes(fixture: ReferenceFixture) -> bytes:
+    """Build a deterministic raster from fixture metadata without running source."""
+    palettes = {
+        "legacy-svg-default": ((23, 37, 84), (251, 191, 36)),
+        "legacy-p5-default": ((17, 24, 39), (251, 191, 36)),
+        "legacy-c2-default": ((17, 24, 39), (34, 211, 238)),
+        "legacy-c2-interactive-default": ((31, 41, 55), (251, 113, 133)),
+        "legacy-three-default": ((15, 23, 42), (251, 191, 36)),
+        "legacy-aframe-default": ((30, 41, 59), (244, 114, 182)),
+    }
+    background, foreground = palettes[fixture.source_id]
+    image = Image.new("RGB", (THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT), background)
+    draw = ImageDraw.Draw(image)
+    if fixture.engine == "svg":
+        draw.ellipse((96, 56, 224, 184), fill=foreground)
+    elif fixture.engine in {"p5js", "threejs"}:
+        draw.ellipse((100, 60, 220, 180), fill=foreground)
+    elif fixture.engine.startswith("c2js"):
+        draw.ellipse((118, 78, 202, 162), fill=foreground)
+    else:
+        draw.polygon([(160, 42), (238, 176), (82, 176)], fill=foreground)
+    output = BytesIO()
+    image.save(output, format="PNG", optimize=True)
+    return output.getvalue()
+
+
+def _store_trusted_thumbnail(version: ArtPieceVersion, fixture: ReferenceFixture):
+    from scenes.models import ArtPieceThumbnail
+
+    return ArtPieceThumbnail.objects.update_or_create(
+        version=version,
+        defaults={
+            "image_data": _trusted_thumbnail_bytes(fixture),
+            "content_type": "image/png",
+            "width": THUMBNAIL_WIDTH,
+            "height": THUMBNAIL_HEIGHT,
+            "is_fallback": False,
+        },
+    )[0]
 
 
 class Command(BaseCommand):
@@ -251,11 +305,7 @@ class Command(BaseCommand):
         marked = [
             piece
             for piece in ArtPiece.all_objects.filter(owner=owner)
-            if piece.current_version
-            and piece.current_version.generation_metadata.get("reference_import", {}).get(
-                "import_name"
-            )
-            == IMPORT_NAME
+            if _is_reference_piece(piece)
         ]
         if action == "cleanup":
             return {
@@ -321,7 +371,10 @@ class Command(BaseCommand):
                     )
                     piece.current_version = version
                     piece.save(update_fields=["current_version", "updated_at"])
-                    regenerate_thumbnail(version)
+                if version and (
+                    not hasattr(version, "thumbnail") or version.thumbnail.is_fallback
+                ):
+                    _store_trusted_thumbnail(version, fixture)
             else:
                 slug = normalize_public_slug(fixture.slug)
                 suffix = 2
@@ -347,14 +400,14 @@ class Command(BaseCommand):
                 )
                 piece.current_version = version
                 piece.save(update_fields=["current_version", "updated_at"])
-                regenerate_thumbnail(version)
+                _store_trusted_thumbnail(version, fixture)
             rows.append(
                 {
                     "source_id": fixture.source_id,
                     "public_id": str(piece.public_id),
                     "slug": piece.public_slug,
                     "engine": piece.engine,
-                    "thumbnail": "fallback-until-browser-capture",
+                    "thumbnail": "trusted-import",
                 }
             )
         return {"import": IMPORT_NAME, "owner": owner.username, "pieces": rows}
@@ -362,12 +415,7 @@ class Command(BaseCommand):
     def _cleanup(self, owner) -> dict[str, object]:
         pieces = []
         for piece in ArtPiece.all_objects.filter(owner=owner):
-            version = piece.current_version
-            if (
-                version
-                and version.generation_metadata.get("reference_import", {}).get("import_name")
-                == IMPORT_NAME
-            ):
+            if _is_reference_piece(piece):
                 pieces.append(piece)
         for piece in pieces:
             piece.current_version = None

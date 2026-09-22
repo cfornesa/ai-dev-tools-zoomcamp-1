@@ -11,13 +11,16 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from PIL import Image
 from rest_framework.test import APIClient
 
+from scenes.art_piece_persistence import MAX_THUMBNAIL_BYTES
 from scenes.models import ArtPiece, ArtPieceVersion
 from scenes.thumbnails import FALLBACK_PNG_BYTES
 
 SOURCE = '<canvas id="art-piece-canvas"></canvas>'
 
 
-def _png_bytes(width: int, height: int, color: tuple[int, int, int] = (37, 99, 235)) -> bytes:
+def _png_bytes(
+    width: int = 320, height: int = 240, color: tuple[int, int, int] = (37, 99, 235)
+) -> bytes:
     buffer = BytesIO()
     Image.new("RGB", (width, height), color).save(buffer, format="PNG")
     return buffer.getvalue()
@@ -25,6 +28,12 @@ def _png_bytes(width: int, height: int, color: tuple[int, int, int] = (37, 99, 2
 
 def _png_upload(width: int = 320, height: int = 240, name: str = "thumb.png") -> SimpleUploadedFile:
     return SimpleUploadedFile(name, _png_bytes(width, height), content_type="image/png")
+
+
+def _jpeg_bytes(width: int = 320, height: int = 240) -> bytes:
+    buffer = BytesIO()
+    Image.new("RGB", (width, height), (10, 10, 10)).save(buffer, format="JPEG")
+    return buffer.getvalue()
 
 
 @pytest.fixture
@@ -271,7 +280,68 @@ def test_thumbnail_upload_replaces_fallback_with_real_capture(client):
     assert bytes(piece.current_version.thumbnail.image_data) == png
 
 
-def test_thumbnail_upload_rejects_wrong_dimensions_and_wrong_format(client):
+def test_thumbnail_upload_accepts_jpeg_and_normalizes_to_png(client):
+    response = create_piece(client)
+    public_id = response.data["public_id"]
+    version_id = response.data["current_version"]["id"]
+    jpeg = _jpeg_bytes()
+
+    upload = client.post(
+        f"/api/art-pieces/{public_id}/versions/{version_id}/thumbnail/",
+        {"image": SimpleUploadedFile("thumb.jpg", jpeg, content_type="image/jpeg")},
+        format="multipart",
+    )
+
+    assert upload.status_code == 200
+    thumbnail = ArtPiece.objects.get(public_id=public_id).current_version.thumbnail
+    assert thumbnail.is_fallback is False
+    assert thumbnail.content_type == "image/png"
+    assert bytes(thumbnail.image_data).startswith(b"\x89PNG\r\n\x1a\n")
+    with Image.open(BytesIO(bytes(thumbnail.image_data))) as image:
+        assert image.format == "PNG"
+        assert image.size == (320, 240)
+
+
+@pytest.mark.parametrize(
+    ("content_type", "payload"),
+    [
+        ("image/png", b"not-a-png"),
+        ("image/jpeg", _png_bytes()),
+        ("image/png", _jpeg_bytes()),
+    ],
+)
+def test_thumbnail_upload_requires_matching_magic_and_image_type(client, content_type, payload):
+    response = create_piece(client)
+    public_id = response.data["public_id"]
+    version_id = response.data["current_version"]["id"]
+
+    upload = client.post(
+        f"/api/art-pieces/{public_id}/versions/{version_id}/thumbnail/",
+        {"image": SimpleUploadedFile("thumb.bin", payload, content_type=content_type)},
+        format="multipart",
+    )
+
+    assert upload.status_code == 400
+    assert ArtPiece.objects.get(public_id=public_id).current_version.thumbnail.is_fallback is True
+
+
+def test_thumbnail_upload_rejects_payload_over_size_cap(client):
+    response = create_piece(client)
+    public_id = response.data["public_id"]
+    version_id = response.data["current_version"]["id"]
+    oversized = _png_bytes() + b"0" * (MAX_THUMBNAIL_BYTES + 1)
+
+    upload = client.post(
+        f"/api/art-pieces/{public_id}/versions/{version_id}/thumbnail/",
+        {"image": SimpleUploadedFile("thumb.png", oversized, content_type="image/png")},
+        format="multipart",
+    )
+
+    assert upload.status_code == 400
+    assert ArtPiece.objects.get(public_id=public_id).current_version.thumbnail.is_fallback is True
+
+
+def test_thumbnail_upload_rejects_wrong_dimensions_and_keeps_fallback(client):
     response = create_piece(client)
     public_id = response.data["public_id"]
     version_id = response.data["current_version"]["id"]
@@ -282,15 +352,6 @@ def test_thumbnail_upload_rejects_wrong_dimensions_and_wrong_format(client):
         format="multipart",
     )
     assert wrong_size.status_code == 400
-
-    buffer = BytesIO()
-    Image.new("RGB", (320, 240), (10, 10, 10)).save(buffer, format="JPEG")
-    wrong_format = client.post(
-        f"/api/art-pieces/{public_id}/versions/{version_id}/thumbnail/",
-        {"image": SimpleUploadedFile("thumb.jpg", buffer.getvalue(), content_type="image/jpeg")},
-        format="multipart",
-    )
-    assert wrong_format.status_code == 400
 
     # Neither rejected upload disturbed the existing fallback thumbnail.
     piece = ArtPiece.objects.get(public_id=public_id)

@@ -1320,7 +1320,7 @@ were posted through active Chrome and both issues were closed. The remaining
 deployment connectivity note from #717 is an owner operational follow-up,
 outside that issue's contract; stage 3 second opinion was not run.
 
-## 2026-09-22 — #727 production schema-diff outage remains blocked
+## 2026-09-22 — #727 production schema-diff outage resolved
 
 The live `augmentrart.com` `/api/site-theme/` and `/api/public/gallery/` routes
 returned HTTP 500 while `/health/` remained HTTP 200. Replit `main` matched
@@ -1329,8 +1329,17 @@ non-destructive Republish completed as release `fc631d4e` but did not repair the
 routes. Read-only Production Database inspection confirmed that the 0086 palette
 columns are missing from `PublicProfile` and `SiteSettings`, and the 0088
 `ThemeGenerationAttempt` table is absent; the 0087 seven-row `ProfileStyle` seed
-is present. This is the documented missed schema-diff pattern. No direct
+is present. This was the documented missed schema-diff pattern. No direct
 production SQL, destructive resolution, deployment-build change, or startup
-migration was used. Evidence was posted to #727; the issue remains open pending
-a supported Replit schema-diff repair and post-repair endpoint/schema/smoke
-verification.
+migration was used. The repair added database defaults for the six new non-null
+shared palette/presentation fields in `cb80b47`. Replit Development migrations
+through 0089 passed, and the approved non-destructive schema diff published
+release `14278c04`, creating `scenes_themegenerationattempt` and all six missing
+columns without truncation or deletion. Read-only Production Database
+inspection confirmed those invariants. `/api/site-theme/`,
+`/api/public/gallery/`, and `/health/` all returned 200; active Chrome showed
+the public gallery cards after retrying the stale error page. The published
+smoke script's health check passed, while its already-tracked share-metadata
+backend diagnostic still reports `TypeError: fetch failed`; that separate
+diagnostic is not attributed to this outage. Evidence was posted to #727 and
+the issue is ready to close.

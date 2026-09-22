@@ -4,22 +4,21 @@
 
 The live issue contracts for #722 and #723 were reread before work. Both are
 owner-authorized production data/config workflows, not Stage 2 implementation
-tasks, and both depend on authenticated production access. Read-only live
-checks confirmed the reported failures, but the available Replit shell targets
-the development workspace and the opened production browser was not
-owner-authenticated. No production write was attempted. The exact manifest and
-QA evidence are recorded in
+tasks. Using the authenticated active Chrome session, #722's missing Celestial
+style was restored through the admin UI and #723's six reference thumbnails
+were refreshed through the owner-only management control. The exact manifest,
+production evidence, and QA substitutions are recorded in
 `.local/tasks/backlog-session-2026-09-22-reconciliation.md`.
 
 | Order | Issue | Status / routing | Evidence and next action |
 | --- | --- | --- | --- |
-| 1 | [#722](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722) | QA FAIL / BLOCKED — owner production access | Live theme remains default/plain. Owner must inspect `SiteSettings.style` and the Celestial `ProfileStyle`, choose null versus explicit `celestial`, perform the admin API/UI action, and rerun the required viewport checks. |
-| 2 | [#723](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723) | QA FAIL / DEPENDENCY-BLOCKED — confirmed production runtime required | Live gallery still reports fallback thumbnails. Owner must run the trusted import once against a confirmed production runtime/database, then rerun gallery, profile, and management-page checks. |
+| 1 | [#722](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722) | QA PASS / ready to close | Authenticated production admin UI restored the missing Celestial style; live theme API and rendered shell confirm the Celestial presentation. |
+| 2 | [#723](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723) | QA PASS / ready to close | Authenticated production management refresh succeeded for all six reference pieces; live API, public gallery, profile, and management evidence confirm real thumbnails. |
 
-These issues remain open. Later backlog processing is intentionally paused until
-both priority issues reach a terminal closure or documented handoff state.
+Later backlog processing is intentionally paused until both priority issues are
+closed and the closure state is reread.
 
-### #722 transaction ledger — 2026-09-22 — QA FAIL / BLOCKED
+### #722 transaction ledger — 2026-09-22 — superseded by authenticated production pass
 
 - PM/grooming: criterion-ready owner production data/config workflow; no code
   implementation or migration is in scope. Root-cause choice remains owner
@@ -31,12 +30,23 @@ both priority issues reach a terminal closure or documented handoff state.
   `curl -fsS https://augmentrart.com/api/site-theme/` and rendered production
   inspection confirmed the default/plain shell. Exact owner-authenticated
   style inspection and writes were not run.
-- Reconciliation: QA comment posted at
-  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722#issuecomment-5772270111`.
-  Issue remains open and blocked on owner-authenticated production access and
-  the explicit null-versus-celestial choice.
+- Reconciliation: the initial QA comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722#issuecomment-5772270111`
+  recorded the access block. It was superseded by the authenticated Chrome
+  pass: the missing `celestial` style was created/configured, selected
+  globally, and verified through the live theme API and rendered shell.
 
-### #723 transaction ledger — 2026-09-22 — QA FAIL / DEPENDENCY-BLOCKED
+### #722 final QA ledger — 2026-09-22 — PASS
+
+- Authenticated Chrome admin UI evidence: Celestial exists, is configured as
+  script/soft/cosmic, and is selected as the global style.
+- Live API evidence: `GET https://augmentrart.com/api/site-theme/` returns
+  `style_key: "celestial"` and the expected presentation values.
+- Render evidence: the authenticated production shell rendered the Celestial
+  cosmic background, script typography, and soft styling.
+- Closure: final QA comment posted and issue closed as completed.
+
+### #723 transaction ledger — 2026-09-22 — superseded by authenticated production pass
 
 - PM/grooming: criterion-ready owner production data workflow; trusted import
   code is already merged and no further implementation is in scope.
@@ -48,10 +58,22 @@ both priority issues reach a terminal closure or documented handoff state.
   stable-marker reference pieces still report fallback thumbnails. The import
   was not run because the available shell is not confirmed to target
   production.
-- Reconciliation: QA comment posted at
-  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723#issuecomment-5772270537`.
-  Issue remains open and dependency-blocked on a confirmed production-runtime
-  execution context.
+- Reconciliation: the initial QA comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723#issuecomment-5772270537`
+  recorded the production-runtime block. It was superseded by the
+  authenticated Chrome pass against production.
+
+### #723 final QA ledger — 2026-09-22 — PASS
+
+- Authenticated Chrome management evidence: the owner-only refresh reported
+  `6 thumbnails refreshed successfully` and `All current versions have
+  thumbnails.`
+- Live API evidence: the six stable-marker reference pieces all return
+  `thumbnail_is_fallback: false`.
+- Render evidence: the public gallery and `users/@cfornesa` profile rendered
+  the generated reference artwork; the management page remained owner-only
+  and usable.
+- Closure: final QA comment posted and issue closed as completed.
 
 ## 2026-09-21 — backlog-session manifest (#703–#718)
 

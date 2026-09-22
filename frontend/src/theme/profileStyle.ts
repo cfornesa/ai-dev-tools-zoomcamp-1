@@ -6,7 +6,10 @@ import type { PresentationOptions } from '../api/adminSettings';
 function presentationFont(value: PresentationOptions['font_family'] | undefined): string {
   if (value === 'serif') return "Georgia, 'Times New Roman', serif";
   if (value === 'mono') return 'ui-monospace, Consolas, monospace';
-  if (value === 'script') return "'Pinyon Script', Georgia, 'Times New Roman', serif";
+  // Script is the Celestial heading treatment. Profile and card body copy
+  // must remain readable; the shared heading cascade applies Pinyon Script
+  // to headings separately.
+  if (value === 'script') return "Lora, Georgia, 'Times New Roman', serif";
   return "system-ui, 'Segoe UI', Roboto, sans-serif";
 }
 

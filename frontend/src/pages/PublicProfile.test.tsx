@@ -86,6 +86,28 @@ describe('PublicProfile theme cascade (#577)', () => {
     expect(section.style.getPropertyValue('--profile-density')).toBe('20px');
   });
 
+  it('keeps script-profile body copy readable with a serif font', async () => {
+    mockedFetch.mockResolvedValue({
+      ...SAMPLE,
+      profile: {
+        ...SAMPLE.profile,
+        presentation: {
+          font_family: 'script',
+          density: 'comfortable',
+          radius: 'soft',
+          border_style: 'solid',
+        },
+      },
+    });
+
+    renderAt('artist');
+
+    const heading = await screen.findByRole('heading', { name: 'The Artist' });
+    const section = heading.closest('.public-profile') as HTMLElement;
+    expect(section.style.getPropertyValue('--profile-font')).toContain('Lora');
+    expect(section.style.getPropertyValue('--profile-font')).not.toContain('Pinyon');
+  });
+
   it('renders the ordered public profile header details as plain text and safe external links', async () => {
     mockedFetch.mockResolvedValue(SAMPLE);
 

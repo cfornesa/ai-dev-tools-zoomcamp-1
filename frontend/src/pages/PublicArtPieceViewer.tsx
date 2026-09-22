@@ -81,6 +81,8 @@ export default function PublicArtPieceViewer({
   const auth = useAuth();
   const stageRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [toolbarHost, setToolbarHost] = useState<HTMLDivElement | null>(null);
+  const [fullscreenToolbarHost, setFullscreenToolbarHost] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     if (initialPiece) return;
     if (id)
@@ -201,58 +203,72 @@ export default function PublicArtPieceViewer({
           )}
         </>
       )}
-      <div
-        ref={stageRef}
-        className="art-piece-stage public-art-piece-stage"
-        role="region"
-        aria-label="Art piece stage"
-        style={
-          {
-            '--art-piece-aspect-ratio': aspectRatio,
-            background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
-          } as CSSProperties
-        }
-      >
-        <iframe
-          ref={iframeRef}
-          title="Art piece preview"
-          sandbox={ART_PIECE_IFRAME_SANDBOX}
-          allow={ART_PIECE_IFRAME_ALLOW}
-          srcDoc={buildArtPieceSandboxDocument(
-            piece.current_version.source,
-            piece.engine,
-            'regular',
+      <div className="public-art-piece-viewer-stage-shell">
+        <div
+          ref={setToolbarHost}
+          className="public-art-piece-toolbar-row"
+          data-testid="regular-piece-toolbar-row"
+        />
+        <div
+          ref={stageRef}
+          className="art-piece-stage public-art-piece-stage"
+          role="region"
+          aria-label="Art piece stage"
+          style={
             {
-              background: 'transparent',
-            },
-          )}
-          // Issue #435: browsers apply a default iframe border a few px
-          // wide unless reset; with box-sizing: content-box (the iframe
-          // default), that border adds to the box beyond its 100% width,
-          // overflowing its container by exactly the border's size --
-          // caught by this issue's own stage-containment check at
-          // 1280x900, present on this route and /art-pieces/p/:id alike.
-          style={{
-            display: 'block',
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
-          }}
-        />
-        <PieceStageControls
-          stageRef={stageRef}
-          iframeRef={iframeRef}
-          capabilities={piece.current_version.capabilities}
-          immersiveHref={
-            canonicalHref
-              ? canonicalHref.replace('/pieces/', '/immersive/')
-              : `/art-pieces/immersive/${piece.public_id}`
+              '--art-piece-aspect-ratio': aspectRatio,
+              background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
+            } as CSSProperties
           }
-          library={piece.engine}
-          source={piece.current_version.source}
-          title={piece.title}
-        />
+        >
+          <div
+            ref={setFullscreenToolbarHost}
+            className="public-art-piece-fullscreen-toolbar-host"
+            data-testid="regular-piece-fullscreen-toolbar-host"
+          />
+          <iframe
+            ref={iframeRef}
+            title="Art piece preview"
+            sandbox={ART_PIECE_IFRAME_SANDBOX}
+            allow={ART_PIECE_IFRAME_ALLOW}
+            srcDoc={buildArtPieceSandboxDocument(
+              piece.current_version.source,
+              piece.engine,
+              'regular',
+              {
+                background: 'transparent',
+              },
+            )}
+            // Issue #435: browsers apply a default iframe border a few px
+            // wide unless reset; with box-sizing: content-box (the iframe
+            // default), that border adds to the box beyond its 100% width,
+            // overflowing its container by exactly the border's size --
+            // caught by this issue's own stage-containment check at
+            // 1280x900, present on this route and /art-pieces/p/:id alike.
+            style={{
+              display: 'block',
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
+            }}
+          />
+          <PieceStageControls
+            stageRef={stageRef}
+            iframeRef={iframeRef}
+            capabilities={piece.current_version.capabilities}
+            immersiveHref={
+              canonicalHref
+                ? canonicalHref.replace('/pieces/', '/immersive/')
+                : `/art-pieces/immersive/${piece.public_id}`
+            }
+            library={piece.engine}
+            source={piece.current_version.source}
+            title={piece.title}
+            toolbarPortalTarget={toolbarHost}
+            fullscreenToolbarPortalTarget={fullscreenToolbarHost}
+          />
+        </div>
       </div>
       {!isEmbedRoute && !!piece.collections?.length && (
         <aside className="public-collection-context" aria-label="Public collections">

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
@@ -36,6 +37,10 @@ type Props = {
   library: ArtPieceLibrary;
   source: string;
   title: string;
+  /** Regular public viewers render the toolbar above the stage, then move it
+   * into the fullscreen host while the stage owns native fullscreen. */
+  toolbarPortalTarget?: HTMLElement | null;
+  fullscreenToolbarPortalTarget?: HTMLElement | null;
   /** Issue #448: which downloadable ZIP shape `downloadPiece` below
    * builds -- `PublicArtPieceViewer.tsx` never passes this (defaulting
    * to the regular small-stage export), `ImmersiveArtPieceViewer.tsx`
@@ -55,6 +60,8 @@ function PieceStageControls({
   library,
   source,
   title,
+  toolbarPortalTarget,
+  fullscreenToolbarPortalTarget,
   presentation = 'regular',
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -501,6 +508,112 @@ function PieceStageControls({
     gestureGuide: capabilities.hand_steering === true,
     fullscreen: capabilities.fullscreen !== false,
   };
+  const toolbar = (
+    <PieceStageToolbar
+      onScreenshot={() => command('screenshot')}
+      onDownload={(variant) => void downloadPiece(variant === 'non-camera' ? 'non-camera' : 'full')}
+      immersiveHref={immersiveHref}
+      immersiveLabel={presentation === 'immersive' ? 'VR' : 'Immersive'}
+      isFullscreen={isFullscreen}
+      onToggleFullscreen={() => void toggleFullscreen()}
+      downloadFormat="zip"
+      capabilities={toolbarCapabilities}
+      toolbarMode="inline"
+      soundControl={
+        toolbarCapabilities.sound ? (
+          <button
+            type="button"
+            className="piece-stage-icon-button"
+            aria-pressed={soundOn}
+            aria-label={soundOn ? 'Mute sound' : 'Unmute sound'}
+            onClick={() => command('toggle-sound')}
+          >
+            <PieceStageIcon name="sound" />
+            <span className="piece-stage-action-label">Sound</span>
+          </button>
+        ) : undefined
+      }
+      controlsControl={
+        toolbarCapabilities.pieceControls ? (
+          <button
+            type="button"
+            className="piece-stage-icon-button"
+            aria-expanded={open}
+            aria-label="Camera controls"
+            onClick={() => setOpen((value) => !value)}
+          >
+            <PieceStageIcon name="controls" />
+            <span className="piece-stage-action-label">Camera</span>
+          </button>
+        ) : undefined
+      }
+      gestureControl={
+        toolbarCapabilities.gesture ? (
+          <button
+            type="button"
+            className="piece-stage-icon-button"
+            aria-pressed={steeringState === 'active'}
+            aria-label={steeringState === 'active' ? 'Stop hand tracking' : 'Hand tracking'}
+            onClick={() =>
+              command(steeringState === 'active' ? 'disable-hand-steering' : 'enable-hand-steering')
+            }
+          >
+            <PieceStageIcon name="steer" />
+            <span className="piece-stage-action-label">Hand tracking</span>
+          </button>
+        ) : undefined
+      }
+      gestureGuide={
+        toolbarCapabilities.gestureGuide ? (
+          <button
+            type="button"
+            className="piece-stage-icon-button"
+            aria-label="Hand tracking guide"
+            onClick={() => setGuide(true)}
+          >
+            <PieceStageIcon name="guide" />
+            <span className="piece-stage-action-label">Guide</span>
+          </button>
+        ) : undefined
+      }
+      visitorDrawControl={
+        library === 'c2js-interactive' ? (
+          <div
+            className="piece-stage-visitor-draw-controls"
+            role="group"
+            aria-label="Visitor drawing"
+          >
+            <button
+              type="button"
+              className="piece-stage-icon-button"
+              aria-pressed={visitorDrawOn}
+              aria-label={visitorDrawOn ? 'Stop drawing' : 'Draw on piece'}
+              onClick={() => setVisitorDrawOn((current) => !current)}
+            >
+              <span className="piece-stage-action-label">
+                {visitorDrawOn ? 'Stop drawing' : 'Draw'}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="piece-stage-icon-button"
+              aria-label="Clear visitor drawing"
+              onClick={clearVisitorStrokes}
+              disabled={visitorStrokes.length === 0}
+            >
+              <span className="piece-stage-action-label">Clear</span>
+            </button>
+          </div>
+        ) : undefined
+      }
+    />
+  );
+  const toolbarTarget =
+    presentation === 'regular'
+      ? isFullscreen
+        ? fullscreenToolbarPortalTarget
+        : toolbarPortalTarget
+      : undefined;
   return (
     <>
       {capabilities.camera_view && (
@@ -526,108 +639,11 @@ function PieceStageControls({
           }}
         />
       )}
-      <PieceStageToolbar
-        onScreenshot={() => command('screenshot')}
-        onDownload={(variant) =>
-          void downloadPiece(variant === 'non-camera' ? 'non-camera' : 'full')
-        }
-        immersiveHref={immersiveHref}
-        immersiveLabel={presentation === 'immersive' ? 'VR' : 'Immersive'}
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={() => void toggleFullscreen()}
-        downloadFormat="zip"
-        capabilities={toolbarCapabilities}
-        toolbarMode="inline"
-        soundControl={
-          toolbarCapabilities.sound ? (
-            <button
-              type="button"
-              className="piece-stage-icon-button"
-              aria-pressed={soundOn}
-              aria-label={soundOn ? 'Mute sound' : 'Unmute sound'}
-              onClick={() => command('toggle-sound')}
-            >
-              <PieceStageIcon name="sound" />
-              <span className="piece-stage-action-label">Sound</span>
-            </button>
-          ) : undefined
-        }
-        controlsControl={
-          toolbarCapabilities.pieceControls ? (
-            <button
-              type="button"
-              className="piece-stage-icon-button"
-              aria-expanded={open}
-              aria-label="Camera controls"
-              onClick={() => setOpen((value) => !value)}
-            >
-              <PieceStageIcon name="controls" />
-              <span className="piece-stage-action-label">Camera</span>
-            </button>
-          ) : undefined
-        }
-        gestureControl={
-          toolbarCapabilities.gesture ? (
-            <button
-              type="button"
-              className="piece-stage-icon-button"
-              aria-pressed={steeringState === 'active'}
-              aria-label={steeringState === 'active' ? 'Stop hand tracking' : 'Hand tracking'}
-              onClick={() =>
-                command(
-                  steeringState === 'active' ? 'disable-hand-steering' : 'enable-hand-steering',
-                )
-              }
-            >
-              <PieceStageIcon name="steer" />
-              <span className="piece-stage-action-label">Hand tracking</span>
-            </button>
-          ) : undefined
-        }
-        gestureGuide={
-          toolbarCapabilities.gestureGuide ? (
-            <button
-              type="button"
-              className="piece-stage-icon-button"
-              aria-label="Hand tracking guide"
-              onClick={() => setGuide(true)}
-            >
-              <PieceStageIcon name="guide" />
-              <span className="piece-stage-action-label">Guide</span>
-            </button>
-          ) : undefined
-        }
-        visitorDrawControl={
-          library === 'c2js-interactive' ? (
-            <div
-              className="piece-stage-visitor-draw-controls"
-              role="group"
-              aria-label="Visitor drawing"
-            >
-              <button
-                type="button"
-                className="piece-stage-icon-button"
-                aria-pressed={visitorDrawOn}
-                aria-label={visitorDrawOn ? 'Stop drawing' : 'Draw on piece'}
-                onClick={() => setVisitorDrawOn((current) => !current)}
-              >
-                <span className="piece-stage-action-label">
-                  {visitorDrawOn ? 'Stop drawing' : 'Draw'}
-                </span>
-              </button>
-              <button
-                type="button"
-                className="piece-stage-icon-button"
-                aria-label="Clear visitor drawing"
-                onClick={clearVisitorStrokes}
-                disabled={visitorStrokes.length === 0}
-              >
-                <span className="piece-stage-action-label">Clear</span>
-              </button>
-            </div>
-          ) : undefined
-        }
-      />
+      {toolbarTarget
+        ? createPortal(toolbar, toolbarTarget)
+        : presentation !== 'regular'
+          ? toolbar
+          : null}
       {library === 'c2js-interactive' && (
         <canvas
           ref={visitorOverlayRef}

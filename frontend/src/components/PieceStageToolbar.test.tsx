@@ -15,6 +15,20 @@ describe('PieceStageToolbar', () => {
     );
   });
 
+  it('keeps the regular public toolbar above the stage and relocatable for fullscreen', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
+    expect(css).toMatch(/\.public-art-piece-toolbar-row\s*\{[^}]*min-height:\s*3\.5rem/s);
+    expect(css).toMatch(
+      /\.public-art-piece-toolbar-row \.piece-stage-toolbar\s*\{[^}]*position:\s*static/s,
+    );
+    expect(css).toMatch(
+      /\.public-art-piece-toolbar-row \.piece-stage-icon-button\s*\{[^}]*min-height:\s*44px;[^}]*height:\s*44px/s,
+    );
+    expect(css).toMatch(
+      /\.public-art-piece-stage:fullscreen > \.public-art-piece-fullscreen-toolbar-host\s*\{[^}]*display:\s*block/s,
+    );
+  });
+
   it('keeps the shared action order and routes both download variants', async () => {
     const user = userEvent.setup();
     const onDownload = vi.fn();

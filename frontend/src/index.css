@@ -4710,6 +4710,45 @@ select.ai-proposal-field-full-width {
   border: 0;
 }
 
+.public-art-piece-viewer-stage-shell {
+  width: 100%;
+}
+
+.public-art-piece-toolbar-row {
+  display: flex;
+  min-height: 3.5rem;
+  align-items: flex-start;
+  padding: 0.35rem 0;
+}
+
+.public-art-piece-toolbar-row .piece-stage-toolbar {
+  position: static;
+  max-width: 100%;
+}
+
+.public-art-piece-fullscreen-toolbar-host {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.public-art-piece-fullscreen-toolbar-host .piece-stage-toolbar {
+  pointer-events: auto;
+}
+
+.public-art-piece-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-height: none;
+  aspect-ratio: auto;
+}
+
+.public-art-piece-stage:fullscreen > .public-art-piece-fullscreen-toolbar-host {
+  display: block;
+}
+
 /* The immersive/public art-piece viewer still uses the legacy runtime
    controls component (rather than the shared command-card toolbar). Its
    disclosure must overlay the stage and scroll within the viewport; leaving
@@ -5222,6 +5261,11 @@ select.ai-proposal-field-full-width {
     min-height: 2.5rem;
     height: 2.5rem;
     padding: 0 0.5rem;
+  }
+
+  .public-art-piece-toolbar-row .piece-stage-icon-button {
+    min-height: 44px;
+    height: 44px;
   }
 }
 

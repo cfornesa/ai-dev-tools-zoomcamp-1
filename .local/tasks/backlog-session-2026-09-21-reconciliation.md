@@ -160,3 +160,15 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Browser evidence:** `public-draw-pieces-1280-erased.png` was inspected: the red erased mark is absent, the white/green marks and underlying artwork remain, the eraser ring is visible, and the explanatory help has sufficient contrast. Toolbar wrapping was constrained so controls stay within the responsive row.
 - **QA result:** `## QA: PASS`. Marks remain temporary; no persistence or API contract changed.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue: #711.
+
+## Transaction ledger — #711 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** C2.js Interactive touch/stylus continuity: conditional `touch-action`, pointer capture/cancel handling, two-finger gesture suppression, and optional pressure-scaled new stroke width; eraser semantics remain owned by #709.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k3: `yes` because no callable independent implementation service was available in this session; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commit:** `a5c4137`.
+- **Focused checks:** visitor history/hit-testing plus toolbar/public-viewer tests `14 passed`; TypeScript and Prettier passed; Chromium `publicDraw.spec.ts` passed `1/1` across regular and immersive 1280×900 and regular and immersive 375×812 touch scenarios. Browser assertions verify `touch-action: auto` when off, `none` when drawing, unchanged mobile scroll position, pointer-driven drawing, and temporary history behavior.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-711 make check` passed: backend `1490 passed, 39 skipped`; frontend `257 files, 2791 tests passed`; format/typecheck/action-pin checks passed; lint remains green with established non-blocking warnings.
+- **Browser evidence:** the inspected 375px touch screenshots show the drawing controls and marks remain within the responsive stage; the page does not scroll during touch drawing. Pointer capture and cancel paths are covered in the implementation.
+- **QA result:** `## QA: PASS`. No route/API/schema/dependency change.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue: #712.

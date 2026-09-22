@@ -133,6 +133,13 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
       await customColor.fill('#22c55e');
       await expect(customColor).toHaveValue('#22c55e');
       await drawStroke(0.15, 0.35, 3);
+      await page.getByRole('radio', { name: 'Eraser' }).click();
+      await expect(page.getByRole('radio', { name: 'Eraser' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      await expect(page.getByText('Eraser removes touched strokes.')).toBeVisible();
+      await drawStroke(0.55, 0.55, 4);
       await expect(page.getByRole('button', { name: 'Clear visitor drawing' })).toBeEnabled();
       await page.waitForTimeout(100);
       const firstScreenshot = page.waitForEvent('download');

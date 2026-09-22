@@ -49,8 +49,8 @@ type Props = {
   presentation?: 'regular' | 'immersive';
 };
 
-type VisitorPoint = { x: number; y: number };
-type VisitorTool = 'pencil' | 'brush';
+export type VisitorPoint = { x: number; y: number };
+type VisitorTool = 'pencil' | 'brush' | 'eraser';
 const VISITOR_SWATCHES = [
   { name: 'Black', value: '#000000' },
   { name: 'White', value: '#ffffff' },
@@ -61,12 +61,37 @@ const VISITOR_SWATCHES = [
   { name: 'Blue', value: '#3b82f6' },
   { name: 'Purple', value: '#a855f7' },
 ] as const;
-type VisitorStroke = {
+export type VisitorStroke = {
   points: VisitorPoint[];
   tool: VisitorTool;
   size: number;
   color: string;
 };
+
+export function visitorStrokeIntersects(
+  stroke: VisitorStroke,
+  point: VisitorPoint,
+  radius: number,
+): boolean {
+  for (let index = 0; index < stroke.points.length; index += 1) {
+    const start = stroke.points[index];
+    const end = stroke.points[index + 1] ?? start;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy;
+    const projection =
+      lengthSquared === 0
+        ? 0
+        : Math.max(
+            0,
+            Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared),
+          );
+    const closestX = start.x + projection * dx;
+    const closestY = start.y + projection * dy;
+    if (Math.hypot(point.x - closestX, point.y - closestY) <= radius) return true;
+  }
+  return false;
+}
 
 function contrastingVisitorColor(background: string): string {
   const channels = background.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -113,6 +138,7 @@ function PieceStageControls({
   const [visitorSize, setVisitorSize] = useState(4);
   const [visitorColor, setVisitorColor] = useState('#ffffff');
   const [visitorStrokes, setVisitorStrokes] = useState<VisitorStroke[]>([]);
+  const [eraserPoint, setEraserPoint] = useState<VisitorPoint | null>(null);
   // Issue #479: model preparation status is now derived directly from the
   // local `TrackingProvider`'s own onFrame/onError channels -- no longer
   // reported through the sandbox at all, since hand-tracking never runs
@@ -247,12 +273,29 @@ function PieceStageControls({
     };
   }
 
+  function visitorEraseRadius(stroke?: VisitorStroke): number {
+    const stageWidth = stageRef.current?.clientWidth || 320;
+    const eraserRadius = visitorSize / (2 * stageWidth);
+    if (!stroke) return eraserRadius;
+    return eraserRadius + visitorStrokeWidth(stroke, stageWidth / 320) / (2 * stageWidth);
+  }
+
   function startVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!visitorDrawOn) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     visitorPointerIdRef.current = event.pointerId;
+    const point = visitorPoint(event);
+    if (visitorTool === 'eraser') {
+      const remaining = visitorStrokesRef.current.filter(
+        (stroke) => !visitorStrokeIntersects(stroke, point, visitorEraseRadius(stroke)),
+      );
+      visitorStrokesRef.current = remaining;
+      setVisitorStrokes(remaining);
+      setEraserPoint(point);
+      return;
+    }
     const stroke = {
-      points: [visitorPoint(event)],
+      points: [point],
       tool: visitorTool,
       size: visitorSize,
       color: visitorColor,
@@ -263,10 +306,20 @@ function PieceStageControls({
 
   function continueVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!visitorDrawOn || visitorPointerIdRef.current !== event.pointerId) return;
+    const point = visitorPoint(event);
+    if (visitorTool === 'eraser') {
+      const remaining = visitorStrokesRef.current.filter(
+        (stroke) => !visitorStrokeIntersects(stroke, point, visitorEraseRadius(stroke)),
+      );
+      visitorStrokesRef.current = remaining;
+      setVisitorStrokes(remaining);
+      setEraserPoint(point);
+      return;
+    }
     const strokes = visitorStrokesRef.current;
     const current = strokes[strokes.length - 1]?.points;
     if (!current) return;
-    current.push(visitorPoint(event));
+    current.push(point);
     setVisitorStrokes([...strokes]);
   }
 
@@ -659,7 +712,7 @@ function PieceStageControls({
               role="radiogroup"
               aria-label="Drawing tool"
             >
-              {(['pencil', 'brush'] as const).map((tool) => (
+              {(['pencil', 'brush', 'eraser'] as const).map((tool) => (
                 <button
                   key={tool}
                   type="button"
@@ -669,11 +722,16 @@ function PieceStageControls({
                   onClick={() => setVisitorTool(tool)}
                 >
                   <span className="piece-stage-action-label">
-                    {tool === 'pencil' ? 'Pencil' : 'Brush'}
+                    {tool === 'pencil' ? 'Pencil' : tool === 'brush' ? 'Brush' : 'Eraser'}
                   </span>
                 </button>
               ))}
             </div>
+            {visitorTool === 'eraser' && (
+              <span className="piece-stage-visitor-eraser-help">
+                Eraser removes touched strokes.
+              </span>
+            )}
             <label className="piece-stage-visitor-size-control" htmlFor="visitor-drawing-size">
               Size <output htmlFor="visitor-drawing-size">{visitorSize}px</output>
               <input
@@ -754,6 +812,10 @@ function PieceStageControls({
           aria-label="Temporary visitor drawing overlay"
           onPointerDown={startVisitorStroke}
           onPointerMove={continueVisitorStroke}
+          onPointerEnter={(event) => {
+            if (visitorTool === 'eraser') setEraserPoint(visitorPoint(event));
+          }}
+          onPointerLeave={() => setEraserPoint(null)}
           onPointerUp={(event) => {
             visitorPointerIdRef.current = null;
             if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -771,6 +833,21 @@ function PieceStageControls({
           }}
         />
       )}
+      {library === 'c2js-interactive' &&
+        visitorDrawOn &&
+        visitorTool === 'eraser' &&
+        eraserPoint && (
+          <span
+            className="piece-stage-visitor-eraser-cursor"
+            aria-hidden="true"
+            style={{
+              left: `${eraserPoint.x * 100}%`,
+              top: `${eraserPoint.y * 100}%`,
+              width: `${visitorSize}px`,
+              height: `${visitorSize}px`,
+            }}
+          />
+        )}
       {open && (
         <div role="region" aria-label="Piece controls">
           {capabilities.sound && (

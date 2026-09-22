@@ -5354,6 +5354,25 @@ select.ai-proposal-field-full-width {
   text-align: right;
 }
 
+.piece-stage-visitor-eraser-help {
+  align-self: center;
+  padding: 0.25rem 0.4rem;
+  border-radius: 0.3rem;
+  background: #737373;
+  color: white;
+  font-size: 0.75rem;
+}
+
+.piece-stage-visitor-eraser-cursor {
+  position: absolute;
+  z-index: 11;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  color: white;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
 @media (max-width: 767px) {
   .piece-stage-visitor-draw-controls {
     width: 100%;

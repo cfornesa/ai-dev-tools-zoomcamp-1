@@ -44,25 +44,11 @@ its transaction record is in `.local/tasks/issue-712-celestial-default.md`.
   and republish are required.
 - **#716** — implementation is blocked on the owner's explicit choice among
   anonymous capture token, owner-only batch refresh, or import-time assets.
-- **#715** — focused component checks pass, but fixed-viewport screenshot
-  execution is blocked by the local Playwright Chromium Mach-port sandbox.
-- **#711** — touch-drawing implementation/spec exists, but the required touch
-  browser verification is blocked by the same host limitation.
-- **#710** — drawing-history model checks pass, but the required extended
-  mouse/touch browser verification is blocked by the same host limitation.
-- **#709** — eraser/hit-testing checks pass, but the required mouse/touch
-  browser verification is blocked by the same host limitation.
-- **#708 / #707** — color-palette and tool-selector implementations are
-  present, but their required rendered mouse/touch verification is blocked by
-  the same host limitation; #707's current focused checks pass 2/2.
-- **#706** — the existing implementation has prior reported browser evidence,
-  but this QA pass cannot independently rerun its rendered desktop/mobile
-  contract on the current host.
-- **#705** — 2D bundle/sandbox checks pass 46/46, but the required five-engine
-  rendered screenshot run is blocked by the same host limitation.
-- **#704 / #703** — 3D bundle checks pass 18/18 and stage-sizing checks pass
-  3/3, but their required rendered WebGL/viewport screenshot runs are blocked
-  by the same host limitation.
+
+Issues #703–#715 that had been deferred on the local Mach-port limitation are
+now closed after the repository-owned Docker Compose Chromium run succeeded.
+The per-issue QA comments and closure state are recorded in the corresponding
+`.local/tasks/issue-*.md` ledgers.
 
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and
@@ -72,6 +58,16 @@ The exact #725 transaction record is in
 `.local/tasks/issue-725-ai-theme-generation.md`. Its browser gate is recorded
 as a host-setup limitation: the spec is discoverable, but this macOS runner's
 Playwright Chromium binary cannot launch because of its Mach port sandbox.
+
+## 2026-09-22 — Compose browser verification closures (#703, #705–#711, #715)
+
+The owner-authorized Codex/GPT-5 runtime reran the previously blocked browser
+contracts against the repository's Docker Compose stack with
+`E2E_DOCKER_COMPOSE=true E2E_BASE_URL=http://127.0.0.1:5000`. The stage,
+fill, toolbar, card-thumbnail, palette, eraser, history, and touch-drawing
+scenarios passed, so the issues were self-reviewed in the active Chrome
+session with `## QA: PASS` comments and closed. Stage 3 second-opinion review
+was not run; evidence is local Compose, not production.
 
 ## 2026-09-22 — backlog-session priority gate (#722–#723)
 

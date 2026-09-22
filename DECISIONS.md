@@ -1267,3 +1267,14 @@ format checks passing. Existing fixed-viewport style evidence covers the
 Celestial default, readable serif body text, cosmic backdrop, reduced motion,
 and mobile/desktop shell behavior. The QA self-review was posted through the
 authenticated active Chrome session and the issue was closed.
+
+## 2026-09-22 — Compose browser gates closed #703, #705–#711, #715
+
+The owner-authorized Codex/GPT-5 runtime resolved the earlier local Chromium
+launch limitation by running the repository-owned Compose-backed Chromium
+scenarios. `pieceStageSizing.spec.ts` passed 1/1; the combined fill, toolbar,
+and card-thumbnail run passed 4/4; and `publicDraw.spec.ts` passed 1/1 across
+regular/immersive desktop and touch-sized scenarios. Focused checks were also
+recorded in each issue ledger. QA comments were posted through active Chrome
+and the issues were closed. Stage 3 second opinion was not run, and no
+production evidence is claimed.

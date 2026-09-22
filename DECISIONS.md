@@ -1190,3 +1190,15 @@ and QA (and scoping for #636/#641), Claude Sonnet 5/Medium scoping for the
 others, no second-opinion review. Effort values are unrecoverable and accepted
 as a documented gap. The owner asked to wait on Replit Publish; #702 stays
 handed-off.
+## 2026-09-22 — #724 shared parity theme system closed
+
+#724 completed the shared admin/account design contract in commits `c6bf366`
+and `46e540c`. The owner-authorized Codex/GPT-5 runtime performed the Stage 2b
+implementation and Stage 4 QA as explicit substitutions for unavailable rostered
+services; Stage 3 second opinion was not run and is recorded as such. QA found
+two in-scope fixes (separate readable body and script heading fonts, plus stable
+preview accessible names), then reran focused tests, the full frontend suite,
+rebuilt Compose images, and the fixed-viewport Chromium scenarios. The QA
+verdict was posted through the authenticated active Chrome session and #724 was
+closed. Evidence remains local disposable Compose only; production publication
+is not claimed. #725 is the next transaction.

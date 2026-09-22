@@ -12,7 +12,7 @@ retry/snapshot workflow.
 
 | Order | Issue | Status / routing | Evidence and next action |
 | --- | --- | --- | --- |
-| 1 | [#724](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/724) | IMPLEMENTED / QA pending | Focused and full checks pass; run fixed-viewport browser QA, then post the issue verdict and close. |
+| 1 | [#724](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/724) | CLOSED / QA PASS | QA comment and closure recorded in the authenticated Chrome session; local evidence is recorded in the transaction ledger. |
 | 2 | [#725](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/725) | GROOMED / Stage 2b, depends on #724 | Implement the source-of-truth AI theme workflow only after #724 closes. |
 
 The exact #724 transaction record is in

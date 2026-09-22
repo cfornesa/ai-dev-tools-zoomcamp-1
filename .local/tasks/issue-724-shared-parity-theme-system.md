@@ -7,12 +7,12 @@ previews, and account/admin design editors specified in GitHub issue #724.
 
 ## Transaction ledger
 
-- **Phase:** IMPLEMENTED — QA pending
+- **Phase:** CLOSED — QA PASS
 - **Issue owner / current transaction:** #724 — shared parity theme system for admin and account design settings
-- **Implementation commit:** pending (working tree ready)
-- **Focused checks / full checks:** focused backend 55 passed; focused frontend 19 passed; full backend 1,504 passed / 39 skipped; full frontend 2,802 passed; `make check` passed with isolated `UV_CACHE_DIR`
-- **QA matrix:** pending; must include Chromium at 1280x900 and 375x812 for `/admin/settings/` and `/settings/`, with rendered iframe previews inspected visually.
-- **GitHub closure evidence:** issue created at https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/724; closure pending.
+- **Implementation commits:** `c6bf366` and `46e540c`
+- **Focused checks / full checks:** focused backend 55 passed; focused frontend 24 passed after QA fixes; full backend 1,504 passed / 39 skipped; full frontend 2,802 passed; `make check` passed with isolated `UV_CACHE_DIR` before the frontend-only QA fixes; final frontend lint/typecheck/format/full-test checks passed.
+- **QA matrix:** PASS — Compose Chromium run 3/3 passed at 1280x900 and 375x812; rendered screenshots inspected for readable body/card text, Celestial heading/body separation, iframe preview controls, and responsive layout.
+- **GitHub closure evidence:** QA verdict posted at https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/724#issuecomment-5773044482; issue closed in the authenticated Chrome session.
 - **New gaps discovered:** AI generation/refinement/snapshot workflow is out of scope and tracked in #725.
 
 ## Scope contract
@@ -34,6 +34,5 @@ also exposed by the shared catalog.
 
 ## Next action
 
-Implementation is complete in the working tree. Commit the coherent change,
-then enter the independent QA pass with rendered Chromium evidence before
-closing #724.
+#724 is complete and closed. Reconcile the linked #725 transaction before
+beginning its implementation.

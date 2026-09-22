@@ -26,6 +26,9 @@ its transaction record is in
 Issue #719 was subsequently closed after the owner-refresh self-review; its
 transaction record is in `.local/tasks/issue-719-project3d-thumbnails.md`.
 
+Issue #714 was subsequently closed after its alignment self-review; its
+transaction record is in `.local/tasks/issue-714-profile-alignment.md`.
+
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and
 #723 remain immutable; this is new follow-up work.

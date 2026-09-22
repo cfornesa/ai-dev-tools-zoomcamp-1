@@ -1234,6 +1234,14 @@ authenticated active Chrome session and the issue was closed. The change is
 UI-only and preserves owner scoping, card actions, creation actions, and
 public filter behavior.
 
+## 2026-09-22 — #714 profile alignment closed
+
+Reviewed existing implementation commit `0641f71` for #714. Focused
+PublicProfile tests passed 11/11, with frontend typecheck and format checks
+passing. Existing fixed-viewport Chromium evidence covered desktop and mobile
+alignment/no-overflow scenarios. The QA self-review was posted through the
+authenticated active Chrome session and the issue was closed.
+
 ## 2026-09-22 — #719 Project3D thumbnail backfill closed
 
 Reviewed existing commits `151e61d`, `2b91e26`, and `019533a` for #719.

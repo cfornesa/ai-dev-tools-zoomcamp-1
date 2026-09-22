@@ -1202,3 +1202,17 @@ rebuilt Compose images, and the fixed-viewport Chromium scenarios. The QA
 verdict was posted through the authenticated active Chrome session and #724 was
 closed. Evidence remains local disposable Compose only; production publication
 is not claimed. #725 is the next transaction.
+
+## 2026-09-22 — #725 AI theme generation workflow closed
+
+#725 completed in `3d14f81` after #724. The owner-authorized Codex/GPT-5
+runtime implemented and self-reviewed the bounded fake-provider workflow,
+including persisted attempts, safe preview validation, revision-checked
+accept/reject actions, and exact restoration of legacy style token shapes.
+Focused checks passed (12 backend, 5 frontend), and `make check` passed with
+1,508 backend tests plus 2,804 frontend tests. The requested Playwright
+Chromium spec was listed and attempted, but the local macOS headless binary
+could not launch because of its Mach port sandbox; this is recorded as host
+setup evidence rather than a product failure. QA evidence was posted through
+the authenticated active Chrome session and #725 was closed. No production
+provider credentials or publication are claimed.

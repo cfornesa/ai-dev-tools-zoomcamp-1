@@ -4696,6 +4696,20 @@ select.ai-proposal-field-full-width {
   position: relative;
 }
 
+.public-art-piece-stage {
+  width: 100%;
+  aspect-ratio: var(--art-piece-aspect-ratio, 16 / 9);
+  max-height: calc(100dvh - 8rem);
+  background: var(--code-bg);
+}
+
+.public-art-piece-stage > iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 /* The immersive/public art-piece viewer still uses the legacy runtime
    controls component (rather than the shared command-card toolbar). Its
    disclosure must overlay the stage and scroll within the viewport; leaving

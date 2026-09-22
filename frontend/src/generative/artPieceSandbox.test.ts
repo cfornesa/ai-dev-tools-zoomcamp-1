@@ -38,6 +38,13 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain(SNIPPET);
   });
 
+  it('can make the regular sandbox transparent so its parent supplies the theme surface', () => {
+    const doc = buildArtPieceSandboxDocument(SNIPPET, 'canvas2d', 'regular', {
+      background: 'transparent',
+    });
+    expect(doc).toContain('html, body { margin: 0; padding: 0; background: transparent;');
+  });
+
   it('#457: the ready handshake defers via setTimeout, not requestAnimationFrame, which Chromium throttles for an off-screen cross-origin iframe', () => {
     const doc = buildArtPieceSandboxDocument(SNIPPET);
     const loadHandlerIndex = doc.indexOf("addEventListener('load'");

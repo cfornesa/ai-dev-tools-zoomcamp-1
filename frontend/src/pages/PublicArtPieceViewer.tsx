@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import {
@@ -32,6 +32,36 @@ function isEmbedPath(): boolean {
 function embedSnippetFor(publicId: string): string {
   const src = `${window.location.origin}/embed/art-pieces/${publicId}`;
   return `<iframe src="${src}" width="800" height="600" frameborder="0" allowfullscreen></iframe>`;
+}
+
+const DEFAULT_ART_PIECE_ASPECT_RATIO = '16 / 9';
+
+function aspectRatioFromMetadata(metadata: Record<string, unknown> | undefined): string {
+  if (!metadata) return DEFAULT_ART_PIECE_ASPECT_RATIO;
+  const declared = metadata.aspect_ratio ?? metadata.aspectRatio ?? metadata.ratio;
+  if (typeof declared === 'number' && Number.isFinite(declared) && declared > 0) {
+    return String(declared);
+  }
+  if (typeof declared === 'string' && declared.trim()) {
+    const normalized = declared.trim().replace(':', ' / ');
+    if (/^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(normalized)) return normalized;
+    const numeric = Number(normalized);
+    if (Number.isFinite(numeric) && numeric > 0) return normalized;
+  }
+
+  const canvas = metadata.canvas;
+  const dimensions =
+    canvas && typeof canvas === 'object' ? (canvas as Record<string, unknown>) : metadata;
+  const width = Number(dimensions.width);
+  const height = Number(dimensions.height);
+  if (Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
+    return `${width} / ${height}`;
+  }
+  return DEFAULT_ART_PIECE_ASPECT_RATIO;
+}
+
+function pieceAspectRatio(piece: ArtPiece): string {
+  return aspectRatioFromMetadata(piece.current_version?.generation_metadata);
 }
 
 export default function PublicArtPieceViewer({
@@ -120,6 +150,7 @@ export default function PublicArtPieceViewer({
 
   const isEmbedRoute = isEmbedPath();
   const pieceId = id ?? piece.public_id;
+  const aspectRatio = pieceAspectRatio(piece);
 
   return (
     <section
@@ -170,20 +201,39 @@ export default function PublicArtPieceViewer({
           )}
         </>
       )}
-      <div ref={stageRef} className="art-piece-stage" aria-label="Art piece stage">
+      <div
+        ref={stageRef}
+        className="art-piece-stage public-art-piece-stage"
+        role="region"
+        aria-label="Art piece stage"
+        style={{ '--art-piece-aspect-ratio': aspectRatio } as CSSProperties}
+      >
         <iframe
           ref={iframeRef}
           title="Art piece preview"
           sandbox={ART_PIECE_IFRAME_SANDBOX}
           allow={ART_PIECE_IFRAME_ALLOW}
-          srcDoc={buildArtPieceSandboxDocument(piece.current_version.source, piece.engine)}
+          srcDoc={buildArtPieceSandboxDocument(
+            piece.current_version.source,
+            piece.engine,
+            'regular',
+            {
+              background: 'transparent',
+            },
+          )}
           // Issue #435: browsers apply a default iframe border a few px
           // wide unless reset; with box-sizing: content-box (the iframe
           // default), that border adds to the box beyond its 100% width,
           // overflowing its container by exactly the border's size --
           // caught by this issue's own stage-containment check at
           // 1280x900, present on this route and /art-pieces/p/:id alike.
-          style={{ display: 'block', width: '100%', height: 480, border: 'none' }}
+          style={{
+            display: 'block',
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            background: 'var(--code-bg)',
+          }}
         />
         <PieceStageControls
           stageRef={stageRef}

@@ -685,6 +685,7 @@ export function buildArtPieceSandboxDocument(
   snippet: string,
   library: ArtPieceLibrary = 'canvas2d',
   presentation: 'regular' | 'immersive' = 'regular',
+  options: { background?: string } = {},
 ): string {
   const cdnUrl = LIBRARY_CDN[library];
   const cdnScriptTag = cdnUrl ? `<script src="${cdnUrl}"></script>` : '';
@@ -694,13 +695,14 @@ export function buildArtPieceSandboxDocument(
       : library === 'p5js' || library === 'c2js' || library === 'c2js-interactive'
         ? buildFlatEngineBody(snippet, library)
         : snippet;
+  const background = options.background ?? '#ffffff';
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="${buildCsp(library)}">
 <style>
-  html, body { margin: 0; padding: 0; background: #ffffff; height: 100%; }
+  html, body { margin: 0; padding: 0; background: ${background}; height: 100%; }
   canvas { display: block; max-width: 100%; }
   ${presentation === 'immersive' ? 'body { display: grid; place-items: center; overflow: hidden; background: #111827; } canvas, svg { width: 100% !important; height: 100% !important; object-fit: contain; }' : ''}
   a-scene { position: absolute; inset: 0; }

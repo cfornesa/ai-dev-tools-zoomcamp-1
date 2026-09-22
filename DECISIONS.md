@@ -1216,3 +1216,11 @@ could not launch because of its Mach port sandbox; this is recorded as host
 setup evidence rather than a product failure. QA evidence was posted through
 the authenticated active Chrome session and #725 was closed. No production
 provider credentials or publication are claimed.
+
+## 2026-09-22 — #721 create wording and shell spacing closed
+
+Reviewed pre-existing implementation commit `2a11de3` for #721. Focused
+Create/Gallery/Templates tests passed 31/31, with frontend typecheck and
+format checks also passing. The QA self-review was posted through the
+authenticated active Chrome session and the issue was closed. The change is
+UI-only; no production data mutation was required.

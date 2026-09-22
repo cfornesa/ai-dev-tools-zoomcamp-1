@@ -15,6 +15,10 @@ retry/snapshot workflow.
 | 1 | [#724](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/724) | CLOSED / QA PASS | QA comment and closure recorded in the authenticated Chrome session; local evidence is recorded in the transaction ledger. |
 | 2 | [#725](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/725) | CLOSED / QA PASS | Bounded fake-provider generation/refinement, safe preview validation, revision-checked actions, and exact snapshots are implemented and reconciled below. |
 
+The next backlog pass closed [#721](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/721)
+after self-review of its existing UI commit; its transaction record is in
+`.local/tasks/issue-721-create-wording-spacing.md`.
+
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and
 #723 remain immutable; this is new follow-up work.

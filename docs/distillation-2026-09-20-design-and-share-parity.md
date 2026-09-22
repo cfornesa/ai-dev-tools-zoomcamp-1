@@ -159,3 +159,24 @@ first-level roots (rewritten; retitled); #654 (closed) used
 canonical route first, legacy paths as redirect shims). `App.tsx` still
 registers the ambiguous `users/:handle/:collectionSlug`; #684/#695 own its
 retirement and reserved-slug protection.
+
+## Addendum — post-publish live inspection (#703–#718)
+
+After the owner's publish, #702's check failed (tags still absent; feeds work),
+so #717 was filed. Live inspection of https://augmentrart.com at 1440x900 and
+375x812 found: fixed 480px stage and white iframe (#703); Three.js canvas
+~178px wide inside a 1438px iframe with a stretched circle (#704); 2D engines
+unverified but sharing the sandbox document (#705); toolbar overlapping the
+artwork (#706); C2.js Interactive visitor drawing limited to one hard-coded
+colour and Clear (#707–#711); `/api/site-theme/` still returns
+`style_key: default` so the vivid look never appears (#712); stacked mobile
+header (#713); profile header edges misaligned (#714); inconsistent
+placeholder card (#715); all reference pieces still fallback thumbnails
+because capture needs the owner's browser (#716, gallery required); share
+metadata self-diagnostic (#717); production evidence matrix (#718).
+
+Order: #703 → #704/#705 → #706 → #707 → #708 → #709 → #710 → #711 (drawing
+chain, each extends `publicDraw.spec.ts`); #712 → #713 → #714 → #715; #717;
+#716 after its Rule 2 gallery; #718 last (needs owner publish). Next groomed
+issue: #703. Non-actionable: the empty `cfornesa` bio is profile data, not a
+code defect.

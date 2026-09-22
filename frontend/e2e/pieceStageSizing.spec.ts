@@ -9,7 +9,7 @@ test.describe('Generated regular-piece stage sizing (#703)', () => {
 
   test('keeps the canonical regular stage responsive, themed, stable, and contained', async ({
     browser,
-  }) => {
+  }, testInfo) => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await loginViaUI(page, e2eFixtures.owner.email, e2eFixtures.password);
@@ -77,6 +77,11 @@ test.describe('Generated regular-piece stage sizing (#703)', () => {
       expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
       expect(geometry.right - geometry.left).toBeCloseTo(geometry.width, 1);
       expect(geometry.backgroundColor).not.toBe('rgb(255, 255, 255)');
+
+      await page.screenshot({
+        path: testInfo.outputPath(`piece-stage-${viewport.width}x${viewport.height}.png`),
+        fullPage: true,
+      });
     }
     await context.close();
   });

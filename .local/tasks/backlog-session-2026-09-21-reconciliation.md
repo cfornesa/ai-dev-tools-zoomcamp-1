@@ -112,3 +112,15 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Browser evidence:** `piece-toolbar-desktop.png`, `piece-toolbar-mobile.png`, and `piece-toolbar-fullscreen.png` were captured and visually inspected. Regular controls sit above the stage, mobile targets wrap at 44px, and fullscreen moves the controls into an overlay host while the artwork fills the viewport.
 - **QA result:** `## QA: PASS` for the issue acceptance criteria. No public route/API contract or dependency changed.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is locally terminal-ready pending the full batch gate. Next groomed issue: #707.
+
+## Transaction ledger — #707 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** temporary C2.js Interactive visitor drawing tools only: Pencil, Brush, and size; color, eraser, undo/redo, and persistence remain out of scope.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k3: `yes` because no callable independent implementation service was available in this session; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commit:** `6c7983c`.
+- **Focused checks:** PieceStageToolbar/PublicArtPieceViewer Vitest `10 passed`; TypeScript passed; Prettier passed; extended `publicDraw.spec.ts` Chromium E2E passed `1/1` at regular and immersive 1280×900 plus regular and immersive 375×812 touch scenarios. The browser assertions cover the accessible Pencil/Brush radiogroup, 1–40px slider/value, distinct new-stroke settings, temporary clear behavior, and no network writes.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-707 make check` passed: backend `1490 passed, 39 skipped`; frontend `255 files, 2787 tests passed`; format/typecheck/action-pin checks passed; existing lint warnings remain non-blocking.
+- **Browser evidence:** marked screenshots `public-draw-pieces-1280-marked.png`, `public-draw-pieces-375-marked.png`, and `public-draw-immersive-1280-marked.png` were captured and visually inspected. The thin hard-edged pencil mark and thicker rounded brush mark are visibly distinct, and the control group wraps without overlapping the 375px piece.
+- **QA result:** `## QA: PASS`. The change preserves temporary in-memory drawing and does not change routes, APIs, schemas, or dependencies.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; dependency #709/#710/#711 may now advance. Next groomed issue: #708.

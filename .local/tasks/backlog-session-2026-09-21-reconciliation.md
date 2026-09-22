@@ -136,3 +136,15 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Browser evidence:** `public-draw-pieces-1280-marked.png` and `public-draw-pieces-375-marked.png` were captured and visually inspected. White pencil, red brush, and green custom-color marks appear within the responsive regular stage; mobile controls wrap without obscuring the piece. The fixed 320×240 regular overlay was corrected to fill the responsive stage so marks remain aligned with the artwork.
 - **QA result:** `## QA: PASS`. No route/API/schema/dependency change; marks remain temporary and in-memory.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue: #709.
+
+## Transaction ledger — #709 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** temporary C2.js Interactive eraser with stroke-level removal, size ring, touch support, and explicit help text; undo/redo and color remain separate concerns.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k3: `yes` because no callable independent implementation service was available in this session; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commits:** `d55cb1e` implementation and `27369a7` lint-clean hit-testing module extraction.
+- **Focused checks:** hit-testing Vitest plus PieceStageToolbar/PublicArtPieceViewer `12 passed`; TypeScript, Prettier, and lint passed with the repository's pre-existing warnings; extended Chromium `publicDraw.spec.ts` passed `1/1` at regular and immersive 1280×900 plus regular and immersive 375×812 touch scenarios. The browser flow verifies Eraser selection/help, erasing a touched mark, clear behavior, and no network writes.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-709 make check` passed before the semantics-preserving helper extraction: backend `1490 passed, 39 skipped`; frontend `256 files, 2789 tests passed`; format/typecheck/action-pin checks passed. The extraction was followed by focused lint/type/e2e reruns, all green.
+- **Browser evidence:** the inspected post-erase desktop screenshot omits the red brush stroke while preserving the white pencil mark, green custom-color mark, and underlying artwork; the 375px touch scenario also passed. The eraser help text is visibly backed for contrast.
+- **QA result:** `## QA: PASS`. Eraser removal is stroke-level and stated in the UI; the source artwork is never mutated.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; dependent #710 and #711 may now advance. Next groomed issue: #710.

@@ -1,5 +1,58 @@
 # AugmentrART Backlog
 
+## 2026-09-22 — backlog-session priority gate (#722–#723)
+
+The live issue contracts for #722 and #723 were reread before work. Both are
+owner-authorized production data/config workflows, not Stage 2 implementation
+tasks, and both depend on authenticated production access. Read-only live
+checks confirmed the reported failures, but the available Replit shell targets
+the development workspace and the opened production browser was not
+owner-authenticated. No production write was attempted. The exact manifest and
+QA evidence are recorded in
+`.local/tasks/backlog-session-2026-09-22-reconciliation.md`.
+
+| Order | Issue | Status / routing | Evidence and next action |
+| --- | --- | --- | --- |
+| 1 | [#722](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722) | QA FAIL / BLOCKED — owner production access | Live theme remains default/plain. Owner must inspect `SiteSettings.style` and the Celestial `ProfileStyle`, choose null versus explicit `celestial`, perform the admin API/UI action, and rerun the required viewport checks. |
+| 2 | [#723](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723) | QA FAIL / DEPENDENCY-BLOCKED — confirmed production runtime required | Live gallery still reports fallback thumbnails. Owner must run the trusted import once against a confirmed production runtime/database, then rerun gallery, profile, and management-page checks. |
+
+These issues remain open. Later backlog processing is intentionally paused until
+both priority issues reach a terminal closure or documented handoff state.
+
+### #722 transaction ledger — 2026-09-22 — QA FAIL / BLOCKED
+
+- PM/grooming: criterion-ready owner production data/config workflow; no code
+  implementation or migration is in scope. Root-cause choice remains owner
+  controlled.
+- Engineering: not applicable; no diff or commit.
+- Second opinion: not run; no implementation diff.
+- QA: Codex / GPT-5 / current session, substituted for the rostered Claude
+  Sonnet 5 / Medium QA owner because that service was unavailable. Read-only
+  `curl -fsS https://augmentrart.com/api/site-theme/` and rendered production
+  inspection confirmed the default/plain shell. Exact owner-authenticated
+  style inspection and writes were not run.
+- Reconciliation: QA comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722#issuecomment-5772270111`.
+  Issue remains open and blocked on owner-authenticated production access and
+  the explicit null-versus-celestial choice.
+
+### #723 transaction ledger — 2026-09-22 — QA FAIL / DEPENDENCY-BLOCKED
+
+- PM/grooming: criterion-ready owner production data workflow; trusted import
+  code is already merged and no further implementation is in scope.
+- Engineering: not applicable; no diff or commit.
+- Second opinion: not run; no implementation diff.
+- QA: Codex / GPT-5 / current session, substituted for the rostered Claude
+  Sonnet 5 / Medium QA owner because that service was unavailable. Read-only
+  `curl -fsS https://augmentrart.com/api/public/gallery/` confirmed the six
+  stable-marker reference pieces still report fallback thumbnails. The import
+  was not run because the available shell is not confirmed to target
+  production.
+- Reconciliation: QA comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723#issuecomment-5772270537`.
+  Issue remains open and dependency-blocked on a confirmed production-runtime
+  execution context.
+
 ## 2026-09-21 — backlog-session manifest (#703–#718)
 
 The live open issue inventory contains sixteen post-publish issues (#703–#718).

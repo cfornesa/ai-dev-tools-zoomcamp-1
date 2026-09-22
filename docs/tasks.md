@@ -50,6 +50,8 @@ its transaction record is in `.local/tasks/issue-712-celestial-default.md`.
   browser verification is blocked by the same host limitation.
 - **#710** — drawing-history model checks pass, but the required extended
   mouse/touch browser verification is blocked by the same host limitation.
+- **#709** — eraser/hit-testing checks pass, but the required mouse/touch
+  browser verification is blocked by the same host limitation.
 
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and

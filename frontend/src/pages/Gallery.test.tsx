@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { MemoryRouter } from 'react-router-dom';
@@ -157,9 +157,53 @@ describe('Gallery loading/error/empty/populated states', () => {
 
     expect(await screen.findByRole('heading', { name: 'Hand Follower' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Untitled 3D scene' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Your 3D projects' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('list', { name: '' })).toHaveLength(1);
     const editLinks = screen.getAllByRole('link', { name: /^edit$/i });
     expect(editLinks).toHaveLength(2);
     expect(editLinks.some((link) => link.getAttribute('href') === '/projects3d/p3d-1')).toBe(true);
+  });
+
+  it('defaults to All and filters the unified grid by 2D or 3D renderer', async () => {
+    const user = userEvent.setup();
+    mockedListProjects.mockResolvedValue([baseProject({ id: 'p1', title: 'Flat study' })]);
+    mockedListProjects3D.mockResolvedValue([baseProject3D({ id: 'p3d-1', title: 'Sphere study' })]);
+
+    renderGallery();
+
+    await screen.findByRole('heading', { name: 'Flat study' });
+    const filter = screen.getByRole('combobox', { name: 'Filter by renderer' });
+    expect(filter).toHaveValue('all');
+    expect(
+      within(filter)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['All', '2D', '3D']);
+    expect(screen.getAllByRole('list')).toHaveLength(1);
+    expect(screen.getByRole('heading', { name: 'Sphere study' })).toBeInTheDocument();
+
+    await user.selectOptions(filter, '2d');
+    expect(screen.getByRole('heading', { name: 'Flat study' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Sphere study' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('list')).toHaveLength(1);
+
+    await user.selectOptions(filter, '3d');
+    expect(screen.queryByRole('heading', { name: 'Flat study' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sphere study' })).toBeInTheDocument();
+  });
+
+  it('shows an accurate empty state when a renderer filter has no matches', async () => {
+    const user = userEvent.setup();
+    mockedListProjects.mockResolvedValue([baseProject({ title: 'Flat study' })]);
+    mockedListProjects3D.mockResolvedValue([]);
+
+    renderGallery();
+
+    const filter = await screen.findByRole('combobox', { name: 'Filter by renderer' });
+    await user.selectOptions(filter, '3d');
+
+    expect(screen.getByText('No 3D projects match this filter.')).toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
   it('does not show the empty state when only 3D projects exist', async () => {
@@ -226,6 +270,9 @@ describe('Gallery keyboard accessibility', () => {
 
     await user.tab();
     expect(screen.getByRole('button', { name: /more creation options/i })).toHaveFocus();
+
+    await user.tab();
+    expect(screen.getByRole('combobox', { name: 'Filter by renderer' })).toHaveFocus();
 
     await user.tab();
     expect(screen.getAllByRole('link', { name: /^edit$/i })[0]).toHaveFocus();

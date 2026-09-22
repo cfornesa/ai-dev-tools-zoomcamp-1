@@ -205,6 +205,8 @@ describe('PublicGallery filter control', () => {
     renderPublicGallery();
     await screen.findByText(/no public pieces yet/i);
     const select = screen.getByRole('combobox', { name: /gallery engine/i });
+    expect(within(select).getByRole('option', { name: 'All' })).toBeEnabled();
+    expect(within(select).queryByRole('option', { name: 'All implemented engines' })).toBeNull();
     expect(within(select).getByRole('option', { name: /canvas2d \(2\)/i })).toBeEnabled();
     expect(within(select).getByRole('option', { name: /svg \(0\)/i })).toBeDisabled();
     await user.selectOptions(select, 'canvas2d');

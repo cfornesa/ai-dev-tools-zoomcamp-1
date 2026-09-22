@@ -8,6 +8,7 @@ import ProjectCard from '../components/ProjectCard';
 import GalleryCreateMenu from './GalleryCreateMenu';
 
 type LoadState = 'loading' | 'error' | 'ready';
+type ProjectRendererFilter = 'all' | '2d' | '3d';
 
 function Gallery() {
   const auth = useAuth();
@@ -21,6 +22,7 @@ function Gallery() {
   const [projects3D, setProjects3D] = useState<Project3D[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [projectRenderer, setProjectRenderer] = useState<ProjectRendererFilter>('all');
   // Issue #206/#207: the only point in the app where a new project's
   // renderer is chosen -- there is no later "change this scene's renderer"
   // flow.
@@ -52,6 +54,10 @@ function Gallery() {
     auth.status === 'signed-in' ? projects.filter((p) => p.owner === auth.user.username) : [];
   const ownProjects3D =
     auth.status === 'signed-in' ? projects3D.filter((p) => p.owner === auth.user.username) : [];
+  const filteredProjects = projectRenderer === '3d' ? [] : ownProjects;
+  const filteredProjects3D = projectRenderer === '2d' ? [] : ownProjects3D;
+  const hasProjects = ownProjects.length > 0 || ownProjects3D.length > 0;
+  const hasFilteredProjects = filteredProjects.length > 0 || filteredProjects3D.length > 0;
 
   if (loadState === 'loading') {
     return (
@@ -100,6 +106,18 @@ function Gallery() {
           onCreatingChange={setCreating}
           onError={setCreateError}
         />
+        <label htmlFor="project-renderer-filter" className="gallery-renderer-label">
+          Filter by renderer
+        </label>
+        <select
+          id="project-renderer-filter"
+          value={projectRenderer}
+          onChange={(event) => setProjectRenderer(event.target.value as ProjectRendererFilter)}
+        >
+          <option value="all">All</option>
+          <option value="2d">2D</option>
+          <option value="3d">3D</option>
+        </select>
       </div>
 
       {createError && (
@@ -108,43 +126,34 @@ function Gallery() {
         </p>
       )}
 
-      {ownProjects.length === 0 && ownProjects3D.length === 0 ? (
+      {!hasProjects ? (
         <div className="centered-state gallery-empty-state">
           <p>You have not created any projects.</p>
           <p>Create your first animation to get started.</p>
         </div>
+      ) : !hasFilteredProjects ? (
+        <div className="centered-state gallery-empty-state">
+          <p>No {projectRenderer.toUpperCase()} projects match this filter.</p>
+        </div>
       ) : (
-        <>
-          {ownProjects.length > 0 && (
-            <ul className="project-grid">
-              {ownProjects.map((project) => (
-                <li key={project.id}>
-                  <ProjectCard
-                    project={project}
-                    onDeleted={(id) => setProjects((current) => current.filter((p) => p.id !== id))}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-          {ownProjects3D.length > 0 && (
-            <>
-              <h3>Your 3D projects</h3>
-              <ul className="project-grid">
-                {ownProjects3D.map((project) => (
-                  <li key={project.id}>
-                    <Project3DCard
-                      project={project}
-                      onDeleted={(id) =>
-                        setProjects3D((current) => current.filter((p) => p.id !== id))
-                      }
-                    />
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </>
+        <ul className="project-grid">
+          {filteredProjects.map((project) => (
+            <li key={`2d-${project.id}`}>
+              <ProjectCard
+                project={project}
+                onDeleted={(id) => setProjects((current) => current.filter((p) => p.id !== id))}
+              />
+            </li>
+          ))}
+          {filteredProjects3D.map((project) => (
+            <li key={`3d-${project.id}`}>
+              <Project3DCard
+                project={project}
+                onDeleted={(id) => setProjects3D((current) => current.filter((p) => p.id !== id))}
+              />
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

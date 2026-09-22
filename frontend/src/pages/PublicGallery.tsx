@@ -239,7 +239,7 @@ function PublicGallery() {
         </select>
         <label htmlFor="gallery-engine">Gallery engine</label>
         <select id="gallery-engine" value={engine ?? ''} onChange={handleEngineChange}>
-          <option value="">All implemented engines</option>
+          <option value="">All</option>
           {engineCatalog.map((option) => (
             <option key={option.value} value={option.value} disabled={!option.available}>
               {option.label} ({option.count})

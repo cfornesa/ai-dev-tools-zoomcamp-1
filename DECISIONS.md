@@ -1233,3 +1233,12 @@ format checks also passing. The QA self-review was posted through the
 authenticated active Chrome session and the issue was closed. The change is
 UI-only and preserves owner scoping, card actions, creation actions, and
 public filter behavior.
+
+## 2026-09-22 — #719 Project3D thumbnail backfill closed
+
+Reviewed existing commits `151e61d`, `2b91e26`, and `019533a` for #719.
+Focused backend/API/renderer tests passed 33/33 and Project3DCard tests passed
+14/14, with frontend typecheck and format checks also passing. Existing
+independent production evidence confirmed radial sphere shading. The QA
+self-review was posted through the authenticated active Chrome session and the
+issue was closed; no additional production mutation was performed.

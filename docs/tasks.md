@@ -23,6 +23,9 @@ Issue #720 was subsequently closed after the unified-gallery self-review;
 its transaction record is in
 `.local/tasks/issue-720-unified-gallery.md`.
 
+Issue #719 was subsequently closed after the owner-refresh self-review; its
+transaction record is in `.local/tasks/issue-719-project3d-thumbnails.md`.
+
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and
 #723 remain immutable; this is new follow-up work.

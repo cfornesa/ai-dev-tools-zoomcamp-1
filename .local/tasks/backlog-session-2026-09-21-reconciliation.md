@@ -89,3 +89,14 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-704 make check` passed: backend `1490 passed, 39 skipped`; frontend `255 files, 2785 tests passed`; format/typecheck/action-pin checks passed; existing lint warnings remain non-blocking.
 - **QA result:** `## QA: PASS` by independent intake/re-run. Renderer CSS size, backing pixel ratio, resize behavior, camera aspect, round geometry, and no-white-margin criteria passed for both engines. Immersive wrapper exclusion was covered by focused unit assertions.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue is #705.
+
+## Transaction ledger — #705 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** regular Canvas2D, SVG, p5.js, C2.js, and C2.js Interactive runtime surfaces; 3D, immersive, and drawing-tool UX remain out of scope.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex subagent + Codex / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k2.7-code: `yes`; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commits:** `f3d72ff` implementation/coverage and `10de194` formatting correction.
+- **Focused checks:** Vitest `28 passed`; TypeScript passed; lint passed with pre-existing warnings; focused Chromium `piece2dFill.spec.ts` passed `1/1` across all five engines at 1440×900 and 375×812, including in-frame pointer coordinate checks; ten rendered screenshots were captured and representative desktop/mobile images inspected.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-705-final make check` passed: backend `1490 passed, 39 skipped`; frontend `255 files, 2786 tests passed`; format/typecheck/action-pin checks passed. A prior full run’s format-only failure was fixed in `10de194` and the gate was rerun green.
+- **QA result:** `## QA: PASS`. Surface containment/aspect behavior, resize without reload, and interactive pointer mapping passed. Letterboxing in the inspected 4:3 logical C2 surface is intentional containment inside the 16:9 stage and is covered by the finite geometry assertions.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue is #706.

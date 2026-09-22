@@ -52,6 +52,12 @@ its transaction record is in `.local/tasks/issue-712-celestial-default.md`.
   mouse/touch browser verification is blocked by the same host limitation.
 - **#709** — eraser/hit-testing checks pass, but the required mouse/touch
   browser verification is blocked by the same host limitation.
+- **#708 / #707** — color-palette and tool-selector implementations are
+  present, but their required rendered mouse/touch verification is blocked by
+  the same host limitation; #707's current focused checks pass 2/2.
+- **#706** — the existing implementation has prior reported browser evidence,
+  but this QA pass cannot independently rerun its rendered desktop/mobile
+  contract on the current host.
 
 The exact #724 transaction record is in
 `.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and

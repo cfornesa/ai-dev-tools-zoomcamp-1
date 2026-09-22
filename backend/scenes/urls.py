@@ -23,6 +23,8 @@ from scenes.admin_settings_api import (
     AdminRoleDetailView,
     AdminRolesView,
     AdminSiteSettingsView,
+    AdminThemeGenerationActionView,
+    AdminThemeGenerationView,
     SiteThemeView,
 )
 from scenes.ai_api import AIAcceptProposalView, AICreateSceneView, AIEditSceneView
@@ -135,6 +137,16 @@ urlpatterns = [
     path("admin/content/actions/", AdminContentActionView.as_view(), name="admin-content-action"),
     path("admin/content/access/", AdminContentAccessView.as_view(), name="admin-content-access"),
     path("admin/settings/", AdminSiteSettingsView.as_view(), name="admin-settings"),
+    path(
+        "admin/theme-generation/",
+        AdminThemeGenerationView.as_view(),
+        name="admin-theme-generation",
+    ),
+    path(
+        "admin/theme-generation/<int:attempt_id>/<str:action>/",
+        AdminThemeGenerationActionView.as_view(),
+        name="admin-theme-generation-action",
+    ),
     path(
         "admin/profile-styles/",
         AdminProfileStyleListCreateView.as_view(),

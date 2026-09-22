@@ -24,7 +24,11 @@ import {
   updateAIProviderModel,
   deleteAIProviderModel,
   type ProfileStyle,
+  type ThemeGenerationAttempt,
   fetchProfileStyles,
+  fetchThemeGenerationAttempts,
+  generateThemeDraft,
+  actOnThemeGeneration,
   createProfileStyle,
   updateProfileStyle,
 } from '../api/adminSettings';
@@ -1237,6 +1241,166 @@ function ProfileStyleCatalogSettings({
   );
 }
 
+function ThemeGenerationSettings({ styles }: { styles: ProfileStyle[] }) {
+  const [prompt, setPrompt] = useState('Create a calm cosmic theme with readable serif text.');
+  const [operation, setOperation] = useState<'generate' | 'refine'>('generate');
+  const [styleId, setStyleId] = useState<number | ''>('');
+  const [attempts, setAttempts] = useState<ThemeGenerationAttempt[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const draft = attempts.find((attempt) => attempt.state === 'draft');
+
+  useEffect(() => {
+    void fetchThemeGenerationAttempts()
+      .then(setAttempts)
+      .catch(() => setError('Could not load theme drafts.'));
+  }, []);
+
+  async function generate() {
+    setBusy(true);
+    setError(null);
+    try {
+      const next = await generateThemeDraft({
+        prompt,
+        operation,
+        attempt_number: draft ? draft.attempt_number + 1 : 1,
+        ...(styleId === '' ? {} : { style_id: styleId }),
+        ...(operation === 'refine' && draft ? { current_definition: draft.definition } : {}),
+      });
+      setAttempts((current) => [next, ...current.filter((item) => item.id !== next.id)]);
+    } catch {
+      setError('The theme provider rejected this request. You can revise the prompt and retry.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function action(id: number, actionName: 'accept' | 'reject' | 'restore', revision: number) {
+    setBusy(true);
+    setError(null);
+    try {
+      const next = await actOnThemeGeneration(id, actionName, revision);
+      setAttempts((current) => current.map((item) => (item.id === next.id ? next : item)));
+    } catch {
+      setError(
+        'The draft changed before this action completed. Reload the draft list and try again.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="admin-theme-generation" aria-labelledby="admin-theme-generation-heading">
+      <h3 id="admin-theme-generation-heading">AI custom theme workflow</h3>
+      <p>Generate a bounded draft, inspect it in the shared preview, then accept or reject it.</p>
+      <div className="admin-theme-generation-controls">
+        <label htmlFor="theme-generation-prompt">Theme prompt</label>
+        <textarea
+          id="theme-generation-prompt"
+          value={prompt}
+          maxLength={2000}
+          rows={3}
+          onChange={(event) => setPrompt(event.target.value)}
+        />
+        <label htmlFor="theme-generation-operation">Workflow</label>
+        <select
+          id="theme-generation-operation"
+          value={operation}
+          onChange={(event) => setOperation(event.target.value as 'generate' | 'refine')}
+        >
+          <option value="generate">Generate new</option>
+          <option value="refine">Refine existing draft</option>
+        </select>
+        <label htmlFor="theme-generation-style">Style target</label>
+        <select
+          id="theme-generation-style"
+          value={styleId}
+          onChange={(event) => setStyleId(event.target.value ? Number(event.target.value) : '')}
+        >
+          <option value="">New custom style</option>
+          {styles
+            .filter((style) => style.enabled)
+            .map((style) => (
+              <option key={style.id} value={style.id}>
+                {style.label}
+              </option>
+            ))}
+        </select>
+        <button
+          type="button"
+          className="admin-action-primary"
+          onClick={() => void generate()}
+          disabled={busy || !prompt.trim()}
+        >
+          {operation === 'refine' ? 'Refine existing' : 'Generate new'}
+        </button>
+      </div>
+      {draft && (
+        <article className="admin-theme-draft" aria-label="Generated theme draft">
+          <h4>{draft.definition.label}</h4>
+          <p>{draft.definition.description}</p>
+          <DesignPreview
+            label="Generated theme draft"
+            ariaLabel="Generated theme draft preview"
+            presentation={draft.definition.presentation}
+            palettes={{
+              light: draft.definition.palettes.light,
+              dark: draft.definition.palettes.dark,
+            }}
+          />
+          <div className="admin-settings-actions">
+            <button
+              type="button"
+              className="admin-action-primary"
+              onClick={() => void action(draft.id, 'accept', draft.revision)}
+              disabled={busy}
+            >
+              Accept theme
+            </button>
+            <button
+              type="button"
+              className="admin-action-secondary"
+              onClick={() => void action(draft.id, 'reject', draft.revision)}
+              disabled={busy}
+            >
+              Reject draft
+            </button>
+            <button
+              type="button"
+              className="admin-action-secondary"
+              onClick={() => void generate()}
+              disabled={busy || draft.attempt_number >= 3 || !prompt.trim()}
+            >
+              Retry
+            </button>
+          </div>
+          <p role="status">
+            Attempt {draft.attempt_number} of 3 · source: {draft.source}
+          </p>
+        </article>
+      )}
+      {attempts
+        .filter((attempt) => attempt.state === 'accepted')
+        .slice(0, 5)
+        .map((attempt) => (
+          <div key={attempt.id} className="admin-theme-snapshot">
+            <span>{attempt.definition.label} accepted</span>
+            <button
+              type="button"
+              className="admin-action-secondary"
+              onClick={() => void action(attempt.id, 'restore', attempt.revision)}
+              disabled={busy}
+            >
+              Restore snapshot
+            </button>
+          </div>
+        ))}
+      {error && <p role="alert">{error}</p>}
+    </section>
+  );
+}
+
 function AdminSettings() {
   const auth = useAuth();
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
@@ -1297,6 +1461,7 @@ function AdminSettings() {
       ) : (
         !loadError && <p role="status">Loading site settings…</p>
       )}
+      {profileStyles && <ThemeGenerationSettings styles={profileStyles} />}
       {plans ? (
         <section className="admin-console-section" aria-labelledby="admin-entitlements-heading">
           <h3 id="admin-entitlements-heading">Plans and capabilities</h3>

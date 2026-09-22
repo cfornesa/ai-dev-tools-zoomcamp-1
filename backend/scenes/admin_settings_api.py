@@ -23,13 +23,21 @@ from scenes.admin_settings import (
     update_plan,
     update_site_settings,
 )
-from scenes.models import SiteSettings
+from scenes.models import ProfileStyle, SiteSettings, ThemeGenerationAttempt
 from scenes.theme import (
     available_palettes,
     effective_design_palettes,
     effective_legacy_theme_palettes,
     effective_presentation,
     effective_profile_theme,
+)
+from scenes.theme_generation import (
+    MAX_ATTEMPTS,
+    ThemeGenerationError,
+    accept_attempt,
+    create_attempt,
+    reject_attempt,
+    restore_attempt,
 )
 
 
@@ -197,6 +205,96 @@ class SiteThemeView(APIView):
                 "metadata_tags": row.metadata_tags,
             }
         )
+
+
+class ThemeGenerationRequestSerializer(serializers.Serializer):
+    prompt = serializers.CharField(max_length=2000, allow_blank=False, trim_whitespace=True)
+    operation = serializers.ChoiceField(choices=("generate", "refine"), default="generate")
+    attempt_number = serializers.IntegerField(min_value=1, max_value=MAX_ATTEMPTS, default=1)
+    style_id = serializers.IntegerField(min_value=1, required=False)
+    current_definition = serializers.DictField(required=False)
+
+
+class AdminThemeGenerationView(APIView):
+    def get(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        return Response(
+            [
+                _theme_attempt_payload(row)
+                for row in ThemeGenerationAttempt.objects.filter(actor=request.user)[:20]
+            ]
+        )
+
+    def post(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        serializer = ThemeGenerationRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"error": "validation_failed", "detail": serializer.errors}, status=400)
+        style = None
+        if serializer.validated_data.get("style_id") is not None:
+            style = ProfileStyle.objects.filter(
+                pk=serializer.validated_data["style_id"], enabled=True
+            ).first()
+            if style is None:
+                return Response(
+                    {"error": "validation_failed", "detail": "Unknown enabled style."}, status=400
+                )
+        try:
+            payload = create_attempt(
+                actor=request.user,
+                prompt=serializer.validated_data["prompt"],
+                operation=serializer.validated_data["operation"],
+                attempt_number=serializer.validated_data["attempt_number"],
+                current=serializer.validated_data.get("current_definition"),
+                style=style,
+            )
+        except ThemeGenerationError as exc:
+            attempt_number = serializer.validated_data.get("attempt_number", 1)
+            return Response(
+                {
+                    "error": "theme_generation_failed",
+                    "detail": str(exc),
+                    "can_retry": attempt_number < MAX_ATTEMPTS,
+                },
+                status=422,
+            )
+        return Response(payload, status=201)
+
+
+def _theme_attempt_payload(row: ThemeGenerationAttempt) -> dict:
+    from scenes.theme_generation import _attempt_payload
+
+    return _attempt_payload(row)
+
+
+class AdminThemeGenerationActionView(APIView):
+    def post(self, request, attempt_id, action):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        try:
+            expected_revision = int(request.data.get("revision", 0))
+            if action == "accept":
+                payload = accept_attempt(
+                    actor=request.user, attempt_id=attempt_id, expected_revision=expected_revision
+                )
+            elif action == "reject":
+                payload = reject_attempt(
+                    actor=request.user, attempt_id=attempt_id, expected_revision=expected_revision
+                )
+            elif action == "restore":
+                payload = restore_attempt(actor=request.user, attempt_id=attempt_id)
+            else:
+                return Response({"error": "unknown_action"}, status=404)
+        except ThemeGenerationAttempt.DoesNotExist:
+            return Response({"error": "not_found"}, status=404)
+        except (ThemeGenerationError, ValueError) as exc:
+            return Response({"error": "theme_action_failed", "detail": str(exc)}, status=409)
+        return Response(payload)
 
 
 class PlanUpdateSerializer(serializers.Serializer):

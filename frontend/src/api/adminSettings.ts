@@ -74,6 +74,58 @@ export type ProfileStyle = {
   revision: number;
 };
 
+export type ThemeDefinition = {
+  key: string;
+  label: string;
+  description: string;
+  presentation: PresentationOptions;
+  palettes: { label: string; description: string; light: ThemePalette; dark: ThemePalette };
+  code: { css: string; html: string; js: string };
+};
+
+export type ThemeGenerationAttempt = {
+  id: number;
+  operation: 'generate' | 'refine';
+  state: 'draft' | 'accepted' | 'rejected';
+  prompt: string;
+  original_prompt: string;
+  source: string;
+  revision: number;
+  attempt_number: number;
+  sequence_token: string;
+  definition: ThemeDefinition;
+  error: string;
+  created_at: string;
+};
+
+export async function fetchThemeGenerationAttempts(): Promise<ThemeGenerationAttempt[]> {
+  return apiFetch<ThemeGenerationAttempt[]>('/api/admin/theme-generation/');
+}
+
+export async function generateThemeDraft(fields: {
+  prompt: string;
+  operation: 'generate' | 'refine';
+  attempt_number?: number;
+  style_id?: number;
+  current_definition?: ThemeDefinition;
+}): Promise<ThemeGenerationAttempt> {
+  return apiFetch<ThemeGenerationAttempt>('/api/admin/theme-generation/', {
+    method: 'POST',
+    body: JSON.stringify(fields),
+  });
+}
+
+export async function actOnThemeGeneration(
+  id: number,
+  action: 'accept' | 'reject' | 'restore',
+  revision: number,
+): Promise<ThemeGenerationAttempt> {
+  return apiFetch<ThemeGenerationAttempt>(`/api/admin/theme-generation/${id}/${action}/`, {
+    method: 'POST',
+    body: JSON.stringify({ revision }),
+  });
+}
+
 export async function fetchProfileStyles(): Promise<ProfileStyle[]> {
   return apiFetch<ProfileStyle[]>('/api/admin/profile-styles/');
 }

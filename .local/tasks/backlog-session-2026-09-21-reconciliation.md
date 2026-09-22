@@ -31,7 +31,7 @@ closure-ready terminal evidence while leaving every GitHub issue open.
 | 10 | [#713](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/713) | Compact mobile header at 375px | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 11 | [#714](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/714) | Public profile header/grid alignment | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | TERMINAL-READY LOCAL |
-| 13 | [#717](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/717) | Share-metadata diagnostic and safe origin handling | owner publish required for final criterion | 2b complex | HANDED-OFF after local implementation/QA |
+| 13 | [#717](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/717) | Share-metadata diagnostic and safe origin handling | owner publish required for final criterion | 2b complex | TERMINAL-READY LOCAL; OWNER PUBLISH PENDING |
 | 14 | [#716](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/716) | Generated thumbnail capture options and chosen secure path | Rule 2 gallery/owner choice required | 2b complex | HANDED-OFF pending owner decision |
 | 15 | [#718](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/718) | Published design evidence matrix, no fixes | #703–#715, #717, #716, owner publish | QA/readiness | DEPENDENCY-BLOCKED |
 
@@ -221,3 +221,15 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Browser evidence:** `card-thumbnail-area-1440.png` and `card-thumbnail-area-375.png` were captured and inspected. Preview and fallback tiles have matching 16:9 geometry; the fallback icon/text is centered and mobile cards remain contained.
 - **QA result:** `## QA: PASS`. No route/API/schema/dependency change.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; #716 now requires the owner’s Rule 2 choice.
+
+## Transaction ledger — #717 (local implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (local criteria terminal-ready; published criterion remains owner-controlled; GitHub intentionally remains open).
+- **Scope:** harden Vite share-metadata origin normalization, add the credential-free `GET /__share-metadata-status` diagnostic, and make the published smoke script print/validate it. No production publish or database write was performed.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex / GPT-5.6 / medium`, substituted for rostered Ollama Cloud/kimi-k3: `yes`; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commit:** `c5519d9`.
+- **Changed files:** `docs/api.md`, `frontend/vite.config.ts`, `frontend/src/vitePreviewShareMetadata.test.ts`, and `scripts/smoke-published.sh`.
+- **Focused checks:** share-metadata Vitest `4 passed`; TypeScript passed; lint passed with established non-blocking warnings; `bash -n scripts/smoke-published.sh` passed; formatting and diff checks passed.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-717 make check` passed: backend `1490 passed, 39 skipped`; frontend `257 files, 2794 tests passed`; format/typecheck/action-pin checks passed.
+- **QA result:** `## QA: PASS` for local acceptance. Tests cover quoted origins, bare hosts, path stripping, allow-list fallback, health reachability, diagnostic JSON, no-store headers, and sanitized error fields.
+- **Remaining criterion:** owner must publish the committed implementation, run `PUBLISHED_APP_URL=... scripts/smoke-published.sh`, and confirm either server-rendered metadata or the diagnostic’s named cause. No GitHub comment/closure mutation was performed.

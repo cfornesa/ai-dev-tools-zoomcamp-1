@@ -39,10 +39,49 @@ function renderCard(project: Project3D, onDeleted: (id: string) => void = vi.fn(
 
 describe('Project3DCard: thumbnail (issue #243)', () => {
   it('renders the thumbnail image when thumbnail_url is present', () => {
-    renderCard(baseProject3D({ thumbnail_url: '/api/projects3d/p3d-1/thumbnail/' }));
+    renderCard(
+      baseProject3D({
+        thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
+        current_version: {
+          id: 1,
+          sequence: 1,
+          origin: 'manual',
+          scene_json: {},
+          created_by: 'alice',
+          created_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+    );
 
     const image = screen.getByRole('img', { name: 'Preview of Untitled 3D scene' });
     expect(image).toHaveAttribute('src', '/api/projects3d/p3d-1/thumbnail/');
+    expect(screen.getByRole('button', { name: 'Refresh thumbnail' })).toBeInTheDocument();
+  });
+
+  it('refreshes an existing non-fallback thumbnail', async () => {
+    const user = userEvent.setup();
+    mockedRefreshProject3DThumbnail.mockResolvedValue(
+      baseProject3D({
+        thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
+        thumbnail_is_fallback: false,
+      }),
+    );
+    renderCard(
+      baseProject3D({
+        thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
+        current_version: {
+          id: 1,
+          sequence: 1,
+          origin: 'manual',
+          scene_json: {},
+          created_by: 'alice',
+          created_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Refresh thumbnail' }));
+    expect(mockedRefreshProject3DThumbnail).toHaveBeenCalledWith('p3d-1');
   });
 
   it('shows the no-preview-available fallback when thumbnail_url is null', () => {

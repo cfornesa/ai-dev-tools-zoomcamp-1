@@ -280,7 +280,7 @@ def test_owner_refresh_retries_a_current_fallback(owner_client, project3d, monke
 
 
 @pytest.mark.django_db(transaction=True)
-def test_thumbnail_refresh_is_idempotent_for_a_successful_current_thumbnail(
+def test_thumbnail_refresh_re_renders_a_successful_current_thumbnail(
     owner_client, project3d, monkeypatch
 ):
     import scenes.thumbnail_generation3d as thumbnail_generation3d
@@ -288,12 +288,17 @@ def test_thumbnail_refresh_is_idempotent_for_a_successful_current_thumbnail(
     version_id = project3d.current_version_id
     thumbnail_generation3d.ensure_thumbnail_for_version3d(version_id)
     original = Thumbnail3D.objects.get(scene_version_id=version_id).image_data
+    refreshed = b"refreshed-sphere-render"
     ensure = Mock(wraps=thumbnail_generation3d.ensure_thumbnail_for_version3d)
+    monkeypatch.setattr(
+        "scenes.thumbnail_generation3d.render_card_thumbnail3d_png", lambda _scene: refreshed
+    )
     monkeypatch.setattr("scenes.api3d.ensure_thumbnail_for_version3d", ensure)
 
     first = owner_client.post(_thumbnail_refresh_url(project3d))
     second = owner_client.post(_thumbnail_refresh_url(project3d))
 
     assert first.status_code == second.status_code == 200
-    assert ensure.call_count == 0
-    assert bytes(Thumbnail3D.objects.get(scene_version_id=version_id).image_data) == bytes(original)
+    assert ensure.call_count == 2
+    assert bytes(Thumbnail3D.objects.get(scene_version_id=version_id).image_data) == refreshed
+    assert bytes(original) != refreshed

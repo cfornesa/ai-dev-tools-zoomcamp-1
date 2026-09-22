@@ -92,16 +92,6 @@ function Project3DCard({
           <span role="img" aria-label={`No preview available for ${project.title}`}>
             No preview available
           </span>
-          {project.current_version && (
-            <>
-              <button type="button" onClick={handleThumbnailRetry} disabled={thumbnailRetrying}>
-                {thumbnailRetrying ? 'Retrying…' : 'Retry thumbnail'}
-              </button>
-              {thumbnailRetryError && (
-                <span role="alert">Could not regenerate the preview. Please try again.</span>
-              )}
-            </>
-          )}
         </div>
       ) : (
         <img
@@ -111,6 +101,20 @@ function Project3DCard({
           key={`${thumbnailUrl}-${thumbnailRetry}`}
           onError={() => setThumbnailFailed(true)}
         />
+      )}
+      {project.current_version && (
+        <>
+          <button type="button" onClick={handleThumbnailRetry} disabled={thumbnailRetrying}>
+            {thumbnailRetrying
+              ? 'Refreshing…'
+              : showFallback
+                ? 'Retry thumbnail'
+                : 'Refresh thumbnail'}
+          </button>
+          {thumbnailRetryError && (
+            <span role="alert">Could not regenerate the preview. Please try again.</span>
+          )}
+        </>
       )}
       <h3 id={titleId}>{project.title}</h3>
       <p>

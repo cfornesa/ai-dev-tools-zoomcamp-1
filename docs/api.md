@@ -4,9 +4,8 @@
 
 `POST /api/projects3d/<public_id>/thumbnail/refresh/` is an authenticated
 owner-only action for reconciling an existing `Project3D` card thumbnail with
-its current `SceneVersion3D`. It is eligible only when the current version's
-thumbnail is missing or is marked `is_fallback`; a successful current render
-is left unchanged, making repeated requests idempotent. The operation locks
+its current `SceneVersion3D`. Each owner request re-renders the current
+version, including when a non-fallback thumbnail is stale. The operation locks
 the project while resolving the current-version pointer, so it never renders
 an older version after a newer one becomes current.
 

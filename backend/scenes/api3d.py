@@ -310,11 +310,9 @@ class Project3DThumbnailRefreshView(APIView):
                 if locked_project.current_version_id is None:
                     raise Http404
 
-                thumbnail = Thumbnail3D.objects.filter(
-                    scene_version_id=locked_project.current_version_id
-                ).first()
-                if thumbnail is None or thumbnail.is_fallback:
-                    ensure_thumbnail_for_version3d(locked_project.current_version_id)
+                # This is an explicit owner refresh, so re-render even a
+                # previously successful thumbnail that may be stale.
+                ensure_thumbnail_for_version3d(locked_project.current_version_id)
         except Project3D.DoesNotExist as exc:
             raise Http404 from exc
 

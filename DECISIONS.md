@@ -1190,3 +1190,132 @@ and QA (and scoping for #636/#641), Claude Sonnet 5/Medium scoping for the
 others, no second-opinion review. Effort values are unrecoverable and accepted
 as a documented gap. The owner asked to wait on Replit Publish; #702 stays
 handed-off.
+## 2026-09-22 — #724 shared parity theme system closed
+
+#724 completed the shared admin/account design contract in commits `c6bf366`
+and `46e540c`. The owner-authorized Codex/GPT-5 runtime performed the Stage 2b
+implementation and Stage 4 QA as explicit substitutions for unavailable rostered
+services; Stage 3 second opinion was not run and is recorded as such. QA found
+two in-scope fixes (separate readable body and script heading fonts, plus stable
+preview accessible names), then reran focused tests, the full frontend suite,
+rebuilt Compose images, and the fixed-viewport Chromium scenarios. The QA
+verdict was posted through the authenticated active Chrome session and #724 was
+closed. Evidence remains local disposable Compose only; production publication
+is not claimed. #725 is the next transaction.
+
+## 2026-09-22 — #725 AI theme generation workflow closed
+
+#725 completed in `3d14f81` after #724. The owner-authorized Codex/GPT-5
+runtime implemented and self-reviewed the bounded fake-provider workflow,
+including persisted attempts, safe preview validation, revision-checked
+accept/reject actions, and exact restoration of legacy style token shapes.
+Focused checks passed (12 backend, 5 frontend), and `make check` passed with
+1,508 backend tests plus 2,804 frontend tests. The requested Playwright
+Chromium spec was listed and attempted, but the local macOS headless binary
+could not launch because of its Mach port sandbox; this is recorded as host
+setup evidence rather than a product failure. QA evidence was posted through
+the authenticated active Chrome session and #725 was closed. No production
+provider credentials or publication are claimed.
+
+## 2026-09-22 — #721 create wording and shell spacing closed
+
+Reviewed pre-existing implementation commit `2a11de3` for #721. Focused
+Create/Gallery/Templates tests passed 31/31, with frontend typecheck and
+format checks also passing. The QA self-review was posted through the
+authenticated active Chrome session and the issue was closed. The change is
+UI-only; no production data mutation was required.
+
+## 2026-09-22 — #720 unified gallery closed
+
+Reviewed existing implementation commits `9dc300d` and `7fc48f2` for #720.
+Focused Gallery/PublicGallery tests passed 45/45, with frontend typecheck and
+format checks also passing. The QA self-review was posted through the
+authenticated active Chrome session and the issue was closed. The change is
+UI-only and preserves owner scoping, card actions, creation actions, and
+public filter behavior.
+
+## 2026-09-22 — #714 profile alignment closed
+
+Reviewed existing implementation commit `0641f71` for #714. Focused
+PublicProfile tests passed 11/11, with frontend typecheck and format checks
+passing. Existing fixed-viewport Chromium evidence covered desktop and mobile
+alignment/no-overflow scenarios. The QA self-review was posted through the
+authenticated active Chrome session and the issue was closed.
+
+## 2026-09-22 — #719 Project3D thumbnail backfill closed
+
+Reviewed existing commits `151e61d`, `2b91e26`, and `019533a` for #719.
+Focused backend/API/renderer tests passed 33/33 and Project3DCard tests passed
+14/14, with frontend typecheck and format checks also passing. Existing
+independent production evidence confirmed radial sphere shading. The QA
+self-review was posted through the authenticated active Chrome session and the
+issue was closed; no additional production mutation was performed.
+
+## 2026-09-22 — #713 mobile header closed
+
+Reviewed existing implementation commit `e4f05a6` for #713. Focused Layout
+tests passed 18/18, with frontend typecheck and format checks passing.
+Existing fixed-viewport Chromium evidence covered 375px and the 768px
+boundary. The QA self-review was posted through the authenticated active
+Chrome session and the issue was closed.
+
+## 2026-09-22 — #712 Celestial default closed
+
+Reviewed existing commits `700c2b2`, `c6bf366`, and `46e540c` for #712.
+Focused backend theme/profile tests passed 29/29, with frontend typecheck and
+format checks passing. Existing fixed-viewport style evidence covers the
+Celestial default, readable serif body text, cosmic backdrop, reduced motion,
+and mobile/desktop shell behavior. The QA self-review was posted through the
+authenticated active Chrome session and the issue was closed.
+
+## 2026-09-22 — Compose browser gates closed #703, #705–#711, #715
+
+The owner-authorized Codex/GPT-5 runtime resolved the earlier local Chromium
+launch limitation by running the repository-owned Compose-backed Chromium
+scenarios. `pieceStageSizing.spec.ts` passed 1/1; the combined fill, toolbar,
+and card-thumbnail run passed 4/4; and `publicDraw.spec.ts` passed 1/1 across
+regular/immersive desktop and touch-sized scenarios. Focused checks were also
+recorded in each issue ledger. QA comments were posted through active Chrome
+and the issues were closed. Stage 3 second opinion was not run, and no
+production evidence is claimed.
+
+## 2026-09-22 — #716 generated thumbnails closed after #723
+
+#716's prior production blocker was the missing trusted-thumbnail data, not an
+implementation defect. After the owner-only #723 refresh completed, the six
+stable-marker reference pieces returned non-fallback thumbnails from the live
+API and rendered artwork in gallery/profile surfaces. Focused security tests
+passed 29/29; QA was posted through active Chrome and #716 was closed. Stage 3
+second opinion was not run.
+
+## 2026-09-22 — final verification boundary
+
+The final `UV_CACHE_DIR=/tmp/codex-final-uv-cache make check` run passed action
+pin checks, backend lint/format/typecheck/tests (1,508 passed, 39 skipped),
+frontend lint/format/typecheck, and 2,803 of 2,804 frontend tests. One full-run
+frontend test transiently timed out while waiting for the Tools region in
+`EditorWorkspace.draftSyncError.test.tsx`; the focused rerun passed 4/4 in
+4.34s without code changes. This is classified as a non-reproducible test
+timing boundary, not an unresolved product defect.
+
+## 2026-09-22 — production-readiness gate
+
+The complete backlog has no remaining open GitHub issues. Local backend and
+frontend checks, Compose browser verification, and the published #718 matrix
+are recorded separately above. `UV_CACHE_DIR=/tmp/codex-final-uv-cache make
+deploy-check` passes with five warnings from the development `.env`:
+HSTS/SSL redirect, secure session/CSRF cookies, and DEBUG. These are a
+deployment-configuration verification boundary, not evidence about the
+published environment; production readiness is therefore not claimed from
+this local gate. No new issue was created because the warnings are local
+development configuration and no production defect was established.
+
+## 2026-09-22 — #717 and #718 terminal published gates closed
+
+#717's live diagnostic satisfied its explicit fallback criterion by naming the
+sanitized `TypeError: fetch failed` cause while confirming middleware and
+origin handling. #718's exact published design matrix then passed all 16
+light/dark desktop/mobile cases across the four required routes. QA comments
+were posted through active Chrome and both issues were closed. The remaining
+deployment connectivity note from #717 is an owner operational follow-up,
+outside that issue's contract; stage 3 second opinion was not run.

@@ -91,20 +91,24 @@ def test_canonical_generated_piece_exposes_edit_url_only_to_owner(client):
 @pytest.mark.django_db
 def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client):
     user = get_user_model().objects.create_user(username="profile-artist")
-    PublicProfile.objects.create(user=user, handle="profile-artist", is_public=True)
+    PublicProfile.objects.create(
+        user=user, handle="current-profile-handle", display_name="Profile Display", is_public=True
+    )
     piece = _published_piece(user, "Profile Study")
 
-    profile = client.get("/api/users/@profile-artist/")
+    profile = client.get("/api/users/@current-profile-handle/")
     assert profile.status_code == 200
     card = next(item for item in profile.json()["pieces"] if item["id"] == str(piece.public_id))
-    assert card["regular_url"] == "/users/@profile-artist/pieces/profile-study"
+    assert card["regular_url"] == "/users/@current-profile-handle/pieces/profile-study"
+    assert card["owner"] == "Profile Display"
 
     gallery = client.get("/api/public/gallery/")
     assert gallery.status_code == 200
     gallery_card = next(
         item for item in gallery.json()["results"] if item["id"] == str(piece.public_id)
     )
-    assert gallery_card["viewer_url"] == "/users/@profile-artist/pieces/profile-study"
+    assert gallery_card["viewer_url"] == "/users/@current-profile-handle/pieces/profile-study"
+    assert gallery_card["owner"] == "Profile Display"
 
 
 @pytest.mark.django_db

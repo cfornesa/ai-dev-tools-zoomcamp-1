@@ -24,13 +24,19 @@ import {
   updateAIProviderModel,
   deleteAIProviderModel,
   type ProfileStyle,
+  type ThemeGenerationAttempt,
   fetchProfileStyles,
+  fetchThemeGenerationAttempts,
+  generateThemeDraft,
+  actOnThemeGeneration,
   createProfileStyle,
   updateProfileStyle,
 } from '../api/adminSettings';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/useAuth';
 import AdminConsoleNav from '../components/AdminConsoleNav';
+import DesignPreview from '../components/DesignPreview';
+import type { DesignPalettes, PresentationOptions } from '../api/adminSettings';
 
 const DEFAULT_THEME = {
   background: '#0b0d12',
@@ -61,6 +67,14 @@ function SiteTitleForm({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [styleKey, setStyleKey] = useState(settings.style_key ?? 'default');
+  const [paletteKey, setPaletteKey] = useState(settings.palette_key ?? 'original');
+  const [paletteOverrides, setPaletteOverrides] = useState(settings.palette_overrides ?? {});
+  const [presentationOverrides, setPresentationOverrides] = useState(
+    settings.presentation_overrides ?? {},
+  );
+  const [designPalettes, setDesignPalettes] = useState<DesignPalettes>(
+    settings.design_palettes ?? { light: {}, dark: {} },
+  );
 
   useEffect(() => {
     setTitle(settings.site_title);
@@ -69,6 +83,10 @@ function SiteTitleForm({
     setTheme({ ...DEFAULT_THEME, ...(settings.theme_config ?? {}) });
     setThemeCleared(false);
     setStyleKey(settings.style_key ?? 'default');
+    setPaletteKey(settings.palette_key ?? 'original');
+    setPaletteOverrides(settings.palette_overrides ?? {});
+    setPresentationOverrides(settings.presentation_overrides ?? {});
+    setDesignPalettes(settings.design_palettes ?? { light: {}, dark: {} });
   }, [settings]);
 
   const dirty =
@@ -79,6 +97,10 @@ function SiteTitleForm({
     themeCleared ||
     JSON.stringify(theme) !==
       JSON.stringify({ ...DEFAULT_THEME, ...(settings.theme_config ?? {}) });
+  const designDirty =
+    paletteKey !== (settings.palette_key ?? 'original') ||
+    JSON.stringify(paletteOverrides) !== JSON.stringify(settings.palette_overrides ?? {}) ||
+    JSON.stringify(presentationOverrides) !== JSON.stringify(settings.presentation_overrides ?? {});
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -96,6 +118,9 @@ function SiteTitleForm({
           .split(',')
           .map((tag) => tag.trim())
           .filter(Boolean),
+        paletteKey,
+        paletteOverrides,
+        presentationOverrides,
       );
       onSaved(next);
       setMessage('Global site metadata saved.');
@@ -119,6 +144,10 @@ function SiteTitleForm({
     setTheme({ ...DEFAULT_THEME, ...(settings.theme_config ?? {}) });
     setThemeCleared(false);
     setStyleKey(settings.style_key ?? 'default');
+    setPaletteKey(settings.palette_key ?? 'original');
+    setPaletteOverrides(settings.palette_overrides ?? {});
+    setPresentationOverrides(settings.presentation_overrides ?? {});
+    setDesignPalettes(settings.design_palettes ?? { light: {}, dark: {} });
     setError(null);
     setMessage(null);
   }
@@ -175,31 +204,129 @@ function SiteTitleForm({
           </label>
         ))}
       </fieldset>
-      <label>
-        Global style preset
-        <select
-          id="site-style-select"
-          value={styleKey}
-          onChange={(event) => setStyleKey(event.target.value)}
-        >
-          {styles
-            .filter((style) => style.enabled)
-            .map((style) => (
-              <option key={style.key} value={style.key}>
-                {style.label}
+      <fieldset className="admin-design-editor">
+        <legend>Site design</legend>
+        <label>
+          Layout style
+          <select value={styleKey} onChange={(event) => setStyleKey(event.target.value)}>
+            {styles
+              .filter((style) => style.enabled)
+              .map((style) => (
+                <option key={style.key} value={style.key}>
+                  {style.label}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label>
+          Color palette
+          <select
+            value={paletteKey}
+            onChange={(event) => {
+              const nextKey = event.target.value;
+              setPaletteKey(nextKey);
+              const selected = settings.available_palettes?.find(
+                (palette) => palette.key === nextKey,
+              );
+              if (selected) setDesignPalettes(selected.values);
+              setPaletteOverrides({});
+            }}
+          >
+            {(settings.available_palettes ?? []).map((palette) => (
+              <option key={palette.key} value={palette.key}>
+                {palette.label}
               </option>
             ))}
-        </select>
-      </label>
+          </select>
+        </label>
+        <div className="design-token-mode">
+          {(['light', 'dark'] as const).map((mode) => (
+            <div key={mode}>
+              <h4>{mode === 'light' ? 'Light mode' : 'Dark mode'} colors</h4>
+              {Object.entries(designPalettes[mode]).map(([key, value]) => (
+                <label key={key}>
+                  {key.replaceAll('_', ' ')}
+                  <input
+                    value={value}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setPaletteOverrides((current) => ({
+                        ...current,
+                        [mode]: { ...(current[mode] ?? {}), [key]: nextValue },
+                      }));
+                      setDesignPalettes((current) => ({
+                        ...current,
+                        [mode]: { ...current[mode], [key]: nextValue },
+                      }));
+                    }}
+                  />
+                </label>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="design-presentation-fields">
+          {(
+            [
+              ['font_family', 'Font family', ['system', 'serif', 'mono', 'script']],
+              ['density', 'Density', ['comfortable', 'compact']],
+              ['radius', 'Corners', ['sharp', 'soft', 'pill']],
+              ['border_style', 'Borders', ['solid', 'dashed', 'none']],
+              ['shadow', 'Shadow', ['none', 'soft', 'offset']],
+              ['backdrop', 'Backdrop', ['plain', 'gradient', 'cosmic']],
+            ] as const
+          ).map(([key, label, options]) => (
+            <label key={key}>
+              {label}
+              <select
+                value={presentationOverrides[key] ?? settings.presentation?.[key] ?? options[0]}
+                onChange={(event) =>
+                  setPresentationOverrides((current) => ({ ...current, [key]: event.target.value }))
+                }
+              >
+                {options.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
+        <DesignPreview
+          label={styles.find((style) => style.key === styleKey)?.label ?? 'Site design'}
+          presentation={
+            {
+              ...(settings.presentation ?? {
+                font_family: 'system',
+                density: 'comfortable',
+                radius: 'soft',
+                border_style: 'solid',
+                shadow: 'none',
+                backdrop: 'plain',
+              }),
+              ...presentationOverrides,
+            } as PresentationOptions
+          }
+          palettes={designPalettes}
+          availablePalette={settings.available_palettes?.find(
+            (palette) => palette.key === paletteKey,
+          )}
+        />
+      </fieldset>
       <div className="admin-settings-actions">
-        <button className="admin-action-primary" type="submit" disabled={busy || !dirty}>
+        <button
+          className="admin-action-primary"
+          type="submit"
+          disabled={busy || (!dirty && !designDirty)}
+        >
           Save
         </button>
         <button
           className="admin-action-secondary"
           type="button"
           onClick={cancel}
-          disabled={busy || !dirty}
+          disabled={busy || (!dirty && !designDirty)}
         >
           Cancel
         </button>
@@ -974,6 +1101,24 @@ function ProfileStyleCatalogSettings({
     }
     return style.tokens as Record<string, string>;
   }
+  function previewPalettes(style: ProfileStyle): DesignPalettes {
+    const tokens = previewTokens(style);
+    const map = {
+      background: tokens.background ?? '#f8fafc',
+      foreground: tokens.text ?? '#111827',
+      muted: tokens.surface ?? '#e5e7eb',
+      muted_foreground: tokens.muted ?? '#64748b',
+      primary: tokens.accent ?? '#7c3aed',
+      primary_foreground: '#ffffff',
+      secondary: tokens.accent ?? '#7c3aed',
+      secondary_foreground: '#ffffff',
+      accent: tokens.accent ?? '#f59e0b',
+      accent_foreground: '#111827',
+      destructive: '#dc2626',
+      destructive_foreground: '#ffffff',
+    };
+    return { light: map, dark: map };
+  }
   return (
     <section className="admin-settings-card" aria-labelledby="profile-style-catalog-heading">
       <h3 id="profile-style-catalog-heading">Profile style catalog</h3>
@@ -1072,17 +1217,12 @@ function ProfileStyleCatalogSettings({
           >
             {style.enabled ? 'Disable' : 'Enable'}
           </button>
-          <div
-            aria-label={`${style.label} preview`}
-            className="profile-style-preview"
-            style={{
-              backgroundColor: previewTokens(style).background,
-              color: previewTokens(style).text,
-              borderColor: previewTokens(style).accent,
-            }}
-          >
-            {style.enabled ? 'Enabled preview' : 'Disabled preview'}
-          </div>
+          <DesignPreview
+            label="Profile style preview"
+            ariaLabel={`${style.label} preview`}
+            presentation={style.presentation}
+            palettes={previewPalettes(style)}
+          />
         </div>
       ))}
       <div className="admin-settings-actions">
@@ -1096,6 +1236,166 @@ function ProfileStyleCatalogSettings({
           Create style
         </button>
       </div>
+      {error && <p role="alert">{error}</p>}
+    </section>
+  );
+}
+
+function ThemeGenerationSettings({ styles }: { styles: ProfileStyle[] }) {
+  const [prompt, setPrompt] = useState('Create a calm cosmic theme with readable serif text.');
+  const [operation, setOperation] = useState<'generate' | 'refine'>('generate');
+  const [styleId, setStyleId] = useState<number | ''>('');
+  const [attempts, setAttempts] = useState<ThemeGenerationAttempt[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const draft = attempts.find((attempt) => attempt.state === 'draft');
+
+  useEffect(() => {
+    void fetchThemeGenerationAttempts()
+      .then(setAttempts)
+      .catch(() => setError('Could not load theme drafts.'));
+  }, []);
+
+  async function generate() {
+    setBusy(true);
+    setError(null);
+    try {
+      const next = await generateThemeDraft({
+        prompt,
+        operation,
+        attempt_number: draft ? draft.attempt_number + 1 : 1,
+        ...(styleId === '' ? {} : { style_id: styleId }),
+        ...(operation === 'refine' && draft ? { current_definition: draft.definition } : {}),
+      });
+      setAttempts((current) => [next, ...current.filter((item) => item.id !== next.id)]);
+    } catch {
+      setError('The theme provider rejected this request. You can revise the prompt and retry.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function action(id: number, actionName: 'accept' | 'reject' | 'restore', revision: number) {
+    setBusy(true);
+    setError(null);
+    try {
+      const next = await actOnThemeGeneration(id, actionName, revision);
+      setAttempts((current) => current.map((item) => (item.id === next.id ? next : item)));
+    } catch {
+      setError(
+        'The draft changed before this action completed. Reload the draft list and try again.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="admin-theme-generation" aria-labelledby="admin-theme-generation-heading">
+      <h3 id="admin-theme-generation-heading">AI custom theme workflow</h3>
+      <p>Generate a bounded draft, inspect it in the shared preview, then accept or reject it.</p>
+      <div className="admin-theme-generation-controls">
+        <label htmlFor="theme-generation-prompt">Theme prompt</label>
+        <textarea
+          id="theme-generation-prompt"
+          value={prompt}
+          maxLength={2000}
+          rows={3}
+          onChange={(event) => setPrompt(event.target.value)}
+        />
+        <label htmlFor="theme-generation-operation">Workflow</label>
+        <select
+          id="theme-generation-operation"
+          value={operation}
+          onChange={(event) => setOperation(event.target.value as 'generate' | 'refine')}
+        >
+          <option value="generate">Generate new</option>
+          <option value="refine">Refine existing draft</option>
+        </select>
+        <label htmlFor="theme-generation-style">Style target</label>
+        <select
+          id="theme-generation-style"
+          value={styleId}
+          onChange={(event) => setStyleId(event.target.value ? Number(event.target.value) : '')}
+        >
+          <option value="">New custom style</option>
+          {styles
+            .filter((style) => style.enabled)
+            .map((style) => (
+              <option key={style.id} value={style.id}>
+                {style.label}
+              </option>
+            ))}
+        </select>
+        <button
+          type="button"
+          className="admin-action-primary"
+          onClick={() => void generate()}
+          disabled={busy || !prompt.trim()}
+        >
+          {operation === 'refine' ? 'Refine existing' : 'Generate new'}
+        </button>
+      </div>
+      {draft && (
+        <article className="admin-theme-draft" aria-label="Generated theme draft">
+          <h4>{draft.definition.label}</h4>
+          <p>{draft.definition.description}</p>
+          <DesignPreview
+            label="Generated theme draft"
+            ariaLabel="Generated theme draft preview"
+            presentation={draft.definition.presentation}
+            palettes={{
+              light: draft.definition.palettes.light,
+              dark: draft.definition.palettes.dark,
+            }}
+          />
+          <div className="admin-settings-actions">
+            <button
+              type="button"
+              className="admin-action-primary"
+              onClick={() => void action(draft.id, 'accept', draft.revision)}
+              disabled={busy}
+            >
+              Accept theme
+            </button>
+            <button
+              type="button"
+              className="admin-action-secondary"
+              onClick={() => void action(draft.id, 'reject', draft.revision)}
+              disabled={busy}
+            >
+              Reject draft
+            </button>
+            <button
+              type="button"
+              className="admin-action-secondary"
+              onClick={() => void generate()}
+              disabled={busy || draft.attempt_number >= 3 || !prompt.trim()}
+            >
+              Retry
+            </button>
+          </div>
+          <p role="status">
+            Attempt {draft.attempt_number} of 3 · source: {draft.source}
+          </p>
+        </article>
+      )}
+      {attempts
+        .filter((attempt) => attempt.state === 'accepted')
+        .slice(0, 5)
+        .map((attempt) => (
+          <div key={attempt.id} className="admin-theme-snapshot">
+            <span>{attempt.definition.label} accepted</span>
+            <button
+              type="button"
+              className="admin-action-secondary"
+              onClick={() => void action(attempt.id, 'restore', attempt.revision)}
+              disabled={busy}
+            >
+              Restore snapshot
+            </button>
+          </div>
+        ))}
       {error && <p role="alert">{error}</p>}
     </section>
   );
@@ -1161,6 +1461,7 @@ function AdminSettings() {
       ) : (
         !loadError && <p role="status">Loading site settings…</p>
       )}
+      {profileStyles && <ThemeGenerationSettings styles={profileStyles} />}
       {plans ? (
         <section className="admin-console-section" aria-labelledby="admin-entitlements-heading">
           <h3 id="admin-entitlements-heading">Plans and capabilities</h3>

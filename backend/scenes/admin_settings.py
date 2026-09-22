@@ -13,12 +13,19 @@ like `scenes.entitlements` -- this module trusts it and doesn't re-check.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from django.db import transaction
 
 from scenes.entitlements import FEATURE_KEYS
 from scenes.models import EntitlementRole, Plan, ProfileStyle, SiteSettings
-from scenes.theme import effective_presentation, sanitize_theme_config
+from scenes.theme import (
+    effective_design_palettes,
+    effective_presentation,
+    sanitize_palette_overrides,
+    sanitize_presentation,
+    sanitize_theme_config,
+)
 
 
 class RevisionConflict(Exception):
@@ -64,7 +71,11 @@ class SiteSettingsView:
     revision: int
     theme_config: dict[str, object]
     style_key: str | None
+    palette_key: str
+    palette_overrides: dict[str, object]
+    presentation_overrides: dict[str, object]
     presentation: dict[str, str]
+    design_palettes: dict[str, dict[str, str]]
 
 
 @dataclass(frozen=True)
@@ -112,7 +123,15 @@ def get_site_settings() -> SiteSettingsView:
         revision=settings_row.revision,
         theme_config=settings_row.theme_config,
         style_key=style.key if style is not None and settings_row.style_id else None,
-        presentation=effective_presentation(style.presentation if style else {}),
+        palette_key=settings_row.palette_key,
+        palette_overrides=settings_row.palette_overrides,
+        presentation_overrides=settings_row.presentation_overrides,
+        presentation=effective_presentation(
+            {**(style.presentation if style else {}), **settings_row.presentation_overrides}
+        ),
+        design_palettes=effective_design_palettes(
+            style.tokens if style else {}, settings_row.palette_key, settings_row.palette_overrides
+        ),
     )
 
 
@@ -127,6 +146,9 @@ def update_site_settings(
     cloud_sync_enabled: bool | None = None,
     theme_config: dict[str, object] | None = None,
     style_key: str | None = None,
+    palette_key: str | None = None,
+    palette_overrides: dict[str, object] | None = None,
+    presentation_overrides: dict[str, object] | None = None,
 ) -> SiteSettingsView:
     if not isinstance(site_title, str) or not site_title.strip():
         raise ValidationFailed("site_title must be a non-empty string.")
@@ -144,6 +166,25 @@ def update_site_settings(
             theme_config = sanitize_theme_config(theme_config)
         except ValueError as exc:
             raise ValidationFailed(str(exc)) from exc
+    if palette_overrides is not None:
+        try:
+            palette_overrides = cast(
+                dict[str, object], sanitize_palette_overrides(palette_overrides)
+            )
+        except ValueError as exc:
+            raise ValidationFailed(str(exc)) from exc
+    if presentation_overrides is not None:
+        try:
+            presentation_overrides = cast(
+                dict[str, object], sanitize_presentation(presentation_overrides)
+            )
+        except ValueError as exc:
+            raise ValidationFailed(str(exc)) from exc
+    if palette_key is not None:
+        from scenes.theme import PALETTE_DEFINITIONS
+
+        if palette_key not in PALETTE_DEFINITIONS:
+            raise ValidationFailed("palette_key must identify a known palette.")
     style = None
     if style_key is not None:
         style = ProfileStyle.objects.filter(key=style_key, enabled=True).first()
@@ -168,6 +209,12 @@ def update_site_settings(
         row.theme_config = theme_config
     if style_key is not None:
         row.style = style
+    if palette_key is not None:
+        row.palette_key = palette_key
+    if palette_overrides is not None:
+        row.palette_overrides = palette_overrides
+    if presentation_overrides is not None:
+        row.presentation_overrides = presentation_overrides
     row.revision += 1
     row.updated_by = actor
     row.save()
@@ -180,7 +227,15 @@ def update_site_settings(
         revision=row.revision,
         theme_config=row.theme_config,
         style_key=style.key if style is not None and row.style_id else None,
-        presentation=effective_presentation(style.presentation if style else {}),
+        palette_key=row.palette_key,
+        palette_overrides=row.palette_overrides,
+        presentation_overrides=row.presentation_overrides,
+        presentation=effective_presentation(
+            {**(style.presentation if style else {}), **row.presentation_overrides}
+        ),
+        design_palettes=effective_design_palettes(
+            style.tokens if style else {}, row.palette_key, row.palette_overrides
+        ),
     )
 
 

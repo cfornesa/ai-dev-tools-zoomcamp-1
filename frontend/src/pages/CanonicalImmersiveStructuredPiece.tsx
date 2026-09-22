@@ -47,6 +47,7 @@ export default function CanonicalImmersiveStructuredPiece() {
     return (
       <ImmersiveArtPieceViewer
         initialPiece={resolved.piece as ArtPiece}
+        authorDisplayName={profile?.display_name}
         canonicalHref={`/users/@${cleanHandle}/immersive/${pieceSlug}`}
         regularHref={`/users/@${cleanHandle}/pieces/${pieceSlug}`}
         editHref={resolved.edit_url}

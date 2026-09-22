@@ -1,5 +1,156 @@
 # AugmentrART Backlog
 
+## 2026-09-22 — shared parity theme system (#724 → #725)
+
+The owner selected the shared parity theme-system direction after comparison
+with `augment-humankind` and `augment-humankind-react-node`. Issue #724 is the
+current groomed transaction for the shared ten-style catalog, ten palettes,
+light/dark iframe previews, account profile-design editor, admin editor parity,
+readability, and single-column account settings. Issue #725 is the linked,
+criterion-ready follow-up for the bounded AI generate/refine/accept/reject/
+retry/snapshot workflow.
+
+| Order | Issue | Status / routing | Evidence and next action |
+| --- | --- | --- | --- |
+| 1 | [#724](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/724) | CLOSED / QA PASS | QA comment and closure recorded in the authenticated Chrome session; local evidence is recorded in the transaction ledger. |
+| 2 | [#725](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/725) | CLOSED / QA PASS | Bounded fake-provider generation/refinement, safe preview validation, revision-checked actions, and exact snapshots are implemented and reconciled below. |
+
+The next backlog pass closed [#721](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/721)
+after self-review of its existing UI commit; its transaction record is in
+`.local/tasks/issue-721-create-wording-spacing.md`.
+
+Issue #720 was subsequently closed after the unified-gallery self-review;
+its transaction record is in
+`.local/tasks/issue-720-unified-gallery.md`.
+
+Issue #719 was subsequently closed after the owner-refresh self-review; its
+transaction record is in `.local/tasks/issue-719-project3d-thumbnails.md`.
+
+Issue #714 was subsequently closed after its alignment self-review; its
+transaction record is in `.local/tasks/issue-714-profile-alignment.md`.
+
+Issue #713 was subsequently closed after its mobile-header self-review; its
+transaction record is in `.local/tasks/issue-713-mobile-header.md`.
+
+Issue #712 was subsequently closed after the Celestial-default self-review;
+its transaction record is in `.local/tasks/issue-712-celestial-default.md`.
+
+## Deferred open backlog items
+
+There are no remaining open issues in the reconciled backlog. #716–#718 were
+closed after their linked production dependencies and published verification
+gates completed; the deployment-runtime follow-up noted by #717 remains an
+out-of-scope operational observation, not an open issue in this batch.
+
+Issues #703–#715 that had been deferred on the local Mach-port limitation are
+now closed after the repository-owned Docker Compose Chromium run succeeded.
+The per-issue QA comments and closure state are recorded in the corresponding
+`.local/tasks/issue-*.md` ledgers.
+
+The exact #724 transaction record is in
+`.local/tasks/issue-724-shared-parity-theme-system.md`. Closed issues #722 and
+#723 remain immutable; this is new follow-up work.
+
+The exact #725 transaction record is in
+`.local/tasks/issue-725-ai-theme-generation.md`. Its browser gate is recorded
+as a host-setup limitation: the spec is discoverable, but this macOS runner's
+Playwright Chromium binary cannot launch because of its Mach port sandbox.
+
+## 2026-09-22 — Compose browser verification closures (#703, #705–#711, #715)
+
+The owner-authorized Codex/GPT-5 runtime reran the previously blocked browser
+contracts against the repository's Docker Compose stack with
+`E2E_DOCKER_COMPOSE=true E2E_BASE_URL=http://127.0.0.1:5000`. The stage,
+fill, toolbar, card-thumbnail, palette, eraser, history, and touch-drawing
+scenarios passed, so the issues were self-reviewed in the active Chrome
+session with `## QA: PASS` comments and closed. Stage 3 second-opinion review
+was not run; evidence is local Compose, not production.
+
+Issue #716 was then closed after the #723 production refresh resolved its
+explicit data dependency. Its focused security checks and live thumbnail/API
+evidence are recorded in `.local/tasks/issue-716-generated-thumbnails.md`.
+
+Issues #717 and #718 were then closed after their terminal published gates:
+#717's live diagnostic satisfied its explicit fallback criterion, and #718's
+published design matrix passed all 16 light/dark desktop/mobile cases. Their
+transaction ledgers are in `.local/tasks/issue-717-share-metadata.md` and
+`.local/tasks/issue-718-published-design-evidence.md`.
+
+## 2026-09-22 — backlog-session priority gate (#722–#723)
+
+The live issue contracts for #722 and #723 were reread before work. Both are
+owner-authorized production data/config workflows, not Stage 2 implementation
+tasks. Using the authenticated active Chrome session, #722's missing Celestial
+style was restored through the admin UI and #723's six reference thumbnails
+were refreshed through the owner-only management control. The exact manifest,
+production evidence, and QA substitutions are recorded in
+`.local/tasks/backlog-session-2026-09-22-reconciliation.md`.
+
+| Order | Issue | Status / routing | Evidence and next action |
+| --- | --- | --- | --- |
+| 1 | [#722](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722) | QA PASS / ready to close | Authenticated production admin UI restored the missing Celestial style; live theme API and rendered shell confirm the Celestial presentation. |
+| 2 | [#723](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723) | QA PASS / ready to close | Authenticated production management refresh succeeded for all six reference pieces; live API, public gallery, profile, and management evidence confirm real thumbnails. |
+
+Later backlog processing is intentionally paused until both priority issues are
+closed and the closure state is reread.
+
+### #722 transaction ledger — 2026-09-22 — superseded by authenticated production pass
+
+- PM/grooming: criterion-ready owner production data/config workflow; no code
+  implementation or migration is in scope. Root-cause choice remains owner
+  controlled.
+- Engineering: not applicable; no diff or commit.
+- Second opinion: not run; no implementation diff.
+- QA: Codex / GPT-5 / current session, substituted for the rostered Claude
+  Sonnet 5 / Medium QA owner because that service was unavailable. Read-only
+  `curl -fsS https://augmentrart.com/api/site-theme/` and rendered production
+  inspection confirmed the default/plain shell. Exact owner-authenticated
+  style inspection and writes were not run.
+- Reconciliation: the initial QA comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722#issuecomment-5772270111`
+  recorded the access block. It was superseded by the authenticated Chrome
+  pass: the missing `celestial` style was created/configured, selected
+  globally, and verified through the live theme API and rendered shell.
+
+### #722 final QA ledger — 2026-09-22 — PASS
+
+- Authenticated Chrome admin UI evidence: Celestial exists, is configured as
+  script/soft/cosmic, and is selected as the global style.
+- Live API evidence: `GET https://augmentrart.com/api/site-theme/` returns
+  `style_key: "celestial"` and the expected presentation values.
+- Render evidence: the authenticated production shell rendered the Celestial
+  cosmic background, script typography, and soft styling.
+- Closure: final QA comment posted and issue closed as completed.
+
+### #723 transaction ledger — 2026-09-22 — superseded by authenticated production pass
+
+- PM/grooming: criterion-ready owner production data workflow; trusted import
+  code is already merged and no further implementation is in scope.
+- Engineering: not applicable; no diff or commit.
+- Second opinion: not run; no implementation diff.
+- QA: Codex / GPT-5 / current session, substituted for the rostered Claude
+  Sonnet 5 / Medium QA owner because that service was unavailable. Read-only
+  `curl -fsS https://augmentrart.com/api/public/gallery/` confirmed the six
+  stable-marker reference pieces still report fallback thumbnails. The import
+  was not run because the available shell is not confirmed to target
+  production.
+- Reconciliation: the initial QA comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723#issuecomment-5772270537`
+  recorded the production-runtime block. It was superseded by the
+  authenticated Chrome pass against production.
+
+### #723 final QA ledger — 2026-09-22 — PASS
+
+- Authenticated Chrome management evidence: the owner-only refresh reported
+  `6 thumbnails refreshed successfully` and `All current versions have
+  thumbnails.`
+- Live API evidence: the six stable-marker reference pieces all return
+  `thumbnail_is_fallback: false`.
+- Render evidence: the public gallery and `users/@cfornesa` profile rendered
+  the generated reference artwork; the management page remained owner-only
+  and usable.
+- Closure: final QA comment posted and issue closed as completed.
+
 ## 2026-09-21 — backlog-session manifest (#703–#718)
 
 The live open issue inventory contains sixteen post-publish issues (#703–#718).

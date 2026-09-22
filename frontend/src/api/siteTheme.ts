@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { PresentationOptions } from './adminSettings';
+import type { DesignPalettes, PaletteDefinition, PresentationOptions } from './adminSettings';
 
 export type ThemeTokens = Record<string, string> & {
   presentation?: PresentationOptions;
@@ -7,6 +7,9 @@ export type ThemeTokens = Record<string, string> & {
     light: Record<string, string>;
     dark: Record<string, string>;
   };
+  palette_key?: string;
+  design_palettes?: DesignPalettes;
+  available_palettes?: PaletteDefinition[];
   site_title?: string;
 };
 

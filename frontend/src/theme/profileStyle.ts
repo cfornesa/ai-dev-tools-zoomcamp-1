@@ -6,8 +6,16 @@ import type { PresentationOptions } from '../api/adminSettings';
 function presentationFont(value: PresentationOptions['font_family'] | undefined): string {
   if (value === 'serif') return "Georgia, 'Times New Roman', serif";
   if (value === 'mono') return 'ui-monospace, Consolas, monospace';
-  if (value === 'script') return "'Pinyon Script', Georgia, 'Times New Roman', serif";
+  // Script is the Celestial heading treatment. Profile and card body copy
+  // must remain readable; the shared heading cascade applies Pinyon Script
+  // to headings separately.
+  if (value === 'script') return "Lora, Georgia, 'Times New Roman', serif";
   return "system-ui, 'Segoe UI', Roboto, sans-serif";
+}
+
+function presentationHeadingFont(value: PresentationOptions['font_family'] | undefined): string {
+  if (value === 'script') return "'Pinyon Script', Georgia, 'Times New Roman', serif";
+  return presentationFont(value);
 }
 
 function presentationRadius(value: PresentationOptions['radius'] | undefined): string {
@@ -34,6 +42,7 @@ export function profileStyleVars(profile: PublicProfile): CSSProperties {
     '--profile-muted-light': value(light, 'muted'),
     '--profile-accent-light': value(light, 'accent'),
     '--profile-font': presentationFont(profile.presentation?.font_family),
+    '--profile-heading-font': presentationHeadingFont(profile.presentation?.font_family),
     '--profile-radius': presentationRadius(profile.presentation?.radius),
     '--profile-density': profile.presentation?.density === 'compact' ? '12px' : '20px',
     '--profile-border-style': profile.presentation?.border_style ?? 'solid',

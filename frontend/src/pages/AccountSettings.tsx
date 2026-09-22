@@ -33,6 +33,8 @@ import EntitlementsSummary from './EntitlementsSummary';
 import { ApiError } from '../api/client';
 import { fetchProfile, type PublicProfile, updateProfile } from '../api/profile';
 import { useAuth } from '../auth/useAuth';
+import DesignPreview from '../components/DesignPreview';
+import type { DesignPalettes, PresentationOptions } from '../api/adminSettings';
 
 const MIN_MAX_RETRIES = 1;
 const MAX_MAX_RETRIES = 10;
@@ -495,6 +497,7 @@ function ProfileSettings() {
     }
     return <p role="status">Loading profile…</p>;
   }
+  const currentProfile = profile;
   async function save(event: React.FormEvent) {
     event.preventDefault();
     const current = profile as PublicProfile;
@@ -515,6 +518,71 @@ function ProfileSettings() {
   function updateDraft(nextProfile: PublicProfile) {
     profileDirtyRef.current = true;
     setProfile(nextProfile);
+  }
+  function designPalettes(): DesignPalettes {
+    if (currentProfile.design_palettes) return currentProfile.design_palettes;
+    const selected = currentProfile.available_palettes?.find(
+      (palette) => palette.key === (currentProfile.palette_key ?? 'original'),
+    );
+    const base = selected?.values ?? {
+      light: {
+        background: '#f8fafc',
+        foreground: '#111827',
+        muted: '#e2e8f0',
+        muted_foreground: '#64748b',
+        primary: '#7c3aed',
+        primary_foreground: '#ffffff',
+        secondary: '#0e7490',
+        secondary_foreground: '#ffffff',
+        accent: '#ea580c',
+        accent_foreground: '#ffffff',
+        destructive: '#dc2626',
+        destructive_foreground: '#ffffff',
+      },
+      dark: {
+        background: '#0b0d12',
+        foreground: '#f3f4f6',
+        muted: '#151923',
+        muted_foreground: '#9ca3af',
+        primary: '#c084fc',
+        primary_foreground: '#0b0d12',
+        secondary: '#38bdf8',
+        secondary_foreground: '#0b0d12',
+        accent: '#fb923c',
+        accent_foreground: '#0b0d12',
+        destructive: '#f87171',
+        destructive_foreground: '#0b0d12',
+      },
+    };
+    const overrides = currentProfile.palette_overrides ?? {};
+    return {
+      light: { ...base.light, ...(overrides.light ?? {}) },
+      dark: { ...base.dark, ...(overrides.dark ?? {}) },
+    };
+  }
+  function updatePaletteValue(mode: 'light' | 'dark', key: string, value: string) {
+    const overrides = currentProfile.palette_overrides ?? {};
+    updateDraft({
+      ...currentProfile,
+      palette_overrides: {
+        ...overrides,
+        [mode]: { ...(overrides[mode] ?? {}), [key]: value },
+      },
+      design_palettes: {
+        ...designPalettes(),
+        [mode]: { ...designPalettes()[mode], [key]: value },
+      },
+    });
+  }
+  function updatePresentation<K extends keyof PresentationOptions>(
+    key: K,
+    value: PresentationOptions[K],
+  ) {
+    updateDraft({
+      ...currentProfile,
+      presentation: { ...currentProfile.presentation, [key]: value } as PresentationOptions,
+      presentation_overrides: { ...(currentProfile.presentation_overrides ?? {}), [key]: value },
+    });
   }
   return (
     <form className="account-settings-form" aria-label="Profile settings" onSubmit={save}>
@@ -541,13 +609,25 @@ function ProfileSettings() {
         )}
       </div>
       {profile.available_styles && profile.available_styles.length > 0 && (
-        <div className="account-settings-field">
-          <label htmlFor="profile-style">Profile style</label>
+        <section
+          className="account-settings-field profile-design-section"
+          aria-labelledby="profile-design-heading"
+        >
+          <h3 id="profile-design-heading">Profile design</h3>
+          <p>Choose the layout style and palette used by your public profile, cards, and pieces.</p>
+          <label htmlFor="profile-style">Layout style</label>
           <select
             id="profile-style"
+            aria-label="Profile style"
             value={profile.style_key ?? ''}
             onChange={(event) =>
-              updateDraft({ ...profile, style_key: event.target.value, theme_config: {} })
+              updateDraft({
+                ...profile,
+                style_key: event.target.value,
+                theme_config: {},
+                palette_overrides: {},
+                presentation_overrides: {},
+              })
             }
           >
             {profile.available_styles.map((style) => (
@@ -560,31 +640,108 @@ function ProfileSettings() {
             {profile.available_styles.find((style) => style.key === profile.style_key)
               ?.description ?? 'Choose a safe, token-only profile style.'}
           </p>
-          <div
-            aria-label="Profile style preview"
-            className="profile-style-preview"
-            style={(() => {
-              const tokens = profile.available_styles?.find(
-                (style) => style.key === profile.style_key,
-              )?.tokens;
-              return tokens
-                ? {
-                    backgroundColor: tokens.background,
-                    color: tokens.text,
-                    borderColor: tokens.accent,
-                  }
-                : undefined;
-            })()}
+          <label htmlFor="profile-palette">Color palette</label>
+          <select
+            id="profile-palette"
+            value={profile.palette_key ?? 'original'}
+            onChange={(event) =>
+              updateDraft({
+                ...profile,
+                palette_key: event.target.value,
+                palette_overrides: {},
+              })
+            }
           >
-            Style preview
-          </div>
+            {(profile.available_palettes ?? []).map((palette) => (
+              <option key={palette.key} value={palette.key}>
+                {palette.label}
+              </option>
+            ))}
+          </select>
+          <fieldset className="design-token-fields">
+            <legend>Palette colors</legend>
+            {(['light', 'dark'] as const).map((mode) => (
+              <div key={mode} className="design-token-mode">
+                <h4>{mode === 'light' ? 'Light mode' : 'Dark mode'}</h4>
+                {Object.entries(designPalettes()[mode]).map(([key, value]) => (
+                  <label key={key} htmlFor={`profile-${mode}-${key}`}>
+                    {key.replaceAll('_', ' ')}
+                    <input
+                      id={`profile-${mode}-${key}`}
+                      value={value}
+                      onChange={(event) => updatePaletteValue(mode, key, event.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
+            ))}
+          </fieldset>
+          <fieldset className="design-presentation-fields">
+            <legend>Presentation</legend>
+            {(
+              [
+                ['font_family', 'Font family', ['system', 'serif', 'mono', 'script']],
+                ['density', 'Density', ['comfortable', 'compact']],
+                ['radius', 'Corners', ['sharp', 'soft', 'pill']],
+                ['border_style', 'Borders', ['solid', 'dashed', 'none']],
+                ['shadow', 'Shadow', ['none', 'soft', 'offset']],
+                ['backdrop', 'Backdrop', ['plain', 'gradient', 'cosmic']],
+              ] as const
+            ).map(([key, label, options]) => (
+              <label key={key} htmlFor={`profile-presentation-${key}`}>
+                {label}
+                <select
+                  id={`profile-presentation-${key}`}
+                  value={profile.presentation?.[key] ?? options[0]}
+                  onChange={(event) => updatePresentation(key, event.target.value as never)}
+                >
+                  {options.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </fieldset>
+          <DesignPreview
+            ariaLabel="Profile style preview"
+            label={
+              profile.available_styles.find((style) => style.key === profile.style_key)?.label ??
+              'Profile design'
+            }
+            presentation={
+              profile.presentation ?? {
+                font_family: 'system',
+                density: 'comfortable',
+                radius: 'soft',
+                border_style: 'solid',
+                shadow: 'none',
+                backdrop: 'plain',
+              }
+            }
+            palettes={designPalettes()}
+            availablePalette={profile.available_palettes?.find(
+              (palette) => palette.key === profile.palette_key,
+            )}
+          />
           <button
             type="button"
-            onClick={() => updateDraft({ ...profile, style_key: 'default', theme_config: {} })}
+            aria-label="Reset style"
+            onClick={() =>
+              updateDraft({
+                ...profile,
+                style_key: 'default',
+                palette_key: 'original',
+                theme_config: {},
+                palette_overrides: {},
+                presentation_overrides: {},
+              })
+            }
           >
-            Reset style
+            Reset design
           </button>
-        </div>
+        </section>
       )}
       <div className="account-settings-field">
         <label htmlFor="profile-display-name">Display name</label>
@@ -620,24 +777,17 @@ function ProfileSettings() {
           onChange={(event) => updateDraft({ ...profile, profile_image_url: event.target.value })}
         />
       </div>
-      <div className="account-settings-field">
-        <label htmlFor="profile-accent">Profile accent</label>
-        <input
-          id="profile-accent"
-          type="color"
-          value={profile.theme_config.accent ?? '#c084fc'}
-          onChange={(event) =>
-            updateDraft({
-              ...profile,
-              theme_config: { ...profile.theme_config, accent: event.target.value },
-            })
-          }
-        />
-      </div>
       <button
         className="shell-action"
         type="button"
-        onClick={() => updateDraft({ ...profile, theme_config: {} })}
+        onClick={() =>
+          updateDraft({
+            ...profile,
+            theme_config: {},
+            palette_overrides: {},
+            presentation_overrides: {},
+          })
+        }
       >
         Reset profile theme
       </button>

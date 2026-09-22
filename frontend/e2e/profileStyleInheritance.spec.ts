@@ -40,11 +40,13 @@ async function assertInheritedStyle(page: Page, mode: (typeof MODES)[number]) {
         background: computed.getPropertyValue('--profile-background').trim(),
         accent: computed.getPropertyValue('--profile-accent').trim(),
         font: computed.getPropertyValue('--profile-font').trim(),
+        headingFont: getComputedStyle(node.querySelector('h2, h3') ?? node).fontFamily,
       };
     });
   expect(style.background).toBe(mode.background);
   expect(style.accent).toBe(mode.accent);
-  expect(style.font).toContain('Pinyon Script');
+  expect(style.font).toContain('Lora');
+  expect(style.headingFont).toContain('Pinyon Script');
 }
 
 test.describe('profile style inheritance (#672)', () => {

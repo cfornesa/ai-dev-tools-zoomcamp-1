@@ -23,8 +23,22 @@ from scenes.admin_settings import (
     update_plan,
     update_site_settings,
 )
-from scenes.models import SiteSettings
-from scenes.theme import effective_presentation, effective_profile_theme, effective_theme_palettes
+from scenes.models import ProfileStyle, SiteSettings, ThemeGenerationAttempt
+from scenes.theme import (
+    available_palettes,
+    effective_design_palettes,
+    effective_legacy_theme_palettes,
+    effective_presentation,
+    effective_profile_theme,
+)
+from scenes.theme_generation import (
+    MAX_ATTEMPTS,
+    ThemeGenerationError,
+    accept_attempt,
+    create_attempt,
+    reject_attempt,
+    restore_attempt,
+)
 
 
 def _admin_required_response(request) -> Response | None:
@@ -48,6 +62,9 @@ class SiteSettingsUpdateSerializer(serializers.Serializer):
     cloud_sync_enabled = serializers.BooleanField(required=False)
     theme_config = serializers.DictField(required=False)
     style_key = serializers.SlugField(max_length=48, required=False)
+    palette_key = serializers.SlugField(max_length=32, required=False)
+    palette_overrides = serializers.DictField(required=False)
+    presentation_overrides = serializers.DictField(required=False)
 
 
 class AdminSiteSettingsView(APIView):
@@ -65,11 +82,18 @@ class AdminSiteSettingsView(APIView):
                 "cloud_sync_enabled": site_settings.cloud_sync_enabled,
                 "revision": site_settings.revision,
                 "theme_config": site_settings.theme_config,
-                "theme_palettes": effective_theme_palettes(
+                "theme_palettes": effective_legacy_theme_palettes(
                     style.tokens if style else {},
+                    site_settings.palette_key,
+                    site_settings.palette_overrides,
                     site_settings.theme_config,
                 ),
                 "style_key": site_settings.style_key,
+                "palette_key": site_settings.palette_key,
+                "palette_overrides": site_settings.palette_overrides,
+                "presentation_overrides": site_settings.presentation_overrides,
+                "design_palettes": site_settings.design_palettes,
+                "available_palettes": available_palettes(),
                 "presentation": site_settings.presentation,
             }
         )
@@ -87,6 +111,9 @@ class AdminSiteSettingsView(APIView):
             "cloud_sync_enabled",
             "theme_config",
             "style_key",
+            "palette_key",
+            "palette_overrides",
+            "presentation_overrides",
         }
         if unknown_fields:
             return Response(
@@ -110,6 +137,9 @@ class AdminSiteSettingsView(APIView):
                 cloud_sync_enabled=serializer.validated_data.get("cloud_sync_enabled"),
                 theme_config=serializer.validated_data.get("theme_config"),
                 style_key=serializer.validated_data.get("style_key"),
+                palette_key=serializer.validated_data.get("palette_key"),
+                palette_overrides=serializer.validated_data.get("palette_overrides"),
+                presentation_overrides=serializer.validated_data.get("presentation_overrides"),
             )
         except RevisionConflict as exc:
             return Response(
@@ -128,13 +158,20 @@ class AdminSiteSettingsView(APIView):
                 "cloud_sync_enabled": updated.cloud_sync_enabled,
                 "revision": updated.revision,
                 "theme_config": updated.theme_config,
-                "theme_palettes": effective_theme_palettes(
+                "theme_palettes": effective_legacy_theme_palettes(
                     effective_site_style(SiteSettings.get_solo()).tokens
                     if effective_site_style(SiteSettings.get_solo())
                     else {},
+                    updated.palette_key,
+                    updated.palette_overrides,
                     updated.theme_config,
                 ),
                 "style_key": updated.style_key,
+                "palette_key": updated.palette_key,
+                "palette_overrides": updated.palette_overrides,
+                "presentation_overrides": updated.presentation_overrides,
+                "design_palettes": updated.design_palettes,
+                "available_palettes": available_palettes(),
                 "presentation": updated.presentation,
             }
         )
@@ -149,16 +186,115 @@ class SiteThemeView(APIView):
         return Response(
             {
                 **effective_profile_theme(style.tokens if style else {}, row.theme_config),
-                "theme_palettes": effective_theme_palettes(
-                    style.tokens if style else {}, row.theme_config
+                "theme_palettes": effective_legacy_theme_palettes(
+                    style.tokens if style else {},
+                    row.palette_key,
+                    row.palette_overrides,
+                    row.theme_config,
                 ),
                 "style_key": style.key if style else None,
-                "presentation": effective_presentation(style.presentation if style else {}),
+                "palette_key": row.palette_key,
+                "design_palettes": effective_design_palettes(
+                    style.tokens if style else {}, row.palette_key, row.palette_overrides
+                ),
+                "presentation": effective_presentation(
+                    {**(style.presentation if style else {}), **row.presentation_overrides}
+                ),
                 "site_title": row.site_title,
                 "site_description": row.site_description,
                 "metadata_tags": row.metadata_tags,
             }
         )
+
+
+class ThemeGenerationRequestSerializer(serializers.Serializer):
+    prompt = serializers.CharField(max_length=2000, allow_blank=False, trim_whitespace=True)
+    operation = serializers.ChoiceField(choices=("generate", "refine"), default="generate")
+    attempt_number = serializers.IntegerField(min_value=1, max_value=MAX_ATTEMPTS, default=1)
+    style_id = serializers.IntegerField(min_value=1, required=False)
+    current_definition = serializers.DictField(required=False)
+
+
+class AdminThemeGenerationView(APIView):
+    def get(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        return Response(
+            [
+                _theme_attempt_payload(row)
+                for row in ThemeGenerationAttempt.objects.filter(actor=request.user)[:20]
+            ]
+        )
+
+    def post(self, request):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        serializer = ThemeGenerationRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({"error": "validation_failed", "detail": serializer.errors}, status=400)
+        style = None
+        if serializer.validated_data.get("style_id") is not None:
+            style = ProfileStyle.objects.filter(
+                pk=serializer.validated_data["style_id"], enabled=True
+            ).first()
+            if style is None:
+                return Response(
+                    {"error": "validation_failed", "detail": "Unknown enabled style."}, status=400
+                )
+        try:
+            payload = create_attempt(
+                actor=request.user,
+                prompt=serializer.validated_data["prompt"],
+                operation=serializer.validated_data["operation"],
+                attempt_number=serializer.validated_data["attempt_number"],
+                current=serializer.validated_data.get("current_definition"),
+                style=style,
+            )
+        except ThemeGenerationError as exc:
+            attempt_number = serializer.validated_data.get("attempt_number", 1)
+            return Response(
+                {
+                    "error": "theme_generation_failed",
+                    "detail": str(exc),
+                    "can_retry": attempt_number < MAX_ATTEMPTS,
+                },
+                status=422,
+            )
+        return Response(payload, status=201)
+
+
+def _theme_attempt_payload(row: ThemeGenerationAttempt) -> dict:
+    from scenes.theme_generation import _attempt_payload
+
+    return _attempt_payload(row)
+
+
+class AdminThemeGenerationActionView(APIView):
+    def post(self, request, attempt_id, action):
+        denied = _admin_required_response(request)
+        if denied:
+            return denied
+        try:
+            expected_revision = int(request.data.get("revision", 0))
+            if action == "accept":
+                payload = accept_attempt(
+                    actor=request.user, attempt_id=attempt_id, expected_revision=expected_revision
+                )
+            elif action == "reject":
+                payload = reject_attempt(
+                    actor=request.user, attempt_id=attempt_id, expected_revision=expected_revision
+                )
+            elif action == "restore":
+                payload = restore_attempt(actor=request.user, attempt_id=attempt_id)
+            else:
+                return Response({"error": "unknown_action"}, status=404)
+        except ThemeGenerationAttempt.DoesNotExist:
+            return Response({"error": "not_found"}, status=404)
+        except (ThemeGenerationError, ValueError) as exc:
+            return Response({"error": "theme_action_failed", "detail": str(exc)}, status=409)
+        return Response(payload)
 
 
 class PlanUpdateSerializer(serializers.Serializer):

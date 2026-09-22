@@ -25,6 +25,9 @@ vi.mock('../api/adminSettings', async () => {
     fetchCloudRetentionPolicy: vi.fn(),
     fetchAIProviderModels: vi.fn(),
     fetchProfileStyles: vi.fn(),
+    fetchThemeGenerationAttempts: vi.fn(),
+    generateThemeDraft: vi.fn(),
+    actOnThemeGeneration: vi.fn(),
     updateProfileStyle: vi.fn(),
   };
 });
@@ -60,6 +63,7 @@ beforeEach(() => {
     updated_at: '2026-01-01T00:00:00Z',
   });
   vi.mocked(adminApi.fetchAIProviderModels).mockResolvedValue([]);
+  vi.mocked(adminApi.fetchThemeGenerationAttempts).mockResolvedValue([]);
   vi.mocked(adminApi.fetchProfileStyles).mockResolvedValue([
     {
       id: 1,
@@ -147,7 +151,7 @@ describe('AdminSettings presentation choices (#643)', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Pareto')).toBeInTheDocument();
+    expect((await screen.findAllByText('Pareto')).length).toBeGreaterThan(0);
     expect(screen.getByRole('combobox', { name: 'Pareto shadow' })).toHaveValue('offset');
   });
 
@@ -158,7 +162,7 @@ describe('AdminSettings presentation choices (#643)', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Celestial')).toBeInTheDocument();
+    expect((await screen.findAllByText('Celestial')).length).toBeGreaterThan(0);
     expect(screen.getByRole('combobox', { name: 'Celestial font family' })).toHaveValue('script');
     expect(screen.getByRole('combobox', { name: 'Celestial backdrop' })).toHaveValue('cosmic');
   });

@@ -18,6 +18,7 @@ from scenes.models import (
     Project3D,
     PublicProfile,
 )
+from scenes.public_identity import public_author_name
 from scenes.public_urls import piece_viewer_path
 
 
@@ -125,7 +126,7 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
         "description": collection.description,
         "slug": collection.slug,
         "handle": profile.handle if profile else None,
-        "owner": collection.owner.get_username(),
+        "owner": public_author_name(collection.owner),
         "visibility": collection.visibility,
         "published_at": collection.published_at.isoformat() if collection.published_at else None,
         "created_at": collection.created_at.isoformat(),

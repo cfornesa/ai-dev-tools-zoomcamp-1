@@ -129,6 +129,9 @@ class SiteSettings(models.Model):
     # Issue #509: cloud backup is disabled until an administrator enables it.
     cloud_sync_enabled = models.BooleanField(default=False)
     theme_config = models.JSONField(default=dict, blank=True)
+    palette_key = models.SlugField(max_length=32, default="original")
+    palette_overrides = models.JSONField(default=dict, blank=True)
+    presentation_overrides = models.JSONField(default=dict, blank=True)
     style = models.ForeignKey(
         "ProfileStyle",
         on_delete=models.SET_NULL,
@@ -172,6 +175,9 @@ class PublicProfile(models.Model):
     profile_image_url = models.URLField(max_length=500, blank=True, default="")
     is_public = models.BooleanField(default=True)
     theme_config = models.JSONField(default=dict, blank=True)
+    palette_key = models.SlugField(max_length=32, default="original")
+    palette_overrides = models.JSONField(default=dict, blank=True)
+    presentation_overrides = models.JSONField(default=dict, blank=True)
     revision = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -196,6 +202,46 @@ class ProfileStyle(models.Model):
 
     def __str__(self) -> str:
         return self.label
+
+
+class ThemeGenerationAttempt(models.Model):
+    """Bounded AI theme draft and reversible acceptance record (#725).
+
+    The definition is safe JSON data only.  An accepted row keeps the exact
+    previous style definition so rejection and restore never need to infer or
+    reconstruct a prior theme.
+    """
+
+    class Operation(models.TextChoices):
+        GENERATE = "generate", "Generate"
+        REFINE = "refine", "Refine"
+
+    class State(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        ACCEPTED = "accepted", "Accepted"
+        REJECTED = "rejected", "Rejected"
+
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    style = models.ForeignKey(ProfileStyle, on_delete=models.SET_NULL, null=True, blank=True)
+    operation = models.CharField(max_length=16, choices=Operation.choices)
+    state = models.CharField(max_length=16, choices=State.choices, default=State.DRAFT)
+    prompt = models.CharField(max_length=2000)
+    original_prompt = models.CharField(max_length=2000, blank=True, default="")
+    source = models.CharField(max_length=32, default="fake", blank=True)
+    revision = models.PositiveIntegerField(default=1)
+    attempt_number = models.PositiveIntegerField(default=1)
+    sequence_token = models.CharField(max_length=80, blank=True, default="")
+    definition = models.JSONField(default=dict)
+    previous_definition = models.JSONField(default=dict, blank=True)
+    error = models.CharField(max_length=500, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"Theme {self.operation} #{self.pk} ({self.state})"
 
 
 class PublicProfileHandleRedirect(models.Model):

@@ -2,12 +2,20 @@ import { apiFetch } from './client';
 import type { ArtPiece } from './artPieces';
 import type { Project, PublicProject } from './projects';
 import type { Project3D, PublicProject3D } from './projects3d';
-import type { PresentationOptions } from './adminSettings';
-import type { ThemePalettes } from './adminSettings';
+import type {
+  DesignPalettes,
+  PaletteDefinition,
+  PaletteOverrides,
+  PresentationOptions,
+  ThemePalettes,
+} from './adminSettings';
 
 export type PublicProfile = {
   handle: string | null;
   style_key?: string | null;
+  palette_key?: string;
+  palette_overrides?: PaletteOverrides;
+  presentation_overrides?: Partial<PresentationOptions>;
   presentation?: PresentationOptions;
   available_styles?: Array<{
     key: string;
@@ -25,6 +33,8 @@ export type PublicProfile = {
   revision: number;
   theme_config: Record<string, string>;
   theme_palettes?: ThemePalettes;
+  design_palettes?: DesignPalettes;
+  available_palettes?: PaletteDefinition[];
 };
 
 export async function fetchProfile(): Promise<PublicProfile> {
@@ -53,6 +63,7 @@ export type PublicProfilePage = {
     slug?: string;
     title: string;
     description?: string;
+    owner?: string;
     type: string;
     engine?: string;
     published_at?: string;

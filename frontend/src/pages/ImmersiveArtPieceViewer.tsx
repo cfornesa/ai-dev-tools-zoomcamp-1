@@ -71,11 +71,13 @@ function ImmersiveArtPieceViewer({
   canonicalHref,
   regularHref,
   editHref,
+  authorDisplayName,
 }: {
   initialPiece?: ArtPiece;
   canonicalHref?: string;
   regularHref?: string;
   editHref?: string;
+  authorDisplayName?: string;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const routeNavigate = useNavigate();
@@ -262,6 +264,9 @@ function ImmersiveArtPieceViewer({
               Close
             </button>
           </div>
+          <p className="public-project-attribution">
+            By {authorDisplayName || piece.owner || 'Public artist'}
+          </p>
           {isSpatial ? (
             <p role="note">
               Drag to look around, scroll to zoom, and use the arrow keys to travel through the

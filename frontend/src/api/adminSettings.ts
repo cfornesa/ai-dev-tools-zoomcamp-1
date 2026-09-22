@@ -8,6 +8,11 @@ export type SiteSettings = {
   cloud_sync_enabled: boolean;
   theme_config?: Record<string, string>;
   theme_palettes?: ThemePalettes;
+  palette_key?: string;
+  palette_overrides?: PaletteOverrides;
+  presentation_overrides?: Partial<PresentationOptions>;
+  design_palettes?: DesignPalettes;
+  available_palettes?: PaletteDefinition[];
   style_key?: string | null;
   presentation?: PresentationOptions;
 };
@@ -15,6 +20,14 @@ export type SiteSettings = {
 export type ThemePalette = Record<string, string>;
 export type ThemePalettes = { light: ThemePalette; dark: ThemePalette };
 export type ThemeConfig = ThemePalette | Partial<ThemePalettes>;
+export type DesignPalettes = { light: ThemePalette; dark: ThemePalette };
+export type PaletteOverrides = Partial<DesignPalettes>;
+export type PaletteDefinition = {
+  key: string;
+  label: string;
+  description: string;
+  values: DesignPalettes;
+};
 
 export type PresentationOptions = {
   font_family: 'system' | 'serif' | 'mono' | 'script';
@@ -61,6 +74,58 @@ export type ProfileStyle = {
   revision: number;
 };
 
+export type ThemeDefinition = {
+  key: string;
+  label: string;
+  description: string;
+  presentation: PresentationOptions;
+  palettes: { label: string; description: string; light: ThemePalette; dark: ThemePalette };
+  code: { css: string; html: string; js: string };
+};
+
+export type ThemeGenerationAttempt = {
+  id: number;
+  operation: 'generate' | 'refine';
+  state: 'draft' | 'accepted' | 'rejected';
+  prompt: string;
+  original_prompt: string;
+  source: string;
+  revision: number;
+  attempt_number: number;
+  sequence_token: string;
+  definition: ThemeDefinition;
+  error: string;
+  created_at: string;
+};
+
+export async function fetchThemeGenerationAttempts(): Promise<ThemeGenerationAttempt[]> {
+  return apiFetch<ThemeGenerationAttempt[]>('/api/admin/theme-generation/');
+}
+
+export async function generateThemeDraft(fields: {
+  prompt: string;
+  operation: 'generate' | 'refine';
+  attempt_number?: number;
+  style_id?: number;
+  current_definition?: ThemeDefinition;
+}): Promise<ThemeGenerationAttempt> {
+  return apiFetch<ThemeGenerationAttempt>('/api/admin/theme-generation/', {
+    method: 'POST',
+    body: JSON.stringify(fields),
+  });
+}
+
+export async function actOnThemeGeneration(
+  id: number,
+  action: 'accept' | 'reject' | 'restore',
+  revision: number,
+): Promise<ThemeGenerationAttempt> {
+  return apiFetch<ThemeGenerationAttempt>(`/api/admin/theme-generation/${id}/${action}/`, {
+    method: 'POST',
+    body: JSON.stringify({ revision }),
+  });
+}
+
 export async function fetchProfileStyles(): Promise<ProfileStyle[]> {
   return apiFetch<ProfileStyle[]>('/api/admin/profile-styles/');
 }
@@ -100,6 +165,9 @@ export async function updateSiteSettings(
   styleKey?: string,
   siteDescription?: string,
   metadataTags?: string[],
+  paletteKey?: string,
+  paletteOverrides?: PaletteOverrides,
+  presentationOverrides?: Partial<PresentationOptions>,
 ): Promise<SiteSettings> {
   return apiFetch<SiteSettings>('/api/admin/settings/', {
     method: 'PATCH',
@@ -110,6 +178,9 @@ export async function updateSiteSettings(
       ...(metadataTags !== undefined ? { metadata_tags: metadataTags } : {}),
       ...(themeConfig ? { theme_config: themeConfig } : {}),
       ...(styleKey ? { style_key: styleKey } : {}),
+      ...(paletteKey ? { palette_key: paletteKey } : {}),
+      ...(paletteOverrides ? { palette_overrides: paletteOverrides } : {}),
+      ...(presentationOverrides ? { presentation_overrides: presentationOverrides } : {}),
     }),
   });
 }

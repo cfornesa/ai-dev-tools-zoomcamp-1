@@ -58,8 +58,10 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
       await expect(page.getByRole('heading', { name: 'Visitor draw fixture' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Draw on piece' })).toBeVisible();
       const overlay = page.getByLabel('Temporary visitor drawing overlay');
+      await expect(overlay).toHaveCSS('touch-action', 'auto');
       await page.getByRole('button', { name: 'Draw on piece' }).click();
       await expect(page.getByRole('button', { name: 'Stop drawing' })).toBeVisible();
+      await expect(overlay).toHaveCSS('touch-action', 'none');
       const colorGroup = page.getByRole('radiogroup', { name: 'Stroke color' });
       await expect(colorGroup).toBeVisible();
       await expect(colorGroup.getByRole('radio')).toHaveCount(8);
@@ -119,6 +121,8 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
           });
         }
       };
+      const scrollBeforeDrawing =
+        pointerType === 'touch' ? await page.evaluate(() => window.scrollY) : null;
       await drawStroke(0.25, 0.7, 1);
       await page.getByRole('radio', { name: 'Brush' }).click();
       await colorGroup.getByRole('radio', { name: 'Red' }).click();
@@ -133,6 +137,9 @@ test.describe('C2.js Interactive visitor drawing (#670)', () => {
       await customColor.fill('#22c55e');
       await expect(customColor).toHaveValue('#22c55e');
       await drawStroke(0.15, 0.35, 3);
+      if (scrollBeforeDrawing !== null) {
+        expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeDrawing);
+      }
       await page.getByRole('radio', { name: 'Eraser' }).click();
       await expect(page.getByRole('radio', { name: 'Eraser' })).toHaveAttribute(
         'aria-checked',

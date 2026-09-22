@@ -149,6 +149,8 @@ function PieceStageControls({
   const visitorOverlayRef = useRef<HTMLCanvasElement | null>(null);
   const visitorStrokesRef = useRef<VisitorStroke[]>([]);
   const visitorPointerIdRef = useRef<number | null>(null);
+  const activeTouchPointerIdsRef = useRef(new Set<number>());
+  const touchStrokeIndexRef = useRef<number | null>(null);
   const compositeAndDownloadScreenshotRef = useRef<
     (artworkDataUrl: string, filename: string) => Promise<void>
   >(async () => {});
@@ -284,6 +286,23 @@ function PieceStageControls({
 
   function startVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!visitorDrawOn) return;
+    if (event.pointerType === 'touch') {
+      if (activeTouchPointerIdsRef.current.size > 0) {
+        if (touchStrokeIndexRef.current !== null) {
+          const next = visitorStrokesRef.current.filter(
+            (_, index) => index !== touchStrokeIndexRef.current,
+          );
+          visitorStrokesRef.current = next;
+          setVisitorHistory((history) => ({ ...history, present: next }));
+          setVisitorStrokes(next);
+        }
+        touchStrokeIndexRef.current = null;
+        visitorPointerIdRef.current = null;
+        activeTouchPointerIdsRef.current.add(event.pointerId);
+        return;
+      }
+      activeTouchPointerIdsRef.current.add(event.pointerId);
+    }
     event.currentTarget.setPointerCapture(event.pointerId);
     visitorPointerIdRef.current = event.pointerId;
     const point = visitorPoint(event);
@@ -298,10 +317,13 @@ function PieceStageControls({
     const stroke = {
       points: [point],
       tool: visitorTool,
-      size: visitorSize,
+      size: visitorSize * (event.pressure > 0 ? 0.5 + event.pressure : 1),
       color: visitorColor,
     };
     commitVisitorStrokes([...visitorStrokesRef.current, stroke]);
+    if (event.pointerType === 'touch') {
+      touchStrokeIndexRef.current = visitorStrokesRef.current.length - 1;
+    }
   }
 
   function continueVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -843,9 +865,16 @@ function PieceStageControls({
           onPointerLeave={() => setEraserPoint(null)}
           onPointerUp={(event) => {
             visitorPointerIdRef.current = null;
+            activeTouchPointerIdsRef.current.delete(event.pointerId);
+            if (activeTouchPointerIdsRef.current.size === 0) touchStrokeIndexRef.current = null;
             if (event.currentTarget.hasPointerCapture(event.pointerId)) {
               event.currentTarget.releasePointerCapture(event.pointerId);
             }
+          }}
+          onPointerCancel={(event) => {
+            visitorPointerIdRef.current = null;
+            activeTouchPointerIdsRef.current.delete(event.pointerId);
+            if (activeTouchPointerIdsRef.current.size === 0) touchStrokeIndexRef.current = null;
           }}
           style={{
             position: 'absolute',
@@ -854,7 +883,7 @@ function PieceStageControls({
             width: '100%',
             height: '100%',
             pointerEvents: visitorDrawOn ? 'auto' : 'none',
-            touchAction: 'none',
+            touchAction: visitorDrawOn ? 'none' : 'auto',
           }}
         />
       )}

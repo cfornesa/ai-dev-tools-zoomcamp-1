@@ -99,6 +99,16 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   const baseURL =
     config.projects[0]?.use?.baseURL ?? process.env.E2E_BASE_URL ?? 'http://localhost:5000';
 
+  // The published design matrix is anonymous and must never seed or clean up
+  // local fixture users while it probes an owner-controlled deployment.
+  if (process.env.PUBLISHED_DESIGN_MATRIX === 'true') {
+    writeE2EState({
+      available: false,
+      reason: 'Published design matrix mode: fixture seeding is intentionally disabled.',
+    });
+    return;
+  }
+
   const health = await probeHealth(baseURL);
   if (!health.ok) {
     writeE2EState({

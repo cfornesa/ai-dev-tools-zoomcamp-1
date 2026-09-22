@@ -161,6 +161,43 @@ def test_a_visible_object_actually_appears_on_canvas():
     assert center[:3] == (0xFF, 0x00, 0x00)
 
 
+def test_sphere_thumbnail_has_a_shaded_surface_not_a_flat_disc():
+    scene = copy.deepcopy(MINIMAL_SCENE3D)
+    scene["scene"]["backgroundColor"] = "#000000"
+    scene["camera"] = {
+        "position": {"x": 0, "y": 0, "z": 10},
+        "target": {"x": 0, "y": 0, "z": 0},
+        "fov": 60,
+        "near": 0.1,
+        "far": 1000,
+    }
+    scene["groups"] = []
+    scene["lights"] = []
+    scene["objects"] = [
+        {
+            "id": "obj-sphere",
+            "type": "sphere",
+            "groupId": None,
+            "transform": {
+                "position": {"x": 0, "y": 0, "z": 0},
+                "rotation": {"x": 0, "y": 0, "z": 0},
+                "scale": {"x": 1, "y": 1, "z": 1},
+                "opacity": 1,
+            },
+            "material": {"color": "#ff0000", "opacity": 1},
+            "visible": True,
+            "radius": 2,
+        }
+    ]
+
+    image = render_scene3d_thumbnail(scene)
+    center = image.getpixel((CARD_WIDTH // 2, CARD_HEIGHT // 2))
+    edgeward = image.getpixel((CARD_WIDTH // 2 + 20, CARD_HEIGHT // 2))
+
+    assert center[:3] == (0xFF, 0x00, 0x00)
+    assert 0 < edgeward[0] < center[0]
+
+
 def test_invisible_object_is_not_drawn():
     scene = copy.deepcopy(MINIMAL_SCENE3D)
     scene["scene"]["backgroundColor"] = "#000000"

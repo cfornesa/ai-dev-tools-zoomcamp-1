@@ -24,14 +24,15 @@ multiplied against `material.color`. This intentionally approximates
 `threeSceneBuilder.ts`'s `MeshStandardMaterial` well enough for a small
 gallery-card thumbnail without attempting specular highlights, shadows,
 or physically-based attenuation -- diffuse-only, no per-pixel renderer,
-same tradeoff `thumbnails.py` already accepts elsewhere in this module.
+same tradeoff `thumbnails.py` already accepts elsewhere in this module. Spheres
+use a deterministic radial surface falloff so the billboard approximation
+still reads as a sphere rather than a flat circle.
 A scene with an empty `lights` array renders every face at full
 brightness (an implicit "fully lit" fallback) rather than crashing or
 going black, preserving this module's pre-#270 output for scenes with no
 lights declared. Spheres have no real face normals (see "Primitive
-approximations" below) so their billboard-impostor disc is shaded using
-the flat normal facing the camera -- a coarse approximation, not
-per-pixel sphere shading.
+approximations" below) so their billboard-impostor disc uses a coarse
+per-pixel radial shading approximation rather than a tessellated mesh.
 
 ## Card size
 
@@ -60,8 +61,8 @@ features and are never read here, so two renders of the same immutable
   of which way its face normal happens to point).
 - **sphere**: has no faces in the schema at all (just a `radius`), so it
   is drawn as a camera-facing filled ellipse ("billboard impostor") sized
-  from its projected screen-space radius rather than a tessellated
-  sphere mesh.
+  from its projected screen-space radius, with deterministic radial shading,
+  rather than a tessellated sphere mesh.
 
 ## Depth/visibility
 
@@ -454,7 +455,12 @@ def _draw_faces(scene: dict, camera: _Camera) -> list[tuple[float, str, list, tu
             disc_normal = _normalize(_sub(camera.position, center_world))
             shaded_rgb = _shade_color(rgba[:3], disc_normal, center_world, lights)
             commands.append(
-                (center_view[2], "disc", [center_screen, screen_radius], (*shaded_rgb, rgba[3]))
+                (
+                    center_view[2],
+                    "sphere",
+                    [center_screen, screen_radius, rgba, camera, center_world, lights],
+                    (*shaded_rgb, rgba[3]),
+                )
             )
             continue
         else:
@@ -535,6 +541,49 @@ def render_scene3d_thumbnail(scene: dict) -> Image.Image:
             draw = ImageDraw.Draw(layer)
             if kind == "poly":
                 draw.polygon(payload, fill=rgba)
+            elif kind == "sphere":
+                (cx, cy), radius, sphere_rgba, sphere_camera, sphere_center, sphere_lights = payload
+                left = max(0, math.floor(cx - radius))
+                right = min(CARD_WIDTH - 1, math.ceil(cx + radius))
+                top = max(0, math.floor(cy - radius))
+                bottom = min(CARD_HEIGHT - 1, math.ceil(cy + radius))
+                base_rgb = sphere_rgba[:3]
+                alpha = sphere_rgba[3]
+                for y in range(top, bottom + 1):
+                    ny = (y - cy) / radius
+                    for x in range(left, right + 1):
+                        nx = (x - cx) / radius
+                        radial = nx * nx + ny * ny
+                        if radial > 1:
+                            continue
+                        nz = math.sqrt(max(0.0, 1.0 - radial))
+                        normal = _normalize(
+                            _add(
+                                _add(
+                                    (
+                                        sphere_camera.right[0] * nx,
+                                        sphere_camera.right[1] * nx,
+                                        sphere_camera.right[2] * nx,
+                                    ),
+                                    (
+                                        sphere_camera.up[0] * -ny,
+                                        sphere_camera.up[1] * -ny,
+                                        sphere_camera.up[2] * -ny,
+                                    ),
+                                ),
+                                (
+                                    -sphere_camera.forward[0] * nz,
+                                    -sphere_camera.forward[1] * nz,
+                                    -sphere_camera.forward[2] * nz,
+                                ),
+                            )
+                        )
+                        lit = _shade_color(base_rgb, normal, sphere_center, sphere_lights)
+                        falloff = 0.55 + 0.45 * nz
+                        draw.point(
+                            (x, y),
+                            fill=(*[round(channel * falloff) for channel in lit], alpha),
+                        )
             else:
                 (cx, cy), radius = payload
                 draw.ellipse([cx - radius, cy - radius, cx + radius, cy + radius], fill=rgba)

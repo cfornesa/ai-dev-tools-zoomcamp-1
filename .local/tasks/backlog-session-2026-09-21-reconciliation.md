@@ -100,3 +100,15 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-705-final make check` passed: backend `1490 passed, 39 skipped`; frontend `255 files, 2786 tests passed`; format/typecheck/action-pin checks passed. A prior full run’s format-only failure was fixed in `10de194` and the gate was rerun green.
 - **QA result:** `## QA: PASS`. Surface containment/aspect behavior, resize without reload, and interactive pointer mapping passed. Letterboxing in the inspected 4:3 logical C2 surface is intentional containment inside the 16:9 stage and is covered by the finite geometry assertions.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue is #706.
+
+## Transaction ledger — #706 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** regular generated-piece toolbar placement and native fullscreen overlay only; immersive toolbar behavior and later button-set refinements remain out of scope.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex subagent / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k2.7-code: `yes`; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commit:** `22be2c6`.
+- **Focused checks:** PieceStageToolbar/PublicArtPieceViewer Vitest `9 passed`; TypeScript passed; lint passed with pre-existing warnings; focused Chromium `pieceToolbarPlacement.spec.ts` passed `1/1` across 1440×900 and 375×812, including fullscreen entry/escape behavior.
+- **Full checks:** pending the batch gate after #706 (the prior #705 full gate was green before this scoped change).
+- **Browser evidence:** `piece-toolbar-desktop.png`, `piece-toolbar-mobile.png`, and `piece-toolbar-fullscreen.png` were captured and visually inspected. Regular controls sit above the stage, mobile targets wrap at 44px, and fullscreen moves the controls into an overlay host while the artwork fills the viewport.
+- **QA result:** `## QA: PASS` for the issue acceptance criteria. No public route/API contract or dependency changed.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is locally terminal-ready pending the full batch gate. Next groomed issue: #707.

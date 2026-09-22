@@ -64,3 +64,16 @@ an independent model family is available. No GitHub issue will be closed.
 
 Per-issue rows are appended only after that issue's focused/full checks, QA
 matrix, evidence boundary, GitHub comment, and reconciliation have completed.
+
+## Transaction ledger — #703 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA` (re-entered engineering once for the required screenshot evidence).
+- **Scope:** regular generated-piece stage only; no route/API/schema/dependency change.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, rostered Codex/Luna substitution: `yes`; implementation `Codex subagent / GPT-5.6 / medium`, rostered Opencode Go/kimi-k2.7-code substitution: `yes`; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, rostered Claude Sonnet 5 substitution: `yes`.
+- **Commits:** `ffe97d6` responsive stage, `a2f3a63` and `1f54687` theme-derived non-white background corrections; screenshot evidence addition pending.
+- **Focused checks:** Vitest `28 passed`; frontend typecheck passed; focused lint/diff checks passed.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-703 make check` passed: backend `1490 passed, 39 skipped`; frontend `255 files, 2783 tests passed`; lint/format/typecheck passed with pre-existing lint warnings.
+- **Browser QA:** `E2E_DOCKER_COMPOSE=true npm run test:e2e -- e2e/pieceStageSizing.spec.ts --project=chromium` passed `1/1` after source synchronization. The initial managed-sandbox browser launch failure was classified as a host permission boundary; a subsequent escalated run reached and fixed the product assertion.
+- **Current QA result:** `## QA: PASS`. The corrected browser run passed `1/1`; screenshots `piece-stage-1440x900.png`, `piece-stage-768x1024.png`, and `piece-stage-375x812.png` were captured and visually inspected. The stage fills the available content width, maintains responsive ratio/cap, retains the themed non-white stage surface, and shows no horizontal overflow or ready-handshake layout shift. The small blue rectangle inside the stage is the fixture's intentionally fixed 320×180 canvas and belongs to #704/#705, not this issue.
+- **GitHub comment:** not posted because the exposed authenticated connector's `github_add_comment_to_issue` schema accepts `pr_number` only; issue fetch/search worked. No GitHub issue close mutation was performed.
+- **Reconciliation:** terminal-ready `completed` locally; GitHub remains open by explicit user instruction. No follow-up issue discovered. Next groomed issue: #704.

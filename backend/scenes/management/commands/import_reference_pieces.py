@@ -371,9 +371,7 @@ class Command(BaseCommand):
                     )
                     piece.current_version = version
                     piece.save(update_fields=["current_version", "updated_at"])
-                if version and (
-                    not hasattr(version, "thumbnail") or version.thumbnail.is_fallback
-                ):
+                if version and (not hasattr(version, "thumbnail") or version.thumbnail.is_fallback):
                     _store_trusted_thumbnail(version, fixture)
             else:
                 slug = normalize_public_slug(fixture.slug)

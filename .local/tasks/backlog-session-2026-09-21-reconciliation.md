@@ -32,7 +32,7 @@ closure-ready terminal evidence while leaving every GitHub issue open.
 | 11 | [#714](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/714) | Public profile header/grid alignment | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 12 | [#715](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/715) | Piece-card 16:9 thumbnail and placeholder | none | 2a mechanical | TERMINAL-READY LOCAL |
 | 13 | [#717](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/717) | Share-metadata diagnostic and safe origin handling | owner publish required for final criterion | 2b complex | TERMINAL-READY LOCAL; OWNER PUBLISH PENDING |
-| 14 | [#716](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/716) | Generated thumbnail capture options and chosen secure path | Rule 2 gallery/owner choice required | 2b complex | HANDED-OFF pending owner decision |
+| 14 | [#716](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/716) | Generated thumbnail capture options and chosen secure path | owner chose import + owner-only refresh | 2b complex | TERMINAL-READY LOCAL |
 | 15 | [#718](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/718) | Published design evidence matrix, no fixes | #703–#715, #717, #716, owner publish | QA/readiness | HARNESS-READY; OWNER PUBLISH PENDING |
 
 ## Duplicate / already-covered report
@@ -221,6 +221,18 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Browser evidence:** `card-thumbnail-area-1440.png` and `card-thumbnail-area-375.png` were captured and inspected. Preview and fallback tiles have matching 16:9 geometry; the fallback icon/text is centered and mobile cards remain contained.
 - **QA result:** `## QA: PASS`. No route/API/schema/dependency change.
 - **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no GitHub issue close mutation performed. Reconciliation is closure-ready locally; #716 now requires the owner’s Rule 2 choice.
+
+## Transaction ledger — #716 (hybrid thumbnail path)
+
+- **State:** `GROOMED → OWNER DECISION → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Owner decision:** The owner selected import-time trusted thumbnails plus an owner-only refresh action for existing fallback pieces, and approved accepting PNG/JPEG uploads with strict validation and JPEG-to-PNG normalization.
+- **Scope:** six stable-marker reference fixtures receive deterministic trusted PNG thumbnails without executing generated source; the authenticated management page offers a click-gated, sequential refresh for current fallback versions only; uploads remain bound to the immutable version and owner permission boundary.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex subagent / GPT-5.6 / medium`, substituted for rostered Ollama Cloud/kimi-k3: `yes`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`; second opinion `not run`.
+- **Commit:** `d5a3d7c` backend trusted-thumbnail implementation; frontend refresh and QA hardening remain in the working tree pending commit.
+- **Changed files:** `backend/scenes/art_piece_persistence.py`, `backend/scenes/management/commands/import_reference_pieces.py`, focused backend tests, `frontend/src/pages/ArtPieceManagement.tsx`, its focused test, and `docs/api.md`.
+- **Focused checks:** backend focused pytest `29 passed`; backend Ruff/type checks passed; frontend focused Vitest `3 passed`; frontend typecheck and Prettier passed; lint passed with established unrelated warnings.
+- **Security evidence:** 2 MiB cap, MIME/magic-byte matching, Pillow verification, exact `320x240` dimensions, JPEG normalization to PNG, version-bound writes, owner-only API permission, and no server-side execution of generated source. Import reconciliation is stable-marker scoped and leaves non-reference rows untouched.
+- **GitHub comment/closure:** no issue comment or close mutation was performed. Reconciliation is terminal-ready locally by explicit user instruction; no follow-up issue discovered. Next groomed issue: #717.
 
 ## Transaction ledger — #717 (implementation, QA, and published diagnostic)
 

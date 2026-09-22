@@ -59,6 +59,8 @@ class Action(StrEnum):
     PROJECT3D_DELETE = "project3d.delete"
     # Issue #296: publish/unpublish parity with PROJECT_PUBLISH -- owner-only.
     PROJECT3D_PUBLISH = "project3d.publish"
+    # Issue #719: explicitly retry/reconcile the current 3D card thumbnail.
+    PROJECT3D_THUMBNAIL_REFRESH = "project3d.thumbnail_refresh"
     ART_PIECE_CREATE = "art_piece.create"
     ART_PIECE_READ = "art_piece.read"
     ART_PIECE_WRITE = "art_piece.write"
@@ -123,6 +125,7 @@ _OWNER_ONLY_PROJECT3D_ACTIONS = frozenset(
         Action.PROJECT3D_WRITE,
         Action.PROJECT3D_DELETE,
         Action.PROJECT3D_PUBLISH,
+        Action.PROJECT3D_THUMBNAIL_REFRESH,
     }
 )
 

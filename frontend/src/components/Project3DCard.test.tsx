@@ -9,11 +9,11 @@ import Project3DCard from './Project3DCard';
 
 vi.mock('../api/projects3d', async () => {
   const actual = await vi.importActual<typeof import('../api/projects3d')>('../api/projects3d');
-  return { ...actual, deleteProject3D: vi.fn(), getProject3D: vi.fn() };
+  return { ...actual, deleteProject3D: vi.fn(), refreshProject3DThumbnail: vi.fn() };
 });
 
 const mockedDeleteProject3D = vi.mocked(projects3dApi.deleteProject3D);
-const mockedGetProject3D = vi.mocked(projects3dApi.getProject3D);
+const mockedRefreshProject3DThumbnail = vi.mocked(projects3dApi.refreshProject3DThumbnail);
 
 function baseProject3D(overrides: Partial<Project3D> = {}): Project3D {
   return {
@@ -54,6 +54,46 @@ describe('Project3DCard: thumbnail (issue #243)', () => {
     ).toBeInTheDocument();
   });
 
+  it('offers refresh for a current version whose thumbnail is missing', async () => {
+    const user = userEvent.setup();
+    mockedRefreshProject3DThumbnail.mockResolvedValue(
+      baseProject3D({
+        thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
+        thumbnail_is_fallback: false,
+        current_version: {
+          id: 1,
+          sequence: 1,
+          origin: 'manual',
+          scene_json: {},
+          created_by: 'alice',
+          created_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+    );
+    renderCard(
+      baseProject3D({
+        thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
+        thumbnail_is_fallback: true,
+        current_version: {
+          id: 1,
+          sequence: 1,
+          origin: 'manual',
+          scene_json: {},
+          created_by: 'alice',
+          created_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Retry thumbnail' }));
+
+    expect(mockedRefreshProject3DThumbnail).toHaveBeenCalledWith('p3d-1');
+    expect(await screen.findByRole('img', { name: /preview of/i })).toHaveAttribute(
+      'src',
+      '/api/projects3d/p3d-1/thumbnail/',
+    );
+  });
+
   it('falls back to the placeholder if the thumbnail image itself fails to load', () => {
     renderCard(baseProject3D({ thumbnail_url: '/api/projects3d/p3d-1/thumbnail/' }));
 
@@ -67,7 +107,7 @@ describe('Project3DCard: thumbnail (issue #243)', () => {
 
   it('offers a retry action for a stored fallback and shows the recovered thumbnail', async () => {
     const user = userEvent.setup();
-    mockedGetProject3D.mockResolvedValue(
+    mockedRefreshProject3DThumbnail.mockResolvedValue(
       baseProject3D({
         thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
         thumbnail_is_fallback: false,
@@ -77,6 +117,14 @@ describe('Project3DCard: thumbnail (issue #243)', () => {
       baseProject3D({
         thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
         thumbnail_is_fallback: true,
+        current_version: {
+          id: 1,
+          sequence: 1,
+          origin: 'manual',
+          scene_json: {},
+          created_by: 'alice',
+          created_at: '2026-01-01T00:00:00Z',
+        },
       }),
     );
 
@@ -86,16 +134,24 @@ describe('Project3DCard: thumbnail (issue #243)', () => {
     expect(
       await screen.findByRole('img', { name: /preview of untitled 3d scene/i }),
     ).toHaveAttribute('src', '/api/projects3d/p3d-1/thumbnail/');
-    expect(mockedGetProject3D).toHaveBeenCalledWith('p3d-1');
+    expect(mockedRefreshProject3DThumbnail).toHaveBeenCalledWith('p3d-1');
   });
 
   it('keeps the safe fallback and reports a retry failure', async () => {
     const user = userEvent.setup();
-    mockedGetProject3D.mockRejectedValueOnce(new Error('network down'));
+    mockedRefreshProject3DThumbnail.mockRejectedValueOnce(new Error('network down'));
     renderCard(
       baseProject3D({
         thumbnail_url: '/api/projects3d/p3d-1/thumbnail/',
         thumbnail_is_fallback: true,
+        current_version: {
+          id: 1,
+          sequence: 1,
+          origin: 'manual',
+          scene_json: {},
+          created_by: 'alice',
+          created_at: '2026-01-01T00:00:00Z',
+        },
       }),
     );
 

@@ -735,7 +735,8 @@ class Project3DSerializer(serializers.ModelSerializer):
         if project.current_version_id is None:
             return False
         thumbnail = Thumbnail3D.objects.filter(scene_version_id=project.current_version_id).first()
-        return bool(thumbnail and thumbnail.is_fallback)
+        # Issue #719: a missing cached row is also a refreshable card state.
+        return thumbnail is None or thumbnail.is_fallback
 
 
 class Project3DMetadataSerializer(serializers.ModelSerializer):

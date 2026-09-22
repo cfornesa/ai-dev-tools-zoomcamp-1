@@ -103,6 +103,7 @@ export interface Projects3DService {
   createProject3D(): Promise<Project3D>;
   listProjects3D(): Promise<Project3D[]>;
   getProject3D(id: string): Promise<Project3D>;
+  refreshProject3DThumbnail(id: string): Promise<Project3D>;
   deleteProject3D(id: string): Promise<void>;
   saveSceneVersion3D(projectId: string, sceneJson: SceneDocument3D): Promise<SceneVersion3D>;
 }

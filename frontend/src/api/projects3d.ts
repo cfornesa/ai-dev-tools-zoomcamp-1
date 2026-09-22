@@ -37,7 +37,7 @@ export type Project3D = {
   /** Issue #243: gallery-card thumbnail URL, mirroring 2D `Project.thumbnail_url`. */
   thumbnail_url: string | null;
   editor_url?: string | null;
-  /** True when the stored render is the explicit safe fallback. */
+  /** True when the current render is missing or is the explicit safe fallback. */
   thumbnail_is_fallback?: boolean;
   current_version: SceneVersion3D | null;
   created_at: string;
@@ -57,6 +57,13 @@ export function listProjects3D(): Promise<Project3D[]> {
 
 export function getProject3D(id: string): Promise<Project3D> {
   return apiFetch<Project3D>(`/api/projects3d/${id}/`);
+}
+
+/** Issue #719: owner-only, current-version-bound retry for a missing or
+ * stored-fallback card thumbnail. A successful current thumbnail is left
+ * unchanged by the server, so repeated calls are idempotent. */
+export function refreshProject3DThumbnail(id: string): Promise<Project3D> {
+  return apiFetch<Project3D>(`/api/projects3d/${id}/thumbnail/refresh/`, { method: 'POST' });
 }
 
 /** Issue #301: title-only metadata PATCH, mirroring the 2D

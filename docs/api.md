@@ -1,5 +1,25 @@
 # Public gallery API contract
 
+## Project3D thumbnail refresh (#719)
+
+`POST /api/projects3d/<public_id>/thumbnail/refresh/` is an authenticated
+owner-only action for reconciling an existing `Project3D` card thumbnail with
+its current `SceneVersion3D`. It is eligible only when the current version's
+thumbnail is missing or is marked `is_fallback`; a successful current render
+is left unchanged, making repeated requests idempotent. The operation locks
+the project while resolving the current-version pointer, so it never renders
+an older version after a newer one becomes current.
+
+The response is the refreshed `Project3D` serializer payload. A missing
+current version returns `404`; anonymous and non-owner callers receive the
+existing not-found privacy response. Rendering uses the server-owned 3D
+thumbnail renderer and never executes generated scene source. Renderer
+failures are stored and returned as the explicit fallback state so the owner
+can retry the action later. For Project3D card payloads,
+`thumbnail_is_fallback` is `true` when the current thumbnail is missing or is
+an explicit fallback. The existing
+`GET /api/projects3d/<public_id>/thumbnail/` image route is unchanged.
+
 ## Generated art-piece thumbnails (#716)
 
 `POST /api/art-pieces/<public_id>/versions/<version_id>/thumbnail/` is an

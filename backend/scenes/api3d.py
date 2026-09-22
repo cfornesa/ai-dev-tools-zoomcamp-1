@@ -296,6 +296,34 @@ class Project3DThumbnailView(APIView):
         return HttpResponse(bytes(thumbnail.image_data), content_type=thumbnail.content_type)
 
 
+class Project3DThumbnailRefreshView(APIView):
+    """Issue #719: owner-controlled reconciliation of an existing card render."""
+
+    def post(self, request, public_id):
+        project = _get_project3d_or_404(public_id)
+        if not can(request.user, Action.PROJECT3D_THUMBNAIL_REFRESH, project):
+            raise Http404
+
+        try:
+            with transaction.atomic():
+                locked_project = Project3D.objects.select_for_update().get(pk=project.pk)
+                if locked_project.current_version_id is None:
+                    raise Http404
+
+                thumbnail = Thumbnail3D.objects.filter(
+                    scene_version_id=locked_project.current_version_id
+                ).first()
+                if thumbnail is None or thumbnail.is_fallback:
+                    ensure_thumbnail_for_version3d(locked_project.current_version_id)
+        except Project3D.DoesNotExist as exc:
+            raise Http404 from exc
+
+        locked_project = Project3D.objects.select_related("owner", "current_version").get(
+            pk=project.pk
+        )
+        return Response(Project3DSerializer(locked_project).data)
+
+
 def _retry_fallback_thumbnail(project: Project3D) -> None:
     """Replace a stored failed render when an owner refreshes the card."""
     if project.current_version_id is None:

@@ -530,6 +530,18 @@ export const mockServices: BackendServices = {
       if (!project) notFound();
       return project;
     },
+    async refreshProject3DThumbnail(id) {
+      const project = findProject3D(id);
+      if (!project) notFound();
+      const updated = {
+        ...project,
+        thumbnail_url: `/api/projects3d/${id}/thumbnail/`,
+        thumbnail_is_fallback: false,
+        updated_at: new Date().toISOString(),
+      };
+      mockState.projects3d = mockState.projects3d.map((p) => (p.id === id ? updated : p));
+      return updated;
+    },
     async deleteProject3D(id): Promise<void> {
       const project = findProject3D(id);
       if (!project) notFound();

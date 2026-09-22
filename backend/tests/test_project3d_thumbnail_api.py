@@ -10,6 +10,7 @@ which only fires against a really-committed transaction.
 import copy
 import json
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -62,6 +63,10 @@ def _versions_url(project):
 
 def _thumbnail_url(project):
     return f"/api/projects3d/{project.public_id}/thumbnail/"
+
+
+def _thumbnail_refresh_url(project):
+    return f"/api/projects3d/{project.public_id}/thumbnail/refresh/"
 
 
 def _detail_url(project):
@@ -214,3 +219,81 @@ def test_thumbnail_endpoint_retries_a_stored_fallback(owner_client, project3d, m
     fallback.refresh_from_db()
     assert fallback.is_fallback is False
     assert fallback.image_data == recovered
+
+
+@pytest.mark.django_db(transaction=True)
+def test_owner_refresh_regenerates_a_missing_sphere_thumbnail(owner, owner_client):
+    project = Project3D.objects.create(owner=owner, title="Sphere")
+    scene = copy.deepcopy(FEATURE_RICH_SCENE3D)
+    version = SceneVersion3D.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=scene,
+        created_by=owner,
+        origin=SceneVersion3D.Origin.MANUAL,
+    )
+    project.current_version = version
+    project.save(update_fields=["current_version"])
+
+    response = owner_client.post(_thumbnail_refresh_url(project))
+
+    assert response.status_code == 200
+    assert response.json()["thumbnail_is_fallback"] is False
+    thumbnail = Thumbnail3D.objects.get(scene_version=version)
+    assert thumbnail.is_fallback is False
+    assert thumbnail.width == 320
+    assert thumbnail.height == 240
+    assert thumbnail.image_data != FALLBACK_PNG_BYTES
+
+
+@pytest.mark.django_db(transaction=True)
+def test_thumbnail_refresh_is_owner_only(anon_client, project3d):
+    other = get_user_model().objects.create_user(username="mallory-refresh")
+    other_client = APIClient()
+    other_client.force_authenticate(other)
+
+    assert other_client.post(_thumbnail_refresh_url(project3d)).status_code == 404
+    assert anon_client.post(_thumbnail_refresh_url(project3d)).status_code == 404
+
+
+@pytest.mark.django_db(transaction=True)
+def test_owner_refresh_retries_a_current_fallback(owner_client, project3d, monkeypatch):
+    version = project3d.current_version
+    fallback = Thumbnail3D.objects.create(
+        scene_version=version,
+        image_data=FALLBACK_PNG_BYTES,
+        width=320,
+        height=240,
+        is_fallback=True,
+    )
+    recovered = b"recovered-sphere-render"
+    monkeypatch.setattr(
+        "scenes.thumbnail_generation3d.render_card_thumbnail3d_png", lambda _scene: recovered
+    )
+
+    response = owner_client.post(_thumbnail_refresh_url(project3d))
+
+    assert response.status_code == 200
+    assert response.json()["thumbnail_is_fallback"] is False
+    fallback.refresh_from_db()
+    assert fallback.image_data == recovered
+
+
+@pytest.mark.django_db(transaction=True)
+def test_thumbnail_refresh_is_idempotent_for_a_successful_current_thumbnail(
+    owner_client, project3d, monkeypatch
+):
+    import scenes.thumbnail_generation3d as thumbnail_generation3d
+
+    version_id = project3d.current_version_id
+    thumbnail_generation3d.ensure_thumbnail_for_version3d(version_id)
+    original = Thumbnail3D.objects.get(scene_version_id=version_id).image_data
+    ensure = Mock(wraps=thumbnail_generation3d.ensure_thumbnail_for_version3d)
+    monkeypatch.setattr("scenes.api3d.ensure_thumbnail_for_version3d", ensure)
+
+    first = owner_client.post(_thumbnail_refresh_url(project3d))
+    second = owner_client.post(_thumbnail_refresh_url(project3d))
+
+    assert first.status_code == second.status_code == 200
+    assert ensure.call_count == 0
+    assert bytes(Thumbnail3D.objects.get(scene_version_id=version_id).image_data) == bytes(original)

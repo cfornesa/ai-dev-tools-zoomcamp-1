@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { deleteProject3D, getProject3D, type Project3D } from '../api/projects3d';
+import { deleteProject3D, refreshProject3DThumbnail, type Project3D } from '../api/projects3d';
 import { originLabel } from './originLabel';
 
 function formatDate(iso: string): string {
@@ -38,6 +38,7 @@ function Project3DCard({
   const originBadge = originLabel(project.current_version?.origin);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState(project.thumbnail_url);
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   const [thumbnailIsFallback, setThumbnailIsFallback] = useState(
     project.thumbnail_is_fallback ?? false,
@@ -45,14 +46,15 @@ function Project3DCard({
   const [thumbnailRetrying, setThumbnailRetrying] = useState(false);
   const [thumbnailRetry, setThumbnailRetry] = useState(0);
   const [thumbnailRetryError, setThumbnailRetryError] = useState(false);
-  const showFallback = !project.thumbnail_url || thumbnailFailed || thumbnailIsFallback;
+  const showFallback = !thumbnailUrl || thumbnailFailed || thumbnailIsFallback;
 
   async function handleThumbnailRetry() {
-    if (!project.thumbnail_url || thumbnailRetrying) return;
+    if (!project.current_version || thumbnailRetrying) return;
     setThumbnailRetrying(true);
     setThumbnailRetryError(false);
     try {
-      const refreshed = await getProject3D(project.id);
+      const refreshed = await refreshProject3DThumbnail(project.id);
+      setThumbnailUrl(refreshed.thumbnail_url);
       setThumbnailIsFallback(refreshed.thumbnail_is_fallback ?? false);
       setThumbnailFailed(false);
       setThumbnailRetry((current) => current + 1);
@@ -90,7 +92,7 @@ function Project3DCard({
           <span role="img" aria-label={`No preview available for ${project.title}`}>
             No preview available
           </span>
-          {project.thumbnail_url && (
+          {project.current_version && (
             <>
               <button type="button" onClick={handleThumbnailRetry} disabled={thumbnailRetrying}>
                 {thumbnailRetrying ? 'Retrying…' : 'Retry thumbnail'}
@@ -103,10 +105,10 @@ function Project3DCard({
         </div>
       ) : (
         <img
-          src={project.thumbnail_url ?? undefined}
+          src={thumbnailUrl ?? undefined}
           alt={`Preview of ${project.title}`}
           className="project-card-thumbnail project-card-thumbnail-3d"
-          key={`${project.thumbnail_url}-${thumbnailRetry}`}
+          key={`${thumbnailUrl}-${thumbnailRetry}`}
           onError={() => setThumbnailFailed(true)}
         />
       )}

@@ -224,6 +224,11 @@ const routes: Route[] = [
     handler: (p) => mockServices.projects3d.getProject3D(p.id),
   },
   {
+    method: 'POST',
+    pattern: /^\/api\/projects3d\/(?<id>[^/]+)\/thumbnail\/refresh\/$/,
+    handler: (p) => mockServices.projects3d.refreshProject3DThumbnail(p.id),
+  },
+  {
     method: 'DELETE',
     pattern: /^\/api\/projects3d\/(?<id>[^/]+)\/$/,
     handler: (p) => mockServices.projects3d.deleteProject3D(p.id),

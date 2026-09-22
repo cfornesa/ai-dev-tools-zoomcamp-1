@@ -71,6 +71,7 @@ from scenes.api3d import (
     Project3DDetailView,
     Project3DListCreateView,
     Project3DPublishView,
+    Project3DThumbnailRefreshView,
     Project3DThumbnailView,
     Project3DUnpublishView,
     PublicProject3DDetailView,
@@ -548,6 +549,11 @@ urlpatterns = [
         "projects3d/<uuid:public_id>/thumbnail/",
         Project3DThumbnailView.as_view(),
         name="project3d-thumbnail",
+    ),
+    path(
+        "projects3d/<uuid:public_id>/thumbnail/refresh/",
+        Project3DThumbnailRefreshView.as_view(),
+        name="project3d-thumbnail-refresh",
     ),
     # Issue #296: publish/unpublish + the public detail route, mirroring
     # the 2D "projects/<id>/publish/"/"unpublish/"/"public/projects/<id>/"

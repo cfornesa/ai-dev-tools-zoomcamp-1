@@ -53,6 +53,7 @@ export const realServices: BackendServices = {
     createProject3D: projects3d.createProject3D,
     listProjects3D: projects3d.listProjects3D,
     getProject3D: projects3d.getProject3D,
+    refreshProject3DThumbnail: projects3d.refreshProject3DThumbnail,
     deleteProject3D: projects3d.deleteProject3D,
     saveSceneVersion3D: projects3d.saveSceneVersion3D,
   },

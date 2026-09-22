@@ -24,6 +24,12 @@
 - #723 read-only live API check: `GET https://augmentrart.com/api/public/gallery/`
   continued to report `thumbnail_is_fallback: true` for the six stable-marker
   reference pieces; the public surface remained fallback presentation.
+- Follow-up read-only recheck: `GET https://augmentrart.com/api/site-theme/`
+  still returned `style_key: "default"`; the six reference gallery rows still
+  had `thumbnail_is_fallback: true`; the actual admin endpoint
+  `GET https://augmentrart.com/api/admin/settings/` returned HTTP 401
+  (`Authentication required.`). No new authenticated production tab was
+  available.
 - QA comments: [#722](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722#issuecomment-5772270111), [#723](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723#issuecomment-5772270537).
 - No focused/full local test suite was applicable because neither issue had a
   product diff; no failed full-suite gate remains unclassified.

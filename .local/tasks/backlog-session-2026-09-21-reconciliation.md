@@ -309,3 +309,58 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
   found. Theme-control relocation is outside #721 and remains pending the
   owner's floating-versus-hybrid design choice; no issue was created because
   the design contract is not yet selected.
+
+## Independent QA re-verification (2026-09-22, Claude Sonnet 5 / Medium, qa-self-review)
+
+Per this session's `qa-self-review` intake, every transaction above was treated
+as untrusted self-QA'd input (Codex QA'd its own Codex-authored diffs; second
+opinion `not run` throughout) and re-derived from the live GitHub issue bodies
+rather than the ledger's paraphrase, scoped to the 19 open issues (#703-#721).
+
+**Confirmed live production failures, not caught by the original ledger's
+"terminal-ready" framing:**
+
+- **#712** — `GET https://augmentrart.com/api/site-theme/` still returns
+  `style_key: "default"` with plain presentation, not `celestial`; live
+  screenshots of `/` and `/gallery` show the plain shell. The code fix
+  (`700c2b2`) is correct and passes locally, but production evidence was never
+  collected for this issue — only local pytest + local Chromium spec. Root
+  cause is ambiguous between a missing/disabled Celestial `ProfileStyle` seed
+  row and an already-explicit `SiteSettings.style_id` pointing at `default`;
+  both require owner-authenticated production access to distinguish, which
+  this session does not have. Filed as
+  [#722](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/722).
+- **#716** — `GET https://augmentrart.com/api/public/gallery/` still returns
+  `thumbnail_is_fallback: true` for all six reference pieces; live screenshot
+  of `/gallery?type=all` shows grey placeholder circles. The backend
+  implementation (`d5a3d7c`, `e234cea`) is correct, but the trusted-thumbnail
+  import was run locally/in dev only, never against the production database —
+  the ledger's own "Published boundary" note ("authenticated owner session
+  currently reports no saved art pieces") already flags this. Filed as
+  [#723](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/723).
+
+**Confirmed live production passes (spot-checked, not exhaustive):**
+
+- #719 — downloaded thumbnail PNG for the affected `Project3D` row shows
+  genuine radial sphere shading, not a flat disc.
+- #713 — 375px live screenshot shows the collapsed hamburger header well
+  under 25% viewport height.
+- #715, #720 — live gallery screenshot shows consistent 16:9 placeholder
+  cards and a single `Renderer` filter reading `All`.
+
+**#717** — diagnostic route (`GET /__share-metadata-status`) correctly
+matches the issue's explicit fallback branch in production
+(`backend_reachable:false`, sanitized `TypeError: fetch failed`), but that
+finding was never posted as a GitHub comment on #717 itself (the "recorded on
+the issue" criterion) — a documentation gap, not a functional defect.
+
+**#703-#711, #714, #718, #721** were not independently re-verified beyond
+general live spot checks above; the ledger's local focused/full-suite
+evidence and inspected screenshots are accepted as adequate given these are
+lower-risk mechanical UI changes and the owner directed this session to keep
+QA scoped to the open-issue batch rather than a full `make check` re-run.
+
+By owner instruction, #722/#723 are recorded as known non-blocking
+production-data follow-ups rather than reopening #712/#716's engineering
+stage — the code in both cases is correct; only a one-time owner-authorized
+production action remains outstanding.

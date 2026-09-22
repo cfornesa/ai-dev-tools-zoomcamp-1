@@ -77,3 +77,15 @@ matrix, evidence boundary, GitHub comment, and reconciliation have completed.
 - **Current QA result:** `## QA: PASS`. The corrected browser run passed `1/1`; screenshots `piece-stage-1440x900.png`, `piece-stage-768x1024.png`, and `piece-stage-375x812.png` were captured and visually inspected. The stage fills the available content width, maintains responsive ratio/cap, retains the themed non-white stage surface, and shows no horizontal overflow or ready-handshake layout shift. The small blue rectangle inside the stage is the fixture's intentionally fixed 320×180 canvas and belongs to #704/#705, not this issue.
 - **GitHub comment:** not posted because the exposed authenticated connector's `github_add_comment_to_issue` schema accepts `pr_number` only; issue fetch/search worked. No GitHub issue close mutation was performed.
 - **Reconciliation:** terminal-ready `completed` locally; GitHub remains open by explicit user instruction. No follow-up issue discovered. Next groomed issue: #704.
+
+## Transaction ledger — #704 (implementation and QA)
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION` (terminal-ready locally; GitHub intentionally remains open).
+- **Scope:** regular generated Three.js/A-Frame runtime only; immersive and 2D runtimes remain separate.
+- **Stage provenance:** scoping `Codex / GPT-5.6 / medium`, substituted for rostered Codex/Luna: `yes`; implementation `Codex subagent / GPT-5.6 / medium`, substituted for rostered Opencode Go/kimi-k2.7-code: `yes`; second opinion `not run`; QA `Codex / GPT-5.6 / medium`, substituted for rostered Claude Sonnet 5: `yes`.
+- **Commit:** `1514557`.
+- **Changed files:** `frontend/src/generative/artPieceSandbox.ts`, its focused regression test, and `frontend/e2e/piece3dFill.spec.ts`.
+- **Focused checks:** Vitest `27 passed`; TypeScript passed; lint passed with pre-existing warnings; focused Chromium Playwright passed `1/1` covering Three.js and A-Frame at 1280×900 and 375×812; four rendered screenshots were captured and inspected.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-704 make check` passed: backend `1490 passed, 39 skipped`; frontend `255 files, 2785 tests passed`; format/typecheck/action-pin checks passed; existing lint warnings remain non-blocking.
+- **QA result:** `## QA: PASS` by independent intake/re-run. Renderer CSS size, backing pixel ratio, resize behavior, camera aspect, round geometry, and no-white-margin criteria passed for both engines. Immersive wrapper exclusion was covered by focused unit assertions.
+- **GitHub comment/closure:** issue-comment connector unavailable (exposed schema is PR-only); no issue close mutation performed. Reconciliation is closure-ready locally; next groomed issue is #705.

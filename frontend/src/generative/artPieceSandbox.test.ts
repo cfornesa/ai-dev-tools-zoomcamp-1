@@ -91,6 +91,28 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain(`<script>${jsSnippet}</script>`);
   });
 
+  it('#704: regular Three.js/A-Frame runtimes install the stage-sized responsive renderer wrapper', () => {
+    const threeDoc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs', 'regular');
+    const aframeDoc = buildArtPieceSandboxDocument('<a-scene></a-scene>', 'aframe', 'regular');
+
+    for (const doc of [threeDoc, aframeDoc]) {
+      expect(doc).toContain('renderer.__artPieceOriginalSetPixelRatio(ratio)');
+      expect(doc).toContain('renderer.__artPieceOriginalSetSize(width, height, false)');
+      expect(doc).toContain("canvas.style.width = '100%'");
+      expect(doc).toContain("canvas.style.height = '100%'");
+      expect(doc).toContain("window.addEventListener('resize', resizeAll)");
+      expect(doc).toContain('camera.aspect = width / height');
+      expect(doc).toContain('camera.updateProjectionMatrix()');
+    }
+    expect(threeDoc).not.toContain('object-fit: contain');
+    expect(aframeDoc).not.toContain('object-fit: contain');
+  });
+
+  it('#704: the responsive wrapper is excluded from the immersive runtime', () => {
+    const doc = buildArtPieceSandboxDocument('THREE.foo();', 'threejs', 'immersive');
+    expect(doc).not.toContain('renderer.__artPieceOriginalSetPixelRatio(ratio)');
+  });
+
   it("aframe loads the pinned CDN script, allows only that origin plus 'unsafe-eval' in the CSP, and places the snippet directly", () => {
     // 'unsafe-eval' regression for #236: A-Frame's own system
     // initialization calls a dynamic eval/Function-constructor

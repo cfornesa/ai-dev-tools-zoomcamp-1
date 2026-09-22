@@ -124,6 +124,106 @@ function webglCapturePrelude(library: ArtPieceLibrary): string {
 }());</script>`;
 }
 
+/** Issue #704: the regular generated-piece iframe is mounted inside the
+ * responsive stage owned by the parent route. Keep the generated runtime's
+ * drawing buffer and CSS box aligned with that stage, regardless of the
+ * dimensions a generated snippet initially requests. The camera wrapper is
+ * deliberately limited to PerspectiveCamera because that is the camera
+ * contract used by generated Three.js pieces; A-Frame's renderer and camera
+ * are covered by the same renderer/camera registration once its scene boots.
+ * Immersive presentation owns a separate navigation/layout contract and must
+ * not be changed here. */
+function webglResponsivePrelude(
+  library: ArtPieceLibrary,
+  presentation: 'regular' | 'immersive',
+): string {
+  if (presentation !== 'regular' || (library !== 'threejs' && library !== 'aframe')) return '';
+  return `<script>(function () {
+  var renderers = [];
+  var cameras = [];
+  var resizeObserver = null;
+
+  function stageFor(element) {
+    return element && element.closest('#art-piece-container, a-scene');
+  }
+
+  function sizeRenderer(renderer) {
+    var canvas = renderer && renderer.domElement;
+    var stage = stageFor(canvas) || document.body;
+    var rect = stage.getBoundingClientRect();
+    var width = Math.max(1, Math.round(rect.width || stage.clientWidth || document.documentElement.clientWidth));
+    var height = Math.max(1, Math.round(rect.height || stage.clientHeight || document.documentElement.clientHeight));
+    var ratio = Math.max(1, window.devicePixelRatio || 1);
+    var responsiveSetSize = renderer.setSize;
+    renderer.setSize = renderer.__artPieceOriginalSetSize;
+    renderer.__artPieceOriginalSetPixelRatio(ratio);
+    renderer.setSize = responsiveSetSize;
+    renderer.__artPieceOriginalSetSize(width, height, false);
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    for (var i = 0; i < cameras.length; i += 1) {
+      var camera = cameras[i];
+      if (camera && typeof camera.aspect === 'number') {
+        camera.aspect = width / height;
+        if (typeof camera.updateProjectionMatrix === 'function') camera.updateProjectionMatrix();
+      }
+    }
+  }
+
+  function resizeAll() {
+    for (var i = 0; i < renderers.length; i += 1) sizeRenderer(renderers[i]);
+  }
+
+  function registerRenderer(renderer) {
+    if (!renderer || renderer.__artPieceResponsive) return renderer;
+    renderer.__artPieceResponsive = true;
+    renderer.__artPieceOriginalSetSize = renderer.setSize.bind(renderer);
+    renderer.__artPieceOriginalSetPixelRatio = renderer.setPixelRatio.bind(renderer);
+    renderer.setSize = function () {
+      renderer.__artPieceOriginalSetSize.apply(renderer, arguments);
+      sizeRenderer(renderer);
+      return renderer;
+    };
+    renderers.push(renderer);
+    setTimeout(resizeAll, 0);
+    return renderer;
+  }
+
+  var three = window.THREE;
+  if (!three || !three.WebGLRenderer) return;
+  var OriginalRenderer = three.WebGLRenderer;
+  function ResponsiveRenderer(parameters) {
+    return registerRenderer(new OriginalRenderer(parameters));
+  }
+  ResponsiveRenderer.prototype = OriginalRenderer.prototype;
+  three.WebGLRenderer = ResponsiveRenderer;
+
+  if (three.PerspectiveCamera) {
+    var OriginalPerspectiveCamera = three.PerspectiveCamera;
+    function ResponsivePerspectiveCamera() {
+      var camera = Reflect.construct(OriginalPerspectiveCamera, Array.prototype.slice.call(arguments), ResponsivePerspectiveCamera);
+      cameras.push(camera);
+      setTimeout(resizeAll, 0);
+      return camera;
+    }
+    ResponsivePerspectiveCamera.prototype = OriginalPerspectiveCamera.prototype;
+    three.PerspectiveCamera = ResponsivePerspectiveCamera;
+  }
+
+  window.addEventListener('resize', resizeAll);
+  if (typeof window.ResizeObserver === 'function') {
+    resizeObserver = new window.ResizeObserver(resizeAll);
+    function observeBody() {
+      if (document.body) resizeObserver.observe(document.body);
+      else setTimeout(observeBody, 0);
+    }
+    observeBody();
+  }
+  window.addEventListener('load', resizeAll);
+}());</script>`;
+}
+
 function buildCsp(library: ArtPieceLibrary): string {
   const cdnUrl = LIBRARY_CDN[library];
   if (cdnUrl && !cdnUrl.startsWith(`${ALLOWED_CDN_ORIGIN}/`)) {
@@ -709,6 +809,7 @@ export function buildArtPieceSandboxDocument(
 </style>
 ${cdnScriptTag}
 ${webglCapturePrelude(library)}
+${webglResponsivePrelude(library, presentation)}
 ${buildListenerScript(library)}
 </head>
 <body>

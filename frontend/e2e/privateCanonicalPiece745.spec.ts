@@ -41,10 +41,10 @@ test('owner-private canonical piece routes preserve privacy at desktop and mobil
     description: 'Private collision fixture',
     prompt: 'Private collision fixture',
     engine: 'threejs',
-    source: 'window.__privateCanonical745 = true;',
+    source: 'const scene = new THREE.Scene();',
     public_slug: slug,
   });
-  expect(privateCreate.status()).toBe(201);
+  expect(privateCreate.status(), await privateCreate.text()).toBe(201);
 
   const canonicalPath = `/users/@${profile.handle}/pieces/${slug}`;
   const immersivePath = `/users/@${profile.handle}/immersive/${slug}`;

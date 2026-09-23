@@ -28,7 +28,8 @@ handoff status rather than omitting them.
 | 10 | #736 | Generated piece metadata/version layout | — | 2b | QA-FAIL / CORRECTION | Fresh browser reaches page but canonical `Generated art` label is absent; route prop correction delegated. |
 | 11 | #737 | 2D piece metadata/version layout | — | 2b | QA-FAIL / CORRECTION | Fresh browser reaches canonical labels; E2E has ambiguous duplicate `Piece actions` locator; scoped harness correction needed. |
 | 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | GROOMED | #735 now passes; dedicated teardown guard and regression coverage still required. |
-| 13 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | — | 2a | GROOMED | — |
+| 13 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | — | 2a | GROOMED | Updated with prompt/action steps, camera overlay/background modes, centered full-viewport sizing, and contextual tooltips; #741 owns secure same-origin-compatible embeds. |
+| 14 | #741 | Contextual controls plus secure same-origin-compatible sandboxing | #740 | 2a/security | GROOMED | New discovery follow-up; no duplicate open issue found. |
 
 ## Transaction ledger
 
@@ -120,6 +121,8 @@ status. No next issue begins before the current one is terminal.
 - #728 reached the published immersive route and activated steering, but no camera video mounted. This is a product camera-lifecycle failure requiring correction, not an infrastructure boundary.
 - #730 setup now reaches the browser but its anonymous immersive navigation lands on the editor shell; canonical published-route fixture correction remains pending before geometry can be judged.
 - #732 reaches the canonical 3D page but the description supplied by the E2E metadata update is absent, indicating the 3D metadata update contract does not persist `description`; issue remains open for API/UI correction.
+- #740 was expanded with prompt/action authoring steps, camera overlay/background configuration, centered full-viewport sizing, and contextual tooltips.
+- #741 was created after duplicate search found no open tooltip or same-origin/sandbox issue; it owns accessible action context plus narrowly scoped `allow-same-origin`/embed security and postMessage validation.
 
 ### Discovery follow-up — #739 and user-requested #740
 

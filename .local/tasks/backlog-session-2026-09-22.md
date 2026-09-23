@@ -16,18 +16,18 @@ handoff status rather than omitting them.
 
 | Order | Issue | Scope | Dependencies | Routing | Status | Blocker / next action |
 |---:|---|---|---|---|---|---|
-| 1 | #728 | Public 3D full-stage camera overlay | — | 2a | GROOMED | — |
+| 1 | #728 | Public 3D full-stage camera overlay | — | 2a | QA-FAIL / CORRECTION | E2E setup waits for legacy `/projects3d/:id`; current creation flow lands at `/users/@<handle>/edit/untitled-3d-scene`. |
 | 2 | #729 | Public 3D camera opacity/mirror while live | #728 | 2a | GROOMED | — |
-| 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | GROOMED | — |
-| 4 | #738 | Themed public piece title and top padding | — | 2a | GROOMED | — |
+| 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | QA-FAIL / CORRECTION | Same stale E2E creation URL; correction delegated. |
+| 4 | #738 | Themed public piece title and top padding | — | 2a | CLOSED | Fresh Docker-backed Chromium route matrix passed. |
 | 5 | #731 | Public 3D description/version API | — | 2b | GROOMED | — |
 | 6 | #732 | Public 3D metadata layout | #731 | 2a | GROOMED | — |
 | 7 | #733 | 3D immersive metadata below canvas | #731, #732 | 2a | GROOMED | — |
 | 8 | #734 | 3D immersive camera overlay/controls | #728, #729 | 2a | GROOMED | — |
-| 9 | #735 | Full ZIP 3D camera/toolset | — | 2a | GROOMED | — |
-| 10 | #736 | Generated piece metadata/version layout | — | 2b | GROOMED | — |
-| 11 | #737 | 2D piece metadata/version layout | — | 2b | GROOMED | — |
-| 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | GROOMED | — |
+| 9 | #735 | Full ZIP 3D camera/toolset | — | 2a | CLOSED | Fresh Docker-backed Chromium: all 10 export/camera scenarios passed. |
+| 10 | #736 | Generated piece metadata/version layout | — | 2b | QA-FAIL / CORRECTION | Fresh browser reaches page but canonical `Generated art` label is absent; route prop correction delegated. |
+| 11 | #737 | 2D piece metadata/version layout | — | 2b | QA-FAIL / CORRECTION | Fresh browser reaches canonical labels; E2E has ambiguous duplicate `Piece actions` locator; scoped harness correction needed. |
+| 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | GROOMED | #735 now passes; dedicated teardown guard and regression coverage still required. |
 | 13 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | — | 2a | GROOMED | — |
 
 ## Transaction ledger
@@ -109,6 +109,17 @@ status. No next issue begins before the current one is terminal.
 - **Browser evidence:** `npx playwright test e2e/publicGeneratedArtPiecePage736.spec.ts --project=chromium` self-skipped because the required local health/fixture stack was unavailable; `make compose-preflight` reports Docker unavailable. No rendered screenshots claimed. Classification: `workflow/infrastructure-defect` / verification boundary. Next action: run the exact generated-piece route matrix in disposable PostgreSQL + Django/Vite or CI Chromium.
 - **QA verdict:** `## QA: FAIL` for complete issue contract solely because required browser screenshots/route evidence are unavailable; no product-code fix made during QA.
 - **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment posted. Keep #736 open as terminally blocked pending browser evidence.
+
+### Fresh Docker/browser retry results (2026-09-23)
+
+- Docker Desktop was available after rebuilding `docker compose up -d --build` from the current checkout; `make compose-preflight` passed.
+- #738 named Chromium matrix passed: 1 test, desktop/mobile route evidence.
+- #735 named export-artifacts Chromium suite passed: 10 tests, including camera lifecycle, Full/Non-Camera ZIP isolation, and real-browser Canvas capture.
+- #737 corrected named Chromium scenario passed: 1 test with desktop/mobile screenshots.
+- #736 reached the canonical generated page but its E2E action assertion selected a hidden stage toolbar group; canonical generated labeling itself is now present after `5d3f3ad`. Visible-action selector correction remains pending.
+- #728 reached the published immersive route and activated steering, but no camera video mounted. This is a product camera-lifecycle failure requiring correction, not an infrastructure boundary.
+- #730 setup now reaches the browser but its anonymous immersive navigation lands on the editor shell; canonical published-route fixture correction remains pending before geometry can be judged.
+- #732 reaches the canonical 3D page but the description supplied by the E2E metadata update is absent, indicating the 3D metadata update contract does not persist `description`; issue remains open for API/UI correction.
 
 ### Discovery follow-up — #739 and user-requested #740
 

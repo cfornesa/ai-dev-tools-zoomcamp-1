@@ -49,6 +49,7 @@ function PublicProject3DViewer({
   // separate visibility check gates the affordance.
   const [showEmbedSnippet, setShowEmbedSnippet] = useState(false);
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -119,6 +120,15 @@ function PublicProject3DViewer({
     }
   }
 
+  async function handleShare() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShareStatus('copied');
+    } catch {
+      setShareStatus('failed');
+    }
+  }
+
   async function handleDownload(
     variant: import('../export/generateHtmlExport3D').Scene3DExportVariant = 'full',
   ) {
@@ -173,71 +183,33 @@ function PublicProject3DViewer({
   if (!project) return null; // unreachable once loadState === 'ready'
 
   const isEmbedRoute = window.location.pathname.startsWith('/embed/p3d/');
+  const isCanonicalRoute =
+    immersiveHref?.startsWith('/users/@') || window.location.pathname.includes('/users/@');
+  const versionSummaries = [...project.versions].sort(
+    (left, right) => right.sequence - left.sequence,
+  );
+  const versionCount = project.version_count || versionSummaries.length;
+
+  function formatVersionDate(createdAt: string) {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+    }).format(new Date(createdAt));
+  }
 
   return (
     <div className="public-project-viewer" data-project-kind="original">
       <header>
+        {isCanonicalRoute && <p className="public-piece-kind">3D scene</p>}
         <h1 className="public-piece-page-heading">{project.title}</h1>
         <p className="public-project-attribution">By {authorDisplayName || project.owner}</p>
-        {!!project.seo_config?.description && (
-          <p className="public-project-context">{project.seo_config.description}</p>
+        {isCanonicalRoute && (
+          <p className="public-piece-meta">
+            3D scene · {versionCount} {versionCount === 1 ? 'version' : 'versions'}
+          </p>
         )}
-
-        <p>
-          <button
-            type="button"
-            onClick={() => {
-              setShowEmbedSnippet((current) => !current);
-              setEmbedCopyStatus('idle');
-            }}
-            aria-expanded={showEmbedSnippet}
-            data-testid="toggle-embed-snippet"
-          >
-            {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
-          </button>{' '}
-          {toolbarMode === 'inline' ? (
-            <button
-              type="button"
-              className="public-project-immersive-button"
-              onClick={() =>
-                window.open(
-                  immersiveHref ?? `/immersive/p3d/${id}`,
-                  '_blank',
-                  'noopener,noreferrer',
-                )
-              }
-            >
-              View in immersive mode
-            </button>
-          ) : (
-            <a href={immersiveHref ?? `/immersive/p3d/${id}`} target="_blank" rel="noreferrer">
-              View in immersive mode
-            </a>
-          )}
-        </p>
-        {showEmbedSnippet && id && (
-          <div className="public-project-embed-snippet" data-testid="embed-snippet-panel">
-            <label htmlFor="embed-snippet-3d-textarea">Embed this piece on another site</label>
-            <textarea
-              id="embed-snippet-3d-textarea"
-              readOnly
-              value={embedSnippetFor(id)}
-              onFocus={(event) => event.currentTarget.select()}
-            />
-            <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
-              Copy
-            </button>
-            {embedCopyStatus === 'copied' && (
-              <p role="status" aria-live="polite">
-                Copied!
-              </p>
-            )}
-            {embedCopyStatus === 'failed' && (
-              <p role="alert" aria-live="assertive">
-                Couldn't copy automatically -- select the text above and copy manually.
-              </p>
-            )}
-          </div>
+        {!!project.description && <p className="public-project-context">{project.description}</p>}
+        {!project.description && !!project.seo_config?.description && !isCanonicalRoute && (
+          <p className="public-project-context">{project.seo_config.description}</p>
         )}
       </header>
 
@@ -252,6 +224,96 @@ function PublicProject3DViewer({
           />
         )}
       </section>
+      {!isEmbedRoute && (
+        <div className="public-piece-actions" aria-label="Piece actions" role="group">
+          {toolbarMode === 'inline' ? (
+            <button
+              type="button"
+              className="public-project-immersive-button"
+              onClick={() =>
+                window.open(
+                  immersiveHref ?? `/immersive/p3d/${id}`,
+                  '_blank',
+                  'noopener,noreferrer',
+                )
+              }
+            >
+              {isCanonicalRoute ? 'Open immersive view' : 'View in immersive mode'}
+            </button>
+          ) : (
+            <a href={immersiveHref ?? `/immersive/p3d/${id}`} target="_blank" rel="noreferrer">
+              {isCanonicalRoute ? 'Open immersive view' : 'View in immersive mode'}
+            </a>
+          )}
+          {isCanonicalRoute && (
+            <button type="button" onClick={() => void handleShare()}>
+              Share
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setShowEmbedSnippet((current) => !current);
+              setEmbedCopyStatus('idle');
+            }}
+            aria-expanded={showEmbedSnippet}
+            data-testid="toggle-embed-snippet"
+          >
+            {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
+          </button>
+          {shareStatus === 'copied' && <span role="status">Link copied.</span>}
+          {shareStatus === 'failed' && <span role="alert">Couldn&apos;t copy the link.</span>}
+        </div>
+      )}
+      {showEmbedSnippet && id && !isEmbedRoute && (
+        <div className="public-project-embed-snippet" data-testid="embed-snippet-panel">
+          <label htmlFor="embed-snippet-3d-textarea">Embed this piece on another site</label>
+          <textarea
+            id="embed-snippet-3d-textarea"
+            readOnly
+            value={embedSnippetFor(id)}
+            onFocus={(event) => event.currentTarget.select()}
+          />
+          <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
+            Copy
+          </button>
+          {embedCopyStatus === 'copied' && <p role="status">Copied!</p>}
+          {embedCopyStatus === 'failed' && (
+            <p role="alert">
+              Couldn't copy automatically -- select the text above and copy manually.
+            </p>
+          )}
+        </div>
+      )}
+      {isCanonicalRoute && !isEmbedRoute && (
+        <div className="public-piece-version-context">
+          <section aria-labelledby="current-version-heading">
+            <h2 id="current-version-heading">Current version context</h2>
+            {project.current_version ? (
+              <p>
+                Version {project.current_version.sequence} ·{' '}
+                <time dateTime={project.current_version.created_at}>
+                  {formatVersionDate(project.current_version.created_at)}
+                </time>
+              </p>
+            ) : (
+              <p>No saved version yet.</p>
+            )}
+          </section>
+          <section aria-labelledby="versions-heading">
+            <h2 id="versions-heading">Versions</h2>
+            <ol>
+              {versionSummaries.map((version) => (
+                <li key={`${version.sequence}-${version.created_at}`}>
+                  <span>Version {version.sequence}</span>{' '}
+                  <time dateTime={version.created_at}>{formatVersionDate(version.created_at)}</time>
+                  {version.is_current && <span className="public-piece-current">CURRENT</span>}
+                </li>
+              ))}
+            </ol>
+          </section>
+        </div>
+      )}
       {!isEmbedRoute && !!project.collections?.length && (
         <aside className="public-collection-context" aria-label="Public collections">
           <h3>Part of these collections</h3>

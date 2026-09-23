@@ -4678,6 +4678,68 @@ select.ai-proposal-field-full-width {
   overflow-wrap: anywhere;
 }
 
+.public-piece-kind,
+.public-piece-meta {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.public-piece-meta {
+  letter-spacing: 0.04em;
+}
+
+.public-piece-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 24px;
+}
+
+.public-piece-actions a,
+.public-piece-actions button {
+  min-height: 42px;
+}
+
+.public-piece-version-context {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin: 0 0 24px;
+  color: var(--text-h);
+}
+
+.public-piece-version-context h2 {
+  margin: 0 0 8px;
+  font-family: var(--heading);
+  font-size: 1.1rem;
+}
+
+.public-piece-version-context p,
+.public-piece-version-context ol {
+  margin: 0;
+}
+
+.public-piece-version-context ol {
+  padding-left: 1.4rem;
+}
+
+.public-piece-version-context li + li {
+  margin-top: 6px;
+}
+
+.public-piece-current {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
 .public-art-piece-viewer {
   padding: var(--site-density) 24px 24px;
   box-sizing: border-box;
@@ -4759,6 +4821,11 @@ select.ai-proposal-field-full-width {
 
   .immersive-project3d-viewer {
     padding: var(--site-density) 16px 16px;
+  }
+
+  .public-piece-version-context {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 .sr-only {

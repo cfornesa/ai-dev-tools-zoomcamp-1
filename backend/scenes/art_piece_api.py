@@ -43,7 +43,7 @@ from ai_provider.art_piece_provider import (
 from ai_provider.config import use_fake_ai_provider
 from scenes.art_piece_contract import GENERATABLE_ART_PIECE_ENGINES
 from scenes.entitlements import get_effective_cap, is_unlimited
-from scenes.models import MistralCredentialDecryptionError, ProviderCredential
+from scenes.models import AIPersona, MistralCredentialDecryptionError, ProviderCredential
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
@@ -139,6 +139,7 @@ class ArtPieceGenerateRequestSerializer(serializers.Serializer):
         required=False,
         default="",
     )
+    persona_id = serializers.IntegerField(required=False, allow_null=True, default=None)
 
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
@@ -146,10 +147,21 @@ class ArtPieceGenerateRequestSerializer(serializers.Serializer):
 
 _current_ai_user: ContextVar[object | None] = ContextVar("current_art_piece_user", default=None)
 _current_ai_model: ContextVar[str | None] = ContextVar("current_art_piece_model", default=None)
+_current_ai_persona_prompt: ContextVar[str | None] = ContextVar(
+    "current_art_piece_persona_prompt", default=None
+)
 
 
 class MissingPersonalMistralCredential(Exception):
     """Raised before any provider call when the owner has no usable key."""
+
+
+def _resolve_persona_prompt(user, persona_id: int | None) -> str | None:
+    """Resolve only an owner-scoped Persona; foreign IDs behave as unset."""
+    if persona_id is None:
+        return None
+    persona = AIPersona.objects.filter(owner=user, pk=persona_id).first()
+    return persona.prompt_text if persona else None
 
 
 def get_art_piece_provider() -> ArtPieceProvider:
@@ -294,17 +306,25 @@ def get_art_piece_provider() -> ArtPieceProvider:
         key = credential.get_key()
     except MistralCredentialDecryptionError as exc:
         raise MissingPersonalMistralCredential from exc
-    return ArtPieceProvider(api_key=key, model=_current_ai_model.get() or None)
+    kwargs = {"api_key": key, "model": _current_ai_model.get() or None}
+    persona_prompt = _current_ai_persona_prompt.get()
+    if persona_prompt is not None:
+        kwargs["persona_prompt"] = persona_prompt
+    return ArtPieceProvider(**kwargs)
 
 
-def _provider_for_user(user, model: str | None = None) -> ArtPieceProvider:
+def _provider_for_user(
+    user, model: str | None = None, persona_prompt: str | None = None
+) -> ArtPieceProvider:
     user_token = _current_ai_user.set(user)
     model_token = _current_ai_model.set(model or None)
+    persona_token = _current_ai_persona_prompt.set(persona_prompt)
     try:
         return get_art_piece_provider()
     finally:
         _current_ai_user.reset(user_token)
         _current_ai_model.reset(model_token)
+        _current_ai_persona_prompt.reset(persona_token)
 
 
 def _missing_key_response() -> Response:
@@ -372,6 +392,9 @@ class ArtPieceGenerateView(APIView):
         library = input_serializer.validated_data["library"]
         prompt = input_serializer.validated_data["prompt"]
         model = input_serializer.validated_data.get("model") or None
+        persona_prompt = _resolve_persona_prompt(
+            request.user, input_serializer.validated_data.get("persona_id")
+        )
 
         user_id = request.user.id
         if not _increment_and_check(
@@ -389,7 +412,7 @@ class ArtPieceGenerateView(APIView):
             return _quota_exceeded_response(art_generate_cap)
 
         try:
-            provider = _provider_for_user(request.user, model)
+            provider = _provider_for_user(request.user, model, persona_prompt)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
 

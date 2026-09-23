@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as artPiecesApi from '../api/artPieces';
+import * as aiPreferencesApi from '../api/aiPreferences';
 import { ApiError } from '../api/client';
 import * as authModule from '../auth/useAuth';
 import * as artPieceBundleModule from '../generative/artPieceBundle';
@@ -10,10 +11,12 @@ import { ART_PIECE_SANDBOX_MESSAGE_SOURCE } from '../generative/artPieceSandbox'
 import ArtPieceStudio from './ArtPieceStudio';
 
 vi.mock('../api/artPieces');
+vi.mock('../api/aiPreferences');
 vi.mock('../auth/useAuth');
 vi.mock('../generative/artPieceBundle');
 
 const mockedGenerateArtPiece = vi.mocked(artPiecesApi.generateArtPiece);
+const mockedFetchAIPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
 const mockedGenerateArtPieceBundle = vi.mocked(artPieceBundleModule.generateArtPieceBundle);
 const mockedTriggerArtPieceBundleDownload = vi.mocked(
@@ -27,6 +30,7 @@ beforeEach(() => {
     status: 'signed-in',
     user: { username: 'alice', email: 'a@example.com', is_application_admin: false },
   });
+  mockedFetchAIPersonas.mockResolvedValue([]);
 });
 
 function dispatchSandboxMessage(iframe: HTMLIFrameElement, data: Record<string, unknown>): void {
@@ -86,6 +90,30 @@ describe('ArtPieceStudio (issue #199)', () => {
     );
     const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
     expect(iframe.srcdoc).toContain('<svg id="art-piece-svg">');
+  });
+
+  it('selects an owner Persona and sends its id with the prompt', async () => {
+    mockedFetchAIPersonas.mockResolvedValue([
+      { id: 17, name: 'Solarist', prompt_text: 'Use bright solar colors.', created_at: '' },
+    ]);
+    mockedGenerateArtPiece.mockResolvedValue({
+      library: 'svg',
+      code: '<svg id="art-piece-svg"></svg>',
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    render(<ArtPieceStudio />);
+
+    await userEvent.selectOptions(await screen.findByLabelText(/persona/i), '17');
+    await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'a solar halo');
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+
+    expect(mockedGenerateArtPiece).toHaveBeenCalledWith(
+      'canvas2d',
+      'a solar halo',
+      expect.anything(),
+      undefined,
+      17,
+    );
   });
 
   it('selecting p5.js sends its stable engine ID and renders the instance-mode wrapper', async () => {

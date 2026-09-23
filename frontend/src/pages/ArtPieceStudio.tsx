@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { ApiError } from '../api/client';
+import { fetchAIPersonas, type AIPersona } from '../api/aiPreferences';
 import {
   createArtPiece,
   generateArtPiece,
@@ -89,6 +90,8 @@ function ArtPieceStudio() {
   const [library, setLibrary] = useState<ArtPieceLibrary>('canvas2d');
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState(readStoredModel);
+  const [personas, setPersonas] = useState<AIPersona[]>([]);
+  const [personaId, setPersonaId] = useState<number | null>(null);
   const [phase, setPhase] = useState<GenerationPhase>('idle');
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
@@ -112,6 +115,11 @@ function ArtPieceStudio() {
   const [cameraPlacement, setCameraPlacement] = useState<CameraPlacement>('overlay');
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (auth.status !== 'signed-in') return;
+    void fetchAIPersonas().then(setPersonas).catch(() => setPersonas([]));
+  }, [auth.status]);
 
   useEffect(() => {
     return () => abortControllerRef.current?.abort();
@@ -158,12 +166,15 @@ function ArtPieceStudio() {
     setSaveError(null);
 
     try {
-      const result = await generateArtPiece(
-        library,
-        trimmed,
-        controller.signal,
-        model.trim() || undefined,
-      );
+      const result = personaId
+        ? await generateArtPiece(
+            library,
+            trimmed,
+            controller.signal,
+            model.trim() || undefined,
+            personaId,
+          )
+        : await generateArtPiece(library, trimmed, controller.signal, model.trim() || undefined);
       if (abortControllerRef.current !== controller) return;
       setCode(result.code);
       setResultLibrary(library);
@@ -300,6 +311,30 @@ function ArtPieceStudio() {
             placeholder="Uses the account default when blank"
             onChange={(event) => updateModel(event.target.value)}
           />
+        </div>
+
+        <div className="behavior-card-field">
+          <label htmlFor="art-piece-persona">Persona (optional)</label>
+          <select
+            id="art-piece-persona"
+            value={personaId ?? ''}
+            disabled={pending}
+            onChange={(event) =>
+              setPersonaId(event.target.value === '' ? null : Number(event.target.value))
+            }
+          >
+            <option value="">No persona</option>
+            {personas.map((persona) => (
+              <option key={persona.id} value={persona.id}>
+                {persona.name}
+              </option>
+            ))}
+          </select>
+          {personas.length === 0 && (
+            <p>
+              No Personas yet — add one in <a href="/account/settings">Account settings</a>.
+            </p>
+          )}
         </div>
 
         <button type="submit" disabled={pending || prompt.trim().length === 0}>

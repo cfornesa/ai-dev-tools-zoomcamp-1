@@ -251,10 +251,16 @@ export function generateArtPiece(
   prompt: string,
   signal?: AbortSignal,
   model?: string,
+  personaId?: number | null,
 ): Promise<GenerateArtPieceResponse> {
   return apiFetch<GenerateArtPieceResponse>('/api/ai/art-pieces/generate/', {
     method: 'POST',
-    body: JSON.stringify(model ? { library, prompt, model } : { library, prompt }),
+    body: JSON.stringify({
+      library,
+      prompt,
+      ...(model ? { model } : {}),
+      ...(personaId ? { persona_id: personaId } : {}),
+    }),
     signal,
   });
 }

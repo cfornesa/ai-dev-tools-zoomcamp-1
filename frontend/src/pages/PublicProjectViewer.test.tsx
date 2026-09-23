@@ -61,13 +61,13 @@ function renderViewer(id = 'p1', initialPath = `/p/${id}`, initialProject?: Publ
         <Route path="/p/:id" element={<PublicProjectViewer initialProject={initialProject} />} />
         <Route
           path="/users/:handle/pieces/:pieceSlug"
-          element={<PublicProjectViewer initialProject={initialProject} />}
+          element={<PublicProjectViewer initialProject={initialProject} canonicalRoute />}
         />
         <Route
           path="/users/@alice/pieces/hand-follower"
           element={
             initialProject ? (
-              <PublicProjectViewer initialProject={initialProject} />
+              <PublicProjectViewer initialProject={initialProject} canonicalRoute />
             ) : (
               <p>Canonical piece</p>
             )
@@ -136,6 +136,16 @@ describe('PublicProjectViewer load states', () => {
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(screen.getByTestId('public-scene-canvas')).toBeInTheDocument();
     expect(mockedGetPublicProject).toHaveBeenCalledWith('p1');
+  });
+
+  it('keeps canonical metadata off legacy routes', async () => {
+    mockedGetPublicProject.mockResolvedValue(basePublicProject({ viewer_url: '/legacy/p1' }));
+
+    renderViewer();
+
+    await screen.findByRole('heading', { name: 'Hand Follower', level: 1 });
+    expect(screen.queryByText('2D scene', { exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByText(/2D scene ·/)).not.toBeInTheDocument();
   });
 
   it('redirects the legacy ID route to the canonical profile-nested piece path', async () => {

@@ -114,12 +114,14 @@ function PublicProjectViewer({
   initialProject,
   toolbarMode = 'menu',
   authorDisplayName,
+  canonicalRoute = false,
 }: {
   initialProject?: PublicProject;
   toolbarMode?: 'menu' | 'inline';
   authorDisplayName?: string;
+  canonicalRoute?: boolean;
 } = {}) {
-  const { id: routeId, pieceSlug } = useParams<{ id: string; pieceSlug: string }>();
+  const { id: routeId } = useParams<{ id: string }>();
   const id = routeId ?? initialProject?.id;
   const location = useLocation();
   const navigate = useNavigate();
@@ -461,11 +463,7 @@ function PublicProjectViewer({
 
   const provenance = project.remix_provenance;
   const isEmbedRoute = location.pathname.startsWith('/embed/p/');
-  // Prefer the router's matched canonical slug param. It remains reliable
-  // when a browser preserves or percent-encodes the `@` in the profile URL;
-  // the pathname fallback keeps compatibility with callers that mount this
-  // viewer outside the canonical route declaration.
-  const isCanonicalRoute = Boolean(pieceSlug) || location.pathname.includes('/users/@');
+  const isCanonicalRoute = canonicalRoute;
   const versionSummaries = [...(project.versions ?? [])].sort(
     (left, right) => right.sequence - left.sequence,
   );

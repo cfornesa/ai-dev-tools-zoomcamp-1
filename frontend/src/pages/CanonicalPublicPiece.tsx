@@ -45,6 +45,7 @@ export default function CanonicalPublicPiece() {
         initialProject={resolved.piece as PublicProject}
         toolbarMode="inline"
         authorDisplayName={profile?.display_name}
+        canonicalRoute
       />
     );
   }

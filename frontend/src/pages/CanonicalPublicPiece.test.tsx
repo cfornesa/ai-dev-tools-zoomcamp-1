@@ -17,8 +17,16 @@ vi.mock('./PublicProject3DViewer', () => ({
 }));
 
 vi.mock('./PublicProjectViewer', () => ({
-  default: ({ initialProject }: { initialProject: { title: string } }) => (
-    <output data-testid="canonical-2d-piece">{initialProject.title}</output>
+  default: ({
+    initialProject,
+    canonicalRoute,
+  }: {
+    initialProject: { title: string };
+    canonicalRoute?: boolean;
+  }) => (
+    <output data-testid="canonical-2d-piece">
+      {initialProject.title} · {canonicalRoute ? '2D scene · 1 version' : 'legacy'}
+    </output>
   ),
 }));
 
@@ -66,7 +74,9 @@ describe('CanonicalPublicPiece (#578)', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByTestId('canonical-2d-piece')).toHaveTextContent('Canvas study'),
+      expect(screen.getByTestId('canonical-2d-piece')).toHaveTextContent(
+        'Canvas study · 2D scene · 1 version',
+      ),
     );
     expect(screen.queryByTestId('destination')).not.toBeInTheDocument();
   });

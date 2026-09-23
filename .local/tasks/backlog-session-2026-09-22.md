@@ -23,7 +23,7 @@ handoff status rather than omitting them.
 | 5 | #731 | Public 3D description/version API | — | 2b | GROOMED | — |
 | 6 | #732 | Public 3D metadata layout | #731 | 2a | CLOSED | `b9ddb51`; targeted backend 5 passed, frontend 12 passed, named Chromium scenario passed. |
 | 7 | #733 | 3D immersive metadata below canvas | #731, #732 | 2a | CLOSED | `2d37360`; focused component 7/7, full `make check` green, and named Docker-backed Chromium 1/1 at desktop/mobile viewports. |
-| 8 | #734 | 3D immersive camera overlay/controls | #728, #729 | 2a | GROOMED | — |
+| 8 | #734 | 3D immersive camera overlay/controls | #728, #729 | 2a | CLOSED | `7fb65f3` + `2cdf9e5`; focused camera 8/8, full `make check` green, and named Docker-backed Chromium 1/1 at desktop/mobile viewports. |
 | 9 | #735 | Full ZIP 3D camera/toolset | — | 2a | CLOSED | Fresh Docker-backed Chromium: all 10 export/camera scenarios passed. |
 | 10 | #736 | Generated piece metadata/version layout | — | 2b | CLOSED | `edaf51d` + `8be39c8`; canonical backend 13/13 and regular-route Chromium desktop/mobile scenario passed. |
 | 11 | #737 | 2D piece metadata/version layout | — | 2b | CLOSED | `9fcbb0d` + `5d3f3ad`; serial frontend 2815/2815 and regular-route Chromium scenario passed. |
@@ -158,6 +158,17 @@ status. No next issue begins before the current one is terminal.
 - **Browser evidence:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/public3dImmersiveInfoArchitecture733.spec.ts --project=chromium` — 1/1 passed in 9.5s with 1440×900 and 375×812 screenshots; metadata is after the Preview region and remains visible/scrollable.
 - **QA verdict:** `## QA: PASS`; the criterion matrix is satisfied. Missing `docs/testing-guidelines.md` and `docs/design-system.md` were recorded as repository process gaps, not substituted silently.
 - **GitHub reconciliation:** top-level issue QA comment was unavailable because the connector accepts `pr_number` only; authenticated issue update closed #733 as `completed` after the evidence above.
+
+### #734 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING → QA → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Stage provenance:** implementation `Codex / GPT-5 / medium`, substituted for rostered Opencode Go: `yes`; QA correction `Codex / GPT-5 / medium`, substituted: `yes`; second opinion `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate `Codex / GPT-5 / medium`, substituted for rostered Claude Pro: `yes`.
+- **Commits:** `7fb65f3` adds the centered/proportional immersive stage and shared camera layering/coverage; `2cdf9e5` fixes the E2E formatting and unused-variable gate findings without changing runtime behavior.
+- **Focused checks:** `npx vitest run src/pages/Scene3DPreview.cameraOverlay.test.tsx` — 8/8 passed, including immersive viewport/stacking contract.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-734-final make check` — backend 1516 passed/39 skipped; frontend 261 files/2822 tests passed; action pins, Ruff, mypy, format, lint, typecheck, and frontend tests passed.
+- **Browser evidence:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/public3dImmersiveCameraOverlay734.spec.ts --project=chromium` — 1/1 passed in 15.9s with fake-camera live feed, centered full-stage video geometry, z-index checks, opacity/mirror controls, Walk/zoom interaction, and desktop/mobile screenshots.
+- **QA verdict:** `## QA: PASS`; the criterion matrix is satisfied. The initial browser test discrepancy was corrected to compare against the measured preview container origin with explicit ±1px tolerance; no acceptance assertion was removed.
+- **GitHub reconciliation:** top-level issue QA comment was unavailable because the connector accepts `pr_number` only; authenticated issue update closed #734 as `completed` after the evidence above.
 
 ### #739 transaction ledger — QA PASS
 

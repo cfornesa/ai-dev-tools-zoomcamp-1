@@ -16,9 +16,9 @@ handoff status rather than omitting them.
 
 | Order | Issue | Scope | Dependencies | Routing | Status | Blocker / next action |
 |---:|---|---|---|---|---|---|
-| 1 | #728 | Public 3D full-stage camera overlay | — | 2a | QA-FAIL / CORRECTION | E2E setup waits for legacy `/projects3d/:id`; current creation flow lands at `/users/@<handle>/edit/untitled-3d-scene`. |
+| 1 | #728 | Public 3D full-stage camera overlay | — | 2a | QA-FAIL / PRODUCT BLOCKER | Regular canonical route now reaches the public page; with fake camera permission and Steer pressed, no camera video mounts. This is a live camera lifecycle blocker. |
 | 2 | #729 | Public 3D camera opacity/mirror while live | #728 | 2a | GROOMED | — |
-| 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | QA-FAIL / CORRECTION | Same stale E2E creation URL; correction delegated. |
+| 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | QA-FAIL / VERIFICATION | Regular-route fixture correction committed, but browser DOM still shows editor shell and zero toolbar actions; route/auth resolution needs diagnosis before geometry can be judged. |
 | 4 | #738 | Themed public piece title and top padding | — | 2a | CLOSED | Fresh Docker-backed Chromium route matrix passed. |
 | 5 | #731 | Public 3D description/version API | — | 2b | GROOMED | — |
 | 6 | #732 | Public 3D metadata layout | #731 | 2a | GROOMED | — |
@@ -27,7 +27,7 @@ handoff status rather than omitting them.
 | 9 | #735 | Full ZIP 3D camera/toolset | — | 2a | CLOSED | Fresh Docker-backed Chromium: all 10 export/camera scenarios passed. |
 | 10 | #736 | Generated piece metadata/version layout | — | 2b | QA-FAIL / CORRECTION | Fresh browser reaches page but canonical `Generated art` label is absent; route prop correction delegated. |
 | 11 | #737 | 2D piece metadata/version layout | — | 2b | QA-FAIL / CORRECTION | Fresh browser reaches canonical labels; E2E has ambiguous duplicate `Piece actions` locator; scoped harness correction needed. |
-| 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | GROOMED | #735 now passes; dedicated teardown guard and regression coverage still required. |
+| 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | ENGINEERING | Delegated teardown guard and focused regression coverage. |
 | 13 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | — | 2a | GROOMED | Updated with prompt/action steps, camera overlay/background modes, centered full-viewport sizing, and contextual tooltips; #741 owns secure same-origin-compatible embeds. |
 | 14 | #741 | Contextual controls plus secure same-origin-compatible sandboxing | #740 | 2a/security | GROOMED | New discovery follow-up; no duplicate open issue found. |
 
@@ -123,6 +123,14 @@ status. No next issue begins before the current one is terminal.
 - #732 reaches the canonical 3D page but the description supplied by the E2E metadata update is absent, indicating the 3D metadata update contract does not persist `description`; issue remains open for API/UI correction.
 - #740 was expanded with prompt/action authoring steps, camera overlay/background configuration, centered full-viewport sizing, and contextual tooltips.
 - #741 was created after duplicate search found no open tooltip or same-origin/sandbox issue; it owns accessible action context plus narrowly scoped `allow-same-origin`/embed security and postMessage validation.
+
+### #739 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION`.
+- **Commit:** `18a34d7`; export-artifact teardown now guards an uninitialized generator and retains normal cleanup.
+- **Checks:** focused teardown regression 2/2, format, lint, and typecheck passed; the named Chromium export suite previously passed all 10 scenarios on the same stack.
+- **QA verdict:** `## QA: PASS`; no product export behavior changed.
+- **GitHub reconciliation:** issue-comment connector accepts `pr_number` only, so no top-level issue QA comment could be posted; close after the focused regression and existing browser suite evidence.
 
 ### Discovery follow-up — #739 and user-requested #740
 

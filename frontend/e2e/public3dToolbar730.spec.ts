@@ -9,10 +9,10 @@ import type { E2EState } from './support/state.js';
 type Fixtures = Extract<E2EState, { available: true }>;
 
 const TOP_LEVEL_ACTIONS =
-  '.piece-stage-toolbar-group > .piece-stage-icon-button, .piece-stage-toolbar-group > .piece-stage-download > .piece-stage-icon-button, .piece-stage-toolbar-group > .piece-stage-controls > .piece-stage-icon-button';
+  ':scope > .piece-stage-icon-button, :scope > .piece-stage-download > .piece-stage-icon-button, :scope > .piece-stage-controls > .piece-stage-icon-button';
 
-async function actionGeometry(frame: import('@playwright/test').Locator) {
-  return frame.locator(TOP_LEVEL_ACTIONS).evaluateAll((elements) =>
+async function actionGeometry(actions: import('@playwright/test').Locator) {
+  return actions.locator(TOP_LEVEL_ACTIONS).evaluateAll((elements) =>
     elements.map((element) => {
       const box = element.getBoundingClientRect();
       return { x: box.x, y: box.y, width: box.width, height: box.height };
@@ -71,11 +71,17 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
     try {
+      expect((await apiGet(anonymousContext, '/api/whoami/')).status()).toBe(401);
       await anonymousPage.goto(`/users/@${handle}/pieces/${piece.slug}`);
+      await expect(anonymousPage).toHaveURL(`/users/@${handle}/pieces/${piece.slug}`);
+      await expect(anonymousPage.locator('.public-project-viewer')).toBeVisible();
+      await expect(anonymousPage.getByRole('region', { name: 'Outline' })).toHaveCount(0);
       const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
       await expect(frame).toBeVisible({ timeout: 15_000 });
       const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
       await expect(toolbar).toBeVisible();
+      const actions = toolbar.getByRole('group', { name: 'Preview actions' });
+      await expect(actions).toBeVisible();
 
       for (const viewport of [
         { name: 'desktop', width: 1440, height: 900 },
@@ -96,7 +102,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
         );
         expect(fullscreenBox!.x).toBeGreaterThan(stageBox!.x + stageBox!.width / 2);
 
-        const closed = await actionGeometry(frame);
+        const closed = await actionGeometry(actions);
         expect(closed.length).toBe(7);
         for (const button of closed) {
           expect(button.width).toBeGreaterThanOrEqual(32);
@@ -111,7 +117,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
 
         const controls = toolbar.getByRole('button', { name: 'Piece controls', exact: true });
         await controls.click();
-        const controlsOpen = await actionGeometry(frame);
+        const controlsOpen = await actionGeometry(actions);
         expect(controlsOpen).toHaveLength(closed.length);
         controlsOpen.forEach((button, index) => {
           expect(Math.abs(button.x - closed[index].x)).toBeLessThanOrEqual(1);
@@ -132,7 +138,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
 
         await toolbar.getByRole('button', { name: 'Open download menu' }).click();
         await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();
-        const downloadOpen = await actionGeometry(frame);
+        const downloadOpen = await actionGeometry(actions);
         downloadOpen.forEach((button, index) => {
           expect(Math.abs(button.x - closed[index].x)).toBeLessThanOrEqual(1);
           expect(Math.abs(button.y - closed[index].y)).toBeLessThanOrEqual(1);

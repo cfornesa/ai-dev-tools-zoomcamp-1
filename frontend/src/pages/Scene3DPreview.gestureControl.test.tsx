@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { StrictMode } from 'react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -173,6 +174,40 @@ describe('Scene3DPreview "Steer the piece" gesture camera control (issue #294)',
     // The user explicitly activated steering before this control mounted, so
     // its opt-in lifecycle starts the camera without a second Enable click.
     expect(fake.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the steering stream mounted through StrictMode effect replay and releases it on stop', async () => {
+    const stream = {} as MediaStream;
+    let streamListener: ((value: MediaStream | null) => void) | null = null;
+    const start = vi.fn(() => streamListener?.(stream));
+    const stop = vi.fn(() => streamListener?.(null));
+    const provider: TrackingProvider = {
+      start,
+      stop,
+      onFrame: () => () => {},
+      onError: () => () => {},
+      onStream: (listener) => {
+        streamListener = listener;
+        return () => {
+          streamListener = null;
+        };
+      },
+    };
+    render(
+      <StrictMode>
+        <Scene3DPreview scene={baseScene()} createGestureCameraProvider={() => provider} />
+      </StrictMode>,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
+
+    const video = await screen.findByTestId('scene3d-camera-overlay-video');
+    await waitFor(() => expect((video as HTMLVideoElement).srcObject).toBe(stream));
+    expect(start).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole('button', { name: 'Stop steering with gestures' }));
+    expect(stop).toHaveBeenCalled();
+    expect(screen.queryByTestId('scene3d-camera-overlay-video')).not.toBeInTheDocument();
   });
 
   it('never mounts the camera-control region (or starts a camera) while the toggle is off', () => {

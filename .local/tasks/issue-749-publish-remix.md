@@ -1,30 +1,32 @@
 ## Goal
 
-Reconcile publishing/remix/public-viewer E2E assertions with the canonical
-slug routes, current public headings, toolbar contract, and stage layout.
+Reconcile publishing/public-viewer E2E assertions with the canonical slug
+routes, current public headings, and stage layout.
 
 ## Acceptance criteria
 
-- [ ] Each named publishing/remix/public-viewer failure is classified as test
+- [ ] Each named publishing/public-viewer failure is classified as test
   drift or product defect before editing.
 - [ ] Test-only drift is updated without weakening route-level or rendered
   interaction coverage.
-- [ ] The focused publishing/remix/draw.io specs pass in Chromium.
+- [ ] The focused publishing/public-viewer specs pass in Chromium.
 
 ## Out of scope
 
 - Responsive shell tab-order drift, in sibling task record.
 - AI draft/recovery drift, in sibling task record.
+- Draw.io public/embed/download drift, in sibling task record.
+- Remix/fork drift, in sibling task record.
 - New public route behavior or production deployment.
 
 ## Evidence and pending items
 
 - **Status:** PROPOSED
-- **Evidence so far:** Host-permission Chromium reproduced failures in draw.io,
-  publishing, public stage layout, and remix scenarios.
+- **Evidence so far:** Host-permission Chromium reproduced publishing/public
+  viewer failures; draw.io and remix are tracked separately.
 - **Pending verification:** Root-cause classification and focused rerun.
-- **Next action:** Groom after the responsive-shell child reaches a terminal
-  state; do not start this transaction in parallel.
+- **Next action:** Process after the responsive-shell child reached its
+  terminal state; do not start sibling transactions in parallel.
 - **Durable memory link:** None.
 
 ## Transaction ledger
@@ -47,7 +49,7 @@ slug routes, current public headings, toolbar contract, and stage layout.
 
 ## Constraints
 
-- Candidate files are limited to the named publishing/remix/draw.io E2E specs
+- Candidate file is `frontend/e2e/publishingAndRemix.spec.ts`
   after grooming identifies exact drift.
 - No dependencies, routes, APIs, or product behavior may change without a new
   scope decision.

@@ -72,7 +72,10 @@ function basePublicProject3D(overrides: Partial<PublicProject3D> = {}): PublicPr
     id: 'p1',
     owner: 'alice',
     title: 'Rotating Cube',
+    description: '',
     thumbnail_url: '/api/public/projects3d/p1/thumbnail.png',
+    versions: [],
+    version_count: 0,
     current_version: {
       id: 1,
       sequence: 1,

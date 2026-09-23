@@ -23788,3 +23788,46 @@ All Codex entries are substitutions authorized at session level in
 `DECISIONS.md`. Effort values and exact model revisions for Codex stages are
 permanently unrecoverable; this is an accepted, recorded gap, not an inferred
 value.
+
+## 2026-09-22 — Piece-page parity distillation (#728–#738), graph run with augment-humankind-react-node #107–#111
+
+Owner request: augmentrart.com and augmenthumankind.com piece pages lack the PHP
+reference's live camera overlay, opacity controls, and functional steering;
+augmentrart.com pieces also lack description/version headings, correct toolbar
+placement, and a themed title. Owner scope decisions this session: both repos in
+graph mode; **this session ends at task-distillation for both repos** (no
+engineering). Downloads and immersive views get the same toolset as the web
+page, minus controls that make no sense there (e.g. no Download inside a
+downloaded piece).
+
+Run by Claude Opus 5.5 (distillation; the recommended Sonnet/Medium profile was
+not used, so record as a model deviation, not a substitution of a rostered
+external service). Evidence gathered in the owner's Chrome with a real camera
+(the desktop browser pane blocks device capture).
+
+| Order | Issue | Surface | Routing | Depends on | Status |
+|---|---|---|---|---|---|
+| 1 | [#728](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/728) | public 3D page: full-stage camera overlay | 2a | — | GROOMED |
+| 2 | [#729](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/729) | public 3D page: opacity/mirror while any camera live | 2a | #728 | GROOMED |
+| 3 | [#730](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/730) | public 3D page: toolbar overlay placement | 2a | — | GROOMED |
+| 4 | [#738](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/738) | public piece pages: themed title + top padding | 2a | — | GROOMED |
+| 5 | [#731](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/731) | public 3D API: description + versions | 2b | — | GROOMED |
+| 6 | [#732](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/732) | public 3D page: metadata layout | 2a | #731 | GROOMED |
+| 7 | [#733](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/733) | 3D immersive: info below canvas | 2a | #731, #732 | GROOMED |
+| 8 | [#734](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/734) | 3D immersive: camera overlay + controls | 2a | #728, #729 | GROOMED |
+| 9 | [#735](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/735) | 3D Full ZIP: toolset minus Download | 2a | — | GROOMED |
+| 10 | [#736](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/736) | generated piece page: engine/prompt/versions | 2b | — | GROOMED |
+| 11 | [#737](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/737) | 2D piece page: versions layout | 2b | — | GROOMED |
+
+Duplicate / closed-history report: #297 (camera overlay + opacity/mirror) and
+#342 (independent camera toggle) are closed and stay closed; #728/#729 are new
+owner-rejection follow-ups (the shipped overlay is a 160×120 corner thumbnail
+under the canvas, and its controls are unreachable while steering). #369–#371,
+#436, #482 (ZIP camera/steer) are closed history for #735. #294/#432/#455 (steer)
+are functional per the live check (Steer activates, camera stream live); no new
+steering-logic issue for augmentrart.com. No open issue duplicated any item.
+
+Verification boundaries: real-camera checks require Claude in Chrome (owner
+grants camera); production theme changes must not be made for #738 (local
+stack only). No blockers; next action for a future session: backlog-session on
+#728.

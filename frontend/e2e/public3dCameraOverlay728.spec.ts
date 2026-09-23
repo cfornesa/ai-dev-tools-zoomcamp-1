@@ -63,8 +63,8 @@ test.describe('public 3D camera overlay geometry (#728)', () => {
       const anonymousPage = await anonymousContext.newPage();
       try {
         await anonymousPage.goto(`/users/@${handle}/immersive/${piece.slug}`);
-        await expect(anonymousPage.getByTestId('immersive-project3d-viewer')).toBeVisible();
         const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
+        await expect(frame).toBeVisible();
         const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
         await toolbar.getByRole('button', { name: 'Steer the piece' }).click();
         const video = anonymousPage.getByTestId('scene3d-camera-overlay-video');

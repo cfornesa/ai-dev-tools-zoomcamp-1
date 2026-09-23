@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 
 import JSZip from 'jszip';
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { chromium, expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -192,20 +192,36 @@ test.describe('reference-style authoring workflow (#740)', () => {
           await expect(page.locator('iframe[title="Art piece preview"]')).toBeVisible();
           await expect(page.getByRole('button', { name: 'Open immersive view' })).toBeVisible();
           if (engine.camera) {
-            const stage = page.locator('.art-piece-stage');
-            await stage.getByRole('button', { name: 'Camera controls' }).click();
-            const cameraControls = stage.getByRole('group', { name: 'Camera view' });
-            await cameraControls.getByRole('button', { name: 'Enable camera view' }).click();
-            await expect(stage.getByTestId('camera-status')).toContainText('Camera is active.');
-            const streamState = await stage.locator('> video').evaluate((element) => {
-              const stream = (element as HTMLVideoElement).srcObject as MediaStream | null;
-              return {
-                trackState: stream?.getVideoTracks()[0]?.readyState,
-                trackCount: stream?.getVideoTracks().length ?? 0,
-              };
+            const fakeBrowser = await chromium.launch({
+              args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
             });
-            expect(streamState.trackState).toBe('live');
-            expect(streamState.trackCount).toBeGreaterThan(0);
+            const cameraContext = await fakeBrowser.newContext({
+              permissions: ['camera'],
+              storageState: await context.storageState(),
+            });
+            try {
+              await mockCamera(cameraContext);
+              const cameraPage = await cameraContext.newPage();
+              await cameraPage.setViewportSize(viewport);
+              await cameraPage.goto(`/users/@${profile.handle}/pieces/${piece.public_slug}`);
+              const stage = cameraPage.locator('.art-piece-stage');
+              await stage.getByRole('button', { name: 'Camera controls' }).click();
+              const cameraControls = stage.getByRole('group', { name: 'Camera view' });
+              await cameraControls.getByRole('button', { name: 'Enable camera view' }).click();
+              await expect(stage.getByTestId('camera-status')).toContainText('Camera is active.');
+              const streamState = await stage.locator('> video').evaluate((element) => {
+                const stream = (element as HTMLVideoElement).srcObject as MediaStream | null;
+                return {
+                  trackState: stream?.getVideoTracks()[0]?.readyState,
+                  trackCount: stream?.getVideoTracks().length ?? 0,
+                };
+              });
+              expect(streamState.trackState).toBe('live');
+              expect(streamState.trackCount).toBeGreaterThan(0);
+            } finally {
+              await cameraContext.close();
+              await fakeBrowser.close();
+            }
           }
           await downloadFullZip(page);
 

@@ -20,7 +20,7 @@ handoff status rather than omitting them.
 | 2 | #729 | Public 3D camera opacity/mirror while live | #728 | 2a | CLOSED | `1fc4dc5` + `34d82c1`; focused camera 7/7 and combined regular-route Chromium scenario passed. |
 | 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | CLOSED | `92cae9c`; named Docker-backed Chromium geometry/popover/screenshots passed 1/1 after correcting the close control locator to its rendered `menuitem` role. |
 | 4 | #738 | Themed public piece title and top padding | — | 2a | CLOSED | Fresh Docker-backed Chromium route matrix passed. |
-| 5 | #731 | Public 3D description/version API | — | 2b | GROOMED | — |
+| 5 | #731 | Public 3D description/version API | — | 2b | CLOSED | QA PASS per the #731 transaction section (row reconciled at readiness gate 2026-09-23). |
 | 6 | #732 | Public 3D metadata layout | #731 | 2a | CLOSED | `b9ddb51`; targeted backend 5 passed, frontend 12 passed, named Chromium scenario passed. |
 | 7 | #733 | 3D immersive metadata below canvas | #731, #732 | 2a | CLOSED | `2d37360`; focused component 7/7, full `make check` green, and named Docker-backed Chromium 1/1 at desktop/mobile viewports. |
 | 8 | #734 | 3D immersive camera overlay/controls | #728, #729 | 2a | CLOSED | `7fb65f3` + `2cdf9e5`; focused camera 8/8, full `make check` green, and named Docker-backed Chromium 1/1 at desktop/mobile viewports. |

@@ -23807,17 +23807,17 @@ external service). Evidence gathered in the owner's Chrome with a real camera
 
 | Order | Issue | Surface | Routing | Depends on | Status |
 |---|---|---|---|---|---|
-| 1 | [#728](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/728) | public 3D page: full-stage camera overlay | 2a | — | GROOMED |
-| 2 | [#729](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/729) | public 3D page: opacity/mirror while any camera live | 2a | #728 | GROOMED |
-| 3 | [#730](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/730) | public 3D page: toolbar overlay placement | 2a | — | GROOMED |
-| 4 | [#738](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/738) | public piece pages: themed title + top padding | 2a | — | GROOMED |
-| 5 | [#731](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/731) | public 3D API: description + versions | 2b | — | GROOMED |
-| 6 | [#732](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/732) | public 3D page: metadata layout | 2a | #731 | GROOMED |
-| 7 | [#733](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/733) | 3D immersive: info below canvas | 2a | #731, #732 | GROOMED |
-| 8 | [#734](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/734) | 3D immersive: camera overlay + controls | 2a | #728, #729 | GROOMED |
-| 9 | [#735](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/735) | 3D Full ZIP: toolset minus Download | 2a | — | GROOMED |
-| 10 | [#736](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/736) | generated piece page: engine/prompt/versions | 2b | — | GROOMED |
-| 11 | [#737](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/737) | 2D piece page: versions layout | 2b | — | GROOMED |
+| 1 | [#728](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/728) | public 3D page: full-stage camera overlay | 2a | — | CLOSED (see 2026-09-23 readiness) |
+| 2 | [#729](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/729) | public 3D page: opacity/mirror while any camera live | 2a | #728 | CLOSED (see 2026-09-23 readiness) |
+| 3 | [#730](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/730) | public 3D page: toolbar overlay placement | 2a | — | CLOSED (see 2026-09-23 readiness) |
+| 4 | [#738](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/738) | public piece pages: themed title + top padding | 2a | — | CLOSED (see 2026-09-23 readiness) |
+| 5 | [#731](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/731) | public 3D API: description + versions | 2b | — | CLOSED (see 2026-09-23 readiness) |
+| 6 | [#732](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/732) | public 3D page: metadata layout | 2a | #731 | CLOSED (see 2026-09-23 readiness) |
+| 7 | [#733](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/733) | 3D immersive: info below canvas | 2a | #731, #732 | CLOSED (see 2026-09-23 readiness) |
+| 8 | [#734](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/734) | 3D immersive: camera overlay + controls | 2a | #728, #729 | CLOSED (see 2026-09-23 readiness) |
+| 9 | [#735](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/735) | 3D Full ZIP: toolset minus Download | 2a | — | CLOSED (see 2026-09-23 readiness) |
+| 10 | [#736](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/736) | generated piece page: engine/prompt/versions | 2b | — | CLOSED (see 2026-09-23 readiness) |
+| 11 | [#737](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/737) | 2D piece page: versions layout | 2b | — | CLOSED (see 2026-09-23 readiness) |
 
 Duplicate / closed-history report: #297 (camera overlay + opacity/mirror) and
 #342 (independent camera toggle) are closed and stay closed; #728/#729 are new
@@ -23866,3 +23866,40 @@ truth for parity: when the two references differ, preserve the PHP app's
 observable functionality and security boundaries, then adapt the implementation
 to this repository's Django/React architecture rather than copying either
 codebase literally.
+
+## 2026-09-23 — Production readiness + session completion (#728–#745; graph peer react-node #107–#114)
+
+Gate run by **Claude Opus 5.5** (rostered Opus 5 tier; no substitution for
+stage 5 or completion). Read-only assessment; no product code changed.
+
+**Readiness result: NOT production-ready: BLOCKED on owner-gated push/Publish (#748) and CI red (#746).**
+
+| Dimension | Result | Evidence |
+|---|---|---|
+| Local | PASS | `make check` exit 0: backend 1523 passed / 39 skipped; frontend 261 files / 2824 tests; lint/format/typecheck green |
+| Approved-browser | PASS (local) | Per-issue Docker-backed Chromium matrices in `.local/tasks/backlog-session-2026-09-22.md`; real-camera Chrome checks cited for #728/#729 |
+| CI | FAIL → #746 | Pushed head `cb80b47`: Browser acceptance E2E shards 1–3 fail (stale `Create a new animation` locator ×38); other jobs pass. The 80 local commits have never run in CI |
+| Production | FAIL → #747, #748 | `smoke-published.sh`: `/health/` PASS, share-metadata FAIL (`backend_reachable:false`); live payload lacks #731 fields; none of #728–#745 is deployed |
+
+Rollup: discovered 18 (#728–#745), completed 18, blocked 0,
+dependency-blocked 0, handed-off 0, missing-terminal-status 0. New follow-ups
+(OPEN): #746 (workflow/infrastructure-defect), #747 (implementation-defect,
+owner log), #748 (verification-boundary, owner push/Publish).
+
+Reconciliation performed: posted closure-evidence comments on #728–#745 (none
+had a GitHub comment; the prior connector could not post issue comments);
+corrected the stale #731 ledger row; set this file's #728–#738 manifest rows to
+CLOSED.
+
+Routing audit: scoping, implementation, and QA for #728–#745 ran as
+Codex / GPT-5 / medium substitutions, all flagged in the ledger; second-opinion
+review was not run on any issue. #730/#733/#734 record an earlier stage-5 pass by
+Codex/GPT-5 "substituted for Claude Pro". This gate supersedes it on the
+rostered tier. **Unrecorded-provenance gaps (not backfilled):** #729 QA stage
+owner; #737 has no transaction section; #739 has no stage-owner line.
+Observation: #741's evidence cites "isolated steering 3/4" with no explanation;
+live re-verification belongs to #748.
+
+Next actions: owner approves the push (`GIT_URL=... make git-safe-push`) → #746
+fix → Replit Publish → #748 live verification; owner supplies the published
+server log for #747.

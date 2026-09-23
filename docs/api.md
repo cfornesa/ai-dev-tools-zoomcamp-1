@@ -1,5 +1,15 @@
 # Public gallery API contract
 
+## AI art-piece generation Persona context (#743)
+
+`POST /api/ai/art-pieces/generate/` accepts the optional owner-scoped
+`persona_id` alongside `library`, `prompt`, and `model`. A Persona's prompt
+text is resolved server-side and sent as a separate provider system message;
+the client cannot provide arbitrary Persona text, select another user's
+Persona, or make Persona context cross the generated-piece sandbox boundary.
+Missing, foreign, or unknown Persona IDs behave as no Persona for backward
+compatibility.
+
 ## Art-piece camera placement (#742)
 
 `ArtPieceVersion` responses now include the additive `camera_placement` field
@@ -122,6 +132,36 @@ grammar:
 - `/users/@<handle>/immersive/<slug>` — immersive view for a piece;
 - `/users/@<handle>/edit/<slug>` — the owner's piece editor entry point; and
 - `/users/@<handle>/collections/<slug>` plus `/users/@<handle>/collections/<slug>/immersive` — collection views.
+
+### Owner-private generated pieces and slug collisions (#745)
+
+The existing `GET /api/users/@<handle>/pieces/<slug>/` resolver remains the
+backward-compatible canonical regular-view contract, but its generated
+`ArtPiece` branch is owner-aware: an authenticated owner may resolve their
+own non-published, non-deleted piece at the same profile-nested slug route
+(including when the owner's profile is private). When that owner has both a
+published and a non-published row with the same owner/slug, the owner view
+selects the non-published row deterministically; anonymous and non-owner
+requests select only the published row. If no published row is available,
+anonymous and non-owner requests receive the existing `404` privacy response.
+
+The same API projection drives the existing
+`/users/@<handle>/immersive/<slug>` route, so owner-only private resolution is
+available there without adding a new URL namespace. The existing
+`/users/@<handle>/edit/<slug>` owner resolver and UUID/public_id endpoints are
+unchanged. Private rows are never returned by profile, gallery, collection,
+feed, embed, public thumbnail, or public download projections; those routes
+retain their published-only boundary.
+
+Generated `ArtPiece` slugs are unique per owner within each visibility class:
+one published slug and one non-published slug may coexist for an owner. The
+existing owner-scoped slug allocation and retry behavior remains in force,
+and different owners may reuse any slug. The migration replacing the former
+single uniqueness constraint is additive/reversible for disposable databases:
+rolling back drops the two conditional constraints and restores the original
+constraint, but must first remove or rename any public/private collisions
+created after the migration because the original constraint cannot represent
+them.
 
 ### Profile Atom feeds (#686)
 

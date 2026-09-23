@@ -29,10 +29,10 @@ handoff status rather than omitting them.
 | 11 | #737 | 2D piece metadata/version layout | — | 2b | CLOSED | `9fcbb0d` + `5d3f3ad`; serial frontend 2815/2815 and regular-route Chromium scenario passed. |
 | 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | CLOSED | `18a34d7`; focused teardown 2/2 and existing 10-test Chromium export suite passed. |
 | 13 | #742 | Authoring camera mode and export-safe configuration | — | 2b | CLOSED | `1279647` + `a425ebe`; focused backend 2/2, frontend runtime 47/47, migration drift clean, full backend 1518/39 skipped, full frontend 2823/2823, and named Docker-backed Chromium 1/1 at desktop/mobile viewports. |
-| 14 | #744 | Public piece surface contract matrix | — | 2a | GROOMED | User-requested inventory of regular, immersive, embeds, collections, gallery, direct links, and downloads; no duplicate open issue found. |
-| 15 | #745 | Private canonical viewing and slug collision isolation | — | 2b | GROOMED | User-requested owner-private viewing plus public/private slug reuse without leakage; no duplicate open issue found. |
-| 16 | #743 | AI authoring matrix across all supported engines | #742 | 2a/complex | DEPENDENCY-BLOCKED | User-requested matrix for prompt + Persona context across SVG, Three.js, A-Frame, p5.js, c2.js, and c2.js interactive; waits on #742 camera/export contract. |
-| 17 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | #742 | 2a | DEPENDENCY-BLOCKED | Remaining prompt/action, version/publish, canonical consumer, and tooltip workflow waits on #742 for camera mode/export criteria; #741 remains separate for secure embeds. |
+| 14 | #744 | Public piece surface contract matrix | — | 2a | CLOSED | `d70d07c`; named Docker-backed Chromium matrix 2/2 at desktop/mobile, covering canonical regular/immersive, direct, embeds, collection/gallery links, downloads, and privacy states. |
+| 15 | #745 | Private canonical viewing and slug collision isolation | — | 2b | CLOSED | `2326fc6` + `d70d07c`; focused backend 40 passed, migration drift clean, named Docker-backed Chromium 1/1 at desktop/mobile for owner/private and collision privacy paths. |
+| 16 | #743 | AI authoring matrix across all supported engines | #742 | 2a/complex | CLOSED | `d48ffec` + `a758a4c`; focused Persona/API tests 4 passed, Studio tests 14 passed, named Docker-backed Chromium 1/1 at desktop/mobile across all six engines, canonical regular/immersive, capabilities, and Full ZIP downloads. |
+| 17 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | #742 | 2a | ENGINEERING-READY | #742/#743/#744/#745 now closed; implement the manual authoring workflow and verify the user-requested authored-piece contract. |
 | 18 | #741 | Contextual controls plus secure same-origin-compatible sandboxing | #740 | 2a/security | GROOMED | New discovery follow-up; no duplicate open issue found. |
 
 ## Transaction ledger
@@ -245,6 +245,36 @@ status. No next issue begins before the current one is terminal.
 
 - **#739:** created during #735 QA for the reproducible export-artifact teardown error when Chromium fails before generator initialization; linked to #735 and added to the manifest. It is a criterion-ready Stage 2a workflow issue.
 - **#740:** created at the user's request for an end-to-end authoring workflow proving that authored 2D/3D pieces analogous to `augment-humankind` can be created, versioned, published, rendered, and exported through supported UI workflow. It is a criterion-ready Stage 2a browser issue and is intentionally separate from viewer parity.
+
+### #744 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Stage provenance:** implementation and QA `Codex / GPT-5 / medium`, substituted for the rostered external services: `yes`; second opinion `not run`.
+- **Commit:** `d70d07c`.
+- **Focused/browser checks:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/publicPieceSurfaceContract744.spec.ts --project=chromium` — 2 passed in 33.7s, desktop/mobile. The matrix covered canonical regular and immersive routes, direct generated route, embed/collection/gallery links, Full ZIP and Non-Camera ZIP, and draft/archived/deleted/unauthorized privacy outcomes.
+- **QA verdict:** `## QA: PASS`; rendered route and artifact evidence accepted. No new implementation gap was found; secure same-origin sandbox policy remains #741.
+- **GitHub reconciliation:** issue #744 closed as `completed`; no top-level issue comment was posted because the authenticated connector only exposes the issue-comment operation with a `pr_number` parameter.
+
+### #745 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Stage provenance:** implementation and QA `Codex / GPT-5 / medium`, substituted for the rostered external services: `yes`; second opinion `not run`.
+- **Commit:** `2326fc6` plus browser correction `d70d07c`.
+- **Focused checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-745 uv run pytest tests/test_canonical_piece.py tests/test_art_piece_persistence.py` — 40 passed; `uv run python manage.py makemigrations --check --dry-run` — no changes.
+- **Browser checks:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/privateCanonicalPiece745.spec.ts --project=chromium` — 1 passed in 14.4s, desktop/mobile, after rebuilding the Docker stack through migration 0091.
+- **QA verdict:** `## QA: PASS`; owner/private, anonymous/public, non-owner/public, canonical regular/immersive, and public/private same-slug isolation were verified. Public projections retain published-only behavior.
+- **GitHub reconciliation:** issue #745 closed as `completed`; no top-level issue comment was posted because the connector only accepts `pr_number` for that operation.
+
+### #743 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Stage provenance:** implementation and QA `Codex / GPT-5 / medium`, substituted for the rostered external services: `yes`; second opinion `not run`.
+- **Commits:** `d48ffec` (Persona context/API/UI), `655dbfe` (provider test correction), and `a758a4c` (six-engine browser matrix).
+- **Focused checks:** Persona API/provider tests — 4 passed; `npm test -- --run src/pages/ArtPieceStudio.test.tsx` — 14 passed.
+- **Browser check:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/aiAuthoringSixEngine743.spec.ts --project=chromium` — 1 passed in 33.2s, desktop/mobile. The deterministic UI workflow selected an owner Persona, submitted it with prompt context for SVG, Three.js, A-Frame, p5.js, c2.js, and c2.js interactive, saved/published each piece, checked runtime markers/capabilities, reopened canonical regular/immersive routes, and validated Full ZIP artifacts.
+- **Evidence boundary:** the matrix verifies capability contracts and the existing dedicated camera/steering/sound suites cover live runtime behavior; engine-specific unsupported capabilities are reported by the capability contract. Full `make check` is part of the post-batch gate.
+- **QA verdict:** `## QA: PASS`; no direct content/database seeding was used for piece creation.
+- **GitHub reconciliation:** issue #743 closed as `completed`; no top-level issue comment was posted because the connector only accepts `pr_number` for that operation.
 
 ## Duplicate / already-covered report
 

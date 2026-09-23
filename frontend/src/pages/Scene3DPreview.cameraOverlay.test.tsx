@@ -132,18 +132,20 @@ beforeEach(() => {
   setCameraOverlayMirrored(DEFAULT_CAMERA_OVERLAY_SETTINGS.mirrored);
 });
 
-describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issue #297)', () => {
+describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issues #297, #729)', () => {
   async function enableGestureControl() {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
   }
 
-  it('shows the live steering feed before tracking activates, while keeping controls status-gated', async () => {
+  it('exposes the Steer controls as soon as its overlay stream is live', async () => {
     render(<Scene3DPreview scene={baseScene()} />);
     await enableGestureControl();
 
     expect(screen.queryByTestId('scene3d-camera-overlay-video')).not.toBeInTheDocument();
+    expect(screen.queryByRole('slider', { name: 'Camera opacity' })).not.toBeInTheDocument();
     setCameraStatus('starting');
     expect(screen.queryByTestId('scene3d-camera-overlay-video')).not.toBeInTheDocument();
     const stream = fakeStream();
@@ -153,13 +155,17 @@ describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issue #2
     expect((screen.getByTestId('scene3d-camera-overlay-video') as HTMLVideoElement).srcObject).toBe(
       stream,
     );
-    expect(screen.queryByLabelText('Camera overlay opacity')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Mirror camera overlay')).not.toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Camera opacity' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Mirror camera overlay' })).toBeInTheDocument();
 
     setCameraStatus('active');
-    expect(screen.getByLabelText('Camera overlay opacity')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Camera opacity' })).toBeInTheDocument();
     setCameraStream(null);
     expect(screen.queryByTestId('scene3d-camera-overlay-video')).not.toBeInTheDocument();
+    expect(screen.queryByRole('slider', { name: 'Camera opacity' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('checkbox', { name: 'Mirror camera overlay' }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows the camera-feed overlay, opacity slider, and mirror toggle once active', async () => {
@@ -173,7 +179,7 @@ describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issue #2
     expect(screen.getByTestId('scene3d-camera-overlay-video')).toHaveClass(
       'scene3d-camera-overlay-video',
     );
-    expect(screen.getByLabelText('Camera overlay opacity')).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'Camera opacity' })).toBeInTheDocument();
     expect(screen.getByLabelText('Mirror camera overlay')).toBeInTheDocument();
   });
 
@@ -183,22 +189,32 @@ describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issue #2
     setCameraStream(fakeStream());
     setCameraStatus('active');
 
-    const opacitySlider = screen.getByLabelText('Camera overlay opacity') as HTMLInputElement;
+    const opacitySlider = screen.getByRole('slider', {
+      name: 'Camera opacity',
+    }) as HTMLInputElement;
+    expect(opacitySlider).toHaveAttribute('min', '0');
+    expect(opacitySlider).toHaveAttribute('max', '100');
     expect(opacitySlider.value).toBe(
       String(Math.round(DEFAULT_CAMERA_OVERLAY_SETTINGS.opacity * 100)),
     );
 
+    opacitySlider.focus();
+    const user = userEvent.setup();
+    expect(document.activeElement).toBe(opacitySlider);
     fireEvent.change(opacitySlider, { target: { value: '80' } });
-    expect(opacitySlider.value).toBe('80');
+    expect(opacitySlider).toHaveAttribute('aria-valuetext', '80%');
 
     const video = screen.getByTestId('scene3d-camera-overlay-video');
-    expect(video).toHaveStyle({ opacity: '0.8' });
+    expect(getComputedStyle(video).opacity).toBe('0.8');
 
     const mirrorToggle = screen.getByLabelText('Mirror camera overlay') as HTMLInputElement;
     expect(mirrorToggle.checked).toBe(DEFAULT_CAMERA_OVERLAY_SETTINGS.mirrored);
-    const user = userEvent.setup();
-    await user.click(mirrorToggle);
+    mirrorToggle.focus();
+    await user.keyboard(' ');
     expect(mirrorToggle.checked).toBe(!DEFAULT_CAMERA_OVERLAY_SETTINGS.mirrored);
+    expect(video).not.toHaveStyle({ transform: 'scaleX(-1)' });
+    await user.keyboard(' ');
+    expect(getComputedStyle(video).transform).toBe('scaleX(-1)');
   });
 
   it('never shows the overlay/controls when showGestureControl is false', () => {
@@ -233,15 +249,18 @@ describe('Scene3DPreview independent camera preview (issue #342)', () => {
     );
     expect(screen.queryByRole('button', { name: 'Camera theremin' })).not.toBeInTheDocument();
 
-    setCameraStream(fakeStream());
     setCameraStatus('active');
+    expect(screen.queryByRole('slider', { name: 'Camera opacity' })).not.toBeInTheDocument();
+    setCameraStream(fakeStream());
 
-    expect(screen.getByTestId('scene3d-camera-preview-video')).toBeInTheDocument();
-    expect(screen.getByTestId('scene3d-camera-preview-video')).toHaveClass(
-      'scene3d-camera-overlay-video',
-    );
-    expect(screen.getByLabelText('Camera overlay opacity')).toBeInTheDocument();
-    expect(screen.getByLabelText('Mirror camera overlay')).toBeInTheDocument();
+    const preview = screen.getByTestId('scene3d-camera-preview-video');
+    expect(preview).toHaveClass('scene3d-camera-overlay-video');
+    const opacity = screen.getByRole('slider', { name: 'Camera opacity' });
+    const mirror = screen.getByRole('checkbox', { name: 'Mirror camera overlay' });
+    fireEvent.change(opacity, { target: { value: '27' } });
+    expect(getComputedStyle(preview).opacity).toBe('0.27');
+    await user.click(mirror);
+    expect(preview).not.toHaveStyle({ transform: 'scaleX(-1)' });
   });
 
   it('hiding the preview removes the stream overlay without changing steering', async () => {

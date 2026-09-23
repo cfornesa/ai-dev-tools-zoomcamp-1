@@ -747,6 +747,11 @@ function Scene3DPreview({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rendererRef/renderError are refs/state read once per effect run, not reactive inputs the loop needs to resubscribe to independently of `scene`.
   }, [scene, renderError]);
 
+  const cameraOverlayLive = Boolean(
+    (showGestureControl && gestureControlEnabled && gestureCameraStream) ||
+    (cameraPreviewEnabled && cameraPreviewStatus === 'active' && cameraPreviewStream),
+  );
+
   if (renderError) {
     return (
       <div ref={containerRef} className="scene3d-preview scene3d-preview-unavailable">
@@ -868,30 +873,30 @@ function Scene3DPreview({
                     onStatusChange={setCameraPreviewStatus}
                     onStreamChange={setCameraPreviewStream}
                   />
-                  {cameraPreviewStatus === 'active' && (
-                    <div className="editor-camera-overlay-control">
-                      <label htmlFor="scene3d-camera-preview-opacity">Camera overlay opacity</label>
-                      <input
-                        id="scene3d-camera-preview-opacity"
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={Math.round(cameraOverlayOpacity * 100)}
-                        aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
-                        onChange={(event) => setOpacity(Number(event.target.value) / 100)}
-                      />
-                      <label htmlFor="scene3d-camera-preview-mirror">
-                        <input
-                          id="scene3d-camera-preview-mirror"
-                          type="checkbox"
-                          checked={cameraOverlayMirrored}
-                          onChange={(event) => setMirrored(event.target.checked)}
-                        />
-                        Mirror camera overlay
-                      </label>
-                    </div>
-                  )}
+                </div>
+              )}
+              {cameraOverlayLive && (
+                <div className="editor-camera-overlay-control">
+                  <label htmlFor="scene3d-camera-opacity">Camera opacity</label>
+                  <input
+                    id="scene3d-camera-opacity"
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={Math.round(cameraOverlayOpacity * 100)}
+                    aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
+                    onChange={(event) => setOpacity(Number(event.target.value) / 100)}
+                  />
+                  <label htmlFor="scene3d-camera-mirror">
+                    <input
+                      id="scene3d-camera-mirror"
+                      type="checkbox"
+                      checked={cameraOverlayMirrored}
+                      onChange={(event) => setMirrored(event.target.checked)}
+                    />
+                    Mirror camera overlay
+                  </label>
                 </div>
               )}
               {showSoundControl && soundEnabled && (
@@ -998,30 +1003,6 @@ function Scene3DPreview({
                     }}
                     onStreamChange={setGestureCameraStream}
                   />
-                  {gestureCameraStatus === 'active' && (
-                    <div className="editor-camera-overlay-control">
-                      <label htmlFor="scene3d-camera-overlay-opacity">Camera overlay opacity</label>
-                      <input
-                        id="scene3d-camera-overlay-opacity"
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={Math.round(cameraOverlayOpacity * 100)}
-                        aria-valuetext={`${Math.round(cameraOverlayOpacity * 100)}%`}
-                        onChange={(event) => setOpacity(Number(event.target.value) / 100)}
-                      />
-                      <label htmlFor="scene3d-camera-overlay-mirror">
-                        <input
-                          id="scene3d-camera-overlay-mirror"
-                          type="checkbox"
-                          checked={cameraOverlayMirrored}
-                          onChange={(event) => setMirrored(event.target.checked)}
-                        />
-                        Mirror camera overlay
-                      </label>
-                    </div>
-                  )}
                 </div>
               )}
             </StageControlsPopover>

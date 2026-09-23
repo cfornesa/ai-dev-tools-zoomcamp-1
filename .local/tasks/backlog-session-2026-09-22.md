@@ -17,7 +17,7 @@ handoff status rather than omitting them.
 | Order | Issue | Scope | Dependencies | Routing | Status | Blocker / next action |
 |---:|---|---|---|---|---|---|
 | 1 | #728 | Public 3D full-stage camera overlay | — | 2a | CLOSED | `f5ed998` fixes Strict Mode camera startup; focused camera 33/33 and regular-route Chromium geometry passed. |
-| 2 | #729 | Public 3D camera opacity/mirror while live | #728 | 2a | GROOMED | — |
+| 2 | #729 | Public 3D camera opacity/mirror while live | #728 | 2a | IMPLEMENTED / QA PENDING | Shared controls render while either overlay is live; focused checks pass. Full/browser QA not run per owner direction. |
 | 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | QA-FAIL / VERIFICATION | Regular-route fixture correction committed, but browser DOM still shows editor shell and zero toolbar actions; route/auth resolution needs diagnosis before geometry can be judged. |
 | 4 | #738 | Themed public piece title and top padding | — | 2a | CLOSED | Fresh Docker-backed Chromium route matrix passed. |
 | 5 | #731 | Public 3D description/version API | — | 2b | GROOMED | — |
@@ -37,6 +37,14 @@ Each issue must record: state, commit, changed files, focused checks, full
 checks, QA verdict/comment, evidence boundary, GitHub reconciliation, stage
 owners (`service / model / effort`) and substitution flags, and terminal
 status. No next issue begins before the current one is terminal.
+
+### #729 transaction ledger — focused implementation
+
+- **State:** `GROOMED → ENGINEERING → QA PENDING`; #728 is closed.
+- **Stage provenance:** implementation `Codex / GPT-6 / effort not reported`, substituted for rostered Opencode Go / kimi-k3: `yes` because the delegated implementation tool was unavailable in this session; stage 3 `not run`; stage 4 pending.
+- **Changed files:** `frontend/src/pages/Scene3DPreview.tsx`, `frontend/src/pages/Scene3DPreview.cameraOverlay.test.tsx`.
+- **Focused checks:** camera-overlay Vitest 7/7 passed; targeted Oxlint passed with an existing Fast Refresh warning; targeted Prettier and `git diff --check` passed. A first focused Vitest run found jsdom does not advance the native range for `userEvent` ArrowRight; the test now asserts focus and range semantics, with a change event for the value update.
+- **Evidence boundary:** owner directed focused implementation and commit now; full `make check` and the real-camera 1440×900 screenshot criterion have not run. Keep #729 open for stage-4 QA.
 
 ### #728 transaction ledger — QA result
 

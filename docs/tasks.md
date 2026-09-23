@@ -23832,7 +23832,7 @@ grants camera); production theme changes must not be made for #738 (local
 stack only). No blockers; next action for a future session: backlog-session on
 #728.
 
-## 2026-09-23 — Authoring workflow expansion (#740–#742)
+## 2026-09-23 — Authoring workflow expansion (#740–#743)
 
 The authoring workflow request now explicitly covers prompt-driven creation of
 reference-style authored 2D/3D pieces, functional user-configurable camera
@@ -23848,6 +23848,12 @@ explicit scene/runtime contract absent from the current app. That work is
 tracked in the linked criterion-ready #742; #740 is dependency-blocked for
 those criteria until #742 closes. #741 remains the separate secure-embed and
 contextual-control contract.
+
+The owner then expanded the goal to require every generated engine case—SVG,
+Three.js, A-Frame, p5.js, c2.js, and c2.js interactive—to be exercised through
+prompt plus Persona context across regular/immersive runtimes, hand steering,
+camera, sound, and per-piece downloads. Discovery found no duplicate open issue;
+the criterion-ready matrix is tracked as #743 and depends on #742.
 
 Implementation reference policy: use the local `../augment-humankind-react-node`
 implementation patterns for React/TypeScript component composition, viewer

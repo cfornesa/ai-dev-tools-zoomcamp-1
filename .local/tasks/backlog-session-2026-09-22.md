@@ -88,6 +88,16 @@ status. No next issue begins before the current one is terminal.
 - **QA verdict:** `## QA: FAIL` for complete issue contract solely because required rendered route evidence is unavailable; no product-code change made during QA.
 - **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment posted. Keep #732 open as terminally blocked pending browser evidence.
 
+### #735 transaction ledger — QA result
+
+- **State:** `GROOMED → ENGINEERING → QA → ENGINEERING → QA → RECONCILIATION`.
+- **Stage provenance:** scoping `Codex / GPT-5 / medium`, substituted for rostered Codex/Luna: `yes`; implementation delegated subagent / GPT-5 / medium, substituted for rostered Opencode Go: `yes`; formatting correction same delegated subagent / GPT-5 / medium, substituted: `yes`; second opinion: `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate pending.
+- **Commits:** `1cc5662` implementation; `95c6a40` Prettier correction.
+- **Checks:** focused Vitest 24 passed; full frontend Vitest 260 files/2813 tests passed; lint passed; format-check and typecheck passed after correction.
+- **Browser evidence:** `npx playwright test e2e/exportArtifacts.spec.ts --project=chromium` attempted; Chromium failed before launch at macOS MachPort permission boundary (`Permission denied (1100)`), and the harness emitted a secondary `generator.close()` undefined cleanup error. No runtime screenshot/ZIP browser evidence claimed. New workflow follow-up #739 created and linked for the cleanup defect. Classification: `verification-boundary` plus `workflow/infrastructure-defect`; exact next action is run #735 in approved CI/Chromium and process #739 before relying on browser failure diagnostics.
+- **QA verdict:** `## QA: FAIL` for complete issue contract because extracted runtime behavior and screenshots are unverified; no product-code fix made during QA.
+- **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment posted. Keep #735 open, dependency-linked to #739 for harness cleanup but not re-scoped.
+
 ## Duplicate / already-covered report
 
 The prior distillation in `docs/tasks.md` records closed history #297/#342

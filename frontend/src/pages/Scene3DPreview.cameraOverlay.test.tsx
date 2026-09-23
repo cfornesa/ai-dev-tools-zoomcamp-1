@@ -139,16 +139,27 @@ describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issue #2
     await user.click(screen.getByRole('button', { name: 'Steer the piece' }));
   }
 
-  it('renders no overlay video or controls while idle/starting, even once a stream exists', async () => {
+  it('shows the live steering feed before tracking activates, while keeping controls status-gated', async () => {
     render(<Scene3DPreview scene={baseScene()} />);
     await enableGestureControl();
 
-    setCameraStream(fakeStream());
-    setCameraStatus('starting');
-
     expect(screen.queryByTestId('scene3d-camera-overlay-video')).not.toBeInTheDocument();
+    setCameraStatus('starting');
+    expect(screen.queryByTestId('scene3d-camera-overlay-video')).not.toBeInTheDocument();
+    const stream = fakeStream();
+    setCameraStream(stream);
+
+    expect(screen.getByTestId('scene3d-camera-overlay-video')).toBeInTheDocument();
+    expect((screen.getByTestId('scene3d-camera-overlay-video') as HTMLVideoElement).srcObject).toBe(
+      stream,
+    );
     expect(screen.queryByLabelText('Camera overlay opacity')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Mirror camera overlay')).not.toBeInTheDocument();
+
+    setCameraStatus('active');
+    expect(screen.getByLabelText('Camera overlay opacity')).toBeInTheDocument();
+    setCameraStream(null);
+    expect(screen.queryByTestId('scene3d-camera-overlay-video')).not.toBeInTheDocument();
   });
 
   it('shows the camera-feed overlay, opacity slider, and mirror toggle once active', async () => {

@@ -1,6 +1,7 @@
 /** Issue #730: public 3D stage toolbar placement and non-reflowing popovers. */
 import { expect, test } from '@playwright/test';
 
+import { apiGet } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
@@ -55,10 +56,22 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
       .click();
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
 
+    const profileResponse = await apiGet(page.context(), '/api/account/profile/');
+    expect(profileResponse.status()).toBe(200);
+    const { handle } = (await profileResponse.json()) as { handle: string };
+    const publicProfileResponse = await apiGet(page.context(), `/api/users/@${handle}/`);
+    expect(publicProfileResponse.status()).toBe(200);
+    const publicProfile = (await publicProfileResponse.json()) as {
+      pieces: Array<{ id: string; slug: string; type: string }>;
+    };
+    const piece = publicProfile.pieces.find((candidate) => candidate.id === projectId);
+    if (!piece || piece.type !== '3d')
+      throw new Error('Published 3D toolbar fixture was not discoverable from the profile.');
+
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
     try {
-      await anonymousPage.goto(`/immersive/p3d/${projectId}`);
+      await anonymousPage.goto(`/users/@${handle}/immersive/${piece.slug}`);
       const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
       const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
       await expect(toolbar).toBeVisible();

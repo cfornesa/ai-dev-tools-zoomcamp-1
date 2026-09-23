@@ -165,9 +165,9 @@ export function getImmersiveHandMoveAxes(signals: HandSignals): {
  * to the WebGL canvas every frame, with no per-frame drawing hook a DOM
  * element could be composited through. The simplest option the issue's own
  * scope note offers -- a DOM-overlaid `<video>` element positioned over the
- * WebGL canvas -- is what's implemented here: a small `<video>` in the
- * corner of `.scene3d-preview-canvas-frame`, shown only while gesture
- * control is on and `CameraControl`'s own status reaches `'active'`. No
+ * WebGL canvas -- is what's implemented here: a `<video>` over
+ * `.scene3d-preview-canvas-frame`, shown when gesture control is on and
+ * its camera stream exists, even before hand tracking reaches `'active'`. No
  * drag/resize (out of scope -- the 2D feature's geometry system is a
  * separate, more involved concern this issue never asked for). Opacity
  * and mirroring reuse
@@ -408,8 +408,8 @@ function Scene3DPreview({
     setThereminEnabled(true);
   }
 
-  // Issue #297: camera-feed overlay + opacity/mirror controls, shown only
-  // while gesture control is active and the camera itself is live.
+  // Issue #297: camera-feed overlay + opacity/mirror controls. The stream
+  // becomes available before CameraControl marks hand tracking active.
   const [gestureCameraStatus, setGestureCameraStatus] = useState<CameraStatus>('idle');
   const [gestureCameraStream, setGestureCameraStream] = useState<MediaStream | null>(null);
   const gestureCameraVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -445,12 +445,9 @@ function Scene3DPreview({
       // autoplay rejection without treating it as a scene-breaking error.
       void Promise.resolve(videoEl.play()).catch(() => {});
     }
-    // `gestureCameraStatus` must stay a dependency here even though it's
-    // not read in the body: the `<video>` element only mounts once status
-    // reaches 'active' (see the JSX below), so without it this effect
-    // would fire once while the ref is still null and never again once the
-    // element actually exists -- the identical bug documented on
-    // `EditorWorkspace.tsx`'s own version of this effect.
+    // Keep status in the dependencies so stream attachment is retried after
+    // a tracking transition; the video itself mounts as soon as the stream
+    // exists, without waiting for the first tracked frame.
   }, [gestureCameraStream, gestureCameraStatus]);
 
   useEffect(() => {
@@ -785,7 +782,7 @@ function Scene3DPreview({
         data-testid="scene3d-preview-canvas-frame"
       >
         <canvas ref={canvasRef} data-testid="scene3d-preview-canvas" />
-        {showGestureControl && gestureCameraStatus === 'active' && gestureCameraStream && (
+        {showGestureControl && gestureControlEnabled && gestureCameraStream && (
           <video
             ref={gestureCameraVideoRef}
             data-testid="scene3d-camera-overlay-video"

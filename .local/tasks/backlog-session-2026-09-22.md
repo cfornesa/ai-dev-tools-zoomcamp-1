@@ -25,7 +25,7 @@ handoff status rather than omitting them.
 | 7 | #733 | 3D immersive metadata below canvas | #731, #732 | 2a | GROOMED | — |
 | 8 | #734 | 3D immersive camera overlay/controls | #728, #729 | 2a | GROOMED | — |
 | 9 | #735 | Full ZIP 3D camera/toolset | — | 2a | CLOSED | Fresh Docker-backed Chromium: all 10 export/camera scenarios passed. |
-| 10 | #736 | Generated piece metadata/version layout | — | 2b | QA-FAIL / VERIFICATION | Fresh browser remains on `Loading public piece…` for the generated canonical fixture; route/API resolution needs diagnosis. |
+| 10 | #736 | Generated piece metadata/version layout | — | 2b | CLOSED | `edaf51d` + `8be39c8`; canonical backend 13/13 and regular-route Chromium desktop/mobile scenario passed. |
 | 11 | #737 | 2D piece metadata/version layout | — | 2b | CLOSED | `9fcbb0d` + `5d3f3ad`; serial frontend 2815/2815 and regular-route Chromium scenario passed. |
 | 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | CLOSED | `18a34d7`; focused teardown 2/2 and existing 10-test Chromium export suite passed. |
 | 13 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | — | 2a | GROOMED | Updated with prompt/action steps, camera overlay/background modes, centered full-viewport sizing, and contextual tooltips; #741 owns secure same-origin-compatible embeds. |
@@ -134,7 +134,8 @@ status. No next issue begins before the current one is terminal.
 - #741 was created after duplicate search found no open tooltip or same-origin/sandbox issue; it owns accessible action context plus narrowly scoped `allow-same-origin`/embed security and postMessage validation.
 - #728 final browser retry passed on the regular canonical public route at both viewports after `f5ed998`; camera video geometry, cover sizing, stacking, pointer-events, and toolbar layering were exercised.
 - #729 combined browser retry passed: controls were absent before camera activation and visible after Steer/video activation at both viewports.
-- #736 remains open because the generated canonical fixture stayed at `Loading public piece…` in fresh Docker Chromium; no closure evidence is claimed.
+- #736 initially hit a transient generated canonical loading state and then duplicate model/current locators; the final run passed after the focused E2E corrections.
+- #736 later resolved to a duplicate “E2E model”/“CURRENT” locator boundary; canonical backend 13/13 and final regular-route Chromium scenario passed after `edaf51d` and `8be39c8`.
 - #730’s selector correction reached the public viewer, but the full geometry/popover scenario timed out during browser cleanup with no usable final geometry evidence; issue remains open pending a stable browser run.
 
 ### #739 transaction ledger — QA PASS

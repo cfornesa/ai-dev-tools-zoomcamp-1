@@ -23841,3 +23841,12 @@ hover/focus text for piece controls. #741 is the discovery-gated security
 follow-up for accessible tooltips plus narrowly scoped `allow-same-origin`
 compatible embeds, origin validation, and postMessage/media permission
 boundaries. No duplicate open issue was found for either requirement.
+
+Implementation reference policy: use the local `../augment-humankind-react-node`
+implementation patterns for React/TypeScript component composition, viewer
+state, sharing, and interaction contracts where they improve this stack. The
+local `../augment-humankind` PHP application remains the behavioral source of
+truth for parity: when the two references differ, preserve the PHP app's
+observable functionality and security boundaries, then adapt the implementation
+to this repository's Django/React architecture rather than copying either
+codebase literally.

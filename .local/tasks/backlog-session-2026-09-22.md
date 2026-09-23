@@ -18,7 +18,7 @@ handoff status rather than omitting them.
 |---:|---|---|---|---|---|---|
 | 1 | #728 | Public 3D full-stage camera overlay | — | 2a | CLOSED | `f5ed998` fixes Strict Mode camera startup; focused camera 33/33 and regular-route Chromium geometry passed. |
 | 2 | #729 | Public 3D camera opacity/mirror while live | #728 | 2a | CLOSED | `1fc4dc5` + `34d82c1`; focused camera 7/7 and combined regular-route Chromium scenario passed. |
-| 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | QA-FAIL / VERIFICATION | Regular-route fixture correction committed, but browser DOM still shows editor shell and zero toolbar actions; route/auth resolution needs diagnosis before geometry can be judged. |
+| 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | CLOSED | `92cae9c`; named Docker-backed Chromium geometry/popover/screenshots passed 1/1 after correcting the close control locator to its rendered `menuitem` role. |
 | 4 | #738 | Themed public piece title and top padding | — | 2a | CLOSED | Fresh Docker-backed Chromium route matrix passed. |
 | 5 | #731 | Public 3D description/version API | — | 2b | GROOMED | — |
 | 6 | #732 | Public 3D metadata layout | #731 | 2a | CLOSED | `b9ddb51`; targeted backend 5 passed, frontend 12 passed, named Chromium scenario passed. |
@@ -136,7 +136,17 @@ status. No next issue begins before the current one is terminal.
 - #729 combined browser retry passed: controls were absent before camera activation and visible after Steer/video activation at both viewports.
 - #736 initially hit a transient generated canonical loading state and then duplicate model/current locators; the final run passed after the focused E2E corrections.
 - #736 later resolved to a duplicate “E2E model”/“CURRENT” locator boundary; canonical backend 13/13 and final regular-route Chromium scenario passed after `edaf51d` and `8be39c8`.
-- #730’s selector correction reached the public viewer, but the full geometry/popover scenario timed out during browser cleanup with no usable final geometry evidence; issue remains open pending a stable browser run.
+- #730’s final retry reached the public viewer and passed the full geometry/popover scenario; the apparent blocker was a stale test locator for a rendered `menuitem` close control.
+
+### #730 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Stage provenance:** implementation `Codex / GPT-5 / medium`, substituted for rostered Opencode Go: `yes`; second opinion `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate `Codex / GPT-5 / medium`, substituted for rostered Claude Pro: `yes`.
+- **Commit:** `92cae9c`; changed only `frontend/e2e/public3dToolbar730.spec.ts`, correcting the close-download locator from `button` to the rendered semantic `menuitem` role. Product code was unchanged.
+- **Focused checks:** `frontend/src/components/PieceStageToolbar.test.tsx` — 9/9 passed.
+- **Browser evidence:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/public3dToolbar730.spec.ts --project=chromium` — 1/1 passed in 14.2s against rebuilt Docker; desktop/mobile toolbar geometry, non-reflowing Piece controls and Download popovers, fullscreen containment, and four screenshots were produced.
+- **QA verdict:** `## QA: PASS`; the earlier blocker was a test locator mismatch, not a product or Docker failure. The Playwright trace showed the close control had `role="menuitem"`, so the old `button` locator could never resolve.
+- **GitHub reconciliation:** top-level issue QA comment was unavailable because the connector accepts `pr_number` only; authenticated issue update closed #730 as `completed` after the evidence above.
 
 ### #739 transaction ledger — QA PASS
 

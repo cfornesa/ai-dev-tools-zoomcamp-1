@@ -91,7 +91,8 @@ describe('PublicProjectViewer load states', () => {
 
     renderViewer();
 
-    expect(await screen.findByRole('heading', { name: 'Hand Follower' })).toBeInTheDocument();
+    const heading = await screen.findByRole('heading', { name: 'Hand Follower', level: 1 });
+    expect(heading).toHaveClass('public-piece-page-heading');
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(screen.getByTestId('public-scene-canvas')).toBeInTheDocument();
     expect(mockedGetPublicProject).toHaveBeenCalledWith('p1');

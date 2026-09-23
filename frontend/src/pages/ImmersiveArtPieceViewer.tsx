@@ -253,7 +253,9 @@ function ImmersiveArtPieceViewer({
       {!isEmbedRoute && (
         <header>
           <div className="immersive-art-piece-heading-row">
-            <h2 id="immersive-art-piece-heading">{piece.title}</h2>
+            <h1 id="immersive-art-piece-heading" className="public-piece-page-heading">
+              {piece.title}
+            </h1>
             {editHref && <Link to={editHref}>Edit piece</Link>}
             <button
               type="button"

@@ -160,7 +160,7 @@ function ImmersiveProject3DViewer({
     >
       {!isEmbed && (
         <header>
-          <h2>{readyProject.title}</h2>
+          <h1 className="public-piece-page-heading">{readyProject.title}</h1>
           <p className="public-project-attribution">By {authorDisplayName || readyProject.owner}</p>
           {!!readyProject.seo_config?.description && (
             <p className="public-project-context">{readyProject.seo_config.description}</p>

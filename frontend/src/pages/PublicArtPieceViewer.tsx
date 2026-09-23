@@ -158,12 +158,15 @@ export default function PublicArtPieceViewer({
 
   return (
     <section
+      className="public-art-piece-viewer"
       aria-labelledby="public-art-piece-heading"
       data-embed-route={isEmbedRoute || undefined}
     >
       {!isEmbedRoute && (
         <>
-          <h2 id="public-art-piece-heading">{piece.title}</h2>
+          <h1 id="public-art-piece-heading" className="public-piece-page-heading">
+            {piece.title}
+          </h1>
           {editHref && <Link to={editHref}>Edit piece</Link>}
           <p>{piece.description}</p>
           <p className="public-project-attribution">

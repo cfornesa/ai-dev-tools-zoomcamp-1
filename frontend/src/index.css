@@ -4659,7 +4659,7 @@ select.ai-proposal-field-full-width {
    treatment from issue #157 unchanged. */
 .public-project-viewer {
   text-align: left;
-  padding: 0 24px 24px;
+  padding: var(--site-density) 24px 24px;
   box-sizing: border-box;
 }
 
@@ -4667,9 +4667,25 @@ select.ai-proposal-field-full-width {
   margin: 0 0 16px;
 }
 
-.public-project-viewer header h2 {
+.public-piece-page-heading {
   display: inline-block;
+  max-width: 100%;
   margin: 0 8px 8px 0;
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.public-art-piece-viewer {
+  padding: var(--site-density) 24px 24px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.public-art-piece-viewer[data-embed-route='true'] {
+  padding: 0;
 }
 
 /* Canonical structured-piece surfaces use a compact action button for the
@@ -4704,12 +4720,17 @@ select.ai-proposal-field-full-width {
 }
 
 .immersive-project3d-viewer {
-  padding: 0 24px 24px;
+  padding: var(--site-density) 24px 24px;
   box-sizing: border-box;
 }
 
 .immersive-project3d-viewer header {
   margin: 0 0 16px;
+}
+
+.immersive-project3d-viewer .public-piece-page-heading,
+.immersive-art-piece-viewer .public-piece-page-heading {
+  color: inherit;
 }
 
 .immersive-project3d-embed-actions {
@@ -4729,11 +4750,15 @@ select.ai-proposal-field-full-width {
 
 @media (max-width: 767px) {
   .public-project-viewer {
-    padding: 0 16px 16px;
+    padding: var(--site-density) 16px 16px;
+  }
+
+  .public-art-piece-viewer {
+    padding: var(--site-density) 16px 16px;
   }
 
   .immersive-project3d-viewer {
-    padding: 0 16px 16px;
+    padding: var(--site-density) 16px 16px;
   }
 }
 .sr-only {

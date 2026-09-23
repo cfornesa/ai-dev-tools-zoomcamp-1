@@ -177,7 +177,7 @@ function PublicProject3DViewer({
   return (
     <div className="public-project-viewer" data-project-kind="original">
       <header>
-        <h2>{project.title}</h2>
+        <h1 className="public-piece-page-heading">{project.title}</h1>
         <p className="public-project-attribution">By {authorDisplayName || project.owner}</p>
         {!!project.seo_config?.description && (
           <p className="public-project-context">{project.seo_config.description}</p>

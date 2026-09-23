@@ -83,7 +83,8 @@ describe('PublicProject3DViewer load states', () => {
     mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
     renderViewer();
 
-    expect(await screen.findByRole('heading', { name: 'Rotating Cube' })).toBeInTheDocument();
+    const heading = await screen.findByRole('heading', { name: 'Rotating Cube', level: 1 });
+    expect(heading).toHaveClass('public-piece-page-heading');
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
     expect(screen.getByRole('toolbar', { name: 'Preview actions' })).toBeInTheDocument();

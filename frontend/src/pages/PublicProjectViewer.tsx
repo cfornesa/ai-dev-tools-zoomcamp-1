@@ -470,7 +470,7 @@ function PublicProjectViewer({
     >
       {!isEmbedRoute && (
         <header>
-          <h2>{project.title}</h2>
+          <h1 className="public-piece-page-heading">{project.title}</h1>
           {provenance && (
             <span className="remix-badge" role="status" aria-label="Remix">
               Remix

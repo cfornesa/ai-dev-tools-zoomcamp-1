@@ -174,6 +174,17 @@ export function cleanupExportHarnessArtifacts(): void {
   }
 }
 
+/** Always remove harness artifacts, even when browser setup never produced a generator. */
+export async function cleanupExportGenerator(
+  generator: Pick<ExportGeneratorPage, 'close'> | undefined,
+): Promise<void> {
+  try {
+    await generator?.close();
+  } finally {
+    cleanupExportHarnessArtifacts();
+  }
+}
+
 // ---------------------------------------------------------------------
 // In-browser bundle of the export modules (for ZIP/thumbnail generation,
 // which needs a real Canvas 2D context — see module doc comment above).

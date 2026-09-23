@@ -76,7 +76,7 @@ import { expect, test, type Browser, type Page, type Route, type TestInfo } from
 
 import {
   assertNoLeaks,
-  cleanupExportHarnessArtifacts,
+  cleanupExportGenerator,
   createExportGeneratorPage,
   exportFixtureScene,
   findUnpinnedDependencyScriptSrcs,
@@ -95,8 +95,7 @@ test.beforeAll(async ({ browser }: { browser: Browser }) => {
 });
 
 test.afterAll(async () => {
-  await generator.close();
-  cleanupExportHarnessArtifacts();
+  await cleanupExportGenerator(generator);
 });
 
 /** A minimal fake `p5` global, adapted from

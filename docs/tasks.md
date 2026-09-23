@@ -23788,3 +23788,118 @@ All Codex entries are substitutions authorized at session level in
 `DECISIONS.md`. Effort values and exact model revisions for Codex stages are
 permanently unrecoverable; this is an accepted, recorded gap, not an inferred
 value.
+
+## 2026-09-22 — Piece-page parity distillation (#728–#738), graph run with augment-humankind-react-node #107–#111
+
+Owner request: augmentrart.com and augmenthumankind.com piece pages lack the PHP
+reference's live camera overlay, opacity controls, and functional steering;
+augmentrart.com pieces also lack description/version headings, correct toolbar
+placement, and a themed title. Owner scope decisions this session: both repos in
+graph mode; **this session ends at task-distillation for both repos** (no
+engineering). Downloads and immersive views get the same toolset as the web
+page, minus controls that make no sense there (e.g. no Download inside a
+downloaded piece).
+
+Run by Claude Opus 5.5 (distillation; the recommended Sonnet/Medium profile was
+not used, so record as a model deviation, not a substitution of a rostered
+external service). Evidence gathered in the owner's Chrome with a real camera
+(the desktop browser pane blocks device capture).
+
+| Order | Issue | Surface | Routing | Depends on | Status |
+|---|---|---|---|---|---|
+| 1 | [#728](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/728) | public 3D page: full-stage camera overlay | 2a | — | CLOSED (see 2026-09-23 readiness) |
+| 2 | [#729](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/729) | public 3D page: opacity/mirror while any camera live | 2a | #728 | CLOSED (see 2026-09-23 readiness) |
+| 3 | [#730](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/730) | public 3D page: toolbar overlay placement | 2a | — | CLOSED (see 2026-09-23 readiness) |
+| 4 | [#738](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/738) | public piece pages: themed title + top padding | 2a | — | CLOSED (see 2026-09-23 readiness) |
+| 5 | [#731](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/731) | public 3D API: description + versions | 2b | — | CLOSED (see 2026-09-23 readiness) |
+| 6 | [#732](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/732) | public 3D page: metadata layout | 2a | #731 | CLOSED (see 2026-09-23 readiness) |
+| 7 | [#733](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/733) | 3D immersive: info below canvas | 2a | #731, #732 | CLOSED (see 2026-09-23 readiness) |
+| 8 | [#734](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/734) | 3D immersive: camera overlay + controls | 2a | #728, #729 | CLOSED (see 2026-09-23 readiness) |
+| 9 | [#735](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/735) | 3D Full ZIP: toolset minus Download | 2a | — | CLOSED (see 2026-09-23 readiness) |
+| 10 | [#736](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/736) | generated piece page: engine/prompt/versions | 2b | — | CLOSED (see 2026-09-23 readiness) |
+| 11 | [#737](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/737) | 2D piece page: versions layout | 2b | — | CLOSED (see 2026-09-23 readiness) |
+
+Duplicate / closed-history report: #297 (camera overlay + opacity/mirror) and
+#342 (independent camera toggle) are closed and stay closed; #728/#729 are new
+owner-rejection follow-ups (the shipped overlay is a 160×120 corner thumbnail
+under the canvas, and its controls are unreachable while steering). #369–#371,
+#436, #482 (ZIP camera/steer) are closed history for #735. #294/#432/#455 (steer)
+are functional per the live check (Steer activates, camera stream live); no new
+steering-logic issue for augmentrart.com. No open issue duplicated any item.
+
+Verification boundaries: real-camera checks require Claude in Chrome (owner
+grants camera); production theme changes must not be made for #738 (local
+stack only). No blockers; next action for a future session: backlog-session on
+#728.
+
+## 2026-09-23 — Authoring workflow expansion (#740–#743)
+
+The authoring workflow request now explicitly covers prompt-driven creation of
+reference-style authored 2D/3D pieces, functional user-configurable camera
+overlay/background modes with centered full-viewport sizing, and contextual
+hover/focus text for piece controls. #741 is the discovery-gated security
+follow-up for accessible tooltips plus narrowly scoped `allow-same-origin`
+compatible embeds, origin validation, and postMessage/media permission
+boundaries. No duplicate open issue was found for either requirement.
+
+The #740 grooming pass discovered that overlay/background camera selection,
+piece/version persistence, and Full/Non-Camera export preservation require an
+explicit scene/runtime contract absent from the current app. That work was
+implemented and QA-closed in #742; the authored workflow is verified by
+`frontend/e2e/authoringWorkflow740.spec.ts` and the secure-embed/contextual-
+control contract is reconciled in #741.
+
+The owner then expanded the goal to require every generated engine case—SVG,
+Three.js, A-Frame, p5.js, c2.js, and c2.js interactive—to be exercised through
+prompt plus Persona context across regular/immersive runtimes, hand steering,
+camera, sound, and per-piece downloads. Discovery found no duplicate open issue;
+the criterion-ready matrix is tracked as #743 and depends on #742.
+
+The public-surface and private-slug follow-ups #744 and #745 are also closed;
+the complete backlog run is reconciled in `.local/tasks/backlog-session-2026-09-22.md`.
+
+Implementation reference policy: use the local `../augment-humankind-react-node`
+implementation patterns for React/TypeScript component composition, viewer
+state, sharing, and interaction contracts where they improve this stack. The
+local `../augment-humankind` PHP application remains the behavioral source of
+truth for parity: when the two references differ, preserve the PHP app's
+observable functionality and security boundaries, then adapt the implementation
+to this repository's Django/React architecture rather than copying either
+codebase literally.
+
+## 2026-09-23 — Production readiness + session completion (#728–#745; graph peer react-node #107–#114)
+
+Gate run by **Claude Opus 5.5** (rostered Opus 5 tier; no substitution for
+stage 5 or completion). Read-only assessment; no product code changed.
+
+**Readiness result: NOT production-ready: BLOCKED on owner-gated push/Publish (#748) and CI red (#746).**
+
+| Dimension | Result | Evidence |
+|---|---|---|
+| Local | PASS | `make check` exit 0: backend 1523 passed / 39 skipped; frontend 261 files / 2824 tests; lint/format/typecheck green |
+| Approved-browser | PASS (local) | Per-issue Docker-backed Chromium matrices in `.local/tasks/backlog-session-2026-09-22.md`; real-camera Chrome checks cited for #728/#729 |
+| CI | FAIL → #746 | Pushed head `cb80b47`: Browser acceptance E2E shards 1–3 fail (stale `Create a new animation` locator ×38); other jobs pass. The 80 local commits have never run in CI |
+| Production | FAIL → #747, #748 | `smoke-published.sh`: `/health/` PASS, share-metadata FAIL (`backend_reachable:false`); live payload lacks #731 fields; none of #728–#745 is deployed |
+
+Rollup: discovered 18 (#728–#745), completed 18, blocked 0,
+dependency-blocked 0, handed-off 0, missing-terminal-status 0. New follow-ups
+(OPEN): #746 (workflow/infrastructure-defect), #747 (implementation-defect,
+owner log), #748 (verification-boundary, owner push/Publish).
+
+Reconciliation performed: posted closure-evidence comments on #728–#745 (none
+had a GitHub comment; the prior connector could not post issue comments);
+corrected the stale #731 ledger row; set this file's #728–#738 manifest rows to
+CLOSED.
+
+Routing audit: scoping, implementation, and QA for #728–#745 ran as
+Codex / GPT-5 / medium substitutions, all flagged in the ledger; second-opinion
+review was not run on any issue. #730/#733/#734 record an earlier stage-5 pass by
+Codex/GPT-5 "substituted for Claude Pro". This gate supersedes it on the
+rostered tier. **Unrecorded-provenance gaps (not backfilled):** #729 QA stage
+owner; #737 has no transaction section; #739 has no stage-owner line.
+Observation: #741's evidence cites "isolated steering 3/4" with no explanation;
+live re-verification belongs to #748.
+
+Next actions: owner approves the push (`GIT_URL=... make git-safe-push`) → #746
+fix → Replit Publish → #748 live verification; owner supplies the published
+server log for #747.

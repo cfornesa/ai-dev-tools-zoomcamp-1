@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -72,7 +72,10 @@ function basePublicProject3D(overrides: Partial<PublicProject3D> = {}): PublicPr
     id: 'p1',
     owner: 'alice',
     title: 'Rotating Cube',
+    description: '',
     thumbnail_url: '/api/public/projects3d/p1/thumbnail.png',
+    versions: [],
+    version_count: 0,
     current_version: {
       id: 1,
       sequence: 1,
@@ -124,6 +127,25 @@ function renderViewerAt(path: string) {
   );
 }
 
+function renderInitialViewer(project: PublicProject3D) {
+  return render(
+    <MemoryRouter initialEntries={['/users/@alice/immersive/rotating-cube']}>
+      <Routes>
+        <Route
+          path="/users/:handle/immersive/:pieceSlug"
+          element={
+            <ImmersiveProject3DViewer
+              initialProject={project}
+              authorDisplayName="Alice Artist"
+              canonicalHref="/users/@alice/immersive/rotating-cube"
+            />
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -167,6 +189,45 @@ describe('ImmersiveProject3DViewer load states', () => {
     expect(writeText).toHaveBeenLastCalledWith(
       expect.stringContaining('/immersive/p3d/p1?embed=1&cms=1'),
     );
+  });
+
+  it('places canonical metadata, actions, and versions below the immersive stage', async () => {
+    const project = basePublicProject3D({
+      description: 'A study in spatial repetition.',
+      version_count: 3,
+      versions: [
+        { sequence: 1, created_at: '2026-01-01T00:00:00Z', is_current: false },
+        { sequence: 3, created_at: '2026-01-03T00:00:00Z', is_current: true },
+        { sequence: 2, created_at: '2026-01-02T00:00:00Z', is_current: false },
+      ],
+    });
+    const user = userEvent.setup();
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
+
+    renderInitialViewer(project);
+
+    const info = await screen.findByTestId('immersive-info-block');
+    const stage = screen.getByRole('region', { name: 'Preview' });
+    expect(stage.compareDocumentPosition(info) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      within(info).getByRole('heading', { name: 'Rotating Cube', level: 1 }),
+    ).toBeInTheDocument();
+    expect(within(info).getByText('A study in spatial repetition.')).toBeInTheDocument();
+    expect(within(info).getByRole('button', { name: 'Share' })).toBeInTheDocument();
+    expect(within(info).getByRole('button', { name: 'Embed (Custom)' })).toBeInTheDocument();
+    expect(within(info).getByRole('button', { name: 'Embed (CMS)' })).toBeInTheDocument();
+    expect(
+      within(info).getByRole('heading', { name: 'Current version context' }),
+    ).toBeInTheDocument();
+    expect(within(info).getByRole('heading', { name: 'Versions' })).toBeInTheDocument();
+    expect(within(info).getByText('CURRENT')).toBeInTheDocument();
+    expect(within(info).getByText('Version 3')).toBeInTheDocument();
+    expect(within(info).getByText('Version 2')).toBeInTheDocument();
+    expect(within(info).getByText('Version 1')).toBeInTheDocument();
+
+    await user.click(within(info).getByRole('button', { name: 'Share' }));
+    expect(writeText).toHaveBeenCalledWith(window.location.href);
+    expect(within(info).getByRole('status')).toHaveTextContent('Link copied.');
   });
 
   it('keeps only the stage preview and controls on Custom/CMS embed routes', async () => {

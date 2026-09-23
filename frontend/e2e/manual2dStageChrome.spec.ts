@@ -2,6 +2,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -28,10 +29,7 @@ test.describe('manual 2D editor stage chrome', () => {
     browserName,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-    await page.waitForURL(/\/projects\/[^/]+$/);
+    await createBlankProjectViaUI(page);
 
     const stage = page.locator('.piece-stage-shell');
     const authoringToolbar = stage.getByRole('toolbar', { name: 'Editor actions' });
@@ -326,10 +324,7 @@ test.describe('manual 2D editor stage chrome', () => {
     browserName,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-    await page.waitForURL(/\/projects\/[^/]+$/);
+    await createBlankProjectViaUI(page);
 
     const stage = page.locator('.piece-stage-shell');
     const stageMenu = stage.locator('button.piece-stage-menu-trigger');

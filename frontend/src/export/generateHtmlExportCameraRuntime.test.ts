@@ -350,6 +350,45 @@ describe('camera export runtime: lazy activation and pre-activation state', () =
     expect(demoHost).not.toBeNull();
     expect(demoHost?.querySelector('button')).not.toBeNull();
   });
+
+  it('shows the full-stage camera overlay after steering becomes active, preserving opacity and mirror defaults', async () => {
+    const trackStop = vi.fn();
+    Object.defineProperty(window.navigator, 'mediaDevices', {
+      value: { getUserMedia: vi.fn().mockResolvedValue(resolvedStream(trackStop)) },
+      configurable: true,
+    });
+    installFakeMediaPipeModule({});
+    const readyState = mockVideoReadyState(4);
+    const animation = installDeterministicAnimationFrame();
+    const originalPlay = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+
+    try {
+      loadCameraExportIntoDocument();
+      const stage = document.createElement('div');
+      stage.id = 'scene3d-canvas-host';
+      document.body.appendChild(stage);
+      cameraEnableButton().click();
+      await vi.waitFor(() => expect(cameraStatusEl().textContent).toMatch(/camera is active/i));
+
+      const video = document.querySelector<HTMLVideoElement>('#camera-view-video');
+      expect(video).not.toBeNull();
+      expect(video?.parentElement?.id).toBe('scene3d-canvas-host');
+      expect(video?.dataset.testid).toBe('camera-view-video');
+      expect(video?.style.display).toBe('block');
+      expect(video?.style.opacity).toBe('0.35');
+      expect(video?.style.transform).toBe('scaleX(-1)');
+      expect(document.querySelector('[data-testid="camera-view-toggle"]')).toBeChecked();
+      expect(document.querySelector('[data-testid="camera-view-opacity"]')).toHaveValue('0.35');
+      expect(document.querySelector('[data-testid="camera-view-mirror"]')).toBeChecked();
+      expect(animation.pendingCount()).toBeGreaterThan(0);
+    } finally {
+      animation.restore();
+      readyState.restore();
+      HTMLMediaElement.prototype.play = originalPlay;
+      clearFakeMediaPipeModule();
+    }
+  });
 });
 
 describe('camera export runtime: failure classification', () => {

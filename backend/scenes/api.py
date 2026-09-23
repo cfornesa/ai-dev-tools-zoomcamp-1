@@ -13,7 +13,7 @@ import json
 import uuid
 
 from django.db import IntegrityError, transaction
-from django.db.models import Max
+from django.db.models import Max, Prefetch
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import status
@@ -315,6 +315,13 @@ class PublicProjectDetailView(APIView):
         project = _get_project_or_404(public_id)
         if project.visibility != Project.Visibility.PUBLIC:
             raise Http404
+        project = Project.objects.prefetch_related(
+            Prefetch(
+                "versions",
+                queryset=SceneVersion.objects.order_by("-sequence", "-id"),
+                to_attr="_public_version_summaries",
+            )
+        ).get(pk=project.pk)
         return Response(PublicProjectSerializer(project).data)
 
 

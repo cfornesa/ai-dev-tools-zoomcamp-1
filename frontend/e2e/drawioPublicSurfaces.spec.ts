@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -56,11 +57,7 @@ test.describe('draw.io public surfaces', () => {
     browser,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-    await page.waitForURL(/\/projects\/[^/]+$/);
-    const projectId = /\/projects\/([^/]+)$/.exec(page.url())?.[1];
+    const projectId = await createBlankProjectViaUI(page);
     expect(projectId).toBeTruthy();
     if (!projectId) return;
 
@@ -92,6 +89,7 @@ test.describe('draw.io public surfaces', () => {
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
     await anonymousPage.goto(`/p/${projectId}`);
+    await anonymousPage.waitForURL(/\/users\/@[^/]+\/pieces\/[^/]+$/);
     await expect(anonymousPage.locator('canvas[aria-label="Draw.io scene preview"]')).toBeVisible();
     await expect(anonymousPage.getByRole('button', { name: 'Logout' })).toHaveCount(0);
     await expect(anonymousPage.getByRole('button', { name: /Edit scene/i })).toHaveCount(0);
@@ -99,7 +97,9 @@ test.describe('draw.io public surfaces', () => {
     const publicToolbar = anonymousPage.locator(
       '.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]',
     );
-    await publicToolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await expect(
+      publicToolbar.getByRole('button', { name: 'Open piece controls menu' }),
+    ).toHaveCount(0);
     await expect(publicToolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     const download = anonymousPage.waitForEvent('download');
     await publicToolbar.getByRole('button', { name: 'Open download menu' }).click();

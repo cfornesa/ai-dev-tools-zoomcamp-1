@@ -114,7 +114,13 @@ describe('generateScene3DBundle', () => {
     expect(html).toContain('piece-fullscreen');
     expect(html).toContain('piece-hand-guide-toggle');
     expect(html).toContain('Hand gesture guide');
+    expect(html).not.toMatch(/>\s*Download\b/i);
     expect(html).toContain('camera-controls-host');
+    expect(styles).toContain('#scene3d-canvas-host {');
+    expect(styles).toContain('z-index: 0;');
+    expect(styles).toContain(
+      '#camera-view-video { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%;',
+    );
     expect(styles).toContain('max-height: none;');
     expect(styles).toContain('overflow: visible;');
     expect(styles).toContain(
@@ -146,6 +152,9 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('camera-view-opacity');
     expect(script).toContain('camera-view-mirror');
     expect(script).toContain('camera-view-video');
+    expect(script).toContain('data-testid');
+    expect(script).toContain('Show camera');
+    expect(script).toContain('Mirror');
     expect(script).toContain('./runtime/mediapipe/vision_bundle.mjs');
     expect(script).toContain('./runtime/mediapipe/wasm');
     expect(script).toContain('./runtime/mediapipe/gesture_recognizer.task');

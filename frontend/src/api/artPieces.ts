@@ -138,15 +138,28 @@ export type ArtPieceCapabilitySet = Partial<
   >
 >;
 
+export type CameraPlacement = 'overlay' | 'background';
+
 export type ArtPieceVersion = {
   id: number;
   sequence: number;
   source: string;
   capabilities: ArtPieceCapabilitySet;
+  /** Nullable for legacy versions; viewers resolve null to overlay. */
+  camera_placement?: CameraPlacement | null;
   thumbnail_url: string;
   thumbnail_is_fallback: boolean;
   created_at: string;
   generation_metadata?: Record<string, unknown>;
+};
+
+export type PublicArtPieceVersionSummary = {
+  sequence: number;
+  engine: ArtPieceLibrary;
+  status: 'draft' | 'published' | 'archived';
+  prompt: string;
+  created_at: string;
+  model_label: string | null;
 };
 
 export type ArtPiece = {
@@ -161,6 +174,7 @@ export type ArtPiece = {
   engine_capabilities?: ArtPieceEngineCapability;
   status: 'draft' | 'published' | 'archived';
   current_version: ArtPieceVersion | null;
+  versions?: PublicArtPieceVersionSummary[];
   created_at: string;
   updated_at: string;
   published_at?: string | null;
@@ -237,10 +251,16 @@ export function generateArtPiece(
   prompt: string,
   signal?: AbortSignal,
   model?: string,
+  personaId?: number | null,
 ): Promise<GenerateArtPieceResponse> {
   return apiFetch<GenerateArtPieceResponse>('/api/ai/art-pieces/generate/', {
     method: 'POST',
-    body: JSON.stringify(model ? { library, prompt, model } : { library, prompt }),
+    body: JSON.stringify({
+      library,
+      prompt,
+      ...(model ? { model } : {}),
+      ...(personaId ? { persona_id: personaId } : {}),
+    }),
     signal,
   });
 }
@@ -256,6 +276,7 @@ export function createArtPiece(input: {
   engine: ArtPieceLibrary;
   source: string;
   capabilities?: ArtPieceCapabilitySet;
+  camera_placement?: CameraPlacement | null;
 }): Promise<ArtPiece> {
   return apiFetch<ArtPiece>('/api/art-pieces/', { method: 'POST', body: JSON.stringify(input) });
 }
@@ -302,7 +323,11 @@ export function listArtPieceVersions(publicId: string): Promise<ArtPieceVersion[
  * version, and its `source`, is retained unchanged. */
 export function createArtPieceVersion(
   publicId: string,
-  input: { source: string; capabilities?: ArtPieceCapabilitySet },
+  input: {
+    source: string;
+    capabilities?: ArtPieceCapabilitySet;
+    camera_placement?: CameraPlacement | null;
+  },
 ): Promise<ArtPieceVersion> {
   return apiFetch<ArtPieceVersion>(`/api/art-pieces/${publicId}/versions/`, {
     method: 'POST',

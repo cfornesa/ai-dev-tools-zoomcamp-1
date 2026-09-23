@@ -35,6 +35,12 @@ function embedSnippetFor(publicId: string): string {
 }
 
 const DEFAULT_ART_PIECE_ASPECT_RATIO = '16 / 9';
+const PUBLIC_PROMPT_PREVIEW_LENGTH = 180;
+
+function truncatePrompt(prompt: string): string {
+  if (prompt.length <= PUBLIC_PROMPT_PREVIEW_LENGTH) return prompt;
+  return `${prompt.slice(0, PUBLIC_PROMPT_PREVIEW_LENGTH).trimEnd()}…`;
+}
 
 function aspectRatioFromMetadata(metadata: Record<string, unknown> | undefined): string {
   if (!metadata) return DEFAULT_ART_PIECE_ASPECT_RATIO;
@@ -67,11 +73,13 @@ function pieceAspectRatio(piece: ArtPiece): string {
 export default function PublicArtPieceViewer({
   initialPiece,
   canonicalHref,
+  canonicalRoute = false,
   editHref,
   authorDisplayName,
 }: {
   initialPiece?: ArtPiece;
   canonicalHref?: string;
+  canonicalRoute?: boolean;
   editHref?: string;
   authorDisplayName?: string;
 } = {}) {
@@ -153,58 +161,81 @@ export default function PublicArtPieceViewer({
     );
 
   const isEmbedRoute = isEmbedPath();
+  const isCanonicalRoute = canonicalRoute;
   const pieceId = id ?? piece.public_id;
   const aspectRatio = pieceAspectRatio(piece);
+  const versions = [...(piece.versions ?? [])].sort(
+    (left, right) => right.sequence - left.sequence,
+  );
+  const versionCount = versions.length || 1;
+  const currentSummary =
+    versions.find((version) => version.sequence === piece.current_version?.sequence) ?? versions[0];
 
   return (
     <section
+      className="public-art-piece-viewer"
       aria-labelledby="public-art-piece-heading"
       data-embed-route={isEmbedRoute || undefined}
     >
       {!isEmbedRoute && (
         <>
-          <h2 id="public-art-piece-heading">{piece.title}</h2>
-          {editHref && <Link to={editHref}>Edit piece</Link>}
-          <p>{piece.description}</p>
+          {isCanonicalRoute && <p className="public-piece-kind">Generated art</p>}
+          <h1 id="public-art-piece-heading" className="public-piece-page-heading">
+            {piece.title}
+          </h1>
+          {isCanonicalRoute && (
+            <p className="public-piece-meta">
+              {piece.engine_label ?? piece.engine} · {versionCount}{' '}
+              {versionCount === 1 ? 'version' : 'versions'}
+            </p>
+          )}
+          {editHref && !isCanonicalRoute && <Link to={editHref}>Edit piece</Link>}
+          {!!piece.description && <p>{piece.description}</p>}
           <p className="public-project-attribution">
             By {authorDisplayName || piece.owner || 'Public artist'}
           </p>
-          <p>
-            <button
-              type="button"
-              onClick={() => {
-                setShowEmbedSnippet((current) => !current);
-                setEmbedCopyStatus('idle');
-              }}
-              aria-expanded={showEmbedSnippet}
-              data-testid="toggle-embed-snippet"
-            >
-              {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
-            </button>
-          </p>
-          {showEmbedSnippet && pieceId && (
-            <div className="public-art-piece-embed-snippet" data-testid="embed-snippet-panel">
-              <label htmlFor="art-piece-embed-snippet-textarea">
-                Embed this piece on another site
-              </label>
-              <textarea
-                id="art-piece-embed-snippet-textarea"
-                readOnly
-                value={embedSnippetFor(pieceId)}
-                onFocus={(event) => event.currentTarget.select()}
-              />
-              <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
-                Copy
-              </button>
-              {embedCopyStatus === 'copied' && (
-                <p role="status" aria-live="polite">
-                  Copied!
-                </p>
+          {!isCanonicalRoute && (
+            <>
+              <p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEmbedSnippet((current) => !current);
+                    setEmbedCopyStatus('idle');
+                  }}
+                  aria-expanded={showEmbedSnippet}
+                  data-testid="toggle-embed-snippet"
+                >
+                  {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
+                </button>
+              </p>
+              {showEmbedSnippet && pieceId && (
+                <div className="public-art-piece-embed-snippet" data-testid="embed-snippet-panel">
+                  <label htmlFor="art-piece-embed-snippet-textarea">
+                    Embed this piece on another site
+                  </label>
+                  <textarea
+                    id="art-piece-embed-snippet-textarea"
+                    readOnly
+                    value={embedSnippetFor(pieceId)}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                  <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
+                    Copy
+                  </button>
+                  {embedCopyStatus === 'copied' && (
+                    <p role="status" aria-live="polite">
+                      Copied!
+                    </p>
+                  )}
+                  {embedCopyStatus === 'failed' && (
+                    <p role="alert">
+                      Could not copy automatically -- select and copy the text above.
+                    </p>
+                  )}
+                </div>
               )}
-              {embedCopyStatus === 'failed' && (
-                <p role="alert">Could not copy automatically -- select and copy the text above.</p>
-              )}
-            </div>
+            </>
           )}
         </>
       )}
@@ -222,7 +253,10 @@ export default function PublicArtPieceViewer({
           style={
             {
               '--art-piece-aspect-ratio': aspectRatio,
-              background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
+              background:
+                piece.current_version.camera_placement === 'background'
+                  ? 'transparent'
+                  : 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
             } as CSSProperties
           }
         >
@@ -255,6 +289,8 @@ export default function PublicArtPieceViewer({
               width: '100%',
               height: '100%',
               border: 'none',
+              position: 'relative',
+              zIndex: 1,
               background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
             }}
           />
@@ -269,12 +305,100 @@ export default function PublicArtPieceViewer({
             }
             library={piece.engine}
             source={piece.current_version.source}
+            cameraPlacement={piece.current_version.camera_placement}
             title={piece.title}
             toolbarPortalTarget={toolbarHost}
             fullscreenToolbarPortalTarget={fullscreenToolbarHost}
           />
         </div>
       </div>
+      {!isEmbedRoute && isCanonicalRoute && (
+        <>
+          <div className="public-piece-actions" aria-label="Piece actions" role="group">
+            <button
+              type="button"
+              onClick={() =>
+                window.open(
+                  canonicalHref?.replace('/pieces/', '/immersive/') ?? '#',
+                  '_blank',
+                  'noopener,noreferrer',
+                )
+              }
+            >
+              Open immersive view
+            </button>
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard.writeText(window.location.href)}
+            >
+              Share
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowEmbedSnippet((current) => !current);
+                setEmbedCopyStatus('idle');
+              }}
+              aria-expanded={showEmbedSnippet}
+            >
+              {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
+            </button>
+          </div>
+          {showEmbedSnippet && pieceId && (
+            <div className="public-art-piece-embed-snippet" data-testid="embed-snippet-panel">
+              <label htmlFor="art-piece-embed-snippet-textarea">
+                Embed this piece on another site
+              </label>
+              <textarea
+                id="art-piece-embed-snippet-textarea"
+                readOnly
+                value={embedSnippetFor(pieceId)}
+              />
+              <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
+                Copy
+              </button>
+              {embedCopyStatus === 'copied' && <p role="status">Copied!</p>}
+              {embedCopyStatus === 'failed' && <p role="alert">Could not copy automatically.</p>}
+            </div>
+          )}
+          <div className="public-piece-version-context">
+            <section aria-labelledby="generated-current-version-heading">
+              <h2 id="generated-current-version-heading">Current version context</h2>
+              {currentSummary ? (
+                <dl>
+                  <dt>Engine</dt>
+                  <dd>{currentSummary.engine}</dd>
+                  <dt>Model</dt>
+                  <dd>{currentSummary.model_label ?? 'Not specified'}</dd>
+                  <dt>Prompt</dt>
+                  <dd>{currentSummary.prompt}</dd>
+                </dl>
+              ) : (
+                <p>No saved version yet.</p>
+              )}
+            </section>
+            <section aria-labelledby="generated-versions-heading">
+              <h2 id="generated-versions-heading">Versions</h2>
+              <ol>
+                {versions.map((version) => (
+                  <li key={`${version.sequence}-${version.created_at}`}>
+                    <span>Version {version.sequence}</span> · {version.engine} · {version.status} ·{' '}
+                    <time dateTime={version.created_at}>{version.created_at}</time>{' '}
+                    {version.model_label && <span>{version.model_label} · </span>}
+                    <details>
+                      <summary title={version.prompt}>{truncatePrompt(version.prompt)}</summary>
+                      <p>{version.prompt}</p>
+                    </details>
+                    {version.sequence === piece.current_version?.sequence && (
+                      <span className="public-piece-current">CURRENT</span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </div>
+        </>
+      )}
       {!isEmbedRoute && !!piece.collections?.length && (
         <aside className="public-collection-context" aria-label="Public collections">
           <h3>Part of these collections</h3>

@@ -157,6 +157,32 @@ describe('generateArtPieceBundle', () => {
     expect(html).not.toContain('guardedGetUserMedia');
   });
 
+  it('preserves background camera placement in Full ZIP and keeps Non-Camera camera-free', async () => {
+    const full = await generateArtPieceBundle('threejs', THREEJS_CODE, {
+      capabilities: { camera_view: true },
+      cameraPlacement: 'background',
+      mode: 'full',
+      presentation: 'immersive',
+    });
+    const fullZip = await JSZip.loadAsync(full);
+    const fullHtml = await fullZip.files['index.html'].async('string');
+    const fullCss = await fullZip.files['styles/piece.css'].async('string');
+    expect(fullHtml).toContain('zIndex = 0');
+    expect(fullCss).toContain('background: transparent');
+    expect(fullCss).toContain('z-index: 1');
+
+    const nonCamera = await generateArtPieceBundle('threejs', THREEJS_CODE, {
+      capabilities: { camera_view: true },
+      cameraPlacement: 'background',
+      mode: 'non-camera',
+    });
+    const nonCameraZip = await JSZip.loadAsync(nonCamera);
+    const nonCameraHtml = await nonCameraZip.files['index.html'].async('string');
+    expect(nonCameraHtml).not.toContain('data-action="camera"');
+    expect(nonCameraHtml).not.toContain('zIndex = 0');
+    expect(nonCameraHtml).toContain('guardedGetUserMedia');
+  });
+
   it('#482: Full ZIP camera runtime runs in the top-level document, not inside a sandboxed iframe', async () => {
     // Issue #482 criterion 1: the Full ZIP export's document topology is
     // DIFFERENT from the live React preview's opaque-origin sandboxed

@@ -379,6 +379,13 @@ export type PublicSceneVersion = {
   created_at: string;
 };
 
+/** Issue #737: public 2D version history metadata. */
+export type PublicSceneVersionSummary = {
+  sequence: number;
+  created_at: string;
+  is_current: boolean;
+};
+
 /** Task 51 (issue #53): the single-public-project detail shape
  * (`PublicProjectSerializer`) the public viewer page fetches. Deliberately
  * narrower than `Project` — no `id`-as-pk, `visibility`, or
@@ -398,6 +405,8 @@ export type PublicProject = {
   viewer_url?: string;
   remix_provenance: RemixProvenance | null;
   current_version: PublicSceneVersion | null;
+  versions?: PublicSceneVersionSummary[];
+  version_count?: number;
   created_at: string;
   updated_at: string;
   collections?: PublicCollectionContext[];

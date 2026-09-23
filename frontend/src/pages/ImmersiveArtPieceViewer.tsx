@@ -253,7 +253,9 @@ function ImmersiveArtPieceViewer({
       {!isEmbedRoute && (
         <header>
           <div className="immersive-art-piece-heading-row">
-            <h2 id="immersive-art-piece-heading">{piece.title}</h2>
+            <h1 id="immersive-art-piece-heading" className="public-piece-page-heading">
+              {piece.title}
+            </h1>
             {editHref && <Link to={editHref}>Edit piece</Link>}
             <button
               type="button"
@@ -353,6 +355,10 @@ function ImmersiveArtPieceViewer({
             piece.current_version.source,
             piece.engine,
             'immersive',
+            {
+              background:
+                piece.current_version.camera_placement === 'background' ? 'transparent' : '#111827',
+            },
           )}
           // Issue #434: a cross-document iframe captures pointer/wheel
           // input entirely within its own document -- it never bubbles
@@ -372,6 +378,8 @@ function ImmersiveArtPieceViewer({
             width: '100%',
             height: '100%',
             border: 'none',
+            position: 'relative',
+            zIndex: 1,
             pointerEvents: isSpatial ? 'none' : 'auto',
           }}
         />
@@ -382,6 +390,7 @@ function ImmersiveArtPieceViewer({
           immersiveHref={immersiveHref}
           library={piece.engine}
           source={piece.current_version.source}
+          cameraPlacement={piece.current_version.camera_placement}
           title={piece.title}
           presentation="immersive"
         />

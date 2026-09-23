@@ -4659,7 +4659,7 @@ select.ai-proposal-field-full-width {
    treatment from issue #157 unchanged. */
 .public-project-viewer {
   text-align: left;
-  padding: 0 24px 24px;
+  padding: var(--site-density) 24px 24px;
   box-sizing: border-box;
 }
 
@@ -4667,9 +4667,87 @@ select.ai-proposal-field-full-width {
   margin: 0 0 16px;
 }
 
-.public-project-viewer header h2 {
+.public-piece-page-heading {
   display: inline-block;
+  max-width: 100%;
   margin: 0 8px 8px 0;
+  color: var(--text-h);
+  font-family: var(--heading);
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.public-piece-kind,
+.public-piece-meta {
+  margin: 0 0 6px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.public-piece-meta {
+  letter-spacing: 0.04em;
+}
+
+.public-piece-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 24px;
+}
+
+.public-piece-actions a,
+.public-piece-actions button {
+  min-height: 42px;
+}
+
+.public-piece-version-context {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin: 0 0 24px;
+  color: var(--text-h);
+}
+
+.public-piece-version-context h2 {
+  margin: 0 0 8px;
+  font-family: var(--heading);
+  font-size: 1.1rem;
+}
+
+.public-piece-version-context p,
+.public-piece-version-context ol {
+  margin: 0;
+}
+
+.public-piece-version-context ol {
+  padding-left: 1.4rem;
+}
+
+.public-piece-version-context li + li {
+  margin-top: 6px;
+}
+
+.public-piece-current {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.public-art-piece-viewer {
+  padding: var(--site-density) 24px 24px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.public-art-piece-viewer[data-embed-route='true'] {
+  padding: 0;
 }
 
 /* Canonical structured-piece surfaces use a compact action button for the
@@ -4704,12 +4782,52 @@ select.ai-proposal-field-full-width {
 }
 
 .immersive-project3d-viewer {
-  padding: 0 24px 24px;
+  padding: var(--site-density) 24px 24px;
   box-sizing: border-box;
+}
+
+/* Issue #734: canonical immersive 3D uses the reference viewer's centered,
+   viewport-sized stage. The 16:9 box takes the full available width when it
+   fits within the viewport height; otherwise its height is the limiting side.
+   Metadata remains below the stage, while the shared Scene3DPreview owns the
+   live camera stream and all stage controls. */
+.immersive-project3d-viewer:not(.immersive-project3d-viewer--embed) {
+  min-height: 100dvh;
+  padding: 0;
+}
+
+.immersive-project3d-viewer:not(.immersive-project3d-viewer--embed) > [data-panel='preview'] {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+.immersive-project3d-viewer:not(.immersive-project3d-viewer--embed)
+  > [data-panel='preview']
+  > .scene3d-preview {
+  width: min(100%, calc(100dvh * 16 / 9));
+  max-width: 100%;
 }
 
 .immersive-project3d-viewer header {
   margin: 0 0 16px;
+}
+
+.immersive-project3d-content {
+  max-width: 72rem;
+  margin: 24px auto 0;
+  overflow-wrap: anywhere;
+}
+
+.immersive-project3d-content header {
+  margin-bottom: 16px;
+}
+
+.immersive-project3d-viewer .public-piece-page-heading,
+.immersive-art-piece-viewer .public-piece-page-heading {
+  color: inherit;
 }
 
 .immersive-project3d-embed-actions {
@@ -4729,11 +4847,20 @@ select.ai-proposal-field-full-width {
 
 @media (max-width: 767px) {
   .public-project-viewer {
-    padding: 0 16px 16px;
+    padding: var(--site-density) 16px 16px;
+  }
+
+  .public-art-piece-viewer {
+    padding: var(--site-density) 16px 16px;
   }
 
   .immersive-project3d-viewer {
-    padding: 0 16px 16px;
+    padding: var(--site-density) 16px 16px;
+  }
+
+  .public-piece-version-context {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 .sr-only {
@@ -5151,12 +5278,22 @@ select.ai-proposal-field-full-width {
   position: absolute;
   top: 0.75rem;
   left: 0.75rem;
+  right: 0.75rem;
+  max-width: calc(100% - 1.5rem);
   /* Keep the shared stage actions above editor-only overlays such as the
      selection HUD. The toolbar is interactive chrome, so a visible HUD must
      never win hit-testing merely because it is rendered later in the panel. */
   z-index: 20;
   display: flex;
   gap: 0.65rem;
+}
+
+/* Inline public viewers keep fullscreen independent from the wrapping action
+   row so it stays anchored to the stage's bottom-right corner. */
+.piece-stage-fullscreen-control {
+  position: absolute;
+  right: 0;
+  bottom: 0;
 }
 
 .piece-stage-menu-trigger,
@@ -5350,6 +5487,7 @@ select.ai-proposal-field-full-width {
   align-items: flex-start;
   gap: 0.65rem;
   min-width: 0;
+  max-width: 100%;
 }
 
 /* Issue #325: the shared stage rail's 2D editor group is a direct child of
@@ -5463,6 +5601,20 @@ select.ai-proposal-field-full-width {
     min-height: 2.5rem;
     height: 2.5rem;
     padding: 0 0.5rem;
+  }
+
+  /* Leave the bottom-right fullscreen target clear while the inline action
+     row wraps through the remaining stage width on phones. */
+  .piece-stage-toolbar > .piece-stage-toolbar-group {
+    max-width: calc(100% - 3.5rem);
+  }
+
+  .piece-stage-download-menu,
+  .piece-stage-controls-panel {
+    width: min(20rem, calc(100vw - 2rem));
+    max-width: calc(100vw - 2rem);
+    right: 0;
+    left: auto;
   }
 
   .public-art-piece-toolbar-row .piece-stage-icon-button {
@@ -5594,13 +5746,10 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-download-menu {
-  /* The download disclosure lives inside the fullscreen command card. Keep
-     it in document flow so its actions remain reachable on short viewports;
-     an absolutely positioned menu can land below the viewport after the
-     other stacked controls have opened. */
-  position: relative;
-  right: auto;
-  top: auto;
+  /* Public inline toolbars must not reflow when this disclosure opens. */
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
   z-index: 30;
   display: grid;
   gap: 0.35rem;
@@ -5634,13 +5783,12 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-controls-panel {
-  /* Open disclosures participate in the command card's normal flow. An
-     absolute panel can begin below the viewport when the stacked menu is
-     already tall, which makes Firefox treat its controls as non-visible and
-     forces a second overlay scrollbar. */
-  position: relative;
-  left: auto;
-  top: auto;
+  /* Inline stage controls float below their trigger instead of moving the
+     remaining toolbar buttons. The command-card variant overrides this to
+     retain its stacked flow. */
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.4rem);
   z-index: 30;
   width: min(360px, 100%);
   margin-top: 0.4rem;
@@ -5659,6 +5807,14 @@ select.ai-proposal-field-full-width {
 
 .piece-stage-controls-panel[hidden] {
   display: none;
+}
+
+.piece-stage-command-card .piece-stage-download-menu,
+.piece-stage-command-card .piece-stage-controls-panel {
+  position: relative;
+  left: auto;
+  top: auto;
+  margin-top: 0.4rem;
 }
 
 /* Issue #348: keep the initial editor stage rail compact. Authoring actions
@@ -5940,13 +6096,12 @@ select.ai-proposal-field-full-width {
 
 .scene3d-camera-overlay-video {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
-  width: 160px;
-  height: 120px;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-position: center;
   object-fit: cover;
-  border-radius: 4px;
-  box-shadow: 0 0 0 1px var(--border, #ccc);
   pointer-events: none;
 }
 

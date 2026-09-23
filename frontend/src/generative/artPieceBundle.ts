@@ -45,7 +45,7 @@
  */
 import JSZip from 'jszip';
 
-import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
+import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import { buildStandaloneArtPieceRuntimeScript } from '../export/standaloneArtPieceRuntimeSource';
 
 export type ArtPieceExportMode = 'full' | 'non-camera';
@@ -72,6 +72,7 @@ export type ArtPieceExportOptions = {
   capabilities?: ArtPieceCapabilitySet;
   mode?: ArtPieceExportMode;
   presentation?: ArtPieceExportPresentation;
+  cameraPlacement?: CameraPlacement | null;
 };
 
 export class ArtPieceBundleError extends Error {
@@ -94,14 +95,18 @@ export class ArtPieceBundleError extends Error {
  * taller box (matching `ImmersiveArtPieceViewer.tsx`'s own `height: 640`
  * stage) than the regular small-preview export, but the same fixed-box
  * containment approach either way. */
-function buildPieceCss(presentation: ArtPieceExportPresentation): string {
+function buildPieceCss(
+  presentation: ArtPieceExportPresentation,
+  cameraPlacement: CameraPlacement,
+): string {
   const immersive = presentation === 'immersive';
   const stageHeight = immersive ? '100dvh' : '480px';
+  const cameraBackground = cameraPlacement === 'background';
   return `html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: ${immersive ? '#111827' : '#ffffff'};
+  background: ${cameraBackground ? 'transparent' : immersive ? '#111827' : '#ffffff'};
   color: ${immersive ? '#f4f6fb' : '#111827'};
 }
 canvas {
@@ -114,6 +119,7 @@ canvas {
   width: 100%;
   height: ${stageHeight};
 }
+${cameraBackground ? '#art-piece-container, a-scene, canvas, svg { position: relative; z-index: 1; }' : ''}
 a-scene canvas.a-canvas {
   display: block;
   width: 100% !important;
@@ -387,6 +393,7 @@ function buildIndexHtml(
     options.capabilities ?? {},
     mode,
     presentation,
+    options.cameraPlacement ?? 'overlay',
   );
   // Issue #437: must be the first script in the document -- before the
   // CDN/vendored runtime and before scripts/piece.js -- so no generated
@@ -470,7 +477,10 @@ export async function generateArtPieceBundle(
   try {
     const zip = new JSZip();
     zip.file('README.txt', README);
-    zip.file('styles/piece.css', buildPieceCss(options.presentation ?? 'regular'));
+    zip.file(
+      'styles/piece.css',
+      buildPieceCss(options.presentation ?? 'regular', options.cameraPlacement ?? 'overlay'),
+    );
     zip.file('index.html', buildIndexHtml(library, code, runtime?.filename, options));
     if (library === 'threejs') {
       zip.file(

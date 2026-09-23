@@ -102,6 +102,18 @@ def test_threejs_system_prompt_tells_the_model_to_register_a_steerable_camera():
     assert "getPose" in content and "setPose" in content
 
 
+def test_generate_appends_persona_as_a_second_system_message():
+    client = _CapturingClient()
+    provider = ArtPieceProvider(client=client, persona_prompt="Use bright solar colors.")
+
+    result = provider.generate("a solar halo", "aframe")
+
+    assert result.code is not None
+    system_messages = [m for m in client.chat.last_kwargs["messages"] if m["role"] == "system"]
+    assert len(system_messages) == 2
+    assert system_messages[1]["content"] == "Use bright solar colors."
+
+
 def test_client_property_builds_a_real_client_from_the_real_sdk_import_path():
     """Exercises the actual `from mistralai.client import Mistral` import
     -- no mock, no injected client. This is the exact statement that used

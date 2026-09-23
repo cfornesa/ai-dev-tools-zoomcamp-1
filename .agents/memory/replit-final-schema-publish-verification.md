@@ -75,3 +75,15 @@ recovery sequence is: synchronize the exact migration revision into Replit,
 migrate Development only, Publish, smoke-test, and inspect actual Production
 tables. Do not enable production startup migrations or repair this class of
 drift with manual production SQL.
+
+Confirmed 2026-09-22 for #727: after a current-revision publish left the
+0086/0088 schema absent, adding Django `db_default` values for the six new
+non-null palette/presentation fields produced a safe Replit schema diff. The
+approved diff created `scenes_themegenerationattempt` and added the six
+columns with database defaults, without a truncate/drop/delete-all-data
+operation. Release `14278c04` restored the affected endpoints, and direct
+read-only `information_schema.columns` inspection confirmed the table and
+columns. Django model/application defaults alone are not sufficient evidence
+that Replit can safely plan a production `ADD COLUMN ... NOT NULL`; review
+the generated diff and add database defaults when that is the intended
+compatibility behavior.

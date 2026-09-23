@@ -17,8 +17,30 @@ vi.mock('./PublicProject3DViewer', () => ({
 }));
 
 vi.mock('./PublicProjectViewer', () => ({
-  default: ({ initialProject }: { initialProject: { title: string } }) => (
-    <output data-testid="canonical-2d-piece">{initialProject.title}</output>
+  default: ({
+    initialProject,
+    canonicalRoute,
+  }: {
+    initialProject: { title: string };
+    canonicalRoute?: boolean;
+  }) => (
+    <output data-testid="canonical-2d-piece">
+      {initialProject.title} · {canonicalRoute ? '2D scene · 1 version' : 'legacy'}
+    </output>
+  ),
+}));
+
+vi.mock('./PublicArtPieceViewer', () => ({
+  default: ({
+    initialPiece,
+    canonicalRoute,
+  }: {
+    initialPiece: { title: string };
+    canonicalRoute?: boolean;
+  }) => (
+    <output data-testid="canonical-generated-piece">
+      {canonicalRoute ? 'Generated art' : 'legacy'} · {initialPiece.title}
+    </output>
   ),
 }));
 
@@ -27,6 +49,29 @@ function Destination() {
 }
 
 describe('CanonicalPublicPiece (#578)', () => {
+  it('renders generated art with canonical page context at its slug route', async () => {
+    vi.mocked(fetchCanonicalPublicPiece).mockResolvedValue({
+      canonical_url: '/users/@artist/pieces/generated-study',
+      viewer_url: '/art-pieces/p/abc123',
+      type: 'generated',
+      piece: { title: 'Generated study', public_id: 'abc123' },
+    } as never);
+
+    render(
+      <MemoryRouter initialEntries={['/users/@artist/pieces/generated-study']}>
+        <Routes>
+          <Route path="/users/:handle/pieces/:pieceSlug" element={<CanonicalPublicPiece />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('canonical-generated-piece')).toHaveTextContent(
+        'Generated art · Generated study',
+      ),
+    );
+  });
+
   it('renders a structured 3D piece directly at its canonical slug route', async () => {
     vi.mocked(fetchCanonicalPublicPiece).mockResolvedValue({
       canonical_url: '/users/@artist/pieces/spatial-study',
@@ -66,7 +111,9 @@ describe('CanonicalPublicPiece (#578)', () => {
     );
 
     await waitFor(() =>
-      expect(screen.getByTestId('canonical-2d-piece')).toHaveTextContent('Canvas study'),
+      expect(screen.getByTestId('canonical-2d-piece')).toHaveTextContent(
+        'Canvas study · 2D scene · 1 version',
+      ),
     );
     expect(screen.queryByTestId('destination')).not.toBeInTheDocument();
   });

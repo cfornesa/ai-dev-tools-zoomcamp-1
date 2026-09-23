@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -116,7 +116,7 @@ describe('CameraControl', () => {
     expect(screen.queryByRole('button', { name: 'Enable camera' })).not.toBeInTheDocument();
   });
 
-  it('supports opt-in start on mount for an already-explicitly-activated capability', () => {
+  it('supports opt-in start on mount for an already-explicitly-activated capability', async () => {
     const fake = createFakeProvider();
     render(
       <CameraControl
@@ -126,7 +126,7 @@ describe('CameraControl', () => {
       />,
     );
 
-    expect(fake.start).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(fake.start).toHaveBeenCalledTimes(1));
     expect(screen.getByTestId('camera-status')).toHaveTextContent('Starting camera…');
     expect(screen.queryByRole('button', { name: 'Enable camera' })).not.toBeInTheDocument();
   });

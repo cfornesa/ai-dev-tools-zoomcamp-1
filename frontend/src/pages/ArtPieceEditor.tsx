@@ -13,6 +13,7 @@ import {
   type ArtPiece,
   type ArtPieceCapabilitySet,
   type ArtPieceVersion,
+  type CameraPlacement,
 } from '../api/artPieces';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { useAuth } from '../auth/useAuth';
@@ -130,6 +131,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   );
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [capabilities, setCapabilities] = useState<ArtPieceCapabilitySet>({});
+  const [cameraPlacement, setCameraPlacement] = useState<CameraPlacement>('overlay');
   const [versionSaving, setVersionSaving] = useState(false);
   const [versionSaveError, setVersionSaveError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -156,6 +158,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       setTitle(initialPiece.title);
       setDescription(initialPiece.description);
       setCapabilities(initialPiece.current_version?.capabilities ?? {});
+      setCameraPlacement(initialPiece.current_version?.camera_placement ?? 'overlay');
       return;
     }
     Promise.all([getArtPiece(id), listArtPieceVersions(id)])
@@ -165,6 +168,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         setTitle(loadedPiece.title);
         setDescription(loadedPiece.description);
         setCapabilities(loadedPiece.current_version?.capabilities ?? {});
+        setCameraPlacement(loadedPiece.current_version?.camera_placement ?? 'overlay');
       })
       .catch(() => setLoadError(true));
   }, [id, auth.status, initialPiece]);
@@ -377,6 +381,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       const version = await createArtPieceVersion(id, {
         source: reviseCode,
         capabilities: sanitizeCapabilities(capabilities, piece.engine),
+        camera_placement: cameraPlacement,
       });
       setVersions((current) => [...current, version]);
       setPiece((current) => (current ? { ...current, current_version: version } : current));
@@ -701,6 +706,24 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
                     );
                   })}
                 </fieldset>
+                {capabilities.camera_view === true && (
+                  <fieldset data-testid="art-piece-editor-camera-placement">
+                    <legend>Camera composition</legend>
+                    <label htmlFor="art-piece-editor-camera-placement-select">
+                      Camera feed placement
+                    </label>
+                    <select
+                      id="art-piece-editor-camera-placement-select"
+                      value={cameraPlacement}
+                      onChange={(event) =>
+                        setCameraPlacement(event.target.value as CameraPlacement)
+                      }
+                    >
+                      <option value="overlay">Overlay artwork</option>
+                      <option value="background">Behind artwork</option>
+                    </select>
+                  </fieldset>
+                )}
                 {refineRun?.status === 'accepted' ? (
                   <p role="status" data-testid="art-piece-refine-accepted">
                     Refinement saved as version {refineRun.accepted_version_id}.

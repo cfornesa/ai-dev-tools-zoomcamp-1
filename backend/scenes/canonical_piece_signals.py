@@ -34,8 +34,16 @@ def _next_slug(model, instance) -> str:
     # queries, so slug allocation must use the unfiltered manager or it can
     # repeatedly select a candidate the database will reject.
     slug_manager = model.all_objects
+    if model is ArtPiece:
+        same_visibility = (
+            slug_manager.filter(status=ArtPiece.Status.PUBLISHED)
+            if instance.status == ArtPiece.Status.PUBLISHED
+            else slug_manager.exclude(status=ArtPiece.Status.PUBLISHED)
+        )
+    else:
+        same_visibility = slug_manager
     while (
-        slug_manager.filter(owner=instance.owner, public_slug=candidate)
+        same_visibility.filter(owner=instance.owner, public_slug=candidate)
         .exclude(pk=instance.pk)
         .exists()
     ):

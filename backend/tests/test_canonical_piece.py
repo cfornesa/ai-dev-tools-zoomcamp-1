@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from django.urls import reverse
 from django.utils import timezone
 
@@ -89,6 +90,47 @@ def test_canonical_generated_piece_exposes_edit_url_only_to_owner(client):
 
 
 @pytest.mark.django_db
+def test_canonical_generated_piece_exposes_safe_public_version_summaries(client):
+    user = get_user_model().objects.create_user(username="version-artist")
+    PublicProfile.objects.create(user=user, handle="version-artist", is_public=True)
+    piece = _published_piece(user, "Version Study")
+    piece.prompt = "A long public prompt"
+    piece.save(update_fields=["prompt"])
+    piece.versions.create(
+        sequence=2,
+        source="private source that must not be serialized",
+        capabilities={"microphone": True},
+        generation_metadata={"model_label": "Mistral Small", "private": "omit"},
+    )
+
+    response = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "version-artist", "piece_slug": piece.public_slug},
+        )
+    )
+
+    assert response.status_code == 200
+    versions = response.json()["piece"]["versions"]
+    assert [version["sequence"] for version in versions] == [2, 1]
+    assert versions[0]["engine"] == "svg"
+    assert versions[0]["status"] == "published"
+    assert versions[0]["prompt"] == "A long public prompt"
+    assert versions[0]["model_label"] == "Mistral Small"
+    assert set(versions[0]) == {
+        "sequence",
+        "engine",
+        "status",
+        "prompt",
+        "created_at",
+        "model_label",
+    }
+    assert "source" not in versions[0]
+    assert "capabilities" not in versions[0]
+    assert "generation_metadata" not in versions[0]
+
+
+@pytest.mark.django_db
 def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client):
     user = get_user_model().objects.create_user(username="profile-artist")
     PublicProfile.objects.create(
@@ -171,6 +213,41 @@ def test_profile_cards_expose_canonical_urls_for_authored_piece_families(client)
 
 
 @pytest.mark.django_db
+def test_canonical_2d_piece_exposes_safe_newest_first_version_summaries(client):
+    user = get_user_model().objects.create_user(username="2d-version-artist")
+    PublicProfile.objects.create(user=user, handle="2d-version-artist", is_public=True)
+    project = Project.objects.create(
+        owner=user,
+        title="Versioned Canvas",
+        description="A public 2D study.",
+        public_slug="versioned-canvas",
+        visibility=Project.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    SceneVersion.objects.create(project=project, sequence=1, scene_json={})
+    second = SceneVersion.objects.create(project=project, sequence=2, scene_json={})
+    project.current_version = second
+    project.save(update_fields=["current_version"])
+
+    response = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "2d-version-artist", "piece_slug": "versioned-canvas"},
+        )
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["piece"]
+    assert payload["description"] == "A public 2D study."
+    assert payload["version_count"] == 2
+    assert [version["sequence"] for version in payload["versions"]] == [2, 1]
+    assert payload["versions"][0]["is_current"] is True
+    assert payload["versions"][1]["is_current"] is False
+    assert set(payload["versions"][0]) == {"sequence", "created_at", "is_current"}
+    assert "scene_json" not in payload["versions"][0]
+
+
+@pytest.mark.django_db
 def test_canonical_piece_does_not_expose_private_or_unknown_piece(client):
     user = get_user_model().objects.create_user(username="private-artist")
     PublicProfile.objects.create(user=user, handle="private-artist", is_public=True)
@@ -186,6 +263,31 @@ def test_canonical_piece_does_not_expose_private_or_unknown_piece(client):
             kwargs={"handle": "private-artist", "piece_slug": piece.public_slug},
         )
     )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_canonical_piece_404s_for_an_unpublished_generated_piece(client):
+    user = get_user_model().objects.create_user(username="unpublished-artist")
+    PublicProfile.objects.create(user=user, handle="unpublished-artist", is_public=True)
+    piece = ArtPiece.objects.create(
+        owner=user,
+        title="Unpublished Study",
+        prompt="A private prompt",
+        engine=ArtPiece.Engine.SVG,
+        status=ArtPiece.Status.DRAFT,
+    )
+    version = ArtPieceVersion.objects.create(piece=piece, sequence=1, source="<svg />")
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+
+    response = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "unpublished-artist", "piece_slug": piece.public_slug},
+        )
+    )
+
     assert response.status_code == 404
 
 
@@ -213,6 +315,111 @@ def test_canonical_piece_404s_for_a_published_piece_on_a_private_profile(client)
         )
     )
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_owner_can_resolve_private_generated_piece_on_private_profile(client):
+    user = get_user_model().objects.create_user(username="private-owner", password="x")
+    other = get_user_model().objects.create_user(username="private-other", password="x")
+    PublicProfile.objects.create(user=user, handle="private-owner", is_public=False)
+    pieces = []
+    for slug, engine in (
+        ("private-flat", ArtPiece.Engine.SVG),
+        ("private-spatial", ArtPiece.Engine.THREEJS),
+    ):
+        piece = ArtPiece.objects.create(
+            owner=user,
+            title=slug,
+            prompt="Private prompt",
+            engine=engine,
+            public_slug=slug,
+            status=ArtPiece.Status.DRAFT,
+        )
+        version = ArtPieceVersion.objects.create(piece=piece, sequence=1, source="<svg />")
+        piece.current_version = version
+        piece.save(update_fields=["current_version"])
+        pieces.append(piece)
+
+    for piece in pieces:
+        url = reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "private-owner", "piece_slug": piece.public_slug},
+        )
+        client.logout()
+        assert client.get(url).status_code == 404
+        client.force_login(other)
+        assert client.get(url).status_code == 404
+        client.force_login(user)
+        response = client.get(url)
+        assert response.status_code == 200
+        assert response.json()["piece"]["public_id"] == str(piece.public_id)
+        assert response.json()["piece"]["status"] == ArtPiece.Status.DRAFT
+        assert response.json()["piece"]["current_version"]["source"] == "<svg />"
+        assert response.json()["edit_url"] == f"/users/@private-owner/edit/{piece.public_slug}"
+
+
+@pytest.mark.django_db
+def test_owner_private_slug_wins_collision_without_changing_public_resolution(client):
+    user = get_user_model().objects.create_user(username="collision-owner", password="x")
+    other = get_user_model().objects.create_user(username="collision-other", password="x")
+    PublicProfile.objects.create(user=user, handle="collision-owner", is_public=True)
+    public = _published_piece(user, "Public collision")
+    public.public_slug = "shared-study"
+    public.save(update_fields=["public_slug"])
+    private = ArtPiece.objects.create(
+        owner=user,
+        title="Private collision",
+        prompt="Private prompt",
+        engine=ArtPiece.Engine.SVG,
+        public_slug="shared-study",
+        status=ArtPiece.Status.DRAFT,
+    )
+    version = ArtPieceVersion.objects.create(piece=private, sequence=1, source="private source")
+    private.current_version = version
+    private.save(update_fields=["current_version"])
+    url = reverse(
+        "public-piece-by-slug",
+        kwargs={"handle": "collision-owner", "piece_slug": "shared-study"},
+    )
+
+    anonymous = client.get(url)
+    assert anonymous.status_code == 200
+    assert anonymous.json()["piece"]["public_id"] == str(public.public_id)
+    client.force_login(other)
+    assert client.get(url).json()["piece"]["public_id"] == str(public.public_id)
+    client.force_login(user)
+    owner = client.get(url)
+    assert owner.status_code == 200
+    assert owner.json()["piece"]["public_id"] == str(private.public_id)
+    assert owner.json()["piece"]["current_version"]["source"] == "private source"
+
+
+@pytest.mark.django_db
+def test_art_piece_slug_constraints_allow_one_public_and_one_private_but_not_two_private_rows():
+    user = get_user_model().objects.create_user(username="slug-policy")
+    public = ArtPiece.objects.create(
+        owner=user,
+        prompt="public",
+        engine=ArtPiece.Engine.SVG,
+        public_slug="same-slug",
+        status=ArtPiece.Status.PUBLISHED,
+    )
+    private = ArtPiece.objects.create(
+        owner=user,
+        prompt="private",
+        engine=ArtPiece.Engine.SVG,
+        public_slug="same-slug",
+        status=ArtPiece.Status.DRAFT,
+    )
+    assert public.public_slug == private.public_slug == "same-slug"
+    with pytest.raises(IntegrityError):
+        ArtPiece.objects.create(
+            owner=user,
+            prompt="another private",
+            engine=ArtPiece.Engine.SVG,
+            public_slug="same-slug",
+            status=ArtPiece.Status.ARCHIVED,
+        )
 
 
 @pytest.mark.django_db

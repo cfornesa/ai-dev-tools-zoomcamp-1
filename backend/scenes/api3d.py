@@ -15,7 +15,7 @@ import json
 import uuid
 
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Max, Prefetch
 from django.http import Http404, HttpResponse
 from django.utils import timezone
 from rest_framework import status
@@ -45,7 +45,17 @@ with (SCHEMA_DIR / "fixtures3d" / "valid" / "minimal.json").open() as _f:
 
 def _get_project3d_or_404(public_id) -> Project3D:
     try:
-        return Project3D.objects.select_related("owner").get(public_id=public_id)
+        return (
+            Project3D.objects.select_related("owner", "current_version")
+            .prefetch_related(
+                Prefetch(
+                    "versions",
+                    queryset=SceneVersion3D.objects.order_by("-sequence", "-id"),
+                    to_attr="_public_version_summaries",
+                )
+            )
+            .get(public_id=public_id)
+        )
     except (Project3D.DoesNotExist, ValueError, TypeError) as exc:
         raise Http404 from exc
 

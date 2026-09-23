@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { ApiError } from '../api/client';
+import { fetchAIPersonas, type AIPersona } from '../api/aiPreferences';
 import {
   createArtPiece,
   generateArtPiece,
@@ -8,6 +9,7 @@ import {
   updateArtPiece,
   type ArtPiece,
   type ArtPieceCapabilitySet,
+  type CameraPlacement,
   type ArtPieceErrorBody,
   type ArtPieceLibrary,
 } from '../api/artPieces';
@@ -88,6 +90,8 @@ function ArtPieceStudio() {
   const [library, setLibrary] = useState<ArtPieceLibrary>('canvas2d');
   const [prompt, setPrompt] = useState('');
   const [model, setModel] = useState(readStoredModel);
+  const [personas, setPersonas] = useState<AIPersona[]>([]);
+  const [personaId, setPersonaId] = useState<number | null>(null);
   const [phase, setPhase] = useState<GenerationPhase>('idle');
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
@@ -108,8 +112,16 @@ function ArtPieceStudio() {
   // every capability starts unselected, for every new piece and every
   // fresh generation.
   const [capabilities, setCapabilities] = useState<ArtPieceCapabilitySet>({});
+  const [cameraPlacement, setCameraPlacement] = useState<CameraPlacement>('overlay');
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (auth.status !== 'signed-in') return;
+    void fetchAIPersonas()
+      .then(setPersonas)
+      .catch(() => setPersonas([]));
+  }, [auth.status]);
 
   useEffect(() => {
     return () => abortControllerRef.current?.abort();
@@ -156,12 +168,15 @@ function ArtPieceStudio() {
     setSaveError(null);
 
     try {
-      const result = await generateArtPiece(
-        library,
-        trimmed,
-        controller.signal,
-        model.trim() || undefined,
-      );
+      const result = personaId
+        ? await generateArtPiece(
+            library,
+            trimmed,
+            controller.signal,
+            model.trim() || undefined,
+            personaId,
+          )
+        : await generateArtPiece(library, trimmed, controller.signal, model.trim() || undefined);
       if (abortControllerRef.current !== controller) return;
       setCode(result.code);
       setResultLibrary(library);
@@ -217,6 +232,7 @@ function ArtPieceStudio() {
         engine: resultLibrary,
         source: code,
         capabilities: sanitizeCapabilities(capabilities, resultLibrary),
+        camera_placement: cameraPlacement,
       });
       setSavedPiece(piece);
       // Issue #438: capture a real thumbnail from the preview iframe
@@ -299,6 +315,30 @@ function ArtPieceStudio() {
           />
         </div>
 
+        <div className="behavior-card-field">
+          <label htmlFor="art-piece-persona">Persona (optional)</label>
+          <select
+            id="art-piece-persona"
+            value={personaId ?? ''}
+            disabled={pending}
+            onChange={(event) =>
+              setPersonaId(event.target.value === '' ? null : Number(event.target.value))
+            }
+          >
+            <option value="">No persona</option>
+            {personas.map((persona) => (
+              <option key={persona.id} value={persona.id}>
+                {persona.name}
+              </option>
+            ))}
+          </select>
+          {personas.length === 0 && (
+            <p>
+              No Personas yet — add one in <a href="/account/settings">Account settings</a>.
+            </p>
+          )}
+        </div>
+
         <button type="submit" disabled={pending || prompt.trim().length === 0}>
           {pending ? 'Generating…' : 'Generate'}
         </button>
@@ -367,6 +407,20 @@ function ArtPieceStudio() {
                   </label>
                 );
               })}
+            </fieldset>
+          )}
+          {phase === 'ready' && !savedPiece && capabilities.camera_view === true && (
+            <fieldset data-testid="art-piece-camera-placement">
+              <legend>Camera composition</legend>
+              <label htmlFor="art-piece-camera-placement-select">Camera feed placement</label>
+              <select
+                id="art-piece-camera-placement-select"
+                value={cameraPlacement}
+                onChange={(event) => setCameraPlacement(event.target.value as CameraPlacement)}
+              >
+                <option value="overlay">Overlay artwork</option>
+                <option value="background">Behind artwork</option>
+              </select>
             </fieldset>
           )}
           {phase === 'ready' && (

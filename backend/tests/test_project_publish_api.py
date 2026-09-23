@@ -383,6 +383,8 @@ def test_public_detail_excludes_owner_private_fields(
         "remix_provenance",
         "collections",
         "current_version",
+        "versions",
+        "version_count",
         "created_at",
         "updated_at",
     }
@@ -390,6 +392,11 @@ def test_public_detail_excludes_owner_private_fields(
     assert "visibility" not in body
     assert body["seo_config"] == {}
     assert body["collections"] == []
+    assert body["version_count"] == 1
+    assert body["versions"][0]["sequence"] == 1
+    assert body["versions"][0]["is_current"] is True
+    assert set(body["versions"][0]) == {"sequence", "created_at", "is_current"}
+    assert "scene_json" not in body["versions"][0]
 
 
 @pytest.mark.django_db

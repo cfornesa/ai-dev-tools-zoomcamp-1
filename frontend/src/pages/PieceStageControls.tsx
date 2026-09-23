@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 
-import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
+import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import { ART_PIECE_BRIDGE_VERSION } from '../generative/artPieceSandbox';
 import {
   generateArtPieceBundle,
@@ -49,6 +49,7 @@ type Props = {
   immersiveHref: string;
   library: ArtPieceLibrary;
   source: string;
+  cameraPlacement?: CameraPlacement | null;
   title: string;
   /** Regular public viewers render the toolbar above the stage, then move it
    * into the fullscreen host while the stage owns native fullscreen. */
@@ -87,11 +88,13 @@ function PieceStageControls({
   immersiveHref,
   library,
   source,
+  cameraPlacement,
   title,
   toolbarPortalTarget,
   fullscreenToolbarPortalTarget,
   presentation = 'regular',
 }: Props) {
+  const resolvedCameraPlacement: CameraPlacement = cameraPlacement ?? 'overlay';
   const [open, setOpen] = useState(false);
   const [guide, setGuide] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -611,6 +614,7 @@ function PieceStageControls({
         capabilities,
         mode,
         presentation,
+        cameraPlacement: resolvedCameraPlacement,
       });
       triggerArtPieceBundleDownload(blob, `${title || 'art-piece'}-${label}.zip`);
       setOpen(false);
@@ -842,6 +846,7 @@ function PieceStageControls({
             height: '100%',
             objectFit: 'cover',
             pointerEvents: 'none',
+            zIndex: resolvedCameraPlacement === 'background' ? 0 : 2,
             opacity: cameraState === 'active' ? cameraOpacity : 0,
           }}
         />

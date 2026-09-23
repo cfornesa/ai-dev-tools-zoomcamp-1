@@ -1,5 +1,85 @@
 # Public gallery API contract
 
+## AI art-piece generation Persona context (#743)
+
+`POST /api/ai/art-pieces/generate/` accepts the optional owner-scoped
+`persona_id` alongside `library`, `prompt`, and `model`. A Persona's prompt
+text is resolved server-side and sent as a separate provider system message;
+the client cannot provide arbitrary Persona text, select another user's
+Persona, or make Persona context cross the generated-piece sandbox boundary.
+Missing, foreign, or unknown Persona IDs behave as no Persona for backward
+compatibility.
+
+## Generated-piece sandbox and embed boundary (#741)
+
+Generated preview source runs in an opaque `iframe sandbox="allow-scripts"`
+with a strict injected Content-Security-Policy. `allow-same-origin` is
+intentionally not granted: generated code does not need the app origin, and
+the opaque origin prevents access to cookies, local storage, and credentialed
+app APIs. The parent validates the iframe window identity and a versioned,
+allowlisted command bridge; camera and hand-tracking permissions remain in the
+trusted parent runtime. Exported local runtimes are separate artifacts and do
+not carry app credentials.
+
+## Art-piece camera placement (#742)
+
+`ArtPieceVersion` responses now include the additive `camera_placement` field
+when the version is returned through the authenticated owner, public, or
+canonical piece projections. It is either `"overlay"`, `"background"`, or
+`null`. `null` is the backward-compatible legacy/default value and resolves to
+`"overlay"` in the current runtime; it does not mean that camera capture is
+enabled. Camera permission, streams, frames, device identifiers, and other
+camera data remain browser-local and are never accepted or returned by the
+backend.
+
+Version-create requests may include `camera_placement` with the same two
+values. Omitting it stores `null` and preserves the legacy overlay behavior.
+Any other value is rejected as a request validation error. Existing immutable
+version semantics apply: placement is fixed when the version is created and
+cannot be patched later; a new version must be created to change it.
+
+The frontend resolves `null` to `"overlay"` for regular and immersive viewers
+and for the Full ZIP runtime. The selected value is propagated as runtime
+configuration only. Full ZIP exports preserve the resolved placement and
+Non-Camera exports omit camera runtime/configuration entirely; neither export
+variant contains a camera frame or secret.
+
+## Public 3D piece version summaries (#731)
+
+The anonymous public 3D piece payloads returned by
+`GET /api/public/projects3d/<id>/` and the `type: "3d"` projection inside
+`GET /api/users/@<handle>/pieces/<slug>/` remain privacy-gated to published,
+non-deleted projects with a current version. They retain all existing fields
+and additionally include:
+
+- `description`: the public description from the project's validated
+  `seo_config.description` value, or `""` when that value is absent;
+- `versions`: every saved version as `{sequence, created_at, is_current}` in
+  newest-first sequence order; these summaries never include `scene_json`;
+- `version_count`: the number of saved versions.
+
+Only the current version continues to include the existing full
+`current_version` projection. Private, unpublished, deleted, missing, and
+versionless projects continue to return `404` without confirming existence.
+The public detail and canonical-slug resolvers prefetch the bounded summary
+projection so the version history does not introduce one query per version.
+
+## Public 2D piece version summaries (#737)
+
+The anonymous public 2D piece payload returned by
+`GET /api/public/projects/<id>/` and the `type: "2d"` projection inside
+`GET /api/users/@<handle>/pieces/<slug>/` retains its existing fields and
+additionally includes:
+
+- `versions`: every saved version as `{sequence, created_at, is_current}` in
+  newest-first sequence order;
+- `version_count`: the number of saved versions.
+
+Only the current version includes the existing full `scene_json` projection.
+The summary list never exposes scene contents or private version bookkeeping.
+The public detail and canonical-slug resolvers prefetch the bounded summary
+projection so the version history does not introduce one query per version.
+
 ## Project3D thumbnail refresh (#719)
 
 `POST /api/projects3d/<public_id>/thumbnail/refresh/` is an authenticated
@@ -63,6 +143,36 @@ grammar:
 - `/users/@<handle>/immersive/<slug>` — immersive view for a piece;
 - `/users/@<handle>/edit/<slug>` — the owner's piece editor entry point; and
 - `/users/@<handle>/collections/<slug>` plus `/users/@<handle>/collections/<slug>/immersive` — collection views.
+
+### Owner-private generated pieces and slug collisions (#745)
+
+The existing `GET /api/users/@<handle>/pieces/<slug>/` resolver remains the
+backward-compatible canonical regular-view contract, but its generated
+`ArtPiece` branch is owner-aware: an authenticated owner may resolve their
+own non-published, non-deleted piece at the same profile-nested slug route
+(including when the owner's profile is private). When that owner has both a
+published and a non-published row with the same owner/slug, the owner view
+selects the non-published row deterministically; anonymous and non-owner
+requests select only the published row. If no published row is available,
+anonymous and non-owner requests receive the existing `404` privacy response.
+
+The same API projection drives the existing
+`/users/@<handle>/immersive/<slug>` route, so owner-only private resolution is
+available there without adding a new URL namespace. The existing
+`/users/@<handle>/edit/<slug>` owner resolver and UUID/public_id endpoints are
+unchanged. Private rows are never returned by profile, gallery, collection,
+feed, embed, public thumbnail, or public download projections; those routes
+retain their published-only boundary.
+
+Generated `ArtPiece` slugs are unique per owner within each visibility class:
+one published slug and one non-published slug may coexist for an owner. The
+existing owner-scoped slug allocation and retry behavior remains in force,
+and different owners may reuse any slug. The migration replacing the former
+single uniqueness constraint is additive/reversible for disposable databases:
+rolling back drops the two conditional constraints and restores the original
+constraint, but must first remove or rename any public/private collisions
+created after the migration because the original constraint cannot represent
+them.
 
 ### Profile Atom feeds (#686)
 
@@ -1233,6 +1343,15 @@ Public detail responses for projects, 3D projects, and generated art pieces
 add a `collections` array containing only currently public, non-deleted
 collection links: `{title, handle, slug, url}`. Private or unpublished
 collections are omitted, and the field is absent from owner-only responses.
+
+The canonical generated art-piece response from
+`GET /api/users/@<handle>/pieces/<slug>/` includes a `versions` array when the
+resolved piece is generated. Each entry is a public summary containing only
+`sequence`, `engine`, `status`, `prompt`, `created_at`, and `model_label` (or
+`null` when no model label was recorded). It never includes source code,
+capabilities, or the raw generation-metadata object. The piece must be
+published and belong to a public profile; private, unpublished, deleted, and
+unknown pieces return `404` without revealing which condition applies.
 
 `GET /api/account/collections/<uuid>/snapshot/` returns the same deterministic
 online JSON representation for the owner. It is not an offline export and no

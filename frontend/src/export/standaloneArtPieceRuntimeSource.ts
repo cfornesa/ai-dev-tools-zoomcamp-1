@@ -19,7 +19,7 @@
  * constants. Any future change to the sandbox's runtime *behavior*
  * (not just its CDN URLs) should be mirrored here.
  */
-import type { ArtPieceCapabilitySet, ArtPieceLibrary } from '../api/artPieces';
+import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import type { ArtPieceExportMode, ArtPieceExportPresentation } from '../generative/artPieceBundle';
 
 const SPATIAL_LIBRARIES: ArtPieceLibrary[] = [
@@ -46,6 +46,7 @@ export function buildStandaloneArtPieceRuntimeScript(
   capabilities: ArtPieceCapabilitySet,
   mode: ArtPieceExportMode,
   presentation: ArtPieceExportPresentation = 'regular',
+  cameraPlacement: CameraPlacement = 'overlay',
 ): string {
   const includeSound = capabilities.sound === true;
   const includeKeyboard = capabilities.keyboard === true;
@@ -447,6 +448,7 @@ export function buildStandaloneArtPieceRuntimeScript(
       video.style.position = 'fixed'; video.style.inset = '0';
       video.style.width = '100%'; video.style.height = '100%';
       video.style.objectFit = 'cover'; video.style.pointerEvents = 'none';
+      video.style.zIndex = ${cameraPlacement === 'background' ? '0' : '2'};
       video.style.opacity = String(cameraOpacity);
       document.body.appendChild(video);
     }

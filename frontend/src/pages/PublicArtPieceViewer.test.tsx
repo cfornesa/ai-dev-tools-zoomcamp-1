@@ -40,6 +40,64 @@ function renderViewer(piece: ArtPiece = basePiece) {
 }
 
 describe('PublicArtPieceViewer stage sizing (#703)', () => {
+  it('renders the canonical generated-art information architecture and safe prompt summaries', () => {
+    const longPrompt = 'A '.repeat(120);
+    render(
+      <MemoryRouter initialEntries={['/users/@artist/pieces/responsive-study']}>
+        <Routes>
+          <Route
+            path="/users/:handle/pieces/:pieceSlug"
+            element={
+              <PublicArtPieceViewer
+                initialPiece={{
+                  ...basePiece,
+                  engine_label: 'SVG',
+                  prompt: longPrompt,
+                  versions: [
+                    {
+                      sequence: 1,
+                      engine: 'svg',
+                      status: 'published',
+                      prompt: longPrompt,
+                      created_at: '2026-09-18T00:00:00Z',
+                      model_label: 'Mistral Small',
+                    },
+                  ],
+                }}
+                canonicalHref="/users/@artist/pieces/responsive-study"
+                canonicalRoute
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Generated art')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Responsive study', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('SVG · 1 version')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Art piece stage' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Piece actions' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Current version context' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Versions' })).toBeInTheDocument();
+    expect(screen.getByText('Mistral Small')).toBeInTheDocument();
+    expect(screen.getByText('CURRENT')).toBeInTheDocument();
+    const summary = document.querySelector('summary');
+    expect(summary).not.toBeNull();
+    expect(summary?.textContent).toHaveLength(180);
+    expect(summary).toHaveAttribute('title', longPrompt);
+    expect(document.querySelector('details p')).toHaveTextContent(longPrompt.trimEnd());
+  });
+
+  it('renders one themed page-level h1 outside the embed route', () => {
+    renderViewer();
+
+    const heading = screen.getByRole('heading', { name: 'Responsive study', level: 1 });
+    expect(heading).toHaveClass('public-piece-page-heading');
+    expect(screen.getByRole('region', { name: 'Art piece stage' })).toBeInTheDocument();
+    expect(screen.queryByText('Generated art')).not.toBeInTheDocument();
+  });
+
   it('reserves a responsive 16:9 stage before the preview is ready and uses the theme background', () => {
     renderViewer();
 

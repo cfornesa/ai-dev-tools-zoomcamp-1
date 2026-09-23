@@ -257,12 +257,14 @@ class ArtPieceProvider:
         *,
         api_key: str | None = None,
         model: str | None = None,
+        persona_prompt: str | None = None,
         client: Any | None = None,
         timeout_ms: int = REQUEST_TIMEOUT_MS,
     ) -> None:
         self._api_key = api_key
         self._client = client
         self.model = model or DEFAULT_MODEL
+        self.persona_prompt = persona_prompt
         self.timeout_ms = timeout_ms
 
     @property
@@ -299,13 +301,15 @@ class ArtPieceProvider:
             "aframe": _AFRAME_SYSTEM_PROMPT,
         }[library]
 
+        messages = [{"role": "system", "content": system_prompt}]
+        if self.persona_prompt:
+            messages.append({"role": "system", "content": self.persona_prompt})
+        messages.append({"role": "user", "content": prompt})
+
         try:
             response = self.client.chat.complete(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt},
-                ],
+                messages=messages,
                 temperature=0.7,
                 timeout_ms=self.timeout_ms,
             )

@@ -9,18 +9,14 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiPatch } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
 async function createPublishedProject(page: Page): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-  await page.waitForURL(/\/projects\/[^/]+$/);
-  const projectId = /\/projects\/([^/]+)$/.exec(page.url())?.[1];
-  if (!projectId) throw new Error(`Could not extract project id from ${page.url()}`);
+  const projectId = await createBlankProjectViaUI(page);
 
   const metadata = await apiPatch(page.context(), `/api/projects/${projectId}/`, {
     title: 'Legacy 2D compatibility study',

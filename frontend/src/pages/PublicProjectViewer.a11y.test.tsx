@@ -100,7 +100,8 @@ describe('PublicProjectViewer accessibility', () => {
   it('has no axe violations in the ready state for an anonymous visitor (no fork button)', async () => {
     mockedGetPublicProject.mockResolvedValue(basePublicProject());
     const { container } = renderViewer();
-    await screen.findByRole('heading', { name: 'Hand Follower' });
+    await screen.findByRole('heading', { name: 'Hand Follower', level: 1 });
+    expect(screen.getByRole('heading', { name: 'Preview', level: 2 })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /fork this project/i })).not.toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });

@@ -87,6 +87,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI } from './support/createProject.js';
 import {
   expandAllCollapsibleSections,
   expandSection,
@@ -118,15 +119,6 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * `BehaviorCardsPanel`'s `followHand`/`reactToPinch`/`emitParticles`
  * cards) to open everything else.
  */
-async function createBlankProjectViaUI(page: Page): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-  await page.waitForURL(/\/projects\/[^/]+$/);
-  const match = /\/projects\/([^/]+)$/.exec(page.url());
-  if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
-  return match[1];
-}
 
 function lastFrameStatus(page: Page) {
   return page.locator('.demo-last-frame');

@@ -20,7 +20,7 @@ from rest_framework.test import APIClient
 
 import scenes.art_piece_api as art_piece_api
 from ai_provider.art_piece_provider import ArtPieceProvider
-from scenes.models import ProviderCredential
+from scenes.models import AIPersona, ProviderCredential
 
 URL = "/api/ai/art-pieces/generate/"
 
@@ -464,6 +464,30 @@ def test_owner_key_and_model_reach_the_real_provider(owner, monkeypatch):
     art_piece_api._provider_for_user(owner, "codestral-2405")
 
     assert captured == {"api_key": "sk-owner-only-key-12345", "model": "codestral-2405"}
+
+
+@pytest.mark.django_db
+def test_owned_persona_id_is_resolved_before_art_piece_generation(owner, owner_client, monkeypatch):
+    persona = AIPersona.objects.create(
+        owner=owner,
+        name="Solarist",
+        prompt_text="Use bright solar colors.",
+    )
+    captured = {}
+
+    def provider_for_user(user, model=None, persona_prompt=None):
+        captured["persona_prompt"] = persona_prompt
+        return _mistral_provider_returning(_VALID_SNIPPET)
+
+    monkeypatch.setattr(art_piece_api, "_provider_for_user", provider_for_user)
+    response = owner_client.post(
+        URL,
+        {"library": "canvas2d", "prompt": "a solar halo", "persona_id": persona.id},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert captured["persona_prompt"] == "Use bright solar colors."
 
 
 # --- Issue #499: credential-resolution parity with the scene path ----------

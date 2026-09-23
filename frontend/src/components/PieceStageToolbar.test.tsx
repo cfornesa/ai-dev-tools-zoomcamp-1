@@ -29,6 +29,46 @@ describe('PieceStageToolbar', () => {
     );
   });
 
+  it('anchors inline fullscreen separately and floats stage disclosures without reflow', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
+    expect(css).toMatch(
+      /\.piece-stage-fullscreen-control\s*\{[^}]*position:\s*absolute;[^}]*right:\s*0;[^}]*bottom:\s*0/s,
+    );
+    expect(css).toMatch(
+      /\.piece-stage-controls-panel\s*\{[^}]*position:\s*absolute;[^}]*top:\s*calc\(100% \+ 0\.4rem\)/s,
+    );
+    expect(css).toMatch(
+      /\.piece-stage-download-menu\s*\{[^}]*position:\s*absolute;[^}]*top:\s*calc\(100% \+ 0\.4rem\)/s,
+    );
+  });
+
+  it('keeps fullscreen out of the inline action row while preserving its accessible name', () => {
+    render(
+      <PieceStageToolbar
+        toolbarMode="inline"
+        capabilities={THREE_D_STAGE_CAPABILITIES}
+        onDownload={vi.fn()}
+        onToggleFullscreen={vi.fn()}
+        immersiveHref="/immersive"
+        soundControl={<button type="button">Sound</button>}
+        controlsControl={<button type="button">Piece controls</button>}
+        gestureControl={<button type="button">Steer the piece</button>}
+        gestureGuide={<button type="button">Guide</button>}
+      />,
+    );
+
+    const toolbar = screen.getByRole('toolbar', { name: 'Piece actions' });
+    expect(toolbar.querySelector('.piece-stage-toolbar-group')).not.toContainElement(
+      screen.getByRole('button', { name: 'Expand piece to fullscreen' }),
+    );
+    expect(
+      screen
+        .getByRole('button', { name: 'Expand piece to fullscreen' })
+        .closest('.piece-stage-fullscreen-control'),
+    ).toBeTruthy();
+    expect(screen.getByRole('tooltip', { name: 'Expand piece to fullscreen' })).toBeInTheDocument();
+  });
+
   it('keeps the shared action order and routes both download variants', async () => {
     const user = userEvent.setup();
     const onDownload = vi.fn();

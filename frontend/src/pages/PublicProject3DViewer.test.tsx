@@ -24,7 +24,10 @@ function basePublicProject3D(overrides: Partial<PublicProject3D> = {}): PublicPr
     id: 'p1',
     owner: 'alice',
     title: 'Rotating Cube',
+    description: '',
     thumbnail_url: '/api/public/projects3d/p1/thumbnail.png',
+    versions: [],
+    version_count: 0,
     viewer_url: '/legacy/p3d/p1',
     current_version: {
       id: 1,
@@ -83,7 +86,8 @@ describe('PublicProject3DViewer load states', () => {
     mockedGetPublicProject3D.mockResolvedValue(basePublicProject3D());
     renderViewer();
 
-    expect(await screen.findByRole('heading', { name: 'Rotating Cube' })).toBeInTheDocument();
+    const heading = await screen.findByRole('heading', { name: 'Rotating Cube', level: 1 });
+    expect(heading).toHaveClass('public-piece-page-heading');
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(mockedGetPublicProject3D).toHaveBeenCalledWith('p1');
     expect(screen.getByRole('toolbar', { name: 'Preview actions' })).toBeInTheDocument();
@@ -233,7 +237,7 @@ describe('PublicProject3DViewer immersive-view entry point (issue #311)', () => 
     await screen.findByRole('heading', { name: 'Rotating Cube' });
     expect(screen.queryByRole('link', { name: 'View in immersive mode' })).not.toBeInTheDocument();
 
-    const immersiveButton = screen.getByRole('button', { name: 'View in immersive mode' });
+    const immersiveButton = screen.getByRole('button', { name: 'Open immersive view' });
     expect(immersiveButton).toHaveClass('public-project-immersive-button');
     await userEvent.setup().click(immersiveButton);
     expect(openWindow).toHaveBeenCalledWith(
@@ -241,5 +245,62 @@ describe('PublicProject3DViewer immersive-view entry point (issue #311)', () => 
       '_blank',
       'noopener,noreferrer',
     );
+  });
+
+  it('renders the canonical 3D information architecture and copies its share link', async () => {
+    const project = basePublicProject3D({
+      description: 'A study in spatial repetition.',
+      version_count: 3,
+      versions: [
+        { sequence: 1, created_at: '2026-01-01T00:00:00Z', is_current: false },
+        { sequence: 3, created_at: '2026-01-03T00:00:00Z', is_current: true },
+        { sequence: 2, created_at: '2026-01-02T00:00:00Z', is_current: false },
+      ],
+    });
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
+
+    render(
+      <MemoryRouter initialEntries={['/users/@alice/pieces/rotating-cube']}>
+        <Routes>
+          <Route
+            path="/users/:handle/pieces/:pieceSlug"
+            element={
+              <PublicProject3DViewer
+                initialProject={project}
+                toolbarMode="inline"
+                authorDisplayName="Alice Artist"
+                immersiveHref="/users/@alice/immersive/rotating-cube"
+              />
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('3D scene', { selector: 'p' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Rotating Cube', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('By Alice Artist')).toBeInTheDocument();
+    expect(screen.getByText('3D scene · 3 versions')).toBeInTheDocument();
+    expect(screen.getByText('A study in spatial repetition.')).toBeInTheDocument();
+
+    const preview = screen.getByRole('region', { name: 'Preview' });
+    const actions = screen.getByRole('group', { name: 'Piece actions' });
+    expect(
+      preview.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Open immersive view' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Share' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Embed' })).toBeInTheDocument();
+
+    const currentVersion = screen.getByRole('region', { name: 'Current version context' });
+    expect(currentVersion).toBeInTheDocument();
+    expect(within(currentVersion).getByText(/Version 1/)).toBeInTheDocument();
+    const versions = screen.getByRole('heading', { name: 'Versions' }).nextElementSibling;
+    expect(versions?.textContent).toMatch(/Version 3[\s\S]*Version 2[\s\S]*Version 1/);
+    expect(screen.getByText('CURRENT')).toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Share' }));
+    expect(writeText).toHaveBeenCalledWith(window.location.href);
+    expect(await within(actions).findByRole('status')).toHaveTextContent('Link copied.');
   });
 });

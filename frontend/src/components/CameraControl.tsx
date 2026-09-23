@@ -224,10 +224,15 @@ function CameraControl({
   // before this control mounts. Start that capability's camera lifecycle here
   // while keeping the standalone camera control opt-in and permission-safe.
   useEffect(() => {
-    if (startOnMount && status === 'idle' && !startOnMountAttemptedRef.current) {
+    if (!startOnMount || status !== 'idle' || startOnMountAttemptedRef.current) return;
+    // StrictMode replays mount effects: the resource cleanup above stops the
+    // provider during the first pass. Schedule the start after that replay so
+    // its cancelled pass never claims the one allowed attempt.
+    const timer = window.setTimeout(() => {
       startOnMountAttemptedRef.current = true;
       handleEnable();
-    }
+    }, 0);
+    return () => window.clearTimeout(timer);
     // `handleEnable` intentionally remains a local event/lifecycle handler;
     // status is the guard that makes this mount-start happen only once.
     // eslint-disable-next-line react-hooks/exhaustive-deps

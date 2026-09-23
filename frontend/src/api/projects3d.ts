@@ -17,6 +17,12 @@ export type SceneVersion3D = {
   created_at: string;
 };
 
+export type PublicSceneVersion3DSummary = {
+  sequence: number;
+  created_at: string;
+  is_current: boolean;
+};
+
 /** Issue #296: mirrors `scenes/models.py`'s `Project3D.Visibility`. */
 export type Project3DVisibility = 'private' | 'public';
 
@@ -120,11 +126,14 @@ export type PublicProject3D = {
   id: string;
   owner: string;
   title: string;
+  description: string;
   seo_config?: SeoConfig;
   thumbnail_url: string | null;
   /** Canonical profile-nested viewer path; legacy ID paths are shims only. */
   viewer_url?: string;
   current_version: SceneVersion3D | null;
+  versions: PublicSceneVersion3DSummary[];
+  version_count: number;
   created_at: string;
   updated_at: string;
   collections?: import('./projects').PublicCollectionContext[];

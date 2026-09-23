@@ -344,8 +344,14 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
             stream = acquiredStream;
             var videoElement = document.createElement("video");
             videoElement.id = "camera-view-video";
+            videoElement.setAttribute("data-testid", "camera-view-video");
             videoElement.setAttribute("aria-label", "Local camera view");
-            videoElement.style.display = cameraViewEnabled ? "block" : "none";
+            // Steering is the explicit opt-in for the live camera. Show the
+            // local feed as soon as the tracking pipeline is genuinely active;
+            // the Show camera control can still hide it without stopping
+            // steering.
+            cameraViewEnabled = true;
+            videoElement.style.display = "block";
             videoElement.style.opacity = String(cameraViewOpacity);
             videoElement.style.transform = cameraViewMirrored ? "scaleX(-1)" : "none";
             videoElement.muted = true;
@@ -358,7 +364,8 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
                   if (myGeneration !== generation) return;
                   video = videoElement;
                   cameraViewVideo = videoElement;
-                  document.body.appendChild(videoElement);
+                  var stage = document.getElementById("scene3d-canvas-host") || document.body;
+                  stage.appendChild(videoElement);
                   loadModel(myGeneration);
                 },
                 function () {
@@ -665,7 +672,7 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
     var viewLabel = el("label", {});
     var viewToggle = el("input", { type: "checkbox", "data-testid": "camera-view-toggle" });
     viewLabel.appendChild(viewToggle);
-    viewLabel.appendChild(document.createTextNode(" Camera view"));
+    viewLabel.appendChild(document.createTextNode(" Show camera"));
     var opacityLabel = el("label", { text: "Camera opacity" });
     var opacityInput = el("input", { type: "range", min: "0", max: "1", step: "0.05", value: String(cameraViewOpacity), "data-testid": "camera-view-opacity", "aria-label": "Camera opacity" });
     opacityLabel.appendChild(opacityInput);
@@ -673,7 +680,7 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
     var mirrorToggle = el("input", { type: "checkbox", "data-testid": "camera-view-mirror" });
     mirrorToggle.checked = cameraViewMirrored;
     mirrorLabel.appendChild(mirrorToggle);
-    mirrorLabel.appendChild(document.createTextNode(" Mirror camera"));
+    mirrorLabel.appendChild(document.createTextNode(" Mirror"));
     viewGroup.appendChild(viewLabel);
     viewGroup.appendChild(opacityLabel);
     viewGroup.appendChild(mirrorLabel);
@@ -690,10 +697,11 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
       cameraViewEnabled = viewToggle.checked;
       cameraViewOpacity = Number(opacityInput.value);
       cameraViewMirrored = mirrorToggle.checked;
-      if (cameraViewVideo) {
-        cameraViewVideo.style.display = cameraViewEnabled ? "block" : "none";
-        cameraViewVideo.style.opacity = String(cameraViewOpacity);
-        cameraViewVideo.style.transform = cameraViewMirrored ? "scaleX(-1)" : "none";
+      var activeVideo = document.getElementById("camera-view-video");
+      if (activeVideo) {
+        activeVideo.style.display = cameraViewEnabled ? "block" : "none";
+        activeVideo.style.opacity = String(cameraViewOpacity);
+        activeVideo.style.transform = cameraViewMirrored ? "scaleX(-1)" : "none";
       }
     }
     viewToggle.addEventListener("change", updateCameraView);
@@ -705,6 +713,8 @@ export function buildStandaloneCameraScript(paths: StandaloneCameraAssetPaths = 
       else if (status === "starting") statusEl.textContent = "Starting camera…";
       else if (status === "active") {
         statusEl.textContent = "Camera is active. Hand tracking is running locally in your browser.";
+        viewToggle.checked = true;
+        updateCameraView();
       } else if (status === "stopped") statusEl.textContent = "Camera stopped. No video is being captured.";
 
       errorEl.style.display = status === "error" ? "" : "none";

@@ -125,7 +125,25 @@ export default function PieceStageToolbar({
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointer);
   }, [downloadOpen]);
 
-  const actionGroup = (
+  const fullscreenControl =
+    capabilities.fullscreen && onToggleFullscreen ? (
+      <button
+        type="button"
+        className="piece-stage-icon-button"
+        aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+        title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+        aria-pressed={isFullscreen}
+        onClick={() => void onToggleFullscreen()}
+      >
+        <PieceStageIcon name="fullscreen" />
+        <StageActionLabel>{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</StageActionLabel>
+        <span className="piece-stage-tooltip" role="tooltip">
+          {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
+        </span>
+      </button>
+    ) : null;
+
+  const actionGroup = (includeFullscreen = false) => (
     <div
       onKeyDown={toolbarMode === 'menu' ? handleMenuKeyDown : undefined}
       role="group"
@@ -243,29 +261,19 @@ export default function PieceStageToolbar({
       {capabilities.gestureGuide && gestureGuide}
       {visitorDrawControl}
       {editorControls}
-      {capabilities.fullscreen && onToggleFullscreen && (
-        <button
-          type="button"
-          className="piece-stage-icon-button"
-          aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-          title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-          aria-pressed={isFullscreen}
-          onClick={() => void onToggleFullscreen()}
-        >
-          <PieceStageIcon name="fullscreen" />
-          <StageActionLabel>{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</StageActionLabel>
-          <span className="piece-stage-tooltip" role="tooltip">
-            {isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
-          </span>
-        </button>
-      )}
+      {includeFullscreen && fullscreenControl}
     </div>
   );
 
   return (
     <div role="toolbar" aria-label={ariaLabel} className="piece-stage-toolbar">
       {toolbarMode === 'inline' ? (
-        actionGroup
+        <>
+          {actionGroup()}
+          {fullscreenControl && (
+            <div className="piece-stage-fullscreen-control">{fullscreenControl}</div>
+          )}
+        </>
       ) : (
         <>
           <button
@@ -305,7 +313,7 @@ export default function PieceStageToolbar({
                   ×
                 </button>
               </header>
-              {actionGroup}
+              {actionGroup(true)}
             </section>
           </div>
         </>

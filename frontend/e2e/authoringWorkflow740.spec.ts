@@ -130,7 +130,6 @@ test.describe('reference-style authoring workflow (#740)', () => {
   }) => {
     test.setTimeout(180_000);
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await mockCamera(context);
     const profile = (await (await apiGet(context, '/api/account/profile/')).json()) as {
       handle: string;
     };

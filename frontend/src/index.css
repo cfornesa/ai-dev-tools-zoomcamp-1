@@ -5151,12 +5151,22 @@ select.ai-proposal-field-full-width {
   position: absolute;
   top: 0.75rem;
   left: 0.75rem;
+  right: 0.75rem;
+  max-width: calc(100% - 1.5rem);
   /* Keep the shared stage actions above editor-only overlays such as the
      selection HUD. The toolbar is interactive chrome, so a visible HUD must
      never win hit-testing merely because it is rendered later in the panel. */
   z-index: 20;
   display: flex;
   gap: 0.65rem;
+}
+
+/* Inline public viewers keep fullscreen independent from the wrapping action
+   row so it stays anchored to the stage's bottom-right corner. */
+.piece-stage-fullscreen-control {
+  position: absolute;
+  right: 0;
+  bottom: 0;
 }
 
 .piece-stage-menu-trigger,
@@ -5350,6 +5360,7 @@ select.ai-proposal-field-full-width {
   align-items: flex-start;
   gap: 0.65rem;
   min-width: 0;
+  max-width: 100%;
 }
 
 /* Issue #325: the shared stage rail's 2D editor group is a direct child of
@@ -5463,6 +5474,20 @@ select.ai-proposal-field-full-width {
     min-height: 2.5rem;
     height: 2.5rem;
     padding: 0 0.5rem;
+  }
+
+  /* Leave the bottom-right fullscreen target clear while the inline action
+     row wraps through the remaining stage width on phones. */
+  .piece-stage-toolbar > .piece-stage-toolbar-group {
+    max-width: calc(100% - 3.5rem);
+  }
+
+  .piece-stage-download-menu,
+  .piece-stage-controls-panel {
+    width: min(20rem, calc(100vw - 2rem));
+    max-width: calc(100vw - 2rem);
+    right: 0;
+    left: auto;
   }
 
   .public-art-piece-toolbar-row .piece-stage-icon-button {
@@ -5594,13 +5619,10 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-download-menu {
-  /* The download disclosure lives inside the fullscreen command card. Keep
-     it in document flow so its actions remain reachable on short viewports;
-     an absolutely positioned menu can land below the viewport after the
-     other stacked controls have opened. */
-  position: relative;
-  right: auto;
-  top: auto;
+  /* Public inline toolbars must not reflow when this disclosure opens. */
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
   z-index: 30;
   display: grid;
   gap: 0.35rem;
@@ -5634,13 +5656,12 @@ select.ai-proposal-field-full-width {
 }
 
 .piece-stage-controls-panel {
-  /* Open disclosures participate in the command card's normal flow. An
-     absolute panel can begin below the viewport when the stacked menu is
-     already tall, which makes Firefox treat its controls as non-visible and
-     forces a second overlay scrollbar. */
-  position: relative;
-  left: auto;
-  top: auto;
+  /* Inline stage controls float below their trigger instead of moving the
+     remaining toolbar buttons. The command-card variant overrides this to
+     retain its stacked flow. */
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.4rem);
   z-index: 30;
   width: min(360px, 100%);
   margin-top: 0.4rem;
@@ -5659,6 +5680,14 @@ select.ai-proposal-field-full-width {
 
 .piece-stage-controls-panel[hidden] {
   display: none;
+}
+
+.piece-stage-command-card .piece-stage-download-menu,
+.piece-stage-command-card .piece-stage-controls-panel {
+  position: relative;
+  left: auto;
+  top: auto;
+  margin-top: 0.4rem;
 }
 
 /* Issue #348: keep the initial editor stage rail compact. Authoring actions

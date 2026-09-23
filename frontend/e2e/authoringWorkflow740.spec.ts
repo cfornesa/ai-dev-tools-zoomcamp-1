@@ -79,7 +79,6 @@ async function downloadFullZip(page: Page): Promise<void> {
 
 async function createPieceThroughStudio(
   page: Page,
-  context: BrowserContext,
   personaId: number,
   engine: (typeof CASES)[number],
   viewportName: string,
@@ -181,7 +180,6 @@ test.describe('reference-style authoring workflow (#740)', () => {
         for (const engine of CASES) {
           const piece = await createPieceThroughStudio(
             page,
-            context,
             persona.id,
             engine,
             viewport.name,

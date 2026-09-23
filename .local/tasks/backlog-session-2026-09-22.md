@@ -68,6 +68,16 @@ status. No next issue begins before the current one is terminal.
 - **QA verdict:** `## QA: FAIL` for the complete issue contract solely because the required rendered browser evidence is unavailable; the earlier implementation defect was fixed and the full frontend gate is green. No product-code change was made during QA.
 - **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment was posted. Keep #738 open as terminally blocked pending approved browser evidence.
 
+### #731 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING → QA → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Stage provenance:** scoping `Codex / GPT-5 / medium`, substituted for rostered Codex/Luna: `yes`; implementation delegated subagent / GPT-5 / medium, substituted for rostered Ollama Cloud: `yes`; correction implementation same delegated subagent / GPT-5 / medium, substituted: `yes`; second opinion: `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate pending.
+- **Commits:** `45354b5` API contract/implementation; `64e9671` additive fixture compatibility correction.
+- **Acceptance matrix:** public 3D payload now documents and returns description plus newest-first public version summaries and count; private/unpublished behavior remains covered; serializer query prefetching avoids N+1; frontend API types and `docs/api.md` are updated before/with code.
+- **Checks:** focused backend 17 passed; public-3D selection 14 passed; full backend `1512 passed, 39 skipped`; full frontend `260 files / 2811 tests`; frontend typecheck, Ruff, format, lint, action-pin checks passed.
+- **QA verdict:** `## QA: PASS`; no browser evidence required by #731. No stage-3 findings to disposition.
+- **GitHub reconciliation:** issue-comment connector accepts `pr_number` only, so the required top-level issue QA comment could not be posted; this is recorded as connector unavailability. The authenticated issue update operation was used to close #731 as `completed` after all criteria passed.
+
 ## Duplicate / already-covered report
 
 The prior distillation in `docs/tasks.md` records closed history #297/#342

@@ -71,7 +71,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
     try {
-      await anonymousPage.goto(`/users/@${handle}/immersive/${piece.slug}`);
+      await anonymousPage.goto(`/users/@${handle}/pieces/${piece.slug}`);
       const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
       await expect(frame).toBeVisible({ timeout: 15_000 });
       const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });

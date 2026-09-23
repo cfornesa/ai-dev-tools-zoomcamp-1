@@ -696,6 +696,7 @@ test.describe('Local and server draft autosave', () => {
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
       const projectId = await createBlankProjectViaUI(page);
+      const editorUrl = page.url();
       await expandAllCollapsibleSections(page);
 
       await page.route('**/draft/**', (route) => {
@@ -726,7 +727,7 @@ test.describe('Local and server draft autosave', () => {
 
       // Still the same editor route, and the unsaved shape is still there —
       // a failed background sync never navigates away or drops working state.
-      await expect(page).toHaveURL(new RegExp(`/projects/${projectId}$`));
+      await expect(page).toHaveURL(editorUrl);
       await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
 
       await context.close();

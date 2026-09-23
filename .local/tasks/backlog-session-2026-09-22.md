@@ -78,6 +78,16 @@ status. No next issue begins before the current one is terminal.
 - **QA verdict:** `## QA: PASS`; no browser evidence required by #731. No stage-3 findings to disposition.
 - **GitHub reconciliation:** issue-comment connector accepts `pr_number` only, so the required top-level issue QA comment could not be posted; this is recorded as connector unavailability. The authenticated issue update operation was used to close #731 as `completed` after all criteria passed.
 
+### #732 transaction ledger — QA result
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION`.
+- **Stage provenance:** scoping `Codex / GPT-5 / medium`, substituted for rostered Codex/Luna: `yes`; implementation delegated subagent / GPT-5 / medium, substituted for rostered Opencode Go: `yes`; second opinion: `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate pending.
+- **Commit:** `cfba21c`.
+- **Checks:** focused Vitest 16 passed; full frontend `260 files / 2812 tests`; lint, Prettier, typecheck passed.
+- **Browser evidence:** `npx playwright test e2e/public3dInfoArchitecture732.spec.ts --project=chromium` attempted and failed before navigation at the macOS Playwright MachPort boundary (`Permission denied (1100)`); no rendered screenshots claimed. Classification: `verification-boundary`. Next action: run the exact spec in CI/approved browser environment and inspect 1440×900 and 375×812 screenshots.
+- **QA verdict:** `## QA: FAIL` for complete issue contract solely because required rendered route evidence is unavailable; no product-code change made during QA.
+- **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment posted. Keep #732 open as terminally blocked pending browser evidence.
+
 ## Duplicate / already-covered report
 
 The prior distillation in `docs/tasks.md` records closed history #297/#342

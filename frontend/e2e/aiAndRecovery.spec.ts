@@ -695,7 +695,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      await createBlankProjectViaUI(page);
       const editorUrl = page.url();
       await expandAllCollapsibleSections(page);
 

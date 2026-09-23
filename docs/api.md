@@ -20,6 +20,22 @@ versionless projects continue to return `404` without confirming existence.
 The public detail and canonical-slug resolvers prefetch the bounded summary
 projection so the version history does not introduce one query per version.
 
+## Public 2D piece version summaries (#737)
+
+The anonymous public 2D piece payload returned by
+`GET /api/public/projects/<id>/` and the `type: "2d"` projection inside
+`GET /api/users/@<handle>/pieces/<slug>/` retains its existing fields and
+additionally includes:
+
+- `versions`: every saved version as `{sequence, created_at, is_current}` in
+  newest-first sequence order;
+- `version_count`: the number of saved versions.
+
+Only the current version includes the existing full `scene_json` projection.
+The summary list never exposes scene contents or private version bookkeeping.
+The public detail and canonical-slug resolvers prefetch the bounded summary
+projection so the version history does not introduce one query per version.
+
 ## Project3D thumbnail refresh (#719)
 
 `POST /api/projects3d/<public_id>/thumbnail/refresh/` is an authenticated

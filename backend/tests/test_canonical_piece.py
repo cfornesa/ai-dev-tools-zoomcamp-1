@@ -212,6 +212,41 @@ def test_profile_cards_expose_canonical_urls_for_authored_piece_families(client)
 
 
 @pytest.mark.django_db
+def test_canonical_2d_piece_exposes_safe_newest_first_version_summaries(client):
+    user = get_user_model().objects.create_user(username="2d-version-artist")
+    PublicProfile.objects.create(user=user, handle="2d-version-artist", is_public=True)
+    project = Project.objects.create(
+        owner=user,
+        title="Versioned Canvas",
+        description="A public 2D study.",
+        public_slug="versioned-canvas",
+        visibility=Project.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    SceneVersion.objects.create(project=project, sequence=1, scene_json={})
+    second = SceneVersion.objects.create(project=project, sequence=2, scene_json={})
+    project.current_version = second
+    project.save(update_fields=["current_version"])
+
+    response = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "2d-version-artist", "piece_slug": "versioned-canvas"},
+        )
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["piece"]
+    assert payload["description"] == "A public 2D study."
+    assert payload["version_count"] == 2
+    assert [version["sequence"] for version in payload["versions"]] == [2, 1]
+    assert payload["versions"][0]["is_current"] is True
+    assert payload["versions"][1]["is_current"] is False
+    assert set(payload["versions"][0]) == {"sequence", "created_at", "is_current"}
+    assert "scene_json" not in payload["versions"][0]
+
+
+@pytest.mark.django_db
 def test_canonical_piece_does_not_expose_private_or_unknown_piece(client):
     user = get_user_model().objects.create_user(username="private-artist")
     PublicProfile.objects.create(user=user, handle="private-artist", is_public=True)

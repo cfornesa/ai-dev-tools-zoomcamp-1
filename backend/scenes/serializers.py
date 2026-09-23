@@ -291,6 +291,20 @@ class PublicSceneVersionSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class PublicSceneVersionSummarySerializer(serializers.ModelSerializer):
+    """Issue #737: safe public 2D version history metadata."""
+
+    is_current = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SceneVersion
+        fields = ["sequence", "created_at", "is_current"]
+        read_only_fields = fields
+
+    def get_is_current(self, version: SceneVersion) -> bool:
+        return version.pk == self.context["current_version_id"]
+
+
 class PublicProjectSerializer(serializers.ModelSerializer):
     """Task 49: the public-reachable shape of a published project.
 
@@ -311,6 +325,8 @@ class PublicProjectSerializer(serializers.ModelSerializer):
     viewer_url = serializers.SerializerMethodField()
     remix_provenance = serializers.SerializerMethodField()
     collections = serializers.SerializerMethodField()
+    versions = serializers.SerializerMethodField()
+    version_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -327,6 +343,8 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "remix_provenance",
             "collections",
             "current_version",
+            "versions",
+            "version_count",
             "created_at",
             "updated_at",
         ]
@@ -357,6 +375,20 @@ class PublicProjectSerializer(serializers.ModelSerializer):
         from scenes.collections import public_collection_context
 
         return public_collection_context("project", project.public_id)
+
+    def get_versions(self, project: Project) -> list[dict]:
+        versions = getattr(project, "_public_version_summaries", None)
+        if versions is None:
+            versions = project.versions.order_by("-sequence", "-id")
+        return PublicSceneVersionSummarySerializer(
+            versions, many=True, context={"current_version_id": project.current_version_id}
+        ).data
+
+    def get_version_count(self, project: Project) -> int:
+        versions = getattr(project, "_public_version_summaries", None)
+        if versions is not None:
+            return len(versions)
+        return project.versions.count()
 
 
 class PublicProjectListItemSerializer(serializers.ModelSerializer):

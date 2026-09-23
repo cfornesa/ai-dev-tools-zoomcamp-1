@@ -460,7 +460,16 @@ function PublicProjectViewer({
   if (!project) return null;
 
   const provenance = project.remix_provenance;
-  const isEmbedRoute = window.location.pathname.startsWith('/embed/p/');
+  const isEmbedRoute = location.pathname.startsWith('/embed/p/');
+  const isCanonicalRoute = location.pathname.includes('/users/@');
+  const versionSummaries = [...(project.versions ?? [])].sort(
+    (left, right) => right.sequence - left.sequence,
+  );
+  const versionCount = project.version_count ?? versionSummaries.length;
+
+  function formatVersionDate(createdAt: string) {
+    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(createdAt));
+  }
 
   return (
     <div
@@ -470,13 +479,23 @@ function PublicProjectViewer({
     >
       {!isEmbedRoute && (
         <header>
+          {isCanonicalRoute && <p className="public-piece-kind">2D scene</p>}
           <h1 className="public-piece-page-heading">{project.title}</h1>
+          {isCanonicalRoute && (
+            <p className="public-piece-meta">
+              2D scene · {versionCount} {versionCount === 1 ? 'version' : 'versions'}
+            </p>
+          )}
           {provenance && (
             <span className="remix-badge" role="status" aria-label="Remix">
               Remix
             </span>
           )}
-          {project.description && <p>{project.description}</p>}
+          {project.description && (
+            <p className={isCanonicalRoute ? 'public-project-context' : undefined}>
+              {project.description}
+            </p>
+          )}
           <p className="public-project-attribution">By {authorDisplayName || project.owner}</p>
 
           {provenance &&
@@ -491,33 +510,35 @@ function PublicProjectViewer({
               </p>
             ))}
 
-          {auth.status === 'signed-in' && project.allow_public_remix && (
+          {!isCanonicalRoute && auth.status === 'signed-in' && project.allow_public_remix && (
             <p>
               <button type="button" onClick={handleFork} disabled={forkState === 'forking'}>
                 {forkState === 'forking' ? 'Forking…' : 'Fork this project'}
               </button>
             </p>
           )}
-          {forkError && (
+          {!isCanonicalRoute && forkError && (
             <p role="alert" aria-live="assertive">
               {forkError}
             </p>
           )}
 
-          <p>
-            <button
-              type="button"
-              onClick={() => {
-                setShowEmbedSnippet((current) => !current);
-                setEmbedCopyStatus('idle');
-              }}
-              aria-expanded={showEmbedSnippet}
-              data-testid="toggle-embed-snippet"
-            >
-              {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
-            </button>
-          </p>
-          {showEmbedSnippet && id && (
+          {!isCanonicalRoute && (
+            <p>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmbedSnippet((current) => !current);
+                  setEmbedCopyStatus('idle');
+                }}
+                aria-expanded={showEmbedSnippet}
+                data-testid="toggle-embed-snippet"
+              >
+                {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
+              </button>
+            </p>
+          )}
+          {!isCanonicalRoute && showEmbedSnippet && id && (
             <div className="public-project-embed-snippet" data-testid="embed-snippet-panel">
               <label htmlFor="embed-snippet-textarea">Embed this piece on another site</label>
               <textarea
@@ -649,6 +670,72 @@ function PublicProjectViewer({
           </div>
         </section>
       </div>
+      {!isEmbedRoute && isCanonicalRoute && (
+        <div className="public-piece-actions" aria-label="Piece actions" role="group">
+          {auth.status === 'signed-in' && project.allow_public_remix && (
+            <button type="button" onClick={handleFork} disabled={forkState === 'forking'}>
+              {forkState === 'forking' ? 'Forking…' : 'Fork this project'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setShowEmbedSnippet((current) => !current);
+              setEmbedCopyStatus('idle');
+            }}
+            aria-expanded={showEmbedSnippet}
+            data-testid="toggle-embed-snippet"
+          >
+            {showEmbedSnippet ? 'Hide embed code' : 'Embed'}
+          </button>
+          {forkError && <span role="alert">{forkError}</span>}
+        </div>
+      )}
+      {!isEmbedRoute && isCanonicalRoute && showEmbedSnippet && id && (
+        <div className="public-project-embed-snippet" data-testid="embed-snippet-panel">
+          <label htmlFor="embed-snippet-textarea">Embed this piece on another site</label>
+          <textarea
+            id="embed-snippet-textarea"
+            readOnly
+            value={embedSnippetFor(id)}
+            onFocus={(event) => event.currentTarget.select()}
+          />
+          <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
+            Copy
+          </button>
+          {embedCopyStatus === 'copied' && <p role="status">Copied!</p>}
+          {embedCopyStatus === 'failed' && <p role="alert">Couldn&apos;t copy automatically.</p>}
+        </div>
+      )}
+      {!isEmbedRoute && isCanonicalRoute && (
+        <div className="public-piece-version-context">
+          <section aria-labelledby="current-version-heading">
+            <h2 id="current-version-heading">Current version context</h2>
+            {project.current_version ? (
+              <p>
+                Version {project.current_version.sequence} ·{' '}
+                <time dateTime={project.current_version.created_at}>
+                  {formatVersionDate(project.current_version.created_at)}
+                </time>
+              </p>
+            ) : (
+              <p>No saved version yet.</p>
+            )}
+          </section>
+          <section aria-labelledby="versions-heading">
+            <h2 id="versions-heading">Versions</h2>
+            <ol>
+              {versionSummaries.map((version) => (
+                <li key={`${version.sequence}-${version.created_at}`}>
+                  <span>Version {version.sequence}</span>{' '}
+                  <time dateTime={version.created_at}>{formatVersionDate(version.created_at)}</time>
+                  {version.is_current && <span className="public-piece-current">CURRENT</span>}
+                </li>
+              ))}
+            </ol>
+          </section>
+        </div>
+      )}
       {!isEmbedRoute && !!project.collections?.length && (
         <aside className="public-collection-context" aria-label="Public collections">
           <h3>Part of these collections</h3>

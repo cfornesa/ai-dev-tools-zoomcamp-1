@@ -53,13 +53,24 @@ function basePublicProject(overrides: Partial<PublicProject> = {}): PublicProjec
   };
 }
 
-function renderViewer(id = 'p1') {
+function renderViewer(
+  id = 'p1',
+  initialPath = `/p/${id}`,
+  initialProject?: PublicProject,
+) {
   return render(
-    <MemoryRouter initialEntries={[`/p/${id}`]}>
+    <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
         <Route path="/gallery" element={<p>Gallery placeholder</p>} />
-        <Route path="/p/:id" element={<PublicProjectViewer />} />
-        <Route path="/users/@alice/pieces/hand-follower" element={<p>Canonical piece</p>} />
+        <Route path="/p/:id" element={<PublicProjectViewer initialProject={initialProject} />} />
+        <Route
+          path="/users/:handle/pieces/:pieceSlug"
+          element={<PublicProjectViewer initialProject={initialProject} />}
+        />
+        <Route
+          path="/users/@alice/pieces/hand-follower"
+          element={initialProject ? <PublicProjectViewer initialProject={initialProject} /> : <p>Canonical piece</p>}
+        />
         <Route path="/projects/:id" element={<p>Editor placeholder</p>} />
       </Routes>
     </MemoryRouter>,
@@ -78,6 +89,33 @@ beforeEach(() => {
 });
 
 describe('PublicProjectViewer load states', () => {
+  it('renders the canonical 2D information architecture and newest-first version context', async () => {
+    const project = basePublicProject({
+      versions: [
+        { sequence: 1, created_at: '2026-01-01T00:00:00Z', is_current: false },
+        { sequence: 2, created_at: '2026-01-02T00:00:00Z', is_current: true },
+      ],
+      version_count: 2,
+    });
+
+    renderViewer('p1', '/users/@alice/pieces/hand-follower', project);
+
+    const heading = await screen.findByRole('heading', { name: 'Hand Follower', level: 1 });
+    expect(screen.getByText('2D scene')).toBeInTheDocument();
+    expect(screen.getByText('2D scene · 2 versions')).toBeInTheDocument();
+    expect(screen.getByText('A hand-reactive circle.')).toHaveClass('public-project-context');
+    expect(screen.getByRole('heading', { name: 'Current version context' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Versions' })).toBeInTheDocument();
+
+    const versions = screen.getByRole('heading', { name: 'Versions' }).parentElement;
+    expect(versions?.querySelectorAll('li')[0]).toHaveTextContent('Version 2');
+    expect(versions?.querySelectorAll('li')[1]).toHaveTextContent('Version 1');
+    expect(heading.compareDocumentPosition(screen.getByTestId('public-scene-canvas'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(screen.getByRole('group', { name: 'Piece actions' })).toBeInTheDocument();
+  });
+
   it('shows an accessible loading state while the public project fetch is in flight', () => {
     mockedGetPublicProject.mockReturnValue(new Promise(() => {}));
 

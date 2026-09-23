@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from scenes.art_piece_persistence import _piece_data
 from scenes.gallery import eligible_projects, eligible_projects3d
-from scenes.models import ArtPiece, Project, Project3D, PublicProfile, SceneVersion3D
+from scenes.models import ArtPiece, Project, Project3D, PublicProfile, SceneVersion, SceneVersion3D
 from scenes.serializers import (
     Project3DSerializer,
     ProjectSerializer,
@@ -50,7 +50,18 @@ class PublicPieceBySlugView(APIView):
         except PublicProfile.DoesNotExist as exc:
             raise Http404 from exc
         owner = profile.user
-        project = eligible_projects().filter(owner=owner, public_slug=piece_slug).first()
+        project = (
+            eligible_projects()
+            .filter(owner=owner, public_slug=piece_slug)
+            .prefetch_related(
+                Prefetch(
+                    "versions",
+                    queryset=SceneVersion.objects.order_by("-sequence", "-id"),
+                    to_attr="_public_version_summaries",
+                )
+            )
+            .first()
+        )
         if project:
             return Response(
                 {

@@ -108,7 +108,7 @@ def test_generate_appends_persona_as_a_second_system_message():
 
     result = provider.generate("a solar halo", "aframe")
 
-    assert result.success
+    assert result.code is not None
     system_messages = [m for m in client.chat.last_kwargs["messages"] if m["role"] == "system"]
     assert len(system_messages) == 2
     assert system_messages[1]["content"] == "Use bright solar colors."

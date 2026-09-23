@@ -16,7 +16,8 @@ test('owner-private canonical piece routes preserve privacy at desktop and mobil
     handle: string;
   };
   const slug = `private-canonical-${testInfo.workerIndex}-${Date.now()}`;
-  const source = '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240"><circle cx="160" cy="120" r="60" fill="teal" /></svg>';
+  const source =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240"><circle cx="160" cy="120" r="60" fill="teal" /></svg>';
 
   const publicCreate = await apiPost(page.context(), '/api/art-pieces/', {
     title: 'Public collision piece',
@@ -71,8 +72,12 @@ test('owner-private canonical piece routes preserve privacy at desktop and mobil
     ]) {
       await anonymousPage.setViewportSize(viewport);
       await anonymousPage.goto(canonicalPath);
-      await expect(anonymousPage.getByRole('heading', { name: 'Public collision piece' })).toBeVisible();
-      await expect(anonymousPage.getByRole('heading', { name: 'Private collision piece' })).toHaveCount(0);
+      await expect(
+        anonymousPage.getByRole('heading', { name: 'Public collision piece' }),
+      ).toBeVisible();
+      await expect(
+        anonymousPage.getByRole('heading', { name: 'Private collision piece' }),
+      ).toHaveCount(0);
       await expect(anonymousPage.getByTitle('Art piece preview')).toBeVisible();
     }
   } finally {
@@ -85,7 +90,9 @@ test('owner-private canonical piece routes preserve privacy at desktop and mobil
     await loginViaUI(otherPage, fixtures.other.email, fixtures.password);
     await otherPage.goto(canonicalPath);
     await expect(otherPage.getByRole('heading', { name: 'Public collision piece' })).toBeVisible();
-    await expect(otherPage.getByRole('heading', { name: 'Private collision piece' })).toHaveCount(0);
+    await expect(otherPage.getByRole('heading', { name: 'Private collision piece' })).toHaveCount(
+      0,
+    );
   } finally {
     await otherContext.close();
   }

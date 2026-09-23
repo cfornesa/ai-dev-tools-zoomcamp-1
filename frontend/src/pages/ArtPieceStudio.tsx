@@ -118,7 +118,9 @@ function ArtPieceStudio() {
 
   useEffect(() => {
     if (auth.status !== 'signed-in') return;
-    void fetchAIPersonas().then(setPersonas).catch(() => setPersonas([]));
+    void fetchAIPersonas()
+      .then(setPersonas)
+      .catch(() => setPersonas([]));
   }, [auth.status]);
 
   useEffect(() => {

@@ -307,6 +307,8 @@ def get_art_piece_provider() -> ArtPieceProvider:
     except MistralCredentialDecryptionError as exc:
         raise MissingPersonalMistralCredential from exc
     persona_prompt = _current_ai_persona_prompt.get()
+    if persona_prompt is None:
+        return ArtPieceProvider(api_key=key, model=_current_ai_model.get() or None)
     return ArtPieceProvider(
         api_key=key,
         model=_current_ai_model.get() or None,

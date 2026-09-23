@@ -17,7 +17,7 @@ handoff status rather than omitting them.
 | Order | Issue | Scope | Dependencies | Routing | Status | Blocker / next action |
 |---:|---|---|---|---|---|---|
 | 1 | #728 | Public 3D full-stage camera overlay | — | 2a | CLOSED | `f5ed998` fixes Strict Mode camera startup; focused camera 33/33 and regular-route Chromium geometry passed. |
-| 2 | #729 | Public 3D camera opacity/mirror while live | #728 | 2a | IMPLEMENTED / QA PENDING | Shared controls render while either overlay is live; focused checks pass. Full/browser QA not run per owner direction. |
+| 2 | #729 | Public 3D camera opacity/mirror while live | #728 | 2a | CLOSED | `1fc4dc5` + `34d82c1`; focused camera 7/7 and combined regular-route Chromium scenario passed. |
 | 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | QA-FAIL / VERIFICATION | Regular-route fixture correction committed, but browser DOM still shows editor shell and zero toolbar actions; route/auth resolution needs diagnosis before geometry can be judged. |
 | 4 | #738 | Themed public piece title and top padding | — | 2a | CLOSED | Fresh Docker-backed Chromium route matrix passed. |
 | 5 | #731 | Public 3D description/version API | — | 2b | GROOMED | — |
@@ -25,9 +25,9 @@ handoff status rather than omitting them.
 | 7 | #733 | 3D immersive metadata below canvas | #731, #732 | 2a | GROOMED | — |
 | 8 | #734 | 3D immersive camera overlay/controls | #728, #729 | 2a | GROOMED | — |
 | 9 | #735 | Full ZIP 3D camera/toolset | — | 2a | CLOSED | Fresh Docker-backed Chromium: all 10 export/camera scenarios passed. |
-| 10 | #736 | Generated piece metadata/version layout | — | 2b | QA-FAIL / CORRECTION | Fresh browser reaches page but canonical `Generated art` label is absent; route prop correction delegated. |
-| 11 | #737 | 2D piece metadata/version layout | — | 2b | QA-FAIL / CORRECTION | Fresh browser reaches canonical labels; E2E has ambiguous duplicate `Piece actions` locator; scoped harness correction needed. |
-| 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | ENGINEERING | Delegated teardown guard and focused regression coverage. |
+| 10 | #736 | Generated piece metadata/version layout | — | 2b | QA-FAIL / VERIFICATION | Fresh browser remains on `Loading public piece…` for the generated canonical fixture; route/API resolution needs diagnosis. |
+| 11 | #737 | 2D piece metadata/version layout | — | 2b | CLOSED | `9fcbb0d` + `5d3f3ad`; serial frontend 2815/2815 and regular-route Chromium scenario passed. |
+| 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | CLOSED | `18a34d7`; focused teardown 2/2 and existing 10-test Chromium export suite passed. |
 | 13 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | — | 2a | GROOMED | Updated with prompt/action steps, camera overlay/background modes, centered full-viewport sizing, and contextual tooltips; #741 owns secure same-origin-compatible embeds. |
 | 14 | #741 | Contextual controls plus secure same-origin-compatible sandboxing | #740 | 2a/security | GROOMED | New discovery follow-up; no duplicate open issue found. |
 
@@ -133,6 +133,9 @@ status. No next issue begins before the current one is terminal.
 - #740 was expanded with prompt/action authoring steps, camera overlay/background configuration, centered full-viewport sizing, and contextual tooltips.
 - #741 was created after duplicate search found no open tooltip or same-origin/sandbox issue; it owns accessible action context plus narrowly scoped `allow-same-origin`/embed security and postMessage validation.
 - #728 final browser retry passed on the regular canonical public route at both viewports after `f5ed998`; camera video geometry, cover sizing, stacking, pointer-events, and toolbar layering were exercised.
+- #729 combined browser retry passed: controls were absent before camera activation and visible after Steer/video activation at both viewports.
+- #736 remains open because the generated canonical fixture stayed at `Loading public piece…` in fresh Docker Chromium; no closure evidence is claimed.
+- #730 remains open because its regular-route browser DOM still exposed the editor shell/zero public toolbar actions; no geometry closure evidence is claimed.
 
 ### #739 transaction ledger — QA PASS
 

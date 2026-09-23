@@ -197,6 +197,8 @@ test.describe('Responsive app shell', () => {
         page,
         [
           page.getByRole('link', { name: 'Skip to main content' }),
+          page.getByRole('link', { name: 'AugmentrART', exact: true }),
+          page.getByRole('combobox', { name: /Color mode, currently/i }),
           page.getByRole('link', { name: 'Public gallery', exact: true }),
           page.getByRole('link', { name: 'Login', exact: true }),
           page.getByRole('radio', { name: 'Match system' }),
@@ -221,6 +223,8 @@ test.describe('Responsive app shell', () => {
         page,
         [
           page.getByRole('link', { name: 'Skip to main content' }),
+          page.getByRole('link', { name: 'AugmentrART', exact: true }),
+          page.getByRole('combobox', { name: /Color mode, currently/i }),
           page.getByRole('link', { name: 'Public gallery', exact: true }),
           page.getByRole('link', { name: 'Login', exact: true }),
           system,
@@ -381,6 +385,8 @@ test.describe('Responsive app shell', () => {
           page,
           [
             page.getByRole('link', { name: 'Skip to main content' }),
+            page.getByRole('link', { name: 'AugmentrART', exact: true }),
+            page.getByRole('combobox', { name: /Color mode, currently/i }),
             page.getByRole('link', { name: 'Studio', exact: true }),
             page.getByRole('link', { name: 'Public gallery', exact: true }),
             page.getByRole('link', { name: 'Account settings' }),

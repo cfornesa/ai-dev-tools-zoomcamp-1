@@ -346,7 +346,7 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
 
   test('extracts Full and Non-Camera bundles and keeps their command dialog responsive', async ({
     page,
-  }) => {
+  }, testInfo) => {
     await generator.page.route('**/*', (route) => {
       const url = route.request().url();
       if (url === generator.constants.THREE_CDN_URL) {
@@ -450,8 +450,21 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
             await cameraMirror.uncheck();
             await page.getByTestId('camera-enable').click();
             await expect(page.getByTestId('camera-status')).toContainText(/camera is active/i);
+            await expect(page.getByTestId('camera-view-toggle')).toBeChecked();
+            const stageBox = await page.locator('#scene3d-canvas-host').boundingBox();
+            const cameraBox = await page.locator('#camera-view-video').boundingBox();
+            expect(stageBox).not.toBeNull();
+            expect(cameraBox).not.toBeNull();
+            expect(Math.abs(cameraBox!.x - stageBox!.x)).toBeLessThanOrEqual(1);
+            expect(Math.abs(cameraBox!.y - stageBox!.y)).toBeLessThanOrEqual(1);
+            expect(Math.abs(cameraBox!.width - stageBox!.width)).toBeLessThanOrEqual(1);
+            expect(Math.abs(cameraBox!.height - stageBox!.height)).toBeLessThanOrEqual(1);
             await expect(page.locator('#camera-view-video')).toHaveCSS('opacity', '0.6');
             await expect(page.locator('#camera-view-video')).toHaveCSS('transform', 'none');
+            const cameraScreenshot = await page.screenshot({
+              path: testInfo.outputPath(`3d-full-camera-${immersive ? 'immersive' : 'regular'}.png`),
+            });
+            expect(cameraScreenshot.byteLength).toBeGreaterThan(0);
             await expect(page.getByTestId('camera-stop')).toHaveText('Stop steering');
             await page.getByTestId('camera-stop').click();
             await expect(page.getByTestId('camera-status')).toContainText(/camera stopped/i);

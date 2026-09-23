@@ -1,6 +1,7 @@
 /** Issue #728: public 3D camera feeds occupy the complete stage. */
 import { chromium, expect, test } from '@playwright/test';
 
+import { apiGet } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
@@ -42,6 +43,18 @@ test.describe('public 3D camera overlay geometry (#728)', () => {
       .click();
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
 
+    const profileResponse = await apiGet(page.context(), '/api/account/profile/');
+    expect(profileResponse.status()).toBe(200);
+    const { handle } = (await profileResponse.json()) as { handle: string };
+    const publicProfileResponse = await apiGet(page.context(), `/api/users/@${handle}/`);
+    expect(publicProfileResponse.status()).toBe(200);
+    const publicProfile = (await publicProfileResponse.json()) as {
+      pieces: Array<{ id: string; slug: string; type: string }>;
+    };
+    const piece = publicProfile.pieces.find((candidate) => candidate.id === projectId);
+    if (!piece || piece.type !== '3d')
+      throw new Error('Published 3D camera fixture was not discoverable from the profile.');
+
     const fakeBrowser = await chromium.launch({
       args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
     });
@@ -49,7 +62,8 @@ test.describe('public 3D camera overlay geometry (#728)', () => {
       const anonymousContext = await fakeBrowser.newContext({ permissions: ['camera'] });
       const anonymousPage = await anonymousContext.newPage();
       try {
-        await anonymousPage.goto(`/immersive/p3d/${projectId}`);
+        await anonymousPage.goto(`/users/@${handle}/immersive/${piece.slug}`);
+        await expect(anonymousPage.getByTestId('immersive-project3d-viewer')).toBeVisible();
         const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
         const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
         await toolbar.getByRole('button', { name: 'Steer the piece' }).click();

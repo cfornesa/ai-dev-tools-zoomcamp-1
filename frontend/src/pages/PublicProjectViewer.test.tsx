@@ -53,11 +53,7 @@ function basePublicProject(overrides: Partial<PublicProject> = {}): PublicProjec
   };
 }
 
-function renderViewer(
-  id = 'p1',
-  initialPath = `/p/${id}`,
-  initialProject?: PublicProject,
-) {
+function renderViewer(id = 'p1', initialPath = `/p/${id}`, initialProject?: PublicProject) {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <Routes>
@@ -69,7 +65,13 @@ function renderViewer(
         />
         <Route
           path="/users/@alice/pieces/hand-follower"
-          element={initialProject ? <PublicProjectViewer initialProject={initialProject} /> : <p>Canonical piece</p>}
+          element={
+            initialProject ? (
+              <PublicProjectViewer initialProject={initialProject} />
+            ) : (
+              <p>Canonical piece</p>
+            )
+          }
         />
         <Route path="/projects/:id" element={<p>Editor placeholder</p>} />
       </Routes>

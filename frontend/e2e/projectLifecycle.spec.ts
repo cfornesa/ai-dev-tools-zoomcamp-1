@@ -56,6 +56,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -79,14 +80,9 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * shape call `openEditScene`/`closeEditScene` themselves around that
  * block; see `openEditScene.ts`. */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-  await page.waitForURL(/\/projects\/[^/]+$/);
-  const match = /\/projects\/([^/]+)$/.exec(page.url());
-  if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
+  const projectId = await createBlankProjectViaUIBase(page);
   await expandAllCollapsibleSections(page);
-  return match[1];
+  return projectId;
 }
 
 // Issue #131: the Tools panel's separate "Shape list" (`<ul aria-label="Shape

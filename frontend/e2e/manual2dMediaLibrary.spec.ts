@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -17,10 +18,7 @@ test.describe('manual 2D media library (#513)', () => {
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-    await page.waitForURL(/\/projects\/[^/]+$/);
+    await createBlankProjectViaUI(page);
 
     const stage = page.locator('.piece-stage-shell');
     await stage.getByRole('button', { name: 'Open piece controls menu' }).click();

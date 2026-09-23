@@ -42,20 +42,18 @@ import { expect, test, type Browser, type Locator, type Page } from '@playwright
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
 import { closeEditScene, openEditScene, openPieceControlsMenu } from './support/openEditScene.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+// Issue #131: "Add circle/rectangle/line/polygon" moved from the Tools
+// panel's (formerly collapsed) "Add & edit shapes" section into the
+// always-visible LayersPanel toolbar, so no section needs expanding to
+// reach them anymore.
 async function createBlankProjectViaUI(page: Page): Promise<void> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-  await page.waitForURL(/\/projects\/[^/]+$/);
-  // Issue #131: "Add circle/rectangle/line/polygon" moved from the Tools
-  // panel's (formerly collapsed) "Add & edit shapes" section into the
-  // always-visible LayersPanel toolbar, so no section needs expanding to
-  // reach them anymore.
+  await createBlankProjectViaUIBase(page);
 }
 
 function outlineList(page: Page): Locator {

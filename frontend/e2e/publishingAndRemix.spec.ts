@@ -99,6 +99,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { openEditScene, openPieceControlsMenu } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -112,14 +113,9 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * `BehaviorCardsPanel`'s `followHand`/`reactToPinch` target select (see
  * issue #116), so there's no mount-order trap to avoid by deferring this. */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-  await page.waitForURL(/\/projects\/[^/]+$/);
-  const match = /\/projects\/([^/]+)$/.exec(page.url());
-  if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
+  const projectId = await createBlankProjectViaUIBase(page);
   await expandAllCollapsibleSections(page);
-  return match[1];
+  return projectId;
 }
 
 // Issue #131: see the identical helper's comment in projectLifecycle.spec.ts

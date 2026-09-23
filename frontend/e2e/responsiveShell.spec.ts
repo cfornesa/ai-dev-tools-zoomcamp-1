@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { openPieceControlsMenu } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -12,14 +13,9 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * identically-named helper (each spec file keeps its own copy rather than
  * sharing one, per this suite's existing convention). */
 async function createBlankProjectViaUI(page: Page): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-  await page.waitForURL(/\/projects\/[^/]+$/);
-  const match = /\/projects\/([^/]+)$/.exec(page.url());
-  if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
+  const projectId = await createBlankProjectViaUIBase(page);
   await expandAllCollapsibleSections(page);
-  return match[1];
+  return projectId;
 }
 
 /** Mirrors `publishingAndRemix.spec.ts`'s own `saveMeaningfulMetadata` +

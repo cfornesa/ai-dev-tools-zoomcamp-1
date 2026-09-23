@@ -113,6 +113,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { apiGet, apiPost, apiPut } from './support/api.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
 import { loginViaUI } from './support/auth.js';
+import { createBlankProjectViaUI } from './support/createProject.js';
 import {
   readLocalDraft,
   readSessionId,
@@ -140,15 +141,6 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * ever runs. Expanding only at the specific call sites that actually read
  * collapsed content keeps every other scenario's timing exactly as it was.
  */
-async function createBlankProjectViaUI(page: Page): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new animation' }).click();
-  await page.waitForURL(/\/projects\/[^/]+$/);
-  const match = /\/projects\/([^/]+)$/.exec(page.url());
-  if (!match) throw new Error(`Could not extract a project id from ${page.url()}`);
-  return match[1];
-}
 
 async function openAuthoringControls(page: Page): Promise<void> {
   const addCircle = page.getByRole('button', { name: 'Add circle' });

@@ -27,6 +27,8 @@ handoff status rather than omitting them.
 | 9 | #735 | Full ZIP 3D camera/toolset | — | 2a | GROOMED | — |
 | 10 | #736 | Generated piece metadata/version layout | — | 2b | GROOMED | — |
 | 11 | #737 | 2D piece metadata/version layout | — | 2b | GROOMED | — |
+| 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | GROOMED | — |
+| 13 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | — | 2a | GROOMED | — |
 
 ## Transaction ledger
 
@@ -97,6 +99,21 @@ status. No next issue begins before the current one is terminal.
 - **Browser evidence:** `npx playwright test e2e/exportArtifacts.spec.ts --project=chromium` attempted; Chromium failed before launch at macOS MachPort permission boundary (`Permission denied (1100)`), and the harness emitted a secondary `generator.close()` undefined cleanup error. No runtime screenshot/ZIP browser evidence claimed. New workflow follow-up #739 created and linked for the cleanup defect. Classification: `verification-boundary` plus `workflow/infrastructure-defect`; exact next action is run #735 in approved CI/Chromium and process #739 before relying on browser failure diagnostics.
 - **QA verdict:** `## QA: FAIL` for complete issue contract because extracted runtime behavior and screenshots are unverified; no product-code fix made during QA.
 - **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment posted. Keep #735 open, dependency-linked to #739 for harness cleanup but not re-scoped.
+
+### #736 transaction ledger — QA result
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION`.
+- **Stage provenance:** scoping `Codex / GPT-5 / medium`, substituted for rostered Codex/Luna: `yes`; implementation delegated subagent / GPT-5 / medium, substituted for rostered Ollama Cloud: `yes`; second opinion: `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate pending.
+- **Commit:** `c33b006`.
+- **Checks:** focused backend 12 passed; focused frontend 9 passed; full backend `1514 passed, 39 skipped`; full frontend gate passed (260 files/2813 tests at current baseline), lint/format/typecheck/action-pin checks passed.
+- **Browser evidence:** `npx playwright test e2e/publicGeneratedArtPiecePage736.spec.ts --project=chromium` self-skipped because the required local health/fixture stack was unavailable; `make compose-preflight` reports Docker unavailable. No rendered screenshots claimed. Classification: `workflow/infrastructure-defect` / verification boundary. Next action: run the exact generated-piece route matrix in disposable PostgreSQL + Django/Vite or CI Chromium.
+- **QA verdict:** `## QA: FAIL` for complete issue contract solely because required browser screenshots/route evidence are unavailable; no product-code fix made during QA.
+- **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment posted. Keep #736 open as terminally blocked pending browser evidence.
+
+### Discovery follow-up — #739 and user-requested #740
+
+- **#739:** created during #735 QA for the reproducible export-artifact teardown error when Chromium fails before generator initialization; linked to #735 and added to the manifest. It is a criterion-ready Stage 2a workflow issue.
+- **#740:** created at the user's request for an end-to-end authoring workflow proving that authored 2D/3D pieces analogous to `augment-humankind` can be created, versioned, published, rendered, and exported through supported UI workflow. It is a criterion-ready Stage 2a browser issue and is intentionally separate from viewer parity.
 
 ## Duplicate / already-covered report
 

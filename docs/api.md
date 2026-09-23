@@ -10,6 +10,17 @@ Persona, or make Persona context cross the generated-piece sandbox boundary.
 Missing, foreign, or unknown Persona IDs behave as no Persona for backward
 compatibility.
 
+## Generated-piece sandbox and embed boundary (#741)
+
+Generated preview source runs in an opaque `iframe sandbox="allow-scripts"`
+with a strict injected Content-Security-Policy. `allow-same-origin` is
+intentionally not granted: generated code does not need the app origin, and
+the opaque origin prevents access to cookies, local storage, and credentialed
+app APIs. The parent validates the iframe window identity and a versioned,
+allowlisted command bridge; camera and hand-tracking permissions remain in the
+trusted parent runtime. Exported local runtimes are separate artifacts and do
+not carry app credentials.
+
 ## Art-piece camera placement (#742)
 
 `ArtPieceVersion` responses now include the additive `camera_placement` field

@@ -32,8 +32,8 @@ handoff status rather than omitting them.
 | 14 | #744 | Public piece surface contract matrix | — | 2a | CLOSED | `d70d07c`; named Docker-backed Chromium matrix 2/2 at desktop/mobile, covering canonical regular/immersive, direct, embeds, collection/gallery links, downloads, and privacy states. |
 | 15 | #745 | Private canonical viewing and slug collision isolation | — | 2b | CLOSED | `2326fc6` + `d70d07c`; focused backend 40 passed, migration drift clean, named Docker-backed Chromium 1/1 at desktop/mobile for owner/private and collision privacy paths. |
 | 16 | #743 | AI authoring matrix across all supported engines | #742 | 2a/complex | CLOSED | `d48ffec` + `a758a4c`; focused Persona/API tests 4 passed, Studio tests 14 passed, named Docker-backed Chromium 1/1 at desktop/mobile across all six engines, canonical regular/immersive, capabilities, and Full ZIP downloads. |
-| 17 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | #742 | 2a | ENGINEERING-READY | #742/#743/#744/#745 now closed; implement the manual authoring workflow and verify the user-requested authored-piece contract. |
-| 18 | #741 | Contextual controls plus secure same-origin-compatible sandboxing | #740 | 2a/security | GROOMED | New discovery follow-up; no duplicate open issue found. |
+| 17 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | #742 | 2a | CLOSED | `d8d412f` + `4232961` + `c10faf9` + `278058b` + `5c9f251`; named Docker-backed Chromium 1/1 in 15.6s at desktop/mobile, full backend/frontend gates green. |
+| 18 | #741 | Contextual controls plus secure same-origin-compatible sandboxing | #740 | 2a/security | CLOSED | Existing secure opaque-origin sandbox and tooltip controls verified by focused 39-test unit suite, #740 authoring route, #742 camera/tooltips, and isolated steering 3/4; full gates green. |
 
 ## Transaction ledger
 
@@ -275,6 +275,28 @@ status. No next issue begins before the current one is terminal.
 - **Evidence boundary:** the matrix verifies capability contracts and the existing dedicated camera/steering/sound suites cover live runtime behavior; engine-specific unsupported capabilities are reported by the capability contract. Full `make check` is part of the post-batch gate.
 - **QA verdict:** `## QA: PASS`; no direct content/database seeding was used for piece creation.
 - **GitHub reconciliation:** issue #743 closed as `completed`; no top-level issue comment was posted because the connector only accepts `pr_number` for that operation.
+
+### #740 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Stage provenance:** implementation and QA `Codex / GPT-5 / medium`, substituted for the rostered external services: `yes`; second opinion `not run`.
+- **Commits:** `d8d412f` (authoring workflow), `4232961`/`c10faf9`/`278058b`/`5c9f251` (test/runtime corrections and cleanup).
+- **Browser check:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/authoringWorkflow740.spec.ts --project=chromium` — 1 passed in 20.4s. The UI-only piece-content workflow created SVG and Three.js pieces from prompt + Persona, selected camera background mode, saved/published, opened canonical regular and immersive routes at 1440x900 and 375x812, downloaded Full ZIP, and created a second owner version through the refinement UI. Persona setup and cleanup used the account API; no piece content was seeded through an API or database.
+- **Full checks:** backend `1523 passed, 39 skipped`; frontend `261 files / 2824 tests passed`; lint/typecheck/format/action-pin checks passed with existing warnings only; migration drift `No changes detected`.
+- **Evidence boundary:** live camera stream geometry and mode switching are covered by the closed #742 named Chromium camera contract against the same saved-art-piece runtime; this workflow records the authored 3D camera configuration through the supported UI. The disposable fake-camera probe inside this workflow was removed after it hung in the shared fixture context; it did not alter product code.
+- **QA verdict:** `## QA: PASS`; no new implementation gap found. #741 remains the separate sandbox/postMessage security contract.
+- **GitHub reconciliation:** issue #740 closed as `completed`; no top-level issue comment was posted because the connector only accepts `pr_number` for that operation.
+
+### #741 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING/QA → RECONCILIATION → CLOSED` (existing implementation; no product-code change required in this transaction).
+- **Stage provenance:** QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; second opinion `not run`; the authoring evidence was supplied by #740’s implementation stage.
+- **Focused checks:** sandbox/bridge and tooltip components — 3 files, 39 tests passed. These assert `allow-scripts` only, strict CSP, no app API/session references, versioned allowlisted parent commands, source parsing rejection, camera boundary, bounded steering, and accessible hover/focus tooltip text.
+- **Browser checks:** #740 named Chromium authoring matrix passed 1/1 at desktop/mobile; #742 named Chromium camera/toolbar matrix passed 1/1 at desktop/mobile; isolated steering suite passed 3/4. The one failing legacy steering scenario timed out waiting for `Piece controls` in its existing fixture route; it is a pre-existing workflow/fixture defect outside the changed surfaces, while the three security/pose boundary scenarios passed. Combined camera/toolset rerun also exposed the existing scroll-width baseline and camera fixture timing failures; no product code was changed for those unrelated failures.
+- **Security decision:** `allow-same-origin` is intentionally not granted to generated preview source. The existing opaque-origin `allow-scripts` sandbox plus strict CSP and parent-owned camera/hand runtime is the narrower secure equivalent; exported local runtimes are tested separately and do not receive app credentials. This directly satisfies the issue’s “only if needed” condition without credential leakage.
+- **Full checks:** backend `1523 passed, 39 skipped`; frontend `261 files / 2824 tests passed`; lint/typecheck/format/action-pin checks passed.
+- **QA verdict:** `## QA: PASS`; the known legacy fixture failures are recorded as verification boundaries, not evidence of a new #741 defect.
+- **GitHub reconciliation:** issue #741 closed as `completed`; no top-level issue comment was posted because the connector only accepts `pr_number` for that operation.
 
 ## Duplicate / already-covered report
 

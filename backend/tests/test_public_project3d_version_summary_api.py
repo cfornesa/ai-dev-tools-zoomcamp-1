@@ -70,6 +70,40 @@ def test_public_3d_canonical_slug_exposes_the_same_safe_version_summary(publishe
 
 
 @pytest.mark.django_db
+def test_owner_seo_description_reaches_public_3d_routes_only_while_published(
+    published_project3d,
+):
+    owner_client = APIClient()
+    owner_client.force_authenticate(user=published_project3d.owner)
+    owner_path = f"/api/projects3d/{published_project3d.public_id}/"
+    detail_path = f"/api/public/projects3d/{published_project3d.public_id}/"
+    canonical_path = "/api/users/@public-3d-history/pieces/published-history/"
+
+    assert owner_client.post(f"{owner_path}unpublish/").status_code == 200
+    response = owner_client.patch(
+        owner_path,
+        {"seo_config": {"description": "Description from owner metadata"}},
+        format="json",
+    )
+    assert response.status_code == 200
+    assert response.json()["seo_config"]["description"] == "Description from owner metadata"
+
+    anonymous = APIClient()
+    assert anonymous.get(detail_path).status_code == 404
+    assert anonymous.get(canonical_path).status_code == 404
+
+    assert owner_client.post(f"{owner_path}publish/").status_code == 200
+    assert anonymous.get(detail_path).json()["description"] == "Description from owner metadata"
+    assert anonymous.get(canonical_path).json()["piece"]["description"] == (
+        "Description from owner metadata"
+    )
+
+    assert owner_client.post(f"{owner_path}unpublish/").status_code == 200
+    assert anonymous.get(detail_path).status_code == 404
+    assert anonymous.get(canonical_path).status_code == 404
+
+
+@pytest.mark.django_db
 def test_public_3d_version_history_query_count_is_bounded(published_project3d):
     for sequence in range(4, 24):
         SceneVersion3D.objects.create(

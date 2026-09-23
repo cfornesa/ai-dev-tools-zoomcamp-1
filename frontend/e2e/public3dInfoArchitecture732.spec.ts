@@ -20,10 +20,11 @@ test('canonical public 3D page exposes metadata, actions, and version history', 
     id: string;
     current_version: { scene_json: Record<string, unknown> };
   };
-  await apiPatch(page.context(), `/api/projects3d/${project.id}/`, {
+  const metadata = await apiPatch(page.context(), `/api/projects3d/${project.id}/`, {
     title: `Canonical info architecture ${project.id}`,
-    description: 'A public 3D fixture with a version history.',
+    seo_config: { description: 'A public 3D fixture with a version history.' },
   });
+  expect(metadata.status()).toBe(200);
   const secondVersion = await apiPost(page.context(), `/api/projects3d/${project.id}/versions/`, {
     scene_json: project.current_version.scene_json,
   });
@@ -39,6 +40,14 @@ test('canonical public 3D page exposes metadata, actions, and version history', 
   ).json()) as { pieces: Array<{ id: string; slug: string }> };
   const piece = publicProfile.pieces.find((candidate) => candidate.id === project.id);
   if (!piece) throw new Error('Published 3D fixture was not discoverable from the profile.');
+  const publicPiece = await apiGet(
+    page.context(),
+    `/api/users/@${profile.handle}/pieces/${piece.slug}/`,
+  );
+  expect(publicPiece.status()).toBe(200);
+  expect((await publicPiece.json()).piece.description).toBe(
+    'A public 3D fixture with a version history.',
+  );
 
   const anonymousContext = await browser.newContext();
   const anonymousPage = await anonymousContext.newPage();

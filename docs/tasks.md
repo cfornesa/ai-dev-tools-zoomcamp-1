@@ -23832,7 +23832,7 @@ grants camera); production theme changes must not be made for #738 (local
 stack only). No blockers; next action for a future session: backlog-session on
 #728.
 
-## 2026-09-23 — Authoring workflow expansion (#740–#741)
+## 2026-09-23 — Authoring workflow expansion (#740–#742)
 
 The authoring workflow request now explicitly covers prompt-driven creation of
 reference-style authored 2D/3D pieces, functional user-configurable camera
@@ -23841,6 +23841,13 @@ hover/focus text for piece controls. #741 is the discovery-gated security
 follow-up for accessible tooltips plus narrowly scoped `allow-same-origin`
 compatible embeds, origin validation, and postMessage/media permission
 boundaries. No duplicate open issue was found for either requirement.
+
+The #740 grooming pass discovered that overlay/background camera selection,
+piece/version persistence, and Full/Non-Camera export preservation require an
+explicit scene/runtime contract absent from the current app. That work is
+tracked in the linked criterion-ready #742; #740 is dependency-blocked for
+those criteria until #742 closes. #741 remains the separate secure-embed and
+contextual-control contract.
 
 Implementation reference policy: use the local `../augment-humankind-react-node`
 implementation patterns for React/TypeScript component composition, viewer

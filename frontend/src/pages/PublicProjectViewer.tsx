@@ -546,7 +546,7 @@ function PublicProjectViewer({
 
       <div className="editor-workspace">
         <section role="region" aria-label="Preview" data-panel="preview" className="editor-panel">
-          <h3>Preview</h3>
+          <h2>Preview</h2>
           {previewError && (
             <p role="alert" aria-live="assertive">
               Couldn't render the preview: {previewError}

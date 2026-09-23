@@ -50,7 +50,6 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
   const anonymousPage = await anonymousContext.newPage();
   try {
     await anonymousPage.goto(`/users/@${handle}/immersive/${piece.slug}`);
-    const stage = anonymousPage.getByTestId('immersive-3d-stage');
     const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(frame).toBeVisible();
@@ -88,19 +87,14 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
           },
         };
       });
-      const expectedWidth = Math.min(
-        geometry.viewport.width,
-        (geometry.viewport.height * 16) / 9,
-      );
+      const expectedWidth = Math.min(geometry.viewport.width, (geometry.viewport.height * 16) / 9);
       const expectedHeight = expectedWidth * (9 / 16);
       const expectedX = (geometry.viewport.width - expectedWidth) / 2;
       const expectedY = (geometry.viewport.height - expectedHeight) / 2;
       expect(geometry.frame.width).toBeCloseTo(expectedWidth, 0);
       expect(geometry.frame.height).toBeCloseTo(expectedHeight, 0);
-      const frameXWithinTolerance =
-        geometry.frame.x - (geometry.viewport.originX ?? 0) - expectedX;
-      const frameYWithinTolerance =
-        geometry.frame.y - (geometry.viewport.originY ?? 0) - expectedY;
+      const frameXWithinTolerance = geometry.frame.x - (geometry.viewport.originX ?? 0) - expectedX;
+      const frameYWithinTolerance = geometry.frame.y - (geometry.viewport.originY ?? 0) - expectedY;
       expect(Math.abs(frameXWithinTolerance)).toBeLessThanOrEqual(1);
       expect(Math.abs(frameYWithinTolerance)).toBeLessThanOrEqual(1);
       expect(geometry.video).not.toBeNull();

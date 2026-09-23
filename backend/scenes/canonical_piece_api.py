@@ -16,8 +16,14 @@ from scenes.serializers import (
 )
 
 
-def _profile_or_404(handle):
-    return PublicProfile.objects.select_related("user").get(handle=handle, is_public=True)
+def _profile_or_404(handle, request):
+    profile = PublicProfile.objects.select_related("user").filter(handle=handle).first()
+    if profile is None or (
+        not profile.is_public
+        and (not request.user.is_authenticated or profile.user_id != request.user.id)
+    ):
+        raise PublicProfile.DoesNotExist
+    return profile
 
 
 def _public_art_piece_versions(piece):
@@ -46,7 +52,7 @@ class PublicPieceBySlugView(APIView):
 
     def get(self, request, handle, piece_slug):
         try:
-            profile = _profile_or_404(handle)
+            profile = _profile_or_404(handle, request)
         except PublicProfile.DoesNotExist as exc:
             raise Http404 from exc
         owner = profile.user
@@ -92,17 +98,31 @@ class PublicPieceBySlugView(APIView):
                     "piece": PublicProject3DSerializer(project3d).data,
                 }
             )
-        art_piece = (
-            ArtPiece.objects.filter(
-                owner=owner,
-                public_slug=piece_slug,
-                status=ArtPiece.Status.PUBLISHED,
-                is_deleted=False,
-                current_version__isnull=False,
+        art_piece_query = ArtPiece.objects.filter(
+            owner=owner,
+            public_slug=piece_slug,
+            is_deleted=False,
+            current_version__isnull=False,
+        ).prefetch_related("versions")
+        if request.user.is_authenticated and request.user == owner:
+            # Prefer the owner's working copy when public and private rows
+            # intentionally share one canonical slug.
+            art_piece = (
+                art_piece_query.filter(
+                    status__in=[ArtPiece.Status.DRAFT, ArtPiece.Status.ARCHIVED]
+                )
+                .order_by("-updated_at", "-id")
+                .first()
+                or art_piece_query.filter(status=ArtPiece.Status.PUBLISHED)
+                .order_by("-updated_at", "-id")
+                .first()
             )
-            .prefetch_related("versions")
-            .first()
-        )
+        else:
+            art_piece = (
+                art_piece_query.filter(status=ArtPiece.Status.PUBLISHED)
+                .order_by("-updated_at", "-id")
+                .first()
+            )
         if art_piece:
             response = {
                 "canonical_url": f"/users/@{handle}/pieces/{art_piece.public_slug}",
@@ -113,6 +133,9 @@ class PublicPieceBySlugView(APIView):
             response["piece"]["versions"] = _public_art_piece_versions(art_piece)
             if request.user.is_authenticated and request.user == owner:
                 response["edit_url"] = f"/users/@{handle}/edit/{art_piece.public_slug}"
+                if art_piece.status != ArtPiece.Status.PUBLISHED:
+                    response["piece"] = _piece_data(art_piece, public=False)
+                    response["piece"]["versions"] = _public_art_piece_versions(art_piece)
             return Response(response)
         raise Http404
 

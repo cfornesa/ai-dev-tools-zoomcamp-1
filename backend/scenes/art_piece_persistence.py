@@ -332,12 +332,13 @@ class ArtPieceListCreateView(APIView):
         serializer = ArtPieceCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         values = serializer.validated_data
-        if (
-            values["public_slug"]
-            and ArtPiece.objects.filter(
-                owner=request.user, public_slug=values["public_slug"]
-            ).exists()
-        ):
+        existing_slug = ArtPiece.objects.filter(
+            owner=request.user, public_slug=values["public_slug"]
+        )
+        # New pieces start as drafts; a draft may share a slug with one
+        # published row, but not with another non-published row.
+        slug_taken = existing_slug.exclude(status=ArtPiece.Status.PUBLISHED).exists()
+        if values["public_slug"] and slug_taken:
             return Response({"public_slug": ["This slug is already in use."]}, status=400)
         try:
             with transaction.atomic():
@@ -393,12 +394,15 @@ class ArtPieceDetailView(APIView):
             with transaction.atomic():
                 locked = ArtPiece.objects.select_for_update().get(pk=piece.pk)
                 next_slug = serializer.validated_data.get("public_slug")
-                if (
-                    next_slug
-                    and ArtPiece.objects.filter(owner=locked.owner, public_slug=next_slug)
-                    .exclude(pk=locked.pk)
-                    .exists()
-                ):
+                existing_slug = ArtPiece.objects.filter(
+                    owner=locked.owner, public_slug=next_slug
+                ).exclude(pk=locked.pk)
+                slug_taken = (
+                    existing_slug.filter(status=ArtPiece.Status.PUBLISHED).exists()
+                    if next_status == ArtPiece.Status.PUBLISHED
+                    else existing_slug.exclude(status=ArtPiece.Status.PUBLISHED).exists()
+                )
+                if next_slug and slug_taken:
                     return Response({"public_slug": ["This slug is already in use."]}, status=400)
                 for key, value in serializer.validated_data.items():
                     setattr(locked, key, value)

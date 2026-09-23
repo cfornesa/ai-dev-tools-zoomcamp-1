@@ -2005,7 +2005,14 @@ class ArtPiece(models.Model):
         ]
         constraints = [
             models.UniqueConstraint(
-                fields=["owner", "public_slug"], name="unique_artpiece_public_slug_per_owner"
+                fields=["owner", "public_slug"],
+                condition=models.Q(status="published"),
+                name="unique_published_artpiece_slug_per_owner",
+            ),
+            models.UniqueConstraint(
+                fields=["owner", "public_slug"],
+                condition=~models.Q(status="published"),
+                name="unique_private_artpiece_slug_per_owner",
             ),
         ]
 

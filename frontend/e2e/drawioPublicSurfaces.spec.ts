@@ -89,6 +89,7 @@ test.describe('draw.io public surfaces', () => {
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
     await anonymousPage.goto(`/p/${projectId}`);
+    await anonymousPage.waitForURL(/\/users\/@[^/]+\/pieces\/[^/]+$/);
     await expect(anonymousPage.locator('canvas[aria-label="Draw.io scene preview"]')).toBeVisible();
     await expect(anonymousPage.getByRole('button', { name: 'Logout' })).toHaveCount(0);
     await expect(anonymousPage.getByRole('button', { name: /Edit scene/i })).toHaveCount(0);
@@ -96,7 +97,9 @@ test.describe('draw.io public surfaces', () => {
     const publicToolbar = anonymousPage.locator(
       '.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]',
     );
-    await publicToolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await expect(
+      publicToolbar.getByRole('button', { name: 'Open piece controls menu' }),
+    ).toHaveCount(0);
     await expect(publicToolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     const download = anonymousPage.waitForEvent('download');
     await publicToolbar.getByRole('button', { name: 'Open download menu' }).click();

@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import type { CameraStatus } from '../components/CameraControl';
 import {
@@ -157,6 +159,9 @@ describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issue #2
     setCameraStatus('active');
 
     expect(screen.getByTestId('scene3d-camera-overlay-video')).toBeInTheDocument();
+    expect(screen.getByTestId('scene3d-camera-overlay-video')).toHaveClass(
+      'scene3d-camera-overlay-video',
+    );
     expect(screen.getByLabelText('Camera overlay opacity')).toBeInTheDocument();
     expect(screen.getByLabelText('Mirror camera overlay')).toBeInTheDocument();
   });
@@ -192,6 +197,17 @@ describe('Scene3DPreview camera-feed overlay + opacity/mirror controls (issue #2
   });
 });
 
+describe('Scene3DPreview public camera overlay geometry (issue #728)', () => {
+  it('keeps both camera paths on the full-stage, non-interactive overlay contract', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
+    expect(css).toMatch(
+      /\.scene3d-camera-overlay-video\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*z-index:\s*10;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*cover;[^}]*pointer-events:\s*none;/s,
+    );
+    expect(css).toMatch(/\.piece-stage-toolbar\s*\{[^}]*z-index:\s*20;/s);
+    expect(css).toMatch(/\.piece-stage-command-overlay\s*\{[^}]*z-index:\s*140;/s);
+  });
+});
+
 describe('Scene3DPreview independent camera preview (issue #342)', () => {
   it('shows camera separately from steering and exposes overlay controls', async () => {
     render(<Scene3DPreview scene={baseScene()} />);
@@ -210,6 +226,9 @@ describe('Scene3DPreview independent camera preview (issue #342)', () => {
     setCameraStatus('active');
 
     expect(screen.getByTestId('scene3d-camera-preview-video')).toBeInTheDocument();
+    expect(screen.getByTestId('scene3d-camera-preview-video')).toHaveClass(
+      'scene3d-camera-overlay-video',
+    );
     expect(screen.getByLabelText('Camera overlay opacity')).toBeInTheDocument();
     expect(screen.getByLabelText('Mirror camera overlay')).toBeInTheDocument();
   });

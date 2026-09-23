@@ -16,7 +16,7 @@ handoff status rather than omitting them.
 
 | Order | Issue | Scope | Dependencies | Routing | Status | Blocker / next action |
 |---:|---|---|---|---|---|---|
-| 1 | #728 | Public 3D full-stage camera overlay | — | 2a | QA-FAIL / PRODUCT BLOCKER | Regular canonical route now reaches the public page; with fake camera permission and Steer pressed, no camera video mounts. This is a live camera lifecycle blocker. |
+| 1 | #728 | Public 3D full-stage camera overlay | — | 2a | CLOSED | `f5ed998` fixes Strict Mode camera startup; focused camera 33/33 and regular-route Chromium geometry passed. |
 | 2 | #729 | Public 3D camera opacity/mirror while live | #728 | 2a | GROOMED | — |
 | 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | QA-FAIL / VERIFICATION | Regular-route fixture correction committed, but browser DOM still shows editor shell and zero toolbar actions; route/auth resolution needs diagnosis before geometry can be judged. |
 | 4 | #738 | Themed public piece title and top padding | — | 2a | CLOSED | Fresh Docker-backed Chromium route matrix passed. |
@@ -124,6 +124,7 @@ status. No next issue begins before the current one is terminal.
 - #732 correction resolved that boundary by aligning the fixture with #731’s supported `seo_config.description` contract; targeted backend 5, frontend 12, and named Chromium 1 passed.
 - #740 was expanded with prompt/action authoring steps, camera overlay/background configuration, centered full-viewport sizing, and contextual tooltips.
 - #741 was created after duplicate search found no open tooltip or same-origin/sandbox issue; it owns accessible action context plus narrowly scoped `allow-same-origin`/embed security and postMessage validation.
+- #728 final browser retry passed on the regular canonical public route at both viewports after `f5ed998`; camera video geometry, cover sizing, stacking, pointer-events, and toolbar layering were exercised.
 
 ### #739 transaction ledger — QA PASS
 

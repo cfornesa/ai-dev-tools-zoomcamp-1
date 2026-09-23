@@ -57,6 +57,17 @@ status. No next issue begins before the current one is terminal.
 - **QA verdict:** `## QA: FAIL` for the complete issue contract because the browser criteria are unverified; no product-code fix was made during QA. Keep open as terminally blocked pending browser infrastructure.
 - **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment was posted. The limitation is recorded rather than fabricated as evidence.
 
+### #738 transaction ledger — QA result
+
+- **State:** `GROOMED → ENGINEERING → QA → ENGINEERING → QA → RECONCILIATION`.
+- **Stage provenance:** scoping `Codex / GPT-5 / medium`, substituted for rostered Codex/Luna: `yes`; implementation delegated subagent / GPT-5 / medium, substituted for rostered Opencode Go: `yes`; correction implementation same delegated subagent / GPT-5 / medium, substituted: `yes`; second opinion: `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate pending.
+- **Commits:** `a3ba8b8` initial heading implementation; `31fed22` accessibility heading-order correction.
+- **Changed files:** public viewer heading components/CSS plus focused component/CSS/a11y coverage, as recorded in the two commits.
+- **Focused/full checks:** focused initial 46 passed; after QA return, focused 33 passed; full frontend `make frontend-test` passed 260 files/2811 tests; lint, Prettier, and typecheck passed.
+- **Browser evidence:** `npx playwright test e2e/canonicalStructuredPieceSlug.spec.ts --project=chromium` attempted and failed before navigation because Playwright Chromium crashed at macOS `MachPortRendezvousServer ... Permission denied (1100)`. Trace retained under `frontend/test-results/`. Classification: `verification-boundary` / host browser limitation. Next action: rerun the named route matrix in the repository CI Chromium runner or another approved macOS/browser environment and inspect both viewport screenshots under at least two local theme presets.
+- **QA verdict:** `## QA: FAIL` for the complete issue contract solely because the required rendered browser evidence is unavailable; the earlier implementation defect was fixed and the full frontend gate is green. No product-code change was made during QA.
+- **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment was posted. Keep #738 open as terminally blocked pending approved browser evidence.
+
 ## Duplicate / already-covered report
 
 The prior distillation in `docs/tasks.md` records closed history #297/#342

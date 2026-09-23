@@ -323,7 +323,10 @@ def test_owner_can_resolve_private_generated_piece_on_private_profile(client):
     other = get_user_model().objects.create_user(username="private-other", password="x")
     PublicProfile.objects.create(user=user, handle="private-owner", is_public=False)
     pieces = []
-    for slug, engine in (("private-flat", ArtPiece.Engine.SVG), ("private-spatial", ArtPiece.Engine.THREEJS)):
+    for slug, engine in (
+        ("private-flat", ArtPiece.Engine.SVG),
+        ("private-spatial", ArtPiece.Engine.THREEJS),
+    ):
         piece = ArtPiece.objects.create(
             owner=user,
             title=slug,

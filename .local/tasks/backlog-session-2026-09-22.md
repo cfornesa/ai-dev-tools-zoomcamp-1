@@ -22,7 +22,7 @@ handoff status rather than omitting them.
 | 4 | #738 | Themed public piece title and top padding | — | 2a | CLOSED | Fresh Docker-backed Chromium route matrix passed. |
 | 5 | #731 | Public 3D description/version API | — | 2b | GROOMED | — |
 | 6 | #732 | Public 3D metadata layout | #731 | 2a | CLOSED | `b9ddb51`; targeted backend 5 passed, frontend 12 passed, named Chromium scenario passed. |
-| 7 | #733 | 3D immersive metadata below canvas | #731, #732 | 2a | GROOMED | — |
+| 7 | #733 | 3D immersive metadata below canvas | #731, #732 | 2a | CLOSED | `2d37360`; focused component 7/7, full `make check` green, and named Docker-backed Chromium 1/1 at desktop/mobile viewports. |
 | 8 | #734 | 3D immersive camera overlay/controls | #728, #729 | 2a | GROOMED | — |
 | 9 | #735 | Full ZIP 3D camera/toolset | — | 2a | CLOSED | Fresh Docker-backed Chromium: all 10 export/camera scenarios passed. |
 | 10 | #736 | Generated piece metadata/version layout | — | 2b | CLOSED | `edaf51d` + `8be39c8`; canonical backend 13/13 and regular-route Chromium desktop/mobile scenario passed. |
@@ -147,6 +147,17 @@ status. No next issue begins before the current one is terminal.
 - **Browser evidence:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/public3dToolbar730.spec.ts --project=chromium` — 1/1 passed in 14.2s against rebuilt Docker; desktop/mobile toolbar geometry, non-reflowing Piece controls and Download popovers, fullscreen containment, and four screenshots were produced.
 - **QA verdict:** `## QA: PASS`; the earlier blocker was a test locator mismatch, not a product or Docker failure. The Playwright trace showed the close control had `role="menuitem"`, so the old `button` locator could never resolve.
 - **GitHub reconciliation:** top-level issue QA comment was unavailable because the connector accepts `pr_number` only; authenticated issue update closed #730 as `completed` after the evidence above.
+
+### #733 transaction ledger — QA PASS
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+- **Stage provenance:** implementation `Codex / GPT-5 / medium`, substituted for rostered Opencode Go: `yes`; second opinion `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate `Codex / GPT-5 / medium`, substituted for rostered Claude Pro: `yes`.
+- **Commit:** `2d37360`; immersive 3D metadata/actions now render below the stage with title, description, Share, Embed Custom/CMS, current-version context, and newest-first Versions. Added focused component and named browser coverage; no camera, security, route, schema, or dependency changes.
+- **Focused checks:** `npx vitest run src/pages/ImmersiveProject3DViewer.test.tsx` — 7/7 passed; typecheck, format, and lint passed with existing warnings only.
+- **Full checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-733 make check` — backend 1516 passed/39 skipped; frontend 261 files/2821 tests passed; action pins, Ruff, mypy, format, lint, typecheck, and frontend tests passed.
+- **Browser evidence:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/public3dImmersiveInfoArchitecture733.spec.ts --project=chromium` — 1/1 passed in 9.5s with 1440×900 and 375×812 screenshots; metadata is after the Preview region and remains visible/scrollable.
+- **QA verdict:** `## QA: PASS`; the criterion matrix is satisfied. Missing `docs/testing-guidelines.md` and `docs/design-system.md` were recorded as repository process gaps, not substituted silently.
+- **GitHub reconciliation:** top-level issue QA comment was unavailable because the connector accepts `pr_number` only; authenticated issue update closed #733 as `completed` after the evidence above.
 
 ### #739 transaction ledger — QA PASS
 

@@ -1,5 +1,25 @@
 # Public gallery API contract
 
+## Public 3D piece version summaries (#731)
+
+The anonymous public 3D piece payloads returned by
+`GET /api/public/projects3d/<id>/` and the `type: "3d"` projection inside
+`GET /api/users/@<handle>/pieces/<slug>/` remain privacy-gated to published,
+non-deleted projects with a current version. They retain all existing fields
+and additionally include:
+
+- `description`: the public description from the project's validated
+  `seo_config.description` value, or `""` when that value is absent;
+- `versions`: every saved version as `{sequence, created_at, is_current}` in
+  newest-first sequence order; these summaries never include `scene_json`;
+- `version_count`: the number of saved versions.
+
+Only the current version continues to include the existing full
+`current_version` projection. Private, unpublished, deleted, missing, and
+versionless projects continue to return `404` without confirming existence.
+The public detail and canonical-slug resolvers prefetch the bounded summary
+projection so the version history does not introduce one query per version.
+
 ## Project3D thumbnail refresh (#719)
 
 `POST /api/projects3d/<public_id>/thumbnail/refresh/` is an authenticated

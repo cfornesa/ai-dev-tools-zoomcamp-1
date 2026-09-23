@@ -786,6 +786,20 @@ class PublicSceneVersion3DSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class PublicSceneVersion3DSummarySerializer(serializers.ModelSerializer):
+    """Issue #731: safe public history metadata without scene snapshots."""
+
+    is_current = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SceneVersion3D
+        fields = ["sequence", "created_at", "is_current"]
+        read_only_fields = fields
+
+    def get_is_current(self, version: SceneVersion3D) -> bool:
+        return version.pk == self.context["current_version_id"]
+
+
 class PublicProject3DSerializer(serializers.ModelSerializer):
     """Issue #296: the 3D counterpart of `PublicProjectSerializer`. No
     `remix_provenance` field -- Project3D has no fork/remix capability at
@@ -801,6 +815,9 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
     collections = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+    versions = serializers.SerializerMethodField()
+    version_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Project3D
@@ -808,11 +825,14 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
             "id",
             "owner",
             "title",
+            "description",
             "seo_config",
             "thumbnail_url",
             "viewer_url",
             "collections",
             "current_version",
+            "versions",
+            "version_count",
             "created_at",
             "updated_at",
         ]
@@ -825,6 +845,24 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
 
     def get_owner(self, project: Project3D) -> str:
         return public_author_name(project.owner)
+
+    def get_description(self, project: Project3D) -> str:
+        seo_config = project.seo_config
+        return seo_config.get("description", "") if isinstance(seo_config, dict) else ""
+
+    def get_versions(self, project: Project3D) -> list[dict]:
+        versions = getattr(project, "_public_version_summaries", None)
+        if versions is None:
+            versions = project.versions.select_related("project").order_by("-sequence", "-id")
+        return PublicSceneVersion3DSummarySerializer(
+            versions, many=True, context={"current_version_id": project.current_version_id}
+        ).data
+
+    def get_version_count(self, project: Project3D) -> int:
+        versions = getattr(project, "_public_version_summaries", None)
+        if versions is not None:
+            return len(versions)
+        return project.versions.count()
 
     def get_viewer_url(self, project: Project3D) -> str:
         return piece_viewer_path(project, "3d")

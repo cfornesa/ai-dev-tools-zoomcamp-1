@@ -1,12 +1,13 @@
 """Resolve stable public piece URLs to existing renderer payloads (#578)."""
 
+from django.db.models import Prefetch
 from django.http import Http404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.art_piece_persistence import _piece_data
 from scenes.gallery import eligible_projects, eligible_projects3d
-from scenes.models import ArtPiece, Project, Project3D, PublicProfile
+from scenes.models import ArtPiece, Project, Project3D, PublicProfile, SceneVersion3D
 from scenes.serializers import (
     Project3DSerializer,
     ProjectSerializer,
@@ -38,7 +39,18 @@ class PublicPieceBySlugView(APIView):
                     "piece": PublicProjectSerializer(project).data,
                 }
             )
-        project3d = eligible_projects3d().filter(owner=owner, public_slug=piece_slug).first()
+        project3d = (
+            eligible_projects3d()
+            .filter(owner=owner, public_slug=piece_slug)
+            .prefetch_related(
+                Prefetch(
+                    "versions",
+                    queryset=SceneVersion3D.objects.order_by("-sequence", "-id"),
+                    to_attr="_public_version_summaries",
+                )
+            )
+            .first()
+        )
         if project3d:
             return Response(
                 {

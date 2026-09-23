@@ -24,6 +24,17 @@
 Append-only log of agent-relevant decisions. See `AGENTS.md` Section 10 for
 ownership and read cadence.
 
+## 2026-09-23 — Persisted camera placement uses the additive compatibility path
+
+- The owner approved option 1 for camera placement: add the backward-compatible
+  `ArtPieceVersion.camera_placement` field, validate and project it through the
+  API, propagate it to viewers and exports, and use a reversible additive
+  migration. `NULL` remains the legacy overlay behavior.
+- Generated previews retain the opaque-origin `allow-scripts` sandbox; the
+  PHP reference's `allow-same-origin` behavior is not copied where it would
+  grant generated source app credentials. Camera and hand tracking stay in the
+  trusted parent runtime with an allowlisted message bridge.
+
 ## 2026-09-21 — #671 refinement-provider prerequisite is a distinct follow-up
 
 - Fresh task distillation of the corrected #684 route contract and the live

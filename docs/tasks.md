@@ -23844,16 +23844,19 @@ boundaries. No duplicate open issue was found for either requirement.
 
 The #740 grooming pass discovered that overlay/background camera selection,
 piece/version persistence, and Full/Non-Camera export preservation require an
-explicit scene/runtime contract absent from the current app. That work is
-tracked in the linked criterion-ready #742; #740 is dependency-blocked for
-those criteria until #742 closes. #741 remains the separate secure-embed and
-contextual-control contract.
+explicit scene/runtime contract absent from the current app. That work was
+implemented and QA-closed in #742; the authored workflow is verified by
+`frontend/e2e/authoringWorkflow740.spec.ts` and the secure-embed/contextual-
+control contract is reconciled in #741.
 
 The owner then expanded the goal to require every generated engine case—SVG,
 Three.js, A-Frame, p5.js, c2.js, and c2.js interactive—to be exercised through
 prompt plus Persona context across regular/immersive runtimes, hand steering,
 camera, sound, and per-piece downloads. Discovery found no duplicate open issue;
 the criterion-ready matrix is tracked as #743 and depends on #742.
+
+The public-surface and private-slug follow-ups #744 and #745 are also closed;
+the complete backlog run is reconciled in `.local/tasks/backlog-session-2026-09-22.md`.
 
 Implementation reference policy: use the local `../augment-humankind-react-node`
 implementation patterns for React/TypeScript component composition, viewer

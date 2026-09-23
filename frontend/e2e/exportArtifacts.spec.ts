@@ -462,7 +462,9 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
             await expect(page.locator('#camera-view-video')).toHaveCSS('opacity', '0.6');
             await expect(page.locator('#camera-view-video')).toHaveCSS('transform', 'none');
             const cameraScreenshot = await page.screenshot({
-              path: testInfo.outputPath(`3d-full-camera-${immersive ? 'immersive' : 'regular'}.png`),
+              path: testInfo.outputPath(
+                `3d-full-camera-${immersive ? 'immersive' : 'regular'}.png`,
+              ),
             });
             expect(cameraScreenshot.byteLength).toBeGreaterThan(0);
             await expect(page.getByTestId('camera-stop')).toHaveText('Stop steering');

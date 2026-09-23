@@ -35,9 +35,19 @@ checks, QA verdict/comment, evidence boundary, GitHub reconciliation, stage
 owners (`service / model / effort`) and substitution flags, and terminal
 status. No next issue begins before the current one is terminal.
 
+### #728 transaction ledger — QA result
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION`.
+- **Stage provenance:** scoping `Codex / GPT-5 / medium`, substituted for rostered Codex/Luna: `yes`; implementation delegated subagent / GPT-5 / medium, substituted for rostered Opencode Go: `yes`; second opinion: `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate pending.
+- **Commit:** `ad51231`.
+- **Changed files:** `frontend/src/index.css`, `frontend/src/pages/Scene3DPreview.cameraOverlay.test.tsx`, `frontend/e2e/public3dCameraOverlay728.spec.ts`.
+- **Focused/full checks:** focused Vitest 7 passed; `UV_CACHE_DIR=/tmp/codex-uv-cache-728 make check` passed backend 1508 passed/39 skipped, frontend 259 files/2805 tests, lint/format/typecheck/action-pin checks.
+- **Browser evidence:** the named Chromium spec was executed and self-skipped because `/health/` was unavailable; `make compose-preflight` independently reported Docker daemon unavailable. No rendered screenshot or real/fake-camera route evidence is claimed. Classification: `workflow/infrastructure-defect` / verification boundary. Next action: rerun the exact spec against a disposable PostgreSQL-backed Django + Vite stack (Docker or CI browser runner).
+- **QA verdict:** `## QA: FAIL` for the complete issue contract because the browser criteria are unverified; no product-code fix was made during QA. The issue must remain open until the browser gate runs, or be terminally dependency-blocked with owner/next action if the stack remains unavailable.
+- **GitHub reconciliation:** authenticated connector exposes issue search/fetch/update but its comment operation accepts `pr_number` only; no issue comment was posted. This connector limitation is recorded as a workflow gap, not fabricated as evidence.
+
 ## Duplicate / already-covered report
 
 The prior distillation in `docs/tasks.md` records closed history #297/#342
 (camera), #369–#371/#436/#482 (ZIP camera/steer), and #294/#432/#455 (steer).
 They are not duplicates of the current owner-reported public canonical surfaces.
-

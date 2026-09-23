@@ -21,7 +21,7 @@ handoff status rather than omitting them.
 | 3 | #730 | Public 3D stage toolbar overlay placement | — | 2a | QA-FAIL / VERIFICATION | Regular-route fixture correction committed, but browser DOM still shows editor shell and zero toolbar actions; route/auth resolution needs diagnosis before geometry can be judged. |
 | 4 | #738 | Themed public piece title and top padding | — | 2a | CLOSED | Fresh Docker-backed Chromium route matrix passed. |
 | 5 | #731 | Public 3D description/version API | — | 2b | GROOMED | — |
-| 6 | #732 | Public 3D metadata layout | #731 | 2a | GROOMED | — |
+| 6 | #732 | Public 3D metadata layout | #731 | 2a | CLOSED | `b9ddb51`; targeted backend 5 passed, frontend 12 passed, named Chromium scenario passed. |
 | 7 | #733 | 3D immersive metadata below canvas | #731, #732 | 2a | GROOMED | — |
 | 8 | #734 | 3D immersive camera overlay/controls | #728, #729 | 2a | GROOMED | — |
 | 9 | #735 | Full ZIP 3D camera/toolset | — | 2a | CLOSED | Fresh Docker-backed Chromium: all 10 export/camera scenarios passed. |
@@ -120,7 +120,8 @@ status. No next issue begins before the current one is terminal.
 - #736 reached the canonical generated page but its E2E action assertion selected a hidden stage toolbar group; canonical generated labeling itself is now present after `5d3f3ad`. Visible-action selector correction remains pending.
 - #728 reached the published immersive route and activated steering, but no camera video mounted. This is a product camera-lifecycle failure requiring correction, not an infrastructure boundary.
 - #730 setup now reaches the browser but its anonymous immersive navigation lands on the editor shell; canonical published-route fixture correction remains pending before geometry can be judged.
-- #732 reaches the canonical 3D page but the description supplied by the E2E metadata update is absent, indicating the 3D metadata update contract does not persist `description`; issue remains open for API/UI correction.
+- #732 initially reached the canonical 3D page without the fixture description because the fixture used an unsupported top-level field; the correction aligns it with #731’s `seo_config.description` contract.
+- #732 correction resolved that boundary by aligning the fixture with #731’s supported `seo_config.description` contract; targeted backend 5, frontend 12, and named Chromium 1 passed.
 - #740 was expanded with prompt/action authoring steps, camera overlay/background configuration, centered full-viewport sizing, and contextual tooltips.
 - #741 was created after duplicate search found no open tooltip or same-origin/sandbox issue; it owns accessible action context plus narrowly scoped `allow-same-origin`/embed security and postMessage validation.
 

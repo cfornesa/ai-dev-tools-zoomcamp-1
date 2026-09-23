@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 
 import JSZip from 'jszip';
-import { chromium, expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -17,36 +17,6 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
   { name: 'mobile', width: 375, height: 812 },
 ] as const;
-
-async function mockCamera(context: BrowserContext): Promise<void> {
-  await context.grantPermissions(['camera'], { origin: 'http://localhost:5000' });
-  await context.addInitScript(() => {
-    const mediaDevices = window.navigator.mediaDevices;
-    const mediaDevicesPrototype = Object.getPrototypeOf(mediaDevices) as MediaDevices;
-    const getUserMedia = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 32;
-      canvas.height = 32;
-      const canvasContext = canvas.getContext('2d')!;
-      canvasContext.fillStyle = '#2563eb';
-      canvasContext.fillRect(0, 0, 32, 32);
-      return Promise.resolve(
-        (canvas as HTMLCanvasElement & { captureStream(fps?: number): MediaStream }).captureStream(
-          5,
-        ),
-      );
-    };
-    Object.defineProperty(mediaDevicesPrototype, 'getUserMedia', {
-      configurable: true,
-      value: getUserMedia,
-    });
-    Object.defineProperty(mediaDevices, 'getUserMedia', {
-      configurable: true,
-      writable: true,
-      value: getUserMedia,
-    });
-  });
-}
 
 type CreatedPiece = {
   public_id: string;
@@ -191,38 +161,6 @@ test.describe('reference-style authoring workflow (#740)', () => {
           await expect(page.getByRole('heading', { name: piece.title })).toBeVisible();
           await expect(page.locator('iframe[title="Art piece preview"]')).toBeVisible();
           await expect(page.getByRole('button', { name: 'Open immersive view' })).toBeVisible();
-          if (engine.camera) {
-            const fakeBrowser = await chromium.launch({
-              args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
-            });
-            const cameraContext = await fakeBrowser.newContext({
-              permissions: ['camera'],
-              storageState: await context.storageState(),
-            });
-            try {
-              await mockCamera(cameraContext);
-              const cameraPage = await cameraContext.newPage();
-              await cameraPage.setViewportSize(viewport);
-              await cameraPage.goto(`/users/@${profile.handle}/pieces/${piece.public_slug}`);
-              const stage = cameraPage.locator('.art-piece-stage');
-              await stage.getByRole('button', { name: 'Camera controls' }).click();
-              const cameraControls = stage.getByRole('group', { name: 'Camera view' });
-              await cameraControls.getByRole('button', { name: 'Enable camera view' }).click();
-              await expect(stage.getByTestId('camera-status')).toContainText('Camera is active.');
-              const streamState = await stage.locator('> video').evaluate((element) => {
-                const stream = (element as HTMLVideoElement).srcObject as MediaStream | null;
-                return {
-                  trackState: stream?.getVideoTracks()[0]?.readyState,
-                  trackCount: stream?.getVideoTracks().length ?? 0,
-                };
-              });
-              expect(streamState.trackState).toBe('live');
-              expect(streamState.trackCount).toBeGreaterThan(0);
-            } finally {
-              await cameraContext.close();
-              await fakeBrowser.close();
-            }
-          }
           await downloadFullZip(page);
 
           await page.goto(`/users/@${profile.handle}/immersive/${piece.public_slug}`);

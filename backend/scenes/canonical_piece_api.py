@@ -20,6 +20,27 @@ def _profile_or_404(handle):
     return PublicProfile.objects.select_related("user").get(handle=handle, is_public=True)
 
 
+def _public_art_piece_versions(piece):
+    """Return the deliberately narrow version context for the public page."""
+    summaries = []
+    for version in piece.versions.order_by("-sequence", "-id"):
+        metadata = (
+            version.generation_metadata if isinstance(version.generation_metadata, dict) else {}
+        )
+        model_label = metadata.get("model_label") or metadata.get("model")
+        summaries.append(
+            {
+                "sequence": version.sequence,
+                "engine": piece.engine,
+                "status": piece.status,
+                "prompt": piece.prompt,
+                "created_at": version.created_at,
+                "model_label": model_label if isinstance(model_label, str) else None,
+            }
+        )
+    return summaries
+
+
 class PublicPieceBySlugView(APIView):
     permission_classes: list = []
 
@@ -60,13 +81,17 @@ class PublicPieceBySlugView(APIView):
                     "piece": PublicProject3DSerializer(project3d).data,
                 }
             )
-        art_piece = ArtPiece.objects.filter(
-            owner=owner,
-            public_slug=piece_slug,
-            status=ArtPiece.Status.PUBLISHED,
-            is_deleted=False,
-            current_version__isnull=False,
-        ).first()
+        art_piece = (
+            ArtPiece.objects.filter(
+                owner=owner,
+                public_slug=piece_slug,
+                status=ArtPiece.Status.PUBLISHED,
+                is_deleted=False,
+                current_version__isnull=False,
+            )
+            .prefetch_related("versions")
+            .first()
+        )
         if art_piece:
             response = {
                 "canonical_url": f"/users/@{handle}/pieces/{art_piece.public_slug}",
@@ -74,6 +99,7 @@ class PublicPieceBySlugView(APIView):
                 "type": "generated",
                 "piece": _piece_data(art_piece, public=True),
             }
+            response["piece"]["versions"] = _public_art_piece_versions(art_piece)
             if request.user.is_authenticated and request.user == owner:
                 response["edit_url"] = f"/users/@{handle}/edit/{art_piece.public_slug}"
             return Response(response)

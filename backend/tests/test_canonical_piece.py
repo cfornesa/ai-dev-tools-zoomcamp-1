@@ -89,6 +89,47 @@ def test_canonical_generated_piece_exposes_edit_url_only_to_owner(client):
 
 
 @pytest.mark.django_db
+def test_canonical_generated_piece_exposes_safe_public_version_summaries(client):
+    user = get_user_model().objects.create_user(username="version-artist")
+    PublicProfile.objects.create(user=user, handle="version-artist", is_public=True)
+    piece = _published_piece(user, "Version Study")
+    piece.prompt = "A long public prompt"
+    piece.save(update_fields=["prompt"])
+    piece.versions.create(
+        sequence=2,
+        source="private source that must not be serialized",
+        capabilities={"microphone": True},
+        generation_metadata={"model_label": "Mistral Small", "private": "omit"},
+    )
+
+    response = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "version-artist", "piece_slug": piece.public_slug},
+        )
+    )
+
+    assert response.status_code == 200
+    versions = response.json()["piece"]["versions"]
+    assert [version["sequence"] for version in versions] == [2, 1]
+    assert versions[0]["engine"] == "svg"
+    assert versions[0]["status"] == "published"
+    assert versions[0]["prompt"] == "A long public prompt"
+    assert versions[0]["model_label"] == "Mistral Small"
+    assert set(versions[0]) == {
+        "sequence",
+        "engine",
+        "status",
+        "prompt",
+        "created_at",
+        "model_label",
+    }
+    assert "source" not in versions[0]
+    assert "capabilities" not in versions[0]
+    assert "generation_metadata" not in versions[0]
+
+
+@pytest.mark.django_db
 def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client):
     user = get_user_model().objects.create_user(username="profile-artist")
     PublicProfile.objects.create(
@@ -186,6 +227,31 @@ def test_canonical_piece_does_not_expose_private_or_unknown_piece(client):
             kwargs={"handle": "private-artist", "piece_slug": piece.public_slug},
         )
     )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_canonical_piece_404s_for_an_unpublished_generated_piece(client):
+    user = get_user_model().objects.create_user(username="unpublished-artist")
+    PublicProfile.objects.create(user=user, handle="unpublished-artist", is_public=True)
+    piece = ArtPiece.objects.create(
+        owner=user,
+        title="Unpublished Study",
+        prompt="A private prompt",
+        engine=ArtPiece.Engine.SVG,
+        status=ArtPiece.Status.DRAFT,
+    )
+    version = ArtPieceVersion.objects.create(piece=piece, sequence=1, source="<svg />")
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+
+    response = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "unpublished-artist", "piece_slug": piece.public_slug},
+        )
+    )
+
     assert response.status_code == 404
 
 

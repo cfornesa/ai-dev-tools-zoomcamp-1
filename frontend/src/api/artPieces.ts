@@ -149,6 +149,15 @@ export type ArtPieceVersion = {
   generation_metadata?: Record<string, unknown>;
 };
 
+export type PublicArtPieceVersionSummary = {
+  sequence: number;
+  engine: ArtPieceLibrary;
+  status: 'draft' | 'published' | 'archived';
+  prompt: string;
+  created_at: string;
+  model_label: string | null;
+};
+
 export type ArtPiece = {
   public_id: string;
   public_slug?: string;
@@ -161,6 +170,7 @@ export type ArtPiece = {
   engine_capabilities?: ArtPieceEngineCapability;
   status: 'draft' | 'published' | 'archived';
   current_version: ArtPieceVersion | null;
+  versions?: PublicArtPieceVersionSummary[];
   created_at: string;
   updated_at: string;
   published_at?: string | null;

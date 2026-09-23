@@ -1254,6 +1254,15 @@ add a `collections` array containing only currently public, non-deleted
 collection links: `{title, handle, slug, url}`. Private or unpublished
 collections are omitted, and the field is absent from owner-only responses.
 
+The canonical generated art-piece response from
+`GET /api/users/@<handle>/pieces/<slug>/` includes a `versions` array when the
+resolved piece is generated. Each entry is a public summary containing only
+`sequence`, `engine`, `status`, `prompt`, `created_at`, and `model_label` (or
+`null` when no model label was recorded). It never includes source code,
+capabilities, or the raw generation-metadata object. The piece must be
+published and belong to a public profile; private, unpublished, deleted, and
+unknown pieces return `404` without revealing which condition applies.
+
 `GET /api/account/collections/<uuid>/snapshot/` returns the same deterministic
 online JSON representation for the owner. It is not an offline export and no
 download or archival guarantee is implied. All account writes require the

@@ -23,23 +23,30 @@ color-mode control and canonical navigation ordering.
 
 ## Evidence and pending items
 
-- **Status:** ACTIVE
+- **Status:** COMPLETE (implemented locally; not deployed)
 - **Evidence so far:** The host-permission Chromium run reproduced both tab
   order failures; Chrome DOM inspection showed the color-mode control between
   the brand link and Public gallery.
-- **Pending verification:** Focused Chromium scenario and full frontend checks.
-- **Next action:** Update only the affected E2E expectations, then run QA.
+- **Pending verification:** No local verification remains. GitHub comment/closure
+  reconciliation is pending because the authenticated issue connector is not
+  available in this session.
+- **Next action:** Reconcile this child against #749 in GitHub when the
+  authenticated connector is available; keep #749 open for the sibling child
+  transactions.
 - **Durable memory link:** None.
 
 ## Transaction ledger
 
-- **Phase:** GROOMED
+- **Phase:** CLOSED
 - **Issue owner / current transaction:** #749 child: responsive shell
-- **Implementation commit:** Pending
-- **Focused checks / full checks:** Pending
-- **QA matrix:** Pending
+- **Implementation commit:** `951f078`
+- **Focused checks / full checks:** `E2E_DOCKER_COMPOSE=true E2E_BASE_URL=http://127.0.0.1:5000 npm run test:e2e -- --project=chromium e2e/responsiveShell.spec.ts` — 3 passed; `npm test` — 2,824 passed; `make frontend-lint frontend-format-check frontend-typecheck` — passed (pre-existing lint warnings only).
+- **QA matrix:** PASS — signed-out and signed-in tablet focus order plus
+  populated 375px gallery all pass in Chromium; rendered browser evidence
+  confirmed the shell sequence. QA ran as Claude Sonnet 5 / Medium
+  substitution for the rostered external reviewer; second opinion not run.
 - **GitHub closure evidence:** GitHub issue/comment connector unavailable in
-  this session; local child record is the reconciled handoff.
+  this session; local child record and commit are the reconciled handoff.
 - **New gaps discovered:** The original #749 bundles unrelated E2E families;
   sibling task records split them before implementation.
 

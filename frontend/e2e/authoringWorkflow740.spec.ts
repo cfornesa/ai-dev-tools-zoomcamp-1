@@ -18,6 +18,36 @@ const VIEWPORTS = [
   { name: 'mobile', width: 375, height: 812 },
 ] as const;
 
+async function mockCamera(context: BrowserContext): Promise<void> {
+  await context.grantPermissions(['camera'], { origin: 'http://localhost:5000' });
+  await context.addInitScript(() => {
+    const mediaDevices = window.navigator.mediaDevices;
+    const mediaDevicesPrototype = Object.getPrototypeOf(mediaDevices) as MediaDevices;
+    const getUserMedia = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const canvasContext = canvas.getContext('2d')!;
+      canvasContext.fillStyle = '#2563eb';
+      canvasContext.fillRect(0, 0, 32, 32);
+      return Promise.resolve(
+        (canvas as HTMLCanvasElement & { captureStream(fps?: number): MediaStream }).captureStream(
+          5,
+        ),
+      );
+    };
+    Object.defineProperty(mediaDevicesPrototype, 'getUserMedia', {
+      configurable: true,
+      value: getUserMedia,
+    });
+    Object.defineProperty(mediaDevices, 'getUserMedia', {
+      configurable: true,
+      writable: true,
+      value: getUserMedia,
+    });
+  });
+}
+
 type CreatedPiece = {
   public_id: string;
   public_slug: string;
@@ -131,6 +161,7 @@ test.describe('reference-style authoring workflow (#740)', () => {
   }) => {
     test.setTimeout(180_000);
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await mockCamera(context);
     const profile = (await (await apiGet(context, '/api/account/profile/')).json()) as {
       handle: string;
     };
@@ -162,6 +193,22 @@ test.describe('reference-style authoring workflow (#740)', () => {
           await expect(page.getByRole('heading', { name: piece.title })).toBeVisible();
           await expect(page.locator('iframe[title="Art piece preview"]')).toBeVisible();
           await expect(page.getByRole('button', { name: 'Open immersive view' })).toBeVisible();
+          if (engine.camera) {
+            const stage = page.locator('.art-piece-stage');
+            await stage.getByRole('button', { name: 'Camera controls' }).click();
+            const cameraControls = stage.getByRole('group', { name: 'Camera view' });
+            await cameraControls.getByRole('button', { name: 'Enable camera view' }).click();
+            await expect(stage.getByTestId('camera-status')).toContainText('Camera is active.');
+            const streamState = await stage.locator('> video').evaluate((element) => {
+              const stream = (element as HTMLVideoElement).srcObject as MediaStream | null;
+              return {
+                trackState: stream?.getVideoTracks()[0]?.readyState,
+                trackCount: stream?.getVideoTracks().length ?? 0,
+              };
+            });
+            expect(streamState.trackState).toBe('live');
+            expect(streamState.trackCount).toBeGreaterThan(0);
+          }
           await downloadFullZip(page);
 
           await page.goto(`/users/@${profile.handle}/immersive/${piece.public_slug}`);

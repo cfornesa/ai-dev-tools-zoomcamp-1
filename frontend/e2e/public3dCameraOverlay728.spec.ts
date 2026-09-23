@@ -66,9 +66,23 @@ test.describe('public 3D camera overlay geometry (#728)', () => {
         const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
         await expect(frame).toBeVisible();
         const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
+        await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+        const controls = toolbar.getByRole('group', { name: 'Piece controls' });
+        await expect(controls.getByRole('slider', { name: 'Camera opacity' })).toHaveCount(0);
+        await expect(controls.getByRole('checkbox', { name: 'Mirror camera overlay' })).toHaveCount(
+          0,
+        );
+        await toolbar.getByRole('button', { name: 'Hide piece controls' }).click();
+
         await toolbar.getByRole('button', { name: 'Steer the piece' }).click();
         const video = anonymousPage.getByTestId('scene3d-camera-overlay-video');
         await expect(video).toBeVisible();
+        await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+        await expect(controls.getByRole('slider', { name: 'Camera opacity' })).toBeVisible();
+        await expect(
+          controls.getByRole('checkbox', { name: 'Mirror camera overlay' }),
+        ).toBeVisible();
+        await toolbar.getByRole('button', { name: 'Hide piece controls' }).click();
 
         for (const viewport of [
           { name: 'desktop', width: 1440, height: 900 },

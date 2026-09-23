@@ -21,25 +21,34 @@ current public heading structure.
 
 ## Evidence and pending items
 
-- **Status:** PROPOSED
-- **Evidence so far:** Host-permission Chromium reproduced canonical-route and
-  heading-selector failures in remix scenarios; authorization/concurrency
-  cases passed.
-- **Pending verification:** Root-cause classification and focused rerun.
-- **Next action:** Process after the draw.io child reaches a terminal state.
+- **Status:** BLOCKED (product-side fork navigation blocker)
+- **Evidence so far:** Docker-matched host-permission Chromium passed the
+  private-source, both concurrency, and authorization scenarios (4/6). The
+  fork-enabled scenario still does not reach a new editor route, and the
+  remix-disabled scenario has a stale unscoped heading assertion.
+- **Pending verification:** Product/helper routing behavior must be resolved,
+  then rerun the fork-enabled case; independently tighten the heading
+  selector before terminal QA.
+- **Next action:** Route the fork navigation failure to a complex/product
+  implementation pass; do not close this child or #749.
 - **Durable memory link:** Canonical piece route contract, if route assertions
   require the existing memory topic.
 
 ## Transaction ledger
 
-- **Phase:** GROOMED
+- **Phase:** BLOCKED
 - **Issue owner / current transaction:** #749 child: remix/fork
-- **Implementation commit:** Pending
-- **Focused checks / full checks:** Pending
-- **QA matrix:** Pending
+- **Implementation commit:** None; mechanical stage returned the work because
+  the fork navigation failure is product-side.
+- **Focused checks / full checks:** Docker-matched Chromium remix/fork subset:
+  4 passed, 2 failed; `make compose-preflight` passed.
+- **QA matrix:** BLOCKED — fork-enabled route transition remains unresolved;
+  remix-disabled heading drift is identified but not silently absorbed.
 - **GitHub closure evidence:** Authenticated issue connector unavailable;
-  local child record is the handoff.
-- **New gaps discovered:** None beyond #749 evidence.
+  local child record is the blocked handoff.
+- **New gaps discovered:** Product-side fork navigation failure needs a
+  complex implementation route; no new issue could be created because the
+  authenticated connector is unavailable.
 
 ## Discovery gate
 

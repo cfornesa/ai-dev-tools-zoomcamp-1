@@ -62,7 +62,7 @@ test.describe('public 3D camera overlay geometry (#728)', () => {
       const anonymousContext = await fakeBrowser.newContext({ permissions: ['camera'] });
       const anonymousPage = await anonymousContext.newPage();
       try {
-        await anonymousPage.goto(`/users/@${handle}/immersive/${piece.slug}`);
+        await anonymousPage.goto(`/users/@${handle}/pieces/${piece.slug}`);
         const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
         await expect(frame).toBeVisible();
         const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });

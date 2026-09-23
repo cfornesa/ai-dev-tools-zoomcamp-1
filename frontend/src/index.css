@@ -4790,6 +4790,16 @@ select.ai-proposal-field-full-width {
   margin: 0 0 16px;
 }
 
+.immersive-project3d-content {
+  max-width: 72rem;
+  margin: 24px auto 0;
+  overflow-wrap: anywhere;
+}
+
+.immersive-project3d-content header {
+  margin-bottom: 16px;
+}
+
 .immersive-project3d-viewer .public-piece-page-heading,
 .immersive-art-piece-viewer .public-piece-page-heading {
   color: inherit;

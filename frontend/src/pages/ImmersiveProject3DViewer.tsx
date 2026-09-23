@@ -57,6 +57,7 @@ function ImmersiveProject3DViewer({
   const isCmsEmbed = isEmbed && searchParams.get('cms') === '1';
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<PublicProject3D | null>(initialProject ?? null);
+  const [shareCopyStatus, setShareCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
 
   useEffect(() => {
@@ -126,6 +127,15 @@ function ImmersiveProject3DViewer({
 
   if (!project) return null; // unreachable once loadState === 'ready'
   const readyProject = project;
+  const versionSummaries = [...readyProject.versions].sort(
+    (left, right) => right.sequence - left.sequence,
+  );
+  const versionCount = readyProject.version_count || versionSummaries.length;
+  const description = readyProject.description || readyProject.seo_config?.description;
+
+  function formatVersionDate(createdAt: string) {
+    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(createdAt));
+  }
 
   function embedSnippetFor(cms: boolean): string {
     const query = cms ? '?embed=1&cms=1' : '?embed=1';
@@ -139,6 +149,15 @@ function ImmersiveProject3DViewer({
       setEmbedCopyStatus('copied');
     } catch {
       setEmbedCopyStatus('failed');
+    }
+  }
+
+  async function copyShareLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShareCopyStatus('copied');
+    } catch {
+      setShareCopyStatus('failed');
     }
   }
 
@@ -158,37 +177,6 @@ function ImmersiveProject3DViewer({
       data-testid="immersive-project3d-viewer"
       data-immersive-embed-mode={isCmsEmbed ? 'cms' : isEmbed ? 'custom' : undefined}
     >
-      {!isEmbed && (
-        <header>
-          <h1 className="public-piece-page-heading">{readyProject.title}</h1>
-          <p className="public-project-attribution">By {authorDisplayName || readyProject.owner}</p>
-          {!!readyProject.seo_config?.description && (
-            <p className="public-project-context">{readyProject.seo_config.description}</p>
-          )}
-          <p role="note">
-            Drag to look around, scroll/pinch to zoom, and use the arrow keys to fly through the
-            piece.
-          </p>
-          <div className="immersive-project3d-embed-actions" aria-label="Embed options">
-            <button type="button" onClick={() => void copyEmbedSnippet(false)}>
-              Embed (Custom)
-            </button>
-            <button type="button" onClick={() => void copyEmbedSnippet(true)}>
-              Embed (CMS)
-            </button>
-            {embedCopyStatus === 'copied' && (
-              <span role="status" aria-live="polite">
-                Embed code copied.
-              </span>
-            )}
-            {embedCopyStatus === 'failed' && (
-              <span role="alert" aria-live="assertive">
-                Couldn&apos;t copy automatically; select and copy the embed code manually.
-              </span>
-            )}
-          </div>
-        </header>
-      )}
       <section role="region" aria-label="Preview" data-panel="preview">
         {readyProject.current_version && (
           <Scene3DPreview
@@ -200,6 +188,89 @@ function ImmersiveProject3DViewer({
           />
         )}
       </section>
+      {!isEmbed && (
+        <div className="immersive-project3d-content" data-testid="immersive-info-block">
+          <header>
+            <p className="public-piece-kind">3D scene</p>
+            <h1 className="public-piece-page-heading">{readyProject.title}</h1>
+            <p className="public-project-attribution">
+              By {authorDisplayName || readyProject.owner}
+            </p>
+            <p className="public-piece-meta">
+              3D scene · {versionCount} {versionCount === 1 ? 'version' : 'versions'}
+            </p>
+            {!!description && <p className="public-project-context">{description}</p>}
+            <p role="note">
+              Drag to look around, scroll/pinch to zoom, and use the arrow keys to fly through the
+              piece.
+            </p>
+          </header>
+          <div
+            className="immersive-project3d-embed-actions"
+            aria-label="Piece actions"
+            role="group"
+          >
+            <button type="button" onClick={() => void copyShareLink()}>
+              Share
+            </button>
+            <button type="button" onClick={() => void copyEmbedSnippet(false)}>
+              Embed (Custom)
+            </button>
+            <button type="button" onClick={() => void copyEmbedSnippet(true)}>
+              Embed (CMS)
+            </button>
+            {shareCopyStatus === 'copied' && (
+              <span role="status" aria-live="polite">
+                Link copied.
+              </span>
+            )}
+            {shareCopyStatus === 'failed' && (
+              <span role="alert" aria-live="assertive">
+                Couldn&apos;t copy the link.
+              </span>
+            )}
+            {embedCopyStatus === 'copied' && (
+              <span role="status" aria-live="polite">
+                Embed code copied.
+              </span>
+            )}
+            {embedCopyStatus === 'failed' && (
+              <span role="alert" aria-live="assertive">
+                Couldn&apos;t copy automatically; select and copy the embed code manually.
+              </span>
+            )}
+          </div>
+          <div className="public-piece-version-context">
+            <section aria-labelledby="immersive-current-version-heading">
+              <h2 id="immersive-current-version-heading">Current version context</h2>
+              {readyProject.current_version ? (
+                <p>
+                  Version {readyProject.current_version.sequence} ·{' '}
+                  <time dateTime={readyProject.current_version.created_at}>
+                    {formatVersionDate(readyProject.current_version.created_at)}
+                  </time>
+                </p>
+              ) : (
+                <p>No saved version yet.</p>
+              )}
+            </section>
+            <section aria-labelledby="immersive-versions-heading">
+              <h2 id="immersive-versions-heading">Versions</h2>
+              <ol>
+                {versionSummaries.map((version) => (
+                  <li key={`${version.sequence}-${version.created_at}`}>
+                    <span>Version {version.sequence}</span>{' '}
+                    <time dateTime={version.created_at}>
+                      {formatVersionDate(version.created_at)}
+                    </time>
+                    {version.is_current && <span className="public-piece-current">CURRENT</span>}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -228,10 +228,25 @@ describe('Scene3DPreview public camera overlay geometry (issue #728)', () => {
   it('keeps both camera paths on the full-stage, non-interactive overlay contract', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
     expect(css).toMatch(
-      /\.scene3d-camera-overlay-video\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*z-index:\s*10;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*cover;[^}]*pointer-events:\s*none;/s,
+      /\.scene3d-camera-overlay-video\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*z-index:\s*1;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-position:\s*center;[^}]*object-fit:\s*cover;[^}]*pointer-events:\s*none;/s,
     );
     expect(css).toMatch(/\.piece-stage-toolbar\s*\{[^}]*z-index:\s*20;/s);
     expect(css).toMatch(/\.piece-stage-command-overlay\s*\{[^}]*z-index:\s*140;/s);
+  });
+
+  it('keeps immersive stages centered and viewport-proportional while retaining the shared camera contract', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
+    expect(css).toMatch(
+      /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)\s*\{[^}]*min-height:\s*100dvh;[^}]*padding:\s*0;/s,
+    );
+    expect(css).toMatch(
+      /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)\s*> \[data-panel='preview'\]\s*\{[^}]*display:\s*grid;[^}]*min-height:\s*100dvh;[^}]*place-items:\s*center;/s,
+    );
+    expect(css).toMatch(
+      /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)[\s\S]*?\.scene3d-preview\s*\{[^}]*width:\s*min\(100%, calc\(100dvh \* 16 \/ 9\)\);/s,
+    );
+    expect(css).toMatch(/\.piece-stage-toolbar\s*\{[^}]*z-index:\s*20;/s);
+    expect(css).toMatch(/\.scene3d-touch-dpad\s*\{[^}]*z-index:\s*6;/s);
   });
 });
 

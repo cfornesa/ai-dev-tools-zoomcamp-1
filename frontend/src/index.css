@@ -4786,6 +4786,31 @@ select.ai-proposal-field-full-width {
   box-sizing: border-box;
 }
 
+/* Issue #734: canonical immersive 3D uses the reference viewer's centered,
+   viewport-sized stage. The 16:9 box takes the full available width when it
+   fits within the viewport height; otherwise its height is the limiting side.
+   Metadata remains below the stage, while the shared Scene3DPreview owns the
+   live camera stream and all stage controls. */
+.immersive-project3d-viewer:not(.immersive-project3d-viewer--embed) {
+  min-height: 100dvh;
+  padding: 0;
+}
+
+.immersive-project3d-viewer:not(.immersive-project3d-viewer--embed) > [data-panel='preview'] {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+.immersive-project3d-viewer:not(.immersive-project3d-viewer--embed)
+  > [data-panel='preview']
+  > .scene3d-preview {
+  width: min(100%, calc(100dvh * 16 / 9));
+  max-width: 100%;
+}
+
 .immersive-project3d-viewer header {
   margin: 0 0 16px;
 }
@@ -6072,9 +6097,10 @@ select.ai-proposal-field-full-width {
 .scene3d-camera-overlay-video {
   position: absolute;
   inset: 0;
-  z-index: 10;
+  z-index: 1;
   width: 100%;
   height: 100%;
+  object-position: center;
   object-fit: cover;
   pointer-events: none;
 }

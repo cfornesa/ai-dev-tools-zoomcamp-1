@@ -177,7 +177,12 @@ function ImmersiveProject3DViewer({
       data-testid="immersive-project3d-viewer"
       data-immersive-embed-mode={isCmsEmbed ? 'cms' : isEmbed ? 'custom' : undefined}
     >
-      <section role="region" aria-label="Preview" data-panel="preview">
+      <section
+        role="region"
+        aria-label="Preview"
+        data-panel="preview"
+        data-testid="immersive-3d-stage"
+      >
         {readyProject.current_version && (
           <Scene3DPreview
             scene={readyProject.current_version.scene_json as unknown as Scene3DDocument}

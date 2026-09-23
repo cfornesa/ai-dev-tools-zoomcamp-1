@@ -20,11 +20,17 @@ test.describe('public 3D camera overlay geometry (#728)', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await page.goto('/');
     await page.getByRole('button', { name: 'More creation options' }).click();
+    const createdResponse = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/projects3d/') && response.request().method() === 'POST',
+    );
     await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
+    const created = await createdResponse;
+    expect(created.status()).toBe(201);
+    const { id: projectId } = (await created.json()) as { id: string };
+    await page.waitForURL(/\/users\/@[^/]+\/edit\/untitled-3d-scene(?:-\d+)?$/);
     expect(projectId).toBeTruthy();
-    if (!projectId) return;
+    if (!projectId) throw new Error('Could not determine the created 3D project id.');
 
     await page
       .getByRole('group', { name: 'Publication status' })

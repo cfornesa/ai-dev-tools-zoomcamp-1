@@ -73,11 +73,13 @@ function pieceAspectRatio(piece: ArtPiece): string {
 export default function PublicArtPieceViewer({
   initialPiece,
   canonicalHref,
+  canonicalRoute = false,
   editHref,
   authorDisplayName,
 }: {
   initialPiece?: ArtPiece;
   canonicalHref?: string;
+  canonicalRoute?: boolean;
   editHref?: string;
   authorDisplayName?: string;
 } = {}) {
@@ -159,7 +161,7 @@ export default function PublicArtPieceViewer({
     );
 
   const isEmbedRoute = isEmbedPath();
-  const isCanonicalRoute = Boolean(canonicalHref?.startsWith('/users/@'));
+  const isCanonicalRoute = canonicalRoute;
   const pieceId = id ?? piece.public_id;
   const aspectRatio = pieceAspectRatio(piece);
   const versions = [...(piece.versions ?? [])].sort(

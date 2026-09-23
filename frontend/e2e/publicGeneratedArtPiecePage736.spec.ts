@@ -50,7 +50,9 @@ test.describe('Canonical generated art-piece page (#736)', () => {
       await expect(page.getByRole('heading', { name: 'Generated page fixture' })).toBeVisible();
       await expect(page.getByText('SVG · 2 versions')).toBeVisible();
       await expect(page.getByRole('region', { name: 'Art piece stage' })).toBeVisible();
-      await expect(page.getByRole('group', { name: 'Piece actions' })).toBeVisible();
+      await expect(
+        page.getByTestId('regular-piece-toolbar-row').getByRole('group', { name: 'Piece actions' }),
+      ).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Current version context' })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Versions' })).toBeVisible();
       await expect(page.getByText('E2E model')).toBeVisible();

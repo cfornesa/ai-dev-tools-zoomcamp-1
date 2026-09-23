@@ -65,6 +65,7 @@ describe('PublicArtPieceViewer stage sizing (#703)', () => {
                   ],
                 }}
                 canonicalHref="/users/@artist/pieces/responsive-study"
+                canonicalRoute
               />
             }
           />
@@ -94,6 +95,7 @@ describe('PublicArtPieceViewer stage sizing (#703)', () => {
     const heading = screen.getByRole('heading', { name: 'Responsive study', level: 1 });
     expect(heading).toHaveClass('public-piece-page-heading');
     expect(screen.getByRole('region', { name: 'Art piece stage' })).toBeInTheDocument();
+    expect(screen.queryByText('Generated art')).not.toBeInTheDocument();
   });
 
   it('reserves a responsive 16:9 stage before the preview is ready and uses the theme background', () => {

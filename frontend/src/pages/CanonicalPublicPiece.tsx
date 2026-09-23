@@ -34,6 +34,7 @@ export default function CanonicalPublicPiece() {
       <PublicArtPieceViewer
         initialPiece={resolved.piece as ArtPiece}
         canonicalHref={resolved.canonical_url}
+        canonicalRoute
         editHref={resolved.edit_url}
         authorDisplayName={profile?.display_name}
       />

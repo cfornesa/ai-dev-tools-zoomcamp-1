@@ -49,16 +49,18 @@ test('renders the canonical 2D payload sections and captures desktop/mobile evid
       await expect(
         anonymousPage.getByRole('heading', { name: `Public 2D #737 ${project.id}`, exact: true }),
       ).toBeVisible();
-      await expect(
-        anonymousPage.getByText('2D scene · 1 version', { exact: true }),
-      ).toBeVisible();
+      await expect(anonymousPage.getByText('2D scene · 1 version', { exact: true })).toBeVisible();
       await expect(
         anonymousPage.getByText('A canonical public 2D piece for version-history evidence.', {
           exact: true,
         }),
       ).toBeVisible();
       await expect(anonymousPage.getByTestId('public-scene-canvas')).toBeVisible();
-      await expect(anonymousPage.getByRole('group', { name: 'Piece actions' })).toBeVisible();
+      await expect(
+        anonymousPage
+          .getByTestId('public-scene-canvas')
+          .getByRole('group', { name: 'Piece actions' }),
+      ).toBeVisible();
       await expect(
         anonymousPage.getByRole('heading', { name: 'Current version context' }),
       ).toBeVisible();

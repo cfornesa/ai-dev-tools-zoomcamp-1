@@ -135,7 +135,7 @@ status. No next issue begins before the current one is terminal.
 - #728 final browser retry passed on the regular canonical public route at both viewports after `f5ed998`; camera video geometry, cover sizing, stacking, pointer-events, and toolbar layering were exercised.
 - #729 combined browser retry passed: controls were absent before camera activation and visible after Steer/video activation at both viewports.
 - #736 remains open because the generated canonical fixture stayed at `Loading public piece…` in fresh Docker Chromium; no closure evidence is claimed.
-- #730 remains open because its regular-route browser DOM still exposed the editor shell/zero public toolbar actions; no geometry closure evidence is claimed.
+- #730’s selector correction reached the public viewer, but the full geometry/popover scenario timed out during browser cleanup with no usable final geometry evidence; issue remains open pending a stable browser run.
 
 ### #739 transaction ledger — QA PASS
 

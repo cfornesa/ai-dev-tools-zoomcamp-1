@@ -23831,3 +23831,13 @@ Verification boundaries: real-camera checks require Claude in Chrome (owner
 grants camera); production theme changes must not be made for #738 (local
 stack only). No blockers; next action for a future session: backlog-session on
 #728.
+
+## 2026-09-23 — Authoring workflow expansion (#740–#741)
+
+The authoring workflow request now explicitly covers prompt-driven creation of
+reference-style authored 2D/3D pieces, functional user-configurable camera
+overlay/background modes with centered full-viewport sizing, and contextual
+hover/focus text for piece controls. #741 is the discovery-gated security
+follow-up for accessible tooltips plus narrowly scoped `allow-same-origin`
+compatible embeds, origin validation, and postMessage/media permission
+boundaries. No duplicate open issue was found for either requirement.

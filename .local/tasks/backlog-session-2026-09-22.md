@@ -46,6 +46,17 @@ status. No next issue begins before the current one is terminal.
 - **QA verdict:** `## QA: FAIL` for the complete issue contract because the browser criteria are unverified; no product-code fix was made during QA. The issue must remain open until the browser gate runs, or be terminally dependency-blocked with owner/next action if the stack remains unavailable.
 - **GitHub reconciliation:** authenticated connector exposes issue search/fetch/update but its comment operation accepts `pr_number` only; no issue comment was posted. This connector limitation is recorded as a workflow gap, not fabricated as evidence.
 
+### #730 transaction ledger — QA result
+
+- **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION`.
+- **Stage provenance:** scoping `Codex / GPT-5 / medium`, substituted for rostered Codex/Luna: `yes`; implementation delegated subagent / GPT-5 / medium, substituted for rostered Opencode Go: `yes`; second opinion: `not run`; QA `Codex / GPT-5 / medium`, substituted for rostered Claude Sonnet 5: `yes`; readiness gate pending.
+- **Commit:** `6fb1c6f`.
+- **Changed files:** `frontend/src/components/PieceStageToolbar.tsx`, `frontend/src/components/PieceStageToolbar.test.tsx`, `frontend/src/index.css`, `frontend/e2e/public3dToolbar730.spec.ts`.
+- **Focused/full checks:** focused Vitest 11 passed; `UV_CACHE_DIR=/tmp/codex-uv-cache-730 make check` passed backend 1508 passed/39 skipped, frontend 259 files/2807 tests, lint/format/typecheck/action-pin checks.
+- **Browser evidence:** the named Chromium spec was executed and self-skipped because `/health/` was unavailable; `make compose-preflight` reported Docker daemon unavailable. No rendered screenshots or live route evidence are claimed. Classification: `workflow/infrastructure-defect` / verification boundary. Next action: rerun the exact spec against disposable PostgreSQL-backed Django + Vite or CI browser runner.
+- **QA verdict:** `## QA: FAIL` for the complete issue contract because the browser criteria are unverified; no product-code fix was made during QA. Keep open as terminally blocked pending browser infrastructure.
+- **GitHub reconciliation:** issue-comment connector accepts `pr_number` only; no issue comment was posted. The limitation is recorded rather than fabricated as evidence.
+
 ## Duplicate / already-covered report
 
 The prior distillation in `docs/tasks.md` records closed history #297/#342

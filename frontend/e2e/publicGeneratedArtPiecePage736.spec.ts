@@ -76,7 +76,7 @@ test.describe('Canonical generated art-piece page (#736)', () => {
       await expect(page.getByRole('heading', { name: 'Current version context' })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Versions' })).toBeVisible();
       await expect(page.getByText('E2E model', { exact: true })).toBeVisible();
-      await expect(page.getByText('CURRENT')).toBeVisible();
+      await expect(page.locator('.public-piece-current')).toHaveText('CURRENT');
       await page.screenshot({
         path: testInfo.outputPath(`public-generated-art-piece-${viewport.width}.png`),
         fullPage: true,

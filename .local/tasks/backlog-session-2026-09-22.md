@@ -28,7 +28,7 @@ handoff status rather than omitting them.
 | 10 | #736 | Generated piece metadata/version layout | — | 2b | CLOSED | `edaf51d` + `8be39c8`; canonical backend 13/13 and regular-route Chromium desktop/mobile scenario passed. |
 | 11 | #737 | 2D piece metadata/version layout | — | 2b | CLOSED | `9fcbb0d` + `5d3f3ad`; serial frontend 2815/2815 and regular-route Chromium scenario passed. |
 | 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | CLOSED | `18a34d7`; focused teardown 2/2 and existing 10-test Chromium export suite passed. |
-| 13 | #742 | Authoring camera mode and export-safe configuration | — | 2b | ENGINEERING | Owner approved option 1: additive persisted `ArtPieceVersion.camera_placement` (`overlay|background`) with API validation/projection, viewer/export propagation, and rollback plan. |
+| 13 | #742 | Authoring camera mode and export-safe configuration | — | 2b | CLOSED | `1279647` + `a425ebe`; focused backend 2/2, frontend runtime 47/47, migration drift clean, full backend 1518/39 skipped, full frontend 2823/2823, and named Docker-backed Chromium 1/1 at desktop/mobile viewports. |
 | 14 | #744 | Public piece surface contract matrix | — | 2a | GROOMED | User-requested inventory of regular, immersive, embeds, collections, gallery, direct links, and downloads; no duplicate open issue found. |
 | 15 | #745 | Private canonical viewing and slug collision isolation | — | 2b | GROOMED | User-requested owner-private viewing plus public/private slug reuse without leakage; no duplicate open issue found. |
 | 16 | #743 | AI authoring matrix across all supported engines | #742 | 2a/complex | DEPENDENCY-BLOCKED | User-requested matrix for prompt + Persona context across SVG, Three.js, A-Frame, p5.js, c2.js, and c2.js interactive; waits on #742 camera/export contract. |
@@ -183,10 +183,10 @@ status. No next issue begins before the current one is terminal.
 - **Impact:** #740 and #743 remain dependency-blocked for their camera-mode and camera-aware export criteria; #741 remains independent.
 - **GitHub reconciliation:** no issue comment was posted because the connector accepts `pr_number` only; issue #742 remains open pending the owner’s contract decision.
 
-### #742 transaction ledger — approved option 1 implementation
+### #742 transaction ledger — approved option 1 implementation and QA PASS
 
-- **State:** `ENGINEERING`; implementation remains bounded to #742. #740,
-  #741, and #743 are not modified.
+- **State:** `ENGINEERING → QA → RECONCILIATION → CLOSED`; implementation
+  remained bounded to #742. #740, #741, and #743 were not modified.
 - **Decision:** owner approved a nullable persisted
   `ArtPieceVersion.camera_placement` with `overlay|background` validation,
   `NULL` resolving to legacy overlay behavior, API projection, viewer/runtime
@@ -201,9 +201,37 @@ status. No next issue begins before the current one is terminal.
   migration or write is authorized in this issue.
 - **Security boundary:** only the enum value crosses the API/export contract;
   camera permissions, streams, frames, and secrets remain browser-local.
-- **Stage provenance:** implementation `Codex / GPT-5 / medium`, substituted
-  for rostered Ollama Cloud / kimi-k3 because the delegated implementation
-  tool was unavailable; QA pending; issue remains open.
+- **Commits:** `1279647` persists and projects the contract; `a425ebe` adds
+  the named browser acceptance scenario.
+- **Focused checks:** `UV_CACHE_DIR=/tmp/codex-uv-cache-742 uv run pytest
+  tests/test_art_piece_persistence.py -k camera_placement` — 2 passed;
+  `npm test -- --run src/generative/artPieceBundle.test.ts
+  src/generative/artPieceSandbox.test.ts` — 47 passed; migration drift
+  (`makemigrations --check --dry-run`) — no changes detected.
+- **Full checks:** backend gate — 1518 passed/39 skipped; frontend full
+  suite rerun independently — 261 files/2823 tests passed. The first
+  combined gate had one unrelated, order-sensitive autosave assertion;
+  its focused rerun was 8/8, and the independent complete frontend rerun
+  passed.
+- **Browser evidence:**
+  `E2E_DOCKER_COMPOSE=true npx playwright test
+  e2e/public3dCameraPlacement742.spec.ts --project=chromium` — 1/1 passed
+  in 11.9s. It covered persisted overlay/background projection, live fake
+  camera state without stream replacement, opacity, contextual tooltip,
+  desktop 1440x900 and mobile 375x812 containment, and Full/Non-Camera ZIP
+  contracts.
+- **QA verdict:** `## QA: PASS`; the acceptance matrix is satisfied. Test
+  corrections addressed invalid assumptions about the editor route,
+  controls being stage-owned, disabled opacity before camera activation,
+  intentional stage overflow for floating controls, and the Non-Camera
+  runtime guard. No product acceptance assertion was removed.
+- **Stage provenance:** implementation and delegated test work used
+  `Codex / GPT-5 / medium`, substituted for rostered Ollama Cloud / kimi-k3
+  because the delegated implementation service was unavailable; QA was
+  performed independently in this session.
+- **GitHub reconciliation:** no top-level issue QA comment could be posted
+  because the connector accepts `pr_number` only; issue #742 was closed as
+  `completed` after the evidence above.
 
 ### #739 transaction ledger — QA PASS
 

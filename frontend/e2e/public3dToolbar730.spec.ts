@@ -147,7 +147,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
           path: testInfo.outputPath(`issue-730-${viewport.name}-download-open.png`),
           fullPage: false,
         });
-        await toolbar.getByRole('button', { name: 'Close download menu' }).click();
+        await toolbar.getByRole('menuitem', { name: 'Close download menu' }).click();
         await anonymousPage.screenshot({
           path: testInfo.outputPath(`issue-730-${viewport.name}-closed.png`),
           fullPage: false,

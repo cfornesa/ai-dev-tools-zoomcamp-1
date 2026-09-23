@@ -28,7 +28,7 @@ handoff status rather than omitting them.
 | 10 | #736 | Generated piece metadata/version layout | — | 2b | CLOSED | `edaf51d` + `8be39c8`; canonical backend 13/13 and regular-route Chromium desktop/mobile scenario passed. |
 | 11 | #737 | 2D piece metadata/version layout | — | 2b | CLOSED | `9fcbb0d` + `5d3f3ad`; serial frontend 2815/2815 and regular-route Chromium scenario passed. |
 | 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | CLOSED | `18a34d7`; focused teardown 2/2 and existing 10-test Chromium export suite passed. |
-| 13 | #742 | Authoring camera mode and export-safe configuration | — | 2b | GROOMED | Discovered during #740 grooming; owns persisted overlay/background mode, centered sizing, and Full/Non-Camera export contract. |
+| 13 | #742 | Authoring camera mode and export-safe configuration | — | 2b | DEPENDENCY-BLOCKED | Contract decision required before migration/API work: recommended persisted `ArtPieceVersion.camera_placement` (`overlay|background`) versus browser-local preference. #740/#743 depend on this choice. |
 | 14 | #743 | AI authoring matrix across all supported engines | #742 | 2a/complex | GROOMED | User-requested matrix for prompt + Persona context across SVG, Three.js, A-Frame, p5.js, c2.js, and c2.js interactive; no duplicate open issue found. |
 | 15 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | #742 | 2a | DEPENDENCY-BLOCKED | Remaining prompt/action, version/publish, canonical consumer, and tooltip workflow waits on #742 for camera mode/export criteria; #741 remains separate for secure embeds. |
 | 16 | #741 | Contextual controls plus secure same-origin-compatible sandboxing | #740 | 2a/security | GROOMED | New discovery follow-up; no duplicate open issue found. |
@@ -171,6 +171,15 @@ status. No next issue begins before the current one is terminal.
 - **Browser evidence:** `E2E_DOCKER_COMPOSE=true npx playwright test e2e/public3dImmersiveCameraOverlay734.spec.ts --project=chromium` — 1/1 passed in 15.9s with fake-camera live feed, centered full-stage video geometry, z-index checks, opacity/mirror controls, Walk/zoom interaction, and desktop/mobile screenshots.
 - **QA verdict:** `## QA: PASS`; the criterion matrix is satisfied. The initial browser test discrepancy was corrected to compare against the measured preview container origin with explicit ±1px tolerance; no acceptance assertion was removed.
 - **GitHub reconciliation:** top-level issue QA comment was unavailable because the connector accepts `pr_number` only; authenticated issue update closed #734 as `completed` after the evidence above.
+
+### #742 transaction ledger — DEPENDENCY-BLOCKED
+
+- **State:** `GROOMED → ENGINEERING → DEPENDENCY-BLOCKED`.
+- **Stage provenance:** grooming/contract analysis `Codex / GPT-5 / medium`, substituted for rostered Ollama Cloud: `yes`; no implementation, QA, or readiness stage ran.
+- **Blocker:** the reference behavior persists `cameraPlacement` (`background | overlay`) per piece version and propagates it through regular, immersive, and Full ZIP runtimes, but this repository has no corresponding model, serializer, public payload, runtime, or export field.
+- **Decision required:** choose additive persisted `ArtPieceVersion.camera_placement` with migration/API/runtime/export support (recommended for parity), or explicitly choose a browser-local preference with the documented cross-browser/version portability trade-off.
+- **Impact:** #740 and #743 remain dependency-blocked for their camera-mode and camera-aware export criteria; #741 remains independent.
+- **GitHub reconciliation:** no issue comment was posted because the connector accepts `pr_number` only; issue #742 remains open pending the owner’s contract decision.
 
 ### #739 transaction ledger — QA PASS
 

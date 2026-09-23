@@ -107,6 +107,31 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+/** The shared login helper still waits for the legacy `/` post-login route.
+ * Publishing/public-viewer coverage uses the current authenticated `/studio`
+ * destination without changing the helper used by the remix/fork scenarios. */
+async function loginViaCurrentUI(page: Page, email: string, password: string): Promise<void> {
+  await page.goto('/accounts/login/');
+  await page.reload();
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  const pageSessionResponse = page.waitForResponse(
+    (response) => response.request().method() === 'GET' && response.url().endsWith('/api/whoami/'),
+    { timeout: 30000 },
+  );
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/studio', { timeout: 30000 }),
+    page.getByRole('button', { name: 'Login', exact: true }).click(),
+  ]);
+  const sessionResponse = await pageSessionResponse;
+  expect(sessionResponse.status()).toBe(200);
+  await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible({
+    timeout: 30000,
+  });
+  const sessionCheck = await page.context().request.get('/api/whoami/');
+  expect(sessionCheck.status()).toBe(200);
+}
+
 /** Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
  * defaults closed -- expand them all right after the editor mounts.
  * Unlike `interactionRuntime.spec.ts`, nothing here ever drives
@@ -152,16 +177,19 @@ async function expectPublicStageChrome(page: Page) {
   await expect(toolbar.getByRole('menuitem', { name: 'Download Non-Camera' })).toBeVisible();
   await toolbar.getByRole('button', { name: 'Open download menu' }).click();
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
-  const layout = await toolbar.getByRole('group', { name: 'Piece actions' }).evaluate((element) => {
-    const style = getComputedStyle(element);
-    const box = element.getBoundingClientRect();
-    return {
-      display: style.display,
-      flexDirection: style.flexDirection,
-      width: box.width,
-      height: box.height,
-    };
-  });
+  const layout = await toolbar
+    .getByRole('dialog', { name: 'Piece actions' })
+    .locator(".piece-stage-command-card > [role='group']")
+    .evaluate((element) => {
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      return {
+        display: style.display,
+        flexDirection: style.flexDirection,
+        width: box.width,
+        height: box.height,
+      };
+    });
   expect(layout.display).toBe('flex');
   // Issue #444: the group is now the vertical list of rows inside the
   // "Piece actions" modal dialog (same design manual2dStageChrome.spec.ts
@@ -271,7 +299,7 @@ test.describe('Publishing', () => {
     page,
     context,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page); // version 1, still-default title/description
 
     // Add a distinguishing shape and save version 2, so "the current
@@ -333,7 +361,7 @@ test.describe('Publishing', () => {
     //    alongside the rendered page).
     await anonPage.goto(`/p/${projectId}`);
     await expect(
-      anonPage.getByRole('heading', { level: 2, name: 'A meaningful public title' }),
+      anonPage.getByRole('heading', { level: 1, name: 'A meaningful public title' }),
     ).toBeVisible();
     await expect(anonPage.getByTestId('public-scene-canvas')).toBeVisible();
 
@@ -352,7 +380,7 @@ test.describe('Publishing', () => {
     page,
     context,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page); // version 1, still-default title/description
 
     // Type a meaningful title through the header's inline editor and a
@@ -410,7 +438,7 @@ test.describe('Publishing', () => {
 
     await anonPage.goto(`/p/${projectId}`);
     await expect(
-      anonPage.getByRole('heading', { level: 2, name: 'Typed straight into Publish' }),
+      anonPage.getByRole('heading', { level: 1, name: 'Typed straight into Publish' }),
     ).toBeVisible();
 
     await anonContext.close();
@@ -420,7 +448,7 @@ test.describe('Publishing', () => {
     page,
     context,
   }) => {
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createBlankProjectViaUI(page);
     await saveMeaningfulMetadata(page, projectId, {
       title: 'Unpublish-me project',
@@ -631,7 +659,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     fixtures = requireE2EFixtures();
     const context = await browser.newContext();
     const page = await context.newPage();
-    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
 
     publicProjectId = await createBlankProjectViaUI(page);
     // Task 113 (issue #144): a circle and a rectangle, each with a
@@ -692,7 +720,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       await expectPublicStageChrome(anonPage);
       await openCameraAndDemoControls(anonPage);
       await expect(
-        anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
+        anonPage.getByRole('heading', { level: 1, name: 'Anonymous viewer fixture project' }),
       ).toBeVisible();
 
       // CameraControl never auto-requests the camera: its status paragraph
@@ -876,7 +904,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       await anonPage.goto(`/p/${publicProjectId}`);
       await openCameraAndDemoControls(anonPage);
       await expect(
-        anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
+        anonPage.getByRole('heading', { level: 1, name: 'Anonymous viewer fixture project' }),
       ).toBeVisible();
 
       const canvas = anonPage.getByTestId('public-scene-canvas').locator('canvas');
@@ -1004,7 +1032,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       await openCameraAndDemoControls(anonPage);
 
       await expect(
-        anonPage.getByRole('heading', { level: 2, name: 'Anonymous viewer fixture project' }),
+        anonPage.getByRole('heading', { level: 1, name: 'Anonymous viewer fixture project' }),
       ).toBeVisible();
       await expect(anonPage.getByRole('alert')).toContainText("Couldn't render the preview");
 

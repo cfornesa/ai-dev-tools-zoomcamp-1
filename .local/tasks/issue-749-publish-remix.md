@@ -21,24 +21,35 @@ routes, current public headings, and stage layout.
 
 ## Evidence and pending items
 
-- **Status:** PROPOSED
-- **Evidence so far:** Host-permission Chromium reproduced publishing/public
-  viewer failures; draw.io and remix are tracked separately.
-- **Pending verification:** Root-cause classification and focused rerun.
-- **Next action:** Process after the responsive-shell child reached its
-  terminal state; do not start sibling transactions in parallel.
+- **Status:** BLOCKED (implemented partially; public-viewer fixture setup
+  remains unverified)
+- **Evidence so far:** The scoped Chromium run passes the three publishing and
+  unpublishing scenarios. The public-viewer fixture setup reproducibly leaves
+  the second fixture `Draft (private)` after `saveMeaningfulMetadata()` and
+  `confirmPublish()`, so its viewer cases cannot start.
+- **Pending verification:** Resolve the fixture/publish transition, then rerun
+  the public-viewer cases at the named routes and viewports.
+- **Next action:** Owner/next engineer should inspect the second-fixture
+  publish transition; do not close this child or #749 until the public-viewer
+  criteria pass.
 - **Durable memory link:** None.
 
 ## Transaction ledger
 
-- **Phase:** GROOMED
+- **Phase:** BLOCKED
 - **Issue owner / current transaction:** #749 child: publish/remix
-- **Implementation commit:** Pending
-- **Focused checks / full checks:** Pending
-- **QA matrix:** Pending
+- **Implementation commit:** Pending until the blocker is resolved.
+- **Focused checks / full checks:** `publishingAndRemix.spec.ts` focused
+  publish/unpublish selection — 3 passed; public-viewer setup — blocked in
+  `beforeAll` at `confirmPublish()`; full frontend checks were previously green
+  before this child.
+- **QA matrix:** PARTIAL PASS — test-only harness/heading/layout updates pass
+  the three core publishing scenarios; public-viewer criteria BLOCKED by the
+  fixture transition. Stage 4 QA is not terminal.
 - **GitHub closure evidence:** GitHub issue/comment connector unavailable in
-  this session; local child record is the reconciled handoff.
-- **New gaps discovered:** None beyond the named #749 evidence.
+  this session; local child record is the blocked handoff.
+- **New gaps discovered:** Fixture publish transition needs a follow-up
+  implementation/triage pass within this child; no unrelated work absorbed.
 
 ## Discovery gate
 
@@ -49,7 +60,8 @@ routes, current public headings, and stage layout.
 
 ## Constraints
 
-- Candidate file is `frontend/e2e/publishingAndRemix.spec.ts`
+- Candidate file is `frontend/e2e/publishingAndRemix.spec.ts`; current diff is
+  limited to that file.
   after grooming identifies exact drift.
 - No dependencies, routes, APIs, or product behavior may change without a new
   scope decision.

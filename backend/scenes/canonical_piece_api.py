@@ -108,9 +108,7 @@ class PublicPieceBySlugView(APIView):
             # Prefer the owner's working copy when public and private rows
             # intentionally share one canonical slug.
             art_piece = (
-                art_piece_query.filter(
-                    status__in=[ArtPiece.Status.DRAFT, ArtPiece.Status.ARCHIVED]
-                )
+                art_piece_query.filter(status__in=[ArtPiece.Status.DRAFT, ArtPiece.Status.ARCHIVED])
                 .order_by("-updated_at", "-id")
                 .first()
                 or art_piece_query.filter(status=ArtPiece.Status.PUBLISHED)

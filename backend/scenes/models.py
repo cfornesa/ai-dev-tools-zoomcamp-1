@@ -2020,10 +2020,24 @@ class ArtPiece(models.Model):
 
 
 class ArtPieceVersion(models.Model):
+    class CameraPlacement(models.TextChoices):
+        OVERLAY = "overlay", "Overlay"
+        BACKGROUND = "background", "Background"
+
     piece = models.ForeignKey(ArtPiece, on_delete=models.CASCADE, related_name="versions")
     sequence = models.PositiveIntegerField()
     source = models.TextField(max_length=1_000_000)
     capabilities = models.JSONField(default=dict)
+    # Nullable for backward compatibility with versions created before the
+    # persisted camera-composition contract. Runtime resolution treats NULL
+    # as the legacy overlay behavior; camera frames never enter this model.
+    camera_placement = models.CharField(  # noqa: DJ001 - NULL preserves legacy version semantics.
+        max_length=16,
+        choices=CameraPlacement.choices,
+        null=True,
+        blank=True,
+        default=None,
+    )
     generation_metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -2034,6 +2048,11 @@ class ArtPieceVersion(models.Model):
             models.CheckConstraint(
                 condition=models.Q(sequence__gte=1), name="art_piece_sequence_gte_1"
             ),
+            models.CheckConstraint(
+                condition=models.Q(camera_placement__isnull=True)
+                | models.Q(camera_placement__in=["overlay", "background"]),
+                name="art_piece_camera_placement_valid",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -2042,7 +2061,14 @@ class ArtPieceVersion(models.Model):
     def save(self, *args, **kwargs):
         if self.pk is not None:
             previous = type(self).objects.get(pk=self.pk)
-            for field in ("piece_id", "sequence", "source", "capabilities", "generation_metadata"):
+            for field in (
+                "piece_id",
+                "sequence",
+                "source",
+                "capabilities",
+                "camera_placement",
+                "generation_metadata",
+            ):
                 if getattr(previous, field) != getattr(self, field):
                     raise ValidationError("Art-piece versions are immutable.")
         super().save(*args, **kwargs)

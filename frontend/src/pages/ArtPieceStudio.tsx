@@ -8,6 +8,7 @@ import {
   updateArtPiece,
   type ArtPiece,
   type ArtPieceCapabilitySet,
+  type CameraPlacement,
   type ArtPieceErrorBody,
   type ArtPieceLibrary,
 } from '../api/artPieces';
@@ -108,6 +109,7 @@ function ArtPieceStudio() {
   // every capability starts unselected, for every new piece and every
   // fresh generation.
   const [capabilities, setCapabilities] = useState<ArtPieceCapabilitySet>({});
+  const [cameraPlacement, setCameraPlacement] = useState<CameraPlacement>('overlay');
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -217,6 +219,7 @@ function ArtPieceStudio() {
         engine: resultLibrary,
         source: code,
         capabilities: sanitizeCapabilities(capabilities, resultLibrary),
+        camera_placement: cameraPlacement,
       });
       setSavedPiece(piece);
       // Issue #438: capture a real thumbnail from the preview iframe
@@ -367,6 +370,20 @@ function ArtPieceStudio() {
                   </label>
                 );
               })}
+            </fieldset>
+          )}
+          {phase === 'ready' && !savedPiece && capabilities.camera_view === true && (
+            <fieldset data-testid="art-piece-camera-placement">
+              <legend>Camera composition</legend>
+              <label htmlFor="art-piece-camera-placement-select">Camera feed placement</label>
+              <select
+                id="art-piece-camera-placement-select"
+                value={cameraPlacement}
+                onChange={(event) => setCameraPlacement(event.target.value as CameraPlacement)}
+              >
+                <option value="overlay">Overlay artwork</option>
+                <option value="background">Behind artwork</option>
+              </select>
             </fieldset>
           )}
           {phase === 'ready' && (

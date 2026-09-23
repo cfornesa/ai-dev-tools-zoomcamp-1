@@ -138,11 +138,15 @@ export type ArtPieceCapabilitySet = Partial<
   >
 >;
 
+export type CameraPlacement = 'overlay' | 'background';
+
 export type ArtPieceVersion = {
   id: number;
   sequence: number;
   source: string;
   capabilities: ArtPieceCapabilitySet;
+  /** Nullable for legacy versions; viewers resolve null to overlay. */
+  camera_placement?: CameraPlacement | null;
   thumbnail_url: string;
   thumbnail_is_fallback: boolean;
   created_at: string;
@@ -266,6 +270,7 @@ export function createArtPiece(input: {
   engine: ArtPieceLibrary;
   source: string;
   capabilities?: ArtPieceCapabilitySet;
+  camera_placement?: CameraPlacement | null;
 }): Promise<ArtPiece> {
   return apiFetch<ArtPiece>('/api/art-pieces/', { method: 'POST', body: JSON.stringify(input) });
 }
@@ -312,7 +317,11 @@ export function listArtPieceVersions(publicId: string): Promise<ArtPieceVersion[
  * version, and its `source`, is retained unchanged. */
 export function createArtPieceVersion(
   publicId: string,
-  input: { source: string; capabilities?: ArtPieceCapabilitySet },
+  input: {
+    source: string;
+    capabilities?: ArtPieceCapabilitySet;
+    camera_placement?: CameraPlacement | null;
+  },
 ): Promise<ArtPieceVersion> {
   return apiFetch<ArtPieceVersion>(`/api/art-pieces/${publicId}/versions/`, {
     method: 'POST',

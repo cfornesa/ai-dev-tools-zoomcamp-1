@@ -28,10 +28,12 @@ handoff status rather than omitting them.
 | 10 | #736 | Generated piece metadata/version layout | — | 2b | CLOSED | `edaf51d` + `8be39c8`; canonical backend 13/13 and regular-route Chromium desktop/mobile scenario passed. |
 | 11 | #737 | 2D piece metadata/version layout | — | 2b | CLOSED | `9fcbb0d` + `5d3f3ad`; serial frontend 2815/2815 and regular-route Chromium scenario passed. |
 | 12 | #739 | Export E2E teardown tolerates browser launch failure | #735 | 2a | CLOSED | `18a34d7`; focused teardown 2/2 and existing 10-test Chromium export suite passed. |
-| 13 | #742 | Authoring camera mode and export-safe configuration | — | 2b | DEPENDENCY-BLOCKED | Contract decision required before migration/API work: recommended persisted `ArtPieceVersion.camera_placement` (`overlay|background`) versus browser-local preference. #740/#743 depend on this choice. |
-| 14 | #743 | AI authoring matrix across all supported engines | #742 | 2a/complex | GROOMED | User-requested matrix for prompt + Persona context across SVG, Three.js, A-Frame, p5.js, c2.js, and c2.js interactive; no duplicate open issue found. |
-| 15 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | #742 | 2a | DEPENDENCY-BLOCKED | Remaining prompt/action, version/publish, canonical consumer, and tooltip workflow waits on #742 for camera mode/export criteria; #741 remains separate for secure embeds. |
-| 16 | #741 | Contextual controls plus secure same-origin-compatible sandboxing | #740 | 2a/security | GROOMED | New discovery follow-up; no duplicate open issue found. |
+| 13 | #742 | Authoring camera mode and export-safe configuration | — | 2b | ENGINEERING | Owner approved option 1: additive persisted `ArtPieceVersion.camera_placement` (`overlay|background`) with API validation/projection, viewer/export propagation, and rollback plan. |
+| 14 | #744 | Public piece surface contract matrix | — | 2a | GROOMED | User-requested inventory of regular, immersive, embeds, collections, gallery, direct links, and downloads; no duplicate open issue found. |
+| 15 | #745 | Private canonical viewing and slug collision isolation | — | 2b | GROOMED | User-requested owner-private viewing plus public/private slug reuse without leakage; no duplicate open issue found. |
+| 16 | #743 | AI authoring matrix across all supported engines | #742 | 2a/complex | DEPENDENCY-BLOCKED | User-requested matrix for prompt + Persona context across SVG, Three.js, A-Frame, p5.js, c2.js, and c2.js interactive; waits on #742 camera/export contract. |
+| 17 | #740 | End-to-end authoring workflow for authored 2D/3D pieces | #742 | 2a | DEPENDENCY-BLOCKED | Remaining prompt/action, version/publish, canonical consumer, and tooltip workflow waits on #742 for camera mode/export criteria; #741 remains separate for secure embeds. |
+| 18 | #741 | Contextual controls plus secure same-origin-compatible sandboxing | #740 | 2a/security | GROOMED | New discovery follow-up; no duplicate open issue found. |
 
 ## Transaction ledger
 
@@ -180,6 +182,28 @@ status. No next issue begins before the current one is terminal.
 - **Decision required:** choose additive persisted `ArtPieceVersion.camera_placement` with migration/API/runtime/export support (recommended for parity), or explicitly choose a browser-local preference with the documented cross-browser/version portability trade-off.
 - **Impact:** #740 and #743 remain dependency-blocked for their camera-mode and camera-aware export criteria; #741 remains independent.
 - **GitHub reconciliation:** no issue comment was posted because the connector accepts `pr_number` only; issue #742 remains open pending the owner’s contract decision.
+
+### #742 transaction ledger — approved option 1 implementation
+
+- **State:** `ENGINEERING`; implementation remains bounded to #742. #740,
+  #741, and #743 are not modified.
+- **Decision:** owner approved a nullable persisted
+  `ArtPieceVersion.camera_placement` with `overlay|background` validation,
+  `NULL` resolving to legacy overlay behavior, API projection, viewer/runtime
+  propagation, and export preservation.
+- **Migration diff:** additive `0090_artpieceversion_camera_placement` adds a
+  nullable `VARCHAR(16)` column plus `art_piece_camera_placement_valid` check;
+  no backfill is run. Existing rows remain `NULL` and therefore overlay by
+  runtime default.
+- **Rollback plan:** on a disposable/local database only, migrate back to
+  `0089_database_defaults_for_shared_palettes`, which removes the check and
+  column and discards any stored placement values. No production/shared DB
+  migration or write is authorized in this issue.
+- **Security boundary:** only the enum value crosses the API/export contract;
+  camera permissions, streams, frames, and secrets remain browser-local.
+- **Stage provenance:** implementation `Codex / GPT-5 / medium`, substituted
+  for rostered Ollama Cloud / kimi-k3 because the delegated implementation
+  tool was unavailable; QA pending; issue remains open.
 
 ### #739 transaction ledger — QA PASS
 

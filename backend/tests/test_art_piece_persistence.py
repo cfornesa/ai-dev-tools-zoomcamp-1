@@ -82,6 +82,50 @@ def test_create_defaults_to_draft_and_persists_fallback_thumbnail(client):
     assert piece.current_version.thumbnail.is_fallback is True
 
 
+def test_camera_placement_is_nullable_overlay_compatible_and_projected(client):
+    response = client.post(
+        "/api/art-pieces/",
+        {
+            "prompt": "camera placement",
+            "engine": "threejs",
+            "source": "THREE.foo();",
+            "title": "Placement",
+            "description": "A placement test",
+            "capabilities": {"camera_view": True},
+            "camera_placement": "background",
+        },
+        format="json",
+    )
+    assert response.status_code == 201
+    assert response.data["current_version"]["camera_placement"] == "background"
+
+    public_id = response.data["public_id"]
+    version = client.post(
+        f"/api/art-pieces/{public_id}/versions/",
+        {"source": "THREE.foo();"},
+        format="json",
+    )
+    assert version.status_code == 201
+    assert version.data["camera_placement"] is None
+
+
+def test_camera_placement_rejects_unknown_values(client):
+    response = client.post(
+        "/api/art-pieces/",
+        {
+            "prompt": "invalid placement",
+            "engine": "svg",
+            "source": "<svg />",
+            "title": "Invalid",
+            "description": "An invalid placement",
+            "camera_placement": "sideways",
+        },
+        format="json",
+    )
+    assert response.status_code == 400
+    assert "camera_placement" in response.data
+
+
 def test_custom_slug_is_normalized_and_can_be_updated_without_new_version(client):
     response = client.post(
         "/api/art-pieces/",

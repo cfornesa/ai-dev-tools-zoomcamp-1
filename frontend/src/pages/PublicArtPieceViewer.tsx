@@ -253,7 +253,10 @@ export default function PublicArtPieceViewer({
           style={
             {
               '--art-piece-aspect-ratio': aspectRatio,
-              background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
+              background:
+                piece.current_version.camera_placement === 'background'
+                  ? 'transparent'
+                  : 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
             } as CSSProperties
           }
         >
@@ -286,6 +289,8 @@ export default function PublicArtPieceViewer({
               width: '100%',
               height: '100%',
               border: 'none',
+              position: 'relative',
+              zIndex: 1,
               background: 'color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827))',
             }}
           />
@@ -300,6 +305,7 @@ export default function PublicArtPieceViewer({
             }
             library={piece.engine}
             source={piece.current_version.source}
+            cameraPlacement={piece.current_version.camera_placement}
             title={piece.title}
             toolbarPortalTarget={toolbarHost}
             fullscreenToolbarPortalTarget={fullscreenToolbarHost}

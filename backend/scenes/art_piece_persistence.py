@@ -189,6 +189,7 @@ def _version_data(version: ArtPieceVersion, *, public: bool):
         "sequence": version.sequence,
         "created_at": version.created_at,
         "capabilities": version.capabilities,
+        "camera_placement": version.camera_placement,
         "thumbnail_url": (
             f"/api/public/art-pieces/{version.piece.public_id}/thumbnail.png"
             if public
@@ -242,6 +243,12 @@ class ArtPieceCreateSerializer(serializers.Serializer):
     source = serializers.CharField(max_length=1_000_000)
     capabilities = serializers.DictField(required=False, default=dict)
     generation_metadata = serializers.DictField(required=False, default=dict)
+    camera_placement = serializers.ChoiceField(
+        choices=ArtPieceVersion.CameraPlacement.values,
+        required=False,
+        allow_null=True,
+        default=None,
+    )
     seo_config = serializers.DictField(required=False, default=dict)
     public_slug = serializers.CharField(
         max_length=220, required=False, allow_blank=True, default=""
@@ -291,6 +298,12 @@ class ArtPieceVersionSerializer(serializers.Serializer):
     source = serializers.CharField(max_length=1_000_000)
     capabilities = serializers.DictField(required=False, default=dict)
     generation_metadata = serializers.DictField(required=False, default=dict)
+    camera_placement = serializers.ChoiceField(
+        choices=ArtPieceVersion.CameraPlacement.values,
+        required=False,
+        allow_null=True,
+        default=None,
+    )
 
     def validate_capabilities(self, value):
         return _capabilities(value)
@@ -342,6 +355,7 @@ class ArtPieceListCreateView(APIView):
                     sequence=1,
                     source=values["source"],
                     capabilities=values["capabilities"],
+                    camera_placement=values["camera_placement"],
                     generation_metadata=values["generation_metadata"],
                 )
                 piece.current_version = version

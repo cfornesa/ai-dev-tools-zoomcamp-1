@@ -1,5 +1,28 @@
 # Public gallery API contract
 
+## Art-piece camera placement (#742)
+
+`ArtPieceVersion` responses now include the additive `camera_placement` field
+when the version is returned through the authenticated owner, public, or
+canonical piece projections. It is either `"overlay"`, `"background"`, or
+`null`. `null` is the backward-compatible legacy/default value and resolves to
+`"overlay"` in the current runtime; it does not mean that camera capture is
+enabled. Camera permission, streams, frames, device identifiers, and other
+camera data remain browser-local and are never accepted or returned by the
+backend.
+
+Version-create requests may include `camera_placement` with the same two
+values. Omitting it stores `null` and preserves the legacy overlay behavior.
+Any other value is rejected as a request validation error. Existing immutable
+version semantics apply: placement is fixed when the version is created and
+cannot be patched later; a new version must be created to change it.
+
+The frontend resolves `null` to `"overlay"` for regular and immersive viewers
+and for the Full ZIP runtime. The selected value is propagated as runtime
+configuration only. Full ZIP exports preserve the resolved placement and
+Non-Camera exports omit camera runtime/configuration entirely; neither export
+variant contains a camera frame or secret.
+
 ## Public 3D piece version summaries (#731)
 
 The anonymous public 3D piece payloads returned by

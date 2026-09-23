@@ -1354,3 +1354,15 @@ smoke script's health check passed, while its already-tracked share-metadata
 backend diagnostic still reports `TypeError: fetch failed`; that separate
 diagnostic is not attributed to this outage. Evidence was posted to #727 and
 the issue is ready to close.
+
+## 2026-09-23 — implementation references and Replit host confirmed
+
+The owner confirmed that piece-related work should use the local
+`augment-humankind-react-node` repository as the React implementation
+reference and the local `augment-humankind` repository as the functional
+source of truth, including social sharing and prompt-to-product/output
+workflows. The owner also identified `replit.com/@fornesus/creatrweb` as the
+Replit project hosting this application. Its Git tab is linked to
+`cfornesa/ai-dev-tools-zoomcamp-1`; a sync attempt after the reviewed push
+reported `MERGE_CONFLICT`, so publication remains blocked until that workspace
+state is reconciled and the exact reviewed commit is verified.

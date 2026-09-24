@@ -1390,3 +1390,7 @@ The owner confirmed animation kinds rotate, orbit, oscillate, and pulse (#783). 
 ## 2026-09-24 — Contextual selection UI for layers (#781–#783)
 
 The owner approved a photo-editor-style interaction model for drawing planes and other selected objects: on-canvas handles (proportional scaling by default), a small anchored floating toolbar for common actions with one "More" overflow, an on-demand precise-values panel, nothing shown when nothing is selected, and never a modal dialog. Touch docks the toolbar at the bottom; full keyboard access required. Recorded as acceptance on #781, #782, #783.
+
+## 2026-09-24 — Test cadence for the backlog session
+
+The owner reported that a full check historically took hours. In this environment `make check` measures about 4-7 minutes, but to keep the session fast each issue runs focused unit tests, lint, typecheck, and only the Playwright specs for its surface; the full `make check` runs per cluster of related issues and at production readiness. Pre-existing e2e drift is repaired inside the issue that owns the surface, not by running the whole matrix.

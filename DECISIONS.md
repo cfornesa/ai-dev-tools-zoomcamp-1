@@ -1446,3 +1446,11 @@ The authorized production reference import was run exactly once. Replit logged t
 ## 2026-09-24 — Browser evidence boundary for #807
 
 #807's first-party cosmic star field implementation and focused tests are committed as `d0819d0`. Compose preflight and local checks pass, but the required Playwright Chromium launch fails on this macOS host at the OS Mach-port permission boundary; the issue remains open until a real browser runner supplies the two viewport screenshots and animation-delta evidence.
+
+## 2026-09-24 — Immersive 3D presentation identity correction (#803)
+
+Owner-authorized Chrome inspection reproduced the reported production mismatch on `/users/@cfornesa/immersive/untitled-3d-scene-3`: the preview/control region appeared before the title and description, with insufficient surrounding padding. Because the existing #803 contract covers the same 3D regular/immersive/embed identity boundary, no duplicate issue was created. Commit `793f0e8` moves the descriptive identity above the stage, keeps stage controls with the stage, places actions/version details below, and adds focused plus E2E-order coverage. Local focused checks pass; the required Playwright browser matrix remains blocked by the macOS Mach-port launch failure, so #803 stays open and unpublished.
+
+## 2026-09-24 — AI generation/editing distillation; work restricted to task-distillation
+
+Owner restricted this session to task-distillation only. Added #809-#816 (new only). Interrupted #807 implementation wrote no files (tool rejected); tree clean. Star-field issues #807/#798 remain queued.

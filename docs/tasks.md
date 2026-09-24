@@ -1,5 +1,15 @@
 # AugmentrART Backlog
 
+## 2026-09-24 — active follow-up batch (#747, #748, #788, #798–#808)
+
+The current authoritative transaction ledger is
+`.local/tasks/backlog-session-2026-09-24.md`. #747 and #808 are closed after
+their QA PASS comments. #803 has a local implementation commit (`793f0e8`)
+and remains open because the required Playwright browser matrix is blocked by
+the host's Chromium Mach-port launch failure. #748, #788, and the dependent
+#798–#806 verification chain remain open with their production/browser
+evidence boundaries recorded in the ledger.
+
 ## 2026-09-22 — shared parity theme system (#724 → #725)
 
 The owner selected the shared parity theme-system direction after comparison
@@ -23990,3 +24000,7 @@ Finding: scene3d has no animation channel and no vector content; both are new co
 ## Addendum 5 — external-repo parity (2026-09-24)
 
 See `docs/distillation-2026-09-24-external-repo-parity.md`. Issues #807, #798–#806. Next: #807.
+
+## Addendum 6 — AI generation/editing (2026-09-24)
+
+See `docs/distillation-2026-09-24-ai-generation-editing.md`. Issues #809-#816. Next: #809. Implementation is paused pending owner go-ahead (distillation-only instruction).

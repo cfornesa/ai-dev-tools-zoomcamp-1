@@ -33,3 +33,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #779 | CLOSED | 99f07a5 | vitest 170; playwright drawingPlane3d threejs | PASS | closed | local |
 | #780 | CLOSED | 5ec915a | vitest 9; playwright drawingPlane3d aframe | PASS | closed | local |
 | #783 | CLOSED | afc6636 | vitest; playwright objectAnimation3d 4 | PASS | closed | local; no migration |
+| #775 | CLOSED | PENDING | vitest 2896 (1 load flake, rerun green); playwright inkLayer2d 2 | PASS | closed | local; no migration |

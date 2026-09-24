@@ -8,6 +8,8 @@ import {
   type SetStateAction,
 } from 'react';
 
+import { applyInkStrokes } from '../ink/sceneInk';
+import type { DrawingShape } from './scene3dTypes';
 import type { SceneDocument } from '../api/projects';
 import {
   addCardToScene,
@@ -601,6 +603,19 @@ export function useSceneEditor(
       return true;
     },
     [workingCopy],
+  );
+
+  // Issue #775: confirms an ink session -- replaces the scene's one ink
+  // layer with the drawn strokes as a single undoable step.
+  const commitInkStrokes = useCallback(
+    (strokes: DrawingShape[]): { ok: true } | { ok: false; error: string } => {
+      if (!workingCopy) return { ok: false, error: 'No scene loaded.' };
+      const result = applyInkStrokes(workingCopy, strokes);
+      if (!result.ok) return result;
+      if (result.scene !== workingCopy) commit(result.scene);
+      return { ok: true };
+    },
+    [workingCopy, commit],
   );
 
   const addShape = useCallback(
@@ -1651,6 +1666,7 @@ export function useSceneEditor(
     toggleMultiSelect,
     clearMultiSelect,
     outlineError,
+    commitInkStrokes,
     outlineStatus,
     addLayer,
     renameLayer,

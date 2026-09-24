@@ -25,7 +25,7 @@ import {
 import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
-import PieceStageToolbar from '../components/PieceStageToolbar';
+import PieceStageToolbar, { usePieceStageMenu } from '../components/PieceStageToolbar';
 import StageControlsPopover from '../components/StageControlsPopover';
 import { TWO_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
@@ -101,6 +101,16 @@ import {
   useJsonCodeSync,
   type JsonCodeSync,
 } from './jsonCodeSync';
+import PieceStageIcon from '../components/PieceStageIcon';
+import { InkEditor } from '../ink/InkEditor';
+import {
+  INK_MAX_PATH_POINTS,
+  INK_MAX_SHAPES,
+  readInkStrokes,
+  hasInkLayer,
+  applyInkStrokes,
+  inkStrokeBudget,
+} from '../ink/sceneInk';
 import { createPreviewTrackingSource } from './previewTrackingSource';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 import { useFullscreenToggle } from './useFullscreenToggle';
@@ -1028,6 +1038,41 @@ function localizePreviewError(message: string): { pointer: string; detail: strin
  * `beginDrag`, so the drag keeps tracking the pointer even outside the
  * canvas element's own bounds and Escape can cancel it from anywhere.
  */
+function InkModeButton({
+  hasInk,
+  active,
+  disabled,
+  onBegin,
+}: {
+  hasInk: boolean;
+  active: boolean;
+  disabled: boolean;
+  onBegin: () => void;
+}) {
+  const { closeMenu } = usePieceStageMenu();
+  const label = hasInk ? 'Edit ink layer' : 'Draw ink layer';
+  return (
+    <button
+      type="button"
+      className="piece-stage-icon-button"
+      data-testid="ink-mode-button"
+      aria-label={label}
+      aria-pressed={active}
+      disabled={active || disabled}
+      onClick={() => {
+        closeMenu();
+        onBegin();
+      }}
+    >
+      <PieceStageIcon name="ink" />
+      <span className="piece-stage-action-label">{label}</span>
+      <span className="piece-stage-tooltip" role="tooltip">
+        {label}
+      </span>
+    </button>
+  );
+}
+
 function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = initialProjectId ?? routeId;
@@ -1594,6 +1639,29 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // would just leave a stale highlight behind once the gesture ends).
   const [hoveredShapeId, setHoveredShapeId] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+
+  // Issue #775: Ink mode. While `inkSession` is set the live stage is hidden and a frozen snapshot of the
+  // scene (without its ink layer) sits under the ink editor, so nothing animates or gets dragged by accident.
+  const [inkSession, setInkSession] = useState<{ snapshotUrl: string | null } | null>(null);
+  const [inkError, setInkError] = useState<string | null>(null);
+  const beginInk = () => {
+    const scene = workingCopyRef.current;
+    let snapshotUrl: string | null = null;
+    try {
+      const preview = previewRef.current;
+      if (preview && scene) {
+        const bare = applyInkStrokes(scene, []);
+        if (bare.ok) {
+          preview.render(bare.scene, [], [], false);
+          snapshotUrl = preview.getCanvasElement()?.toDataURL('image/png') ?? null;
+        }
+      }
+    } catch {
+      snapshotUrl = null;
+    }
+    setInkError(null);
+    setInkSession({ snapshotUrl });
+  };
   const [cameraOverlayStatus, setCameraOverlayStatus] = useState<string | null>(null);
 
   // Issue #159: Visual/Code is a sub-toggle inside the Preview panel
@@ -3344,6 +3412,36 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
             </div>
           </div>
           <div className="piece-stage-shell" data-testid="editor-piece-stage-shell">
+            {inkSession && (
+              <InkEditor
+                width={canvasWidth}
+                height={canvasHeight}
+                initialShapes={readInkStrokes(workingCopy ?? {})}
+                snapshotUrl={inkSession.snapshotUrl}
+                maxPointsPerStroke={INK_MAX_PATH_POINTS}
+                maxStrokes={inkStrokeBudget(workingCopy ?? {}, INK_MAX_SHAPES)}
+                strokeIdPrefix="ink"
+                onCancel={() => {
+                  setInkSession(null);
+                  setInkError(null);
+                  redrawPreview();
+                }}
+                onConfirm={(strokes) => {
+                  const result = sceneEditor.commitInkStrokes(strokes);
+                  if (result.ok) {
+                    setInkSession(null);
+                    setInkError(null);
+                  } else {
+                    setInkError(result.error);
+                  }
+                }}
+              />
+            )}
+            {inkError && (
+              <p role="alert" data-testid="ink-save-error" className="ink-editor-message">
+                {inkError}
+              </p>
+            )}
             {/* Issue #156: the fixed-size, `overflow: hidden` (once zoomed)
               clipping viewport panning happens inside. Carries the exact
               same responsive width/aspect-ratio sizing `.editor-scene-
@@ -3376,7 +3474,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                 // vertical offset, escaping this viewport's box entirely and
                 // covering unrelated page content above the Preview panel.
                 // Flexbox centering has no such percentage-resolution step.
-                display: 'flex',
+                display: inkSession ? 'none' : 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -3878,6 +3976,12 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   }
                   editorControls={
                     <>
+                      <InkModeButton
+                        hasInk={hasInkLayer(workingCopy ?? {})}
+                        active={inkSession !== null}
+                        disabled={!workingCopy}
+                        onBegin={beginInk}
+                      />
                       {id && auth.status === 'signed-in' && (
                         <ProjectMediaLibraryPanel
                           projectId={id}

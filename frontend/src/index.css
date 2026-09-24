@@ -6193,3 +6193,101 @@ select.ai-proposal-field-full-width {
     max-width: none;
   }
 }
+
+/* Issues #775/#781: shared ink editor (frozen drawing surface + contextual tool bar). */
+.ink-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.ink-editor-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+.ink-editor-bar button {
+  min-height: 36px;
+  min-width: 36px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.ink-editor-bar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.ink-editor-bar .ink-tool.is-active,
+.ink-editor-bar .ink-confirm {
+  background: var(--accent, #4f46e5);
+  border-color: var(--accent, #4f46e5);
+  color: #fff;
+}
+.ink-editor-tools {
+  display: inline-flex;
+  gap: 4px;
+}
+.ink-editor-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+.ink-editor-frozen {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.14);
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.ink-editor-spacer {
+  flex: 1 1 0;
+}
+.ink-editor-message {
+  margin: 0;
+  color: #b91c1c;
+}
+.ink-editor-surface {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+.ink-editor-snapshot,
+.ink-editor-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ink-editor-snapshot {
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+}
+.ink-editor-canvas {
+  touch-action: none;
+  cursor: crosshair;
+}
+@media (max-width: 480px) {
+  .ink-editor-bar {
+    gap: 4px;
+    padding: 4px;
+  }
+  .ink-editor-field {
+    font-size: 0.75rem;
+  }
+}

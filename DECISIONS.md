@@ -1394,3 +1394,7 @@ The owner approved a photo-editor-style interaction model for drawing planes and
 ## 2026-09-24 — Test cadence for the backlog session
 
 The owner reported that a full check historically took hours. In this environment `make check` measures about 4-7 minutes, but to keep the session fast each issue runs focused unit tests, lint, typecheck, and only the Playwright specs for its surface; the full `make check` runs per cluster of related issues and at production readiness. Pre-existing e2e drift is repaired inside the issue that owns the surface, not by running the whole matrix.
+
+## 2026-09-24 — "One ink layer" in structured 2D is one ink group (#775)
+
+The scene model enforces one shape per layer (`duplicateLayerAssignment`, #142), so "many strokes in one ink layer" is realised as one reserved group (`ink-group`, named "Ink") whose children are the stroke `path` shapes; each stroke keeps the layer the invariant requires ("Ink stroke N"). This needs no schema change, no new shape type, and no migration, and every existing renderer, runtime, exporter, and thumbnail path already draws it. Trade-off: the layer panel lists one row per stroke under the Ink group, and the scene's shape/layer limits (200) bound the stroke count. The shared ink core (`frontend/src/ink/`: geometry, history, `InkEditor`) is reused by the 3D drawing-plane Draw mode (#781). Alternative rejected: a new `ink` shape type (about 25 touchpoints across three standalone runtimes, thumbnails, and both AI providers) — revisit only if the per-stroke layer rows prove unusable.

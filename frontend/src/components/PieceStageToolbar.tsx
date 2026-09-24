@@ -1,5 +1,5 @@
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react';
 
 import { type PieceStageCapabilities, TWO_D_STAGE_CAPABILITIES } from './pieceStageCapabilities';
 import PieceStageIcon from './PieceStageIcon';
@@ -25,6 +25,13 @@ export type PieceStageToolbarProps = {
    * viewers retain the menu shell for backwards-compatible UI behavior. */
   toolbarMode?: 'menu' | 'inline';
 };
+
+const PieceStageMenuContext = createContext<{ closeMenu: () => void }>({ closeMenu: () => {} });
+
+/** Lets an action inside the toolbar's menu dismiss that menu (e.g. before it takes over the stage). */
+export function usePieceStageMenu() {
+  return useContext(PieceStageMenuContext);
+}
 
 function StageActionLabel({ children }: { children: string }) {
   return <span className="piece-stage-action-label">{children}</span>;
@@ -266,66 +273,70 @@ export default function PieceStageToolbar({
   );
 
   return (
-    <div
-      role="toolbar"
-      aria-label={ariaLabel}
-      className="piece-stage-toolbar"
-      data-toolbar-mode={toolbarMode}
-    >
-      {toolbarMode === 'inline' ? (
-        <>
-          {/* Owner order (docs/piece-toolbar-parity-matrix.md, #752): Screenshot,
+    <PieceStageMenuContext.Provider value={{ closeMenu }}>
+      <div
+        role="toolbar"
+        aria-label={ariaLabel}
+        className="piece-stage-toolbar"
+        data-toolbar-mode={toolbarMode}
+      >
+        {toolbarMode === 'inline' ? (
+          <>
+            {/* Owner order (docs/piece-toolbar-parity-matrix.md, #752): Screenshot,
               Download, Immersive, Sound, Piece controls, Guide, then Fullscreen
               LAST inside the same icon row. Engine tools (visitor drawing) sit
               in their own tools row directly beneath so the icon row stays one
               compact, predictable line. */}
-          {actionGroup(true, false)}
-          {visitorDrawControl && <div className="piece-stage-tools-row">{visitorDrawControl}</div>}
-        </>
-      ) : (
-        <>
-          <button
-            ref={menuTriggerRef}
-            type="button"
-            className="piece-stage-menu-trigger"
-            aria-label={menuOpen ? 'Close piece controls menu' : 'Open piece controls menu'}
-            aria-controls={menuId}
-            aria-expanded={menuOpen}
-            title={menuOpen ? 'Close piece controls menu' : 'Open piece controls menu'}
-            onClick={() => setMenuOpen((current) => !current)}
-          >
-            <span aria-hidden="true">☰</span>
-          </button>
-          <div
-            id={menuId}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={menuTitleId}
-            className="piece-stage-command-overlay"
-            hidden={!menuOpen}
-            onPointerDown={(event) => {
-              if (event.target === event.currentTarget) closeMenu();
-            }}
-          >
-            <section className="piece-stage-command-card">
-              <header className="piece-stage-command-header" onKeyDown={handleMenuKeyDown}>
-                <h2 id={menuTitleId}>{ariaLabel}</h2>
-                <button
-                  ref={menuCloseRef}
-                  type="button"
-                  className="piece-stage-command-close"
-                  aria-label="Close piece controls menu"
-                  title="Close piece controls menu"
-                  onClick={closeMenu}
-                >
-                  ×
-                </button>
-              </header>
-              {actionGroup(true)}
-            </section>
-          </div>
-        </>
-      )}
-    </div>
+            {actionGroup(true, false)}
+            {visitorDrawControl && (
+              <div className="piece-stage-tools-row">{visitorDrawControl}</div>
+            )}
+          </>
+        ) : (
+          <>
+            <button
+              ref={menuTriggerRef}
+              type="button"
+              className="piece-stage-menu-trigger"
+              aria-label={menuOpen ? 'Close piece controls menu' : 'Open piece controls menu'}
+              aria-controls={menuId}
+              aria-expanded={menuOpen}
+              title={menuOpen ? 'Close piece controls menu' : 'Open piece controls menu'}
+              onClick={() => setMenuOpen((current) => !current)}
+            >
+              <span aria-hidden="true">☰</span>
+            </button>
+            <div
+              id={menuId}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={menuTitleId}
+              className="piece-stage-command-overlay"
+              hidden={!menuOpen}
+              onPointerDown={(event) => {
+                if (event.target === event.currentTarget) closeMenu();
+              }}
+            >
+              <section className="piece-stage-command-card">
+                <header className="piece-stage-command-header" onKeyDown={handleMenuKeyDown}>
+                  <h2 id={menuTitleId}>{ariaLabel}</h2>
+                  <button
+                    ref={menuCloseRef}
+                    type="button"
+                    className="piece-stage-command-close"
+                    aria-label="Close piece controls menu"
+                    title="Close piece controls menu"
+                    onClick={closeMenu}
+                  >
+                    ×
+                  </button>
+                </header>
+                {actionGroup(true)}
+              </section>
+            </div>
+          </>
+        )}
+      </div>
+    </PieceStageMenuContext.Provider>
   );
 }

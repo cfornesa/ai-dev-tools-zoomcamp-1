@@ -1,7 +1,15 @@
 import type { ReactNode } from 'react';
 
 export type PieceStageIconName =
-  'screenshot' | 'download' | 'immersive' | 'sound' | 'controls' | 'steer' | 'guide' | 'fullscreen';
+  | 'screenshot'
+  | 'download'
+  | 'immersive'
+  | 'sound'
+  | 'controls'
+  | 'steer'
+  | 'guide'
+  | 'fullscreen'
+  | 'ink';
 
 const PATHS: Record<PieceStageIconName, ReactNode> = {
   screenshot: (
@@ -49,6 +57,12 @@ const PATHS: Record<PieceStageIconName, ReactNode> = {
       <circle cx="12" cy="12" r="8.5" />
       <path d="M12 8v5" />
       <circle cx="12" cy="16.5" r=".7" fill="currentColor" stroke="none" />
+    </>
+  ),
+  ink: (
+    <>
+      <path d="m4 20 1-4.2L16.6 4.2a1.9 1.9 0 0 1 2.7 0l.5.5a1.9 1.9 0 0 1 0 2.7L8.2 19z" />
+      <path d="m14.5 6.3 3.2 3.2" />
     </>
   ),
   fullscreen: (

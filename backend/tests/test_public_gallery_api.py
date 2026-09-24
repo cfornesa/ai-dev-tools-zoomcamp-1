@@ -679,11 +679,16 @@ def test_unified_items_are_a_discriminated_union_with_public_fields(
         == f"/users/@alice/pieces/{fixed_unified_fixture['generated'].public_slug}"
     )
 
-    # Only generated rows carry the engine label.
+    # #770: every kind is tied to one rendering library and shows its label; only generated
+    # rows carry a thumbnail-fallback flag.
     assert by_kind["generated"]["engine"] == "canvas2d"
     assert by_kind["generated"]["thumbnail_is_fallback"] is True
-    assert "engine" not in by_kind["2d"]
-    assert "engine" not in by_kind["3d"]
+    assert by_kind["2d"]["engine"] in {"p5js", "canvas2d", "svg"}
+    assert by_kind["2d"]["engine_label"]
+    assert by_kind["3d"]["engine"] == "threejs"
+    assert by_kind["3d"]["engine_label"] == "Three.js"
+    assert "thumbnail_is_fallback" not in by_kind["2d"]
+    assert "thumbnail_is_fallback" not in by_kind["3d"]
 
 
 @pytest.mark.django_db

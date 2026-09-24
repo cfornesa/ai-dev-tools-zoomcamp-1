@@ -249,3 +249,17 @@ export function validateScene3D(data: unknown): Scene3DValidationResult {
   const limitErrors = checkLimits(data);
   return { valid: limitErrors.length === 0, errors: limitErrors };
 }
+
+/** #770: the explicit rendering library of a 3D scene. A document written before the optional
+ * `renderer.preferred` field existed has none and resolves to Three.js (the only 3D builder that
+ * existed then), so no stored scene needs rewriting. Mirrors `scenes.piece_engine.resolve_scene3d_engine`. */
+export function resolveScene3DRenderer(scene: unknown): 'threejs' | 'aframe' {
+  if (typeof scene === 'object' && scene !== null) {
+    const renderer = (scene as { renderer?: unknown }).renderer;
+    if (typeof renderer === 'object' && renderer !== null) {
+      const preferred = (renderer as { preferred?: unknown }).preferred;
+      if (preferred === 'aframe' || preferred === 'threejs') return preferred;
+    }
+  }
+  return 'threejs';
+}

@@ -270,6 +270,9 @@ export type PublicGallery2DItem = {
   published_at: string;
   thumbnail_url: string | null;
   viewer_url: string;
+  /** #770: the piece's explicit rendering library (`p5js`, `canvas2d`, `svg`). */
+  engine?: string;
+  engine_label?: string;
 };
 
 /** Issue #491: one item from the unified `/api/public/gallery/` endpoint
@@ -282,6 +285,9 @@ export type PublicGallery3DItem = {
   published_at: string;
   thumbnail_url: string | null;
   viewer_url: string;
+  /** #770: `threejs` or `aframe`; legacy scenes resolve to `threejs`. */
+  engine?: string;
+  engine_label?: string;
 };
 
 /** Issue #491: one item from the unified `/api/public/gallery/` endpoint

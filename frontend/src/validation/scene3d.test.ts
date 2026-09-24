@@ -13,7 +13,12 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { SUPPORTED_DOCUMENT_TYPE, SUPPORTED_SCHEMA_VERSION, validateScene3D } from './scene3d';
+import {
+  resolveScene3DRenderer,
+  SUPPORTED_DOCUMENT_TYPE,
+  SUPPORTED_SCHEMA_VERSION,
+  validateScene3D,
+} from './scene3d';
 
 const SCHEMA_DIR = path.resolve(__dirname, '../../../schema');
 const FIXTURES_DIR = path.join(SCHEMA_DIR, 'fixtures3d');
@@ -105,5 +110,21 @@ describe('validateScene3D edge cases', () => {
     const result = validateScene3D(data);
 
     expect(result.valid).toBe(false);
+  });
+});
+
+describe('resolveScene3DRenderer (#770)', () => {
+  it('resolves a legacy document without a renderer to Three.js', () => {
+    const legacy = readJson('valid/minimal.json') as Record<string, unknown>;
+    expect('renderer' in legacy).toBe(false);
+    expect(resolveScene3DRenderer(legacy)).toBe('threejs');
+  });
+
+  it('resolves explicit renderers and ignores unknown or malformed declarations', () => {
+    expect(resolveScene3DRenderer(readJson('valid/renderer_aframe.json'))).toBe('aframe');
+    expect(resolveScene3DRenderer(readJson('valid/renderer_threejs.json'))).toBe('threejs');
+    expect(resolveScene3DRenderer({ renderer: { preferred: 'babylon' } })).toBe('threejs');
+    expect(resolveScene3DRenderer({ renderer: 'aframe' })).toBe('threejs');
+    expect(resolveScene3DRenderer(null)).toBe('threejs');
   });
 });

@@ -643,6 +643,17 @@ preview. Unsupported spatial navigation is disclosed by the renderer rather
 than implied. Existing `/art-pieces/immersive/<public_id>` and
 `/embed/art-pieces/immersive/<public_id>` routes remain compatible.
 
+### Explicit engine on every piece (#770)
+
+Every public piece is tied to one rendering library. The unified public gallery
+(`GET /api/public/gallery/`) and profile piece lists now carry `engine` and
+`engine_label` on authored 2D and 3D rows as well as generated rows (additive
+fields; existing clients are unaffected). Authored 2D pieces resolve it from the
+required scene `renderer.preferred` (`p5` -> `p5js`, `canvas2d`, `svg`). Authored 3D
+scenes gained an OPTIONAL top-level `renderer.preferred` (`threejs` or `aframe`,
+the only two 3D engines); a scene without it resolves to `threejs`, so no stored
+scene is rewritten and no migration is involved. Collections have no engine.
+
 ### Art-piece engine capability contract (#614)
 
 Generated art-piece API payloads expose the persisted `engine` identifier and

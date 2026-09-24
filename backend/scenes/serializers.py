@@ -17,6 +17,7 @@ from scenes.models import (
     Template,
     Thumbnail3D,
 )
+from scenes.piece_engine import resolve_scene2d_engine, resolve_scene3d_engine
 from scenes.public_identity import public_author_name
 from scenes.public_urls import canonical_piece_viewer_path, piece_viewer_path
 
@@ -587,28 +588,34 @@ class PublicGalleryItemSerializer(serializers.Serializer):
         thumbnail = getattr(record.current_version, "thumbnail", None)
         return thumbnail is None or thumbnail.is_fallback
 
-    def get_engine(self, obj) -> str | None:
-        # Present (with the piece's engine label) only on generated rows;
-        # omitted from authored rows -- including it as null would imply a
-        # meaningful "no engine" state that authored pieces don't have. The
-        # isinstance narrowing is load-bearing: it tells the type checker
-        # that "generated" rows really are ArtPiece records.
+    def _engine_id(self, obj) -> str | None:
+        # #770: every piece is tied to one rendering library. Generated rows store it;
+        # structured rows resolve it from their scene document (3D defaults to Three.js
+        # when a legacy document never declared one). Collections have no engine.
         kind, record = self._entry(obj)
-        if kind != "generated" or not isinstance(record, ArtPiece):
-            return None
-        return record.engine
+        if isinstance(record, ArtPiece):
+            return record.engine
+        if isinstance(record, Project3D):
+            version_3d = record.current_version
+            return resolve_scene3d_engine(version_3d.scene_json if version_3d else None)
+        if isinstance(record, Project):
+            version_2d = record.current_version
+            return resolve_scene2d_engine(version_2d.scene_json if version_2d else None)
+        return None
+
+    def get_engine(self, obj) -> str | None:
+        return self._engine_id(obj)
 
     def get_engine_label(self, obj) -> str | None:
-        kind, record = self._entry(obj)
-        if kind != "generated" or not isinstance(record, ArtPiece):
-            return None
-        return art_piece_engine_capability(record.engine)["label"]
+        engine = self._engine_id(obj)
+        return art_piece_engine_capability(engine)["label"] if engine else None
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if data["engine"] is None:
             del data["engine"]
             del data["engine_label"]
+        if data.get("thumbnail_is_fallback") is None:
             data.pop("thumbnail_is_fallback", None)
         return data
 

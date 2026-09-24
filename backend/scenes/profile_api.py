@@ -20,6 +20,7 @@ from scenes.models import (
     PublicProfileHandleRedirect,
     SiteSettings,
 )
+from scenes.piece_engine import resolve_scene2d_engine, resolve_scene3d_engine
 from scenes.public_identity import public_author_name
 from scenes.theme import (
     PALETTE_DEFINITIONS,
@@ -153,7 +154,9 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 "description": project.description,
                 "owner": public_author_name(owner),
                 "type": "2d",
-                "engine": "canvas2d",
+                "engine": resolve_scene2d_engine(
+                    project.current_version.scene_json if project.current_version else None
+                ),
                 "published_at": project.published_at.isoformat() if project.published_at else None,
                 "regular_url": f"/users/@{profile.handle}/pieces/{project.public_slug}",
                 "thumbnail_url": f"/api/public/projects/{project.public_id}/thumbnail.png",
@@ -172,7 +175,9 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 ),
                 "owner": public_author_name(owner),
                 "type": "3d",
-                "engine": "threejs",
+                "engine": resolve_scene3d_engine(
+                    project3d.current_version.scene_json if project3d.current_version else None
+                ),
                 "published_at": project3d.published_at.isoformat()
                 if project3d.published_at
                 else None,

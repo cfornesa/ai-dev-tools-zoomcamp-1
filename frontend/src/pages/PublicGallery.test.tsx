@@ -49,6 +49,31 @@ beforeEach(() => {
   vi.resetAllMocks();
 });
 
+describe('PublicGallery engine labels on every piece kind (#770)', () => {
+  it('shows the rendering engine on authored 2D and 3D cards, not just generated ones', async () => {
+    mockedFetchPublicGallery.mockResolvedValueOnce({
+      results: [
+        baseItem({ kind: '2d', id: 'a', title: 'Flat piece', engine: 'svg' }),
+        baseItem({ kind: '3d', id: 'b', title: 'Solid piece', engine: 'threejs' }),
+        baseItem({ kind: '3d', id: 'c', title: 'Frame piece', engine: 'aframe' }),
+      ],
+      next_cursor: null,
+      has_more: false,
+    });
+
+    renderPublicGallery();
+
+    for (const [testId, engine] of [
+      ['gallery-card-a', 'svg'],
+      ['gallery-card-b', 'threejs'],
+      ['gallery-card-c', 'aframe'],
+    ] as const) {
+      const card = await screen.findByTestId(testId);
+      expect(card.querySelector('.engine-label')).toHaveTextContent(engine);
+    }
+  });
+});
+
 describe('PublicGallery loading/error/empty states', () => {
   it('shows an accessible loading status while the first page is fetched', () => {
     mockedFetchPublicGallery.mockReturnValue(new Promise(() => {})); // never resolves

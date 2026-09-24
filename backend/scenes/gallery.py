@@ -115,7 +115,12 @@ def eligible_projects() -> QuerySet[Project]:
             current_version__isnull=False,
             published_at__isnull=False,
         )
-        .select_related("owner", "fork_provenance", "fork_provenance__source_project__owner")
+        .select_related(
+            "owner",
+            "current_version",
+            "fork_provenance",
+            "fork_provenance__source_project__owner",
+        )
         .order_by("-published_at", "-id")
     )
 

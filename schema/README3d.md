@@ -112,3 +112,13 @@ for f in sorted(glob.glob('schema/fixtures3d/**/*.json', recursive=True)):
     print(f, 'VALID' if not errors else 'INVALID')
 "
 ```
+
+## Optional `renderer` (issue #770)
+
+`renderer: { preferred: "threejs" | "aframe" }` is an optional, additive top-level
+field naming the scene's rendering library. It needs no `schemaVersion` bump:
+every existing document stays valid, and a document without it resolves to
+`threejs` (the only 3D builder that existed before the field). Both validators
+read this one schema; the resolvers are `scenes.piece_engine.resolve_scene3d_engine`
+and `frontend/src/validation/scene3d.ts`'s `resolveScene3DRenderer`. The A-Frame
+builder itself is tracked separately (#772).

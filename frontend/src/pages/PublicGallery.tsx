@@ -68,7 +68,11 @@ function GalleryCard({ item }: { item: PublicGalleryItem | PublicGalleryAccountI
       thumbnailUrl={item.thumbnail_url}
       thumbnailIsFallback={item.kind === 'generated' ? item.thumbnail_is_fallback : false}
       kind={item.kind}
-      engine={item.kind === 'generated' ? item.engine : undefined}
+      engine={
+        item.kind === 'generated' || item.kind === '2d' || item.kind === '3d'
+          ? item.engine
+          : undefined
+      }
       owner={item.owner}
       testId={`gallery-card-${item.id}`}
     />

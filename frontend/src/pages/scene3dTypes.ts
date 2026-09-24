@@ -68,11 +68,16 @@ export type Camera3D = {
   far: number;
 };
 
+/** The only two 3D rendering libraries (#770). */
+export type Scene3DRenderer = 'threejs' | 'aframe';
+
 export type Scene3DDocument = {
   schemaVersion: 1;
   documentType: 'scene3d';
   id: string;
   scene: { backgroundColor: string };
+  /** #770: optional explicit rendering library; absent means Three.js (legacy documents). */
+  renderer?: { preferred: Scene3DRenderer };
   camera: Camera3D;
   lights: Light3D[];
   groups: Group3D[];

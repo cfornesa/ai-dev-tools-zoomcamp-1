@@ -67,6 +67,15 @@
       "type": "array",
       "items": { "$ref": "#/$defs/object3d" }
     },
+    "renderer": {
+      "description": "Optional explicit rendering library for this scene (#770): `threejs` or `aframe`, the only two 3D engines. Additive and backward compatible: no schemaVersion bump, and a document without it resolves to `threejs` (the only 3D builder that existed before it), so no stored scene needs rewriting. Mirrors the 2D schema's `renderer.preferred`.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preferred"],
+      "properties": {
+        "preferred": { "enum": ["threejs", "aframe"] }
+      }
+    },
     "randomness": {
       "description": "Deterministic-randomness declaration, mirroring the 2D schema's identical field (Task 40) -- reserved for future seeded-placement/material-variation features; carries no effect on its own in this initial schema.",
       "type": "object",

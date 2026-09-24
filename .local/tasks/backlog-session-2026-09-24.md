@@ -80,3 +80,39 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 - Terminal outcomes: 2 closed (#747, #808), 1 implemented but QA-failed on browser boundary (#803), 11 open/dependent or production-gated (#748, #788, #798–#802, #804–#807).
 - Routing audit: Stage 2b #808 and stage 2a #803 used Codex/GPT-5 substitutions for rostered engineering; stage 4 used Codex/GPT-5 substitutions for rostered Claude QA; no second-opinion service ran. Stage 5 readiness and completion were performed as documented Codex substitutions because the rostered service was unavailable.
 - Follow-up audit: #803's user-reported layout gap is linked to the existing issue; no duplicate was created. Remaining open work and evidence boundaries are preserved in the issue list and this ledger.
+
+## Distillation refresh — 2026-09-24 continuation
+
+The authoritative GitHub open inventory also includes #809–#821, which were
+created by the prior AI-provider/prompt distillation and were absent from the
+earlier compact table. No duplicate was found: each has a distinct provider,
+AI contract, generated-piece, or admin capability boundary. The dependency
+order is:
+
+1. #798 after #807 (star-field behavior hardening).
+2. #809 and #810 (shared 2D/3D vendor prompts), then #811 (vendor-neutral
+   generated-piece calls); #812 and #813 are independent AI safety contracts.
+3. #815 is a quality/replay contract over the shared prompts; #817 precedes
+   #816 because the catalog capability field is its prerequisite.
+4. #818 precedes #819, which precedes #820 and #821; #812 also informs #820's
+   delete-intent rule.
+5. #799–#805 remain route/matrix work; #806 is the final published gate.
+
+| Issue | Routing | Dependency/blocker | Closure boundary / next action |
+|---|---|---|---|
+| #809 | 2b | independent | shared 2D prompts and byte-identical provider tests |
+| #810 | 2b | independent | shared 3D/drawing-plane prompts and fake Gemini validation |
+| #811 | 2b | depends #809/#810 | six-library generate/refine vendor matrix |
+| #812 | 2b | independent | explicit-delete patch authorization |
+| #813 | 2b | independent | plan-declared scope enforcement |
+| #815 | 2b | depends shared prompt work | offline corpus and preservation replay |
+| #816 | 2b | depends #817 | vendor-neutral structured-output repair |
+| #817 | 2b | migration-bearing | native_schema catalog capability |
+| #818 | 2b | independent | marker prompts and pure region parser |
+| #819 | 2b | depends #818 | bounded owner-scoped refine mentions |
+| #820 | 2b | depends #819/#812 | preservation and delete-intent enforcement |
+| #821 | 2a | depends #819/#818 | generated-piece refine typeahead |
+
+Next groomed issue: #798, because its prerequisite #807 has an implemented
+commit and it is the only small independent follow-up in the site-shell chain;
+its required production evidence remains separately owned by #806.

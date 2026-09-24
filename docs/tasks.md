@@ -23911,7 +23911,7 @@ Owner report: augmenthumankind.com downloads use old button styling; augmentrart
 
 | Issue | Surface | Class | Routing | Status |
 |---|---|---|---|---|
-| #751 | Owner decision: toolbar order/label style | decision (Rule 2) | owner | PROPOSED, blocks #752–#756 |
+| #751 | Owner decision: toolbar order/label style | decision | owner | CLOSED 2026-09-24: icon-only + desktop hover labels, reference order |
 | #752 | `/embed/art-pieces/:id` toolbar order/placement | implementation-defect | 2a | PROPOSED, dep #751 |
 | #753 | Immersive route toolbar order/placement | implementation-defect | 2a | PROPOSED, dep #751 |
 | #754 | Immersive embed toolbar + 3D camera framing | implementation-defect / verification | 2a→2b | PROPOSED, dep #751, #753 |
@@ -23925,4 +23925,4 @@ Owner report: augmenthumankind.com downloads use old button styling; augmentrart
 | #762 | `embed:false` capability vs working embed route | implementation-defect | 2a | PROPOSED, independent |
 
 Already covered / duplicates: live viewer drawing (#670, #707–#711 closed, valid for the live viewer only), labelled inline toolsets (#690–#694, #706), offline downloads (#609), publish/live verification incl. real-camera 3D checks (#748), CI (#746). No open duplicate found. Camera perspective in embed/immersive is folded into #754 with real-Chrome evidence.
-Next issue when engineering starts: #757 (independent, closure-ready). Cross-repo drafts for `augment-humankind-react-node` (old `.portable-button` ZIP styling; ZIP guide only sets status text; no c2-interactive drawing toolset) are `issue-creation-pending-authorization` until the owner confirms.
+Next issue when engineering starts: #757 (independent, closure-ready). Cross-repo issues filed in `augment-humankind-react-node`: #117 (ZIP toolbar styling), #118 (ZIP guide/reset), #119 (c2 interactive drawing). #759 (canvas size) remains an open owner decision blocking #760.

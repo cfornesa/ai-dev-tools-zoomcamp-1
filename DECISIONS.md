@@ -1366,3 +1366,7 @@ Replit project hosting this application. Its Git tab is linked to
 `cfornesa/ai-dev-tools-zoomcamp-1`; a sync attempt after the reviewed push
 reported `MERGE_CONFLICT`, so publication remains blocked until that workspace
 state is reconciled and the exact reviewed commit is verified.
+
+## 2026-09-24 — Stage toolbar: icon-only with desktop hover labels, reference order (#751)
+
+The owner decided the piece stage toolbar is icon-only on all surfaces (regular, embed, immersive, ZIP exports) with a contextual hover/focus label on desktop and none on touch, and that the reference order (Screenshot, Immersive/VR, Sound, Piece controls, Download, Fullscreen, Hand guide) needs no further decision. This supersedes the labelled-button wording of closed #690/#694/#706 for new work. Implementation: #752-#756, #761. Cross-repo follow-ups filed in augment-humankind-react-node: #117 (ZIP toolbar), #118 (ZIP guide/reset), #119 (c2 interactive drawing).

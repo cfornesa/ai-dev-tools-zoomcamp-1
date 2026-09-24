@@ -37,4 +37,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #776 | CLOSED | ce0cce4 | backend full 1573; vitest 2903; playwright inkLayerGenerated2d 6 + inkLayer2d 2 | PASS | closed | local; no migration; follow-ups #793 #794 |
 | #781 | CLOSED | c5e893f, f336cf4 | vitest 2904; playwright drawingPlaneDraw3d 2 + 3D regression 7 | PASS | closed | local; no migration; follow-up #795 |
 | #782 | CLOSED | 6d6e17a | vitest 2922; playwright drawingPlaneTransform782 2 + 3D regression 9 | PASS | closed | local; no migration; follow-up #796 |
-| #784 | CLOSED | PENDING | backend full 1597; vitest 2922; playwright aiDrawingPlane784 4 + 3D regression 8 | PASS | closed | local; no migration |
+| #784 | CLOSED | 4afc213 | backend full 1597; vitest 2922; playwright aiDrawingPlane784 4 + 3D regression 8 | PASS | closed | local; no migration |

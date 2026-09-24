@@ -734,9 +734,14 @@ function ThreeScenePreview({
         animationSeconds += deltaSeconds;
         applyObjectAnimations(threeScene, scene, animationSeconds);
       }
-      if (gestureControlEnabledRef.current) applyGestureCameraControl(deltaSeconds);
-      if (flyControls) applyFlyTranslation(deltaSeconds);
-      controls.update();
+      // #781: a frozen stage (draw mode) also holds the camera -- no orbit/zoom drag, fly keys, or
+      // hand steering move it, so Confirm/Cancel returns to exactly the prior camera.
+      controls.enabled = !frozenRef.current;
+      if (!frozenRef.current) {
+        if (gestureControlEnabledRef.current) applyGestureCameraControl(deltaSeconds);
+        if (flyControls) applyFlyTranslation(deltaSeconds);
+        controls.update();
+      }
       if (previousCameraPosition) {
         sonicEngineRef.current?.reportMovement({
           dx: camera.position.x - previousCameraPosition.x,

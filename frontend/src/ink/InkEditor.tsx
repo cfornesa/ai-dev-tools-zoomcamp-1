@@ -38,6 +38,8 @@ export type InkEditorProps = {
   initialShapes: DrawingShape[];
   /** Colour painted behind the strokes; omit for a transparent layer. */
   background?: string | null;
+  /** Show a transparency checkerboard behind the drawing (for a drawing with no background colour). */
+  checkerboard?: boolean;
   /** A picture of the frozen piece drawn behind the ink so the author can annotate in place. */
   snapshotUrl?: string | null;
   strokeIdPrefix?: string;
@@ -65,6 +67,7 @@ export function InkEditor({
   height,
   initialShapes,
   background = null,
+  checkerboard = false,
   snapshotUrl = null,
   strokeIdPrefix = 'ink',
   initialTool = 'pen',
@@ -327,7 +330,12 @@ export function InkEditor({
           {message}
         </p>
       )}
-      <div className="ink-editor-surface" style={{ aspectRatio: `${width} / ${height}` }}>
+      <div
+        className={
+          checkerboard ? 'ink-editor-surface ink-editor-surface--checker' : 'ink-editor-surface'
+        }
+        style={{ aspectRatio: `${width} / ${height}` }}
+      >
         {snapshotUrl && (
           <img src={snapshotUrl} alt="" className="ink-editor-snapshot" draggable={false} />
         )}

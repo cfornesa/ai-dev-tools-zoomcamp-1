@@ -25,7 +25,8 @@ import {
 import { useReducedMotion } from '../a11y/reducedMotion';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
-import PieceStageToolbar, { usePieceStageMenu } from '../components/PieceStageToolbar';
+import InkModeButton from '../components/InkModeButton';
+import PieceStageToolbar from '../components/PieceStageToolbar';
 import StageControlsPopover from '../components/StageControlsPopover';
 import { TWO_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
 import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
@@ -101,7 +102,6 @@ import {
   useJsonCodeSync,
   type JsonCodeSync,
 } from './jsonCodeSync';
-import PieceStageIcon from '../components/PieceStageIcon';
 import { InkEditor } from '../ink/InkEditor';
 import {
   INK_MAX_PATH_POINTS,
@@ -1038,41 +1038,6 @@ function localizePreviewError(message: string): { pointer: string; detail: strin
  * `beginDrag`, so the drag keeps tracking the pointer even outside the
  * canvas element's own bounds and Escape can cancel it from anywhere.
  */
-function InkModeButton({
-  hasInk,
-  active,
-  disabled,
-  onBegin,
-}: {
-  hasInk: boolean;
-  active: boolean;
-  disabled: boolean;
-  onBegin: () => void;
-}) {
-  const { closeMenu } = usePieceStageMenu();
-  const label = hasInk ? 'Edit ink layer' : 'Draw ink layer';
-  return (
-    <button
-      type="button"
-      className="piece-stage-icon-button"
-      data-testid="ink-mode-button"
-      aria-label={label}
-      aria-pressed={active}
-      disabled={active || disabled}
-      onClick={() => {
-        closeMenu();
-        onBegin();
-      }}
-    >
-      <PieceStageIcon name="ink" />
-      <span className="piece-stage-action-label">{label}</span>
-      <span className="piece-stage-tooltip" role="tooltip">
-        {label}
-      </span>
-    </button>
-  );
-}
-
 function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = initialProjectId ?? routeId;
@@ -3977,7 +3942,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   editorControls={
                     <>
                       <InkModeButton
-                        hasInk={hasInkLayer(workingCopy ?? {})}
+                        label={hasInkLayer(workingCopy ?? {}) ? 'Edit ink layer' : 'Draw ink layer'}
                         active={inkSession !== null}
                         disabled={!workingCopy}
                         onBegin={beginInk}

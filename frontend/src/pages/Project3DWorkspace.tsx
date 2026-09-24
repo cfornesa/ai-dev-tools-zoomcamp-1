@@ -22,10 +22,17 @@ import Outline3DInspector from './Outline3DInspector';
 import PublishControl3D from './PublishControl3D';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
+import {
+  DRAWING_PLANE_MAX_POINTS,
+  DRAWING_PLANE_MAX_SHAPES,
+  DRAWING_PLANE_RESOLUTION,
+} from './drawingPlaneDefaults';
 import type { Group3D, Object3D, Scene3DDocument, Transform3D } from './scene3dTypes';
-import { object3DLabel, type Object3DType } from './scene3dTypes';
+import { object3DLabel, type DrawingShape, type Object3DType } from './scene3dTypes';
 import { type Outline3DSelection } from './Outline3DInspector';
+import InkModeButton from '../components/InkModeButton';
 import StageControlsPopover from '../components/StageControlsPopover';
+import { InkEditor } from '../ink/InkEditor';
 
 type LoadState = 'loading' | 'ready' | 'access-denied' | 'no-scene' | 'error';
 type PreviewView = 'visual' | 'code';
@@ -150,6 +157,8 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
   // can tell the user whether there's anything to save.
   const [persistedScene, setPersistedScene] = useState<Scene3DDocument | null>(null);
   const [selectedOutlineItem, setSelectedOutlineItem] = useState<Outline3DSelection>(null);
+  // #781: the drawing plane currently being drawn on (Draw mode), or null.
+  const [drawObjectId, setDrawObjectId] = useState<string | null>(null);
   const [undoStack, setUndoStack] = useState<Scene3DDocument[]>([]);
   const [redoStack, setRedoStack] = useState<Scene3DDocument[]>([]);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
@@ -317,7 +326,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
     opacity: 1,
   };
 
-  function addObject(type: Extract<Object3DType, 'sphere' | 'plane'>) {
+  function addObject(type: Extract<Object3DType, 'sphere' | 'plane' | 'drawingPlane'>) {
     const id = createId(
       type,
       currentScene.objects.map((object) => object.id),
@@ -334,18 +343,44 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
             visible: true,
             radius: 1,
           }
-        : {
-            id,
-            name: `Plane ${currentScene.objects.filter((item) => item.type === 'plane').length + 1}`,
-            type,
-            groupId: null,
-            transform: structuredClone(identityTransform),
-            material: { color: '#7b7bd8' },
-            visible: true,
-            width: 4,
-            height: 4,
-          };
-    updateWorkingScene({ ...currentScene, objects: [...currentScene.objects, object] });
+        : type === 'drawingPlane'
+          ? {
+              id,
+              name: `Drawing plane ${currentScene.objects.filter((item) => item.type === 'drawingPlane').length + 1}`,
+              type,
+              groupId: null,
+              transform: structuredClone(identityTransform),
+              material: { color: '#ffffff' },
+              visible: true,
+              width: 4,
+              height: 3,
+              doubleSided: true,
+              // #781: the documented drawing resolution (4:3, matching the default 4 x 3 plane).
+              drawing: {
+                width: DRAWING_PLANE_RESOLUTION.width,
+                height: DRAWING_PLANE_RESOLUTION.height,
+                background: '#ffffff',
+                shapes: [],
+              },
+            }
+          : {
+              id,
+              name: `Plane ${currentScene.objects.filter((item) => item.type === 'plane').length + 1}`,
+              type,
+              groupId: null,
+              transform: structuredClone(identityTransform),
+              material: { color: '#7b7bd8' },
+              visible: true,
+              width: 4,
+              height: 4,
+            };
+    // #781: the plane's material is lit, so in a scene with no lights at all the drawing would render
+    // black. Adding the first drawing plane also adds a neutral ambient light so it shows true colours.
+    const lights =
+      type === 'drawingPlane' && currentScene.lights.length === 0
+        ? [{ id: 'ambient-1', type: 'ambient' as const, color: '#ffffff', intensity: 1 }]
+        : currentScene.lights;
+    updateWorkingScene({ ...currentScene, lights, objects: [...currentScene.objects, object] });
     setSelectedOutlineItem({ kind: 'object', id });
   }
 
@@ -353,6 +388,24 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
     return selectedOutlineItem?.kind === 'object'
       ? currentScene.objects.find((object) => object.id === selectedOutlineItem.id)
       : undefined;
+  }
+
+  const drawTarget = drawObjectId
+    ? currentScene.objects.find(
+        (object) => object.id === drawObjectId && object.type === 'drawingPlane',
+      )
+    : undefined;
+
+  function confirmDrawing(shapes: DrawingShape[]) {
+    if (!drawTarget?.drawing) return;
+    const drawing = drawTarget.drawing;
+    updateWorkingScene({
+      ...currentScene,
+      objects: currentScene.objects.map((object) =>
+        object.id === drawTarget.id ? { ...object, drawing: { ...drawing, shapes } } : object,
+      ),
+    });
+    setDrawObjectId(null);
   }
 
   function deleteSelected() {
@@ -534,10 +587,25 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
               <Scene3DCodeEditor projectId={id} scene={workingScene} onSaved={handleVersionSaved} />
             </section>
           )}
-          <div>
+          {drawTarget?.drawing && (
+            <InkEditor
+              width={drawTarget.drawing.width}
+              height={drawTarget.drawing.height}
+              initialShapes={drawTarget.drawing.shapes}
+              background={drawTarget.drawing.background ?? null}
+              checkerboard={!drawTarget.drawing.background}
+              strokeIdPrefix="draw"
+              maxPointsPerStroke={DRAWING_PLANE_MAX_POINTS}
+              maxStrokes={DRAWING_PLANE_MAX_SHAPES}
+              onCancel={() => setDrawObjectId(null)}
+              onConfirm={confirmDrawing}
+            />
+          )}
+          <div hidden={drawTarget !== undefined}>
             {/* Issue #244: real Three.js rendering, replacing the
                 #226 placeholder. */}
             <Scene3DPreview
+              frozen={drawTarget !== undefined}
               scene={workingScene}
               screenshotBaseName={project?.title}
               immersiveHref={id ? `/immersive/p3d/${id}` : undefined}
@@ -567,6 +635,13 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
                           aria-label="Add plane"
                         >
                           Add plane
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => addObject('drawingPlane')}
+                          aria-label="Add drawing plane"
+                        >
+                          Add drawing plane
                         </button>
                         <button
                           type="button"
@@ -613,6 +688,14 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
                         </button>
                       </div>
                     </StageControlsPopover>
+                    {selectedObject()?.type === 'drawingPlane' && (
+                      <InkModeButton
+                        label="Draw on plane"
+                        testId="draw-plane-button"
+                        active={drawTarget !== undefined}
+                        onBegin={() => setDrawObjectId(selectedObject()?.id ?? null)}
+                      />
+                    )}
                     <button
                       type="button"
                       className="piece-stage-icon-button"

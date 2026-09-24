@@ -264,6 +264,7 @@ export type AIProviderModel = {
   display_label: string;
   task_kinds: string[];
   agentic_supported: boolean;
+  native_schema: boolean;
   active: boolean;
   revision: number;
 };
@@ -278,6 +279,7 @@ export async function createAIProviderModel(fields: {
   display_label: string;
   task_kinds: string[];
   agentic_supported?: boolean;
+  native_schema?: boolean;
 }): Promise<AIProviderModel> {
   return apiFetch<AIProviderModel>('/api/admin/ai-models/', {
     method: 'POST',
@@ -292,6 +294,7 @@ export async function updateAIProviderModel(
     display_label?: string;
     task_kinds?: string[];
     agentic_supported?: boolean;
+    native_schema?: boolean;
     active?: boolean;
   },
 ): Promise<AIProviderModel> {

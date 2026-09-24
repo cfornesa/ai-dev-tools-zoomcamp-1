@@ -21,6 +21,15 @@ catalog entry flagged for `art_piece` before a provider call is made. Missing
 or undecryptable credentials return the existing structured
 `personal_key_required` response.
 
+## AI model catalog capabilities (#817)
+
+Admin AI model catalog entries expose `native_schema`, a boolean capability
+flag that defaults to `true`. It is returned by `GET /api/admin/ai-models/`
+and may be supplied on catalog create/update requests. It records whether a
+model natively supports the provider's structured JSON-schema mode; the
+structured-output routing that consumes this flag is tracked separately in
+#816. Existing rows retain native-schema behavior through the additive default.
+
 ## Generated-piece sandbox and embed boundary (#741)
 
 Generated preview source runs in an opaque `iframe sandbox="allow-scripts"`

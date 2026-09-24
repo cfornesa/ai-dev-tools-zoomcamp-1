@@ -767,6 +767,7 @@ function AIModelCatalogRow({
   const [displayLabel, setDisplayLabel] = useState(model.display_label);
   const [taskKinds, setTaskKinds] = useState<string[]>(model.task_kinds);
   const [agenticSupported, setAgenticSupported] = useState(model.agentic_supported);
+  const [nativeSchema, setNativeSchema] = useState(model.native_schema);
   const [active, setActive] = useState(model.active);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -789,6 +790,7 @@ function AIModelCatalogRow({
         display_label: displayLabel,
         task_kinds: taskKinds,
         agentic_supported: agenticSupported,
+        native_schema: nativeSchema,
         active,
       });
       onSaved(next);
@@ -866,6 +868,15 @@ function AIModelCatalogRow({
         Agentic supported (a product capability declaration, not proof of safe arbitrary code
         execution)
       </label>
+      <label htmlFor={`ai-model-native-schema-${model.id}`}>
+        <input
+          id={`ai-model-native-schema-${model.id}`}
+          type="checkbox"
+          checked={nativeSchema}
+          onChange={(event) => setNativeSchema(event.target.checked)}
+        />
+        Supports native JSON schema output
+      </label>
       <label htmlFor={`ai-model-active-${model.id}`}>
         <input
           id={`ai-model-active-${model.id}`}
@@ -900,6 +911,7 @@ function AIModelCatalogCreateForm({ onCreated }: { onCreated: (model: AIProvider
   const [displayLabel, setDisplayLabel] = useState('');
   const [taskKinds, setTaskKinds] = useState<string[]>([]);
   const [agenticSupported, setAgenticSupported] = useState(false);
+  const [nativeSchema, setNativeSchema] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -920,12 +932,14 @@ function AIModelCatalogCreateForm({ onCreated }: { onCreated: (model: AIProvider
         display_label: displayLabel,
         task_kinds: taskKinds,
         agentic_supported: agenticSupported,
+        native_schema: nativeSchema,
       });
       onCreated(created);
       setModelSlug('');
       setDisplayLabel('');
       setTaskKinds([]);
       setAgenticSupported(false);
+      setNativeSchema(true);
     } catch {
       setError('Could not create this catalog entry. Check the provider, slug, and task kinds.');
     } finally {
@@ -994,6 +1008,15 @@ function AIModelCatalogCreateForm({ onCreated }: { onCreated: (model: AIProvider
           onChange={(event) => setAgenticSupported(event.target.checked)}
         />
         Agentic supported
+      </label>
+      <label htmlFor="ai-model-new-native-schema">
+        <input
+          id="ai-model-new-native-schema"
+          type="checkbox"
+          checked={nativeSchema}
+          onChange={(event) => setNativeSchema(event.target.checked)}
+        />
+        Supports native JSON schema output
       </label>
       <div className="admin-settings-actions">
         <button

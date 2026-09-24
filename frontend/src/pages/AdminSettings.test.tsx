@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -24,6 +24,7 @@ vi.mock('../api/adminSettings', async () => {
     fetchGlobalCapabilities: vi.fn(),
     fetchCloudRetentionPolicy: vi.fn(),
     fetchAIProviderModels: vi.fn(),
+    updateAIProviderModel: vi.fn(),
     fetchProfileStyles: vi.fn(),
     fetchThemeGenerationAttempts: vi.fn(),
     generateThemeDraft: vi.fn(),
@@ -62,7 +63,30 @@ beforeEach(() => {
     revision: 1,
     updated_at: '2026-01-01T00:00:00Z',
   });
-  vi.mocked(adminApi.fetchAIProviderModels).mockResolvedValue([]);
+  vi.mocked(adminApi.fetchAIProviderModels).mockResolvedValue([
+    {
+      id: 1,
+      vendor: 'gemini',
+      model_slug: 'gemini-test',
+      display_label: 'Gemini test',
+      task_kinds: ['one_shot_2d'],
+      agentic_supported: false,
+      native_schema: true,
+      active: true,
+      revision: 1,
+    },
+  ]);
+  vi.mocked(adminApi.updateAIProviderModel).mockImplementation(async (_id, fields) => ({
+    id: 1,
+    vendor: 'gemini',
+    model_slug: 'gemini-test',
+    display_label: 'Gemini test',
+    task_kinds: ['one_shot_2d'],
+    agentic_supported: false,
+    native_schema: fields.native_schema ?? true,
+    active: true,
+    revision: 2,
+  }));
   vi.mocked(adminApi.fetchThemeGenerationAttempts).mockResolvedValue([]);
   vi.mocked(adminApi.fetchProfileStyles).mockResolvedValue([
     {
@@ -165,5 +189,30 @@ describe('AdminSettings presentation choices (#643)', () => {
     expect((await screen.findAllByText('Celestial')).length).toBeGreaterThan(0);
     expect(screen.getByRole('combobox', { name: 'Celestial font family' })).toHaveValue('script');
     expect(screen.getByRole('combobox', { name: 'Celestial backdrop' })).toHaveValue('cosmic');
+  });
+});
+
+describe('AI model native schema capability (#817)', () => {
+  it('round-trips the labelled native JSON schema checkbox', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AdminSettings />
+      </MemoryRouter>,
+    );
+
+    const [checkbox] = await screen.findAllByRole('checkbox', {
+      name: 'Supports native JSON schema output',
+    });
+    expect(checkbox).toBeChecked();
+    await user.click(checkbox);
+    await user.click(
+      within(checkbox.closest('form') as HTMLElement).getByRole('button', { name: 'Save' }),
+    );
+
+    expect(adminApi.updateAIProviderModel).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ native_schema: false }),
+    );
   });
 });

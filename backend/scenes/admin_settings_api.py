@@ -516,6 +516,7 @@ def _ai_model_payload(view: ai_catalog.AIProviderModelView) -> dict:
         "display_label": view.display_label,
         "task_kinds": view.task_kinds,
         "agentic_supported": view.agentic_supported,
+        "native_schema": view.native_schema,
         "active": view.active,
         "revision": view.revision,
     }
@@ -527,6 +528,7 @@ class AIProviderModelCreateSerializer(serializers.Serializer):
     display_label = serializers.CharField(max_length=200)
     task_kinds = serializers.ListField(child=serializers.CharField(), allow_empty=False)
     agentic_supported = serializers.BooleanField(required=False, default=False)
+    native_schema = serializers.BooleanField(required=False, default=True)
 
 
 class AIProviderModelUpdateSerializer(serializers.Serializer):
@@ -536,6 +538,7 @@ class AIProviderModelUpdateSerializer(serializers.Serializer):
         child=serializers.CharField(), allow_empty=False, required=False
     )
     agentic_supported = serializers.BooleanField(required=False)
+    native_schema = serializers.BooleanField(required=False)
     active = serializers.BooleanField(required=False)
 
 
@@ -559,6 +562,7 @@ class AdminAIModelsView(APIView):
             "display_label",
             "task_kinds",
             "agentic_supported",
+            "native_schema",
         }
         unknown_fields = set(request.data.keys()) - allowed_fields
         if unknown_fields:
@@ -595,6 +599,7 @@ class AdminAIModelDetailView(APIView):
             "display_label",
             "task_kinds",
             "agentic_supported",
+            "native_schema",
             "active",
         }
         unknown_fields = set(request.data.keys()) - allowed_fields

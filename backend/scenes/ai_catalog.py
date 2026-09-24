@@ -54,6 +54,7 @@ class AIProviderModelView:
     display_label: str
     task_kinds: list[str]
     agentic_supported: bool
+    native_schema: bool
     active: bool
     revision: int
 
@@ -66,6 +67,7 @@ def _view(row: AIProviderModel) -> AIProviderModelView:
         display_label=row.display_label,
         task_kinds=sorted(row.task_kinds),
         agentic_supported=row.agentic_supported,
+        native_schema=row.native_schema,
         active=row.active,
         revision=row.revision,
     )
@@ -123,6 +125,7 @@ def create_model(
     display_label: str,
     task_kinds: list[str],
     agentic_supported: bool = False,
+    native_schema: bool = True,
 ) -> AIProviderModelView:
     _validate_fields(
         vendor=vendor,
@@ -142,6 +145,7 @@ def create_model(
             display_label=display_label.strip(),
             task_kinds=sorted(set(task_kinds)),
             agentic_supported=agentic_supported,
+            native_schema=native_schema,
             active=True,
             updated_by=actor,
         )
@@ -161,6 +165,7 @@ def update_model(
     display_label: str | None = None,
     task_kinds: list[str] | None = None,
     agentic_supported: bool | None = None,
+    native_schema: bool | None = None,
     active: bool | None = None,
 ) -> AIProviderModelView:
     try:
@@ -176,6 +181,7 @@ def update_model(
     next_label = display_label if display_label is not None else row.display_label
     next_kinds = task_kinds if task_kinds is not None else row.task_kinds
     next_agentic = agentic_supported if agentic_supported is not None else row.agentic_supported
+    next_native_schema = native_schema if native_schema is not None else row.native_schema
     _validate_fields(
         vendor=row.vendor,
         model_slug=row.model_slug,
@@ -185,6 +191,8 @@ def update_model(
     )
     if active is not None and not isinstance(active, bool):
         raise ValidationFailed("active must be a boolean.")
+    if not isinstance(next_native_schema, bool):
+        raise ValidationFailed("native_schema must be a boolean.")
 
     next_active = active if active is not None else row.active
     if next_active:
@@ -203,6 +211,7 @@ def update_model(
     row.display_label = next_label.strip()
     row.task_kinds = sorted(set(next_kinds))
     row.agentic_supported = next_agentic
+    row.native_schema = next_native_schema
     row.active = next_active
     row.revision += 1
     row.updated_by = actor

@@ -40,6 +40,7 @@ class TestCreateModel:
         )
         assert view.vendor == "gemini"
         assert view.agentic_supported is True
+        assert view.native_schema is True
         assert view.revision == 1
 
     def test_rejects_unknown_provider(self, admin_a):
@@ -292,6 +293,7 @@ class TestAdminAIModelsAPI:
         )
         assert create_response.status_code == 201
         model_id = create_response.json()["id"]
+        assert create_response.json()["native_schema"] is True
 
         list_response = client.get(reverse("admin-ai-models"))
         assert list_response.status_code == 200
@@ -299,12 +301,13 @@ class TestAdminAIModelsAPI:
 
         patch_response = client.patch(
             reverse("admin-ai-model-detail", args=[model_id]),
-            data={"revision": 1, "display_label": "Renamed"},
+            data={"revision": 1, "display_label": "Renamed", "native_schema": False},
             content_type="application/json",
         )
         assert patch_response.status_code == 200
         assert patch_response.json()["display_label"] == "Renamed"
         assert patch_response.json()["revision"] == 2
+        assert patch_response.json()["native_schema"] is False
 
         delete_response = client.delete(
             reverse("admin-ai-model-detail", args=[model_id]),

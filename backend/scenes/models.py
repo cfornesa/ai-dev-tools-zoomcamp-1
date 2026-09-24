@@ -821,6 +821,7 @@ class AIProviderModel(models.Model):
     display_label = models.CharField(max_length=200)
     task_kinds = models.JSONField(default=list)
     agentic_supported = models.BooleanField(default=False)
+    native_schema = models.BooleanField(default=True)
     active = models.BooleanField(default=True)
     revision = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)

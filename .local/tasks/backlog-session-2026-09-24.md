@@ -23,3 +23,5 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 **Cluster gate (toolbar/ZIP-canvas, #752-#754,#761-#764,#766-#769,#773):** `make check`: backend green; frontend 2826/2828, two load-only timing flakes (App.embedRoute, useDraftAutosave) pass alone (3 files/21 tests); filed as a workflow defect (issue below).
 | #755 | CLOSED | 35da890 | vitest 247; playwright zip specs | PASS | closed | local |
 | #756 | CLOSED | 35da890 | same | PASS | closed | local |
+| #757 | CLOSED | afdc93c | vitest 246; playwright artPieceZipDrawing757 | PASS | closed | local |
+| #758 | CLOSED | afdc93c | same | PASS | closed | local |

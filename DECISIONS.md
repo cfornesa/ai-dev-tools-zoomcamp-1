@@ -1382,3 +1382,7 @@ The owner decided the stage toolbar order follows the PHP augment-humankind impl
 ## 2026-09-24 — 3D drawings are flat plane assets (#774 closed; #778–#787)
 
 The owner rejected screen-space and world-stroke ink for 3D. A manual drawing in a 3D piece is a flat plane object (a rectangle-only drawing reads as a flat plane; multi-colour shapes allowed) authored in a frozen-scene Draw mode and treated as an asset: transformable, expandable, rotatable horizontally/vertically, and animatable manually or via AI prompts, on both Three.js and A-Frame. Assessed as feasible: scene3d already has a `plane` object; missing pieces are a drawing-content schema (#778), Three.js/A-Frame rendering (#779/#780), Draw mode (#781), manual transforms (#782), a per-object animation channel that scene3d lacks (#783), AI operations (#784), and viewer/immersive/ZIP surfaces (#785–#787). #777 was superseded.
+
+## 2026-09-24 — Animation kinds, proportional expansion, contextual UX (#782–#784)
+
+The owner confirmed animation kinds rotate, orbit, oscillate, and pulse (#783). Drawing-plane expansion is proportional by default; non-proportional stretch only on explicit request (contextual control or an AI prompt such as "elongate layer <name>") (#782, #784). Workspace UX principle: controls are contextual, grouped by task in familiar menus, with progressive disclosure so the default workspace stays focused; applied as acceptance to #775, #776, #781–#784.

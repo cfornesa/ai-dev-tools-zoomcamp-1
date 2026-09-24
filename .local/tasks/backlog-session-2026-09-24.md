@@ -258,3 +258,98 @@ deferred.
   dependency order. Browser/production blockers remain linked to #748/#788,
   #798/#803/#807/#806. No new follow-up issue was created because each finding
   matched an existing open issue.
+
+## #811 transaction — 2026-09-24 continuation
+
+- Groom: criterion-ready Stage 2b vendor-neutral provider contract; no
+  duplicate. Scope is generated art-piece generate/refine transport selection,
+  owner-scoped credentials, active catalog capability gating, and backend
+  regression coverage. Production rollout is out of scope.
+- Engineering: Ollama Cloud / Kimi K3 / medium rostered; Codex / GPT-5 /
+  medium substituted. Commit `c37c00f` adds Mistral/Gemini/DeepSeek transport
+  selection, vendor/model request fields, catalog `art_piece` capability and
+  seed migration limited to the five seeded models, selected-vendor credential
+  isolation, Gemini scalar JSON-string normalization, API docs, and matrix
+  tests.
+- QA self-review: Claude / Sonnet 5 / medium rostered; Codex / GPT-5 / medium
+  substituted. Stage 3 independent-family review not run. Intake
+  ACCEPTED-WITH-FIXES: QA corrected and retested Gemini JSON-string handling.
+  `UV_CACHE_DIR=/tmp/codex-final-uv-cache uv run pytest tests -k art_piece -q`
+  passed 136 with 1554 deselected. `UV_CACHE_DIR=/tmp/codex-final-uv-cache
+  make backend-check` passed Ruff, format, mypy, and 1651 tests with 39
+  skips.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/811#issuecomment-5823540495`;
+  issue #811 closed. Evidence is local automated only; no production
+  provider calls, publish, or production database action was performed.
+
+## Distillation refresh 4 — 2026-09-24 continuation
+
+- #811 is terminal CLOSED/QA PASS. The authenticated open inventory is now
+  20 issues: #748, #788, #798–#809 (with #810 and #811 closed), and #814–#821.
+- Duplicate audit: no new issue emerged from #811 QA. Production/browser
+  boundaries remain attached to existing #748/#788/#803/#807 work; no new
+  issue was created.
+- Next dependency-ready issue: #809, whose prior QA boundary should be
+  rechecked now that #810 and #811 provider contracts are closed. The local
+  vendor-neutral capability does not authorize production rollout.
+
+## #809 transaction — 2026-09-24 continuation
+
+- Groom: criterion-ready Stage 2b structured 2D prompt-source contract; prior
+  QA failure was re-derived as a generated-art transport concern outside this
+  issue and mapped to #811, now closed. No duplicate.
+- Engineering: Ollama Cloud / Kimi K3 / medium rostered; Codex / GPT-5 /
+  medium substituted. Commit `ead0312` moves the detailed 2D create/edit
+  prompts into `backend/ai_provider/prompts.py`, routes Mistral, Gemini, and
+  DeepSeek through the canonical constants, and adds an actual transport
+  capture matrix.
+- QA self-review: Claude / Sonnet 5 / medium rostered; Codex / GPT-5 / medium
+  substituted. Stage 3 independent-family review not run. Focused matrix and
+  3D regression checks passed 41 tests. The exact issue command
+  `UV_CACHE_DIR=/tmp/codex-final-uv-cache uv run pytest tests -k 'provider or
+  ai' -q` passed 585 with 13 skips. Full `make backend-check` passed Ruff,
+  format, mypy, and 1652 tests with 39 skips.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/809#issuecomment-5823654751`;
+  issue #809 closed. Evidence is local automated only; no production action.
+
+## Distillation refresh 5 — 2026-09-24 continuation
+
+- #809 and #811 are terminal CLOSED/QA PASS. The authenticated open inventory
+  is now 19 issues: #748, #788, #798, #799, #800, #801, #802, #803, #804,
+  #805, #806, #807, #808, and #814–#821.
+- Duplicate/follow-up audit: no new actionable gap emerged from #809. Its
+  earlier generated-art boundary is represented by closed #811; the remaining
+  live immersive/browser and production work remains on existing issues.
+- Next dependency-ready target: #808, then #814–#821 in dependency order.
+
+## #817 transaction — 2026-09-24 continuation
+
+- Groom: criterion-ready Stage 2b additive catalog capability contract; #814
+  and #808 were already closed on authenticated inspection, so no duplicate
+  work was absorbed. #817 is the prerequisite for #816.
+- Engineering: Ollama Cloud / Kimi K3 / medium rostered; Codex / GPT-5 /
+  medium substituted. Commit `6919593` adds additive `native_schema` defaulting
+  true, migration `0093`, catalog service/API revision-aware round-trip,
+  `docs/api.md`, typed admin API fields, and labelled create/edit UI checkboxes.
+- QA self-review: Claude / Sonnet 5 / medium rostered; Codex / GPT-5 / medium
+  substituted. Stage 3 independent-family review not run. Catalog tests: 25
+  passed. AdminSettings: 4 passed. Final frontend: 276 files / 2972 tests,
+  lint, format, and typecheck passed. Final backend/full repository gate:
+  1652 passed / 39 skipped; `makemigrations --check --dry-run` reported no
+  changes.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/817#issuecomment-5823874711`;
+  issue #817 closed. Evidence is local automated only; migration-bearing
+  production verification remains a separate owner-authorized release step.
+
+## Distillation refresh 6 — 2026-09-24 continuation
+
+- Terminal closures since refresh 5: #809 and #817 CLOSED/QA PASS. Authenticated
+  open inventory is now 17 issues: #748, #788, #798–#807, and #815, #816,
+  #818–#821.
+- Dependency audit: #816 is now dependency-ready after #817 and is the next
+  implementation target. #818 precedes #819, which precedes #820/#821.
+- Production audit: #803/#806/#807 remain production/browser gated; no
+  unauthorized publish or schema/data action was performed.

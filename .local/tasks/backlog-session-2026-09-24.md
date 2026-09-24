@@ -41,4 +41,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #785 | CLOSED | f6e2e9e | playwright drawingPlaneViewers785 4 (both engines) + drawingPlane3d + objectAnimation3d | PASS | closed | local |
 | #786 | CLOSED | f6e2e9e | playwright drawingPlaneViewers785 immersive (both engines) | PASS | closed | local |
 | #787 | CLOSED | 71885a5 | vitest 2924 (1 known #791 flake); playwright drawingPlaneZip787 4 + ZIP regression 18 | PASS | closed | local; no migration; follow-up #797 |
-| #790 | CLOSED | PENDING | backend canonical/public 22+; vitest CanonicalPublicPiece; playwright privatePieceToolbar773 (#790) | PASS | closed | local; no migration |
+| #790 | CLOSED | 9c58b4f | backend canonical/public 22+; vitest CanonicalPublicPiece; playwright privatePieceToolbar773 (#790) | PASS | closed | local; no migration |

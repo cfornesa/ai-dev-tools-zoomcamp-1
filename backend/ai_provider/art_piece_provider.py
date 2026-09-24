@@ -44,6 +44,7 @@ from ai_provider.errors import (
     AIProviderTimeoutError,
 )
 from ai_provider.interface import AIUsageMetadata
+from ai_provider.prompts import ART_PIECE_REFINE_SYSTEM_PROMPT, art_piece_2d_prompt
 from scenes.art_piece_contract import (
     GENERATABLE_ART_PIECE_ENGINES,
     SUPPORTED_ART_PIECE_ENGINES,
@@ -91,59 +92,6 @@ _ESTIMATED_COMPLETION_COST_PER_1K = 0.006
 RESPONSE_TOO_LARGE_PREFIX = "response_too_large:"
 EMPTY_OR_MALFORMED_PREFIX = "empty_or_malformed:"
 ENGINE_UNAVAILABLE_PREFIX = "engine_unavailable:"
-
-_CANVAS2D_SYSTEM_PROMPT = """You generate the inner markup for a single generative-art piece \
-using ONLY the browser's native Canvas2D API (CanvasRenderingContext2D). Follow these rules \
-exactly:
-
-- Respond with ONLY the raw markup -- no prose, no explanation, no markdown code fences \
-before or after it.
-- Output exactly one <canvas id="art-piece-canvas"> element followed by exactly one \
-<script> element that draws to it via canvas.getContext("2d"). Nothing else: no <html>, \
-<head>, <body>, <!DOCTYPE>, or any other top-level element.
-- The script must be fully self-contained and network-free: never fetch/XMLHttpRequest/ \
-WebSocket/EventSource, never a <script src="...">, never @import, never access \
-window.top/window.parent/document.cookie/localStorage/sessionStorage, never define or call \
-eval()/Function()/setTimeout with a string argument.
-- The canvas must size itself to its container (read canvas.clientWidth/clientHeight, or a \
-fixed reasonable size like 800x600) and begin drawing immediately without user interaction.
-- Prefer requestAnimationFrame for any animation, and make sure the loop is self-terminating \
-or bounded -- never an infinitely recursive synchronous call that could hang the page."""
-
-# Issue #199 (SVG extension): unlike Canvas2D, SVG output is inert, declarative
-# markup -- no script execution is needed (or wanted) at all for a purely
-# SVG-driven piece. Animation, when the prompt calls for it, is expressed
-# with SVG's own native animation elements or CSS, never JavaScript.
-_SVG_SYSTEM_PROMPT = """You generate the markup for a single generative-art piece using ONLY \
-inert SVG markup -- no JavaScript at all. Follow these rules exactly:
-
-- Respond with ONLY the raw markup -- no prose, no explanation, no markdown code fences \
-before or after it.
-- Output exactly one <svg id="art-piece-svg" ...> root element and nothing else: no <html>, \
-<head>, <body>, <!DOCTYPE>, <script>, <foreignObject>, or any other top-level element.
-- The <svg> must declare a viewBox (e.g. viewBox="0 0 800 600") so it scales to its container, \
-and must render its content immediately with no user interaction required.
-- Any animation must use SVG's own native animation elements (<animate>, <animateTransform>, \
-<animateMotion>) or a <style> block with CSS @keyframes/animation -- never JavaScript, never \
-a <script> element of any kind.
-- Never reference an external resource: no xlink:href/href to a URL, no <image> with a remote \
-src, no @import, no url(...) pointing outside the document. Every color/gradient/pattern must \
-be defined inline within the <svg> itself."""
-
-_P5JS_SYSTEM_PROMPT = """You generate plain JavaScript for one p5.js generative-art piece. \
-The p5.js library is already loaded globally as `p5`; do not import it or write a script tag. \
-Respond with only JavaScript and assign an instance-mode sketch function to `window.sketch`. \
-The function receives the p5 instance, must create its canvas in setup, draw immediately, and \
-keep all state self-contained. Never fetch a URL, create another script, access cookies or \
-storage, or use eval/Function. Use only the p5 API and deterministic inline values."""
-
-_C2JS_SYSTEM_PROMPT = """You generate plain JavaScript for one C2.js generative-art piece. \
-The wrapper supplies a `runtime` object with `runtime.canvas`, `runtime.c2`, and \
-`runtime.startFrame(callback)`. Respond with only JavaScript and assign a function to \
-`window.sketch`; the function receives `runtime`, draws through the supplied canvas context, \
-and uses `runtime.startFrame` for animation or interaction. Never fetch a URL, create another \
-script, access cookies or storage, or use eval/Function. Keep the source self-contained and \
-preserve pointer events for the interactive variant."""
 
 # Issue #199 (Three.js extension): the AI writes plain JavaScript, not
 # markup -- the sandboxed document (`artPieceSandbox.ts`) loads Three.js
@@ -291,15 +239,11 @@ class ArtPieceProvider:
                 error=f"{ENGINE_UNAVAILABLE_PREFIX}{library}",
             )
 
-        system_prompt = {
-            "canvas2d": _CANVAS2D_SYSTEM_PROMPT,
-            "svg": _SVG_SYSTEM_PROMPT,
-            "p5js": _P5JS_SYSTEM_PROMPT,
-            "c2js": _C2JS_SYSTEM_PROMPT,
-            "c2js-interactive": _C2JS_SYSTEM_PROMPT,
-            "threejs": _THREEJS_SYSTEM_PROMPT,
-            "aframe": _AFRAME_SYSTEM_PROMPT,
-        }[library]
+        system_prompt = (
+            art_piece_2d_prompt(library)
+            if library in {"canvas2d", "svg", "p5js", "c2js", "c2js-interactive"}
+            else {"threejs": _THREEJS_SYSTEM_PROMPT, "aframe": _AFRAME_SYSTEM_PROMPT}[library]
+        )
 
         messages = [{"role": "system", "content": system_prompt}]
         if self.persona_prompt:
@@ -399,12 +343,7 @@ class ArtPieceProvider:
         zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
         if library not in SUPPORTED_LIBRARIES:
             raise ValueError(f"Unsupported library: {library!r}")
-        system_prompt = (
-            "You refine an existing generative art source. Return ONLY valid JSON with this exact "
-            'shape: {"edits":[{"search":"exact source text","replace":"replacement text"}]}.'
-            " Each search must be copied exactly from the source and must match once. "
-            "Do not return prose, markdown, or a complete replacement source."
-        )
+        system_prompt = ART_PIECE_REFINE_SYSTEM_PROMPT
         prompt = json.dumps(
             {
                 "instruction": instruction,

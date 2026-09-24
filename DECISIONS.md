@@ -1474,3 +1474,13 @@ evidence boundary, not evidence that the feature works in production.
 Mistral transport. Gemini and DeepSeek generated-art transports do not yet
 exist in this checkout, so the provider matrix belongs to #811 and #809 stays
 open rather than claiming byte-identical multi-provider behavior.
+
+## 2026-09-24 — Shared 3D prompt contract and final local gate (#810)
+
+#810 is closed after `8e34e85` plus the lint-only follow-up `2184a63`. The
+3D create/edit/convert instructions are sourced from `ai_provider/prompts.py`
+for Mistral, Gemini, and DeepSeek; Gemini now applies the same drawing-plane
+patch validation/proportionalization path as Mistral. Full local verification
+passed: backend 1619/39 skipped, frontend 276 files/2970 tests, mypy, ruff,
+format, typecheck, and action-pin checks. #811 remains the separate
+vendor-agnostic generated-art transport issue; no scope was silently absorbed.

@@ -164,3 +164,38 @@ order is:
 
 Next groomed issue: #811, now that its #809 and #810 shared-prompt
 prerequisites are implemented; its six-library provider matrix remains open.
+
+## Production-readiness refresh — 2026-09-24 continuation
+
+- Local deployment/quality: PASS. `UV_CACHE_DIR=/tmp/codex-final-uv-cache make
+  check` passed GitHub Action pin checks, backend ruff/format/mypy and
+  1619 backend tests with 39 skips, plus frontend lint/format/typecheck and
+  276 Vitest files / 2970 tests. Existing lint warnings and jsdom notices did
+  not fail the gate.
+- Approved-browser verification: BLOCKED for unpublished #798/#803/#807 by
+  Playwright Chromium's macOS Mach-port launch permission error. Signed-in
+  Chrome remains available and confirmed the published/Compose bundles predate
+  those commits; it cannot substitute for the required Playwright matrix.
+- Production: NO-GO. #747 is production-verified; #788's one authorized
+  import was a no-op for the changed sources; #803/#798/#807 are unpublished;
+  #806 and the remaining parity issues are open. No additional publish or
+  production data action was authorized.
+- Current open inventory: 23 issues. #810 is closed with QA PASS; #811–#821,
+  #812/#813, #798/#799–#807, #748, and #788 remain open with their recorded
+  next actions. No duplicate or silently omitted issue was found.
+
+## Session-completion refresh — 2026-09-24 continuation
+
+- This is a partial backlog continuation, not a complete project run:
+  #810 reached terminal CLOSED/QA PASS; #798/#809 remain QA FAIL/open; the
+  remaining 23 open issues are explicitly handed forward rather than falsely
+  closed.
+- Routing: #810 stage 2b and stage 4 were Codex/GPT-5 substitutions for
+  Ollama Kimi K3 and Claude Sonnet 5; stage 3 was not run. Readiness was a
+  Codex/GPT-5 substitution under the owner authorization already recorded in
+  the session decisions; no independent-family review was credited.
+- Follow-up audit: #811 is the next dependency-ready implementation target;
+  #812/#813 are independent safety contracts; #818–#821 retain their declared
+  dependency order. Browser/production blockers remain linked to #748/#788,
+  #798/#803/#807/#806. No new follow-up issue was created because each finding
+  matched an existing open issue.

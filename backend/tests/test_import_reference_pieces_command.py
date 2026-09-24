@@ -9,7 +9,7 @@ from django.core.management.base import CommandError
 from django.test import override_settings
 
 from scenes.management.commands.import_reference_pieces import IMPORT_NAME
-from scenes.models import ArtPiece, ArtPieceThumbnail, PublicProfile
+from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion, PublicProfile
 
 
 @pytest.mark.django_db
@@ -162,6 +162,74 @@ def test_production_import_is_existing_owner_scoped_and_idempotent():
     )
     assert second == first
     assert PublicProfile.objects.filter(handle="cfornesa").count() == 1
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=False)
+def test_production_import_reconciles_changed_source_without_mutating_history():
+    User = get_user_model()
+    owner = User.objects.create_user(
+        username="christopher1", email="cfornesa@outlook.com", password="unused"
+    )
+    PublicProfile.objects.create(user=owner, handle="cfornesa", is_public=True)
+    kwargs = {
+        "username": "christopher1",
+        "email": "cfornesa@outlook.com",
+        "handle": "cfornesa",
+        "allow_production": True,
+    }
+
+    call_command("import_reference_pieces", "import", **kwargs)
+    piece = ArtPiece.objects.get(owner=owner, public_slug="reference-c2-study")
+    original_public_id = piece.public_id
+    original_version = piece.current_version
+    original_source = original_version.source
+    ArtPieceVersion.objects.filter(pk=original_version.pk).update(
+        source="legacy fixed-coordinate source"
+    )
+
+    call_command("import_reference_pieces", "import", **kwargs)
+
+    piece.refresh_from_db()
+    current = piece.current_version
+    assert current.sequence == original_version.sequence + 1
+    assert current.source == original_source
+    assert piece.public_id == original_public_id
+    assert piece.public_slug == "reference-c2-study"
+    assert ArtPiece.objects.get(pk=piece.pk).versions.count() == 2
+    assert piece.versions.get(sequence=1).source == "legacy fixed-coordinate source"
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=False)
+def test_production_dry_run_reports_changed_source_update_without_writing():
+    User = get_user_model()
+    owner = User.objects.create_user(
+        username="christopher1", email="cfornesa@outlook.com", password="unused"
+    )
+    PublicProfile.objects.create(user=owner, handle="cfornesa", is_public=True)
+    kwargs = {
+        "username": "christopher1",
+        "email": "cfornesa@outlook.com",
+        "handle": "cfornesa",
+        "allow_production": True,
+    }
+    call_command("import_reference_pieces", "import", **kwargs)
+    piece = ArtPiece.objects.get(owner=owner, public_slug="reference-c2-study")
+    ArtPieceVersion.objects.filter(pk=piece.current_version_id).update(
+        source="legacy fixed-coordinate source"
+    )
+    output = StringIO()
+
+    call_command("import_reference_pieces", "import", "--dry-run", stdout=output, **kwargs)
+
+    assert '"would_update"' in output.getvalue()
+    assert '"source_id": "legacy-c2-default"' in output.getvalue()
+    assert '"current_sequence": 1' in output.getvalue()
+    assert '"next_sequence": 2' in output.getvalue()
+    piece.refresh_from_db()
+    assert piece.current_version.sequence == 1
+    assert piece.current_version.source == "legacy fixed-coordinate source"
 
 
 @pytest.mark.django_db

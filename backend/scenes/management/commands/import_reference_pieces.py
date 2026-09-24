@@ -324,10 +324,23 @@ class Command(BaseCommand):
         )
         conflicts: list[str] = []
         existing_markers: set[str] = set()
+        would_update: list[dict[str, object]] = []
         for piece in marked:
             version = piece.current_version
             if version:
-                existing_markers.add(version.generation_metadata["reference_import"]["source_id"])
+                source_id = version.generation_metadata["reference_import"]["source_id"]
+                existing_markers.add(source_id)
+                fixture = next(fixture for fixture in FIXTURES if fixture.source_id == source_id)
+                if version.source != fixture.source or version.capabilities != fixture.capabilities:
+                    would_update.append(
+                        {
+                            "source_id": source_id,
+                            "public_id": str(piece.public_id),
+                            "slug": piece.public_slug,
+                            "current_sequence": version.sequence,
+                            "next_sequence": version.sequence + 1,
+                        }
+                    )
         for fixture in FIXTURES:
             if fixture.source_id in existing_markers:
                 continue
@@ -343,6 +356,7 @@ class Command(BaseCommand):
             "planned_fixture_count": len(FIXTURES),
             "existing_reference_count": len(existing_markers),
             "would_create": len(FIXTURES) - len(existing_markers),
+            "would_update": would_update,
             "slug_conflicts": conflicts,
             "idempotent": True,
         }
@@ -363,17 +377,22 @@ class Command(BaseCommand):
             if existing:
                 piece = existing
                 version = piece.current_version
-                if version and version.capabilities != fixture.capabilities:
+                if version and (
+                    version.source != fixture.source or version.capabilities != fixture.capabilities
+                ):
                     version = ArtPieceVersion.objects.create(
                         piece=piece,
                         sequence=version.sequence + 1,
-                        source=version.source,
+                        source=fixture.source,
                         capabilities=fixture.capabilities,
                         generation_metadata=version.generation_metadata,
                     )
                     piece.current_version = version
                     piece.save(update_fields=["current_version", "updated_at"])
-                if version and (not hasattr(version, "thumbnail") or version.thumbnail.is_fallback):
+                    _store_trusted_thumbnail(version, fixture)
+                elif version and (
+                    not hasattr(version, "thumbnail") or version.thumbnail.is_fallback
+                ):
                     _store_trusted_thumbnail(version, fixture)
             else:
                 slug = normalize_public_slug(fixture.slug)

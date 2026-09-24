@@ -1,7 +1,7 @@
 /** Issue #734: canonical immersive 3D keeps the shared camera overlay full-stage. */
 import { chromium, expect, test } from '@playwright/test';
 
-import { apiGet } from './support/api.js';
+import { apiGet, apiPatch } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
@@ -34,7 +34,12 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
 
   const profileResponse = await apiGet(page.context(), '/api/account/profile/');
   expect(profileResponse.status()).toBe(200);
-  const { handle } = (await profileResponse.json()) as { handle: string };
+  const profile = (await profileResponse.json()) as { handle: string };
+  const { handle } = profile;
+  // An anonymous visitor can only see a piece whose owner's profile is public.
+  expect(
+    (await apiPatch(page.context(), '/api/account/profile/', { ...profile, is_public: true })).ok(),
+  ).toBe(true);
   const publicProfileResponse = await apiGet(page.context(), `/api/users/@${handle}/`);
   expect(publicProfileResponse.status()).toBe(200);
   const publicProfile = (await publicProfileResponse.json()) as {
@@ -52,7 +57,8 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
     await anonymousPage.goto(`/users/@${handle}/immersive/${piece.slug}`);
     const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
-    await expect(frame).toBeVisible();
+    // A fresh browser process cold-starts the dev server's route chunks, which can take a while.
+    await expect(frame).toBeVisible({ timeout: 45_000 });
     // Steer lives inside the Piece controls popover (#767).
     await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await toolbar
@@ -110,7 +116,16 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
       expect(Number(geometry.videoZ)).toBeLessThan(Number(geometry.toolbarZ));
       expect(Number(geometry.videoZ)).toBeLessThan(Number(geometry.dpadZ));
 
-      await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+      // The popover opened for Steer above stays open ("Hide piece controls") until the first pass
+      // closes it below, so only open it when it is not already open.
+      if (
+        !(await toolbar
+          .getByRole('button', { name: 'Hide piece controls' })
+          .isVisible()
+          .catch(() => false))
+      ) {
+        await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+      }
       const controls = toolbar.getByRole('group', { name: 'Piece controls' });
       await expect(controls.getByRole('slider', { name: 'Camera opacity' })).toBeVisible();
       await expect(controls.getByRole('checkbox', { name: 'Mirror camera overlay' })).toBeVisible();

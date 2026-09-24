@@ -5587,6 +5587,12 @@ select.ai-proposal-field-full-width {
 }
 
 @media (max-width: 700px) {
+  /* Hover labels are a desktop affordance: on a phone-width stage a label centred under an icon near the
+     right edge would push the page wider than the viewport (a horizontal scrollbar). */
+  .piece-stage-toolbar .piece-stage-tooltip {
+    display: none;
+  }
+
   .piece-stage-toolbar {
     right: 0.75rem;
     max-width: calc(100% - 1.5rem);

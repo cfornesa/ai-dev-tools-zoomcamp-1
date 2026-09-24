@@ -11,17 +11,21 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createBlank3DProjectViaUI } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
 const BASE_BUTTONS = ['Take screenshot', 'Open download menu', 'Expand piece to fullscreen'];
-const IMMERSIVE_BUTTONS = ['Enable sound', 'Steer the piece', 'Show hand gesture guide'];
+// Steer lives inside the Piece controls popover on inline stages (#767), so it is not a toolbar button.
+const IMMERSIVE_BUTTONS = ['Enable sound', 'Show hand gesture guide'];
 
 type RouteCase = {
   name: string;
   routeSuffix: string;
+  /** Embed keeps the compact menu shell; immersive shows its icon row inline (#692/#693). */
+  toolbarMode: 'menu' | 'inline';
   trackCamera: boolean;
   expectedButtons: string[];
   extraAssertions?: (page: import('@playwright/test').Page, viewerTestId: string) => Promise<void>;
@@ -31,18 +35,21 @@ const CASES: RouteCase[] = [
   {
     name: 'embed (#387)',
     routeSuffix: '/embed/p3d',
+    toolbarMode: 'menu',
     trackCamera: false,
     expectedButtons: [...BASE_BUTTONS, 'Piece controls'],
   },
   {
     name: 'immersive (#388)',
     routeSuffix: '/immersive/p3d',
+    toolbarMode: 'inline',
     trackCamera: true,
     expectedButtons: [...BASE_BUTTONS, ...IMMERSIVE_BUTTONS, 'Piece controls'],
   },
   {
     name: 'immersive CMS (#389)',
     routeSuffix: '/immersive/p3d',
+    toolbarMode: 'inline',
     trackCamera: true,
     expectedButtons: [...BASE_BUTTONS, ...IMMERSIVE_BUTTONS, 'Piece controls'],
     extraAssertions: async (page, viewerTestId) => {
@@ -70,13 +77,7 @@ test.describe('anonymous public 3D route stage chrome (#387/#388/#389)', () => {
       if (index === 0) {
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
       }
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-      await page.waitForURL(/\/projects3d\/[^/]+$/);
-      const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
-      expect(projectId).toBeTruthy();
-      if (!projectId) continue;
+      const projectId = await createBlank3DProjectViaUI(page);
 
       await page.setViewportSize({ width: 1280, height: 900 });
       await page
@@ -124,7 +125,7 @@ test.describe('anonymous public 3D route stage chrome (#387/#388/#389)', () => {
         await anonymousPage.goto(`${routeCase.routeSuffix}/${suffix}`);
         const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
         const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
-        await expect(frame).toBeVisible();
+        await expect(frame).toBeVisible({ timeout: 45_000 });
         await expect(toolbar).toBeVisible();
         await expect(anonymousPage.locator('.app-shell-header')).toHaveCount(0);
         await expect(anonymousPage.getByRole('link', { name: 'Public gallery' })).toHaveCount(0);
@@ -133,46 +134,92 @@ test.describe('anonymous public 3D route stage chrome (#387/#388/#389)', () => {
           await routeCase.extraAssertions(anonymousPage, 'immersive-project3d-viewer');
         }
 
-        await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-        for (const viewport of [
-          { name: 'desktop', width: 1280, height: 900 },
-          { name: 'mobile', width: 375, height: 812 },
-        ]) {
-          await anonymousPage.setViewportSize(viewport);
-          const dialog = toolbar.getByRole('dialog', { name: 'Preview actions' });
-          await expect(dialog).toBeVisible();
-          for (const name of routeCase.expectedButtons) {
-            await expect(
-              dialog.getByRole('button', { name, exact: name === 'Piece controls' }),
-            ).toBeVisible();
+        if (routeCase.toolbarMode === 'menu') {
+          await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+          for (const viewport of [
+            { name: 'desktop', width: 1280, height: 900 },
+            { name: 'mobile', width: 375, height: 812 },
+          ]) {
+            await anonymousPage.setViewportSize(viewport);
+            const dialog = toolbar.getByRole('dialog', { name: 'Preview actions' });
+            await expect(dialog).toBeVisible();
+            for (const name of routeCase.expectedButtons) {
+              await expect(
+                dialog.getByRole('button', { name, exact: name === 'Piece controls' }),
+              ).toBeVisible();
+            }
+            const metrics = await frame.evaluate((element) => {
+              const box = element.getBoundingClientRect();
+              const card = document.querySelector('.piece-stage-command-card');
+              const cardBox = card?.getBoundingClientRect();
+              return {
+                frameRatio: box.width / box.height,
+                documentWidth: document.documentElement.scrollWidth,
+                viewportWidth: innerWidth,
+                cardInside: Boolean(
+                  cardBox &&
+                  cardBox.x >= 0 &&
+                  cardBox.y >= 0 &&
+                  cardBox.right <= innerWidth &&
+                  cardBox.bottom <= innerHeight,
+                ),
+                cardOverflow: card ? getComputedStyle(card).overflowY : 'missing',
+              };
+            });
+            expect(metrics.frameRatio).toBeCloseTo(16 / 9, 1);
+            expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
+            expect(metrics.cardInside).toBe(true);
+            expect(['auto', 'scroll']).not.toContain(metrics.cardOverflow);
           }
-          const metrics = await frame.evaluate((element) => {
-            const box = element.getBoundingClientRect();
-            const canvas = element.querySelector('canvas');
-            const card = document.querySelector('.piece-stage-command-card');
-            const cardBox = card?.getBoundingClientRect();
-            return {
-              frameRatio: box.width / box.height,
-              canvasRatio: (canvas?.width ?? 0) / (canvas?.height ?? 1),
-              documentWidth: document.documentElement.scrollWidth,
-              viewportWidth: innerWidth,
-              cardInside: Boolean(
-                cardBox &&
-                cardBox.x >= 0 &&
-                cardBox.y >= 0 &&
-                cardBox.right <= innerWidth &&
-                cardBox.bottom <= innerHeight,
-              ),
-              cardOverflow: card ? getComputedStyle(card).overflowY : 'missing',
-            };
-          });
-          expect(metrics.frameRatio).toBeCloseTo(16 / 9, 1);
-          expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
-          expect(metrics.cardInside).toBe(true);
-          expect(['auto', 'scroll']).not.toContain(metrics.cardOverflow);
+          await anonymousPage.keyboard.press('Escape');
+          await expect(toolbar.getByRole('dialog', { name: 'Preview actions' })).toBeHidden();
+        } else {
+          // Inline public stages show their icon row directly (no hamburger since #692/#693).
+          for (const viewport of [
+            { name: 'desktop', width: 1280, height: 900 },
+            { name: 'mobile', width: 375, height: 812 },
+          ]) {
+            await anonymousPage.setViewportSize(viewport);
+            await expect(
+              toolbar.getByRole('button', { name: 'Open piece controls menu' }),
+            ).toHaveCount(0);
+            for (const name of routeCase.expectedButtons) {
+              await expect(
+                toolbar.getByRole('button', { name, exact: name === 'Piece controls' }),
+              ).toBeVisible();
+            }
+            const metrics = await frame.evaluate((element) => {
+              const box = element.getBoundingClientRect();
+              const bar = element.querySelector('.piece-stage-toolbar')?.getBoundingClientRect();
+              return {
+                frameRatio: box.width / box.height,
+                documentWidth: document.documentElement.scrollWidth,
+                viewportWidth: innerWidth,
+                toolbarInside: Boolean(
+                  bar &&
+                  bar.x >= 0 &&
+                  bar.y >= 0 &&
+                  bar.right <= innerWidth + 1 &&
+                  bar.bottom <= innerHeight,
+                ),
+              };
+            });
+            expect(metrics.frameRatio).toBeCloseTo(16 / 9, 1);
+            expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
+            expect(metrics.toolbarInside).toBe(true);
+          }
         }
-        await anonymousPage.keyboard.press('Escape');
-        await expect(toolbar.getByRole('dialog', { name: 'Preview actions' })).toBeHidden();
+        if (routeCase.trackCamera) {
+          // Steer is reachable inside the single Piece controls popover, not as its own toolbar button.
+          await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toHaveCount(0);
+          await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+          await expect(
+            toolbar
+              .getByRole('group', { name: 'Piece controls' })
+              .getByRole('button', { name: 'Steer the piece' }),
+          ).toBeVisible();
+          await toolbar.getByRole('button', { name: 'Hide piece controls' }).click();
+        }
       } finally {
         await context.close();
       }

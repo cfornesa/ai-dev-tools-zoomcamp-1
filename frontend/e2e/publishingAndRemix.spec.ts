@@ -167,9 +167,13 @@ async function openCameraAndDemoControls(page: Page) {
 }
 
 async function expectPublicStageChrome(page: Page) {
-  await openPieceControlsMenu(page);
   const toolbar = page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
   await expect(toolbar).toBeVisible();
+  // The public 2D stage shows its icon row inline (no hamburger since #692/#693); menu-mode shells still
+  // put the same actions in a "Piece actions" dialog. Cover whichever this surface uses.
+  const inline =
+    (await toolbar.getByRole('button', { name: 'Open piece controls menu' }).count()) === 0;
+  if (!inline) await openPieceControlsMenu(page);
   await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
   await toolbar.getByRole('button', { name: 'Open download menu' }).click();
@@ -177,26 +181,29 @@ async function expectPublicStageChrome(page: Page) {
   await expect(toolbar.getByRole('menuitem', { name: 'Download Non-Camera' })).toBeVisible();
   await toolbar.getByRole('button', { name: 'Open download menu' }).click();
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
-  const layout = await toolbar
-    .getByRole('dialog', { name: 'Piece actions' })
-    .locator(".piece-stage-command-card > [role='group']")
-    .evaluate((element) => {
-      const style = getComputedStyle(element);
-      const box = element.getBoundingClientRect();
-      return {
-        display: style.display,
-        flexDirection: style.flexDirection,
-        width: box.width,
-        height: box.height,
-      };
-    });
+  const group = inline
+    ? toolbar.locator('.piece-stage-toolbar-group').first()
+    : toolbar
+        .getByRole('dialog', { name: 'Piece actions' })
+        .locator(".piece-stage-command-card > [role='group']");
+  const layout = await group.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const box = element.getBoundingClientRect();
+    return {
+      display: style.display,
+      flexDirection: style.flexDirection,
+      width: box.width,
+      height: box.height,
+    };
+  });
   expect(layout.display).toBe('flex');
-  // Issue #444: the group is now the vertical list of rows inside the
-  // "Piece actions" modal dialog (same design manual2dStageChrome.spec.ts
-  // already asserts as `column`), not an inline horizontal toolbar --
-  // still wider than tall since each row spans the dialog's full width.
-  expect(layout.flexDirection).toBe('column');
-  expect(layout.width).toBeGreaterThan(layout.height);
+  if (inline) {
+    expect(layout.flexDirection).toBe('row');
+  } else {
+    // Issue #444: the vertical list of rows inside the "Piece actions" modal dialog.
+    expect(layout.flexDirection).toBe('column');
+    expect(layout.width).toBeGreaterThan(layout.height);
+  }
 }
 
 function pieceActionsToolbar(page: Page) {
@@ -937,7 +944,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       await anonPage.goto(`/p/${emptyScenePublicProjectId}`);
       await expect(
         anonPage.getByRole('heading', {
-          level: 2,
+          level: 1,
           name: 'Anonymous viewer empty-scene fixture project',
         }),
       ).toBeVisible();
@@ -972,10 +979,10 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       // carries role="status", so this must scope to the exact text rather
       // than the bare role.
       await expect(anonPage.getByRole('status').getByText(/Loading project/)).toBeVisible();
-      await expect(anonPage.getByRole('heading', { level: 2 })).toHaveCount(0);
+      await expect(anonPage.getByRole('heading', { level: 1, name: /fixture/i })).toHaveCount(0);
 
       await navigation;
-      await expect(anonPage.getByRole('heading', { level: 2 })).toBeVisible();
+      await expect(anonPage.getByRole('heading', { level: 1, name: /fixture/i })).toBeVisible();
 
       await anonContext.close();
     });
@@ -1019,14 +1026,29 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
       // -- mirrors #140's "a render-time failure must never blank the whole
       // page" principle, scoped to this page's own try/catch around
       // previewRef.current.render(...).
-      await anonContext.route(`**/api/public/projects/${publicProjectId}/`, async (route) => {
-        const response = await route.fetch();
-        const body = (await response.json()) as {
-          current_version: { scene_json: { canvas: { width: number } } };
-        };
-        body.current_version.scene_json.canvas.width = 5;
-        await route.fulfill({ response, json: body });
-      });
+      // `/p/:id` redirects to the canonical piece route, whose payload nests the project under `piece`, so
+      // both the legacy public endpoint and the canonical resolver are corrupted the same way.
+      type SceneHolder = { current_version: { scene_json: { canvas: { width: number } } } };
+      const breakScene = (body: SceneHolder & { piece?: SceneHolder }) => {
+        for (const holder of [body, body.piece]) {
+          if (holder?.current_version?.scene_json?.canvas) {
+            holder.current_version.scene_json.canvas.width = 5;
+          }
+        }
+        return body;
+      };
+      for (const pattern of [
+        `**/api/public/projects/${publicProjectId}/`,
+        '**/api/users/@*/pieces/*/',
+      ]) {
+        await anonContext.route(pattern, async (route) => {
+          const response = await route.fetch();
+          await route.fulfill({
+            response,
+            json: breakScene((await response.json()) as SceneHolder & { piece?: SceneHolder }),
+          });
+        });
+      }
       const anonPage = await anonContext.newPage();
       await anonPage.goto(`/p/${publicProjectId}`);
       await openCameraAndDemoControls(anonPage);
@@ -1323,11 +1345,17 @@ test.describe('Remix and fork', () => {
     await loginViaUI(visitorPage, fixtures.other.email, fixtures.password);
     await visitorPage.goto(`/p/${sourceId}`);
     await expect(visitorPage.getByRole('button', { name: 'Fork this project' })).toBeVisible();
+    const forkResponse = visitorPage.waitForResponse(
+      (res) =>
+        res.request().method() === 'POST' &&
+        /\/api\/public\/projects\/[^/]+\/fork\/$/.test(new URL(res.url()).pathname),
+    );
     await visitorPage.getByRole('button', { name: 'Fork this project' }).click();
-    await visitorPage.waitForURL(/\/projects\/[^/]+$/);
+    // Forking creates the visitor's profile handle if needed, then lands on the canonical editor route.
+    await visitorPage.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
     await expandAllCollapsibleSections(visitorPage);
-    const forkMatch = /\/projects\/([^/]+)$/.exec(visitorPage.url());
-    if (!forkMatch) throw new Error('Fork did not navigate to a new project.');
+    const forkedProjectId = ((await (await forkResponse).json()) as { id: string }).id;
+    const forkMatch = ['', forkedProjectId] as [string, string];
     const forkedId = forkMatch[1];
 
     // Private default.
@@ -1446,9 +1474,9 @@ test.describe('Remix and fork', () => {
     const visitorPage = await visitorContext.newPage();
     await loginViaUI(visitorPage, fixtures.other.email, fixtures.password);
     await visitorPage.goto(`/p/${sourceId}`);
-    await expect(visitorPage.getByRole('heading', { level: 2 })).toHaveText(
-      'Remix-disabled source project',
-    );
+    await expect(
+      visitorPage.getByRole('heading', { level: 1, name: 'Remix-disabled source project' }),
+    ).toHaveText('Remix-disabled source project');
     // The Fork button itself is never offered.
     await expect(visitorPage.getByRole('button', { name: 'Fork this project' })).toHaveCount(0);
 

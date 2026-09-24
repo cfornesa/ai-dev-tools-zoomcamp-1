@@ -1,3 +1,4 @@
+import { fetchProfile } from '../api/profile';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -417,6 +418,9 @@ function PublicProjectViewer({
     setForkError(null);
     try {
       const forked = await forkProject(id, forkRequestIdRef.current);
+      // A first-time visitor has no profile handle yet, and the canonical editor route needs one; loading the
+      // account profile creates it, so the redirect below can resolve instead of dead-ending (#749).
+      await fetchProfile().catch(() => undefined);
       navigate(`/projects/${forked.id}`);
     } catch {
       setForkState('idle');

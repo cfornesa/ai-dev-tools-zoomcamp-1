@@ -1426,3 +1426,7 @@ The standalone Three.js runtime (`standaloneThreeRuntimeSource.ts`, a self-conta
 ## 2026-09-24 — Selection chrome on the sandboxed A-Frame stage (#796)
 
 The A-Frame stage stays an opaque-origin `allow-scripts` iframe. An editor-only script (never in public, immersive, or exported markup) reports the camera matrix/fov/canvas size and stage clicks over the existing versioned bridge; the parent rebuilds a Three.js camera, projects the plane with the same maths as the Three.js stage, and picks planes by point-in-projected-quad. During a handle drag the stage keeps its last render (`holdRender`) and reloads once on release; a selected plane's animation holds at its authored pose. Limits: the sandbox reloads on each committed edit (its camera view resets), and only drawing planes are click-selectable on this stage.
+
+## 2026-09-24 — Fork ensures the visitor's profile handle (#749)
+
+Triage of #749: responsiveShell, drawioPublicSurfaces, and aiAndRecovery already pass (earlier toolbar/create-flow repairs); publishingAndRemix had four test-only drifts (inline public stage toolbar, the title heading is now an h1, the render-failure fixture must also corrupt the canonical resolver payload, the fork lands on the canonical editor route) plus one real defect: a visitor who has never loaded their account profile has no handle, so forking ended on "Editor unavailable". The fork handler now loads the account profile (which creates the handle) before navigating.

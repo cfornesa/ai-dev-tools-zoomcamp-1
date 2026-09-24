@@ -1460,3 +1460,17 @@ Owner restricted this session to task-distillation only. Added #809-#816 (new on
 ## 2026-09-24 — @ contract for generated pieces and catalog column approved
 
 Owner accepted #814's default and approved the additive `native_schema` catalog column (#817). Added #817-#821.
+
+## 2026-09-24 — AI prompt and cosmic behavior follow-up boundaries (#798/#809)
+
+#798's implementation is local-only: reduced-motion and low-power behavior is
+covered by focused tests, but the required Playwright Chromium run cannot
+launch on this macOS host because the browser process is denied a Mach-port.
+The signed-in Chrome session remains usable for inspection and shows the
+published/Compose bundles predate `ef3d718`; this is a browser/deployment
+evidence boundary, not evidence that the feature works in production.
+
+#809 centralizes the generated 2D create/refine prompt source and verifies the
+Mistral transport. Gemini and DeepSeek generated-art transports do not yet
+exist in this checkout, so the provider matrix belongs to #811 and #809 stays
+open rather than claiming byte-identical multi-provider behavior.

@@ -55,7 +55,7 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #747 | CLOSED / QA PASS / production verified | d87b711, 16ceca5 | `make check`; published smoke; live view-source metadata | PASS | closed | production release verified at augmentrart.com; metadata backend forwarding confirmed; QA comment 5822183321803 |
 | #748 | BLOCKED | — | local checks green; required live Chrome matrix not completed in this handoff | FAIL/INCOMPLETE | open | requires live 1280x900 and 375x812 inspection of toolbar, routes, ZIP, ink, drawing planes, slug, and private-owner view |
 | #788 | QA FAIL / production blocked | 652c36ed production release; no source-update commit | rehearsal + one authorized production run + post-run live API/Chrome inspection + cleanup smoke | FAIL | open | production command ran exactly once; source rows stayed version 1 with old fixed-coordinate sources; no second run authorized |
-| #798 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | depends on #807; reduced-motion, low-power, and style-token scoping |
+| #798 | IMPLEMENTED / QA FAIL environment boundary | ef3d718 | focused Layout/Cosmic 21 passed; typecheck/lint/format pass; four required Playwright tests fail before launch at macOS Mach-port boundary | FAIL (browser evidence unavailable) | open | reduced-motion, low-power, and theme-token behavior implemented; signed-in Chrome and Compose still serve pre-commit bundle; QA comment 5822506902 |
 | #799 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | 2D runtime template parity |
 | #800 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | 3D runtime template parity |
 | #801 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | all-engine ready/error runtime template |
@@ -112,6 +112,37 @@ order is:
 | #819 | 2b | depends #818 | bounded owner-scoped refine mentions |
 | #820 | 2b | depends #819/#812 | preservation and delete-intent enforcement |
 | #821 | 2a | depends #819/#818 | generated-piece refine typeahead |
+
+### #809 transaction
+
+- Groom: criterion-ready Stage 2b prompt-source/provider contract; no duplicate.
+- Engineering: Codex / GPT-5 / current session substituted for Ollama Cloud
+  Kimi K3; commit `74f6670` centralizes the 2D create/refine prompts in
+  `backend/ai_provider/prompts.py` and adds focused tests.
+- QA self-review: Codex / GPT-5 / current session substituted for Claude
+  Sonnet 5; focused tests and provider/AI subset pass, but the current code
+  has no Gemini/DeepSeek generated-art transport. That missing matrix is
+  explicitly shifted to #811, so #809 is terminal QA FAIL and remains open.
+- Reconciliation: QA comment `5822557535`; no closure because one acceptance
+  criterion is not met.
+
+### #798 transaction
+
+- Groom: criterion-ready Stage 2b behavior-hardening issue after #807; no
+  duplicate. Its closure requires reduced-motion, low-power, and theme-token
+  behavior plus real-browser evidence.
+- Engineering: Codex / GPT-5 / current session substituted for Ollama Cloud
+  Kimi K3; commit `ef3d718` adds the low-power root marker, motion suppression,
+  and cosmic theme tokens with focused regression coverage.
+- QA self-review: Codex / GPT-5 / current session substituted for Claude
+  Sonnet 5; 21 focused tests, typecheck, lint, and format checks pass. The
+  required four-test Playwright command fails before execution at macOS's
+  Chromium Mach-port permission boundary. Signed-in Chrome confirms production
+  and Compose still serve the pre-`ef3d718` bundle, so local evidence cannot
+  close the deployed criterion.
+- Reconciliation: QA comment `5822506902`; terminal QA FAIL/open. No publish
+  was performed because production authorization covers #747, #748, and #788,
+  not this release.
 
 Next groomed issue: #798, because its prerequisite #807 has an implemented
 commit and it is the only small independent follow-up in the site-shell chain;

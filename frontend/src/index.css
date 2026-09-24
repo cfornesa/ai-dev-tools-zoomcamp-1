@@ -6157,3 +6157,11 @@ select.ai-proposal-field-full-width {
 .piece-stage-tools-row .piece-stage-visitor-draw-controls {
   flex: 1 1 auto;
 }
+
+/* Immersive/embed stage: the icon row and the engine-tools row stack (icon row
+   first) instead of sitting side by side, so the icon row never wraps its
+   Fullscreen button onto a second line at desktop widths (#754). */
+.piece-stage-toolbar[data-toolbar-mode='inline'] {
+  flex-direction: column;
+  align-items: flex-start;
+}

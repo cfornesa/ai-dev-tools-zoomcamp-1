@@ -46,6 +46,7 @@
  */
 import * as THREE from 'three';
 
+import { rasterizeDrawing } from './drawingRaster';
 import type {
   Camera3D,
   Group3D,
@@ -110,8 +111,32 @@ function buildGeometry(object: SceneObject3D): THREE.BufferGeometry {
   }
 }
 
+/** #779: a drawing plane shows its vector drawing as a canvas texture (transparent where the drawing is).
+ * When 2D canvas is unavailable the plane falls back to its plain material colour. */
+function buildDrawingTexture(object: SceneObject3D): THREE.CanvasTexture | null {
+  if (object.type !== 'drawingPlane' || !object.drawing) return null;
+  const canvas = rasterizeDrawing(object.drawing);
+  if (!canvas) return null;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  return texture;
+}
+
 function buildMaterial(object: SceneObject3D): THREE.MeshStandardMaterial {
   const opacity = object.material.opacity ?? 1;
+  const map = buildDrawingTexture(object);
+  if (map) {
+    return new THREE.MeshStandardMaterial({
+      map,
+      // The texture carries the colours; white keeps them unmodified.
+      color: new THREE.Color(0xffffff),
+      opacity,
+      transparent: true,
+      alphaTest: 0.01,
+      side: object.doubleSided === false ? THREE.FrontSide : THREE.DoubleSide,
+    });
+  }
   return new THREE.MeshStandardMaterial({
     color: new THREE.Color(object.material.color),
     ...(object.material.emissive
@@ -234,7 +259,11 @@ export function disposeThreeSceneGraph(scene: THREE.Scene): void {
     if (node instanceof THREE.Mesh) {
       node.geometry.dispose();
       const materials = Array.isArray(node.material) ? node.material : [node.material];
-      for (const material of materials) material.dispose();
+      for (const material of materials) {
+        // #779: a drawing plane's canvas texture is GPU memory the material does not free.
+        (material as THREE.MeshStandardMaterial).map?.dispose();
+        material.dispose();
+      }
     }
   });
 }

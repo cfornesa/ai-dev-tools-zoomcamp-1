@@ -424,3 +424,56 @@ describe('disposeThreeSceneGraph', () => {
     expect(materialDisposeSpy).toHaveBeenCalled();
   });
 });
+
+describe('buildThreeSceneGraph: drawing planes (#779)', () => {
+  const planeObject = {
+    id: 'draw-1',
+    type: 'drawingPlane' as const,
+    groupId: null,
+    transform: identityTransform,
+    material: { color: '#ffffff', opacity: 0.8 },
+    visible: true,
+    width: 4,
+    height: 3,
+    drawing: {
+      width: 256,
+      height: 192,
+      shapes: [
+        { id: 'r', type: 'rect' as const, x: 8, y: 8, width: 100, height: 80, fill: '#22c55e' },
+      ],
+    },
+  };
+
+  it('builds a double-sided plane whose material maps the rasterised drawing', () => {
+    const fakeContext = new Proxy({}, { get: () => () => undefined, set: () => true });
+    const spy = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue(fakeContext as unknown as CanvasRenderingContext2D);
+    const { scene } = buildThreeSceneGraph(baseScene({ objects: [planeObject] }), 1);
+    const mesh = scene.children.find((node) => node.name === 'draw-1') as THREE.Mesh;
+    expect(mesh.geometry).toBeInstanceOf(THREE.PlaneGeometry);
+    const material = mesh.material as THREE.MeshStandardMaterial;
+    expect(material.map).toBeInstanceOf(THREE.CanvasTexture);
+    expect((material.map!.image as HTMLCanvasElement).width).toBe(256);
+    expect(material.transparent).toBe(true);
+    expect(material.opacity).toBeCloseTo(0.8);
+    expect(material.side).toBe(THREE.DoubleSide);
+    const disposeMap = vi.spyOn(material.map!, 'dispose');
+    disposeThreeSceneGraph(scene);
+    expect(disposeMap).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it('falls back to the plain material colour when 2D canvas is unavailable', () => {
+    const spy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    const { scene } = buildThreeSceneGraph(
+      baseScene({ objects: [{ ...planeObject, material: { color: '#336699' } }] }),
+      1,
+    );
+    const mesh = scene.children.find((node) => node.name === 'draw-1') as THREE.Mesh;
+    const material = mesh.material as THREE.MeshStandardMaterial;
+    expect(material.map).toBeNull();
+    expect(material.color.getHexString()).toBe('336699');
+    spy.mockRestore();
+  });
+});

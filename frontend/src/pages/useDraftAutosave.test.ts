@@ -1,11 +1,16 @@
 import 'fake-indexeddb/auto';
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor as rawWaitFor } from '@testing-library/react';
 import { IDBFactory } from 'fake-indexeddb';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { SceneDocument, SceneVersion } from '../api/projects';
 import { useDraftAutosave } from './useDraftAutosave';
+
+// These waits span a real debounce plus a fake-IndexedDB write, which under a parallel full-suite run can
+// exceed testing-library's 1s default (#791). Scoped to this file, not global.
+const waitFor: typeof rawWaitFor = (callback, options) =>
+  rawWaitFor(callback, { timeout: 5000, ...options });
 
 /**
  * Task 42: the React-hook wiring layer over `../storage/draftAutosave.ts`

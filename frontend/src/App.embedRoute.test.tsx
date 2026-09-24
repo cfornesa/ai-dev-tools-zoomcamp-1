@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from './api/client';
 import * as projectsApi from './api/projects';
@@ -7,6 +7,7 @@ import type { PublicProject } from './api/projects';
 import * as projects3dApi from './api/projects3d';
 import type { PublicProject3D } from './api/projects3d';
 import App from './App';
+import { PRELOAD_TIMEOUT_MS, preloadAppRoutes } from './test/preloadAppRoutes';
 
 /**
  * Issue #292: `/embed/p/:id` is a chrome-less sibling of `/p/:id` --
@@ -102,6 +103,9 @@ function basePublicProject3D(overrides: Partial<PublicProject3D> = {}): PublicPr
 function navigateTo(path: string) {
   window.history.pushState({}, '', path);
 }
+
+// Route modules are lazy-loaded; preload them so first-render assertions don't race the import (#791).
+beforeAll(preloadAppRoutes, PRELOAD_TIMEOUT_MS);
 
 beforeEach(() => {
   vi.clearAllMocks();

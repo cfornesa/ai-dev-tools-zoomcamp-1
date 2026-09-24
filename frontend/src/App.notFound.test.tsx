@@ -1,9 +1,10 @@
 import { render, screen, within } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError } from './api/client';
 import * as projectsApi from './api/projects';
 import App from './App';
+import { PRELOAD_TIMEOUT_MS, preloadAppRoutes } from './test/preloadAppRoutes';
 
 /**
  * Issue #485: the catch-all `*` route inside `Layout` renders a visible,
@@ -26,6 +27,9 @@ const mockedFetchPublicGallery = vi.mocked(projectsApi.fetchPublicGallery);
 function navigateTo(path: string) {
   window.history.pushState({}, '', path);
 }
+
+// Route modules are lazy-loaded; preload them so first-render assertions don't race the import (#791).
+beforeAll(preloadAppRoutes, PRELOAD_TIMEOUT_MS);
 
 beforeEach(() => {
   vi.clearAllMocks();

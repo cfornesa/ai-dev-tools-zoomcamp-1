@@ -177,6 +177,28 @@ function ImmersiveProject3DViewer({
       data-testid="immersive-project3d-viewer"
       data-immersive-embed-mode={isCmsEmbed ? 'cms' : isEmbed ? 'custom' : undefined}
     >
+      {!isEmbed && (
+        <div
+          className="immersive-project3d-content immersive-project3d-content--header"
+          data-testid="immersive-info-header"
+        >
+          <header>
+            <p className="public-piece-kind">3D scene</p>
+            <h1 className="public-piece-page-heading">{readyProject.title}</h1>
+            <p className="public-project-attribution">
+              By {authorDisplayName || readyProject.owner}
+            </p>
+            <p className="public-piece-meta">
+              3D scene · {versionCount} {versionCount === 1 ? 'version' : 'versions'}
+            </p>
+            {!!description && <p className="public-project-context">{description}</p>}
+            <p role="note">
+              Drag to look around, scroll/pinch to zoom, and use the arrow keys to fly through the
+              piece.
+            </p>
+          </header>
+        </div>
+      )}
       <section
         role="region"
         aria-label="Preview"
@@ -194,22 +216,10 @@ function ImmersiveProject3DViewer({
         )}
       </section>
       {!isEmbed && (
-        <div className="immersive-project3d-content" data-testid="immersive-info-block">
-          <header>
-            <p className="public-piece-kind">3D scene</p>
-            <h1 className="public-piece-page-heading">{readyProject.title}</h1>
-            <p className="public-project-attribution">
-              By {authorDisplayName || readyProject.owner}
-            </p>
-            <p className="public-piece-meta">
-              3D scene · {versionCount} {versionCount === 1 ? 'version' : 'versions'}
-            </p>
-            {!!description && <p className="public-project-context">{description}</p>}
-            <p role="note">
-              Drag to look around, scroll/pinch to zoom, and use the arrow keys to fly through the
-              piece.
-            </p>
-          </header>
+        <div
+          className="immersive-project3d-content immersive-project3d-content--footer"
+          data-testid="immersive-info-block"
+        >
           <div
             className="immersive-project3d-embed-actions"
             aria-label="Piece actions"

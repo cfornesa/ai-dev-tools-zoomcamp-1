@@ -195,7 +195,7 @@ describe('ImmersiveProject3DViewer load states', () => {
     );
   });
 
-  it('places canonical metadata, actions, and versions below the immersive stage', async () => {
+  it('places title and description above the stage, with actions and versions below it', async () => {
     const project = basePublicProject3D({
       description: 'A study in spatial repetition.',
       version_count: 3,
@@ -210,13 +210,18 @@ describe('ImmersiveProject3DViewer load states', () => {
 
     renderInitialViewer(project);
 
-    const info = await screen.findByTestId('immersive-info-block');
+    const header = await screen.findByTestId('immersive-info-header');
+    const info = screen.getByTestId('immersive-info-block');
     const stage = screen.getByRole('region', { name: 'Preview' });
+    expect(header.compareDocumentPosition(stage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(stage.compareDocumentPosition(info) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(
-      within(info).getByRole('heading', { name: 'Rotating Cube', level: 1 }),
+      within(header).getByRole('heading', { name: 'Rotating Cube', level: 1 }),
     ).toBeInTheDocument();
-    expect(within(info).getByText('A study in spatial repetition.')).toBeInTheDocument();
+    expect(within(header).getByText('A study in spatial repetition.')).toBeInTheDocument();
+    expect(
+      within(info).queryByRole('heading', { name: 'Rotating Cube', level: 1 }),
+    ).not.toBeInTheDocument();
     expect(within(info).getByRole('button', { name: 'Share' })).toBeInTheDocument();
     expect(within(info).getByRole('button', { name: 'Embed (Custom)' })).toBeInTheDocument();
     expect(within(info).getByRole('button', { name: 'Embed (CMS)' })).toBeInTheDocument();

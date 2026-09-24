@@ -1,11 +1,11 @@
-/** Issue #733: canonical immersive 3D metadata/actions live below the stage. */
+/** Issue #803: canonical immersive 3D identity precedes the stage; actions/details follow it. */
 import { expect, test } from '@playwright/test';
 
 import { apiGet, apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
-test('canonical immersive 3D page exposes below-stage metadata and version history', async ({
+test('canonical immersive 3D page exposes above-stage identity and below-stage actions/history', async ({
   page,
   browser,
 }, testInfo) => {
@@ -20,7 +20,7 @@ test('canonical immersive 3D page exposes below-stage metadata and version histo
   };
   const metadata = await apiPatch(page.context(), `/api/projects3d/${project.id}/`, {
     title: `Immersive info architecture ${project.id}`,
-    seo_config: { description: 'A below-stage immersive 3D fixture.' },
+    seo_config: { description: 'An above-stage immersive 3D fixture.' },
   });
   expect(metadata.status()).toBe(200);
   const secondVersion = await apiPost(page.context(), `/api/projects3d/${project.id}/versions/`, {
@@ -55,14 +55,16 @@ test('canonical immersive 3D page exposes below-stage metadata and version histo
       await anonymousPage.goto(`/users/@${profile.handle}/immersive/${piece.slug}`);
 
       const stage = anonymousPage.getByRole('region', { name: 'Preview' });
+      const header = anonymousPage.getByTestId('immersive-info-header');
       const info = anonymousPage.getByTestId('immersive-info-block');
       await expect(stage).toBeVisible();
+      await expect(header).toBeVisible();
       await expect(info).toBeVisible();
       await expect(
-        info.getByRole('heading', { name: `Immersive info architecture ${project.id}` }),
+        header.getByRole('heading', { name: `Immersive info architecture ${project.id}` }),
       ).toBeVisible();
       await expect(
-        info.getByText('A below-stage immersive 3D fixture.', { exact: true }),
+        header.getByText('An above-stage immersive 3D fixture.', { exact: true }),
       ).toBeVisible();
       await expect(info.getByRole('button', { name: 'Share' })).toBeVisible();
       await expect(info.getByRole('button', { name: 'Embed (Custom)' })).toBeVisible();
@@ -70,6 +72,16 @@ test('canonical immersive 3D page exposes below-stage metadata and version histo
       await expect(info.getByRole('heading', { name: 'Current version context' })).toBeVisible();
       await expect(info.getByRole('heading', { name: 'Versions' })).toBeVisible();
       await expect(info.getByText('CURRENT', { exact: true })).toBeVisible();
+      expect(
+        await header.evaluate(
+          (element, stageElement) =>
+            Boolean(
+              stageElement &&
+              element.compareDocumentPosition(stageElement) & Node.DOCUMENT_POSITION_FOLLOWING,
+            ),
+          await stage.elementHandle(),
+        ),
+      ).toBe(true);
       expect(
         await stage.evaluate(
           (element, infoElement) =>

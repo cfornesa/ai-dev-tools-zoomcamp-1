@@ -4786,19 +4786,26 @@ select.ai-proposal-field-full-width {
   box-sizing: border-box;
 }
 
-/* Issue #734: canonical immersive 3D uses the reference viewer's centered,
-   viewport-sized stage. The 16:9 box takes the full available width when it
-   fits within the viewport height; otherwise its height is the limiting side.
-   Metadata remains below the stage, while the shared Scene3DPreview owns the
-   live camera stream and all stage controls. */
+/* Issue #734/#803: canonical immersive 3D keeps the descriptive identity
+   above the stage, with actions and version details below it. The 16:9 box
+   takes the full available width when it fits within the viewport height;
+   otherwise its height is the limiting side. */
 .immersive-project3d-viewer:not(.immersive-project3d-viewer--embed) {
   min-height: 100dvh;
-  padding: 0;
+  padding: var(--site-density) 1.25rem 1.25rem;
+}
+
+.immersive-project3d-content--header {
+  margin: 0 auto 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--panel-color, transparent) 75%, transparent);
 }
 
 .immersive-project3d-viewer:not(.immersive-project3d-viewer--embed) > [data-panel='preview'] {
   display: grid;
-  min-height: 100dvh;
+  min-height: min(100dvh, calc(100vw * 9 / 16));
   place-items: center;
   width: 100%;
   overflow: hidden;
@@ -4817,8 +4824,15 @@ select.ai-proposal-field-full-width {
 
 .immersive-project3d-content {
   max-width: 72rem;
-  margin: 24px auto 0;
+  margin: 1.25rem auto 0;
   overflow-wrap: anywhere;
+}
+
+.immersive-project3d-content--footer {
+  padding: 1.25rem;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--panel-color, transparent) 75%, transparent);
 }
 
 .immersive-project3d-content header {
@@ -4856,6 +4870,11 @@ select.ai-proposal-field-full-width {
 
   .immersive-project3d-viewer {
     padding: var(--site-density) 16px 16px;
+  }
+
+  .immersive-project3d-content--header,
+  .immersive-project3d-content--footer {
+    padding: 1rem;
   }
 
   .public-piece-version-context {

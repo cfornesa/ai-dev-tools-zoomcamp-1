@@ -18,3 +18,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #767 | CLOSED | 511ae34 | vitest 223; playwright regularToolbar3d767, public3dCameraOverlay728 | PASS | closed | local; drift specs to #769 |
 | #768 | CLOSED | 65a784a | playwright regularToolbar2d768 | PASS | closed | local |
 | #769 | CLOSED | 2758bab | playwright immersive3dToolbar769 | PASS | closed | local; drift #789 |
+| #773 | CLOSED | d8faf86 | playwright privatePieceToolbar773 | PASS | closed | local; follow-up #790 |

@@ -1484,3 +1484,13 @@ patch validation/proportionalization path as Mistral. Full local verification
 passed: backend 1619/39 skipped, frontend 276 files/2970 tests, mypy, ruff,
 format, typecheck, and action-pin checks. #811 remains the separate
 vendor-agnostic generated-art transport issue; no scope was silently absorbed.
+
+## 2026-09-24 — Vendor-neutral structured output (#816)
+
+#816 was routed as complex logic with Ollama Cloud / Kimi K3 / medium rostered;
+Codex / GPT-5 / medium substituted. QA returned the first implementation for
+two in-scope non-native-path defects, then accepted commit `25f2a63` after the
+focused provider matrix (61 passed) and full `make check` (backend 1658 passed
+/ 39 skipped; frontend 276 files / 2972 tests). No production rollout was
+authorized or performed; the catalog capability remains local until its
+deployment gate is separately authorized.

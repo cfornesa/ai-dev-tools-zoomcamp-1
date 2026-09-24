@@ -373,3 +373,34 @@ deferred.
   owner authorization currently covers only #747/#748/#788, not publishing
   #803/#798/#807 or running other production writes. No new follow-up issue is
   needed; each blocker has an existing issue and concrete next action.
+
+## #816 transaction — 2026-09-24 continuation
+
+- Groom: criterion-ready Stage 2b vendor-neutral structured-output contract;
+  #817 was the completed additive catalog prerequisite. No duplicate or new
+  follow-up was needed.
+- Engineering: Ollama Cloud / Kimi K3 / medium rostered; Codex / GPT-5 /
+  medium substituted. Commit `25f2a63` adds fenced/prose JSON extraction,
+  one bounded repair callback with attempt accounting, catalog capability
+  routing, and non-native handling across Gemini, DeepSeek, and Mistral.
+- QA self-review: Claude / Sonnet 5 / medium rostered; Codex / GPT-5 / medium
+  substituted. Stage 3 independent-family review not run. QA intake returned
+  the first diff to engineering for two scoped fixes (DeepSeek still forcing
+  JSON mode; Mistral 3D conversion using strict parsing), then re-entered QA.
+  Focused provider matrix passed 61 tests. Final `make check` passed: backend
+  1658 passed / 39 skipped; frontend 276 files / 2972 tests.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/816#issuecomment-5824092639`;
+  issue #816 closed. Evidence is local automated only; no production action.
+
+## Distillation refresh 8 — 2026-09-24 continuation
+
+- #816 is terminal CLOSED/QA PASS. The authenticated open inventory is 17
+  issues: #748, #788, #798–#807, #815, and #818–#821.
+- Duplicate/follow-up audit: #816 QA found no new actionable issue; the two
+  implementation defects were in-scope and fixed before closure. The renewed
+  immersive presentation report remains existing #803, not a duplicate.
+- Dependency/order rationale: #818 is the next dependency-ready AI issue,
+  followed by #819, then #820/#821; #815 is independent. Production/browser
+  boundaries remain on #748/#788/#803/#806/#807. No unauthorized publish or
+  production data action is planned.

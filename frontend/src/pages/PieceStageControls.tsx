@@ -625,7 +625,8 @@ function PieceStageControls({
   const toolbarCapabilities: PieceStageCapabilities = {
     screenshot: capabilities.screenshot !== false,
     download: capabilities.download === true ? ('zip' as const) : false,
-    immersive: capabilities.immersive === true,
+    // The immersive surface is already the immersive view: no self-link (matrix row 3, #753).
+    immersive: capabilities.immersive === true && presentation !== 'immersive',
     sound: capabilities.sound === true,
     pieceControls:
       capabilities.camera_view === true ||

@@ -70,10 +70,10 @@ test.describe('generated immersive toolset (#691)', () => {
 
       await expect(page.getByRole('heading', { name: `${engine} immersive piece` })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
-      await expect(
-        page.locator('.piece-stage-action-label', { hasText: 'Download ZIP' }),
-      ).toBeVisible();
-      await expect(page.locator('.piece-stage-action-label', { hasText: 'VR' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Open download menu' })).toBeVisible();
+      // Matrix row 3 (#753): the immersive surface never links to itself.
+      await expect(page.getByRole('link', { name: 'View immersive piece' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'View immersive piece' })).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
       await expect(page.getByRole('link', { name: 'Back to regular viewer' })).toHaveAttribute(
         'href',
@@ -98,4 +98,34 @@ test.describe('generated immersive toolset (#691)', () => {
       });
     });
   }
+
+  test('icon row order: Fullscreen last, no self-link, toolbar clear of the subject (#753)', async ({
+    page,
+  }, testInfo) => {
+    await stubCanonicalPiece(page, 'threejs');
+    for (const viewport of [
+      { width: 1280, height: 900 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/users/@artist/immersive/sample-piece');
+      const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
+      await expect(toolbar).toBeVisible();
+      const labels = await toolbar.locator('.piece-stage-toolbar-group').evaluate((group) =>
+        Array.from(group.querySelectorAll(':scope > button, :scope > div > button'))
+          .filter((node) => !node.closest('[data-piece-stage-download-menu]'))
+          .map((node) => node.getAttribute('aria-label') ?? ''),
+      );
+      expect(labels[0]).toBe('Take screenshot');
+      expect(labels[1]).toBe('Open download menu');
+      expect(labels[labels.length - 1]).toBe('Expand piece to fullscreen');
+      expect(labels).not.toContain('View immersive piece');
+      // The whole toolbar leaves most of the stage to the artwork.
+      const height = (await toolbar.boundingBox())!.height;
+      expect(height).toBeLessThan(viewport.height * 0.3);
+      await page.screenshot({
+        path: testInfo.outputPath(`immersive-order-${viewport.width}.png`),
+      });
+    }
+  });
 });

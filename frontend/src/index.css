@@ -5603,12 +5603,8 @@ select.ai-proposal-field-full-width {
     padding: 0 0.5rem;
   }
 
-  /* Leave the bottom-right fullscreen target clear while the inline action
-     row wraps through the remaining stage width on phones. */
-  .piece-stage-toolbar > .piece-stage-toolbar-group {
-    max-width: calc(100% - 3.5rem);
-  }
-
+  /* Fullscreen now sits inside the inline icon row (#752), so the row may use
+     the whole stage width and a 7-button set still fits one line at 375px. */
   .piece-stage-download-menu,
   .piece-stage-controls-panel {
     width: min(20rem, calc(100vw - 2rem));

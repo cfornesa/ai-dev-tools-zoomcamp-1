@@ -113,6 +113,11 @@ canvas {
   display: block;
   max-width: 100%;
 }
+#c2-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
 #art-piece-container, a-scene {
   display: block;
   position: relative;
@@ -350,7 +355,7 @@ function buildIndexHtml(
   window.__artPieceInstance = new window.p5(window.sketch, mount);
 }());</script>`;
   } else if (library === 'c2js' || library === 'c2js-interactive') {
-    body = `<canvas id="c2-canvas" width="320" height="240"></canvas>
+    body = `<canvas id="c2-canvas" width="1280" height="720"></canvas>
 <script>${exportCode}
 (function () {
   var canvas = document.getElementById('c2-canvas');

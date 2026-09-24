@@ -84,10 +84,21 @@ describe('generateArtPieceBundle', () => {
       expect(fileNames(zip)).toEqual(['README.txt', 'index.html', 'styles/piece.css']);
       const html = await zip.files['index.html'].async('string');
       const css = await zip.files['styles/piece.css'].async('string');
-      expect(html).toContain('id="c2-canvas"');
+      expect(html).toContain('id="c2-canvas" width="1280" height="720"');
       expect(html).toContain('var c2Fallback = {');
       expect(html).toContain('art-piece-navigation-pose');
       expect(css).toContain('height: 100dvh');
+    }
+  });
+
+  it('C2.js regular ZIP: canvas is the reference 1280x720 and fills the stage width at 16:9 (#764)', async () => {
+    for (const library of ['c2js', 'c2js-interactive'] as const) {
+      const blob = await generateArtPieceBundle(library, C2_CODE, { presentation: 'regular' });
+      const zip = await JSZip.loadAsync(blob);
+      const html = await zip.files['index.html'].async('string');
+      const css = await zip.files['styles/piece.css'].async('string');
+      expect(html).toContain('<canvas id="c2-canvas" width="1280" height="720">');
+      expect(css).toMatch(/#c2-canvas \{\s*width: 100%;\s*height: auto;\s*aspect-ratio: 16 \/ 9;/);
     }
   });
 

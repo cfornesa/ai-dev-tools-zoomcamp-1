@@ -132,7 +132,7 @@ export default function PublicArtPieceViewer({
           ownerPiece.current_version.id,
           ownerPiece.current_version.source,
           ownerPiece.engine,
-          ownerPiece.current_version.ink ?? undefined,
+          ...(ownerPiece.current_version.ink ? [ownerPiece.current_version.ink] : []),
         );
       })
       .catch(() => undefined);

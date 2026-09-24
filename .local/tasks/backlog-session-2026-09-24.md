@@ -11,3 +11,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #762 | CLOSED | 43a014f | make check pass | PASS | closed | local; deploy under #748 |
 | #763 | CLOSED | e73fb6a | make check; piece2dFill compose | PASS | closed | local; prod data #788 |
 | #764 | CLOSED | 26cdf02 | vitest generative; playwright c2ZipCanvas764 | PASS | closed | local |
+| #752 | CLOSED | 19e6b9f | vitest 284; playwright embedToolbarOrder, sixEngineEmbed, publicDraw | PASS | closed | local |

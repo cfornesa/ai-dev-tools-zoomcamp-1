@@ -404,3 +404,31 @@ deferred.
   followed by #819, then #820/#821; #815 is independent. Production/browser
   boundaries remain on #748/#788/#803/#806/#807. No unauthorized publish or
   production data action is planned.
+
+## #818 transaction — 2026-09-24 continuation
+
+- Groom: criterion-ready Stage 2b generated-art prompt/parser contract. The
+  public response addition was documented in `docs/api.md` before code edits;
+  no duplicate or out-of-scope refine work was absorbed.
+- Engineering: Ollama Cloud / Kimi K3 / medium rostered; Codex / GPT-5 /
+  medium substituted. Commit `034e447` adds per-library marker instructions,
+  pure ordered region parsing, additive response metadata, and tests.
+- QA self-review: Claude / Sonnet 5 / medium rostered; Codex / GPT-5 / medium
+  substituted. Stage 3 independent-family review not run. QA initially found
+  a prompt-registry import defect during focused intake; engineering corrected
+  it before the issue commit. Focused tests passed 57; `make backend-check`
+  passed with 1668 tests / 39 skips.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/818#issuecomment-5824189357`;
+  issue #818 closed. Evidence is local automated only; no production action.
+
+## Distillation refresh 9 — 2026-09-24 continuation
+
+- #818 is terminal CLOSED/QA PASS. The authenticated open inventory is 16
+  issues: #748, #788, #798–#807, #815, and #819–#821.
+- Duplicate/follow-up audit: no new issue emerged from #818 QA. Marker
+  warnings are intentionally non-blocking and refine/@ targeting remain the
+  existing #819+ contracts.
+- Dependency/order rationale: #819 is the next dependency-ready issue,
+  followed by #820/#821; #815 remains independent. Production/browser work
+  stays on #748/#788/#803/#806/#807 with no unauthorized rollout.

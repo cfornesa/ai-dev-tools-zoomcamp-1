@@ -1494,3 +1494,12 @@ focused provider matrix (61 passed) and full `make check` (backend 1658 passed
 / 39 skipped; frontend 276 files / 2972 tests). No production rollout was
 authorized or performed; the catalog capability remains local until its
 deployment gate is separately authorized.
+
+## 2026-09-24 — Generated art region markers (#818)
+
+#818 was routed as complex logic with Ollama Cloud / Kimi K3 / medium rostered;
+Codex / GPT-5 / medium substituted. The additive `regions`/`warnings` response
+contract was documented before implementation. Commit `034e447` passed 57
+focused tests and `make backend-check` (1668 passed / 39 skipped); QA fixed one
+prompt-registry import defect before accepting the final diff. No production or
+browser evidence was required or performed.

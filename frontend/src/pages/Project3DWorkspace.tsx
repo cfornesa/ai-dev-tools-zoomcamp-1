@@ -174,6 +174,8 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
   }>({ selection: null, nonce: 0 });
   // #782: a drag gesture edits the scene transiently and is folded into ONE undo step when it ends.
   const gestureBaseRef = useRef<Scene3DDocument | null>(null);
+  // #796: true while a handle drag is in flight (the A-Frame stage holds its last render meanwhile).
+  const [gestureActive, setGestureActive] = useState(false);
   const workingSceneRef = useRef<Scene3DDocument | null>(null);
   workingSceneRef.current = workingScene;
   const [undoStack, setUndoStack] = useState<Scene3DDocument[]>([]);
@@ -447,6 +449,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
 
   function beginGesture() {
     gestureBaseRef.current = workingSceneRef.current;
+    setGestureActive(true);
   }
 
   function changeGesture(next: Object3D) {
@@ -463,6 +466,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
   function endGesture() {
     const base = gestureBaseRef.current;
     gestureBaseRef.current = null;
+    setGestureActive(false);
     if (!base) return;
     // Defer one tick so `workingSceneRef` reflects the gesture's last transient edit.
     window.setTimeout(() => {
@@ -691,6 +695,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
               frozen={drawTarget !== undefined}
               // Handles are drawn at the authored pose, so a selected plane's animation holds still.
               pauseAnimations={overlayObject !== undefined}
+              holdRender={gestureActive}
               onPickObject={(objectId) =>
                 requestSelection(objectId ? { kind: 'object', id: objectId } : null)
               }

@@ -1422,3 +1422,7 @@ The standalone Three.js runtime (`standaloneThreeRuntimeSource.ts`, a self-conta
 ## 2026-09-24 — Owners read their own private structured pieces at the regular route (#790)
 
 `PublicPieceBySlugView` now falls back, for the signed-in owner only, to their own non-deleted private 2D/3D project when no public record matches the slug, and returns `edit_url` for the owner on structured pieces (as generated pieces already did). Anonymous visitors and other users still get 404 (asserted per family), deleted pieces never resolve, and no serializer changed — the response is the same public payload the stage already renders, so private and public pieces look and behave the same for the owner.
+
+## 2026-09-24 — Selection chrome on the sandboxed A-Frame stage (#796)
+
+The A-Frame stage stays an opaque-origin `allow-scripts` iframe. An editor-only script (never in public, immersive, or exported markup) reports the camera matrix/fov/canvas size and stage clicks over the existing versioned bridge; the parent rebuilds a Three.js camera, projects the plane with the same maths as the Three.js stage, and picks planes by point-in-projected-quad. During a handle drag the stage keeps its last render (`holdRender`) and reloads once on release; a selected plane's animation holds at its authored pose. Limits: the sandbox reloads on each committed edit (its camera view resets), and only drawing planes are click-selectable on this stage.

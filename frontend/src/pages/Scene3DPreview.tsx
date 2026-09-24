@@ -244,6 +244,8 @@ function ThreeScenePreview({
   scene: Scene3DDocument;
   /** #782: holds object animations at their authored pose (e.g. while a selection's handles are shown) without freezing the camera. */
   pauseAnimations?: boolean;
+  /** #796 (A-Frame stage only): keep showing the last rendered scene while true, so a live handle drag does not reload the sandboxed stage on every pointer move. */
+  holdRender?: boolean;
   /** #782: a click (not a drag) on the stage reports the scene object under it, or null for empty space. */
   onPickObject?: (objectId: string | null) => void;
   /** #782: selection chrome (handles, floating toolbar, precise panel) drawn over the stage in canvas-frame pixels. */

@@ -68,7 +68,8 @@ export const AFRAME_ANIMATION_COMPONENT_SCRIPT = `<script>
       var d = this.data;
       var o = this.el.object3D;
       if (!reduced() && !frozen) this.seconds += Math.min(deltaMs, 100) / 1000;
-      var t = this.seconds, axis = d.axis, speed = d.speed;
+      // #796: a frozen stage (draw mode, or a selection's handles being shown) holds the authored pose.
+      var t = frozen ? 0 : this.seconds, axis = d.axis, speed = d.speed;
       var pos = { x: d.basePosition.x, y: d.basePosition.y, z: d.basePosition.z };
       var rot = { x: d.baseRotation.x, y: d.baseRotation.y, z: d.baseRotation.z };
       var scl = { x: d.baseScale.x, y: d.baseScale.y, z: d.baseScale.z };

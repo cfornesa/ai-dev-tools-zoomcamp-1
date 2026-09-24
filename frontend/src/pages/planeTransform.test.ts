@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   PLANE_MAX_SIZE,
   flipPlane,
+  pickDrawingPlane,
+  planeContainsPoint,
   movePlaneByScreenDelta,
   projectPlane,
   resizePlane,
@@ -152,5 +154,30 @@ describe('drag maths (#782)', () => {
     const { u, v } = screenAxes(projectPlane(plane(), null, camera(), stage));
     expect(u.x).toBeCloseTo(1, 3);
     expect(v.y).toBeCloseTo(1, 3);
+  });
+});
+
+describe('picking drawing planes on a stage (#796)', () => {
+  it('hits a plane inside its projected quad and misses outside', () => {
+    const cam = camera();
+    expect(planeContainsPoint(plane(), null, cam, stage, { x: 400, y: 300 })).toBe(true);
+    expect(planeContainsPoint(plane(), null, cam, stage, { x: 5, y: 5 })).toBe(false);
+  });
+
+  it('picks the nearest of two overlapping planes and ignores hidden ones', () => {
+    const cam = camera();
+    const back = plane({
+      id: 'back',
+      transform: { ...plane().transform, position: { x: 0, y: 0, z: -2 } },
+    });
+    const front = plane({
+      id: 'front',
+      transform: { ...plane().transform, position: { x: 0, y: 0, z: 1 } },
+    });
+    expect(pickDrawingPlane([back, front], [], cam, stage, { x: 400, y: 300 })).toBe('front');
+    expect(
+      pickDrawingPlane([back, { ...front, visible: false }], [], cam, stage, { x: 400, y: 300 }),
+    ).toBe('back');
+    expect(pickDrawingPlane([back, front], [], cam, stage, { x: 3, y: 3 })).toBeNull();
   });
 });

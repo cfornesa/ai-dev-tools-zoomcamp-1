@@ -234,3 +234,48 @@ export function screenAxes(projected: ProjectedPlane): { u: Point; v: Point } {
     v: norm({ x: bl.x - tl.x, y: bl.y - tl.y }),
   };
 }
+
+/** True when the stage point lies inside the plane's projected quadrilateral. */
+export function planeContainsPoint(
+  object: Object3D,
+  group: Group3D | null | undefined,
+  camera: THREE.PerspectiveCamera,
+  stage: StageSize,
+  point: Point,
+): boolean {
+  const projected = projectPlane(object, group, camera, stage);
+  if (!projected.visible) return false;
+  const poly = projected.corners;
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i, i += 1) {
+    const a = poly[i]!;
+    const b = poly[j]!;
+    if (
+      a.y > point.y !== b.y > point.y &&
+      point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
+    ) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/** The id of the nearest drawing plane under `point` (stage pixels), or null. */
+export function pickDrawingPlane(
+  objects: Object3D[],
+  groups: Group3D[],
+  camera: THREE.PerspectiveCamera,
+  stage: StageSize,
+  point: Point,
+): string | null {
+  let best: { id: string; distance: number } | null = null;
+  for (const object of objects) {
+    if (object.type !== 'drawingPlane' || !object.visible) continue;
+    const group = object.groupId ? (groups.find((g) => g.id === object.groupId) ?? null) : null;
+    if (!planeContainsPoint(object, group, camera, stage, point)) continue;
+    const world = new THREE.Vector3(0, 0, 0).applyMatrix4(planeWorldMatrix(object, group));
+    const distance = world.distanceTo(camera.position);
+    if (!best || distance < best.distance) best = { id: object.id, distance };
+  }
+  return best?.id ?? null;
+}

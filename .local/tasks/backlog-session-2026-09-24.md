@@ -45,3 +45,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #794 | CLOSED | 87722e0, b2dcdb7 | vitest; playwright inkLayerGenerated2d 6 (thumbnail + SVG ZIP screenshot) + zip regression | PASS | closed | local |
 | #795 | CLOSED | 06c6e3a | playwright manual3dStageChrome + manual3dOutlineSelection + cameraPreview3d 3 pass | PASS | closed | test-only |
 | #793 | CLOSED | 21a9d2a | playwright artPieceEmbed 3 + artPieceOwnerEditing 5 + artPiece2dEditor 1 + livePreview 1 pass | PASS | closed | test-only |
+| #797 | CLOSED | 6ea276f | playwright public3dCameraPlacement742 1 pass (also exercises the generated 3D ZIP variants) | PASS | closed | test-only |

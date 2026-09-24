@@ -33,6 +33,66 @@ import type {
 
 const ZERO_CONTENT_BACKGROUND_COLOR = '#808080';
 
+/**
+ * #783: the A-Frame counterpart of `objectAnimation.ts`. A first-party component (a static string, never
+ * built from scene data) that applies the same four motion formulas each frame from the object's authored
+ * base transform, so both engines move identically. It pauses under prefers-reduced-motion and when the
+ * parent posts a `scene3d-frozen` message (draw mode). Rotation is applied in XYZ order like scene3d.
+ */
+export const AFRAME_ANIMATION_COMPONENT_SCRIPT = `<script>
+(function () {
+  if (typeof AFRAME === 'undefined' || AFRAME.components['scene3d-animate']) return;
+  var DEG = Math.PI / 180;
+  var frozen = false;
+  window.addEventListener('message', function (event) {
+    var data = event && event.data;
+    if (data && data.source === 'art-piece-parent' && data.type === 'scene3d-frozen') frozen = !!data.frozen;
+  });
+  function reduced() {
+    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+  function rotateAbout(p, axis, deg) {
+    var c = Math.cos(deg * DEG), s = Math.sin(deg * DEG);
+    if (axis === 'x') return { x: p.x, y: p.y * c - p.z * s, z: p.y * s + p.z * c };
+    if (axis === 'y') return { x: p.x * c + p.z * s, y: p.y, z: -p.x * s + p.z * c };
+    return { x: p.x * c - p.y * s, y: p.x * s + p.y * c, z: p.z };
+  }
+  AFRAME.registerComponent('scene3d-animate', {
+    schema: {
+      kind: { type: 'string' }, axis: { type: 'string', default: 'y' }, speed: { type: 'number' },
+      amplitude: { type: 'number', default: -1 }, center: { type: 'vec3' },
+      basePosition: { type: 'vec3' }, baseRotation: { type: 'vec3' }, baseScale: { type: 'vec3', default: { x: 1, y: 1, z: 1 } }
+    },
+    init: function () { this.seconds = 0; },
+    tick: function (time, deltaMs) {
+      var d = this.data;
+      var o = this.el.object3D;
+      if (!reduced() && !frozen) this.seconds += Math.min(deltaMs, 100) / 1000;
+      var t = this.seconds, axis = d.axis, speed = d.speed;
+      var pos = { x: d.basePosition.x, y: d.basePosition.y, z: d.basePosition.z };
+      var rot = { x: d.baseRotation.x, y: d.baseRotation.y, z: d.baseRotation.z };
+      var scl = { x: d.baseScale.x, y: d.baseScale.y, z: d.baseScale.z };
+      if (d.kind === 'rotate') { rot[axis] += speed * t; }
+      else if (d.kind === 'orbit') {
+        var off = { x: pos.x - d.center.x, y: pos.y - d.center.y, z: pos.z - d.center.z };
+        var turned = rotateAbout(off, axis, speed * t);
+        pos = { x: d.center.x + turned.x, y: d.center.y + turned.y, z: d.center.z + turned.z };
+        rot[axis] += speed * t;
+      } else if (d.kind === 'oscillate') {
+        pos[axis] += (d.amplitude < 0 ? 1 : d.amplitude) * Math.sin(2 * Math.PI * speed * t);
+      } else if (d.kind === 'pulse') {
+        var f = 1 + (d.amplitude < 0 ? 0.1 : d.amplitude) * Math.sin(2 * Math.PI * speed * t);
+        scl = { x: scl.x * f, y: scl.y * f, z: scl.z * f };
+      }
+      o.position.set(pos.x, pos.y, pos.z);
+      o.rotation.order = 'XYZ';
+      o.rotation.set(rot.x * DEG, rot.y * DEG, rot.z * DEG);
+      o.scale.set(scl.x, scl.y, scl.z);
+    }
+  });
+}());
+</script>`;
+
 type Vec3 = { x: number; y: number; z: number };
 
 const DEG = Math.PI / 180;
@@ -124,8 +184,30 @@ function materialAttr(object: SceneObject3D, textureId?: string): string {
   return `material="${escapeAttr(parts.join('; '))}"`;
 }
 
+function animationAttr(object: SceneObject3D): string {
+  const animation = object.animation;
+  if (!animation) return '';
+  const axis = animation.axis === 'x' || animation.axis === 'z' ? animation.axis : 'y';
+  const kind = ['rotate', 'orbit', 'oscillate', 'pulse'].includes(animation.kind)
+    ? animation.kind
+    : null;
+  if (!kind) return '';
+  const center = animation.center ?? { x: 0, y: 0, z: 0 };
+  const parts = [
+    `kind: ${kind}`,
+    `axis: ${axis}`,
+    `speed: ${num(animation.speed)}`,
+    `amplitude: ${animation.amplitude === undefined ? -1 : num(animation.amplitude)}`,
+    `center: ${vec(center)}`,
+    `basePosition: ${vec(object.transform.position)}`,
+    `baseRotation: ${vec(object.transform.rotation)}`,
+    `baseScale: ${vec(object.transform.scale)}`,
+  ];
+  return ` scene3d-animate="${escapeAttr(parts.join('; '))}"`;
+}
+
 function objectMarkup(object: SceneObject3D, textureId?: string): string {
-  const base = `id="${escapeAttr(object.id)}" ${materialAttr(object, textureId)} ${transformAttrs(object.transform)} visible="${object.visible ? 'true' : 'false'}"`;
+  const base = `id="${escapeAttr(object.id)}" ${materialAttr(object, textureId)} ${transformAttrs(object.transform)} visible="${object.visible ? 'true' : 'false'}"${animationAttr(object)}`;
   switch (object.type) {
     case 'box':
       return `<a-box ${base} width="${num(object.width ?? 1)}" height="${num(object.height ?? 1)}" depth="${num(object.depth ?? 1)}"></a-box>`;
@@ -241,5 +323,6 @@ export function buildAFrameSceneMarkup(
     ...topLevel,
     cameraMarkup(scene3d.camera),
     '</a-scene>',
+    scene3d.objects.some((object) => object.animation) ? AFRAME_ANIMATION_COMPONENT_SCRIPT : '',
   ].join('');
 }

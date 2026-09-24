@@ -6,6 +6,8 @@ import {
   type Group3D,
   type Light3D,
   type Object3D,
+  type ObjectAnimation,
+  type ObjectAnimationKind,
   type Object3DType,
   type Scene3DDocument,
   type Transform3D,
@@ -119,6 +121,95 @@ function TransformFields({
         onChange={(opacity) => onChange({ ...transform, opacity })}
       />
     </>
+  );
+}
+
+const ANIMATION_KIND_LABELS: Record<ObjectAnimationKind, string> = {
+  rotate: 'Rotate',
+  orbit: 'Orbit',
+  oscillate: 'Oscillate',
+  pulse: 'Pulse',
+};
+
+/** #783: the selected object's animation (contextual: it only exists inside the object inspector). The
+ * kind select is the only always-visible control; axis, speed, and amplitude appear once a kind is
+ * chosen, and amplitude only for the kinds that use it. */
+function AnimationFields({
+  animation,
+  onChange,
+}: {
+  animation: ObjectAnimation | undefined;
+  onChange: (next: ObjectAnimation | undefined) => void;
+}) {
+  const kindId = useId();
+  const axisId = useId();
+  const usesAmplitude = animation?.kind === 'oscillate' || animation?.kind === 'pulse';
+  const speedLabel =
+    animation?.kind === 'oscillate' || animation?.kind === 'pulse'
+      ? 'Speed (cycles per second)'
+      : 'Speed (degrees per second)';
+  return (
+    <fieldset>
+      <legend>Animation</legend>
+      <div className="behavior-card-field">
+        <label htmlFor={kindId}>Animation kind</label>
+        <select
+          id={kindId}
+          value={animation?.kind ?? ''}
+          onChange={(event) => {
+            const kind = event.target.value as ObjectAnimationKind | '';
+            if (!kind) return onChange(undefined);
+            onChange({
+              kind,
+              axis: animation?.axis ?? 'y',
+              speed: animation?.speed ?? (kind === 'oscillate' || kind === 'pulse' ? 0.5 : 30),
+              ...(kind === 'oscillate' ? { amplitude: animation?.amplitude ?? 1 } : {}),
+              ...(kind === 'pulse' ? { amplitude: animation?.amplitude ?? 0.1 } : {}),
+              ...(kind === 'orbit' && animation?.center ? { center: animation.center } : {}),
+            });
+          }}
+        >
+          <option value="">None</option>
+          {(Object.keys(ANIMATION_KIND_LABELS) as ObjectAnimationKind[]).map((kind) => (
+            <option key={kind} value={kind}>
+              {ANIMATION_KIND_LABELS[kind]}
+            </option>
+          ))}
+        </select>
+      </div>
+      {animation && (
+        <>
+          <div className="behavior-card-field">
+            <label htmlFor={axisId}>Animation axis</label>
+            <select
+              id={axisId}
+              value={animation.axis ?? 'y'}
+              onChange={(event) =>
+                onChange({ ...animation, axis: event.target.value as 'x' | 'y' | 'z' })
+              }
+            >
+              <option value="x">X</option>
+              <option value="y">Y</option>
+              <option value="z">Z</option>
+            </select>
+          </div>
+          <NumberField
+            label={speedLabel}
+            value={animation.speed}
+            onChange={(speed) => onChange({ ...animation, speed })}
+          />
+          {usesAmplitude && (
+            <NumberField
+              label={animation.kind === 'pulse' ? 'Pulse amount' : 'Oscillation distance'}
+              value={animation.amplitude ?? (animation.kind === 'pulse' ? 0.1 : 1)}
+              onChange={(amplitude) =>
+                onChange({ ...animation, amplitude: Math.max(0, amplitude) })
+              }
+            />
+          )}
+        </>
+      )}
+    </fieldset>
   );
 }
 
@@ -489,6 +580,10 @@ function Outline3DInspector({ scene, onChange, onSelectionChange, onAskAiChange 
                 />
               </div>
             </fieldset>
+            <AnimationFields
+              animation={selectedObject.animation}
+              onChange={(animation) => updateObject(selectedObject.id, { animation })}
+            />
             <fieldset>
               <legend>Dimensions</legend>
               {OBJECT_TYPE_DIMENSION_FIELDS[selectedObject.type].map((field) => (

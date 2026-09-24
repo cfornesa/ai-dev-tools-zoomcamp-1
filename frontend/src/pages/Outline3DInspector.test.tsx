@@ -122,6 +122,30 @@ describe('Outline3DInspector', () => {
     expect(positionX).toHaveValue(5);
   });
 
+  it('animation controls are contextual: only in the selected object inspector, extra fields only once a kind is chosen (#783)', async () => {
+    const user = userEvent.setup();
+    render(<ControlledOutline initial={baseScene()} />);
+    // Nothing selected: no animation controls anywhere.
+    expect(screen.queryByLabelText('Animation kind')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Box 1' }));
+    const kind = screen.getByLabelText('Animation kind');
+    expect(kind).toHaveValue('');
+    expect(screen.queryByLabelText('Animation axis')).not.toBeInTheDocument();
+
+    await user.selectOptions(kind, 'oscillate');
+    expect(screen.getByLabelText('Animation axis')).toHaveValue('y');
+    expect(screen.getByLabelText('Speed (cycles per second)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Oscillation distance')).toHaveValue(1);
+
+    await user.selectOptions(kind, 'rotate');
+    expect(screen.getByLabelText('Speed (degrees per second)')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Oscillation distance')).not.toBeInTheDocument();
+
+    await user.selectOptions(kind, '');
+    expect(screen.queryByLabelText('Animation axis')).not.toBeInTheDocument();
+  });
+
   it('edits a group name and it is reflected in the outline list', async () => {
     const user = userEvent.setup();
     render(<ControlledOutline initial={baseScene()} />);

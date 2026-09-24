@@ -47,6 +47,7 @@
 import * as THREE from 'three';
 
 import { rasterizeDrawing } from './drawingRaster';
+import { computeAnimatedTransform } from './objectAnimation';
 import type {
   Camera3D,
   Group3D,
@@ -266,4 +267,27 @@ export function disposeThreeSceneGraph(scene: THREE.Scene): void {
       }
     }
   });
+}
+
+/** #783: poses every animated object at `seconds` of animation time from its authored transform.
+ * Objects without an animation are left alone, so the authored pose is what you see at time zero. */
+export function applyObjectAnimations(
+  threeScene: THREE.Scene,
+  scene3d: Scene3DDocument,
+  seconds: number,
+): void {
+  for (const object of scene3d.objects) {
+    if (!object.animation) continue;
+    const node = threeScene.getObjectByName(object.id);
+    if (!node) continue;
+    const next = computeAnimatedTransform(object.transform, object.animation, seconds);
+    node.position.set(next.position.x, next.position.y, next.position.z);
+    node.rotation.set(
+      THREE.MathUtils.degToRad(next.rotation.x),
+      THREE.MathUtils.degToRad(next.rotation.y),
+      THREE.MathUtils.degToRad(next.rotation.z),
+      'XYZ',
+    );
+    node.scale.set(next.scale.x, next.scale.y, next.scale.z);
+  }
 }

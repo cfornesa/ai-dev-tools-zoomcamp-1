@@ -29,10 +29,12 @@ import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
 import {
+  applyObjectAnimations,
   buildThreeSceneGraph,
   disposeThreeSceneGraph,
   updateThreeCameraAspect,
 } from '../render/threeSceneBuilder';
+import { prefersReducedMotion } from '../render/objectAnimation';
 import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
 import type { TrackingFrame } from '../tracking/types';
 import HandGestureGuideDialog from './HandGestureGuideDialog';
@@ -227,8 +229,11 @@ function ThreeScenePreview({
   toolbarMode = 'menu',
   editorControls,
   createGestureCameraProvider,
+  frozen = false,
 }: {
   scene: Scene3DDocument;
+  /** #783/#781: while true (draw mode) object animations hold their authored pose. */
+  frozen?: boolean;
   showScreenshotButton?: boolean;
   showGestureControl?: boolean;
   /** Issue #306: an unaccepted AI proposal preview passes `false`, matching
@@ -258,6 +263,8 @@ function ThreeScenePreview({
    * title) -- falls back to the scene document's own `id`. */
   screenshotBaseName?: string;
 }) {
+  const frozenRef = useRef(frozen);
+  frozenRef.current = frozen;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasFrameRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -713,6 +720,7 @@ function ThreeScenePreview({
 
     let frameId: number;
     let lastTickAt = performance.now();
+    let animationSeconds = 0;
     function tick() {
       const now = performance.now();
       // Capped so a tab backgrounded mid-fly (a large real elapsed time on
@@ -720,6 +728,12 @@ function ThreeScenePreview({
       const deltaSeconds = Math.min((now - lastTickAt) / 1000, 0.1);
       lastTickAt = now;
 
+      // #783: animated objects advance unless the visitor prefers reduced motion or the stage is
+      // frozen (draw mode); the authored pose is what shows while paused.
+      if (!prefersReducedMotion() && !frozenRef.current) {
+        animationSeconds += deltaSeconds;
+        applyObjectAnimations(threeScene, scene, animationSeconds);
+      }
       if (gestureControlEnabledRef.current) applyGestureCameraControl(deltaSeconds);
       if (flyControls) applyFlyTranslation(deltaSeconds);
       controls.update();

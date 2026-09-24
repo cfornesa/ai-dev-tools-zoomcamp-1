@@ -20,6 +20,16 @@ export type Material3D = {
   emissive?: string;
 };
 
+/** #783: declarative object animation (schema `objectAnimation`). */
+export type ObjectAnimationKind = 'rotate' | 'orbit' | 'oscillate' | 'pulse';
+export type ObjectAnimation = {
+  kind: ObjectAnimationKind;
+  axis?: 'x' | 'y' | 'z';
+  speed: number;
+  amplitude?: number;
+  center?: Vec3;
+};
+
 export type Object3DType = 'box' | 'sphere' | 'cylinder' | 'plane' | 'drawingPlane';
 
 /** #778: shapes of a drawing plane's vector drawing, in the drawing's pixel space (y down). */
@@ -75,6 +85,7 @@ export type Object3D = {
   transform: Transform3D;
   material: Material3D;
   visible: boolean;
+  animation?: ObjectAnimation;
   // Type-specific dimension fields -- only the ones matching `type` are
   // meaningful, mirroring the schema's per-type allOf branches.
   width?: number;

@@ -222,7 +222,8 @@
         },
         "transform": { "$ref": "#/$defs/transform3D" },
         "material": { "$ref": "#/$defs/material" },
-        "visible": { "type": "boolean" }
+        "visible": { "type": "boolean" },
+        "animation": { "$ref": "#/$defs/objectAnimation" }
       }
     },
     "boxObject": {
@@ -285,6 +286,45 @@
         }
       ],
       "unevaluatedProperties": false
+    },
+    "objectAnimation": {
+      "description": "Optional declarative animation for a scene object (#783): one of four closed kinds, rendered identically by Three.js and A-Frame, paused by reduced-motion and by draw mode. `rotate` spins about `axis` at `speed` degrees per second; `orbit` circles the object about `center` (default the origin) around `axis` at `speed` degrees per second; `oscillate` slides along `axis` by `amplitude` world units at `speed` cycles per second; `pulse` scales uniformly by 1 +/- `amplitude` at `speed` cycles per second. Additive and optional, so no schemaVersion bump.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "speed"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "rotate",
+            "orbit",
+            "oscillate",
+            "pulse"
+          ]
+        },
+        "axis": {
+          "enum": [
+            "x",
+            "y",
+            "z"
+          ]
+        },
+        "speed": {
+          "type": "number",
+          "minimum": -3600,
+          "maximum": 3600
+        },
+        "amplitude": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "center": {
+          "$ref": "#/$defs/vec3"
+        }
+      }
     },
     "drawingShape": {
       "description": "One vector shape inside a drawingPlane's drawing (#778), in the drawing's own pixel coordinate space (origin top-left, y down). Closed vocabulary: rect, ellipse, line, path. Fill and stroke are colours or null; opacity is a unit interval.",

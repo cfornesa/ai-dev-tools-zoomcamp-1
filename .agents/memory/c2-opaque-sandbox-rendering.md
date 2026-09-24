@@ -14,3 +14,5 @@ responsive CSS scaling.
 This is disposable-browser/runtime evidence, not a claim that the upstream
 c2.js library itself is fully compatible with opaque origins. Recheck the
 upstream runtime separately before expanding the adapter surface.
+
+**Superseded 2026-09-24:** owner decision (#759) is the reference 1280x720 canvas; the 320x240 rule above is obsolete once #763/#764 land.

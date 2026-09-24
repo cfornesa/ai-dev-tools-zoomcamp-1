@@ -33,6 +33,7 @@ result *likely*; it is not a security control.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -47,7 +48,11 @@ from ai_provider.errors import (
 )
 from ai_provider.gemini_provider import GeminiHttpClient
 from ai_provider.interface import AIUsageMetadata
-from ai_provider.prompts import ART_PIECE_REFINE_SYSTEM_PROMPT, art_piece_2d_prompt
+from ai_provider.prompts import (
+    ART_PIECE_REFINE_SYSTEM_PROMPT,
+    art_piece_2d_prompt,
+    art_piece_region_rule,
+)
 from scenes.art_piece_contract import (
     GENERATABLE_ART_PIECE_ENGINES,
     SUPPORTED_ART_PIECE_ENGINES,
@@ -179,10 +184,14 @@ class ArtPieceResult:
     usage: AIUsageMetadata
     code: str | None = None
     error: str | None = None
+    regions: list[dict[str, int | str]] | None = None
+    warnings: list[str] | None = None
 
     def __post_init__(self) -> None:
         if (self.code is None) == (self.error is None):
             raise ValueError("ArtPieceResult must carry exactly one of `code` or `error`.")
+        if self.code is None and (self.regions or self.warnings):
+            raise ValueError("ArtPieceResult errors cannot carry region metadata.")
 
 
 @dataclass(frozen=True)
@@ -325,6 +334,8 @@ class ArtPieceProvider:
             if library in {"canvas2d", "svg", "p5js", "c2js", "c2js-interactive"}
             else {"threejs": _THREEJS_SYSTEM_PROMPT, "aframe": _AFRAME_SYSTEM_PROMPT}[library]
         )
+        if library in {"threejs", "aframe"}:
+            system_prompt += "\n- " + art_piece_region_rule(library)
 
         messages = [{"role": "system", "content": system_prompt}]
         if self.persona_prompt:
@@ -415,7 +426,9 @@ class ArtPieceProvider:
                 ),
             )
 
-        return ArtPieceResult(usage=usage, code=snippet)
+        regions = parse_regions(snippet, library)
+        warnings = [] if regions else ["missing_layer_markers"]
+        return ArtPieceResult(usage=usage, code=snippet, regions=regions, warnings=warnings)
 
     def refine(
         self, instruction: str, source: str, library: str, target_references: list[str]
@@ -528,3 +541,46 @@ def _looks_like_snippet(snippet: str, library: str) -> bool:
     # aframe: declarative markup only, matching SVG's inert-markup
     # rejection of any "<script" tag.
     return "<a-scene" in lowered and "<script" not in lowered
+
+
+def parse_regions(code: str, library: str) -> list[dict[str, int | str]]:
+    """Parse ordered named regions with one-based inclusive line boundaries."""
+    lines = code.splitlines()
+    normalized = library.strip().lower()
+    marker_pattern = re.compile(r"^\s*//\s*@layer\s+(.+?)\s*$")
+    html_marker_pattern = re.compile(r"^\s*<!--\s*@layer\s+(.+?)\s*-->\s*$")
+    svg_open_pattern = re.compile(r"<g\b[^>]*\bid=[\"']([^\"']+)[\"'][^>]*>", re.I)
+    svg_close_pattern = re.compile(r"</g\s*>", re.I)
+    occurrences: list[tuple[int, str, int | None]] = []
+    stack: list[int] = []
+    for index, line in enumerate(lines):
+        match = svg_open_pattern.search(line) if normalized == "svg" else None
+        if match:
+            occurrence_index = len(occurrences)
+            occurrences.append((index, match.group(1).strip(), None))
+            stack.append(occurrence_index)
+            continue
+        if normalized == "svg" and svg_close_pattern.search(line) and stack:
+            occurrence_index = stack.pop()
+            start, name, _ = occurrences[occurrence_index]
+            occurrences[occurrence_index] = (start, name, index)
+            continue
+        match = marker_pattern.match(line) or html_marker_pattern.match(line)
+        if match:
+            occurrences.append((index, match.group(1).strip(), None))
+    if not occurrences:
+        return []
+    counts: dict[str, int] = {}
+    regions: list[dict[str, int | str]] = []
+    for occurrence_index, (start, raw_name, explicit_end) in enumerate(occurrences):
+        counts[raw_name] = counts.get(raw_name, 0) + 1
+        suffix = counts[raw_name]
+        name = raw_name if suffix == 1 else f"{raw_name} {suffix}"
+        next_start = (
+            occurrences[occurrence_index + 1][0] - 1
+            if occurrence_index + 1 < len(occurrences)
+            else len(lines) - 1
+        )
+        end = explicit_end if explicit_end is not None else next_start
+        regions.append({"name": name, "start": start + 1, "end": max(start + 1, end + 1)})
+    return regions

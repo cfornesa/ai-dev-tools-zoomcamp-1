@@ -55,6 +55,42 @@ script, access cookies or storage, or use eval/Function. Keep the source self-co
 preserve pointer events for the interactive variant.""",
 }
 
+ART_PIECE_REGION_RULES = {
+    "canvas2d": (
+        "Organize the source into named sections with comments like `// @layer Background` "
+        "and `// @layer Foreground`."
+    ),
+    "svg": (
+        'Organize the SVG into named groups such as `<g id="Background">...</g>` and '
+        '`<g id="Foreground">...</g>`.'
+    ),
+    "p5js": (
+        "Organize the source into named sections with comments like `// @layer Background` "
+        "and `// @layer Foreground`."
+    ),
+    "c2js": (
+        "Organize the source into named sections with comments like `// @layer Background` "
+        "and `// @layer Interaction`."
+    ),
+    "c2js-interactive": (
+        "Organize the source into named sections with comments like `// @layer Background` "
+        "and `// @layer Interaction`."
+    ),
+    "threejs": (
+        "Organize the source into named sections with comments like `// @layer Background` "
+        "and `// @layer Foreground`."
+    ),
+    "aframe": (
+        "Organize the markup with comments like `<!-- @layer Background -->` and "
+        "`<!-- @layer Foreground -->` immediately before the corresponding entities."
+    ),
+}
+
+for _library, _region_rule in ART_PIECE_REGION_RULES.items():
+    _prompt_key = "c2js" if _library == "c2js-interactive" else _library
+    if _library != "c2js-interactive" and _prompt_key in ART_PIECE_2D_CREATE_PROMPTS:
+        ART_PIECE_2D_CREATE_PROMPTS[_prompt_key] += "\n- " + _region_rule
+
 ART_PIECE_REFINE_SYSTEM_PROMPT = (
     "You refine an existing generative art source. Return ONLY valid JSON with this exact "
     'shape: {"edits":[{"search":"exact source text","replace":"replacement text"}]}. '
@@ -218,3 +254,8 @@ SCENE3D_EDIT_PROMPT = (
 def art_piece_2d_prompt(library: str) -> str:
     """Return the canonical 2D create prompt for a supported library."""
     return ART_PIECE_2D_CREATE_PROMPTS["c2js" if library == "c2js-interactive" else library]
+
+
+def art_piece_region_rule(library: str) -> str:
+    """Return the marker contract for any generated-art library."""
+    return ART_PIECE_REGION_RULES[library]

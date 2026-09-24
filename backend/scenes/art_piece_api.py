@@ -506,6 +506,8 @@ class ArtPieceGenerateView(APIView):
             {
                 "library": library,
                 "code": result.code,
+                "regions": result.regions or [],
+                "warnings": result.warnings or [],
                 "usage": {
                     "prompt_tokens": result.usage.prompt_tokens,
                     "completion_tokens": result.usage.completion_tokens,

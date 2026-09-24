@@ -415,6 +415,17 @@ the editor sends only IDs selected as chips, never display labels. A source
 with no part markers still exposes its discovered assets and a hint that no
 parts were declared.
 
+## Generated art-piece regions (#818)
+
+`POST /api/ai/art-pieces/generate/` keeps the existing `library`, `code`, and
+`usage` fields and adds `regions` plus `warnings`. `regions` is an ordered
+array of `{name, start, end}` entries using 1-based inclusive source-line
+boundaries. JavaScript-like engines use `// @layer Name` markers; SVG uses
+`<g id="Name">` groups; markup engines may use the equivalent HTML comment
+marker. Duplicate names receive numeric suffixes (`Name 2`, `Name 3`, ...).
+Missing markers are non-blocking and return an empty `regions` array plus the
+`missing_layer_markers` warning.
+
 ## Global site metadata settings (#586)
 
 The application-admin-only `GET|PATCH /api/admin/settings/` contract includes

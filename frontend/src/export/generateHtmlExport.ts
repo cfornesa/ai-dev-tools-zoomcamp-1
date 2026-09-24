@@ -29,6 +29,7 @@
  * module never concatenates a raw title/description/scene string directly
  * into an HTML tag.
  */
+import { EXPORT_STAGE_TOOLBAR_CSS, renderExportStageToolbar } from './exportStageToolbar';
 import { buildScenePlan, SceneRenderError } from '../render/sceneDrawPlan';
 import { resolveSceneRendererId } from '../render/createScenePreview';
 import type { SceneDocument } from '../api/projects';
@@ -269,24 +270,12 @@ function renderMotionControl(): string {
 
 function renderStageToolbar(): string {
   return `
-    <div id="piece-toolbar" role="toolbar" aria-label="Piece actions">
-      <button id="piece-menu-toggle" type="button" aria-label="Open piece controls menu" aria-expanded="false" aria-controls="piece-command-overlay" title="Open piece controls menu">☰</button>
-    </div>
-    <div id="piece-command-overlay" role="dialog" aria-modal="true" aria-labelledby="piece-actions-heading" hidden>
-      <div id="piece-command-card">
-        <header><h2 id="piece-actions-heading">Piece actions</h2><button id="piece-menu-close" type="button" aria-label="Close piece controls menu">×</button></header>
-        <div id="piece-action-list" role="group" aria-label="Piece actions">
-          <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot"><span aria-hidden="true">⌗</span><span>Screenshot</span></button>
-          <button id="piece-controls-toggle" type="button" aria-label="Piece controls" aria-expanded="false" aria-controls="piece-controls-panel" title="Piece controls"><span aria-hidden="true">☷</span><span>Piece controls</span></button>
-          <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen"><span aria-hidden="true">⛶</span><span>Fullscreen</span></button>
-        </div>
-        <div id="piece-controls-panel" role="group" aria-label="Piece controls" hidden>
-          <button id="piece-controls-close" type="button" aria-label="Close piece controls">× Close</button>
-          ${renderMotionControl()}
-          ${renderDemoControlsSection()}
-          {{CAMERA_CONTROLS}}
-        </div>
-      </div>
+    ${renderExportStageToolbar({ buttons: ['screenshot', 'controls', 'fullscreen'], controlsPanelId: 'piece-controls-panel' })}
+    <div id="piece-controls-panel" role="group" aria-label="Piece controls" hidden>
+      <button id="piece-controls-close" type="button" aria-label="Close piece controls">× Close</button>
+      ${renderMotionControl()}
+      ${renderDemoControlsSection()}
+      {{CAMERA_CONTROLS}}
     </div>`;
 }
 
@@ -294,42 +283,21 @@ function renderStageToolbarScript(): string {
   return `<script id="piece-stage-runtime">
 (() => {
   const host = document.getElementById('scene-canvas-host');
-  const menuToggle = document.getElementById('piece-menu-toggle');
-  const menuClose = document.getElementById('piece-menu-close');
-  const overlay = document.getElementById('piece-command-overlay');
   const screenshot = document.getElementById('piece-screenshot');
   const controlsToggle = document.getElementById('piece-controls-toggle');
   const controlsPanel = document.getElementById('piece-controls-panel');
   const controlsClose = document.getElementById('piece-controls-close');
   const fullscreen = document.getElementById('piece-fullscreen');
-  const canvas = () => host && host.querySelector('canvas, svg');
-  let priorBodyOverflow = '';
+  const canvas = () => host && host.querySelector('canvas, svg:not(.piece-stage-icon)');
   const closeControls = () => {
     if (!controlsPanel || !controlsToggle) return;
     controlsPanel.hidden = true;
     controlsToggle.setAttribute('aria-expanded', 'false');
   };
-  const closeMenu = (restoreFocus = true) => {
-    if (!overlay || !menuToggle) return;
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !controlsPanel || controlsPanel.hidden) return;
     closeControls();
-    overlay.hidden = true;
-    menuToggle.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = priorBodyOverflow;
-    if (restoreFocus) menuToggle.focus();
-  };
-  menuToggle?.addEventListener('click', () => {
-    if (!overlay) return;
-    priorBodyOverflow = document.body.style.overflow;
-    overlay.hidden = false;
-    menuToggle.setAttribute('aria-expanded', 'true');
-    menuClose?.focus();
-  });
-  menuClose?.addEventListener('click', () => closeMenu());
-  overlay?.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeMenu();
-    }
+    controlsToggle?.focus();
   });
   controlsToggle?.addEventListener('click', () => {
     if (!controlsPanel) return;
@@ -363,8 +331,10 @@ function renderStageToolbarScript(): string {
   fullscreen?.addEventListener('click', async () => {
     if (document.fullscreenElement) await document.exitFullscreen();
     else await (host?.requestFullscreen?.() ?? Promise.resolve());
-    fullscreen.setAttribute('aria-label', document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen');
-    fullscreen.setAttribute('title', document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen');
+    const fullscreenLabel = document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen';
+    fullscreen.setAttribute('aria-label', fullscreenLabel);
+    const tip = fullscreen.querySelector('.piece-stage-tooltip');
+    if (tip) tip.textContent = fullscreenLabel;
   });
 })();
 </script>`;
@@ -375,22 +345,12 @@ const EXPORT_STYLE = `
     h1 { margin-top: 0; }
     #scene-canvas-host { position: relative; max-width: 100%; }
     #scene-canvas-host canvas { max-width: 100%; height: auto; display: block; border: 1px solid #ccc; }
-    #scene-canvas-host svg { max-width: 100%; height: auto; display: block; border: 1px solid #ccc; }
-    #piece-toolbar { position: absolute; left: 1rem; top: 1rem; z-index: 4; }
-    #piece-toolbar button, #piece-command-card button { min-width: 2.75rem; min-height: 2.75rem; border: 1px solid rgba(255,255,255,.35); border-radius: .75rem; background: rgba(10,12,20,.88); color: #fff; cursor: pointer; }
-    #piece-toolbar button:hover, #piece-toolbar button:focus-visible, #piece-command-card button:hover, #piece-command-card button:focus-visible { background: rgba(21,26,40,.94); }
-    #piece-command-overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 1rem; box-sizing: border-box; background: rgba(5,8,16,.72); }
-    #piece-command-overlay[hidden] { display: none; }
-    #piece-command-card { width: min(32rem, 100%); max-height: none; overflow: visible; box-sizing: border-box; padding: 1rem; border: 1px solid rgba(255,255,255,.35); border-radius: 1rem; background: rgba(10,12,20,.96); color: #fff; box-shadow: 0 12px 36px rgba(0,0,0,.45); }
-    #piece-command-card header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
-    #piece-command-card h2 { margin: 0; font-size: 1.15rem; }
-    #piece-command-card header button { width: 2.75rem; padding: 0; font-size: 1.5rem; }
-    #piece-action-list { display: flex; flex-direction: column; gap: .5rem; }
-    #piece-action-list button { display: flex; align-items: center; justify-content: flex-start; gap: .65rem; width: 100%; padding: .5rem .7rem; text-align: left; }
-    #piece-action-list button span:first-child { width: 1.3rem; text-align: center; font-size: 1.1rem; }
-    #piece-controls-panel { box-sizing: border-box; max-height: min(40vh, 20rem); overflow: auto; margin-top: .75rem; padding: .75rem; border: 1px solid rgba(255,255,255,.25); border-radius: .75rem; background: rgba(21,26,40,.78); color: #fff; }
+    #scene-canvas-host svg:not(.piece-stage-icon) { max-width: 100%; height: auto; display: block; border: 1px solid #ccc; }
+    ${EXPORT_STAGE_TOOLBAR_CSS}
+    #scene-canvas-host #piece-toolbar { position: absolute; z-index: 4; }
+    #piece-controls-panel { position: absolute; top: 4.5rem; left: .75rem; z-index: 10; width: min(22rem, calc(100vw - 1.5rem)); box-sizing: border-box; max-height: min(60vh, 28rem); overflow: auto; padding: .75rem; border: 1px solid rgba(255,255,255,.25); border-radius: .75rem; background: rgba(21,26,40,.97); color: #fff; }
     #piece-controls-panel[hidden] { display: none; }
-    #piece-controls-close { margin-bottom: .25rem; padding: .35rem .55rem; }
+    #piece-controls-close { margin-bottom: .25rem; padding: .35rem .55rem; min-height: 2.75rem; border: 1px solid rgba(255,255,255,.7); border-radius: .75rem; background: rgba(10,12,20,.94); color: #fff; cursor: pointer; }
     #piece-controls-panel #motion-control, #piece-controls-panel #demo-controls-host, #piece-controls-panel #camera-controls-host { margin-top: .75rem; }
     #export-camera-overlay { pointer-events: none; }
     #demo-controls-host { margin-top: 1.5rem; }

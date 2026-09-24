@@ -136,8 +136,8 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('"id":"obj-1"');
     expect(script).toContain('piece-reset-view');
     expect(html).toContain('setGuideOpen');
-    expect(html).toContain("event.key === 'Escape'");
-    expect(html).toContain('menuTrigger.focus()');
+    expect(html).toContain("event.key !== 'Escape'");
+    expect(html).toContain('guideToggle?.focus()');
     expect(script).toContain('piece-sound');
     expect(script).toContain('AudioContext');
     expect(script).toContain('piece-volume');
@@ -199,11 +199,42 @@ describe('generateScene3DBundle', () => {
     expect(html.indexOf('id="camera-controls-host"')).toBeGreaterThan(
       html.indexOf('id="piece-audio-controls"'),
     );
-    expect(html).toContain(
-      '<div id="piece-actions-dialog" role="dialog" aria-label="Piece actions" hidden>',
-    );
+    expect(html).not.toContain('piece-menu-trigger');
+    expect(html).not.toContain('piece-actions-dialog');
     expect(readme).toContain('Surface mode: immersive (arrow-key travel).');
     expect(script).toContain('window.__EXPORT_SURFACE_MODE__ = "immersive"');
+  });
+
+  it('renders the inline icon-only toolbar in the parity-matrix order with Fullscreen last (#761)', async () => {
+    const result = await generateScene3DBundle(validScene(), 'Toolbar scene', { variant: 'full' });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const zip = await JSZip.loadAsync(result.zipBlob);
+    const html = await zip.files['index.html'].async('string');
+    const css = await zip.files['styles/piece.css'].async('string');
+    const toolbar = html.slice(
+      html.indexOf('<div id="piece-toolbar"'),
+      html.indexOf('</div>', html.indexOf('<div id="piece-toolbar"')),
+    );
+    const labels = [...toolbar.matchAll(/<button id="([^"]+)"/g)].map((match) => match[1]);
+    expect(labels).toEqual([
+      'piece-screenshot',
+      'piece-sound',
+      'piece-audio-settings',
+      'piece-hand-guide-toggle',
+      'piece-fullscreen',
+    ]);
+    // Icon-only: every button has an accessible name and a hover-only tooltip; no visible text label.
+    expect(toolbar).not.toContain('piece-action-label');
+    expect(toolbar).toContain('aria-label="Take screenshot"');
+    expect(toolbar).toContain('class="piece-stage-tooltip"');
+    expect(css).toContain('@media (hover: hover) and (pointer: fine)');
+    expect(html).not.toContain('\u2630');
+    // Reset view stays reachable inside the Piece controls panel.
+    expect(html.indexOf('id="piece-reset-view"')).toBeGreaterThan(
+      html.indexOf('id="piece-audio-controls"'),
+    );
   });
 
   it('keeps regular exports explicitly marked as regular', async () => {

@@ -134,7 +134,9 @@ describe('exported SVG runtime script: functional smoke test in a jsdom sandbox'
       document.dispatchEvent(new Event('DOMContentLoaded'));
       raf.flush();
 
-      const svg = document.getElementById('scene-canvas-host')?.querySelector('svg');
+      const svg = document
+        .getElementById('scene-canvas-host')
+        ?.querySelector('svg:not(.piece-stage-icon)');
       expect(svg).not.toBeNull();
       expect(svg!.getAttribute('width')).toBe('40');
       expect(svg!.getAttribute('height')).toBe('40');
@@ -170,7 +172,9 @@ describe('exported SVG runtime script: functional smoke test in a jsdom sandbox'
       document.dispatchEvent(new Event('DOMContentLoaded'));
       raf.flush();
 
-      const svg = document.getElementById('scene-canvas-host')?.querySelector('svg');
+      const svg = document
+        .getElementById('scene-canvas-host')
+        ?.querySelector('svg:not(.piece-stage-icon)');
       // Before the binding fires (no hand present yet), the shape sits at
       // its authored x=0.
       expect(svg!.querySelector('circle')!.getAttribute('transform')).toContain('translate(0 20)');

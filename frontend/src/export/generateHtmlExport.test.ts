@@ -808,3 +808,27 @@ describe('generateHtmlExport: optional product attribution (Task 60, issue #60)'
     expect(stripAttributionArtifacts(onResult.html)).toBe(normalizeWhitespace(offResult.html));
   });
 });
+
+describe('generateHtmlExport: inline icon-only stage toolbar (#761)', () => {
+  it('shows Screenshot, Piece controls, Fullscreen inline in matrix order with no hamburger', () => {
+    const result = generateHtmlExport(baseInput());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const doc = new DOMParser().parseFromString(result.html, 'text/html');
+    const ids = Array.from(doc.querySelectorAll('#piece-toolbar > button')).map((b) => b.id);
+    expect(ids).toEqual(['piece-screenshot', 'piece-controls-toggle', 'piece-fullscreen']);
+    expect(doc.getElementById('piece-menu-toggle')).toBeNull();
+    expect(doc.getElementById('piece-command-overlay')).toBeNull();
+    for (const button of Array.from(doc.querySelectorAll('#piece-toolbar > button'))) {
+      expect(button.getAttribute('aria-label')).toBeTruthy();
+      expect(button.querySelector('.piece-stage-tooltip')).toBeTruthy();
+      expect(button.textContent?.trim()).toBe(button.getAttribute('aria-label'));
+    }
+    // Icons are inline <svg> (a data:image URI would trip the content-exclusion scan), so the
+    // artwork must always be located inside its own host, never by a bare document-wide 'svg'.
+    expect(doc.querySelectorAll('#piece-toolbar svg[aria-hidden="true"]').length).toBe(3);
+    expect(result.html).toContain('@media (hover: hover) and (pointer: fine)');
+    // The screenshot lookup must never pick a toolbar icon over the artwork.
+    expect(result.html).toContain("host.querySelector('canvas, svg:not(.piece-stage-icon)')");
+  });
+});

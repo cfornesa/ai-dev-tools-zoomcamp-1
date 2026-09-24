@@ -213,7 +213,6 @@ async function openExportInIsolatedContext(
 }
 
 async function openExportPieceControls(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Open piece controls menu' }).click();
   await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
 }
 
@@ -248,61 +247,60 @@ test.describe('HTML export: responsive piece action surface', () => {
     if (!result.ok) return;
     await openExportInIsolatedContext(page, result.html, 'responsive-actions.html');
 
-    const menuToggle = page.getByRole('button', { name: 'Open piece controls menu' });
-    await expect(menuToggle).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open piece controls menu' })).toHaveCount(0);
 
     for (const viewport of [
       { width: 1280, height: 900 },
       { width: 375, height: 812 },
     ]) {
       await page.setViewportSize(viewport);
-      await menuToggle.click();
 
-      const overlay = page.getByRole('dialog', { name: 'Piece actions' });
-      await expect(overlay).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Piece controls', exact: true })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Enter fullscreen' })).toBeVisible();
+      const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
+      await expect(toolbar).toBeVisible();
+      await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+      await expect(
+        toolbar.getByRole('button', { name: 'Piece controls', exact: true }),
+      ).toBeVisible();
+      await expect(toolbar.getByRole('button', { name: 'Enter fullscreen' })).toBeVisible();
 
       const geometry = await page.evaluate(() => {
-        const card = document.getElementById('piece-command-card');
-        const actions = [...document.querySelectorAll('#piece-action-list > button')];
-        const rect = (element: Element) => {
-          const box = element.getBoundingClientRect();
-          return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
-        };
+        const buttons = [...document.querySelectorAll('#piece-toolbar > button')].map((button) => {
+          const box = button.getBoundingClientRect();
+          return {
+            id: button.id,
+            left: box.left,
+            right: box.right,
+            top: box.top,
+            width: box.width,
+            height: box.height,
+          };
+        });
         return {
-          card: card ? rect(card) : null,
-          cardOverflow: card ? getComputedStyle(card).overflow : null,
-          cardScrolls: card ? card.scrollHeight > card.clientHeight : true,
-          actions: actions.map(rect),
+          buttons,
           documentWidth: document.documentElement.scrollWidth,
-          documentHeight: document.documentElement.scrollHeight,
           viewportWidth: window.innerWidth,
-          viewportHeight: window.innerHeight,
         };
       });
-      expect(geometry.card).not.toBeNull();
-      expect(geometry.cardOverflow).toBe('visible');
-      expect(geometry.cardScrolls).toBe(false);
+      // Matrix order (docs/piece-toolbar-parity-matrix.md), Fullscreen last.
+      expect(geometry.buttons.map((button) => button.id)).toEqual([
+        'piece-screenshot',
+        'piece-controls-toggle',
+        'piece-fullscreen',
+      ]);
+      for (const button of geometry.buttons) {
+        expect(button.width).toBeGreaterThanOrEqual(44);
+        expect(button.height).toBeGreaterThanOrEqual(44);
+        expect(button.left).toBeGreaterThanOrEqual(0);
+        expect(button.right).toBeLessThanOrEqual(geometry.viewportWidth);
+      }
       expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
-      expect(geometry.documentHeight).toBeLessThanOrEqual(geometry.viewportHeight);
-      for (const action of geometry.actions) {
-        expect(action.left).toBeGreaterThanOrEqual(geometry.card!.left);
-        expect(action.right).toBeLessThanOrEqual(geometry.card!.right);
-        expect(action.top).toBeGreaterThanOrEqual(geometry.card!.top);
-        expect(action.bottom).toBeLessThanOrEqual(geometry.card!.bottom);
-      }
-      for (let index = 1; index < geometry.actions.length; index += 1) {
-        expect(geometry.actions[index]!.top).toBeGreaterThanOrEqual(
-          geometry.actions[index - 1]!.bottom,
-        );
-      }
 
-      await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
+      const controlsToggle = toolbar.getByRole('button', { name: 'Piece controls', exact: true });
+      await controlsToggle.click();
       await expect(page.locator('#piece-controls-panel')).toBeVisible();
       await page.keyboard.press('Escape');
-      await expect(overlay).toBeHidden();
+      await expect(page.locator('#piece-controls-panel')).toBeHidden();
+      await expect(controlsToggle).toBeFocused();
     }
 
     await context.close();
@@ -418,9 +416,10 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
             'data-piece-surface',
             immersive ? 'immersive' : 'regular',
           );
-          const menu = page.getByRole('button', { name: 'Open piece controls menu' });
-          await menu.click();
-          const dialog = page.getByRole('dialog', { name: 'Piece actions' });
+          await expect(page.getByRole('button', { name: 'Open piece controls menu' })).toHaveCount(
+            0,
+          );
+          const dialog = page.getByRole('toolbar', { name: 'Piece actions' });
           await expect(dialog).toBeVisible();
           await expect(dialog.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
           await expect(dialog.getByRole('button', { name: /download/i })).toHaveCount(0);
@@ -472,33 +471,41 @@ test.describe('3D ZIP export: responsive packaged command surface', () => {
           } else {
             await expect(page.getByRole('group', { name: 'Camera controls' })).toHaveCount(0);
           }
-          const geometry = await dialog.evaluate((element) => {
-            const card = element as HTMLElement;
-            const rows = [...card.querySelectorAll('.piece-action-list > button')].map((row) => {
-              const rect = row.getBoundingClientRect();
-              return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
-            });
-            return {
-              overflow: getComputedStyle(card).overflow,
-              rows,
-              width: innerWidth,
-            };
-          });
-          // The command drawer is intentionally bounded and scrolls only while
-          // open; this keeps the page itself free of a persistent scrollbar on
-          // short desktop and mobile viewports.
-          expect(geometry.overflow).toBe('auto');
-          expect(
-            geometry.rows.every((row) => row.left >= 16 && row.right <= geometry.width - 16),
-          ).toBe(true);
-          for (let index = 1; index < geometry.rows.length; index += 1) {
-            expect(geometry.rows[index]!.top).toBeGreaterThanOrEqual(
-              geometry.rows[index - 1]!.bottom,
+          const geometry = await page.evaluate(() => {
+            const buttons = [...document.querySelectorAll('#piece-toolbar > button')].map(
+              (button) => {
+                const rect = button.getBoundingClientRect();
+                return {
+                  id: button.id,
+                  left: rect.left,
+                  right: rect.right,
+                  width: rect.width,
+                  height: rect.height,
+                };
+              },
             );
+            return { buttons, width: innerWidth };
+          });
+          // Matrix order with Fullscreen last; inline, always visible, 44px targets.
+          expect(geometry.buttons.map((button) => button.id)).toEqual([
+            'piece-screenshot',
+            'piece-sound',
+            'piece-audio-settings',
+            'piece-hand-guide-toggle',
+            'piece-fullscreen',
+          ]);
+          for (const button of geometry.buttons) {
+            expect(button.width).toBeGreaterThanOrEqual(44);
+            expect(button.height).toBeGreaterThanOrEqual(44);
+            expect(button.left).toBeGreaterThanOrEqual(0);
+            expect(button.right).toBeLessThanOrEqual(geometry.width);
           }
+          const controlsToggle = page.getByRole('button', { name: 'Piece controls', exact: true });
+          if (await page.locator('#piece-audio-controls').isHidden()) await controlsToggle.click();
+          await expect(page.locator('#piece-audio-controls')).toBeVisible();
           await page.keyboard.press('Escape');
-          await expect(dialog).toBeHidden();
-          await expect(menu).toBeFocused();
+          await expect(page.locator('#piece-audio-controls')).toBeHidden();
+          await expect(controlsToggle).toBeFocused();
         } finally {
           fs.rmSync(root, { recursive: true, force: true });
         }

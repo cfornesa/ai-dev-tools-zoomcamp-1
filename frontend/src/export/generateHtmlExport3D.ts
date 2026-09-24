@@ -21,6 +21,7 @@ import JSZip from 'jszip';
 
 import { validateScene3D } from '../validation/scene3d';
 import { downloadBlob } from './downloadBlob';
+import { EXPORT_STAGE_TOOLBAR_CSS, renderExportStageToolbar } from './exportStageToolbar';
 import { buildStandaloneThreeRuntimeScript } from './standaloneThreeRuntimeSource';
 import {
   GESTURE_RECOGNIZER_MODEL_URL,
@@ -95,55 +96,11 @@ const PIECE_CSS = `html, body {
   width: 100%;
   height: 100%;
 }
-#piece-toolbar {
-  position: fixed;
-  left: 1rem;
-  bottom: 1rem;
-  z-index: 10;
-  display: grid;
-  gap: .5rem;
-}
-#piece-menu-trigger, #piece-actions-dialog button {
-  min-height: 3rem;
-  min-width: 3rem;
-  padding: .5rem .75rem;
-  border: 1px solid rgba(255,255,255,.28);
-  border-radius: .75rem;
-  background: rgba(10,12,20,.76);
-  color: #fff;
-  cursor: pointer;
-}
-#piece-menu-trigger:focus-visible, #piece-actions-dialog button:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-}
-#piece-actions-dialog {
-  position: fixed;
-  inset: 1rem;
-  z-index: 30;
-  display: grid;
-  align-content: start;
-  gap: 1rem;
-  max-height: calc(100vh - 2rem);
-  overflow: auto;
-  padding: 1rem;
-  color: #fff;
-  background: rgba(10,12,20,.94);
-  border: 1px solid rgba(255,255,255,.28);
-  border-radius: 1rem;
-}
-#piece-actions-dialog[hidden] { display: none; }
-#piece-actions-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-#piece-actions-dialog h2 { margin: 0; font-size: 1.25rem; }
-#piece-actions-dialog .piece-action-list { display: grid; gap: .75rem; }
-#piece-actions-dialog .piece-action-list > button { display: flex; align-items: center; justify-content: flex-start; gap: .75rem; width: 100%; text-align: left; }
-#piece-actions-dialog .piece-action-icon { width: 1.5rem; text-align: center; font-size: 1.25rem; }
-#piece-actions-dialog .piece-action-label { font-size: 1rem; }
-#piece-actions-dialog-close { width: 3rem; padding-inline: 0 !important; font-size: 1.5rem; }
+${EXPORT_STAGE_TOOLBAR_CSS}
 #piece-audio-controls {
   position: fixed;
-  left: 1rem;
-  bottom: 5.5rem;
+  left: .75rem;
+  top: 4.5rem;
   z-index: 10;
   display: grid;
   gap: .5rem;
@@ -154,9 +111,9 @@ const PIECE_CSS = `html, body {
   border: 1px solid rgba(255,255,255,.28);
   border-radius: .75rem;
 }
-#piece-actions-dialog > #piece-audio-controls { position: static; left: auto; bottom: auto; z-index: auto; width: auto; min-width: 0; max-width: none; max-height: none; overflow: visible; margin: 0 1rem 1rem; box-sizing: border-box; }
 #piece-audio-controls[hidden] { display: none; }
 #piece-audio-controls { max-height: min(40vh, 20rem); overflow: auto; box-sizing: border-box; }
+#piece-audio-controls button, #piece-hand-guide button { min-height: 2.75rem; padding: .4rem .75rem; border: 1px solid rgba(255,255,255,.7); border-radius: .75rem; background: rgba(10,12,20,.94); color: #fff; cursor: pointer; }
 #piece-audio-controls label { display: grid; gap: .25rem; font-size: .8rem; }
 #piece-hand-guide {
   position: fixed;
@@ -219,27 +176,15 @@ function buildIndexHtml(variant: Scene3DExportVariant, immersive: boolean): stri
 </head>
 <body data-piece-surface="${immersive ? 'immersive' : 'regular'}">
 <div id="scene3d-canvas-host"></div>
-<div id="piece-toolbar" role="toolbar" aria-label="Piece actions">
-  <button id="piece-menu-trigger" type="button" aria-label="Open piece controls menu" aria-expanded="false" aria-controls="piece-actions-dialog">☰</button>
-</div>
-<div id="piece-actions-dialog" role="dialog" aria-label="Piece actions" hidden>
-  <header><h2>Piece actions</h2><button id="piece-actions-dialog-close" type="button" aria-label="Close piece controls menu">×</button></header>
-  <div class="piece-action-list">
-    <button id="piece-screenshot" type="button" aria-label="Take screenshot" title="Take screenshot"><span class="piece-action-icon" aria-hidden="true">⌗</span><span class="piece-action-label">Screenshot</span></button>
-    <button id="piece-reset-view" type="button" aria-label="Reset view" title="Reset view"><span class="piece-action-icon" aria-hidden="true">↺</span><span class="piece-action-label">Reset view</span></button>
-    <button id="piece-sound" type="button" aria-label="Enable sound" title="Enable sound" aria-pressed="false"><span class="piece-action-icon" aria-hidden="true">♪</span><span class="piece-action-label">Sound</span></button>
-    <button id="piece-audio-settings" type="button" aria-label="Piece controls" title="Piece controls" aria-expanded="false"><span class="piece-action-icon" aria-hidden="true">☷</span><span class="piece-action-label">Piece controls</span></button>
-    <button id="piece-hand-guide-toggle" type="button" aria-label="Hand gesture guide" title="Hand gesture guide" aria-expanded="false"><span class="piece-action-icon" aria-hidden="true">?</span><span class="piece-action-label">Hand gesture guide</span></button>
-    <button id="piece-fullscreen" type="button" aria-label="Enter fullscreen" title="Enter fullscreen"><span class="piece-action-icon" aria-hidden="true">⛶</span><span class="piece-action-label">Fullscreen</span></button>
-  </div>
-  <div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
+${renderExportStageToolbar({ buttons: ['screenshot', 'sound', 'controls', 'guide', 'fullscreen'], controlsDomId: 'piece-audio-settings', controlsPanelId: 'piece-audio-controls' })}
+<div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
+    <button id="piece-reset-view" type="button">Reset view</button>
     <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
     <button id="piece-keyboard" type="button" aria-pressed="false">Keyboard notes</button>
     ${variant === 'full' ? '<button id="piece-mic" type="button" aria-pressed="false">Live mic</button>' : ''}
     ${variant === 'full' ? '<button id="piece-theremin" type="button" aria-pressed="false">Camera theremin</button>' : ''}
     <p>Enable sound, then turn on keyboard notes to play A–L keys.</p>
     ${variant === 'full' ? '<div id="camera-controls-host" role="group" aria-label="Camera controls"></div>' : ''}
-  </div>
 </div>
 <div id="piece-hand-guide" role="dialog" aria-label="Hand gesture guide" hidden>
   <h2>Hand gesture guide</h2>
@@ -256,9 +201,6 @@ function buildIndexHtml(variant: Scene3DExportVariant, immersive: boolean): stri
 <script>
 (() => {
   const host = document.getElementById('scene3d-canvas-host');
-  const menuTrigger = document.getElementById('piece-menu-trigger');
-  const actionsDialog = document.getElementById('piece-actions-dialog');
-  const actionsClose = document.getElementById('piece-actions-dialog-close');
   const screenshot = document.getElementById('piece-screenshot');
   const resetView = document.getElementById('piece-reset-view');
   const fullscreen = document.getElementById('piece-fullscreen');
@@ -267,27 +209,6 @@ function buildIndexHtml(variant: Scene3DExportVariant, immersive: boolean): stri
   const guideClose = document.getElementById('piece-hand-guide-close');
   const audioSettings = document.getElementById('piece-audio-settings');
   const audioPanel = document.getElementById('piece-audio-controls');
-  let menuReturnFocus = null;
-  function setMenuOpen(open) {
-    if (!actionsDialog || !menuTrigger) return;
-    actionsDialog.hidden = !open;
-    menuTrigger.setAttribute('aria-expanded', String(open));
-    if (open) {
-      menuReturnFocus = document.activeElement;
-      actionsClose?.focus();
-    } else {
-      menuTrigger.focus();
-      menuReturnFocus = null;
-    }
-  }
-  menuTrigger?.addEventListener('click', () => setMenuOpen(Boolean(actionsDialog?.hidden)));
-  actionsClose?.addEventListener('click', () => setMenuOpen(false));
-  actionsDialog?.addEventListener('click', (event) => {
-    if (event.target === actionsDialog) setMenuOpen(false);
-  });
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && actionsDialog && !actionsDialog.hidden) setMenuOpen(false);
-  });
   const canvas = () => host && host.querySelector('canvas');
   screenshot?.addEventListener('click', () => {
     const current = canvas();
@@ -301,7 +222,10 @@ function buildIndexHtml(variant: Scene3DExportVariant, immersive: boolean): stri
   fullscreen?.addEventListener('click', async () => {
     if (document.fullscreenElement) await document.exitFullscreen();
     else await (host?.requestFullscreen?.() ?? Promise.resolve());
-    fullscreen.setAttribute('aria-label', document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen');
+    const fullscreenLabel = document.fullscreenElement ? 'Exit fullscreen' : 'Enter fullscreen';
+    fullscreen.setAttribute('aria-label', fullscreenLabel);
+    const tip = fullscreen.querySelector('.piece-stage-tooltip');
+    if (tip) tip.textContent = fullscreenLabel;
   });
   function setGuideOpen(open) {
     if (!guide || !guideToggle) return;
@@ -310,6 +234,17 @@ function buildIndexHtml(variant: Scene3DExportVariant, immersive: boolean): stri
   }
   guideToggle?.addEventListener('click', () => setGuideOpen(Boolean(guide?.hidden)));
   guideClose?.addEventListener('click', () => setGuideOpen(false));
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (guide && !guide.hidden) {
+      setGuideOpen(false);
+      guideToggle?.focus();
+    } else if (audioPanel && !audioPanel.hidden) {
+      audioPanel.hidden = true;
+      audioSettings?.setAttribute('aria-expanded', 'false');
+      audioSettings?.focus();
+    }
+  });
   audioSettings?.addEventListener('click', () => {
     if (!audioPanel) return;
     audioPanel.hidden = !audioPanel.hidden;

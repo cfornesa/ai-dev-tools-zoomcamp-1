@@ -1386,3 +1386,7 @@ The owner rejected screen-space and world-stroke ink for 3D. A manual drawing in
 ## 2026-09-24 — Animation kinds, proportional expansion, contextual UX (#782–#784)
 
 The owner confirmed animation kinds rotate, orbit, oscillate, and pulse (#783). Drawing-plane expansion is proportional by default; non-proportional stretch only on explicit request (contextual control or an AI prompt such as "elongate layer <name>") (#782, #784). Workspace UX principle: controls are contextual, grouped by task in familiar menus, with progressive disclosure so the default workspace stays focused; applied as acceptance to #775, #776, #781–#784.
+
+## 2026-09-24 — Contextual selection UI for layers (#781–#783)
+
+The owner approved a photo-editor-style interaction model for drawing planes and other selected objects: on-canvas handles (proportional scaling by default), a small anchored floating toolbar for common actions with one "More" overflow, an on-demand precise-values panel, nothing shown when nothing is selected, and never a modal dialog. Touch docks the toolbar at the bottom; full keyboard access required. Recorded as acceptance on #781, #782, #783.

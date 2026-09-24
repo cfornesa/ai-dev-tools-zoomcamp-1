@@ -74,10 +74,11 @@ test.describe('public 3D camera overlay geometry (#728)', () => {
         );
         await toolbar.getByRole('button', { name: 'Hide piece controls' }).click();
 
-        await toolbar.getByRole('button', { name: 'Steer the piece' }).click();
+        // Steer lives inside the Piece controls popover (#767).
+        await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+        await controls.getByRole('button', { name: 'Steer the piece' }).click();
         const video = anonymousPage.getByTestId('scene3d-camera-overlay-video');
         await expect(video).toBeVisible();
-        await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
         await expect(controls.getByRole('slider', { name: 'Camera opacity' })).toBeVisible();
         await expect(
           controls.getByRole('checkbox', { name: 'Mirror camera overlay' }),

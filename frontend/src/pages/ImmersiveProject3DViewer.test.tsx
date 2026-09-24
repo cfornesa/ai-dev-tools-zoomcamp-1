@@ -167,7 +167,10 @@ describe('ImmersiveProject3DViewer load states', () => {
     expect(
       screen.queryByRole('button', { name: 'Open piece controls menu' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /steer the piece/i })).toBeInTheDocument();
+    // Matrix (#767): Steer lives inside the Piece controls popover, not the icon row.
+    expect(screen.queryByRole('button', { name: /steer the piece/i })).not.toBeInTheDocument();
+    const steer = screen.getByRole('button', { name: /steer the piece/i, hidden: true });
+    expect(steer.closest('[aria-label="Piece controls"]')).not.toBeNull();
     expect(screen.getByRole('button', { name: /show hand gesture guide/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Embed (Custom)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Embed (CMS)' })).toBeInTheDocument();

@@ -53,7 +53,12 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
     const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(frame).toBeVisible();
-    await toolbar.getByRole('button', { name: 'Steer the piece' }).click();
+    // Steer lives inside the Piece controls popover (#767).
+    await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+    await toolbar
+      .getByRole('group', { name: 'Piece controls' })
+      .getByRole('button', { name: 'Steer the piece' })
+      .click();
     const video = anonymousPage.getByTestId('scene3d-camera-overlay-video');
     await expect(video).toBeVisible();
 

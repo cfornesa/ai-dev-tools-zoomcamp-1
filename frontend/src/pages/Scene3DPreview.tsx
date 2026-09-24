@@ -752,6 +752,35 @@ function Scene3DPreview({
     (cameraPreviewEnabled && cameraPreviewStatus === 'active' && cameraPreviewStream),
   );
 
+  // Matrix (#767): on the public/immersive (inline) stage, Steer lives inside the single
+  // Piece controls popover instead of being its own toolbar button. The editor's menu
+  // mode keeps the toolbar button.
+  const steerInPopover = toolbarMode === 'inline';
+  const toggleSteering = () => {
+    resetGestureSignals();
+    setGestureCameraStatus('idle');
+    setGestureCameraStream(null);
+    setGestureControlEnabled((current) => !current);
+  };
+  const steerToolbarButton = showGestureControl ? (
+    <button
+      type="button"
+      className="piece-stage-icon-button"
+      title={gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
+      aria-label={gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
+      aria-pressed={gestureControlEnabled}
+      onClick={toggleSteering}
+    >
+      <PieceStageIcon name="steer" />
+      <span className="piece-stage-action-label">
+        {gestureControlEnabled ? 'Stop steer' : 'Steer'}
+      </span>
+      <span className="piece-stage-tooltip" role="tooltip">
+        {gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
+      </span>
+    </button>
+  ) : undefined;
+
   if (renderError) {
     return (
       <div ref={containerRef} className="scene3d-preview scene3d-preview-unavailable">
@@ -850,6 +879,20 @@ function Scene3DPreview({
           }
           controlsControl={
             <StageControlsPopover resetKey={soundControlsResetKey}>
+              {steerInPopover && showGestureControl && (
+                <div className="editor-tool-group">
+                  <button
+                    type="button"
+                    aria-label={
+                      gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'
+                    }
+                    aria-pressed={gestureControlEnabled}
+                    onClick={toggleSteering}
+                  >
+                    {gestureControlEnabled ? 'Stop steering' : 'Steer the piece'}
+                  </button>
+                </div>
+              )}
               <div className="editor-tool-group">
                 <button
                   type="button"
@@ -1007,33 +1050,7 @@ function Scene3DPreview({
               )}
             </StageControlsPopover>
           }
-          gestureControl={
-            showGestureControl ? (
-              <button
-                type="button"
-                className="piece-stage-icon-button"
-                title={gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
-                aria-label={
-                  gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'
-                }
-                aria-pressed={gestureControlEnabled}
-                onClick={() => {
-                  resetGestureSignals();
-                  setGestureCameraStatus('idle');
-                  setGestureCameraStream(null);
-                  setGestureControlEnabled((current) => !current);
-                }}
-              >
-                <PieceStageIcon name="steer" />
-                <span className="piece-stage-action-label">
-                  {gestureControlEnabled ? 'Stop steer' : 'Steer'}
-                </span>
-                <span className="piece-stage-tooltip" role="tooltip">
-                  {gestureControlEnabled ? 'Stop steering with gestures' : 'Steer the piece'}
-                </span>
-              </button>
-            ) : undefined
-          }
+          gestureControl={steerInPopover ? undefined : steerToolbarButton}
           gestureGuide={showGestureControl ? <HandGestureGuideDialog /> : undefined}
           editorControls={editorControls}
         />

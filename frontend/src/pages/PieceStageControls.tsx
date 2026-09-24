@@ -628,11 +628,16 @@ function PieceStageControls({
     // The immersive surface is already the immersive view: no self-link (matrix row 3, #753).
     immersive: capabilities.immersive === true && presentation !== 'immersive',
     sound: capabilities.sound === true,
+    // Matrix (#766): the single Piece controls popover exists whenever any of its
+    // contents (sound, mic, keyboard, camera view, Steer) is offered. Steer lives
+    // inside that popover, never as its own toolbar button.
     pieceControls:
+      capabilities.sound === true ||
       capabilities.camera_view === true ||
       capabilities.microphone === true ||
-      capabilities.keyboard === true,
-    gesture: capabilities.hand_steering === true,
+      capabilities.keyboard === true ||
+      capabilities.hand_steering === true,
+    gesture: false,
     gestureGuide: capabilities.hand_steering === true,
     fullscreen: capabilities.fullscreen !== false,
   };
@@ -667,11 +672,11 @@ function PieceStageControls({
             type="button"
             className="piece-stage-icon-button"
             aria-expanded={open}
-            aria-label="Camera controls"
+            aria-label="Piece controls"
             onClick={() => setOpen((value) => !value)}
           >
             <PieceStageIcon name="controls" />
-            <span className="piece-stage-action-label">Camera</span>
+            <span className="piece-stage-action-label">Piece controls</span>
           </button>
         ) : undefined
       }
@@ -696,7 +701,7 @@ function PieceStageControls({
           <button
             type="button"
             className="piece-stage-icon-button"
-            aria-label="Hand tracking guide"
+            aria-label="Hand gesture guide"
             onClick={() => setGuide(true)}
           >
             <PieceStageIcon name="guide" />

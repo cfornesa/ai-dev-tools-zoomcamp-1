@@ -79,10 +79,12 @@ test.describe('generated immersive toolset (#691)', () => {
         'href',
         '/users/@artist/pieces/sample-piece',
       );
-      await expect(page.getByRole('button', { name: 'Camera controls' })).toHaveCount(
+      await expect(page.getByRole('button', { name: 'Piece controls' })).toHaveCount(
         engine === 'threejs' ? 1 : 0,
       );
-      await expect(page.getByRole('button', { name: /^Hand tracking$/ })).toHaveCount(
+      // Steer lives inside the Piece controls popover; the guide is its own button (#766).
+      await expect(page.getByRole('button', { name: /^Hand tracking$/ })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Hand gesture guide' })).toHaveCount(
         engine === 'threejs' ? 1 : 0,
       );
       await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveCount(

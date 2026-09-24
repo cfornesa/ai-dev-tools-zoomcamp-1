@@ -43,6 +43,13 @@ toolbar buttons): volume, keyboard notes, live mic (`sound`); camera theremin
 (hand tracking voice); Steer the piece (`hand_control`); Show camera and
 opacity (`camera_view`).
 
+**Divergence (this repo, #766):** the PHP contract defaults camera view and hand
+control ON when unset. Here they are explicit per-version author capabilities
+(the editor's Camera view and Hand steering checkboxes), so a button appears only
+when its capability is enabled. Steer lives inside the Piece controls popover
+(never its own toolbar button), and the popover exists whenever sound, microphone,
+keyboard, camera view, or hand steering is enabled.
+
 ## Matrix
 
 Legend: ● present, ○ present only when its gate is on, — never.

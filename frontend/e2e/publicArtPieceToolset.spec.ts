@@ -68,14 +68,14 @@ test.describe('generated art-piece public toolset (#690)', () => {
 
       await expect(page.getByRole('heading', { name: `${engine} piece` })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
-      await expect(
-        page.locator('.piece-stage-action-label', { hasText: 'Download ZIP' }),
-      ).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Open download menu' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Camera controls' })).toHaveCount(
+      await expect(page.getByRole('button', { name: 'Piece controls' })).toHaveCount(
         engine === 'threejs' ? 1 : 0,
       );
-      await expect(page.getByRole('button', { name: /^Hand tracking$/ })).toHaveCount(
+      // Steer lives inside the Piece controls popover; the guide is its own button (#766).
+      await expect(page.getByRole('button', { name: /^Hand tracking$/ })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Hand gesture guide' })).toHaveCount(
         engine === 'threejs' ? 1 : 0,
       );
       await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveCount(

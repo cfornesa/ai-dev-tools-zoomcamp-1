@@ -107,11 +107,13 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
         const frame = page.frameLocator('iframe[title="Art piece preview"]');
         await frame.locator(fixture.selector).waitFor({ state: 'attached', timeout: 10_000 });
         await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Expand fullscreen' })).toBeVisible();
+        await expect(
+          page.getByRole('button', { name: 'Expand piece to fullscreen' }),
+        ).toBeVisible();
         if (fixture.immersive) {
-          await expect(page.getByRole('link', { name: 'View immersive piece' })).toBeVisible();
+          await expect(page.getByRole('button', { name: 'View immersive piece' })).toBeVisible();
         } else {
-          await expect(page.getByRole('link', { name: 'View immersive piece' })).toHaveCount(0);
+          await expect(page.getByRole('button', { name: 'View immersive piece' })).toHaveCount(0);
         }
       }
     }

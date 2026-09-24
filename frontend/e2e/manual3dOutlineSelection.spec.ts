@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createBlank3DProjectViaUI } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -92,13 +93,7 @@ test.describe('manual 3D outline selection', () => {
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
-    expect(projectId).toBeTruthy();
-    if (!projectId) return;
+    const projectId = await createBlank3DProjectViaUI(page);
 
     const saved = await apiPost(page.context(), `/api/projects3d/${projectId}/versions/`, {
       scene_json: FIXTURE_SCENE,

@@ -6,6 +6,19 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { preview, type PreviewServer } from 'vite';
+import { resolveBackendProxyTarget } from './viteBackendTarget.js';
+
+describe('backend proxy target selection', () => {
+  it('pins production preview to local HTTP even with an HTTPS browser-QA override', () => {
+    expect(resolveBackendProxyTarget('preview', 'https://qa-backend.example.test')).toBe(
+      'http://127.0.0.1:8000',
+    );
+  });
+
+  it('keeps the browser-QA override available in development', () => {
+    expect(resolveBackendProxyTarget('dev', 'http://127.0.0.1:8123')).toBe('http://127.0.0.1:8123');
+  });
+});
 
 // Issue #700: the production run path (`vite preview`) must inject the
 // server-rendered share metadata and feed-discovery links into the SPA shell.
@@ -14,10 +27,18 @@ describe('vite preview share metadata (production run path)', () => {
   let web: PreviewServer;
   let dir: string;
   let baseUrl: string;
+  let backendPort: number;
   const saved = { ...process.env };
 
   beforeAll(async () => {
     backend = createServer((request, response) => {
+      if (request.headers['x-forwarded-proto'] !== 'https') {
+        response.writeHead(301, {
+          Location: `https://127.0.0.1:${backendPort}${request.url}`,
+        });
+        response.end();
+        return;
+      }
       response.setHeader('Content-Type', 'application/json');
       if (request.url === '/health/') {
         response.statusCode = 200;
@@ -39,7 +60,8 @@ describe('vite preview share metadata (production run path)', () => {
       response.end('{}');
     });
     await new Promise<void>((done) => backend.listen(0, '127.0.0.1', done));
-    const backendPort = (backend.address() as AddressInfo).port;
+    backendPort = (backend.address() as AddressInfo).port;
+    process.env.FRONTEND_SERVE_MODE = 'dev';
     process.env.BROWSER_QA_BACKEND_URL = `http://127.0.0.1:${backendPort}`;
     // Simulates a platform secret saved with whitespace and quotes.
     process.env.PUBLIC_SITE_ORIGIN = ' "https://example.test" ';

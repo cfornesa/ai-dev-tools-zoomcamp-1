@@ -5,6 +5,7 @@ import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { resolveBackendProxyTarget } from './src/viteBackendTarget.js';
 import { previewCachePolicy } from './src/vitePreviewCachePolicy.js';
 
 // Deliberately '127.0.0.1', not 'localhost': Django's runserver only ever
@@ -18,7 +19,10 @@ import { previewCachePolicy } from './src/vitePreviewCachePolicy.js';
 // .agents/memory/local-port-8000-docker-conflict.md. Pinning to
 // 127.0.0.1 makes this proxy target unambiguous regardless of what else is
 // listening on ::1 on this machine.
-const backendProxyTarget = process.env.BROWSER_QA_BACKEND_URL ?? 'http://127.0.0.1:8000';
+const backendProxyTarget = resolveBackendProxyTarget(
+  process.env.FRONTEND_SERVE_MODE,
+  process.env.BROWSER_QA_BACKEND_URL,
+);
 
 const djangoProxy = {
   '/api': { target: backendProxyTarget, changeOrigin: false },
@@ -98,6 +102,17 @@ function publicOrigin(): string {
   return normalizedPublicOrigin().origin;
 }
 
+function backendRequestHeaders(): Record<string, string> {
+  // Production Django redirects plain HTTP requests unless the trusted proxy
+  // protocol is supplied. These server-side calls still use HTTP to reach
+  // Django locally; the header describes the public request's actual scheme.
+  const protocol = new URL(normalizedPublicOrigin().origin).protocol.slice(0, -1);
+  return {
+    Accept: 'application/json',
+    'X-Forwarded-Proto': protocol,
+  };
+}
+
 function safeShareMetadataError(error: unknown): ShareMetadataError {
   const name = error instanceof Error && error.name ? error.name : 'Error';
   const rawMessage = error instanceof Error ? error.message : String(error);
@@ -113,7 +128,7 @@ async function backendReachable(): Promise<boolean> {
   const timeout = setTimeout(() => controller.abort(), 2000);
   try {
     const response = await fetch(`${backendProxyTarget}/health/`, {
-      headers: { Accept: 'application/json' },
+      headers: backendRequestHeaders(),
       signal: controller.signal,
     });
     return response.ok;
@@ -206,7 +221,7 @@ async function fetchShareMetadata(pathname: string): Promise<ShareMetadata | nul
   const sitePath = siteMetadataDescriptor(pathname);
   if (sitePath) {
     const response = await fetch(`${backendProxyTarget}${sitePath}`, {
-      headers: { Accept: 'application/json' },
+      headers: backendRequestHeaders(),
     });
     if (!response.ok) return null;
     return (await response.json()) as ShareMetadata;
@@ -221,7 +236,7 @@ async function fetchShareMetadata(pathname: string): Promise<ShareMetadata | nul
     if (!canonical) return null;
     const response = await fetch(
       `${backendProxyTarget}/api/users/@${encodeURIComponent(canonical[1])}/pieces/${encodeURIComponent(canonical[2])}/`,
-      { headers: { Accept: 'application/json' } },
+      { headers: backendRequestHeaders() },
     );
     if (!response.ok) return null;
     const payload = (await response.json()) as {
@@ -234,7 +249,7 @@ async function fetchShareMetadata(pathname: string): Promise<ShareMetadata | nul
   }
   const response = await fetch(
     `${backendProxyTarget}/api/public/share-meta/${kind}/${encodeURIComponent(publicId)}/`,
-    { headers: { Accept: 'application/json' } },
+    { headers: backendRequestHeaders() },
   );
   if (!response.ok) return null;
   return (await response.json()) as ShareMetadata;
@@ -305,7 +320,7 @@ function shareMetadataPlugin(): Plugin {
         try {
           const collectionResponse = await fetch(
             `${backendProxyTarget}/api/public/collections/${encodeURIComponent(legacyCollection.handle)}/${encodeURIComponent(legacyCollection.slug)}/`,
-            { headers: { Accept: 'application/json' } },
+            { headers: backendRequestHeaders() },
           );
           if (collectionResponse.ok) {
             const collection = (await collectionResponse.json()) as {

@@ -226,6 +226,23 @@ deferred.
 - Follow-up audit: #803 needs an owner-authorized publish followed by the real
   browser matrix before closure. No production mutation was performed.
 
+## Distillation refresh 3 — 2026-09-24
+
+- The authenticated GitHub open inventory contains 21 issues: #748, #788,
+  #798–#811 excluding closed #810, #814–#821, plus open #803 and #809. The
+  earlier count of 22 was stale after #813 closed.
+- Duplicate audit: the renewed immersive order/spacing report remains covered
+  by open #803; no new issue was created. Fresh Chrome evidence confirms the
+  deployed revision still predates the local fix.
+- Production/browser boundary: Chrome is available and was used directly;
+  the requested tab remained at 375x812 despite the extension viewport
+  override, so this pass does not claim fresh desktop evidence. Playwright
+  Chromium remains a separate host-launch boundary.
+- Next groomed issue remains #811 (vendor-neutral generated-piece transport),
+  with #814–#821 ordered after its dependency chain. #803/#748 remain
+  production-gated and no unauthorized publish or production data action was
+  performed.
+
 ## Session-completion refresh — 2026-09-24 continuation
 
 - This is a partial backlog continuation, not a complete project run:

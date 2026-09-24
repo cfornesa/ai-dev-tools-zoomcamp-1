@@ -23903,3 +23903,26 @@ live re-verification belongs to #748.
 Next actions: owner approves the push (`GIT_URL=... make git-safe-push`) → #746
 fix → Replit Publish → #748 live verification; owner supplies the published
 server log for #747.
+
+## 2026-09-24 — Distillation: download, embed, immersive, and c2 drawing parity (#751–#762)
+
+Provenance: task-distillation / Claude Sonnet 5 (default profile) / not substituted. Discovery only; no product code changed.
+Owner report: augmenthumankind.com downloads use old button styling; augmentrart.com downloads lack controls, embeds/immersive order differs from the reference, and the c2.js interactive drawing toolset and canvas standard are unverified. Live augmentrart.com runs `index-D1d1cwvE.js`; local main is ~80 commits ahead (#748), so publish/verify is a boundary, not new work.
+
+| Issue | Surface | Class | Routing | Status |
+|---|---|---|---|---|
+| #751 | Owner decision: toolbar order/label style | decision (Rule 2) | owner | PROPOSED, blocks #752–#756 |
+| #752 | `/embed/art-pieces/:id` toolbar order/placement | implementation-defect | 2a | PROPOSED, dep #751 |
+| #753 | Immersive route toolbar order/placement | implementation-defect | 2a | PROPOSED, dep #751 |
+| #754 | Immersive embed toolbar + 3D camera framing | implementation-defect / verification | 2a→2b | PROPOSED, dep #751, #753 |
+| #755 | Regular ZIP controls visible/styled | implementation-defect (owner conflict UNRESOLVED until extracted-ZIP screenshot) | 2b | PROPOSED, dep #751 |
+| #756 | Immersive ZIP controls | implementation-defect | 2b | PROPOSED, dep #755 |
+| #757 | c2js-interactive Regular ZIP drawing toolset | implementation-defect (confirmed absent by source grep) | 2b | PROPOSED, independent |
+| #758 | c2js-interactive Immersive ZIP drawing | implementation-defect | 2b | PROPOSED, dep #757 |
+| #759 | Owner decision: C2 canvas 320x240 vs reference 1280x720 | decision | owner | PROPOSED |
+| #760 | c2/c2-interactive ZIP real c2.min.js vs 3-method stub | implementation-defect | 2b | PROPOSED, dep #759 |
+| #761 | Authored /p,/p3d exports: hamburger → inline | implementation-defect | 2b | PROPOSED, dep #751 |
+| #762 | `embed:false` capability vs working embed route | implementation-defect | 2a | PROPOSED, independent |
+
+Already covered / duplicates: live viewer drawing (#670, #707–#711 closed, valid for the live viewer only), labelled inline toolsets (#690–#694, #706), offline downloads (#609), publish/live verification incl. real-camera 3D checks (#748), CI (#746). No open duplicate found. Camera perspective in embed/immersive is folded into #754 with real-Chrome evidence.
+Next issue when engineering starts: #757 (independent, closure-ready). Cross-repo drafts for `augment-humankind-react-node` (old `.portable-button` ZIP styling; ZIP guide only sets status text; no c2-interactive drawing toolset) are `issue-creation-pending-authorization` until the owner confirms.

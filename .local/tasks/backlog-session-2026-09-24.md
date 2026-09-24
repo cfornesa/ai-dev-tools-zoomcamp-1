@@ -353,3 +353,23 @@ deferred.
   implementation target. #818 precedes #819, which precedes #820/#821.
 - Production audit: #803/#806/#807 remain production/browser gated; no
   unauthorized publish or schema/data action was performed.
+
+## Distillation refresh 7 — 2026-09-24 continuation
+
+- Current authoritative GitHub open inventory is 17 issues: #748, #788,
+  #798–#807, #815, #816, and #818–#821. #808, #809, #810, #811, #812,
+  #813, #814, and #817 are closed and remain immutable history.
+- Duplicate audit: the owner’s renewed immersive layout report remains the
+  existing #803 production/browser contract; no duplicate issue was created.
+  Chrome is confirmed running with the production piece tab and Replit tab
+  available. The prior browser limitation was viewport/Playwright evidence,
+  not Chrome absence.
+- Dependency/order rationale: #817 is CLOSED, so #816 (native-schema-aware
+  structured extraction/repair) is the next dependency-ready implementation.
+  #818 then precedes #819, which precedes #820 and #821. #815 is independent
+  but its replay fixtures should follow the provider capability work.
+- Blocker triage: #748/#788/#803/#806/#807 require production or browser
+  evidence; #798–#802 and #799–#801 are dependent release/browser work. The
+  owner authorization currently covers only #747/#748/#788, not publishing
+  #803/#798/#807 or running other production writes. No new follow-up issue is
+  needed; each blocker has an existing issue and concrete next action.

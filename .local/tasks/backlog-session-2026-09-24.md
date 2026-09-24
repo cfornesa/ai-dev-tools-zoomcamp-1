@@ -67,6 +67,7 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #807 | IMPLEMENTED / QA FAIL environment boundary | d0819d0 | focused Vitest/Layout 20 passed; `make check` backend 1615 passed / frontend 276 files 2969 tests; Compose preflight PASS; Chromium E2E blocked by macOS Mach-port launch permission | FAIL (browser evidence unavailable) | open | first-party CSS/React star field, bounded 90 nodes, cosmic-only rendering, E2E spec added; needs real browser runner screenshots and animation delta |
 | #808 | CLOSED / QA PASS | 47d7827 | focused importer 9 passed; `make check` backend 1615 passed / frontend 276 files 2968 tests | PASS | closed | local-only reconciliation fix; production re-import intentionally not run; QA comment 5822184052 |
 | #810 | CLOSED / QA PASS | 8e34e85 | shared provider prompts 30 passed; full backend 1619 passed / 39 skipped; mypy and ruff pass | PASS | closed | 3D create/edit/convert prompts are shared across Mistral/Gemini/DeepSeek; Gemini drawing-plane validation/proportionalization parity covered; QA comment 5822745870 |
+| #812 | CLOSED / QA PASS | d53c7a0 | focused patch/API 101 passed; full backend 1622 passed / 39 skipped; frontend 276 files / 2971 tests; mypy, ruff, typecheck, format pass | PASS | closed | explicit delete intent for 2D/3D whole-element removal/replacement; QA comment 5823039527 |
 
 ## Production-readiness — 2026-09-24
 
@@ -162,8 +163,25 @@ order is:
   stage 3 independent-family review was not run. No new dependency, migration,
   route, secret, or public API change.
 
-Next groomed issue: #811, now that its #809 and #810 shared-prompt
-prerequisites are implemented; its six-library provider matrix remains open.
+### #812 transaction
+
+- Groom: criterion-ready Stage 2b safety contract, independent of #811; no
+  duplicate. Its scope includes 2D/3D patch validators, API taxonomy/docs,
+  and the React proposal error message.
+- Engineering: Codex / GPT-5 / current session substituted for Ollama Cloud
+  Kimi K3; commit `d53c7a0` adds explicit delete verbs plus exact name/id/
+  ordinal matching, class-scoped bulk deletion, the new
+  `delete_intent_required` error, and regression coverage.
+- QA self-review: Codex / GPT-5 / current session substituted for Claude
+  Sonnet 5; focused 101-test backend set, full backend 1622/39 skipped, full
+  frontend 276 files/2971 tests, typecheck, format, ruff, and mypy pass.
+- Reconciliation: QA PASS comment `5823039527`; issue #812 closed. Stage 3
+  independent-family review was not run. No dependency, migration, route,
+  secret, or production data action changed.
+
+Next groomed issue: #811, the remaining prerequisite chain's provider
+transport matrix; #813 is the next independent safety contract if #811 is
+deferred.
 
 ## Production-readiness refresh — 2026-09-24 continuation
 
@@ -180,8 +198,8 @@ prerequisites are implemented; its six-library provider matrix remains open.
   import was a no-op for the changed sources; #803/#798/#807 are unpublished;
   #806 and the remaining parity issues are open. No additional publish or
   production data action was authorized.
-- Current open inventory: 23 issues. #810 is closed with QA PASS; #811–#821,
-  #812/#813, #798/#799–#807, #748, and #788 remain open with their recorded
+- Current open inventory: 22 issues. #810 and #812 are closed with QA PASS;
+  #811, #813–#821, #798/#799–#807, #748, and #788 remain open with their recorded
   next actions. No duplicate or silently omitted issue was found.
 
 ## Session-completion refresh — 2026-09-24 continuation

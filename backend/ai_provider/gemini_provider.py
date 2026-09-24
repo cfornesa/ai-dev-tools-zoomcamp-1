@@ -42,6 +42,8 @@ from ai_provider.prompts import (
     SCENE3D_CONVERT_PROMPT,
     SCENE3D_CREATE_PROMPT,
     SCENE3D_EDIT_PROMPT,
+    SCENE_2D_CREATE_PROMPT,
+    SCENE_2D_EDIT_PROMPT,
 )
 from scenes.patch import PatchError, apply_patch, validate_patch_operations, worst_reason
 from scenes.patch3d import (
@@ -124,15 +126,8 @@ class GeminiHttpClient:
             raise AIProviderRejectionError("Gemini returned an unusable response.") from exc
 
 
-_CREATE_INSTRUCTIONS = (
-    "Return only one JSON object matching the supplied scene schema. "
-    "Never return code, XML, markdown, or prose."
-)
-_EDIT_INSTRUCTIONS = (
-    "Return only a JSON Patch array. Use only add, replace, or remove "
-    "operations on the existing allowlisted scene paths. Return [] when "
-    "the edit is not expressible."
-)
+_CREATE_INSTRUCTIONS = SCENE_2D_CREATE_PROMPT
+_EDIT_INSTRUCTIONS = SCENE_2D_EDIT_PROMPT
 # Issue #528: convert an existing 2D scene into a new 3D scene. The request
 # body is {"prompt": <optional extra guidance>, "source_scene_2d": <the 2D
 # scene>}; only "circle"->"sphere" and "rect"->"box" have a defined 3D

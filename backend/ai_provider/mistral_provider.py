@@ -159,6 +159,8 @@ from ai_provider.prompts import (
     SCENE3D_CONVERT_PROMPT,
     SCENE3D_CREATE_PROMPT,
     SCENE3D_EDIT_PROMPT,
+    SCENE_2D_CREATE_PROMPT,
+    SCENE_2D_EDIT_PROMPT,
 )
 from scenes.patch import (
     PatchError,
@@ -218,95 +220,8 @@ EMPTY_PATCH_PREFIX = "empty_patch:"
 INVALID_PATCH_PREFIX = "invalid_patch:"
 PATCH_APPLY_FAILED_PREFIX = "patch_apply_failed:"
 
-_SYSTEM_PROMPT = """You generate a single canonical scene document for a gesture-reactive \
-animation editor. Follow these rules exactly:
-
-- Respond with ONLY a single JSON object -- no prose, no markdown code \
-fences, no explanation before or after it.
-- The JSON object must conform to the provided JSON Schema (schemaVersion, \
-canvas, renderer, layers, shapes, groups, bindings, graph, accessibility, \
-and randomness are the top-level fields).
-- Never include executable JavaScript, code strings, or anything a runtime \
-would eval() -- node "params" accept only number/string/boolean/null leaf \
-values.
-- schemaVersion must be exactly 1.
-- Every binding's "targetProperty" must be exactly one of: "positionX", \
-"positionY", "scaleX", "scaleY", "rotation", "opacity", "fill", "stroke", \
-"backgroundColor", "palette", "globalForce", "triggerPreset", \
-"toggleLayer", "emitParticles", "resetScene" -- there is no "width" or \
-"height" target; to make a shape appear larger or smaller, bind \
-"scaleX"/"scaleY" instead.
-- Every binding's "signal" must be exactly one of: "indexTipX", \
-"indexTipY", "palmX", "palmY", "handDepth", "handSpeed", "pinchStrength", \
-"pinchDistance", "gestureConfidence", "handPresence", "handDistance", \
-"handsClose", "handsFar", "gestureState:openPalm", \
-"gestureState:closedFist", "gestureState:pointingUp", \
-"gestureState:thumbsUp", "gestureState:victory", "gestureState:none", \
-"event:pinchStart", "event:pinchEnd", "event:gestureEnter", \
-"event:gestureExit", "event:handAppear", "event:handDisappear", \
-"event:handsBecameClose", or "event:handsBecameFar" -- never invent a new \
-signal name.
-- Keep the scene well within these limits: at most 200 shapes, 50 groups, \
-20 layers, 100 graph nodes, 150 graph connections, 3 conditional nodes, \
-100 bindings, and 4 particle emitters.
-- Every id referenced by a binding, group, or connection must exist \
-elsewhere in the document.
-- Every shape requires its own specific fields beyond the common ones: \
-"circle" requires "radius"; "rect" requires "width", "height", and \
-"cornerRadius"; "line" requires "x2" and "y2"; "path" requires "points" \
-and "closed"; "particleEmitter" requires "rate", "size", "lifespan", \
-"speed", and "palette"; "image" requires "mediaAssetId" (and "altText" \
-unless "decorative" is true).
-- Never generate a shape with "type": "image". It requires a \
-"mediaAssetId" referencing a media asset already imported into the \
-user's local project library, which you have no way to know or \
-generate -- any "image" shape you invent would reference an asset that \
-does not exist and would be rejected. If the user's prompt asks for an \
-image or photo, omit that part of the request and generate the rest of \
-the scene using only the other shape types.
-- Every shape is its own independent layer: no two shapes may share the \
-same "layerId" -- each shape needs a distinct layer with a distinct id, \
-even if you otherwise reuse a shared style or transform.
-- If you include "demoSignals", it may only contain these keys: "palmX", \
-"palmY", "pinchStrength", "handDistance", "gestureState" -- no other key \
-(e.g. "handPresence") is ever allowed there, even though it is a valid \
-"signal" value elsewhere.
-- When the user's prompt implies a name for a shape (e.g. "add a sun" \
-implies naming that shape "Sun"), set that shape's optional "name" \
-field accordingly, so a later prompt in the same session can address it \
-back by that name. Leave "name" unset when no name is implied."""
-
-_EDIT_SYSTEM_PROMPT = """You propose a minimal JSON Patch editing an existing gesture-reactive \
-animation scene document. Follow these rules exactly:
-
-- Respond with ONLY a single JSON array of patch operations -- no prose, \
-no markdown code fences, no explanation before or after it.
-- Each operation is an object with "op" (one of "add", "replace", or \
-"remove" -- no other op is ever accepted), "path" (a JSON Pointer string \
-into the scene document), and "value" (required for "add"/"replace", \
-omitted for "remove").
-- Propose the SMALLEST set of operations that fulfills the requested \
-edit. Do not rewrite or re-emit unrelated parts of the scene.
-- NEVER target these paths -- any operation touching them is rejected \
-outright: "/schemaVersion", "/id" (the scene's own identity), \
-"/randomness/seed", or any existing item's own "id" field (e.g. \
-"/shapes/2/id"). You may add or remove a whole shape/group/binding/node/ \
-connection/layer (its own "id" lives inside the added/removed value), \
-but you may never rename an existing item's id in place.
-- Only these paths may be targeted, each at element or property \
-granularity (never a bare whole-array replace like "/shapes" on its \
-own): "/shapes/...", "/groups/...", "/bindings/...", "/layers/...", \
-"/graph/nodes/...", "/graph/connections/...", "/accessibility/...", \
-"/demoSignals" (or under it), "/canvas/backgroundColor" exactly, and \
-"/randomness/enabled" exactly.
-- If the requested edit cannot be expressed within these constraints, \
-respond with an empty JSON array: [].
-- You may address an existing shape by its "name" field when the scene \
-document shows one set (e.g. "the shape named Sun" or "rename Sun to \
-Moon" both refer to whichever shape currently has "name": "Sun") -- you \
-do not need to already know its id. When you add a new shape the prompt \
-implies a name for, set that shape's "name" field so a later prompt can \
-address it back the same way."""
+_SYSTEM_PROMPT = SCENE_2D_CREATE_PROMPT
+_EDIT_SYSTEM_PROMPT = SCENE_2D_EDIT_PROMPT
 
 # Issue #232: the 3D counterpart of _SYSTEM_PROMPT/_EDIT_SYSTEM_PROMPT,
 # targeting schema/scene3d.schema.json (a genuinely separate document

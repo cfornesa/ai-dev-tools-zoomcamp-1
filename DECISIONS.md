@@ -1434,3 +1434,7 @@ Triage of #749: responsiveShell, drawioPublicSurfaces, and aiAndRecovery already
 ## 2026-09-24 — Independent slug; old slugs hard-404 (#750)
 
 Owner decision (asked in session): after a slug change the old URL is a hard 404, with no redirect table and no migration. `public_slug` is an optional field of the 2D and 3D metadata PATCH (declared free-text, normalised, non-empty, unique per owner including soft-deleted rows) and is returned by the project serializers; `ArtPiece` already supported it. A shared `PieceSlugField` (own Save button, explicit "old links will stop working" warning, collision message) is in the 2D Details panel, a 3D "Web address" disclosure, and the generated-piece editor; saving navigates the editor to the new address. Titles never touch the slug.
+
+## 2026-09-24 — External-repo parity distillation
+
+Added #807, #798–#806 (new issues only; no closed issue reopened). Star field implemented first-party CSS/React, not theme JS. Claude Sonnet 5 / Medium ran distillation. Production verification #806 stays owner/Codex-gated.

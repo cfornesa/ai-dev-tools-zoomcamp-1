@@ -23986,3 +23986,7 @@ Finding: scene3d has no animation channel and no vector content; both are new co
 | #794 / #796 | Ink in thumbnails + SVG ZIP screenshot; A-Frame selection chrome | closed |
 | #749 / #750 | E2E triage (+fork handle fix); independent slug (hard-404 old links) | closed |
 | #747 / #748 / #788 | Production middleware, publish + live verification, production data re-import | OPEN — owner/production-gated (see below) |
+
+## Addendum 5 — external-repo parity (2026-09-24)
+
+See `docs/distillation-2026-09-24-external-repo-parity.md`. Issues #807, #798–#806. Next: #807.

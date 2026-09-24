@@ -50,3 +50,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #789 | CLOSED | bd8df15 | playwright public3dImmersiveCameraOverlay734 + public3dRouteStageChrome pass; toolbar matrix specs 8 pass | PASS | closed | test repair + 1 CSS fix |
 | #791 | CLOSED | 13e44c9 | 3 consecutive full vitest runs green (2958 tests, 179s/172s/190s) | PASS | closed | test hygiene |
 | #796 | CLOSED | c23882b | vitest 2963; playwright drawingPlaneAframe796 2 + 3D regression 9 | PASS | closed | local |
+| #749 | CLOSED | b39eaa2 | playwright publishingAndRemix 13, responsiveShell 3, drawioPublicSurfaces 1, aiAndRecovery 7 all pass; vitest PublicProjectViewer 44 | PASS | closed | 1 product fix + test repairs |

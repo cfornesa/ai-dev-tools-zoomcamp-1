@@ -84,3 +84,58 @@ export function rasterizeDrawing(drawing: DrawingDocument): HTMLCanvasElement | 
   paintDrawing(ctx, drawing);
   return canvas;
 }
+
+/**
+ * #787: the same painter as `paintDrawing`, as plain JS source for the standalone (ZIP/HTML) Three.js
+ * runtime, which cannot import this module. Defines `scene3dPaintDrawing(ctx, drawing)`. A unit test drives
+ * both with a recording 2D context so the two cannot drift.
+ */
+export const DRAWING_PAINTER_SOURCE = `
+function scene3dSafeColor(value) {
+  return typeof value === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : null;
+}
+function scene3dPaintDrawing(ctx, drawing) {
+  ctx.clearRect(0, 0, drawing.width, drawing.height);
+  var background = scene3dSafeColor(drawing.background);
+  if (background) {
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, drawing.width, drawing.height);
+  }
+  for (var i = 0; i < drawing.shapes.length; i += 1) {
+    var shape = drawing.shapes[i];
+    ctx.save();
+    var fill = scene3dSafeColor(shape.fill);
+    var stroke = scene3dSafeColor(shape.stroke);
+    var strokeWidth = Math.max(0, Number(shape.strokeWidth == null ? 0 : shape.strokeWidth));
+    ctx.globalAlpha = Math.min(1, Math.max(0, shape.opacity == null ? 1 : shape.opacity));
+    if (fill) ctx.fillStyle = fill;
+    if (stroke && strokeWidth > 0) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = strokeWidth;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+    }
+    var doFill = Boolean(fill);
+    var doStroke = Boolean(stroke) && strokeWidth > 0;
+    ctx.beginPath();
+    if (shape.type === 'rect') {
+      ctx.rect(shape.x, shape.y, shape.width, shape.height);
+    } else if (shape.type === 'ellipse') {
+      ctx.ellipse(shape.cx, shape.cy, shape.rx, shape.ry, 0, 0, Math.PI * 2);
+    } else if (shape.type === 'line') {
+      ctx.moveTo(shape.x1, shape.y1);
+      ctx.lineTo(shape.x2, shape.y2);
+    } else {
+      for (var p = 0; p < shape.points.length; p += 1) {
+        if (p === 0) ctx.moveTo(shape.points[p].x, shape.points[p].y);
+        else ctx.lineTo(shape.points[p].x, shape.points[p].y);
+      }
+      if (shape.closed) ctx.closePath();
+    }
+    if (doFill && shape.type !== 'line') ctx.fill();
+    if (doStroke) ctx.stroke();
+    ctx.restore();
+  }
+}
+`;

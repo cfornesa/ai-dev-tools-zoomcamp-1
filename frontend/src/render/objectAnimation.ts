@@ -98,3 +98,52 @@ export function prefersReducedMotion(): boolean {
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
 }
+
+/**
+ * #787: the same animation maths as `computeAnimatedTransform`, as plain JS source for the standalone
+ * (ZIP/HTML) Three.js runtime, which cannot import this module. Defines
+ * `scene3dAnimatedTransform(base, animation, seconds)` returning `{ position, rotation, scale }` (rotation
+ * in degrees). A unit test evaluates this source against `computeAnimatedTransform` so they cannot drift.
+ */
+export const ANIMATION_MATH_SOURCE = `
+function scene3dRotateAbout(p, axis, deg) {
+  var c = Math.cos(deg * Math.PI / 180), s = Math.sin(deg * Math.PI / 180);
+  if (axis === 'x') return { x: p.x, y: p.y * c - p.z * s, z: p.y * s + p.z * c };
+  if (axis === 'y') return { x: p.x * c + p.z * s, y: p.y, z: -p.x * s + p.z * c };
+  return { x: p.x * c - p.y * s, y: p.x * s + p.y * c, z: p.z };
+}
+function scene3dWithAxis(v, axis, value) {
+  return { x: axis === 'x' ? value : v.x, y: axis === 'y' ? value : v.y, z: axis === 'z' ? value : v.z };
+}
+function scene3dAnimatedTransform(base, animation, seconds) {
+  var axis = animation.axis || 'y';
+  var speed = animation.speed;
+  if (animation.kind === 'rotate') {
+    return { position: base.position, rotation: scene3dWithAxis(base.rotation, axis, base.rotation[axis] + speed * seconds), scale: base.scale };
+  }
+  if (animation.kind === 'orbit') {
+    var center = animation.center || { x: 0, y: 0, z: 0 };
+    var angle = speed * seconds;
+    var offset = { x: base.position.x - center.x, y: base.position.y - center.y, z: base.position.z - center.z };
+    var turned = scene3dRotateAbout(offset, axis, angle);
+    return {
+      position: { x: center.x + turned.x, y: center.y + turned.y, z: center.z + turned.z },
+      rotation: scene3dWithAxis(base.rotation, axis, base.rotation[axis] + angle),
+      scale: base.scale
+    };
+  }
+  if (animation.kind === 'oscillate') {
+    var oscillation = animation.amplitude == null ? ${DEFAULT_OSCILLATE_AMPLITUDE} : animation.amplitude;
+    return {
+      position: scene3dWithAxis(base.position, axis, base.position[axis] + oscillation * Math.sin(2 * Math.PI * speed * seconds)),
+      rotation: base.rotation, scale: base.scale
+    };
+  }
+  if (animation.kind === 'pulse') {
+    var pulse = animation.amplitude == null ? ${DEFAULT_PULSE_AMPLITUDE} : animation.amplitude;
+    var factor = 1 + pulse * Math.sin(2 * Math.PI * speed * seconds);
+    return { position: base.position, rotation: base.rotation, scale: { x: base.scale.x * factor, y: base.scale.y * factor, z: base.scale.z * factor } };
+  }
+  return { position: base.position, rotation: base.rotation, scale: base.scale };
+}
+`;

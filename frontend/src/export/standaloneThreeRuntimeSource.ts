@@ -17,6 +17,9 @@
  * the downloaded piece retains the same basic view controls as the live
  * preview without needing to vendor OrbitControls.
  */
+import { DRAWING_PAINTER_SOURCE } from '../render/drawingRaster';
+import { ANIMATION_MATH_SOURCE } from '../render/objectAnimation';
+
 export function buildStandaloneThreeRuntimeScript(
   options: { includeCameraFeatures?: boolean; immersive?: boolean } = {},
 ): string {
@@ -25,6 +28,8 @@ export function buildStandaloneThreeRuntimeScript(
   const source = `
 (function () {
   var scene3d = window.__SCENE3D_DATA__;
+${DRAWING_PAINTER_SOURCE}
+${ANIMATION_MATH_SOURCE}
   window.__EXPORT_SURFACE_MODE__ = ${JSON.stringify(immersive ? 'immersive' : 'regular')};
 
   function applyTransform(target, transform) {
@@ -59,8 +64,34 @@ export function buildStandaloneThreeRuntimeScript(
     }
   }
 
+  // #787: a drawing plane shows its vector drawing as a canvas texture (transparent where the drawing is).
+  function buildDrawingTexture(object) {
+    if (object.type !== 'drawingPlane' || !object.drawing) return null;
+    var canvas = document.createElement('canvas');
+    canvas.width = object.drawing.width;
+    canvas.height = object.drawing.height;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    scene3dPaintDrawing(ctx, object.drawing);
+    var texture = new THREE.CanvasTexture(canvas);
+    if (THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4;
+    return texture;
+  }
+
   function buildMaterial(object) {
     var opacity = object.material.opacity == null ? 1 : object.material.opacity;
+    var map = object.type === 'drawingPlane' && typeof buildDrawingTexture === 'function' ? buildDrawingTexture(object) : null;
+    if (map) {
+      return new THREE.MeshStandardMaterial({
+        map: map,
+        color: new THREE.Color(0xffffff),
+        opacity: opacity,
+        transparent: true,
+        alphaTest: 0.01,
+        side: object.doubleSided === false ? THREE.FrontSide : THREE.DoubleSide,
+      });
+    }
     var options = {
       color: new THREE.Color(object.material.color),
       opacity: opacity,
@@ -133,6 +164,7 @@ export function buildStandaloneThreeRuntimeScript(
     }
 
     var groupNodes = {};
+    var animated = [];
     for (var g = 0; g < doc.groups.length; g += 1) {
       var group = doc.groups[g];
       var node = buildGroupNode(group);
@@ -145,14 +177,15 @@ export function buildStandaloneThreeRuntimeScript(
       var mesh = buildObjectMesh(object);
       var parent = object.groupId !== null ? groupNodes[object.groupId] : undefined;
       (parent || scene).add(mesh);
+      if (object.animation) animated.push({ mesh: mesh, base: object.transform, animation: object.animation });
     }
 
-    return { scene: scene, camera: buildCamera(doc.camera, aspect) };
+    return { scene: scene, camera: buildCamera(doc.camera, aspect), animated: animated };
   }
 
   function start() {
     var host = document.getElementById('scene3d-canvas-host');
-    var renderer = new THREE.WebGLRenderer({ antialias: true });
+    var renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     host.appendChild(renderer.domElement);
 
     function currentSize() {
@@ -331,6 +364,8 @@ export function buildStandaloneThreeRuntimeScript(
     var lastY = 0;
     var pressedArrows = {};
     var lastFrameAt = performance.now();
+    var lastAnimationAt = performance.now();
+    var animationSeconds = 0;
 
     function applyOrbit() {
       var cosPitch = Math.cos(orbit.pitch);
@@ -471,6 +506,16 @@ export function buildStandaloneThreeRuntimeScript(
       applyArrowTravel((now - lastFrameAt) / 1000);
       lastFrameAt = now;
       applyHandCamera();
+      // #787: declarative per-object animations (#783); held at the authored pose under reduced motion.
+      if (graph.animated.length && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+        animationSeconds += Math.min((now - lastAnimationAt) / 1000, 0.1);
+        for (var a = 0; a < graph.animated.length; a += 1) {
+          var entry = graph.animated[a];
+          var next = scene3dAnimatedTransform(entry.base, entry.animation, animationSeconds);
+          applyTransform(entry.mesh, { position: next.position, rotation: next.rotation, scale: next.scale });
+        }
+      }
+      lastAnimationAt = now;
       renderer.render(graph.scene, graph.camera);
       requestAnimationFrame(tick);
     }

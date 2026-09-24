@@ -109,7 +109,7 @@ const ALLOWED_CDN_ORIGIN = 'https://cdn.jsdelivr.net';
  * WebGL frame remains readable by the sandbox screenshot command. This is a
  * browser-only runtime adaptation; generated source still cannot escape the
  * opaque iframe and Django never executes it. */
-function webglCapturePrelude(library: ArtPieceLibrary): string {
+export function webglCapturePrelude(library: ArtPieceLibrary): string {
   if (library !== 'threejs' && library !== 'aframe') return '';
   return `<script>(function () {
   var three = window.THREE;

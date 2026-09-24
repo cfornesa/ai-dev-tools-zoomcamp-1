@@ -46,6 +46,7 @@
 import JSZip from 'jszip';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
+import { webglCapturePrelude } from './artPieceSandbox';
 import { buildInkOverlayBlock } from './inkOverlay';
 import { buildStandaloneArtPieceRuntimeScript } from '../export/standaloneArtPieceRuntimeSource';
 import {
@@ -497,7 +498,7 @@ function buildIndexHtml(
 <meta charset="utf-8">
 <title>Art piece</title>
 <link rel="stylesheet" href="styles/piece.css">
-${deviceIsolationScript}${runtimeScriptTag}${runtimeControlsScript}${library === 'c2js-interactive' ? `\n${buildVisitorDrawingScript()}` : ''}
+${deviceIsolationScript}${runtimeScriptTag}${webglCapturePrelude(library)}${runtimeControlsScript}${library === 'c2js-interactive' ? `\n${buildVisitorDrawingScript()}` : ''}
 </head>
 <body>
 ${body}

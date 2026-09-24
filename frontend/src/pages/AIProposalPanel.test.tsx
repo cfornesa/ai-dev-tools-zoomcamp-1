@@ -554,6 +554,7 @@ function makeRun(overrides: Partial<AIRun> = {}): AIRun {
     plan_summary: '',
     plan: {
       revision: 1,
+      scope: 'scene',
       steps: [{ id: 'step-1', action: 'generate_scene', target_ids: [] }],
       target_ids: [],
       success_criteria: [{ type: 'renders_nonblank', parameters: {} }],

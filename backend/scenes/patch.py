@@ -629,8 +629,10 @@ def validate_patch_operations(
                         )
                     )
 
-        if scene is not None and prompt is not None and _is_destructive_existing_operation(
-            op_name, segments, op, scene
+        if (
+            scene is not None
+            and prompt is not None
+            and _is_destructive_existing_operation(op_name, segments, op, scene)
         ):
             touched = _touched_element_path(segments)
             assert touched is not None

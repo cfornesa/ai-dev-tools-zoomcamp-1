@@ -87,6 +87,7 @@ _REPAIRABLE_CATEGORIES = (
 PLAN_CRITERION_TYPES = frozenset(
     {"object_exists", "property_equals", "count_between", "renders_nonblank"}
 )
+PLAN_SCOPES = frozenset({"targets", "layer", "scene", "overhaul"})
 
 
 def _stable_scene_ids(scene_json: dict[str, Any] | None) -> set[str]:
@@ -110,6 +111,8 @@ def validate_plan(plan: dict[str, Any], scene_json: dict[str, Any] | None = None
     """Validate the bounded structured plan contract before implementation."""
     if not isinstance(plan, dict) or plan.get("revision") != 1:
         raise InvalidTarget("plan revision must be 1.")
+    if plan.get("scope") not in PLAN_SCOPES:
+        raise InvalidTarget("plan scope must be one of targets, layer, scene, or overhaul.")
     steps = plan.get("steps")
     target_ids = plan.get("target_ids")
     criteria = plan.get("success_criteria")
@@ -215,7 +218,11 @@ def _criteria_feedback(results: list[dict[str, Any]]) -> str:
 
 
 def _build_plan(
-    *, operation: str, scope: str, selected_target_ids: list[Any], scene_json: dict[str, Any] | None
+    *,
+    operation: str,
+    scope: str,
+    selected_target_ids: list[Any],
+    scene_json: dict[str, Any] | None,
 ) -> dict[str, Any]:
     target_ids = (
         [str(target_id) for target_id in selected_target_ids]
@@ -223,6 +230,13 @@ def _build_plan(
         else []
     )
     action = "generate_scene" if operation == AIRun.Operation.CREATE else "edit_scene"
+    plan_scope = (
+        "targets"
+        if scope == AIRun.Scope.SELECTION
+        else "overhaul"
+        if operation == AIRun.Operation.CREATE
+        else "scene"
+    )
     criteria: list[dict[str, Any]] = [
         {"type": "renders_nonblank", "parameters": {"target": "scene"}}
     ]
@@ -231,12 +245,103 @@ def _build_plan(
     )
     plan = {
         "revision": 1,
+        "scope": plan_scope,
         "steps": [{"id": "step-1", "action": action, "target_ids": target_ids}],
         "target_ids": target_ids,
         "success_criteria": criteria,
     }
     validate_plan(plan, scene_json if operation == AIRun.Operation.EDIT_PATCH else None)
     return plan
+
+
+def _scene_elements_by_id(scene_json: dict[str, Any] | None) -> dict[str, Any]:
+    elements: dict[str, Any] = {}
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            element_id = value.get("id")
+            if isinstance(element_id, str):
+                elements[element_id] = value
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(scene_json or {})
+    return elements
+
+
+def _descendant_ids(element: Any) -> set[str]:
+    ids: set[str] = set()
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            element_id = value.get("id")
+            if isinstance(element_id, str):
+                ids.add(element_id)
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(element)
+    return ids
+
+
+def _scope_allowed_ids(plan: dict[str, Any], before: dict[str, Any] | None) -> set[str]:
+    target_ids = {str(value) for value in plan.get("target_ids", [])}
+    if plan.get("scope") == "targets":
+        elements = _scene_elements_by_id(before)
+        allowed = set(target_ids)
+        for target_id in target_ids:
+            if target_id in elements:
+                allowed.update(_descendant_ids(elements[target_id]))
+        return allowed
+    if plan.get("scope") == "layer":
+        elements = _scene_elements_by_id(before)
+        allowed = set(target_ids)
+        for element_id, element in elements.items():
+            if isinstance(element, dict) and (
+                element.get("layerId") in target_ids or element.get("layer_id") in target_ids
+            ):
+                allowed.add(element_id)
+        return allowed
+    return set(elements := _scene_elements_by_id(before))
+
+
+def _validate_candidate_scope(
+    plan: dict[str, Any] | None,
+    before: dict[str, Any] | None,
+    after: dict[str, Any] | None,
+) -> str | None:
+    """Return a safe rejection message when a candidate exceeds its plan scope."""
+    if not isinstance(plan, dict) or not isinstance(after, dict):
+        return None
+    before_elements = _scene_elements_by_id(before)
+    after_elements = _scene_elements_by_id(after)
+    scope = plan.get("scope")
+    if scope in {"scene", "overhaul"}:
+        missing = set(before_elements) - set(after_elements)
+        if missing:
+            return f"plan scope {scope!r} cannot remove existing element IDs: {sorted(missing)!r}."
+        return None
+    allowed = _scope_allowed_ids(plan, before)
+    changed = {
+        element_id
+        for element_id in set(before_elements) & set(after_elements)
+        if before_elements[element_id] != after_elements[element_id]
+    }
+    added = set(after_elements) - set(before_elements)
+    removed = set(before_elements) - set(after_elements)
+    outside = (changed | added | removed) - allowed
+    if outside:
+        return (
+            f"plan scope {scope!r} permits only declared target IDs and their children; "
+            f"out-of-scope element IDs: {sorted(outside)!r}."
+        )
+    return None
 
 
 class AIRunError(Exception):
@@ -415,6 +520,19 @@ def _run_one_attempt(run: AIRun) -> _AttemptOutcome:
             patch, change_summary = outcome.patch, outcome.change_summary or ""
 
     if result.success:
+        scope_error = _validate_candidate_scope(run.plan, _target_scene_json(run), result.scene)
+        if scope_error is not None:
+            return _AttemptOutcome(
+                success=False,
+                scene_json=None,
+                patch=None,
+                change_summary="",
+                error_category=AIErrorCategory.INVALID_STRUCTURED_OUTPUT,
+                error_message=scope_error,
+                prompt_tokens=result.usage.prompt_tokens,
+                completion_tokens=result.usage.completion_tokens,
+                cost_usd=result.usage.estimated_cost_usd,
+            )
         return _AttemptOutcome(
             success=True,
             scene_json=result.scene,

@@ -33,6 +33,7 @@ export type AIRunCriterion = {
 
 export type AIRunPlan = {
   revision: number;
+  scope: 'targets' | 'layer' | 'scene' | 'overhaul';
   steps: Array<{ id: string; action: string; target_ids: string[] }>;
   target_ids: string[];
   success_criteria: Array<{

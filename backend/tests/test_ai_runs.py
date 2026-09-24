@@ -62,6 +62,42 @@ MINIMAL_SCENE_3D = json.loads(_MINIMAL_SCENE_3D_PATH.read_text())
 _USAGE = AIUsageMetadata(prompt_tokens=10, completion_tokens=20, estimated_cost_usd=0.001)
 
 
+def test_validate_plan_requires_explicit_scope():
+    plan = {
+        "revision": 1,
+        "steps": [{"id": "step-1", "target_ids": []}],
+        "target_ids": [],
+        "success_criteria": [{"type": "renders_nonblank", "parameters": {}}],
+    }
+    with pytest.raises(ai_runs.InvalidTarget, match="plan scope"):
+        ai_runs.validate_plan(plan)
+
+
+def test_run_scope_rejects_out_of_scope_changes_and_preserves_scene_scope_rules():
+    before = {
+        "shapes": [
+            {"id": "shape-a", "type": "circle", "layerId": "layer-1", "x": 1},
+            {"id": "shape-b", "type": "rect", "layerId": "layer-2", "x": 1},
+        ],
+        "layers": [{"id": "layer-1"}, {"id": "layer-2"}],
+    }
+    changed_b = copy.deepcopy(before)
+    changed_b["shapes"][1]["x"] = 2
+    target_plan = {"scope": "targets", "target_ids": ["shape-a"]}
+    assert "shape-b" in (ai_runs._validate_candidate_scope(target_plan, before, changed_b) or "")
+
+    layer_plan = {"scope": "layer", "target_ids": ["layer-1"]}
+    assert "shape-b" in (ai_runs._validate_candidate_scope(layer_plan, before, changed_b) or "")
+
+    removed = copy.deepcopy(before)
+    removed["shapes"].pop()
+    assert ai_runs._validate_candidate_scope({"scope": "scene"}, before, removed)
+
+    overhaul = copy.deepcopy(before)
+    overhaul["shapes"].append({"id": "shape-c", "type": "line"})
+    assert ai_runs._validate_candidate_scope({"scope": "overhaul"}, before, overhaul) is None
+
+
 class _QueuedFakeProvider:
     """Returns one canned outcome per call, in order. Each outcome is
     either a scene dict (success) or an `AIErrorCategory` (failure). A
@@ -190,6 +226,7 @@ def test_start_persists_structured_plan_before_provider_attempt(owner, project):
 
     assert run.plan == {
         "revision": 1,
+        "scope": "overhaul",
         "steps": [{"id": "step-1", "action": "generate_scene", "target_ids": []}],
         "target_ids": [],
         "success_criteria": [{"type": "renders_nonblank", "parameters": {"target": "scene"}}],
@@ -785,6 +822,7 @@ def test_full_api_lifecycle_start_advance_accept(monkeypatch, owner_client, proj
     run_id = start.json()["id"]
     assert start.json()["status"] == AIRun.Status.RUNNING
     assert start.json()["plan"]["revision"] == 1
+    assert start.json()["plan"]["scope"] == "overhaul"
     assert start.json()["plan"]["success_criteria"][0]["type"] == "renders_nonblank"
 
     advance = owner_client.post(f"/api/ai/runs/{run_id}/advance/")

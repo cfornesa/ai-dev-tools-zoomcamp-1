@@ -322,6 +322,7 @@ persisted `plan` object before any provider attempt is made:
 ```json
 {
   "revision": 1,
+  "scope": "scene",
   "steps": [{"id": "step-1", "action": "generate_scene", "target_ids": []}],
   "target_ids": [],
   "success_criteria": [
@@ -329,6 +330,16 @@ persisted `plan` object before any provider attempt is made:
   ]
 }
 ```
+
+The plan `scope` is one of `targets`, `layer`, `scene`, or `overhaul` and is
+persisted with the run before any provider attempt. `targets` and `layer`
+permit changes only to the declared IDs and their contained/owned children;
+`scene` permits edits anywhere but preserves every existing element ID; and
+`overhaul` permits replacement or addition anywhere but also preserves every
+existing element ID. A scope violation is rejected when the candidate is
+applied, even if the prompt mentions an out-of-scope element. Whole-element
+deletion remains subject to the explicit delete-intent contract documented for
+AI edits.
 
 The only success-criteria types are `object_exists`, `property_equals`,
 `count_between`, and `renders_nonblank`. Target IDs are stable scene element

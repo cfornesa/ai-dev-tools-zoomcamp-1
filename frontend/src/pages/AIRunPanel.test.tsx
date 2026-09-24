@@ -27,6 +27,7 @@ const runBase: AIRun = {
   plan_summary: '',
   plan: {
     revision: 1,
+    scope: 'overhaul',
     steps: [{ id: 'step-1', action: 'generate_scene', target_ids: [] }],
     target_ids: [],
     success_criteria: [{ type: 'renders_nonblank', parameters: {} }],
@@ -95,6 +96,7 @@ describe('AIRunPanel plan review', () => {
 
     expect(screen.getByTestId('ai-run-plan-review')).toBeInTheDocument();
     expect(screen.getByText('generate_scene')).toBeInTheDocument();
+    expect(screen.getByTestId('ai-run-plan-scope')).toHaveTextContent('Scope: overhaul');
     expect(screen.getByText('renders_nonblank')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Approve plan' }));
     expect(approve).toHaveBeenCalledOnce();

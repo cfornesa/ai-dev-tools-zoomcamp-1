@@ -306,6 +306,9 @@ function AIRunPanel<TVersion>({
       {run.plan && awaitingPlanApproval && (
         <section aria-label="AI run plan" data-testid="ai-run-plan-review">
           <h3>Plan</h3>
+          <p data-testid="ai-run-plan-scope">
+            Scope: {run.plan.scope === 'targets' ? 'Declared targets' : run.plan.scope}
+          </p>
           <ol>
             {run.plan.steps.map((step) => (
               <li key={step.id}>

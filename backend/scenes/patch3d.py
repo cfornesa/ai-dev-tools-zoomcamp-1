@@ -310,8 +310,10 @@ def validate_patch_operations3d(
                         )
                     )
 
-        if scene is not None and prompt is not None and _is_destructive_existing_operation(
-            op_name, segments, op, scene
+        if (
+            scene is not None
+            and prompt is not None
+            and _is_destructive_existing_operation(op_name, segments, op, scene)
         ):
             root = segments[0]
             found, item = _get_at_path(scene, segments)

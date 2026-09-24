@@ -22,7 +22,7 @@ def test_registry_has_stable_ids_labels_and_explicit_surface_values():
         "family": "2d",
         "regular": True,
         "immersive": True,
-        "embed": False,
+        "embed": True,
         "download": True,
         "editor_target": "2d-ai",
         "generation": True,
@@ -36,3 +36,8 @@ def test_registry_has_stable_ids_labels_and_explicit_surface_values():
         "threejs",
         "aframe",
     )
+
+
+def test_every_engine_is_embeddable():
+    """#762: the embed route and Embed action serve all engines, so no flag says otherwise."""
+    assert all(caps["embed"] is True for caps in ART_PIECE_ENGINE_CAPABILITIES.values())

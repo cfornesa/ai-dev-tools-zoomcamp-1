@@ -3,6 +3,10 @@
 This module intentionally has no Django model imports.  It is the shared
 source for model choices, API validation, provider allowlisting, and the
 human-facing capability projection.
+
+`embed` is True for every engine (#762): the chrome-less ``/embed/art-pieces/<id>``
+route and the Embed action serve all of them (delivered by #607/#615), so the
+flag must never claim otherwise.
 """
 
 from __future__ import annotations
@@ -47,7 +51,7 @@ ART_PIECE_ENGINE_CAPABILITIES: Final[dict[str, ArtPieceEngineCapability]] = {
         "family": "2d",
         "regular": True,
         "immersive": True,
-        "embed": False,
+        "embed": True,
         "download": True,
         "editor_target": "2d-ai",
         "generation": True,
@@ -57,7 +61,7 @@ ART_PIECE_ENGINE_CAPABILITIES: Final[dict[str, ArtPieceEngineCapability]] = {
         "family": "2d",
         "regular": True,
         "immersive": True,
-        "embed": False,
+        "embed": True,
         "download": True,
         "editor_target": "2d-ai",
         "generation": True,
@@ -67,7 +71,7 @@ ART_PIECE_ENGINE_CAPABILITIES: Final[dict[str, ArtPieceEngineCapability]] = {
         "family": "2d",
         "regular": True,
         "immersive": True,
-        "embed": False,
+        "embed": True,
         "download": True,
         "editor_target": "2d-ai",
         "generation": True,

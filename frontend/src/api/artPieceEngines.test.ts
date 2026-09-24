@@ -21,10 +21,16 @@ describe('art-piece engine capability registry', () => {
       expect(ART_PIECE_ENGINE_CAPABILITIES[engine]).toMatchObject({
         regular: true,
         immersive: true,
-        embed: false,
+        embed: true,
         download: true,
         generation: true,
       });
+    }
+  });
+
+  it('marks every engine embeddable to match the embed route (#762)', () => {
+    for (const capability of Object.values(ART_PIECE_ENGINE_CAPABILITIES)) {
+      expect(capability.embed).toBe(true);
     }
   });
 });

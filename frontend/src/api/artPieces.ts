@@ -33,7 +33,9 @@ export type ArtPieceEngineCapability = {
   generation: boolean;
 };
 
-/** Mirrors `scenes.art_piece_contract` without deriving behavior from labels. */
+/** Mirrors `scenes.art_piece_contract` without deriving behavior from labels.
+ * `embed` is true for every engine (#762): the chrome-less `/embed/art-pieces/:id`
+ * route and the Embed action serve all seven engines (closed #607/#615). */
 export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngineCapability> = {
   canvas2d: {
     label: 'Canvas 2D',
@@ -60,7 +62,7 @@ export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngi
     family: '2d',
     regular: true,
     immersive: true,
-    embed: false,
+    embed: true,
     download: true,
     editor_target: '2d-ai',
     generation: true,
@@ -70,7 +72,7 @@ export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngi
     family: '2d',
     regular: true,
     immersive: true,
-    embed: false,
+    embed: true,
     download: true,
     editor_target: '2d-ai',
     generation: true,
@@ -80,7 +82,7 @@ export const ART_PIECE_ENGINE_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEngi
     family: '2d',
     regular: true,
     immersive: true,
-    embed: false,
+    embed: true,
     download: true,
     editor_target: '2d-ai',
     generation: true,

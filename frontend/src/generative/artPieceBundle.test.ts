@@ -141,6 +141,35 @@ describe('generateArtPieceBundle', () => {
     }
   });
 
+  it('C2.js Interactive exports the session-only drawing toolset; other engines do not (#757)', async () => {
+    for (const library of ['c2js-interactive', 'c2js'] as const) {
+      for (const presentation of ['regular', 'immersive'] as const) {
+        const blob = await generateArtPieceBundle(library, C2_CODE, {
+          presentation,
+          mode: 'non-camera',
+          capabilities: { screenshot: true, fullscreen: true },
+        });
+        const zip = await JSZip.loadAsync(blob);
+        const html = await zip.files['index.html'].async('string');
+        const css = await zip.files['styles/piece.css'].async('string');
+        const has = library === 'c2js-interactive';
+        expect(html.includes('data-action="draw"')).toBe(has);
+        expect(html.includes('id="art-piece-drawing-tools"')).toBe(has);
+        expect(html.includes('__artPieceVisitorDrawing')).toBe(has);
+        expect(css.includes('#art-piece-drawing-tools')).toBe(has);
+        if (has) {
+          // Session-only: no storage or network write anywhere in the drawing runtime.
+          expect(html).not.toContain('localStorage');
+          expect(html).not.toContain('sessionStorage');
+          expect(html).not.toMatch(/XMLHttpRequest|navigator\.sendBeacon/);
+          for (const name of ['Pencil', 'Brush', 'Eraser', 'Clear', 'Undo', 'Redo']) {
+            expect(html).toContain(name);
+          }
+        }
+      }
+    }
+  });
+
   it('non-camera export drops camera, steer, and the hand guide from the toolbar (#755)', async () => {
     const blob = await generateArtPieceBundle('c2js', C2_CODE, {
       mode: 'non-camera',

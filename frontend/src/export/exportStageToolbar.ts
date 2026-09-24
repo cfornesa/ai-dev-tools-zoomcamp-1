@@ -14,7 +14,7 @@
  */
 
 export type ExportToolbarButtonId =
-  'screenshot' | 'sound' | 'controls' | 'guide' | 'reset' | 'fullscreen';
+  'screenshot' | 'sound' | 'controls' | 'guide' | 'draw' | 'reset' | 'fullscreen';
 
 type ExportToolbarButton = {
   id: ExportToolbarButtonId;
@@ -35,6 +35,7 @@ const ICONS: Record<ExportToolbarButtonId, string> = {
   controls: '<path d="M5 6h14M5 12h14M5 18h14"/><path d="M9 4v4M15 10v4M11 16v4"/>',
   guide:
     '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v5"/><circle cx="12" cy="16.5" r=".7" fill="currentColor" stroke="none"/>',
+  draw: '<path d="M4 20l4.2-1 10-10a2.1 2.1 0 0 0-3-3l-10 10z"/><path d="M13.5 7.5l3 3"/>',
   reset: '<path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4h4"/>',
   fullscreen: '<path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4"/>',
 };
@@ -67,6 +68,13 @@ const BUTTONS: Record<ExportToolbarButtonId, ExportToolbarButton> = {
     toggles: true,
     icon: ICONS.guide,
   },
+  draw: {
+    id: 'draw',
+    domId: 'piece-draw',
+    label: 'Draw on piece',
+    pressed: true,
+    icon: ICONS.draw,
+  },
   reset: {
     id: 'reset',
     domId: 'piece-reset-view',
@@ -87,6 +95,7 @@ const ORDER: ExportToolbarButtonId[] = [
   'sound',
   'controls',
   'guide',
+  'draw',
   'reset',
   'fullscreen',
 ];

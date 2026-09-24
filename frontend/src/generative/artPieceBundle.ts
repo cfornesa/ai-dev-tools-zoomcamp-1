@@ -48,6 +48,11 @@ import JSZip from 'jszip';
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import { buildStandaloneArtPieceRuntimeScript } from '../export/standaloneArtPieceRuntimeSource';
 import {
+  buildVisitorDrawingScript,
+  buildVisitorDrawingToolsMarkup,
+  VISITOR_DRAWING_CSS,
+} from '../export/standaloneVisitorDrawingSource';
+import {
   EXPORT_STAGE_TOOLBAR_CSS,
   renderExportStageToolbar,
   type ExportToolbarButtonId,
@@ -103,6 +108,7 @@ export class ArtPieceBundleError extends Error {
 function buildPieceCss(
   presentation: ArtPieceExportPresentation,
   cameraPlacement: CameraPlacement,
+  library: ArtPieceLibrary,
 ): string {
   const immersive = presentation === 'immersive';
   const stageHeight = immersive ? '100dvh' : '480px';
@@ -131,6 +137,7 @@ canvas {
 }
 ${cameraBackground ? '#art-piece-container, a-scene, canvas, svg:not(.piece-stage-icon) { position: relative; z-index: 1; }' : ''}
 ${EXPORT_STAGE_TOOLBAR_CSS}
+${library === 'c2js-interactive' ? VISITOR_DRAWING_CSS : ''}
 #art-piece-controls-panel, #art-piece-guide-dialog { font: 14px/1.4 system-ui, sans-serif; }
 #art-piece-controls-panel {
   position: fixed;
@@ -185,7 +192,7 @@ a-scene canvas.a-canvas {
 ${
   immersive
     ? `
-canvas, svg:not(.piece-stage-icon) {
+canvas:not(#art-piece-drawing-overlay), svg:not(.piece-stage-icon) {
   width: 100% !important;
   height: 100% !important;
   object-fit: contain;
@@ -332,6 +339,8 @@ function buildExportControls(
     ...(capabilities.sound === true ? (['sound'] as const) : []),
     ...(includeMicrophone || includeCamera || includeSteering ? (['controls'] as const) : []),
     ...(includeSteering ? (['guide'] as const) : []),
+    // C2.js Interactive: the session-only visitor drawing toggle (#757/#758, matrix row 7).
+    ...(library === 'c2js-interactive' ? (['draw'] as const) : []),
     'reset',
     ...(capabilities.fullscreen !== false ? (['fullscreen'] as const) : []),
   ];
@@ -382,6 +391,7 @@ function buildExportControls(
     : '';
   return [
     toolbar,
+    library === 'c2js-interactive' ? buildVisitorDrawingToolsMarkup() : '',
     panel,
     soundStatus,
     navigationPose,
@@ -473,7 +483,7 @@ function buildIndexHtml(
 <meta charset="utf-8">
 <title>Art piece</title>
 <link rel="stylesheet" href="styles/piece.css">
-${deviceIsolationScript}${runtimeScriptTag}${runtimeControlsScript}
+${deviceIsolationScript}${runtimeScriptTag}${runtimeControlsScript}${library === 'c2js-interactive' ? `\n${buildVisitorDrawingScript()}` : ''}
 </head>
 <body>
 ${body}
@@ -547,7 +557,11 @@ export async function generateArtPieceBundle(
     zip.file('README.txt', README);
     zip.file(
       'styles/piece.css',
-      buildPieceCss(options.presentation ?? 'regular', options.cameraPlacement ?? 'overlay'),
+      buildPieceCss(
+        options.presentation ?? 'regular',
+        options.cameraPlacement ?? 'overlay',
+        library,
+      ),
     );
     zip.file('index.html', buildIndexHtml(library, code, runtime?.filename, options));
     if (library === 'threejs') {

@@ -334,16 +334,22 @@ export function buildStandaloneArtPieceRuntimeScript(
   // the same stacking order it renders live, at its current opacity.
   function compositeScreenshot(baseCanvas) {
     var video = document.getElementById('art-piece-camera-overlay');
-    if (!video || !video.videoWidth) return baseCanvas.toDataURL('image/png');
+    var extras = window.__artPieceScreenshotExtras || [];
+    var hasVideo = !!(video && video.videoWidth);
+    if (!hasVideo && !extras.length) return baseCanvas.toDataURL('image/png');
     var composite = document.createElement('canvas');
     composite.width = baseCanvas.width;
     composite.height = baseCanvas.height;
     var ctx = composite.getContext('2d');
     ctx.drawImage(baseCanvas, 0, 0);
-    ctx.save();
-    ctx.globalAlpha = cameraOpacity;
-    ctx.drawImage(video, 0, 0, composite.width, composite.height);
-    ctx.restore();
+    // Extras (e.g. the visitor drawing marks, #757) sit above the artwork, below the camera overlay.
+    extras.forEach(function (draw) { draw(ctx, composite.width, composite.height); });
+    if (hasVideo) {
+      ctx.save();
+      ctx.globalAlpha = cameraOpacity;
+      ctx.drawImage(video, 0, 0, composite.width, composite.height);
+      ctx.restore();
+    }
     return composite.toDataURL('image/png');
   }
   function saveBlob(blob, name) {

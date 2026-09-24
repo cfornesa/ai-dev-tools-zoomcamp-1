@@ -38,7 +38,21 @@ async function renderSignature(
       ).data;
       return `${canvas.toDataURL('image/png')}:${Array.from(pixel.slice(0, 3)).join(',')}`;
     }
-    return canvas.toDataURL('image/png');
+    // WebGL: compare what is drawn at the centre, not the raw PNG bytes (which are not a stable
+    // signature across separately created GL contexts). The mesh is unlit, so its colour is exact.
+    const scratch = document.createElement('canvas');
+    scratch.width = canvas.width;
+    scratch.height = canvas.height;
+    const scratchContext = scratch.getContext('2d');
+    if (!scratchContext) return canvas.toDataURL('image/png');
+    scratchContext.drawImage(canvas, 0, 0);
+    const centre = scratchContext.getImageData(
+      Math.floor(canvas.width / 2),
+      Math.floor(canvas.height / 2),
+      1,
+      1,
+    ).data;
+    return `webgl:${centre[0]},${centre[1]},${centre[2]}`;
   }, engine);
 }
 
@@ -97,7 +111,11 @@ test.describe('Generated-piece live preview (#669)', () => {
         .not.toBe(firstFrame);
       const secondFrame = await renderSignature(page, engine);
       if (engine === 'canvas2d') expect(secondFrame).toContain(':34,197,94');
-      else expect(secondFrame.length).toBeGreaterThan(1_000);
+      else {
+        const [r, g, b] = secondFrame.replace('webgl:', '').split(',').map(Number);
+        expect(g!).toBeGreaterThan(r! + 80);
+        expect(g!).toBeGreaterThan(b! + 60);
+      }
       const third = engine === 'canvas2d' ? '#3b82f6' : '0x3b82f6';
       await page.locator('#art-piece-editor-code').fill(CANDIDATES[engine](third));
       await expect

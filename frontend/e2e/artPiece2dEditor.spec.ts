@@ -4,10 +4,12 @@ import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
+// The fake AI refinement edits the fake generator's own fixture tokens (`teal`, `#2a9d8f`), so the
+// fixtures contain them (backend/scenes/art_piece_api.py `_FakeArtPieceProvider.refine`).
 const SOURCES = {
-  svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240"><rect width="320" height="240" fill="#172554"/></svg>',
+  svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240"><rect width="320" height="240" fill="teal"/></svg>',
   'c2js-interactive':
-    "window.sketch = ({ canvas, startFrame }) => { canvas.addEventListener('pointermove', () => {}); const context = canvas.getContext('2d'); startFrame(() => { context.fillStyle = '#1f2937'; context.fillRect(0, 0, canvas.width, canvas.height); }); };",
+    "window.sketch = ({ canvas, startFrame }) => { canvas.addEventListener('pointermove', () => {}); const context = canvas.getContext('2d'); startFrame(() => { context.fillStyle = '#2a9d8f'; context.fillRect(0, 0, canvas.width, canvas.height); }); };",
 } as const;
 
 test.describe('2D AI editor engine modes (#618)', () => {

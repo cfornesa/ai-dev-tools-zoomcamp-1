@@ -20,10 +20,12 @@ import { requireE2EFixtures } from './support/prerequisites.js';
  * only Playwright's own test-invocation count drops.
  */
 
-const RED_RECTANGLE =
+// The fake AI refinement (`backend/scenes/art_piece_api.py`'s `_FakeArtPieceProvider.refine`) edits the
+// fake generator's own fixture token, so fixtures must contain it (`teal` for canvas2d/svg).
+const TEAL_RECTANGLE =
   '<canvas id="art-piece-canvas" width="320" height="240"></canvas>' +
   '<script>var c=document.getElementById("art-piece-canvas");' +
-  'var x=c.getContext("2d");x.fillStyle="#dc2626";x.fillRect(0,0,320,240);</script>';
+  'var x=c.getContext("2d");x.fillStyle="teal";x.fillRect(0,0,320,240);</script>';
 
 async function generateRevision(page: Page, prompt: string): Promise<'manual-save' | 'auto-saved'> {
   await page.getByLabel('Describe the revision you want to generate').fill(prompt);
@@ -54,10 +56,10 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
       const created = await apiPost(context, '/api/art-pieces/', {
         title,
         description: 'Owner editing fixture.',
-        prompt: 'red rectangle',
+        prompt: 'teal rectangle',
         engine: 'canvas2d',
         capabilities: {},
-        source: RED_RECTANGLE,
+        source: TEAL_RECTANGLE,
       });
       expect(created.status()).toBe(201);
       const piece = (await created.json()) as { public_id: string };
@@ -117,10 +119,10 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
         const created = await apiPost(context, '/api/art-pieces/', {
           title,
           description: 'Original description.',
-          prompt: 'red rectangle',
+          prompt: 'teal rectangle',
           engine: 'canvas2d',
           capabilities: { screenshot: true },
-          source: RED_RECTANGLE,
+          source: TEAL_RECTANGLE,
         });
         expect(created.status()).toBe(201);
         const piece = (await created.json()) as { public_id: string };
@@ -174,7 +176,7 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
           capabilities: Record<string, boolean>;
         }>;
         expect(versions).toHaveLength(2);
-        expect(versions.find((v) => v.sequence === 1)!.source).toBe(RED_RECTANGLE);
+        expect(versions.find((v) => v.sequence === 1)!.source).toBe(TEAL_RECTANGLE);
         if (revisionMode === 'manual-save') {
           expect(versions.find((v) => v.sequence === 2)!.capabilities.download).toBe(true);
         }
@@ -200,10 +202,10 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
       const created = await apiPost(context, '/api/art-pieces/', {
         title: 'Failure recovery fixture',
         description: 'Original.',
-        prompt: 'red rectangle',
+        prompt: 'teal rectangle',
         engine: 'canvas2d',
         capabilities: {},
-        source: RED_RECTANGLE,
+        source: TEAL_RECTANGLE,
       });
       expect(created.status()).toBe(201);
       const piece = (await created.json()) as { public_id: string };
@@ -232,10 +234,10 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
       const created = await apiPost(context, '/api/art-pieces/', {
         title: 'Concurrency fixture',
         description: 'Original.',
-        prompt: 'red rectangle',
+        prompt: 'teal rectangle',
         engine: 'canvas2d',
         capabilities: {},
-        source: RED_RECTANGLE,
+        source: TEAL_RECTANGLE,
       });
       expect(created.status()).toBe(201);
       const piece = (await created.json()) as { public_id: string };
@@ -277,10 +279,10 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
     const created = await apiPost(context, '/api/art-pieces/', {
       title: 'Deletion fixture',
       description: 'Original.',
-      prompt: 'red rectangle',
+      prompt: 'teal rectangle',
       engine: 'canvas2d',
       capabilities: {},
-      source: RED_RECTANGLE,
+      source: TEAL_RECTANGLE,
     });
     expect(created.status()).toBe(201);
     const piece = (await created.json()) as { public_id: string };
@@ -316,10 +318,10 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
     const created = await apiPost(context, '/api/art-pieces/', {
       title: 'Cross-user denial fixture',
       description: 'Owner-only.',
-      prompt: 'red rectangle',
+      prompt: 'teal rectangle',
       engine: 'canvas2d',
       capabilities: {},
-      source: RED_RECTANGLE,
+      source: TEAL_RECTANGLE,
     });
     expect(created.status()).toBe(201);
     const piece = (await created.json()) as { public_id: string };

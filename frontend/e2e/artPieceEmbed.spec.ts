@@ -123,7 +123,7 @@ test.describe('Generated regular embed: chrome-less published-piece entry point 
       const screenshot = await screenshotDownload;
       expect(screenshot.suggestedFilename()).toMatch(/\.png$/);
       await expect(
-        anonPage.getByRole('button', { name: /expand fullscreen|exit fullscreen/i }),
+        anonPage.getByRole('button', { name: /expand piece to fullscreen|exit fullscreen/i }),
       ).toBeVisible();
 
       // No horizontal overflow -- the stage (including the art-piece

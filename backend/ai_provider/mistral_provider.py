@@ -162,6 +162,7 @@ from ai_provider.prompts import (
     SCENE_2D_CREATE_PROMPT,
     SCENE_2D_EDIT_PROMPT,
 )
+from ai_provider.structured_output import StructuredOutputError, extract_json
 from scenes.patch import (
     PatchError,
     apply_patch,
@@ -504,6 +505,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
         model: str | None = None,
         timeout_ms: int = REQUEST_TIMEOUT_MS,
         persona_prompt: str | None = None,
+        native_schema: bool = True,
     ):
         # `client` is an injection point: tests pass a mock/fake client so
         # this provider never opens a socket or reads MISTRAL_API_KEY under
@@ -518,6 +520,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
         # in every create/edit call below -- never merged into or replacing
         # it. `None`/blank means "no persona selected" (unchanged behavior).
         self.persona_prompt = persona_prompt or None
+        self.native_schema = native_schema
 
     def _system_messages(self, mandatory_prompt: str) -> list[dict[str, str]]:
         """Builds the leading system-message list for one Mistral call:
@@ -530,6 +533,14 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
         if self.persona_prompt:
             messages.append({"role": "system", "content": self.persona_prompt})
         return messages
+
+    def _response_format(self, name: str, schema: dict[str, Any]) -> dict[str, Any] | None:
+        if not self.native_schema:
+            return None
+        return {
+            "type": "json_schema",
+            "json_schema": {"name": name, "schema_definition": schema, "strict": False},
+        }
 
     @property
     def client(self) -> Any:
@@ -638,14 +649,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
                     *self._system_messages(_SYSTEM_PROMPT),
                     {"role": "user", "content": prompt},
                 ],
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "canonical_scene",
-                        "schema_definition": _RESPONSE_JSON_SCHEMA,
-                        "strict": False,
-                    },
-                },
+                response_format=self._response_format("canonical_scene", _RESPONSE_JSON_SCHEMA),
                 temperature=0.2,
                 timeout_ms=self.timeout_ms,
             )
@@ -706,8 +710,8 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             )
 
         try:
-            scene = json.loads(text)
-        except (json.JSONDecodeError, TypeError):
+            scene = extract_json(text)
+        except (StructuredOutputError, TypeError):
             return usage, _raiser(AIProviderRejectionError("Mistral response was not valid JSON."))
 
         if not isinstance(scene, dict):
@@ -738,14 +742,9 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
                     *self._system_messages(_EDIT_SYSTEM_PROMPT),
                     {"role": "user", "content": user_content},
                 ],
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "scene_json_patch",
-                        "schema_definition": _EDIT_RESPONSE_JSON_SCHEMA,
-                        "strict": False,
-                    },
-                },
+                response_format=self._response_format(
+                    "scene_json_patch", _EDIT_RESPONSE_JSON_SCHEMA
+                ),
                 temperature=0.2,
                 timeout_ms=self.timeout_ms,
             )
@@ -806,8 +805,8 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             )
 
         try:
-            patch = json.loads(text)
-        except (json.JSONDecodeError, TypeError):
+            patch = extract_json(text)
+        except (StructuredOutputError, TypeError):
             return usage, _raiser(AIProviderRejectionError("Mistral response was not valid JSON."))
 
         if not isinstance(patch, list):
@@ -895,14 +894,9 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
                     *self._system_messages(SCENE3D_CREATE_PROMPT),
                     {"role": "user", "content": prompt},
                 ],
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "canonical_scene3d",
-                        "schema_definition": _RESPONSE_JSON_SCHEMA_3D,
-                        "strict": False,
-                    },
-                },
+                response_format=self._response_format(
+                    "canonical_scene3d", _RESPONSE_JSON_SCHEMA_3D
+                ),
                 temperature=0.2,
                 timeout_ms=self.timeout_ms,
             )
@@ -963,7 +957,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             )
 
         try:
-            scene = json.loads(text)
+            scene = extract_json(text)
         except (json.JSONDecodeError, TypeError):
             return usage, _raiser(AIProviderRejectionError("Mistral response was not valid JSON."))
 
@@ -992,14 +986,9 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
                     *self._system_messages(SCENE3D_CONVERT_PROMPT),
                     {"role": "user", "content": user_content},
                 ],
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "canonical_scene3d",
-                        "schema_definition": _RESPONSE_JSON_SCHEMA_3D,
-                        "strict": False,
-                    },
-                },
+                response_format=self._response_format(
+                    "canonical_scene3d", _RESPONSE_JSON_SCHEMA_3D
+                ),
                 temperature=0.2,
                 timeout_ms=self.timeout_ms,
             )
@@ -1060,8 +1049,8 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             )
 
         try:
-            scene = json.loads(text)
-        except (json.JSONDecodeError, TypeError):
+            scene = extract_json(text)
+        except (StructuredOutputError, TypeError):
             return usage, _raiser(AIProviderRejectionError("Mistral response was not valid JSON."))
 
         if not isinstance(scene, dict):
@@ -1093,14 +1082,9 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
                     *self._system_messages(SCENE3D_EDIT_PROMPT),
                     {"role": "user", "content": user_content},
                 ],
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "scene3d_json_patch",
-                        "schema_definition": _EDIT_RESPONSE_JSON_SCHEMA,
-                        "strict": False,
-                    },
-                },
+                response_format=self._response_format(
+                    "scene3d_json_patch", _EDIT_RESPONSE_JSON_SCHEMA
+                ),
                 temperature=0.2,
                 timeout_ms=self.timeout_ms,
             )
@@ -1161,7 +1145,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             )
 
         try:
-            patch = json.loads(text)
+            patch = extract_json(text)
         except (json.JSONDecodeError, TypeError):
             return usage, _raiser(AIProviderRejectionError("Mistral response was not valid JSON."))
 

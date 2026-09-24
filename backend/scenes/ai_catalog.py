@@ -268,6 +268,20 @@ def is_art_piece_supported(*, vendor: str, model_slug: str) -> bool:
     return row is not None and AIProviderModel.TaskKind.ART_PIECE in row.task_kinds
 
 
+def uses_native_schema(*, vendor: str, model_slug: str) -> bool:
+    """Return the catalog capability, defaulting closed only for no row."""
+    row = (
+        AIProviderModel.objects.filter(
+            vendor=vendor.strip().lower() if isinstance(vendor, str) else vendor,
+            model_slug=(model_slug or "").strip(),
+            active=True,
+        )
+        .only("native_schema")
+        .first()
+    )
+    return True if row is None else row.native_schema
+
+
 __all__ = [
     "AGENT_TASK_KINDS",
     "TASK_KINDS",
@@ -279,6 +293,7 @@ __all__ = [
     "delete_model",
     "is_agentic_supported",
     "is_art_piece_supported",
+    "uses_native_schema",
     "list_models",
     "update_model",
 ]

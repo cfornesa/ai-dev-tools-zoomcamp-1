@@ -74,7 +74,7 @@ from __future__ import annotations
 
 import re
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
@@ -104,6 +104,7 @@ from ai_provider.mistral_provider import (
     MistralSceneProvider,
 )
 from ai_provider.registry import get_provider, validate_model
+from scenes.ai_catalog import uses_native_schema
 from scenes.api import _get_project_or_404, _require_or_404
 from scenes.entitlements import get_effective_cap, is_unlimited
 from scenes.models import (
@@ -581,21 +582,34 @@ def get_ai_provider() -> AISceneProvider:
         key = generic.get_key()
     except MistralCredentialDecryptionError as exc:
         raise MissingPersonalMistralCredential from exc
-    if vendor == "gemini":
-        return GeminiSceneProvider(
-            api_key=key,
-            model=_current_ai_model.get() or "gemini-2.5-flash",
-        )
-    if vendor == "deepseek":
-        return DeepSeekSceneProvider(
-            api_key=key,
-            model=_current_ai_model.get() or "deepseek-chat",
-        )
-    return MistralSceneProvider(
-        api_key=key,
-        model=_current_ai_model.get() or None,
-        persona_prompt=_current_ai_persona_prompt.get() or None,
+    model = _current_ai_model.get()
+    native_schema = uses_native_schema(
+        vendor=vendor,
+        model_slug=model
+        or {
+            "gemini": "gemini-2.5-flash",
+            "deepseek": "deepseek-chat",
+            "mistral": "mistral-small-latest",
+        }[vendor],
     )
+    if vendor == "gemini":
+        kwargs: dict[str, Any] = {"api_key": key, "model": model or "gemini-2.5-flash"}
+        if not native_schema:
+            kwargs["native_schema"] = False
+        return GeminiSceneProvider(**kwargs)
+    if vendor == "deepseek":
+        kwargs = {"api_key": key, "model": model or "deepseek-chat"}
+        if not native_schema:
+            kwargs["native_schema"] = False
+        return DeepSeekSceneProvider(**kwargs)
+    kwargs = {
+        "api_key": key,
+        "model": model or None,
+        "persona_prompt": _current_ai_persona_prompt.get() or None,
+    }
+    if not native_schema:
+        kwargs["native_schema"] = False
+    return MistralSceneProvider(**kwargs)
 
 
 def _resolve_persona_prompt(user, persona_id: int | None) -> str | None:

@@ -11,9 +11,10 @@ from ai_provider.gemini_provider import GeminiResponse, GeminiSceneProvider
 class DeepSeekHttpClient:
     """Small dependency-free DeepSeek client; the key is header-only."""
 
-    def __init__(self, api_key: str, timeout_seconds: float = 30.0):
+    def __init__(self, api_key: str, timeout_seconds: float = 30.0, native_schema: bool = True):
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
+        self.native_schema = native_schema
 
     def generate(self, *, model: str, system_instruction: str, prompt: str, response_schema: dict):
         body = {
@@ -22,9 +23,10 @@ class DeepSeekHttpClient:
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": prompt},
             ],
-            "response_format": {"type": "json_object"},
             "temperature": 0.2,
         }
+        if self.native_schema:
+            body["response_format"] = {"type": "json_object"}
         request = Request(
             "https://api.deepseek.com/chat/completions",
             data=json.dumps(body).encode("utf-8"),
@@ -70,8 +72,10 @@ class DeepSeekSceneProvider(GeminiSceneProvider):
         api_key: str | None = None,
         model: str = "deepseek-chat",
         client=None,
+        native_schema: bool = True,
     ):
         if client is None and not api_key:
             raise ValueError("DeepSeek API key is required.")
         self.model = model
-        self._client = client or DeepSeekHttpClient(api_key or "")
+        self.native_schema = native_schema
+        self._client = client or DeepSeekHttpClient(api_key or "", native_schema=native_schema)

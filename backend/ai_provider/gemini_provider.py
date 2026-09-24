@@ -45,6 +45,7 @@ from ai_provider.prompts import (
     SCENE_2D_CREATE_PROMPT,
     SCENE_2D_EDIT_PROMPT,
 )
+from ai_provider.structured_output import extract_json
 from scenes.patch import PatchError, apply_patch, validate_patch_operations, worst_reason
 from scenes.patch3d import (
     proportionalize_drawing_plane_patch,
@@ -85,20 +86,19 @@ class GeminiHttpClient:
         self.timeout_seconds = timeout_seconds
 
     def generate(
-        self, *, model: str, system_instruction: str, prompt: str, response_schema: dict
+        self, *, model: str, system_instruction: str, prompt: str, response_schema: dict | None
     ) -> GeminiResponse:
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
             f"{quote(model, safe='')}:generateContent"
         )
-        body = {
+        body: dict[str, Any] = {
             "systemInstruction": {"parts": [{"text": system_instruction}]},
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "responseMimeType": "application/json",
-                "responseSchema": response_schema,
-            },
+            "generationConfig": {"responseMimeType": "application/json"},
         }
+        if response_schema is not None:
+            body["generationConfig"]["responseSchema"] = response_schema
         request = Request(
             url,
             data=json.dumps(body).encode("utf-8"),
@@ -153,10 +153,12 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
         api_key: str | None = None,
         model: str = "gemini-2.5-flash",
         client: Any | None = None,
+        native_schema: bool = True,
     ):
         if client is None and not api_key:
             raise ValueError("Gemini API key is required.")
         self.model = model
+        self.native_schema = native_schema
         self._client = client or GeminiHttpClient(api_key or "")
 
     def _call(self, system: str, prompt: str, schema: dict) -> GeminiResponse:
@@ -165,7 +167,7 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
                 model=self.model,
                 system_instruction=system,
                 prompt=prompt,
-                response_schema=schema,
+                response_schema=schema if self.native_schema else None,
             )
         except (
             AIProviderTimeoutError,
@@ -221,7 +223,7 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
 
     def _json(self, response: GeminiResponse) -> dict[str, Any]:
         try:
-            value = json.loads(response.text)
+            value = extract_json(response.text)
         except (TypeError, ValueError) as exc:
             raise AIProviderRejectionError("Gemini returned invalid JSON.") from exc
         if not isinstance(value, dict):
@@ -262,7 +264,7 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
             return GeminiEditResult(self._error(AIOperation.EDIT_SCENE, exc))
         usage = self._usage(response)
         try:
-            operations = json.loads(response.text)
+            operations = extract_json(response.text)
             if not isinstance(operations, list):
                 raise ValueError("patch must be an array")
             if not operations:
@@ -349,7 +351,7 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
             return GeminiEdit3DResult(self._error3d(AIOperation.EDIT_SCENE, exc))
         usage = self._usage(response)
         try:
-            operations = json.loads(response.text)
+            operations = extract_json(response.text)
             if not isinstance(operations, list):
                 raise ValueError("patch must be an array")
             if not operations:

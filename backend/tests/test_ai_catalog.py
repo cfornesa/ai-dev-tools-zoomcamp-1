@@ -41,6 +41,7 @@ class TestCreateModel:
         assert view.vendor == "gemini"
         assert view.agentic_supported is True
         assert view.native_schema is True
+        assert ai_catalog.uses_native_schema(vendor="gemini", model_slug="gemini-2.5-flash-test")
         assert view.revision == 1
 
     def test_rejects_unknown_provider(self, admin_a):

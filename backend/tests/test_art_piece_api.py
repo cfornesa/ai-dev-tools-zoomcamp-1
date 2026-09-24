@@ -20,7 +20,7 @@ from rest_framework.test import APIClient
 
 import scenes.art_piece_api as art_piece_api
 from ai_provider.art_piece_provider import ArtPieceProvider
-from scenes.models import AIPersona, ProviderCredential
+from scenes.models import AIPersona, AIProviderModel, ProviderCredential
 
 URL = "/api/ai/art-pieces/generate/"
 
@@ -440,6 +440,65 @@ def test_missing_personal_key_returns_424(owner_client):
 
     assert response.status_code == 424
     assert response.json()["error"] == "personal_key_required"
+
+
+@pytest.mark.django_db
+def test_selected_vendor_does_not_fall_back_to_another_vendor_key(owner, owner_client, monkeypatch):
+    """A requested vendor must own the credential used for the request."""
+    credential = ProviderCredential(owner=owner, vendor="mistral")
+    credential.set_key("sk-mistral-only-key")
+    credential.save()
+    constructed = False
+
+    def should_not_construct(**kwargs):
+        nonlocal constructed
+        constructed = True
+        raise AssertionError("the selected vendor had no credential")
+
+    monkeypatch.setattr(art_piece_api, "ArtPieceProvider", should_not_construct)
+    response = owner_client.post(
+        URL,
+        {"vendor": "gemini", "library": "canvas2d", "prompt": "x"},
+        format="json",
+    )
+
+    assert response.status_code == 424
+    assert response.json()["error"] == "personal_key_required"
+    assert constructed is False
+
+
+@pytest.mark.django_db
+def test_model_without_art_piece_catalog_capability_is_rejected_before_provider(
+    owner_client, monkeypatch
+):
+    AIProviderModel.objects.create(
+        vendor="gemini",
+        model_slug="gemini-scene-only-test",
+        display_label="Scene-only test model",
+        task_kinds=["one_shot_2d"],
+        agentic_supported=False,
+    )
+    monkeypatch.setattr(
+        art_piece_api,
+        "_provider_for_user",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("catalog rejection must happen before credential/provider resolution")
+        ),
+    )
+
+    response = owner_client.post(
+        URL,
+        {
+            "vendor": "gemini",
+            "model": "gemini-scene-only-test",
+            "library": "canvas2d",
+            "prompt": "x",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "model_invalid"
 
 
 @pytest.mark.django_db

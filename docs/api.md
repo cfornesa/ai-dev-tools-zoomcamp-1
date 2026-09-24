@@ -10,6 +10,17 @@ Persona, or make Persona context cross the generated-piece sandbox boundary.
 Missing, foreign, or unknown Persona IDs behave as no Persona for backward
 compatibility.
 
+## Vendor-neutral generated art-piece generation (#811)
+
+`POST /api/ai/art-pieces/generate/` accepts an additive `vendor` field with
+`mistral`, `gemini`, or `deepseek`; omitted values remain `mistral` for
+backward compatibility. The selected vendor's owner-scoped credential and
+the request/saved model are used for both generation and refinement—there is
+no fallback to another vendor. The selected model must be an active AI-model
+catalog entry flagged for `art_piece` before a provider call is made. Missing
+or undecryptable credentials return the existing structured
+`personal_key_required` response.
+
 ## Generated-piece sandbox and embed boundary (#741)
 
 Generated preview source runs in an opaque `iframe sandbox="allow-scripts"`

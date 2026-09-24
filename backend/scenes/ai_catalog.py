@@ -245,6 +245,20 @@ def is_agentic_supported(*, vendor: str, model_slug: str, task_kind: str) -> boo
     return row is not None and task_kind in row.task_kinds
 
 
+def is_art_piece_supported(*, vendor: str, model_slug: str) -> bool:
+    """Return whether an active catalog row explicitly supports raw pieces."""
+    row = (
+        AIProviderModel.objects.filter(
+            vendor=vendor.strip().lower() if isinstance(vendor, str) else vendor,
+            model_slug=(model_slug or "").strip(),
+            active=True,
+        )
+        .only("task_kinds")
+        .first()
+    )
+    return row is not None and AIProviderModel.TaskKind.ART_PIECE in row.task_kinds
+
+
 __all__ = [
     "AGENT_TASK_KINDS",
     "TASK_KINDS",
@@ -255,6 +269,7 @@ __all__ = [
     "create_model",
     "delete_model",
     "is_agentic_supported",
+    "is_art_piece_supported",
     "list_models",
     "update_model",
 ]

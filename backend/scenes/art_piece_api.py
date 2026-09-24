@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import re
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from django.core.cache import cache
 from rest_framework import serializers, status
@@ -41,6 +41,8 @@ from ai_provider.art_piece_provider import (
     ArtPieceProvider,
 )
 from ai_provider.config import use_fake_ai_provider
+from ai_provider.registry import validate_model
+from scenes.ai_catalog import is_art_piece_supported
 from scenes.art_piece_contract import GENERATABLE_ART_PIECE_ENGINES
 from scenes.entitlements import get_effective_cap, is_unlimited
 from scenes.models import AIPersona, MistralCredentialDecryptionError, ProviderCredential
@@ -128,6 +130,7 @@ def _validate_model_id(value: str) -> str:
 
 
 class ArtPieceGenerateRequestSerializer(serializers.Serializer):
+    vendor = serializers.ChoiceField(choices=["mistral", "gemini", "deepseek"], default="mistral")
     library = serializers.ChoiceField(choices=list(SUPPORTED_LIBRARIES))
     prompt = serializers.CharField(
         max_length=MAX_PROMPT_CHARS, allow_blank=False, trim_whitespace=True
@@ -147,6 +150,7 @@ class ArtPieceGenerateRequestSerializer(serializers.Serializer):
 
 _current_ai_user: ContextVar[object | None] = ContextVar("current_art_piece_user", default=None)
 _current_ai_model: ContextVar[str | None] = ContextVar("current_art_piece_model", default=None)
+_current_ai_vendor: ContextVar[str] = ContextVar("current_art_piece_vendor", default="mistral")
 _current_ai_persona_prompt: ContextVar[str | None] = ContextVar(
     "current_art_piece_persona_prompt", default=None
 )
@@ -297,9 +301,8 @@ def get_art_piece_provider() -> ArtPieceProvider:
     user = _current_ai_user.get()
     if user is None or not getattr(user, "is_authenticated", False):
         raise MissingPersonalMistralCredential
-    credential = ProviderCredential.objects.filter(
-        owner=cast("User", user), vendor="mistral"
-    ).first()
+    vendor = _current_ai_vendor.get()
+    credential = ProviderCredential.objects.filter(owner=cast("User", user), vendor=vendor).first()
     if credential is None:
         raise MissingPersonalMistralCredential
     try:
@@ -308,12 +311,16 @@ def get_art_piece_provider() -> ArtPieceProvider:
         raise MissingPersonalMistralCredential from exc
     persona_prompt = _current_ai_persona_prompt.get()
     if persona_prompt is None:
-        return ArtPieceProvider(api_key=key, model=_current_ai_model.get() or None)
-    return ArtPieceProvider(
-        api_key=key,
-        model=_current_ai_model.get() or None,
-        persona_prompt=persona_prompt,
-    )
+        kwargs: dict[str, Any] = {"api_key": key, "model": _current_ai_model.get() or None}
+    else:
+        kwargs = {
+            "api_key": key,
+            "model": _current_ai_model.get() or None,
+            "persona_prompt": persona_prompt,
+        }
+    if vendor != "mistral":
+        kwargs["vendor"] = vendor
+    return ArtPieceProvider(**kwargs)
 
 
 def _provider_for_user(
@@ -394,7 +401,23 @@ class ArtPieceGenerateView(APIView):
             return _request_invalid_response(input_serializer.errors)
         library = input_serializer.validated_data["library"]
         prompt = input_serializer.validated_data["prompt"]
+        vendor = input_serializer.validated_data["vendor"]
         model = input_serializer.validated_data.get("model") or None
+        try:
+            effective_model = validate_model(vendor, model)
+        except ValueError as exc:
+            return Response(
+                {"error": "model_invalid", "detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not is_art_piece_supported(vendor=vendor, model_slug=effective_model):
+            return Response(
+                {
+                    "error": "model_invalid",
+                    "detail": "That model is not enabled for generated art pieces.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         persona_prompt = _resolve_persona_prompt(
             request.user, input_serializer.validated_data.get("persona_id")
         )
@@ -414,10 +437,13 @@ class ArtPieceGenerateView(APIView):
         ):
             return _quota_exceeded_response(art_generate_cap)
 
+        vendor_token = _current_ai_vendor.set(vendor)
         try:
-            provider = _provider_for_user(request.user, model, persona_prompt)
+            provider = _provider_for_user(request.user, model or effective_model, persona_prompt)
         except MissingPersonalMistralCredential:
             return _missing_key_response()
+        finally:
+            _current_ai_vendor.reset(vendor_token)
 
         result = provider.generate(prompt, library)
 

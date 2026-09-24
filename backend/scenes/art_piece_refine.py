@@ -11,8 +11,11 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from ai_provider.registry import validate_model
+from scenes.ai_catalog import is_art_piece_supported
 from scenes.art_piece_api import (
     RATE_LIMIT_WINDOW_SECONDS,
+    _current_ai_vendor,
     _current_count,
     _generation_rate_limit,
     _increment_and_check,
@@ -33,6 +36,7 @@ MAX_RETRIES = 2
 
 
 class ArtPieceRefineRequestSerializer(serializers.Serializer):
+    vendor = serializers.ChoiceField(choices=["mistral", "gemini", "deepseek"], default="mistral")
     instruction = serializers.CharField(max_length=4000, allow_blank=False, trim_whitespace=True)
     target_references = serializers.ListField(
         child=serializers.CharField(max_length=200), required=False, default=list
@@ -125,7 +129,13 @@ def _record_quota_or_fail(run: ArtPieceRefineRun, owner) -> bool:
 
 
 def refine_art_piece(
-    *, owner, piece: ArtPiece, instruction: str, target_references: list[str], model: str = ""
+    *,
+    owner,
+    piece: ArtPiece,
+    instruction: str,
+    target_references: list[str],
+    model: str = "",
+    vendor: str = "mistral",
 ):
     source_version = piece.current_version
     if source_version is None:
@@ -161,12 +171,15 @@ def refine_art_piece(
         prompt = instruction
         if feedback:
             prompt += f" Repair feedback from the previous attempt: {feedback}"
+        vendor_token = _current_ai_vendor.set(vendor)
         try:
             provider = _provider_for_user(owner, model or None)
             result = provider.refine(prompt, source, piece.engine, target_references)
         except Exception as exc:
             result = None
             feedback = str(exc)
+        finally:
+            _current_ai_vendor.reset(vendor_token)
         if result is not None:
             run.usage_prompt_tokens += result.usage.prompt_tokens
             run.usage_completion_tokens += result.usage.completion_tokens
@@ -233,12 +246,23 @@ class ArtPieceRefineView(APIView):
             raise Http404
         serializer = ArtPieceRefineRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        vendor = serializer.validated_data["vendor"]
+        model = serializer.validated_data["model"] or None
+        try:
+            effective_model = validate_model(vendor, model)
+        except ValueError as exc:
+            raise serializers.ValidationError({"model": str(exc)}) from exc
+        if not is_art_piece_supported(vendor=vendor, model_slug=effective_model):
+            raise serializers.ValidationError(
+                {"model": "That model is not enabled for generated art pieces."}
+            )
         run = refine_art_piece(
             owner=request.user,
             piece=piece,
             instruction=serializer.validated_data["instruction"],
             target_references=serializer.validated_data["target_references"],
-            model=serializer.validated_data["model"],
+            model=model or effective_model,
+            vendor=vendor,
         )
         return Response(_serialize(run), status=status.HTTP_200_OK)
 

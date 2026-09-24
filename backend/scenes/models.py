@@ -812,6 +812,7 @@ class AIProviderModel(models.Model):
     class TaskKind(models.TextChoices):
         ONE_SHOT_2D = "one_shot_2d", "One-shot 2D generation"
         ONE_SHOT_3D = "one_shot_3d", "One-shot 3D generation"
+        ART_PIECE = "art_piece", "Generated art piece"
         AGENT_2D = "agent_2d", "Bounded agent run (2D)"
         AGENT_3D = "agent_3d", "Bounded agent run (3D)"
 

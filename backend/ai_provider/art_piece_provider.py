@@ -38,11 +38,14 @@ from typing import Any
 
 import httpx
 
+from ai_provider.deepseek_provider import DeepSeekHttpClient
 from ai_provider.errors import (
+    AIProviderCancelledError,
     AIProviderQuotaError,
     AIProviderRejectionError,
     AIProviderTimeoutError,
 )
+from ai_provider.gemini_provider import GeminiHttpClient
 from ai_provider.interface import AIUsageMetadata
 from ai_provider.prompts import ART_PIECE_REFINE_SYSTEM_PROMPT, art_piece_2d_prompt
 from scenes.art_piece_contract import (
@@ -73,7 +76,7 @@ THREEJS_CDN_URL = f"https://cdn.jsdelivr.net/npm/three@{THREEJS_VERSION}/build/t
 AFRAME_VERSION = "1.4.2"
 AFRAME_CDN_URL = f"https://cdn.jsdelivr.net/npm/aframe@{AFRAME_VERSION}/dist/aframe.min.js"
 
-DEFAULT_MODEL = "mistral-large-latest"
+DEFAULT_MODEL = "mistral-small-latest"
 REQUEST_TIMEOUT_MS = 20_000
 
 # A self-contained art-piece snippet is expected to be far smaller than a
@@ -203,12 +206,14 @@ class ArtPieceProvider:
     def __init__(
         self,
         *,
+        vendor: str = "mistral",
         api_key: str | None = None,
         model: str | None = None,
         persona_prompt: str | None = None,
         client: Any | None = None,
         timeout_ms: int = REQUEST_TIMEOUT_MS,
     ) -> None:
+        self.vendor = vendor.strip().lower()
         self._api_key = api_key
         self._client = client
         self.model = model or DEFAULT_MODEL
@@ -218,10 +223,86 @@ class ArtPieceProvider:
     @property
     def client(self):
         if self._client is None:
-            from mistralai.client import Mistral
+            if self.vendor == "gemini":
+                self._client = GeminiHttpClient(self._api_key or "")
+            elif self.vendor == "deepseek":
+                self._client = DeepSeekHttpClient(self._api_key or "")
+            else:
+                from mistralai.client import Mistral
 
-            self._client = Mistral(api_key=self._api_key)
+                self._client = Mistral(api_key=self._api_key)
         return self._client
+
+    def _complete(
+        self,
+        *,
+        system_prompt: str,
+        prompt: str,
+        temperature: float,
+        messages: list[dict[str, str]] | None = None,
+    ):
+        if self.vendor == "mistral":
+            return self.client.chat.complete(
+                model=self.model,
+                messages=messages
+                or [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=temperature,
+                timeout_ms=self.timeout_ms,
+            )
+        return self.client.generate(
+            model=self.model,
+            system_instruction=(
+                "\n\n".join(
+                    message["content"]
+                    for message in (messages or [])
+                    if message["role"] == "system"
+                )
+                or system_prompt
+            ),
+            prompt=prompt,
+            response_schema={"type": "string"},
+        )
+
+    @staticmethod
+    def _response_content(response: Any, *, unwrap_json_string: bool = False) -> str:
+        if hasattr(response, "text"):
+            content = str(response.text)
+            if unwrap_json_string:
+                try:
+                    decoded = json.loads(content)
+                except json.JSONDecodeError:
+                    pass
+                else:
+                    if isinstance(decoded, str):
+                        return decoded
+            return content
+        choice = response.choices[0]
+        return (
+            choice.message.content
+            if isinstance(choice.message.content, str)
+            else str(choice.message.content)
+        )
+
+    @staticmethod
+    def _response_usage(response: Any) -> AIUsageMetadata:
+        if hasattr(response, "prompt_tokens"):
+            prompt_tokens = int(getattr(response, "prompt_tokens", 0) or 0)
+            completion_tokens = int(getattr(response, "completion_tokens", 0) or 0)
+        else:
+            usage_info = getattr(response, "usage", None)
+            prompt_tokens = int(getattr(usage_info, "prompt_tokens", 0) or 0)
+            completion_tokens = int(getattr(usage_info, "completion_tokens", 0) or 0)
+        return AIUsageMetadata(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            estimated_cost_usd=(
+                (prompt_tokens / 1000) * _ESTIMATED_PROMPT_COST_PER_1K
+                + (completion_tokens / 1000) * _ESTIMATED_COMPLETION_COST_PER_1K
+            ),
+        )
 
     def generate(self, prompt: str, library: str) -> ArtPieceResult:
         zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
@@ -251,11 +332,11 @@ class ArtPieceProvider:
         messages.append({"role": "user", "content": prompt})
 
         try:
-            response = self.client.chat.complete(
-                model=self.model,
-                messages=messages,
+            response = self._complete(
+                system_prompt=system_prompt,
+                prompt=prompt,
                 temperature=0.7,
-                timeout_ms=self.timeout_ms,
+                messages=messages,
             )
         except httpx.TimeoutException:
             return self._error_result(
@@ -265,9 +346,20 @@ class ArtPieceProvider:
         except httpx.HTTPError:
             return self._error_result(
                 zero_usage,
-                AIProviderRejectionError("Mistral request failed (network/connection error)."),
+                AIProviderRejectionError(
+                    f"{self.vendor.title()} request failed (network/connection error)."
+                ),
             )
+        except (
+            AIProviderTimeoutError,
+            AIProviderCancelledError,
+            AIProviderQuotaError,
+            AIProviderRejectionError,
+        ) as exc:
+            return self._error_result(zero_usage, exc)
         except Exception as exc:  # Mistral SDK error types (lazy-imported below)
+            if self.vendor != "mistral":
+                raise
             from mistralai.client.errors import MistralError
 
             if not isinstance(exc, MistralError):
@@ -293,21 +385,10 @@ class ArtPieceProvider:
                 AIProviderRejectionError(f"Mistral provider request failed (status {status})."),
             )
 
-        usage_info = getattr(response, "usage", None)
-        prompt_tokens = int(getattr(usage_info, "prompt_tokens", 0) or 0)
-        completion_tokens = int(getattr(usage_info, "completion_tokens", 0) or 0)
-        usage = AIUsageMetadata(
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            estimated_cost_usd=(
-                (prompt_tokens / 1000) * _ESTIMATED_PROMPT_COST_PER_1K
-                + (completion_tokens / 1000) * _ESTIMATED_COMPLETION_COST_PER_1K
-            ),
-        )
+        usage = self._response_usage(response)
 
         try:
-            choice = response.choices[0]
-            content = choice.message.content
+            content = self._response_content(response, unwrap_json_string=self.vendor != "mistral")
         except (AttributeError, IndexError, TypeError):
             return self._error_result(
                 usage, AIProviderRejectionError("Mistral response contained no message content.")
@@ -354,36 +435,38 @@ class ArtPieceProvider:
             ensure_ascii=False,
         )
         try:
-            response = self.client.chat.complete(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt},
-                ],
+            response = self._complete(
+                system_prompt=system_prompt,
+                prompt=prompt,
                 temperature=0.4,
-                timeout_ms=self.timeout_ms,
             )
         except httpx.TimeoutException:
             return ArtPieceRefineResult(
                 usage=zero_usage, error=f"Mistral did not respond within {self.timeout_ms}ms."
             )
         except httpx.HTTPError:
-            return ArtPieceRefineResult(usage=zero_usage, error="Mistral request failed.")
+            return ArtPieceRefineResult(
+                usage=zero_usage, error=f"{self.vendor.title()} request failed."
+            )
+        except (
+            AIProviderTimeoutError,
+            AIProviderCancelledError,
+            AIProviderQuotaError,
+            AIProviderRejectionError,
+        ) as exc:
+            return ArtPieceRefineResult(usage=zero_usage, error=str(exc))
         except Exception as exc:
+            if self.vendor != "mistral":
+                raise
             from mistralai.client.errors import MistralError
 
             if not isinstance(exc, MistralError):
                 raise
             return ArtPieceRefineResult(usage=zero_usage, error="Mistral provider request failed.")
 
-        usage_info = getattr(response, "usage", None)
-        usage = AIUsageMetadata(
-            prompt_tokens=int(getattr(usage_info, "prompt_tokens", 0) or 0),
-            completion_tokens=int(getattr(usage_info, "completion_tokens", 0) or 0),
-            estimated_cost_usd=0.0,
-        )
+        usage = self._response_usage(response)
         try:
-            content = response.choices[0].message.content
+            content = self._response_content(response)
             payload = json.loads(content if isinstance(content, str) else str(content))
             edits = payload["edits"]
             if not isinstance(edits, list) or not all(

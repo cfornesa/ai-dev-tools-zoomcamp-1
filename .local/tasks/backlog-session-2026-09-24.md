@@ -60,7 +60,7 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #800 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | 3D runtime template parity |
 | #801 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | all-engine ready/error runtime template |
 | #802 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | 2D regular/immersive/embed presentation identity |
-| #803 | IMPLEMENTED / QA FAIL environment boundary | 793f0e8, dcbdeb0 | focused immersive/camera tests 15 passed; frontend 276 files / 2969 tests passed on isolated run; typecheck/lint/format pass; required Playwright Chromium launch blocked by macOS Mach-port permission | FAIL (browser evidence unavailable) | open | live Chrome reproduced immersive metadata-order/padding defect; fix is local and unpublished; QA comment 5822183557807 |
+| #803 | IMPLEMENTED / QA FAIL environment boundary | 793f0e8, dcbdeb0, 5e65fcf, bc5cdcf | focused immersive/camera tests 15 passed; frontend 276 files / 2971 tests; full backend 1624 / 39 skipped; typecheck/lint/format pass; required Playwright Chromium launch blocked by macOS Mach-port permission | FAIL (production/browser evidence boundary) | open | local fix now restores above-stage identity, responsive 16:9 framing, and shared 32px/24px spacing; deployed revision remains old/unpublished; QA refresh comment 5823290653 |
 | #804 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | collection parity matrix and presentation gaps |
 | #805 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | profile/personalization parity matrix |
 | #806 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | production verification depends on #798–#803 and owner-gated live evidence |
@@ -68,6 +68,7 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #808 | CLOSED / QA PASS | 47d7827 | focused importer 9 passed; `make check` backend 1615 passed / frontend 276 files 2968 tests | PASS | closed | local-only reconciliation fix; production re-import intentionally not run; QA comment 5822184052 |
 | #810 | CLOSED / QA PASS | 8e34e85 | shared provider prompts 30 passed; full backend 1619 passed / 39 skipped; mypy and ruff pass | PASS | closed | 3D create/edit/convert prompts are shared across Mistral/Gemini/DeepSeek; Gemini drawing-plane validation/proportionalization parity covered; QA comment 5822745870 |
 | #812 | CLOSED / QA PASS | d53c7a0 | focused patch/API 101 passed; full backend 1622 passed / 39 skipped; frontend 276 files / 2971 tests; mypy, ruff, typecheck, format pass | PASS | closed | explicit delete intent for 2D/3D whole-element removal/replacement; QA comment 5823039527 |
+| #813 | CLOSED / QA PASS | 482a30b, 1ae4ef1 | focused AI-run 29 passed / 1 skipped; full backend 1624 passed / 39 skipped; frontend 276 files / 2971 tests; make check green after #803 assertion refresh | PASS | closed | persisted plan scope and apply-time targets/layer/scene/overhaul enforcement; QA comment 5823303248 |
 
 ## Production-readiness — 2026-09-24
 
@@ -199,8 +200,31 @@ deferred.
   #806 and the remaining parity issues are open. No additional publish or
   production data action was authorized.
 - Current open inventory: 22 issues. #810 and #812 are closed with QA PASS;
-  #811, #813–#821, #798/#799–#807, #748, and #788 remain open with their recorded
+  #811, #814–#821, #798/#799–#807, #748, and #788 remain open with their recorded
   next actions. No duplicate or silently omitted issue was found.
+
+## Production-readiness refresh 2 — 2026-09-24
+
+- Local quality: PASS after the #813 implementation and #803 spacing refresh;
+  backend 1624 passed / 39 skipped, frontend 276 files / 2971 tests, and the
+  repository lint/format/type checks passed. The full `make check` was rerun;
+  one stale CSS assertion was updated to the intentional new responsive tokens,
+  then the final frontend suite passed.
+- Production/browser evidence: #803 remains NO-GO because Chrome still shows
+  the prior published bundle and no publish is authorized for #803. Playwright
+  Chromium remains blocked at launch by the macOS Mach-port permission error.
+- Batch readiness: NO-GO. #748, #788, #803, #807, dependent #798–#806, and
+  the remaining #811/#814–#821 backlog work remain open. #813 is terminal
+  CLOSED/QA PASS with local-only evidence.
+
+## Session-completion refresh 2 — 2026-09-24
+
+- Terminal outcomes added: #813 CLOSED/QA PASS; #803 received a local spacing
+  refresh but remains OPEN/QA FAIL at the production/browser evidence boundary.
+- Duplicate audit: the renewed immersive-layout request maps to existing #803;
+  no new issue was created.
+- Follow-up audit: #803 needs an owner-authorized publish followed by the real
+  browser matrix before closure. No production mutation was performed.
 
 ## Session-completion refresh — 2026-09-24 continuation
 

@@ -4010,6 +4010,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
             {id && (
               <EditorDetailsPanel
                 ref={detailsPanelRef}
+                onEditorUrlChange={(url) => navigate(url, { replace: true })}
                 projectId={id}
                 project={project}
                 setProject={setProject}

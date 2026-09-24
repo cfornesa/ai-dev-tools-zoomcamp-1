@@ -6,7 +6,7 @@ import {
   type FormEvent,
   type SetStateAction,
 } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import {
@@ -39,6 +39,7 @@ import type { Group3D, Object3D, Scene3DDocument, Transform3D } from './scene3dT
 import { object3DLabel, type DrawingShape, type Object3DType } from './scene3dTypes';
 import { type Outline3DSelection } from './Outline3DInspector';
 import InkModeButton from '../components/InkModeButton';
+import PieceSlugField from '../components/PieceSlugField';
 import StageControlsPopover from '../components/StageControlsPopover';
 import { InkEditor } from '../ink/InkEditor';
 
@@ -155,6 +156,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
   const { id: routeId } = useParams<{ id: string }>();
   const id = initialProjectId ?? routeId;
   const auth = useAuth();
+  const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<Project3D | null>(null);
   const [workingScene, setWorkingScene] = useState<Scene3DDocument | null>(null);
@@ -597,6 +599,19 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
       <header className="editor-workspace-header">
         <EditableProject3DTitle id={id} project={project} setProject={setProject} />
         {id && <PublishControl3D id={id} project={project} setProject={setProject} />}
+        {id && (
+          <details className="piece-slug-details">
+            <summary>Web address</summary>
+            <PieceSlugField
+              current={project?.public_slug}
+              save={(slug) => updateProjectMetadata3D(id, { public_slug: slug })}
+              onSaved={(updated) => {
+                setProject((current) => (current ? { ...current, ...updated } : current));
+                if (updated.editor_url) navigate(updated.editor_url, { replace: true });
+              }}
+            />
+          </details>
+        )}
         {workingScene && (
           // #771/#772: the piece's explicit rendering library. Changing it is an undoable edit
           // that is saved as a new version like any other scene change.

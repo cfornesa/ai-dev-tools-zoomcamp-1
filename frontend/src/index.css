@@ -6596,3 +6596,26 @@ select.ai-proposal-field-full-width {
   gap: 6px;
   margin-top: 8px;
 }
+
+/* Issue #750: the piece slug field. */
+.piece-slug-field {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+.piece-slug-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.piece-slug-row input {
+  flex: 1 1 12rem;
+  min-height: 2.5rem;
+}
+.piece-slug-hint {
+  margin: 0;
+  font-size: 0.85rem;
+}
+.piece-slug-details {
+  margin: 0.25rem 0;
+}

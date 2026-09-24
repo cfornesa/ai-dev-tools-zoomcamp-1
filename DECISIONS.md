@@ -1430,3 +1430,7 @@ The A-Frame stage stays an opaque-origin `allow-scripts` iframe. An editor-only 
 ## 2026-09-24 — Fork ensures the visitor's profile handle (#749)
 
 Triage of #749: responsiveShell, drawioPublicSurfaces, and aiAndRecovery already pass (earlier toolbar/create-flow repairs); publishingAndRemix had four test-only drifts (inline public stage toolbar, the title heading is now an h1, the render-failure fixture must also corrupt the canonical resolver payload, the fork lands on the canonical editor route) plus one real defect: a visitor who has never loaded their account profile has no handle, so forking ended on "Editor unavailable". The fork handler now loads the account profile (which creates the handle) before navigating.
+
+## 2026-09-24 — Independent slug; old slugs hard-404 (#750)
+
+Owner decision (asked in session): after a slug change the old URL is a hard 404, with no redirect table and no migration. `public_slug` is an optional field of the 2D and 3D metadata PATCH (declared free-text, normalised, non-empty, unique per owner including soft-deleted rows) and is returned by the project serializers; `ArtPiece` already supported it. A shared `PieceSlugField` (own Save button, explicit "old links will stop working" warning, collision message) is in the 2D Details panel, a 3D "Web address" disclosure, and the generated-piece editor; saving navigates the editor to the new address. Titles never touch the slug.

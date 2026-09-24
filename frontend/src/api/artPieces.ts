@@ -288,7 +288,7 @@ export function createArtPiece(input: {
 
 export function updateArtPiece(
   publicId: string,
-  input: Partial<Pick<ArtPiece, 'title' | 'description' | 'status'>>,
+  input: Partial<Pick<ArtPiece, 'title' | 'description' | 'status' | 'public_slug'>>,
 ): Promise<ArtPiece> {
   return apiFetch<ArtPiece>(`/api/art-pieces/${publicId}/`, {
     method: 'PATCH',

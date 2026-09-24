@@ -1,9 +1,12 @@
 """DRF serializers for the scenes API (Task 13+)."""
 
+from typing import Any
+
 from django.urls import reverse
 from rest_framework import serializers
 
 from scenes.art_piece_contract import art_piece_engine_capability
+from scenes.canonical_piece_signals import normalize_public_slug
 from scenes.content_metadata import sanitize_content_seo
 from scenes.models import (
     ArtPiece,
@@ -110,7 +113,31 @@ class TagListField(serializers.ListField):
         super().__init__(max_length=MAX_TAGS, **kwargs)
 
 
-class ProjectMetadataSerializer(serializers.ModelSerializer):
+class PublicSlugMixin:
+    """#750: an explicit, owner-chosen `public_slug`, independent of the title.
+
+    The title never changes the slug (it is only auto-derived once, at creation). A submitted
+    slug is normalised to the URL-safe form, must be non-empty, and must be unique among the
+    owner's pieces of this family (the database constraint also counts soft-deleted rows, so
+    those are checked too). Old URLs are not redirected: the previous slug simply stops
+    resolving (owner decision, #750).
+    """
+
+    Meta: Any
+    instance: Any
+
+    def validate_public_slug(self, value: str) -> str:
+        normalized = normalize_public_slug(value)
+        if not normalized:
+            raise serializers.ValidationError("Slug must contain a letter or number.")
+        model = self.Meta.model
+        clash = model.all_objects.filter(owner=self.instance.owner, public_slug=normalized)
+        if clash.exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("This slug is already in use.")
+        return normalized
+
+
+class ProjectMetadataSerializer(PublicSlugMixin, serializers.ModelSerializer):
     """Mutable project metadata only — never touches SceneVersion (Task 13/17).
 
     `visibility` is deliberately excluded (Task 49): switching a project
@@ -126,6 +153,9 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
 
     tags = TagListField(required=False)
     seo_config = serializers.DictField(required=False)
+    # Declared (not model-derived) so free text such as "My Slug!" reaches
+    # `validate_public_slug` and is normalised there.
+    public_slug = serializers.CharField(required=False, max_length=220)
 
     def validate_seo_config(self, value):
         try:
@@ -142,10 +172,12 @@ class ProjectMetadataSerializer(serializers.ModelSerializer):
             "tags",
             "allow_public_remix",
             "export_attribution",
+            "public_slug",
         ]
         extra_kwargs = {
             "title": {"required": False, "allow_blank": False},
             "description": {"required": False, "allow_blank": True},
+            "public_slug": {"required": False, "max_length": 220},
             "seo_config": {"required": False},
             "allow_public_remix": {"required": False},
             "export_attribution": {"required": False},
@@ -229,6 +261,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "active_scene",
             "scenes",
             "editor_url",
+            "public_slug",
             "created_at",
             "updated_at",
         ]
@@ -763,6 +796,7 @@ class Project3DSerializer(serializers.ModelSerializer):
             "thumbnail_is_fallback",
             "current_version",
             "editor_url",
+            "public_slug",
             "created_at",
             "updated_at",
         ]
@@ -787,7 +821,7 @@ class Project3DSerializer(serializers.ModelSerializer):
         return thumbnail is None or thumbnail.is_fallback
 
 
-class Project3DMetadataSerializer(serializers.ModelSerializer):
+class Project3DMetadataSerializer(PublicSlugMixin, serializers.ModelSerializer):
     """Issue #301: the `Project3D` counterpart of `ProjectMetadataSerializer`,
     scoped to `title` and validated content SEO/AEO metadata -- `Project3D`
     has no `description`/`tags`/
@@ -798,6 +832,7 @@ class Project3DMetadataSerializer(serializers.ModelSerializer):
     `Project3DUnpublishView`, not a generic metadata PATCH."""
 
     seo_config = serializers.DictField(required=False)
+    public_slug = serializers.CharField(required=False, max_length=220)
 
     def validate_seo_config(self, value):
         try:
@@ -807,10 +842,11 @@ class Project3DMetadataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project3D
-        fields = ["title", "seo_config"]
+        fields = ["title", "seo_config", "public_slug"]
         extra_kwargs = {
             "title": {"required": False, "allow_blank": False},
             "seo_config": {"required": False},
+            "public_slug": {"required": False, "max_length": 220},
         }
 
 

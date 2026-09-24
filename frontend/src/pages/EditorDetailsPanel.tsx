@@ -1,3 +1,4 @@
+import PieceSlugField from '../components/PieceSlugField';
 import {
   forwardRef,
   useEffect,
@@ -102,8 +103,10 @@ const EditorDetailsPanel = forwardRef<
     projectId: string;
     project: Project | null;
     setProject: Dispatch<SetStateAction<Project | null>>;
+    /** #750: called with the new canonical editor URL after the slug changes, so the route can follow it. */
+    onEditorUrlChange?: (url: string) => void;
   }
->(function EditorDetailsPanel({ projectId, project, setProject }, ref) {
+>(function EditorDetailsPanel({ projectId, project, setProject, onEditorUrlChange }, ref) {
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
   const [allowRemix, setAllowRemix] = useState(false);
@@ -177,78 +180,92 @@ const EditorDetailsPanel = forwardRef<
   );
 
   return (
-    <form className="editor-details-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
-      <div>
-        <label htmlFor="project-description">Description</label>
-        <textarea
-          id="project-description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          aria-invalid={fieldErrors.description ? true : undefined}
-          aria-describedby={fieldErrors.description ? 'project-description-error' : undefined}
-        />
-        {fieldErrors.description && (
-          <p id="project-description-error" role="alert">
-            {fieldErrors.description.join(' ')}
+    <>
+      <form
+        className="editor-details-form"
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+      >
+        <div>
+          <label htmlFor="project-description">Description</label>
+          <textarea
+            id="project-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            aria-invalid={fieldErrors.description ? true : undefined}
+            aria-describedby={fieldErrors.description ? 'project-description-error' : undefined}
+          />
+          {fieldErrors.description && (
+            <p id="project-description-error" role="alert">
+              {fieldErrors.description.join(' ')}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="project-tags">Tags (comma-separated)</label>
+          <input
+            id="project-tags"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            aria-invalid={fieldErrors.tags ? true : undefined}
+            aria-describedby={fieldErrors.tags ? 'project-tags-error' : undefined}
+          />
+          {fieldErrors.tags && (
+            <p id="project-tags-error" role="alert">
+              {fieldErrors.tags.join(' ')}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="project-remix">
+            <input
+              id="project-remix"
+              type="checkbox"
+              checked={allowRemix}
+              onChange={(e) => setAllowRemix(e.target.checked)}
+            />
+            Allow other users to remix this project when public
+          </label>
+        </div>
+
+        <div>
+          <label htmlFor="project-attribution">
+            <input
+              id="project-attribution"
+              type="checkbox"
+              checked={exportAttribution}
+              onChange={(e) => setExportAttribution(e.target.checked)}
+            />
+            Include "Created with" attribution in exports
+          </label>
+        </div>
+
+        {fieldErrors.form && (
+          <p role="alert" aria-live="assertive">
+            {fieldErrors.form.join(' ')}
           </p>
         )}
-      </div>
 
-      <div>
-        <label htmlFor="project-tags">Tags (comma-separated)</label>
-        <input
-          id="project-tags"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          aria-invalid={fieldErrors.tags ? true : undefined}
-          aria-describedby={fieldErrors.tags ? 'project-tags-error' : undefined}
-        />
-        {fieldErrors.tags && (
-          <p id="project-tags-error" role="alert">
-            {fieldErrors.tags.join(' ')}
+        <button type="submit" disabled={saveState === 'saving'}>
+          {saveState === 'saving' ? 'Saving…' : 'Save changes'}
+        </button>
+        {saveState === 'saved' && (
+          <p role="status" aria-live="polite">
+            Saved.
           </p>
         )}
-      </div>
-
-      <div>
-        <label htmlFor="project-remix">
-          <input
-            id="project-remix"
-            type="checkbox"
-            checked={allowRemix}
-            onChange={(e) => setAllowRemix(e.target.checked)}
-          />
-          Allow other users to remix this project when public
-        </label>
-      </div>
-
-      <div>
-        <label htmlFor="project-attribution">
-          <input
-            id="project-attribution"
-            type="checkbox"
-            checked={exportAttribution}
-            onChange={(e) => setExportAttribution(e.target.checked)}
-          />
-          Include "Created with" attribution in exports
-        </label>
-      </div>
-
-      {fieldErrors.form && (
-        <p role="alert" aria-live="assertive">
-          {fieldErrors.form.join(' ')}
-        </p>
-      )}
-
-      <button type="submit" disabled={saveState === 'saving'}>
-        {saveState === 'saving' ? 'Saving…' : 'Save changes'}
-      </button>
-      {saveState === 'saved' && (
-        <p role="status" aria-live="polite">
-          Saved.
-        </p>
-      )}
-    </form>
+      </form>
+      <PieceSlugField
+        current={project?.public_slug}
+        save={(slug) => updateProjectMetadata(projectId, { public_slug: slug })}
+        onSaved={(updated) => {
+          setProject((current) => (current ? { ...current, ...updated } : current));
+          if (updated.editor_url) onEditorUrlChange?.(updated.editor_url);
+        }}
+      />
+    </>
   );
 });
 

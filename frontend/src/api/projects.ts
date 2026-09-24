@@ -38,6 +38,8 @@ export type Project = {
   export_attribution: boolean;
   thumbnail_url: string | null;
   editor_url?: string | null;
+  /** #750: the piece's URL slug, editable independently of the title. */
+  public_slug?: string;
   viewer_url?: string;
   current_version: number | null;
   // How the current version was produced -- a SceneVersion.Origin value
@@ -109,7 +111,13 @@ export type SceneValidationErrorBody = {
 export type ProjectMetadataInput = Partial<
   Pick<
     Project,
-    'title' | 'description' | 'seo_config' | 'tags' | 'allow_public_remix' | 'export_attribution'
+    | 'title'
+    | 'description'
+    | 'seo_config'
+    | 'tags'
+    | 'allow_public_remix'
+    | 'export_attribution'
+    | 'public_slug'
   >
 >;
 

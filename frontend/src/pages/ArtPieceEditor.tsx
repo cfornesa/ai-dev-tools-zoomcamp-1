@@ -31,6 +31,7 @@ import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbna
 import MentionPromptField from './MentionPromptField';
 import { buildArtPieceTargetOptions } from './artPieceTargets';
 import ArtPieceEditorToolAvailability from '../components/ArtPieceEditorToolAvailability';
+import PieceSlugField from '../components/PieceSlugField';
 import GeneratedInkPanel, { type InkRequest } from '../components/GeneratedInkPanel';
 import type { InkTool } from '../ink/inkModel';
 import Generated3DManualTools from '../components/Generated3DManualTools';
@@ -591,6 +592,20 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       <p>
         <Link to="/art-pieces/manage">Back to your art pieces</Link>
       </p>
+
+      <PieceSlugField
+        current={piece.public_slug}
+        save={(slug) => updateArtPiece(piece.public_id, { public_slug: slug })}
+        onSaved={(updated) => {
+          setPiece((current) => (current ? { ...current, ...updated } : current));
+          const path = window.location.pathname;
+          if (updated.public_slug && /^\/users\/@[^/]+\/edit\/[^/]+$/.test(path)) {
+            navigate(path.replace(/[^/]+$/, encodeURIComponent(updated.public_slug)), {
+              replace: true,
+            });
+          }
+        }}
+      />
 
       <div className="behavior-card-field">
         <label htmlFor="art-piece-editor-title">Piece title</label>

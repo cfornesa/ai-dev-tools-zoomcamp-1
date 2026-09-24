@@ -38,6 +38,8 @@ export type Project3D = {
   owner: string;
   title: string;
   seo_config?: SeoConfig;
+  /** #750: the piece's URL slug, editable independently of the title. */
+  public_slug?: string;
   /** Issue #296: private by default; see `publishProject3D`/`unpublishProject3D`. */
   visibility: Project3DVisibility;
   /** Issue #243: gallery-card thumbnail URL, mirroring 2D `Project.thumbnail_url`. */
@@ -76,7 +78,9 @@ export function refreshProject3DThumbnail(id: string): Promise<Project3D> {
  * `updateProjectMetadata` -- scoped to just `title` since `Project3D` has
  * no `description`/`tags`/`allow_public_remix`/`export_attribution`
  * fields (see `Project3DMetadataSerializer`'s own doc comment). */
-export type Project3DMetadataInput = Partial<Pick<Project3D, 'title' | 'seo_config'>>;
+export type Project3DMetadataInput = Partial<
+  Pick<Project3D, 'title' | 'seo_config' | 'public_slug'>
+>;
 
 export function updateProjectMetadata3D(
   id: string,

@@ -21,6 +21,16 @@ allowlisted command bridge; camera and hand-tracking permissions remain in the
 trusted parent runtime. Exported local runtimes are separate artifacts and do
 not carry app credentials.
 
+## Piece URL slug (#750)
+
+`Project`, `Project3D`, and `ArtPiece` responses include `public_slug`. The slug is set once from the title at
+creation and never follows later title edits. `PATCH /api/projects/<id>/`, `/api/projects3d/<id>/`, and
+`/api/art-pieces/<id>/` accept `public_slug`: it is normalised to the URL-safe form, must contain a letter or
+number, and must be unique among the owner's pieces of that family (soft-deleted pieces keep reserving their
+slug); a violation is a 400 ("This slug is already in use."). **Old slugs are not redirected** (owner decision):
+after a change the previous `/users/@handle/pieces|edit/<old-slug>` URLs stop resolving (404). Existing pieces
+keep their current slug; no migration.
+
 ## Art-piece ink layer (#776)
 
 `ArtPieceVersion` responses (owner, public, and canonical projections) include the additive

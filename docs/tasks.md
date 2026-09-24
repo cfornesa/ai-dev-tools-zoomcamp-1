@@ -23926,3 +23926,22 @@ Owner report: augmenthumankind.com downloads use old button styling; augmentrart
 
 Already covered / duplicates: live viewer drawing (#670, #707–#711 closed, valid for the live viewer only), labelled inline toolsets (#690–#694, #706), offline downloads (#609), publish/live verification incl. real-camera 3D checks (#748), CI (#746). No open duplicate found. Camera perspective in embed/immersive is folded into #754 with real-Chrome evidence.
 Next issue when engineering starts: #757 (independent, closure-ready). Cross-repo issues filed in `augment-humankind-react-node`: #117 (ZIP toolbar styling), #118 (ZIP guide/reset), #119 (c2 interactive drawing). #759 (canvas size) CLOSED 2026-09-24: owner chose the reference 1280x720; implementation #763 (live sandbox) and #764 (ZIP); #760 unblocked. The owner's button-less download was 'Untitled 3D scene' (structured Project3D, `generateHtmlExport3D.ts`, only a near-invisible ☰ trigger on black): reproduced evidence now lives on #761 (highest-priority export issue); #755's generated-art ZIP has unstyled but present buttons locally, so it is no longer owner-reproduced.
+
+### 2026-09-24 addendum — button-set parity and explicit rendering library (#765–#772; react-node #120–#122)
+
+Owner requirement: button SETS on regular, immersive, and downloaded pieces match augment-humankind per engine in both repos; every piece is tied to one explicit rendering library (3D = Three.js or A-Frame), backward compatible.
+
+| Issue | Scope | Routing | Notes |
+|---|---|---|---|
+| #765 | Parity matrix doc (engine x surface) from the PHP source | analysis | Oracle for #752–#756, #761, #766–#769, react-node #117–#122; resolves order discrepancy |
+| #766 | Regular view, generated pieces: button set | 2a | dep #765 |
+| #767 | Regular view, structured 3D (untitled-3d-scene-3) | 2a | dep #765 |
+| #768 | Regular view, structured 2D | 2a | dep #765 |
+| #769 | Immersive, structured 3D/2D | 2a | dep #765 |
+| #770 | Structured 3D `renderer` (threejs\|aframe), legacy default threejs, engine shown in API/cards | 2b, Rule 3 stop before migration | independent |
+| #771 | Creation/AI flows set explicit engine; reject new pieces without one | 2b | dep #770 |
+| #772 | A-Frame adapter for structured 3D | 2b | dep #770; owner scope confirmation first |
+| react-node #120 / #121 | Regular / immersive button sets per engine | 2a | cross-repo |
+| react-node #122 | Explicit engine for every piece; legacy backfill (owner approval before prod run) | 2b | cross-repo |
+
+**Open discrepancy (owner input needed via #765):** the PHP `piece-stage.php` order is Screenshot, Download, Immersive, Sound, Controls, Guide, Fullscreen, but live augmenthumankind.com (react-node) is Screenshot, Immersive, Sound, Controls, Download, Fullscreen, Guide. The owner asked for the latter earlier; the set must still match PHP.

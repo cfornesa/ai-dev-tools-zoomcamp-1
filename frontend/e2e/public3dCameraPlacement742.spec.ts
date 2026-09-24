@@ -156,7 +156,7 @@ test.describe('public 3D camera placement contract (#742)', () => {
             toolbar.getByRole('button', { name: 'Open download menu' }).getByRole('tooltip'),
           ).toHaveText('Open download menu');
 
-          await toolbar.getByRole('button', { name: 'Camera controls' }).click();
+          await toolbar.getByRole('button', { name: 'Piece controls' }).click();
           const controls = stage.getByRole('group', { name: 'Camera view' });
           await expect(controls.getByRole('button', { name: 'Enable camera view' })).toBeVisible();
           const opacity = controls.getByRole('slider', { name: 'Camera overlay opacity' });

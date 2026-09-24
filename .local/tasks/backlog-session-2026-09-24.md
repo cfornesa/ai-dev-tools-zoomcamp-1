@@ -48,3 +48,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #797 | CLOSED | 6ea276f | playwright public3dCameraPlacement742 1 pass (also exercises the generated 3D ZIP variants) | PASS | closed | test-only |
 | #792 | CLOSED | 393c728 | playwright artPieceFlatSpatial 4 pass | PASS | closed | test-only |
 | #789 | CLOSED | bd8df15 | playwright public3dImmersiveCameraOverlay734 + public3dRouteStageChrome pass; toolbar matrix specs 8 pass | PASS | closed | test repair + 1 CSS fix |
+| #791 | CLOSED | 13e44c9 | 3 consecutive full vitest runs green (2958 tests, 179s/172s/190s) | PASS | closed | test hygiene |

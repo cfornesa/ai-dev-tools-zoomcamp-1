@@ -143,7 +143,7 @@ export default function PieceStageToolbar({
       </button>
     ) : null;
 
-  const actionGroup = (includeFullscreen = false) => (
+  const actionGroup = (includeFullscreen = false, includeVisitorDraw = true) => (
     <div
       onKeyDown={toolbarMode === 'menu' ? handleMenuKeyDown : undefined}
       role="group"
@@ -259,20 +259,28 @@ export default function PieceStageToolbar({
       {capabilities.pieceControls && controlsControl}
       {capabilities.gesture && gestureControl}
       {capabilities.gestureGuide && gestureGuide}
-      {visitorDrawControl}
+      {includeVisitorDraw && visitorDrawControl}
       {editorControls}
       {includeFullscreen && fullscreenControl}
     </div>
   );
 
   return (
-    <div role="toolbar" aria-label={ariaLabel} className="piece-stage-toolbar">
+    <div
+      role="toolbar"
+      aria-label={ariaLabel}
+      className="piece-stage-toolbar"
+      data-toolbar-mode={toolbarMode}
+    >
       {toolbarMode === 'inline' ? (
         <>
-          {actionGroup()}
-          {fullscreenControl && (
-            <div className="piece-stage-fullscreen-control">{fullscreenControl}</div>
-          )}
+          {/* Owner order (docs/piece-toolbar-parity-matrix.md, #752): Screenshot,
+              Download, Immersive, Sound, Piece controls, Guide, then Fullscreen
+              LAST inside the same icon row. Engine tools (visitor drawing) sit
+              in their own tools row directly beneath so the icon row stays one
+              compact, predictable line. */}
+          {actionGroup(true, false)}
+          {visitorDrawControl && <div className="piece-stage-tools-row">{visitorDrawControl}</div>}
         </>
       ) : (
         <>

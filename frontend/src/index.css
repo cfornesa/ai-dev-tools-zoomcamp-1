@@ -6116,3 +6116,48 @@ select.ai-proposal-field-full-width {
   color: var(--muted-text, #666);
   text-align: center;
 }
+
+/* Issue #752 (owner decision 2026-09-24): inline piece toolbars are icon-only.
+   The short text next to an icon is visually hidden (it stays in the DOM and in
+   each button's aria-label); text-only tool buttons such as Pencil or Undo keep
+   their visible text. A contextual label appears on hover/focus, and only for
+   hover-capable pointers, so touch never shows a stuck tooltip. */
+.piece-stage-toolbar[data-toolbar-mode='inline'] .piece-stage-icon + .piece-stage-action-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.piece-stage-toolbar[data-toolbar-mode='inline'] .piece-stage-icon-button:has(> .piece-stage-icon) {
+  width: 2.75rem;
+  padding: 0;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .piece-stage-icon-button:hover > .piece-stage-tooltip,
+  .piece-stage-icon-button:focus-visible > .piece-stage-tooltip {
+    opacity: 0;
+  }
+}
+
+/* Engine tools (visitor drawing) sit in one full-width row under the icon row
+   so Undo/Redo can never be orphaned onto a lone third row at desktop widths. */
+.piece-stage-tools-row {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  margin-top: 0.4rem;
+}
+
+.piece-stage-tools-row .piece-stage-visitor-draw-controls {
+  flex: 1 1 auto;
+}

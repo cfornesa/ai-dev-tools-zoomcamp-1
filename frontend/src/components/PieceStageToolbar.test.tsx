@@ -42,11 +42,12 @@ describe('PieceStageToolbar', () => {
     );
   });
 
-  it('keeps fullscreen out of the inline action row while preserving its accessible name', () => {
+  it('inline: Fullscreen is the LAST button inside the icon row, and engine tools sit in their own row (#752)', () => {
     render(
       <PieceStageToolbar
         toolbarMode="inline"
         capabilities={THREE_D_STAGE_CAPABILITIES}
+        onScreenshot={vi.fn()}
         onDownload={vi.fn()}
         onToggleFullscreen={vi.fn()}
         immersiveHref="/immersive"
@@ -54,18 +55,32 @@ describe('PieceStageToolbar', () => {
         controlsControl={<button type="button">Piece controls</button>}
         gestureControl={<button type="button">Steer the piece</button>}
         gestureGuide={<button type="button">Guide</button>}
+        visitorDrawControl={<button type="button">Draw tool</button>}
       />,
     );
 
     const toolbar = screen.getByRole('toolbar', { name: 'Piece actions' });
-    expect(toolbar.querySelector('.piece-stage-toolbar-group')).not.toContainElement(
-      screen.getByRole('button', { name: 'Expand piece to fullscreen' }),
-    );
+    expect(toolbar).toHaveAttribute('data-toolbar-mode', 'inline');
+    const group = toolbar.querySelector('.piece-stage-toolbar-group') as HTMLElement;
+    const fullscreen = screen.getByRole('button', { name: 'Expand piece to fullscreen' });
+    expect(group).toContainElement(fullscreen);
+    const names = Array.from(group.querySelectorAll('button, a'))
+      .filter((element) => !element.closest('[data-piece-stage-download-menu]'))
+      .map((element) => element.getAttribute('aria-label') ?? element.textContent);
+    expect(names).toEqual([
+      'Take screenshot',
+      'Open download menu',
+      'View immersive piece',
+      'Sound',
+      'Piece controls',
+      'Steer the piece',
+      'Guide',
+      'Expand piece to fullscreen',
+    ]);
     expect(
-      screen
-        .getByRole('button', { name: 'Expand piece to fullscreen' })
-        .closest('.piece-stage-fullscreen-control'),
+      screen.getByRole('button', { name: 'Draw tool' }).closest('.piece-stage-tools-row'),
     ).toBeTruthy();
+    expect(group).not.toContainElement(screen.getByRole('button', { name: 'Draw tool' }));
     expect(screen.getByRole('tooltip', { name: 'Expand piece to fullscreen' })).toBeInTheDocument();
   });
 

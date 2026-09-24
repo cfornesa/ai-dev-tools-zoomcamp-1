@@ -94,9 +94,13 @@ test.describe('Six-engine chrome-less embeds (#615)', () => {
         await expect(page.locator('iframe[title="Art piece preview"]')).toBeVisible();
         const embed = page.frameLocator('iframe[title="Art piece preview"]');
         await expect(embed.locator(fixture.selector)).toBeVisible({ timeout: 15_000 });
-        await expect(page.getByRole('button', { name: 'Piece controls' })).toBeVisible();
-        await page.getByRole('button', { name: 'Piece controls' }).click();
-        await expect(page.getByRole('button', { name: 'Fullscreen' })).toBeVisible();
+        // Toolbar contract (#752, docs/piece-toolbar-parity-matrix.md): icon-only, named buttons;
+        // these fixtures grant Screenshot and Fullscreen only, so no Piece controls button.
+        await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
+        await expect(
+          page.getByRole('button', { name: 'Expand piece to fullscreen' }),
+        ).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Piece controls' })).toHaveCount(0);
         await expect(page.getByRole('button', { name: 'Enable camera view' })).toHaveCount(0);
         if (fixture.engine === 'c2js-interactive') {
           await embed.locator('#c2-canvas').dispatchEvent('pointermove', {

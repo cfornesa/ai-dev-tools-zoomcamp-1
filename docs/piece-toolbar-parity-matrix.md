@@ -23,6 +23,9 @@ L643+), `public/app/helpers/piece-render.php`
 - **Downloaded ZIPs** omit Download and Immersive/VR (they are already
   downloaded and offline).
 - Applies to private (owner) and public regular views alike (#773).
+- Layout (#752): Fullscreen is the last button of the icon row; engine tools
+  such as the C2.js Interactive drawing controls sit in their own row directly
+  beneath the icon row, so the icon row stays one compact line.
 
 ## Capability gates (PHP `piece_sound_capability_contract`)
 

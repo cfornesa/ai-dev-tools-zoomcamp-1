@@ -23957,3 +23957,18 @@ Owner requirement: button SETS on regular, immersive, and downloaded pieces matc
 | #777 | 3D ink layer, Three.js and A-Frame | 2b | dep #774, #770, #772 |
 
 Order decided (PHP order, Fullscreen last): recorded on #765 and all toolbar issues in both repos. #772 scope confirmed by the owner (A-Frame required). react-node already has Three.js and A-Frame as generated engines; its gap is ZIP wiring and explicit engine association (#122).
+
+### 2026-09-24 addendum 3 — 3D drawing-plane assets (#778–#787; #774 closed, #777 superseded)
+
+| Issue | Scope | Routing | Depends |
+|---|---|---|---|
+| #778 | scene3d `drawingPlane` schema + validation (Rule 3) | 2b | - |
+| #779 | Three.js render | 2b | #778 |
+| #780 | A-Frame render | 2b | #772, #778 |
+| #781 | Draw mode (frozen scene, tools, Confirm/Cancel) | 2b | #775, #778, #779 |
+| #782 | Manual transform/expand controls | 2a | #778, #779 |
+| #783 | Per-object animation channel (owner confirms kinds first) | 2b | #772 |
+| #784 | AI create/modify plane, transforms, animation | 2b | #778, #782, #783 |
+| #785 / #786 / #787 | Public viewer / immersive / ZIP render drawing planes | 2a / 2a / 2b | #778–#780, #783 |
+
+Finding: scene3d has no animation channel and no vector content; both are new contracts. 2D ink (#775, #776) is unchanged.

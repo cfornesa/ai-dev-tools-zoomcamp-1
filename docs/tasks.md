@@ -23972,3 +23972,17 @@ Order decided (PHP order, Fullscreen last): recorded on #765 and all toolbar iss
 | #785 / #786 / #787 | Public viewer / immersive / ZIP render drawing planes | 2a / 2a / 2b | #778–#780, #783 |
 
 Finding: scene3d has no animation channel and no vector content; both are new contracts. 2D ink (#775, #776) is unchanged.
+
+### 2026-09-24 addendum 4 — ink layers, drawing planes, and follow-ups (session close)
+
+| Issue | Scope | Status |
+|---|---|---|
+| #775 / #776 | Structured 2D / generated 2D ink layer | closed |
+| #781 / #782 / #783 / #784 | 3D Draw mode, selection chrome, per-object animation, AI proposals | closed |
+| #785 / #786 / #787 | Public regular / immersive / ZIP render drawing planes | closed |
+| #789 / #792 / #793 / #795 / #797 | E2E drift repairs (found while verifying the above) | closed |
+| #790 | Owner reads own private structured piece at the regular route | closed |
+| #791 | Full-suite vitest load flakes | closed |
+| #794 / #796 | Ink in thumbnails + SVG ZIP screenshot; A-Frame selection chrome | closed |
+| #749 / #750 | E2E triage (+fork handle fix); independent slug (hard-404 old links) | closed |
+| #747 / #748 / #788 | Production middleware, publish + live verification, production data re-import | OPEN — owner/production-gated (see below) |

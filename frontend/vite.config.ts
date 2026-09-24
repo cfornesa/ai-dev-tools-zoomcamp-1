@@ -104,12 +104,13 @@ function publicOrigin(): string {
 
 function backendRequestHeaders(): Record<string, string> {
   // Production Django redirects plain HTTP requests unless the trusted proxy
-  // protocol is supplied. These server-side calls still use HTTP to reach
-  // Django locally; the header describes the public request's actual scheme.
-  const protocol = new URL(normalizedPublicOrigin().origin).protocol.slice(0, -1);
+  // scheme is supplied. Keep the internal connection on local HTTP while
+  // presenting the configured public host and scheme to Django.
+  const publicUrl = new URL(normalizedPublicOrigin().origin);
   return {
     Accept: 'application/json',
-    'X-Forwarded-Proto': protocol,
+    'X-Forwarded-Proto': publicUrl.protocol.slice(0, -1),
+    'X-Forwarded-Host': publicUrl.host,
   };
 }
 

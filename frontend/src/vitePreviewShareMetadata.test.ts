@@ -28,11 +28,14 @@ describe('vite preview share metadata (production run path)', () => {
   let dir: string;
   let baseUrl: string;
   let backendPort: number;
+  const forwardedHosts = new Set<string>();
   const saved = { ...process.env };
 
   beforeAll(async () => {
     backend = createServer((request, response) => {
-      if (request.headers['x-forwarded-proto'] !== 'https') {
+      const forwardedHost = request.headers['x-forwarded-host'];
+      if (typeof forwardedHost === 'string') forwardedHosts.add(forwardedHost);
+      if (request.headers['x-forwarded-proto'] !== 'https' || !forwardedHost) {
         response.writeHead(301, {
           Location: `https://127.0.0.1:${backendPort}${request.url}`,
         });
@@ -89,6 +92,7 @@ describe('vite preview share metadata (production run path)', () => {
 
   it('injects escaped Open Graph tags and feed alternates for a profile', async () => {
     const html = await (await fetch(`${baseUrl}/users/@artist`)).text();
+    expect(forwardedHosts).toContain('example.test');
     expect(html).toContain('data-server-metadata="true"');
     expect(html).toContain('content="Artist &lt;&amp;&gt; profile"');
     expect(html).toContain('og:url" content="https://example.test/users/@artist"');
@@ -125,6 +129,7 @@ describe('vite preview share metadata (production run path)', () => {
       backend_reachable: true,
       last_error: null,
     });
+    expect(forwardedHosts).toContain('diagnostic.example.test');
     const html = await (await fetch(`${baseUrl}/`)).text();
     expect(html).toContain('https://diagnostic.example.test/');
   });

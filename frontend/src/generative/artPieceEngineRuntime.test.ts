@@ -22,7 +22,7 @@ describe('regular art-piece engine adapters', () => {
       );
       expect(html).toContain('var c2Fallback = {');
       expect(html).toContain('id="c2-canvas"');
-      expect(html).toContain('width="320" height="240"');
+      expect(html).toContain('id="c2-canvas" width="1280" height="720"');
       expect(html).toContain(
         'window.sketch({ c2: c2Runtime, canvas: canvas, startFrame: startFrame })',
       );

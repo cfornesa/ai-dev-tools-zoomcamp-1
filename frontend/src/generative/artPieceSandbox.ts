@@ -228,7 +228,8 @@ function webglResponsivePrelude(
  * parent stage while leaving each engine's logical drawing coordinates alone.
  * The event wrapper maps pointer coordinates back through the object-fit
  * letterbox, so an interactive C2 sketch continues to receive its authored
- * 320x240 (or SVG viewBox) coordinates after the stage is scaled. */
+ * 1280x720 (C2, the reference `sizeCanvas` standard, #759/#763), authored canvas
+ * size, or SVG viewBox coordinates after the stage is scaled. */
 function flatResponsivePrelude(
   library: ArtPieceLibrary,
   presentation: 'regular' | 'immersive',
@@ -380,7 +381,7 @@ function buildFlatEngineBody(snippet: string, library: ArtPieceLibrary): string 
 }());</script>`;
   }
   if (library === 'c2js' || library === 'c2js-interactive') {
-    return `<canvas id="c2-canvas" width="320" height="240"></canvas>
+    return `<canvas id="c2-canvas" width="1280" height="720"></canvas>
 <script>${snippet}
 (function () {
   var canvas = document.getElementById('c2-canvas');

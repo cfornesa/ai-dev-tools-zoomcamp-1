@@ -89,7 +89,7 @@ test.describe('Generated 2D regular stage fill (#705)', () => {
               }),
             );
           });
-          await expect(surface).toHaveAttribute('data-pointer', /^(159|160|161),(119|120|121)$/);
+          await expect(surface).toHaveAttribute('data-pointer', /^(639|640|641),(359|360|361)$/);
         }
         await page.screenshot({
           path: testInfo.outputPath(`issue-705-${engine}-${viewport.width}.png`),

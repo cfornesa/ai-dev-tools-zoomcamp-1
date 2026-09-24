@@ -154,7 +154,7 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain('var c2Fallback = {');
     expect(doc).toMatch(/script-src 'unsafe-inline';/);
     expect(doc).toContain('id="c2-canvas"');
-    expect(doc).toContain('width="320" height="240"');
+    expect(doc).toContain('id="c2-canvas" width="1280" height="720"');
     expect(doc).toContain('window.__artPieceInstance = window.sketch');
   });
 

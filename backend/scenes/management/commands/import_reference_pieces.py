@@ -73,7 +73,8 @@ FIXTURES = (
             "const context = canvas.getContext('2d'); startFrame((frame) => { "
             "context.fillStyle = '#111827'; context.fillRect(0, 0, canvas.width, canvas.height); "
             "context.fillStyle = '#22d3ee'; context.beginPath(); "
-            "context.arc(160 + Math.sin(frame / 20) * 40, 120, 42, 0, Math.PI * 2); "
+            "context.arc(canvas.width / 2 + Math.sin(frame / 20) * canvas.width / 8, "
+            "canvas.height / 2, canvas.height / 5, 0, Math.PI * 2); "
             "context.fill(); }); };"
         ),
         {"screenshot": True, "fullscreen": True, "immersive": True, "download": True},
@@ -90,7 +91,8 @@ FIXTURES = (
             "const context = canvas.getContext('2d'); startFrame(() => { "
             "context.fillStyle = '#1f2937'; context.fillRect(0, 0, canvas.width, canvas.height); "
             "context.fillStyle = '#fb7185'; context.beginPath(); "
-            "context.arc(Number(canvas.dataset.pointerX || 160), 120, 42, 0, Math.PI * 2); "
+            "context.arc(Number(canvas.dataset.pointerX || canvas.width / 2), "
+            "canvas.height / 2, canvas.height / 5, 0, Math.PI * 2); "
             "context.fill(); }); };"
         ),
         {"screenshot": True, "fullscreen": True, "immersive": True, "download": True},

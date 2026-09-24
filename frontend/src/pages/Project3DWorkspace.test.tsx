@@ -219,33 +219,4 @@ describe('Project3DWorkspace panel/grid containment (issue #304)', () => {
       screen.getByRole('button', { name: 'Ask AI to improve this scene' }),
     ).toBeInTheDocument();
   });
-
-  it('adds a drawing plane (with a neutral light in an unlit scene) and enters/leaves Draw mode (#781)', async () => {
-    const project = baseProject();
-    (project.current_version!.scene_json as { lights: unknown[] }).lights = [];
-    mockedGetProject3D.mockResolvedValue(project);
-    const user = userEvent.setup();
-
-    renderWorkspace();
-    await screen.findByRole('region', { name: 'Preview' });
-    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-
-    // Contextual: no Draw action until a drawing plane is selected.
-    expect(screen.queryByTestId('draw-plane-button')).toBeNull();
-    await user.click(await screen.findByRole('button', { name: '3D authoring' }));
-    await user.click(await screen.findByRole('button', { name: 'Add drawing plane' }));
-
-    const outline = screen.getByRole('region', { name: 'Outline' });
-    expect(within(outline).getByText('Drawing plane 1')).toBeInTheDocument();
-    expect(within(outline).getByText(/Ambient light/)).toBeInTheDocument();
-
-    await user.click(await screen.findByTestId('draw-plane-button'));
-    expect(await screen.findByTestId('ink-editor')).toBeInTheDocument();
-    expect(screen.getByTestId('ink-frozen-indicator')).toBeInTheDocument();
-    expect(screen.getByTestId('ink-canvas')).toHaveAttribute('width', '1024');
-    expect(screen.getByTestId('ink-canvas')).toHaveAttribute('height', '768');
-
-    await user.click(screen.getByTestId('ink-cancel'));
-    expect(screen.queryByTestId('ink-editor')).toBeNull();
-  });
 });

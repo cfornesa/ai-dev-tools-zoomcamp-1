@@ -1454,3 +1454,7 @@ Owner-authorized Chrome inspection reproduced the reported production mismatch o
 ## 2026-09-24 — AI generation/editing distillation; work restricted to task-distillation
 
 Owner restricted this session to task-distillation only. Added #809-#816 (new only). Interrupted #807 implementation wrote no files (tool rejected); tree clean. Star-field issues #807/#798 remain queued.
+
+## 2026-09-24 — @ contract for generated pieces and catalog column approved
+
+Owner accepted #814's default and approved the additive `native_schema` catalog column (#817). Added #817-#821.

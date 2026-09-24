@@ -29,3 +29,9 @@ code changed. New issues only; closed #158, #222, #661, #662, #656, #553, #523,
 - #814 needs an owner answer (recommended default recorded in the issue); its implementation issues are distilled after.
 - #816 may need one additive catalog column; the issue says to split that into its own issue first.
 - Live-vendor quality is a verification boundary; #815 keeps live mode opt-in.
+
+## Update — owner answers (2026-09-24)
+- #814 default accepted and closed (decision recorded). Follow-ups: #818 markers/region parser (2b), #819 backend mention resolution (2b, after #818), #820 preservation (2b, after #819; benefits from #812), #821 frontend typeahead (2a, after #819).
+- Catalog column approved: split out as #817 (2b, migration); #816 is dependency-blocked on #817.
+- Revised order: #809, #810, #817, #816, #811, #812, #813, #818, #819, #820, #821, #815.
+- Migration-bearing (#817): after Publish, verify the real column per AGENTS.md; owned by the production run.

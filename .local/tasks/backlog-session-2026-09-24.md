@@ -25,3 +25,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #756 | CLOSED | 35da890 | same | PASS | closed | local |
 | #757 | CLOSED | afdc93c | vitest 246; playwright artPieceZipDrawing757 | PASS | closed | local |
 | #758 | CLOSED | afdc93c | same | PASS | closed | local |
+| #760 | CLOSED | 38829df | vitest 54; playwright c2ZipRuntime760 + zip specs | PASS | closed | local |

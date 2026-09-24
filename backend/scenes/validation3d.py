@@ -52,7 +52,7 @@ PRIMITIVE_DEFAULT_DIMENSIONS: dict[str, dict[str, int]] = {
     "sphere": {"radius": 1},
     "cylinder": {"radiusTop": 1, "radiusBottom": 1, "height": 1},
     "plane": {"width": 1, "height": 1},
-    "drawingPlane": {"width": 1, "height": 1},
+    "drawingPlane": {"width": 4, "height": 3},
 }
 
 
@@ -100,6 +100,10 @@ def normalize_scene3d_ai_output(data: Any) -> Any:
             continue
         for dimension_name, default in defaults.items():
             obj.setdefault(dimension_name, default)
+        if object_type == "drawingPlane" and "drawing" not in obj:
+            # #784: a drawing plane proposed without content starts as a blank white sheet at the
+            # documented editor resolution (matches "Add drawing plane" in the editor).
+            obj["drawing"] = {"width": 1024, "height": 768, "background": "#ffffff", "shapes": []}
     return normalized
 
 

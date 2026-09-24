@@ -162,7 +162,11 @@ from scenes.patch import (
     validate_patch_operations,
     worst_reason,
 )
-from scenes.patch3d import validate_patch_operations3d
+from scenes.patch3d import (
+    has_stretch_intent,
+    proportionalize_drawing_plane_patch,
+    validate_patch_operations3d,
+)
 from scenes.validation import SCENE_SCHEMA
 from scenes.validation3d import SCENE3D_SCHEMA, normalize_scene3d_ai_output
 
@@ -303,7 +307,36 @@ address it back the same way."""
 # targeting schema/scene3d.schema.json (a genuinely separate document
 # family from the 2D canonical scene per #208's decision -- never mix
 # these prompts/schemas with the 2D ones above).
-_SYSTEM_PROMPT_3D = """You generate a single canonical 3D scene document for a \
+# #784: the drawing-plane and animation vocabulary, restated verbatim in every 3D prompt that may
+# create or edit those (Mistral's non-strict mode needs enums and cross-item rules spelled out).
+_DRAWING_PLANE_RULES_3D = """
+- A "drawingPlane" object is a FLAT PLANE holding a 2D vector drawing (a rectangle-only drawing \
+reads as a plain coloured plane). It requires "width" and "height" (world units, > 0, at most \
+10000) and a "drawing" object: {"width": <integer 16-2048>, "height": <integer 16-2048>, \
+"background": <hex colour such as "#ffffff", or null for transparent>, "shapes": [...]}. Unless \
+the prompt says otherwise use width 4, height 3 and drawing {"width": 1024, "height": 768, \
+"background": "#ffffff", "shapes": []}. It may also set "doubleSided" (boolean, default true).
+- Every entry of drawing.shapes has a unique "id" (letters, digits, "_" or "-", at most 64 \
+characters) and one of exactly these "type" values: "rect" (x, y, width, height), "ellipse" \
+(cx, cy, rx, ry), "line" (x1, y1, x2, y2), "path" (points: [{"x","y"}...], closed: boolean). \
+Shapes may add "fill" and "stroke" (each a hex colour like "#22c55e", or null), "strokeWidth" \
+(0-256) and "opacity" (0-1). Coordinates are drawing pixels: origin top-left, y grows downward, \
+inside the drawing's own width x height. At most 500 shapes per drawing and 2000 points per path.
+- Placing or moving a drawing plane uses the object's "transform" (position, rotation in \
+DEGREES per axis x/y/z, scale). "Rotate it horizontally" means it lies flat: rotation.x = -90. \
+"Rotate it vertically" means it stands upright facing the viewer: rotation.x = 0.
+- RESIZING a drawing plane ("expand", "make it bigger", "shrink") multiplies BOTH "width" and \
+"height" by the SAME factor, keeping its proportions. Change only one of them, or the two by \
+different factors, ONLY when the prompt explicitly asks to stretch it ("elongate", "stretch", \
+"widen", "make it taller", ...).
+- Any object may carry an optional "animation": {"kind": one of exactly "rotate", "orbit", \
+"oscillate", "pulse"; "axis": one of "x", "y", "z" (default "y"); "speed": number (rotate/orbit: \
+degrees per second; oscillate/pulse: cycles per second); "amplitude": number >= 0 (oscillate: \
+world units; pulse: scale fraction such as 0.2); "center": {"x","y","z"} (orbit only)}. To stop \
+animating, remove the "animation" property."""
+
+_SYSTEM_PROMPT_3D = (
+    """You generate a single canonical 3D scene document for a \
 gesture-reactive animation editor. Follow these rules exactly:
 
 - Respond with ONLY a single JSON object -- no prose, no markdown code \
@@ -313,9 +346,10 @@ documentType, id, scene, camera, lights, groups, objects, and randomness \
 are the top-level fields).
 - schemaVersion must be exactly 1. documentType must be exactly "scene3d".
 - Every object's "type" must be exactly one of: "box", "sphere", \
-"cylinder", "plane" -- each requires its own specific dimension fields \
-(box: width/height/depth; sphere: radius; cylinder: radiusTop/ \
-radiusBottom/height; plane: width/height).
+"cylinder", "plane", "drawingPlane" -- each requires its own specific \
+dimension fields (box: width/height/depth; sphere: radius; cylinder: \
+radiusTop/radiusBottom/height; plane: width/height; drawingPlane: \
+width/height/drawing).
 - Never omit a type-specific dimension field. If the prompt does not specify \
 size, use these explicit unit defaults and include every field in the output: \
 box width=1, height=1, depth=1; sphere radius=1; cylinder radiusTop=1, \
@@ -335,6 +369,8 @@ address it back by that name. Leave "name" unset when no name is \
 implied.
 - Keep the scene well within reasonable limits: at most a few dozen \
 objects, groups, and lights each."""
+    + _DRAWING_PLANE_RULES_3D
+)
 
 # Issue #528: 2D scene -> 3D scene. The request's JSON user content is
 # {"prompt": <optional extra guidance>, "source_scene_2d": <the 2D scene
@@ -371,7 +407,8 @@ object's "name" field unchanged.
 - Keep the scene well within reasonable limits: at most a few dozen objects, groups, and \
 lights each."""
 
-_EDIT_SYSTEM_PROMPT_3D = """You propose a minimal JSON Patch editing an existing 3D \
+_EDIT_SYSTEM_PROMPT_3D = (
+    """You propose a minimal JSON Patch editing an existing 3D \
 gesture-reactive animation scene document. Follow these rules exactly:
 
 - Respond with ONLY a single JSON array of patch operations -- no prose, \
@@ -400,7 +437,13 @@ field when the scene document shows one set (e.g. "the object named \
 Sun" or "rename Sun to Moon" both refer to whichever element currently \
 has "name": "Sun") -- you do not need to already know its id. When you \
 add a new object or light the prompt implies a name for, set its "name" \
-field so a later prompt can address it back the same way."""
+field so a later prompt can address it back the same way.
+- Drawing planes and object animations are edited ONLY through operations under \
+"/objects/..." (for example "replace" "/objects/2/width", "add" "/objects/2/animation", \
+"add" "/objects/2/drawing/shapes/-" with one complete shape); never emit code or markup as a \
+value. The rules below describe their exact vocabulary."""
+    + _DRAWING_PLANE_RULES_3D
+)
 
 _RESPONSE_JSON_SCHEMA_3D: dict[str, Any] = {
     k: v for k, v in SCENE3D_SCHEMA.items() if k not in ("$schema", "$id")
@@ -893,8 +936,12 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
                 f"{INVALID_PATCH_PREFIX}{reason} {detail}",
             )
 
+        # #784: drawing planes keep their proportions unless the prompt asks to stretch them.
+        raw_patch = proportionalize_drawing_plane_patch(
+            raw_patch, request.current_scene, request.prompt
+        )
         try:
-            draft_scene = apply_patch(request.current_scene, raw_patch)
+            draft_scene = normalize_scene3d_ai_output(apply_patch(request.current_scene, raw_patch))
         except PatchError as exc:
             return _edit_error_3d(
                 usage, AIErrorCategory.PROVIDER_REJECTION, f"{PATCH_APPLY_FAILED_PREFIX} {exc}"
@@ -1108,6 +1155,8 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             + json.dumps(current_scene)
             + "\n\nRequested edit:\n"
             + prompt
+            + "\n\nStretch requested (non-proportional drawing-plane resize allowed): "
+            + ("yes" if has_stretch_intent(prompt) else "no")
         )
 
         try:

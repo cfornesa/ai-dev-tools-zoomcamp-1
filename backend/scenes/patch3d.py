@@ -28,6 +28,14 @@ reimplemented here.
 Same shape as `patch.py`: `/schemaVersion`, `/documentType`, `/id`,
 `/randomness/seed`, and any path whose final segment is exactly `id`.
 
+## Drawing planes stay proportional (#784)
+
+An AI resize of a `drawingPlane` keeps its width:height ratio unless the prompt asks to stretch
+it (`has_stretch_intent`, e.g. "elongate drawing plane 1").
+`proportionalize_drawing_plane_patch` appends `replace` operations so a proposal that changed only
+one dimension (or both by different factors) lands proportional; when the prompt does ask to
+stretch, the proposal is left exactly as proposed.
+
 ## Prompt-element reference check
 
 Mirrors #222's generalization of issue #158 for `object`/`light`: an
@@ -41,6 +49,8 @@ array), never subject to this check -- there is nothing to disambiguate.
 from __future__ import annotations
 
 import json
+import math
+import re
 from typing import Any
 
 from scenes.patch import (
@@ -52,6 +62,7 @@ from scenes.patch import (
     _get_at_path,
     _is_bulk_scope_prompt,
     _split_pointer,
+    apply_patch,
 )
 
 __all__ = [
@@ -60,6 +71,8 @@ __all__ = [
     "PatchError",
     "PatchErrorReason",
     "PatchOperationError",
+    "has_stretch_intent",
+    "proportionalize_drawing_plane_patch",
     "validate_patch_operations3d",
 ]
 
@@ -280,3 +293,70 @@ def validate_patch_operations3d(
                         )
 
     return errors
+
+
+# --- #784: drawing planes keep their proportions unless the prompt asks to stretch ---
+
+_STRETCH_INTENT = re.compile(
+    r"\b(elongat\w*|stretch\w*|squash\w*|squish\w*|widen\w*|lengthen\w*|shorten\w*"
+    r"|distort\w*"
+    r"|non-?proportional\w*|disproportionat\w*|unevenly|taller|wider|narrower|skew\w*)\b",
+    re.IGNORECASE,
+)
+
+_PLANE_MIN_SIZE = 0.05
+_PLANE_MAX_SIZE = 10000.0
+_RATIO_TOLERANCE = 0.001
+
+
+def has_stretch_intent(prompt: str | None) -> bool:
+    """True when the prompt explicitly asks for a non-proportional change ("elongate layer X")."""
+    return bool(prompt) and _STRETCH_INTENT.search(prompt or "") is not None
+
+
+def _positive(value: Any) -> float | None:
+    """`value` as a finite positive float, or None."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value) if math.isfinite(value) and value > 0 else None
+
+
+def proportionalize_drawing_plane_patch(
+    patch: list[Any], scene: dict[str, Any], prompt: str | None
+) -> list[Any]:
+    """`patch`, plus `replace` ops that keep every resized drawing plane's aspect ratio.
+
+    Only planes that already exist in `scene` are considered (a newly added plane defines its own
+    size), and nothing is added when the prompt has stretch intent or the patch cannot be applied
+    (the normal apply step then reports the real error).
+    """
+    if has_stretch_intent(prompt):
+        return patch
+    try:
+        draft = apply_patch(scene, patch)
+    except PatchError:
+        return patch
+    before = {
+        obj.get("id"): obj
+        for obj in scene.get("objects", [])
+        if isinstance(obj, dict) and obj.get("type") == "drawingPlane"
+    }
+    extra: list[dict[str, Any]] = []
+    for index, obj in enumerate(draft.get("objects", [])):
+        if not isinstance(obj, dict) or obj.get("type") != "drawingPlane":
+            continue
+        old = before.get(obj.get("id"))
+        if old is None:
+            continue
+        ow, oh = _positive(old.get("width")), _positive(old.get("height"))
+        nw, nh = _positive(obj.get("width")), _positive(obj.get("height"))
+        if ow is None or oh is None or nw is None or nh is None:
+            continue
+        if abs((nw / nh) / (ow / oh) - 1) <= _RATIO_TOLERANCE:
+            continue
+        factor = math.sqrt((nw / ow) * (nh / oh))
+        width = round(min(_PLANE_MAX_SIZE, max(_PLANE_MIN_SIZE, ow * factor)), 3)
+        height = round(min(_PLANE_MAX_SIZE, max(_PLANE_MIN_SIZE, oh * factor)), 3)
+        extra.append({"op": "replace", "path": f"/objects/{index}/width", "value": width})
+        extra.append({"op": "replace", "path": f"/objects/{index}/height", "value": height})
+    return [*patch, *extra] if extra else patch

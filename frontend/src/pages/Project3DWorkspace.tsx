@@ -321,6 +321,27 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
     setRedoStack([]);
   }
 
+  /**
+   * #784: an accepted AI proposal selects the drawing plane it created or changed, so the same
+   * on-canvas handles and floating toolbar (#782) are there for manual follow-up.
+   */
+  function handleAiAccepted(version: SceneVersion3D) {
+    const previousScene = workingScene;
+    const before = previousScene?.objects ?? [];
+    handleVersionSaved(version);
+    // Undo steps back to the pre-proposal scene (as an unsaved working-copy edit).
+    if (previousScene) setUndoStack([previousScene]);
+    const after = (version.scene_json as unknown as Scene3DDocument).objects ?? [];
+    const affected = after
+      .filter((object) => object.type === 'drawingPlane')
+      .filter((object) => {
+        const previous = before.find((candidate) => candidate.id === object.id);
+        return !previous || JSON.stringify(previous) !== JSON.stringify(object);
+      })
+      .at(-1);
+    if (affected) requestSelection({ kind: 'object', id: affected.id });
+  }
+
   function updateWorkingScene(next: Scene3DDocument) {
     setWorkingScene((current) => {
       if (!current || current === next) return next;
@@ -668,6 +689,8 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
                 #226 placeholder. */}
             <Scene3DPreview
               frozen={drawTarget !== undefined}
+              // Handles are drawn at the authored pose, so a selected plane's animation holds still.
+              pauseAnimations={overlayObject !== undefined}
               onPickObject={(objectId) =>
                 requestSelection(objectId ? { kind: 'object', id: objectId } : null)
               }
@@ -837,7 +860,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
                 projectId={id}
                 workingCopy={workingScene}
                 currentVersionId={project?.current_version?.id ?? null}
-                onAccepted={handleVersionSaved}
+                onAccepted={handleAiAccepted}
                 seed={aiSeed}
               />
             </section>

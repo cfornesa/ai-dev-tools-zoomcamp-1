@@ -237,10 +237,13 @@ function ThreeScenePreview({
   editorControls,
   createGestureCameraProvider,
   frozen = false,
+  pauseAnimations = false,
   onPickObject,
   renderOverlay,
 }: {
   scene: Scene3DDocument;
+  /** #782: holds object animations at their authored pose (e.g. while a selection's handles are shown) without freezing the camera. */
+  pauseAnimations?: boolean;
   /** #782: a click (not a drag) on the stage reports the scene object under it, or null for empty space. */
   onPickObject?: (objectId: string | null) => void;
   /** #782: selection chrome (handles, floating toolbar, precise panel) drawn over the stage in canvas-frame pixels. */
@@ -278,6 +281,8 @@ function ThreeScenePreview({
 }) {
   const frozenRef = useRef(frozen);
   frozenRef.current = frozen;
+  const pauseAnimationsRef = useRef(pauseAnimations);
+  pauseAnimationsRef.current = pauseAnimations;
   const viewStateRef = useRef<{
     key: string;
     position: THREE.Vector3;
@@ -807,9 +812,11 @@ function ThreeScenePreview({
 
       // #783: animated objects advance unless the visitor prefers reduced motion or the stage is
       // frozen (draw mode); the authored pose is what shows while paused.
-      if (!prefersReducedMotion() && !frozenRef.current) {
-        animationSeconds += deltaSeconds;
-        applyObjectAnimations(threeScene, scene, animationSeconds);
+      if (!prefersReducedMotion()) {
+        const held = frozenRef.current || pauseAnimationsRef.current;
+        if (!held) animationSeconds += deltaSeconds;
+        // Time zero is every animation's authored pose, so a held stage shows exactly that.
+        applyObjectAnimations(threeScene, scene, held ? 0 : animationSeconds);
       }
       // #781: a frozen stage (draw mode) also holds the camera -- no orbit/zoom drag, fly keys, or
       // hand steering move it, so Confirm/Cancel returns to exactly the prior camera.

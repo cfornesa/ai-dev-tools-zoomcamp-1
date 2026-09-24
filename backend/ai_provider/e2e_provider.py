@@ -85,6 +85,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -204,6 +205,97 @@ _EDIT_PATCH_3D_BY_SCENARIO: dict[str, list[dict[str, Any]]] = {
 }
 
 
+_CURRENT_SCENE_MARKER = "Current scene3d (JSON):\n"
+_REQUESTED_EDIT_MARKER = "\n\nRequested edit:\n"
+_STRETCH_MARKER = "\n\nStretch requested"
+
+
+def _drawing_plane_patch_3d(user_text: str) -> list[dict[str, Any]] | None:
+    """Deterministic drawing-plane proposals for `AI_PROVIDER=fake` (#784).
+
+    Understands a handful of natural phrasings ("add a drawing plane", "expand drawing plane 1",
+    "rotate it vertically", "elongate drawing plane 1", "make it spin") so the AI editor's
+    drawing-plane flow can be exercised end to end without a real model. Deliberately naive on
+    resize: "expand" only proposes a new WIDTH, so the backend's proportional-resize rule (not
+    the fake) is what keeps the height in step; "elongate" proposes the same width-only change
+    and is allowed to stay stretched. Returns None when the prompt is not about a drawing plane.
+    """
+    if _CURRENT_SCENE_MARKER not in user_text or _REQUESTED_EDIT_MARKER not in user_text:
+        return None
+    scene_text, _, rest = user_text[len(_CURRENT_SCENE_MARKER) :].partition(_REQUESTED_EDIT_MARKER)
+    prompt = rest.split(_STRETCH_MARKER)[0].strip().lower()
+    try:
+        scene = json.loads(scene_text)
+    except json.JSONDecodeError:
+        return None
+    objects = scene.get("objects", []) if isinstance(scene, dict) else []
+    planes = [
+        (index, obj)
+        for index, obj in enumerate(objects)
+        if isinstance(obj, dict) and obj.get("type") == "drawingPlane"
+    ]
+
+    if re.search(r"\badd (a |an |another )?(new )?drawing plane\b", prompt):
+        number = len(planes) + 1
+        return [
+            {
+                "op": "add",
+                "path": "/objects/-",
+                "value": {
+                    "id": f"drawing-plane-{number}",
+                    "name": f"Drawing plane {number}",
+                    "type": "drawingPlane",
+                    "groupId": None,
+                    "transform": {
+                        "position": {"x": 0, "y": 0, "z": 0},
+                        "rotation": {"x": 0, "y": 0, "z": 0},
+                        "scale": {"x": 1, "y": 1, "z": 1},
+                        "opacity": 1,
+                    },
+                    "material": {"color": "#ffffff"},
+                    "visible": True,
+                    "width": 4,
+                    "height": 3,
+                    "doubleSided": True,
+                    "drawing": {
+                        "width": 1024,
+                        "height": 768,
+                        "background": "#ffffff",
+                        "shapes": [],
+                    },
+                },
+            }
+        ]
+
+    target = next(
+        (
+            (index, obj)
+            for index, obj in planes
+            if isinstance(obj.get("name"), str) and obj["name"].lower() in prompt
+        ),
+        planes[0] if planes else None,
+    )
+    if target is None:
+        return None
+    index, obj = target
+    if re.search(r"\b(elongat\w*|stretch\w*|expand|bigger|enlarge|grow)\b", prompt):
+        width = float(obj.get("width", 4)) * 2
+        return [{"op": "replace", "path": f"/objects/{index}/width", "value": width}]
+    if re.search(r"\brotate\b.*\bvertical", prompt):
+        return [{"op": "replace", "path": f"/objects/{index}/transform/rotation/x", "value": 0}]
+    if re.search(r"\brotate\b.*\bhorizontal", prompt):
+        return [{"op": "replace", "path": f"/objects/{index}/transform/rotation/x", "value": -90}]
+    if re.search(r"\b(spin|animate)\b", prompt):
+        return [
+            {
+                "op": "add",
+                "path": f"/objects/{index}/animation",
+                "value": {"kind": "rotate", "axis": "y", "speed": 45},
+            }
+        ]
+    return None
+
+
 class _E2EFakeChat3D:
     """The 3D counterpart of `_E2EFakeChat`, targeting
     `create_scene3d`/`edit_scene3d_with_patch`'s response_format names."""
@@ -219,8 +311,18 @@ class _E2EFakeChat3D:
 
         schema_name = kwargs.get("response_format", {}).get("json_schema", {}).get("name")
         if schema_name == "scene3d_json_patch":
+            drawing_patch = None
+            if self.scenario == "success":
+                user_messages = [
+                    m.get("content", "")
+                    for m in kwargs.get("messages", [])
+                    if isinstance(m, dict) and m.get("role") == "user"
+                ]
+                drawing_patch = _drawing_plane_patch_3d(user_messages[-1] if user_messages else "")
             content = json.dumps(
-                _EDIT_PATCH_3D_BY_SCENARIO.get(self.scenario, _EDIT_PATCH_3D_SUCCESS)
+                drawing_patch
+                if drawing_patch is not None
+                else _EDIT_PATCH_3D_BY_SCENARIO.get(self.scenario, _EDIT_PATCH_3D_SUCCESS)
             )
         else:
             content = json.dumps(_CREATE_SCENE_3D_BY_SCENARIO.get(self.scenario, _MINIMAL_SCENE_3D))

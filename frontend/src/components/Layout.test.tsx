@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -112,6 +112,40 @@ describe('Layout: responsive header chrome (#674)', () => {
     expect(
       screen.getByRole('radiogroup', { name: 'Reduce motion' }).closest('.app-shell-toolbar'),
     ).not.toBeNull();
+  });
+});
+
+describe('Layout: cosmic backdrop (#807)', () => {
+  const cosmicTheme = {
+    presentation: {
+      font_family: 'system' as const,
+      density: 'comfortable' as const,
+      radius: 'soft' as const,
+      border_style: 'solid' as const,
+      backdrop: 'cosmic' as const,
+    },
+  } as Awaited<ReturnType<typeof siteThemeApi.fetchSiteTheme>>;
+
+  it('renders the decorative field only when the selected backdrop is cosmic', async () => {
+    vi.mocked(siteThemeApi.fetchSiteTheme).mockResolvedValueOnce(cosmicTheme);
+    renderWithAuth({ status: 'signed-out', user: null });
+
+    expect(screen.queryByTestId('cosmic-starfield')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('cosmic-starfield')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.getByTestId('cosmic-starfield')).toHaveClass('cosmic-starfield');
+
+    cleanup();
+    vi.mocked(siteThemeApi.fetchSiteTheme).mockResolvedValueOnce({
+      presentation: {
+        font_family: 'system',
+        density: 'comfortable',
+        radius: 'soft',
+        border_style: 'solid',
+        backdrop: 'plain',
+      },
+    } as Awaited<ReturnType<typeof siteThemeApi.fetchSiteTheme>>);
+    renderWithAuth({ status: 'signed-out', user: null });
+    expect(screen.queryByTestId('cosmic-starfield')).not.toBeInTheDocument();
   });
 });
 

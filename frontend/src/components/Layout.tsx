@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
+import CosmicStarField from './CosmicStarField';
 import ReducedMotionControl from './ReducedMotionControl';
 import { useIsMobileHeader } from './useIsMobileHeader';
 import { useAuth } from '../auth/useAuth';
@@ -193,6 +194,7 @@ function Layout() {
     <div
       className={`app-shell${location.pathname.startsWith('/projects/') ? ' app-shell-editor' : ''}`}
     >
+      {siteTheme?.presentation?.backdrop === 'cosmic' && <CosmicStarField />}
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>

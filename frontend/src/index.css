@@ -6619,3 +6619,116 @@ select.ai-proposal-field-full-width {
 .piece-slug-details {
   margin: 0.25rem 0;
 }
+
+/* Issue #807: animated cosmic star field (behind all shell content). */
+.cosmic-starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.app-shell > :not(.cosmic-starfield) {
+  position: relative;
+  z-index: 1;
+}
+
+.cosmic-nebula {
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.35;
+}
+
+.cosmic-nebula-1 {
+  top: -20%;
+  left: -10%;
+  background: radial-gradient(circle, rgb(192 132 252 / 45%), transparent 65%);
+  animation: nebula-drift-1 55s ease-in-out infinite alternate;
+}
+
+.cosmic-nebula-2 {
+  right: -15%;
+  bottom: -25%;
+  background: radial-gradient(circle, rgb(56 189 248 / 35%), transparent 65%);
+  animation: nebula-drift-2 65s ease-in-out infinite alternate;
+}
+
+.cosmic-nebula-3 {
+  top: 30%;
+  left: 35%;
+  background: radial-gradient(circle, rgb(251 191 36 / 22%), transparent 65%);
+  animation: nebula-drift-3 75s ease-in-out infinite alternate;
+}
+
+.cosmic-astrolabe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 90vmin;
+  height: 90vmin;
+  margin: -45vmin 0 0 -45vmin;
+  border: 1px solid rgb(192 132 252 / 12%);
+  border-radius: 50%;
+  animation: astrolabe-rotation 300s linear infinite;
+}
+
+.cosmic-stars {
+  position: absolute;
+  inset: -20%;
+  animation: star-rotation 60s linear infinite;
+}
+
+.cosmic-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  animation: cosmos-star-twinkle ease-in-out infinite;
+}
+
+.cosmic-star-amber {
+  background: #fbbf24;
+}
+
+@keyframes nebula-drift-1 {
+  to {
+    transform: translate(8vw, 6vh) scale(1.1);
+  }
+}
+
+@keyframes nebula-drift-2 {
+  to {
+    transform: translate(-7vw, -5vh) scale(1.15);
+  }
+}
+
+@keyframes nebula-drift-3 {
+  to {
+    transform: translate(5vw, -8vh) scale(0.9);
+  }
+}
+
+@keyframes astrolabe-rotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes star-rotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cosmos-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}

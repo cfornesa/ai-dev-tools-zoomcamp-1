@@ -238,7 +238,7 @@ describe('Scene3DPreview public camera overlay geometry (issue #728)', () => {
   it('keeps immersive stages centered and viewport-proportional while retaining the shared camera contract', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
     expect(css).toMatch(
-      /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)\s*\{[^}]*min-height:\s*100dvh;[^}]*padding:\s*0;/s,
+      /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)\s*\{[^}]*min-height:\s*100dvh;[^}]*padding:\s*var\(--site-density\) 1\.25rem 1\.25rem;/s,
     );
     expect(css).toMatch(
       /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)\s*> \[data-panel='preview'\]\s*\{[^}]*display:\s*grid;[^}]*min-height:\s*100dvh;[^}]*place-items:\s*center;/s,

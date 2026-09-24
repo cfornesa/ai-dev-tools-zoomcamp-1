@@ -4805,7 +4805,7 @@ select.ai-proposal-field-full-width {
 
 .immersive-project3d-viewer:not(.immersive-project3d-viewer--embed) > [data-panel='preview'] {
   display: grid;
-  min-height: min(100dvh, calc(100vw * 9 / 16));
+  min-height: 100dvh;
   place-items: center;
   width: 100%;
   overflow: hidden;

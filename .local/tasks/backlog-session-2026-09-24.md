@@ -8,3 +8,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 |---|---|---|---|---|---|---|
 | #765 | CLOSED | 145fbce | prettier check on doc | PASS (doc criteria; cross-repo posting shifted out of scope) | closed | doc only |
 | #761 | CLOSED | a8a9ede | vitest export 192; make frontend-* 2826 tests; playwright exportArtifacts 10 | PASS | closed | local only; deployed under #748 |
+| #762 | CLOSED | 43a014f | make check pass | PASS | closed | local; deploy under #748 |

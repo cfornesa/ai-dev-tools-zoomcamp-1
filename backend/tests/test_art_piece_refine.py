@@ -21,9 +21,11 @@ class _Provider:
     def __init__(self, results):
         self.results = list(results)
         self.calls = 0
+        self.instructions = []
 
     def refine(self, instruction, source, library, target_references):
         self.calls += 1
+        self.instructions.append(instruction)
         return self.results.pop(0)
 
 
@@ -80,6 +82,57 @@ def test_refine_applies_all_edits_and_creates_immutable_current_version(monkeypa
     assert 'color = "blue"' in piece.current_version.source
     assert piece.versions.count() == 2
     assert provider.calls == 1
+
+
+@pytest.mark.django_db
+def test_refine_resolves_region_and_ink_mentions_before_provider_call(monkeypatch, owner):
+    source = '<svg><g id="Sky"><circle /></g></svg>'
+    piece = ArtPiece.objects.create(owner=owner, prompt="svg", engine=ArtPiece.Engine.SVG)
+    version = ArtPieceVersion.objects.create(
+        piece=piece,
+        sequence=1,
+        source=source,
+        generation_metadata={"ink": {"width": 16, "height": 16, "shapes": []}},
+    )
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+    provider = _Provider([_result("<circle />", "<rect />")])
+    monkeypatch.setattr(art_piece_refine, "_provider_for_user", lambda *args: provider)
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.post(
+        f"/api/art-pieces/{piece.public_id}/refine/",
+        {
+            "instruction": "make targets warmer",
+            "mentions": [{"kind": "region", "id": "Sky"}, {"kind": "ink", "id": "ink"}],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert provider.calls == 1
+    assert '"kind": "region"' in provider.instructions[0]
+    assert '"kind": "ink"' in provider.instructions[0]
+
+
+@pytest.mark.django_db
+def test_unresolved_mention_returns_422_without_creating_run_or_call(monkeypatch, owner, piece):
+    provider = _Provider([_result('color = "red"', 'color = "blue"')])
+    monkeypatch.setattr(art_piece_refine, "_provider_for_user", lambda *args: provider)
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.post(
+        f"/api/art-pieces/{piece.public_id}/refine/",
+        {"instruction": "change it", "mentions": [{"kind": "region", "id": "Missing"}]},
+        format="json",
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {"error": "unresolved_mention", "detail": "region:Missing"}
+    assert provider.calls == 0
+    assert piece.refine_runs.count() == 0
 
 
 @pytest.mark.django_db

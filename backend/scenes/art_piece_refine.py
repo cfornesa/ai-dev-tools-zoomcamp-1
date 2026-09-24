@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
@@ -11,6 +12,7 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from ai_provider.art_piece_provider import parse_regions
 from ai_provider.registry import validate_model
 from scenes.ai_catalog import is_art_piece_supported
 from scenes.art_piece_api import (
@@ -33,6 +35,11 @@ from scenes.permissions import Action, can
 
 MAX_TARGET_REFERENCES = 32
 MAX_RETRIES = 2
+MAX_MENTIONS = 10
+
+
+class UnresolvedMention(ValueError):
+    pass
 
 
 class ArtPieceRefineRequestSerializer(serializers.Serializer):
@@ -42,11 +49,70 @@ class ArtPieceRefineRequestSerializer(serializers.Serializer):
         child=serializers.CharField(max_length=200), required=False, default=list
     )
     model = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    mentions = serializers.ListField(
+        child=serializers.DictField(), required=False, default=list, allow_empty=True
+    )
 
     def validate_target_references(self, value):
         if len(value) > MAX_TARGET_REFERENCES:
             raise serializers.ValidationError("Too many target references.")
         return value
+
+    def validate_mentions(self, value):
+        if len(value) > MAX_MENTIONS:
+            raise serializers.ValidationError("Too many mentions.")
+        for mention in value:
+            if set(mention) != {"kind", "id"}:
+                raise serializers.ValidationError("Each mention requires kind and id.")
+            if mention["kind"] not in {"ink", "asset", "element", "region"}:
+                raise serializers.ValidationError("Unknown mention kind.")
+            if not isinstance(mention["id"], str) or not mention["id"].strip():
+                raise serializers.ValidationError("Mention ids must be non-empty strings.")
+            if len(mention["id"]) > 200:
+                raise serializers.ValidationError("Mention ids are too long.")
+        return value
+
+
+def resolve_mentions(piece: ArtPiece, mentions: list[dict[str, str]]) -> list[dict[str, Any]]:
+    """Resolve bounded owner-local targets without executing generated code."""
+    version = piece.current_version
+    if version is None:
+        raise UnresolvedMention("piece:no_current_version")
+    source = version.source
+    metadata = version.generation_metadata or {}
+    resolved: list[dict[str, Any]] = []
+    for mention in mentions:
+        kind, identifier = mention["kind"], mention["id"].strip()
+        target: dict[str, Any] | None = None
+        if kind == "ink":
+            if identifier == "ink" and isinstance(metadata.get("ink"), dict):
+                target = {"kind": kind, "id": identifier, "document": metadata["ink"]}
+        elif kind == "asset":
+            assets = metadata.get("assets", [])
+            known = any(
+                (asset == identifier)
+                or (
+                    isinstance(asset, dict)
+                    and str(asset.get("id") or asset.get("asset_id")) == identifier
+                )
+                for asset in assets
+            )
+            if known and identifier in source:
+                target = {"kind": kind, "id": identifier, "source_span": identifier}
+        elif kind == "element":
+            if piece.engine == "svg" and re.search(
+                rf"(?:id|data-augmentr-part)=[\"']{re.escape(identifier)}[\"']", source
+            ):
+                target = {"kind": kind, "id": identifier, "source_span": identifier}
+        elif kind == "region":
+            for region in parse_regions(source, piece.engine):
+                if region["name"] == identifier:
+                    target = {"kind": kind, "id": identifier, "region": region}
+                    break
+        if target is None:
+            raise UnresolvedMention(f"{kind}:{identifier}")
+        resolved.append(target)
+    return resolved
 
 
 def _plan(piece: ArtPiece, references: list[str]) -> dict[str, Any]:
@@ -136,10 +202,19 @@ def refine_art_piece(
     target_references: list[str],
     model: str = "",
     vendor: str = "mistral",
+    mentions: list[dict[str, str]] | None = None,
 ):
     source_version = piece.current_version
     if source_version is None:
         raise serializers.ValidationError("The piece has no current version.")
+    source = source_version.source
+    resolved_mentions = resolve_mentions(piece, mentions or [])
+    mention_block = (
+        "\n\nOnly modify these resolved targets; preserve all other source:\n"
+        + json.dumps(resolved_mentions, ensure_ascii=False)
+        if resolved_mentions
+        else ""
+    )
     preference = AIRetryPreference.objects.filter(owner=owner).first()
     auto_retry = preference.auto_retry_enabled if preference else False
     max_retries = min(preference.max_retries if preference else 0, MAX_RETRIES)
@@ -152,7 +227,6 @@ def refine_art_piece(
         auto_retry_enabled=auto_retry,
         max_retries=max_retries,
     )
-    source = source_version.source
     feedback = ""
     for attempt in range(1, max_retries + 2):
         if not _increment_and_check(
@@ -168,7 +242,7 @@ def refine_art_piece(
             break
         run.attempts = attempt
         run.save(update_fields=["attempts"])
-        prompt = instruction
+        prompt = instruction + mention_block
         if feedback:
             prompt += f" Repair feedback from the previous attempt: {feedback}"
         vendor_token = _current_ai_vendor.set(vendor)
@@ -256,14 +330,21 @@ class ArtPieceRefineView(APIView):
             raise serializers.ValidationError(
                 {"model": "That model is not enabled for generated art pieces."}
             )
-        run = refine_art_piece(
-            owner=request.user,
-            piece=piece,
-            instruction=serializer.validated_data["instruction"],
-            target_references=serializer.validated_data["target_references"],
-            model=model or effective_model,
-            vendor=vendor,
-        )
+        try:
+            run = refine_art_piece(
+                owner=request.user,
+                piece=piece,
+                instruction=serializer.validated_data["instruction"],
+                target_references=serializer.validated_data["target_references"],
+                model=model or effective_model,
+                vendor=vendor,
+                mentions=serializer.validated_data["mentions"],
+            )
+        except UnresolvedMention as exc:
+            return Response(
+                {"error": "unresolved_mention", "detail": str(exc)},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
         return Response(_serialize(run), status=status.HTTP_200_OK)
 
 

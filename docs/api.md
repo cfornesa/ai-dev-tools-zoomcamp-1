@@ -426,6 +426,16 @@ marker. Duplicate names receive numeric suffixes (`Name 2`, `Name 3`, ...).
 Missing markers are non-blocking and return an empty `regions` array plus the
 `missing_layer_markers` warning.
 
+## Generated art-piece refinement mentions (#819)
+
+`POST /api/art-pieces/<public_id>/refine/` accepts an additive `mentions`
+array of at most 10 `{kind, id}` objects. `kind` is one of `ink`, `asset`,
+`element`, or `region`; each id is bounded to 200 characters. The server
+resolves mentions against the current piece source and metadata, then appends
+a bounded structured target block to the provider prompt. An unknown or
+owner-inaccessible mention returns HTTP 422 with `error: "unresolved_mention"`
+and no provider call or refine run is created.
+
 ## Global site metadata settings (#586)
 
 The application-admin-only `GET|PATCH /api/admin/settings/` contract includes

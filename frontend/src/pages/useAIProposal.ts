@@ -111,12 +111,16 @@ const VALIDATION_CODES = new Set<AIErrorCode>([
   // provider-error bucket below -- the server's `detail` message already
   // names which unreferenced element triggered it.
   'unreferenced_element',
+  'delete_intent_required',
 ]);
 
 const UNREFERENCED_ELEMENT_FALLBACK_MESSAGE =
   'This edit would also change a shape, group, binding, layer, or graph node/connection ' +
   'the prompt never mentioned. Name it explicitly in the prompt, or make the prompt ' +
   'explicitly broad (e.g. "all"/"every"/"everything"/"entire"/"whole") if that was intended.';
+
+const DELETE_INTENT_FALLBACK_MESSAGE =
+  'This edit would delete or replace an existing element without explicit delete intent. Use a delete verb and name the exact layer, shape, group, object, or light.';
 
 function classifyGenerationError(err: unknown): { phase: GenerationPhase; error: GenerationError } {
   if (err instanceof ApiError) {
@@ -131,7 +135,9 @@ function classifyGenerationError(err: unknown): { phase: GenerationPhase; error:
             detailMessage(body) ??
             (code === 'unreferenced_element'
               ? UNREFERENCED_ELEMENT_FALLBACK_MESSAGE
-              : 'The request was invalid. Check the prompt and try again.'),
+              : code === 'delete_intent_required'
+                ? DELETE_INTENT_FALLBACK_MESSAGE
+                : 'The request was invalid. Check the prompt and try again.'),
         },
       };
     }

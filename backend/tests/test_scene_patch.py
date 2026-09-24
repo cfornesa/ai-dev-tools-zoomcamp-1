@@ -78,6 +78,30 @@ def test_remove_shape_is_allowed_and_applies():
     assert scene["shapes"] == [_circle("shape-1")]  # original untouched
 
 
+def test_whole_layer_removal_requires_matching_delete_intent_and_ordinal():
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [{"op": "remove", "path": "/layers/0"}]
+
+    assert validate_patch_operations(patch, scene=scene, prompt="delete layer 1") == []
+    assert validate_patch_operations(patch, scene=scene, prompt="delete the background layer") == []
+
+    errs = validate_patch_operations(patch, scene=scene, prompt="make the background darker")
+    assert any(error.reason == PatchErrorReason.DELETE_INTENT_REQUIRED for error in errs)
+
+    errs = validate_patch_operations(patch, scene=scene, prompt="delete layer 9")
+    assert any(error.reason == PatchErrorReason.DELETE_INTENT_REQUIRED for error in errs)
+
+
+def test_delete_intent_cannot_remove_a_different_element():
+    scene = _scene_with_named_layers_and_shapes()
+    errs = validate_patch_operations(
+        [{"op": "remove", "path": "/shapes/1"}],
+        scene=scene,
+        prompt="delete the background layer",
+    )
+    assert any(error.reason == PatchErrorReason.DELETE_INTENT_REQUIRED for error in errs)
+
+
 def test_canvas_background_color_is_allowed():
     patch = [{"op": "replace", "path": "/canvas/backgroundColor", "value": "#000000"}]
     assert validate_patch_operations(patch) == []
@@ -455,8 +479,7 @@ def test_patch_touching_a_layer_referenced_by_name_is_allowed():
         "recolor everything",
         "reduce the opacity of all layers",
         "make every shape bigger",
-        "clear the entire scene",
-        "reset the whole scene",
+        "clear every shape and layer",
     ],
 )
 def test_explicitly_bulk_scope_prompts_are_never_blocked(prompt):

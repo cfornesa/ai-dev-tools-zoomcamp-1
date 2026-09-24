@@ -49,6 +49,20 @@ def test_patch_referencing_an_object_by_name_is_allowed():
     assert validate_patch_operations3d(patch, scene=scene, prompt="paint the Table brown") == []
 
 
+def test_whole_object_removal_requires_matching_delete_intent_and_ordinal():
+    scene = _scene()
+    patch = [{"op": "remove", "path": "/objects/0"}]
+
+    assert validate_patch_operations3d(patch, scene=scene, prompt="delete object 1") == []
+    assert validate_patch_operations3d(patch, scene=scene, prompt="delete the Table") == []
+
+    errs = validate_patch_operations3d(patch, scene=scene, prompt="make the Table darker")
+    assert any(error.reason == PatchErrorReason.DELETE_INTENT_REQUIRED for error in errs)
+
+    errs = validate_patch_operations3d(patch, scene=scene, prompt="delete object 9")
+    assert any(error.reason == PatchErrorReason.DELETE_INTENT_REQUIRED for error in errs)
+
+
 def test_patch_touching_an_unreferenced_object_is_rejected():
     scene = _scene()
     patch = [

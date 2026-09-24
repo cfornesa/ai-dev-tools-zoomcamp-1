@@ -315,6 +315,20 @@ def test_protected_field_patch_is_rejected_with_422(owner_client, project, monke
 
 
 @pytest.mark.django_db
+def test_delete_without_explicit_intent_is_rejected_with_422(owner_client, project, monkeypatch):
+    scene = _scene_with_named_shapes()
+    patch = [{"op": "remove", "path": "/layers/0"}]
+    _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(patch)))
+
+    response = owner_client.post(
+        _url(project), _payload(prompt="make the background darker", scene=scene), format="json"
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"] == "delete_intent_required"
+
+
+@pytest.mark.django_db
 def test_invalid_path_patch_is_rejected_with_422(owner_client, project, monkeypatch):
     patch = [{"op": "replace", "path": "/renderer/preferred", "value": "svg"}]
     _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(patch)))

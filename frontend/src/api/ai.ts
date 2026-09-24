@@ -62,6 +62,7 @@ export type AIErrorCode =
   | 'empty_patch'
   | 'protected_field'
   | 'unreferenced_element'
+  | 'delete_intent_required'
   | 'invalid_patch_path'
   | 'malformed_patch'
   | 'oversized_patch'

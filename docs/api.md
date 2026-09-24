@@ -273,6 +273,19 @@ edit to selected objects, groups, lights, camera, materials, or declared
 media assets. Create requests accept the additive field for client symmetry
 but have no existing scene against which to validate it.
 
+### AI edit delete intent (#812)
+
+Removing a whole 2D shape, layer, group, binding, graph node/connection, or
+3D object/group/light is allowed only when the edit prompt contains an
+explicit delete verb (`delete`, `remove`, `erase`, `clear`, or `get rid of`)
+and identifies the exact element by name, id, or 1-based ordinal such as
+`layer 1`. A prompt that merely edits an element, or a destructive patch aimed
+at another element, returns HTTP 422 with `error: "delete_intent_required"`.
+Whole-item replacements that drop or change an existing element id use the
+same guard. Property-level removal remains non-destructive. Bulk deletion is
+allowed only when the prompt names the element class (for example, `delete
+all layers`).
+
 ### Profile JSON Feeds (#688)
 
 `GET /users/@<handle>/feed.json` returns the same privacy-filtered,

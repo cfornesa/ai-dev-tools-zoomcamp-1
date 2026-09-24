@@ -281,6 +281,27 @@ describe('useAIProposal generation phases', () => {
     expect(result.current.genError?.message).toMatch(/circle 3/i);
   });
 
+  it('classifies a destructive patch without delete intent as a validation error', async () => {
+    mockedEditAIScene.mockRejectedValue(
+      new ApiError(422, {
+        error: 'delete_intent_required',
+        detail: 'A destructive patch requires an explicit delete verb and exact element reference.',
+      }),
+    );
+
+    const { result } = renderHook(() => useAIProposal('p1'));
+    act(() => result.current.setMode('edit'));
+    act(() => result.current.setPrompt('make the background darker'));
+
+    await act(async () => {
+      await result.current.generate(VALID_SCENE, 3);
+    });
+
+    expect(result.current.phase).toBe('validation-error');
+    expect(result.current.genError?.code).toBe('delete_intent_required');
+    expect(result.current.genError?.message).toMatch(/explicit delete verb/i);
+  });
+
   it('rejects edit mode with no working scene without calling the API', async () => {
     const { result } = renderHook(() => useAIProposal('p1'));
     act(() => result.current.setMode('edit'));

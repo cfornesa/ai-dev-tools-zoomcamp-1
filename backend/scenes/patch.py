@@ -207,6 +207,7 @@ class PatchErrorReason:
     # scope. See this module's docstring's "Prompt-element reference
     # check" section.
     UNREFERENCED_ELEMENT = "unreferenced_element"
+    DELETE_INTENT_REQUIRED = "delete_intent_required"
 
 
 @dataclass(frozen=True)
@@ -340,6 +341,9 @@ _SHAPE_TYPE_DISPLAY_NAMES = {
 # docstring's "The bulk-scope heuristic" section) -- word-boundary matched
 # so e.g. "small"/"recall" never accidentally match "all".
 _BULK_SCOPE_PATTERN = re.compile(r"\b(all|every|everything|entire|whole)\b", re.IGNORECASE)
+_DELETE_INTENT_PATTERN = re.compile(
+    r"\b(delete|remove|erase|clear)\b|\bget\s+rid\s+of\b", re.IGNORECASE
+)
 
 
 def _is_bulk_scope_prompt(prompt: str) -> bool:
@@ -392,6 +396,65 @@ def _reference_candidates(root: str, item: dict[str, Any], scene: dict[str, Any]
 
 def _prompt_references(prompt_lower: str, candidates: list[str]) -> bool:
     return any(candidate.lower() in prompt_lower for candidate in candidates)
+
+
+_ORDINAL_ROOT_LABELS = {
+    "shapes": "shape",
+    "groups": "group",
+    "bindings": "binding",
+    "layers": "layer",
+    "graph.nodes": "node",
+    "graph.connections": "connection",
+}
+
+
+def _ordinal_reference(root: str, element_segments: list[str]) -> str | None:
+    if len(element_segments) < 2 or not element_segments[-1].isdigit():
+        return None
+    label = _ORDINAL_ROOT_LABELS.get(root)
+    if label is None:
+        return None
+    return f"{label} {int(element_segments[-1]) + 1}"
+
+
+def _delete_intent_allows(
+    root: str, element_segments: list[str], item: dict[str, Any], scene: dict[str, Any], prompt: str
+) -> bool:
+    prompt_lower = prompt.lower()
+    if not _DELETE_INTENT_PATTERN.search(prompt_lower):
+        return False
+    candidates = _reference_candidates(root, item, scene)
+    ordinal = _ordinal_reference(root, element_segments)
+    if ordinal:
+        candidates.append(ordinal)
+    if _prompt_references(prompt_lower, candidates):
+        return True
+    # Bulk deletion must name the class, so "delete all" alone cannot widen
+    # a destructive patch to every element in the document.
+    if _is_bulk_scope_prompt(prompt):
+        label = _ORDINAL_ROOT_LABELS.get(root)
+        return bool(label and re.search(rf"\b{re.escape(label)}s?\b", prompt_lower))
+    return False
+
+
+def _is_destructive_existing_operation(
+    op_name: Any, segments: list[str], op: dict[str, Any], scene: dict[str, Any]
+) -> bool:
+    touched = _touched_element_path(segments)
+    if touched is None:
+        return False
+    _root, element_segments = touched
+    if len(segments) != len(element_segments):
+        return False
+    found, current = _get_at_path(scene, element_segments)
+    if not found or not isinstance(current, dict):
+        return False
+    if op_name == "remove":
+        return True
+    if op_name == "replace":
+        value = op.get("value")
+        return not isinstance(value, dict) or value.get("id") != current.get("id")
+    return False
 
 
 def _touched_element_path(segments: list[str]) -> tuple[str, list[str]] | None:
@@ -566,6 +629,37 @@ def validate_patch_operations(
                         )
                     )
 
+        if scene is not None and prompt is not None and _is_destructive_existing_operation(
+            op_name, segments, op, scene
+        ):
+            touched = _touched_element_path(segments)
+            assert touched is not None
+            root, element_segments = touched
+            found, item = _get_at_path(scene, element_segments)
+            candidates = _reference_candidates(root, item, scene) if isinstance(item, dict) else []
+            ordinal = _ordinal_reference(root, element_segments)
+            if ordinal:
+                candidates.append(ordinal)
+            should_classify = bool(
+                _DELETE_INTENT_PATTERN.search(prompt)
+                or (candidates and _prompt_references(prompt.lower(), candidates))
+            )
+            if should_classify and (
+                not found
+                or not isinstance(item, dict)
+                or not _delete_intent_allows(root, element_segments, item, scene, prompt)
+            ):
+                errors.append(
+                    PatchOperationError(
+                        index=index,
+                        reason=PatchErrorReason.DELETE_INTENT_REQUIRED,
+                        message=(
+                            f"destructive operation at {path!r} requires an explicit delete "
+                            "verb and a reference to the exact element (name, id, or ordinal)."
+                        ),
+                    )
+                )
+
         # Issue #158: prompt-element reference check -- only runs when both
         # `scene` and `prompt` were supplied (see docstring above), and only
         # exempted entirely when the prompt is bulk/global in scope.
@@ -576,6 +670,9 @@ def validate_patch_operations(
                 found, item = _get_at_path(scene, element_segments)
                 if found and isinstance(item, dict):
                     candidates = _reference_candidates(root, item, scene)
+                    ordinal = _ordinal_reference(root, element_segments)
+                    if ordinal:
+                        candidates.append(ordinal)
                     if candidates and not _prompt_references(prompt_lower, candidates):
                         errors.append(
                             PatchOperationError(
@@ -600,6 +697,7 @@ def validate_patch_operations(
 # violations are surfaced first since they're the most security-relevant.
 _REASON_PRIORITY = (
     PatchErrorReason.PROTECTED_FIELD,
+    PatchErrorReason.DELETE_INTENT_REQUIRED,
     PatchErrorReason.UNREFERENCED_ELEMENT,
     PatchErrorReason.INVALID_PATH,
     PatchErrorReason.OVERSIZED,

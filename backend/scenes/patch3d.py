@@ -54,6 +54,7 @@ import re
 from typing import Any
 
 from scenes.patch import (
+    _DELETE_INTENT_PATTERN,
     MAX_PATCH_BYTES,
     MAX_PATCH_OPERATIONS,
     PatchError,
@@ -61,6 +62,7 @@ from scenes.patch import (
     PatchOperationError,
     _get_at_path,
     _is_bulk_scope_prompt,
+    _prompt_references,
     _split_pointer,
     apply_patch,
 )
@@ -83,6 +85,7 @@ _PROTECTED_EXACT_PATHS = frozenset({"/schemaVersion", "/documentType", "/id", "/
 _ELEMENT_LEVEL_ROOTS = frozenset({"objects", "groups", "lights"})
 
 _IDENTITY_BEARING_ELEMENT_ROOTS = frozenset({"objects", "groups", "lights"})
+_ORDINAL_ROOT_LABELS = {"objects": "object", "groups": "group", "lights": "light"}
 
 
 def _is_identity_bearing_element_path(segments: list[str]) -> bool:
@@ -129,8 +132,45 @@ def _reference_candidates(item: dict[str, Any]) -> list[str]:
     return candidates
 
 
-def _prompt_references(prompt_lower: str, candidates: list[str]) -> bool:
-    return any(candidate.lower() in prompt_lower for candidate in candidates)
+def _ordinal_reference(root: str, element_segments: list[str]) -> str | None:
+    if len(element_segments) != 2 or not element_segments[1].isdigit():
+        return None
+    label = _ORDINAL_ROOT_LABELS.get(root)
+    return f"{label} {int(element_segments[1]) + 1}" if label else None
+
+
+def _delete_intent_allows(
+    root: str, element_segments: list[str], item: dict[str, Any], prompt: str
+) -> bool:
+    prompt_lower = prompt.lower()
+    if not _DELETE_INTENT_PATTERN.search(prompt_lower):
+        return False
+    candidates = _reference_candidates(item)
+    ordinal = _ordinal_reference(root, element_segments)
+    if ordinal:
+        candidates.append(ordinal)
+    if _prompt_references(prompt_lower, candidates):
+        return True
+    if _is_bulk_scope_prompt(prompt):
+        label = _ORDINAL_ROOT_LABELS.get(root)
+        return bool(label and re.search(rf"\b{re.escape(label)}s?\b", prompt_lower))
+    return False
+
+
+def _is_destructive_existing_operation(
+    op_name: Any, segments: list[str], op: dict[str, Any], scene: dict[str, Any]
+) -> bool:
+    if len(segments) != 2 or segments[0] not in _ELEMENT_LEVEL_ROOTS or not segments[1].isdigit():
+        return False
+    found, current = _get_at_path(scene, segments)
+    if not found or not isinstance(current, dict):
+        return False
+    if op_name == "remove":
+        return True
+    if op_name == "replace":
+        value = op.get("value")
+        return not isinstance(value, dict) or value.get("id") != current.get("id")
+    return False
 
 
 def _touched_element_path(segments: list[str]) -> tuple[str, list[str]] | None:
@@ -270,6 +310,35 @@ def validate_patch_operations3d(
                         )
                     )
 
+        if scene is not None and prompt is not None and _is_destructive_existing_operation(
+            op_name, segments, op, scene
+        ):
+            root = segments[0]
+            found, item = _get_at_path(scene, segments)
+            candidates = _reference_candidates(item) if isinstance(item, dict) else []
+            ordinal = _ordinal_reference(root, segments)
+            if ordinal:
+                candidates.append(ordinal)
+            should_classify = bool(
+                _DELETE_INTENT_PATTERN.search(prompt)
+                or (candidates and _prompt_references(prompt.lower(), candidates))
+            )
+            if should_classify and (
+                not found
+                or not isinstance(item, dict)
+                or not _delete_intent_allows(root, segments, item, prompt)
+            ):
+                errors.append(
+                    PatchOperationError(
+                        index=index,
+                        reason=PatchErrorReason.DELETE_INTENT_REQUIRED,
+                        message=(
+                            f"destructive operation at {path!r} requires an explicit delete "
+                            "verb and a reference to the exact element (name, id, or ordinal)."
+                        ),
+                    )
+                )
+
         if scene is not None and prompt is not None and not bulk_scope:
             touched = _touched_element_path(segments)
             if touched is not None:
@@ -277,6 +346,9 @@ def validate_patch_operations3d(
                 found, item = _get_at_path(scene, element_segments)
                 if found and isinstance(item, dict):
                     candidates = _reference_candidates(item)
+                    ordinal = _ordinal_reference(root, element_segments)
+                    if ordinal:
+                        candidates.append(ordinal)
                     if candidates and not _prompt_references(prompt_lower, candidates):
                         errors.append(
                             PatchOperationError(

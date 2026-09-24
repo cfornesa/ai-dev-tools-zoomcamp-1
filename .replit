@@ -25,9 +25,6 @@ DJANGO_ALLOWED_HOSTS = "augmentrart.com,animate.creatrweb.com,creatrweb.replit.a
 DJANGO_DEBUG = "false"
 PUBLIC_SITE_ORIGIN = "https://augmentrart.com"
 RUN_MIGRATIONS_ON_START = "false"
-# One-shot, owner-authorized #788 production data action. Remove immediately
-# after the import publish and republish with this gate disabled.
-RUN_REFERENCE_IMPORT_ON_START = "true"
 
 [workflows]
 runButton = "Project"

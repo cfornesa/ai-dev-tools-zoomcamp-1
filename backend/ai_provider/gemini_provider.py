@@ -38,8 +38,16 @@ from ai_provider.interface3d import (
     AIScene3DProvider,
     execute3d,
 )
+from ai_provider.prompts import (
+    SCENE3D_CONVERT_PROMPT,
+    SCENE3D_CREATE_PROMPT,
+    SCENE3D_EDIT_PROMPT,
+)
 from scenes.patch import PatchError, apply_patch, validate_patch_operations, worst_reason
-from scenes.patch3d import validate_patch_operations3d
+from scenes.patch3d import (
+    proportionalize_drawing_plane_patch,
+    validate_patch_operations3d,
+)
 from scenes.validation import SCENE_SCHEMA
 from scenes.validation3d import SCENE3D_SCHEMA
 
@@ -270,6 +278,9 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
             if errors:
                 detail = "; ".join(f"[{error.index}] {error.message}" for error in errors[:5])
                 raise AIProviderRejectionError(f"invalid_patch:{worst_reason(errors)} {detail}")
+            operations = proportionalize_drawing_plane_patch(
+                operations, request.current_scene, request.prompt
+            )
             scene = apply_patch(request.current_scene, operations)
         except PatchError as exc:
             return GeminiEditResult(
@@ -294,7 +305,7 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
 
     def create_scene3d(self, request: AICreateScene3DRequest) -> AIOperationResult3D:
         try:
-            response = self._call(_CREATE_INSTRUCTIONS, request.prompt, SCENE3D_SCHEMA)
+            response = self._call(SCENE3D_CREATE_PROMPT, request.prompt, SCENE3D_SCHEMA)
         except (
             AIProviderTimeoutError,
             AIProviderCancelledError,
@@ -309,7 +320,7 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
     def convert_scene_2d_to_3d(self, request: AIConvertScene2DTo3DRequest) -> AIOperationResult3D:
         try:
             response = self._call(
-                _CONVERT_INSTRUCTIONS,
+                SCENE3D_CONVERT_PROMPT,
                 json.dumps({"prompt": request.prompt, "source_scene_2d": request.source_scene}),
                 SCENE3D_SCHEMA,
             )
@@ -330,7 +341,7 @@ class GeminiSceneProvider(AISceneProvider, AIScene3DProvider):
     def edit_scene3d_with_patch(self, request: AIEditScene3DRequest) -> GeminiEdit3DResult:
         try:
             response = self._call(
-                _EDIT_INSTRUCTIONS,
+                SCENE3D_EDIT_PROMPT,
                 json.dumps({"prompt": request.prompt, "scene": request.current_scene}),
                 {"type": "array", "items": {"type": "object"}},
             )

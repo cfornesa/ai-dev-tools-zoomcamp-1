@@ -155,6 +155,11 @@ from ai_provider.interface3d import (
     AIScene3DProvider,
     execute3d,
 )
+from ai_provider.prompts import (
+    SCENE3D_CONVERT_PROMPT,
+    SCENE3D_CREATE_PROMPT,
+    SCENE3D_EDIT_PROMPT,
+)
 from scenes.patch import (
     PatchError,
     apply_patch,
@@ -444,6 +449,13 @@ field so a later prompt can address it back the same way.
 value. The rules below describe their exact vocabulary."""
     + _DRAWING_PLANE_RULES_3D
 )
+
+# Compatibility aliases for the existing focused tests and any callers that
+# imported these historical module constants.  The shared prompt module is the
+# canonical source used by every provider adapter.
+_SYSTEM_PROMPT_3D = SCENE3D_CREATE_PROMPT
+_CONVERT_SYSTEM_PROMPT_3D = SCENE3D_CONVERT_PROMPT
+_EDIT_SYSTEM_PROMPT_3D = SCENE3D_EDIT_PROMPT
 
 _RESPONSE_JSON_SCHEMA_3D: dict[str, Any] = {
     k: v for k, v in SCENE3D_SCHEMA.items() if k not in ("$schema", "$id")
@@ -965,7 +977,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             response = self.client.chat.complete(
                 model=self.model,
                 messages=[
-                    *self._system_messages(_SYSTEM_PROMPT_3D),
+                    *self._system_messages(SCENE3D_CREATE_PROMPT),
                     {"role": "user", "content": prompt},
                 ],
                 response_format={
@@ -1062,7 +1074,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             response = self.client.chat.complete(
                 model=self.model,
                 messages=[
-                    *self._system_messages(_CONVERT_SYSTEM_PROMPT_3D),
+                    *self._system_messages(SCENE3D_CONVERT_PROMPT),
                     {"role": "user", "content": user_content},
                 ],
                 response_format={
@@ -1163,7 +1175,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             response = self.client.chat.complete(
                 model=self.model,
                 messages=[
-                    *self._system_messages(_EDIT_SYSTEM_PROMPT_3D),
+                    *self._system_messages(SCENE3D_EDIT_PROMPT),
                     {"role": "user", "content": user_content},
                 ],
                 response_format={

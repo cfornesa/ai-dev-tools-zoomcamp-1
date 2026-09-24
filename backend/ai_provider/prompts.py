@@ -62,6 +62,66 @@ ART_PIECE_REFINE_SYSTEM_PROMPT = (
     "Do not return prose, markdown, or a complete replacement source."
 )
 
+# Shared scene3d instructions.  These are deliberately transport-neutral: the
+# Mistral adapter puts them in system messages while Gemini/DeepSeek pass them
+# through their compatible structured-output request.  Keep the vocabulary in
+# one place so provider behavior cannot silently diverge.
+SCENE3D_DRAWING_PLANE_RULES = (
+    '\n- A "drawingPlane" is a FLAT PLANE holding a 2D vector drawing. It requires positive '
+    "world-unit width and height and a drawing object with integer width and height, a hex "
+    "background or null, and shapes. Unless the prompt says otherwise use width 4, height 3 "
+    "and a 1024x768 drawing with a white background."
+    '\n- Drawing shapes have unique ids and exactly one of "rect", "ellipse", "line", or "path". '
+    "Coordinates are pixels in the drawing (origin top-left, y downward); keep within the "
+    "drawing dimensions, with at most 500 shapes and 2000 path points."
+    '\n- Place and move a "drawingPlane" with its transform. Rotate it horizontally with '
+    "rotation.x = -90 and vertically with rotation.x = 0."
+    '\n- Resizing a "drawingPlane" changes width and height by the SAME factor. Change them by '
+    "different factors only when the prompt explicitly asks to elongate, stretch, widen, or "
+    "make it taller."
+    '\n- Any object may have animation with kind "rotate", "orbit", "oscillate", or "pulse"; axis x, y, '
+    "or z; speed; amplitude; and center for orbit. Remove animation to stop it.\n"
+)
+
+SCENE3D_CREATE_PROMPT = (
+    "You generate one canonical 3D scene document for a gesture-reactive animation editor.\n"
+    "\n- Respond with ONLY one JSON object matching the supplied scene3d schema; never return "
+    "prose, markdown, code, or XML."
+    "\n- schemaVersion is 1 and documentType is scene3d. Objects are box, sphere, cylinder, "
+    "plane, or drawingPlane and always include their type-specific dimensions. If size is "
+    'unspecified, use box {"width": 1, "height": 1, "depth": 1}; sphere {"radius": 1}; '
+    'cylinder {"radiusTop": 1, "radiusBottom": 1, "height": 1}; plane {"width": 1, '
+    '"height": 1}. Lights are directional, point, or ambient objects with "id", "type", '
+    '"color", and "intensity".'
+    "\n- Every object's groupId is an existing group id or null. When the prompt implies a "
+    "name for an object or light, preserve it in name. Keep the scene to a few dozen "
+    "objects, groups, and lights.\n" + SCENE3D_DRAWING_PLANE_RULES
+)
+
+SCENE3D_CONVERT_PROMPT = (
+    "You convert a 2D canonical scene into a new complete 3D scene document.\n"
+    "\n- Respond with ONLY one JSON object matching the supplied scene3d schema; never return "
+    "prose, markdown, code, or XML."
+    "\n- Convert every circle to a sphere and every rect to a box, preserving relative position, "
+    "size, and name. Skip line, path, particleEmitter, and image entirely; never approximate "
+    "them."
+    "\n- Include a reasonable camera and at least one directional or ambient light. Objects are "
+    "box, sphere, cylinder, or plane with all type-specific dimensions and the scene stays "
+    "within a few dozen objects.\n" + SCENE3D_DRAWING_PLANE_RULES
+)
+
+SCENE3D_EDIT_PROMPT = (
+    "You propose a minimal JSON Patch editing an existing canonical 3D scene.\n"
+    "\n- Respond with ONLY a JSON Patch array using add, replace, or remove. Include value for "
+    "add/replace and omit it for remove. Return [] when the edit is not expressible."
+    "\n- Change only element/property paths under /objects, /groups, /lights, /camera, "
+    "/scene/backgroundColor, or /randomness/enabled; never change schemaVersion, documentType, "
+    "the scene id, randomness.seed, or an existing item's id."
+    "\n- Address existing objects, groups, or lights by their name when the prompt provides one. "
+    "Drawing planes and animations are edited only under /objects; never emit code or markup "
+    "as a value.\n" + SCENE3D_DRAWING_PLANE_RULES
+)
+
 
 def art_piece_2d_prompt(library: str) -> str:
     """Return the canonical 2D create prompt for a supported library."""

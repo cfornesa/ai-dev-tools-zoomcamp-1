@@ -372,6 +372,16 @@ export function buildStandaloneArtPieceRuntimeScript(
           var svg = document.querySelector('svg:not(.piece-stage-icon)');
           if (!svg) throw new Error('This piece has no capturable artwork.');
           var svgText = new XMLSerializer().serializeToString(svg);
+          // #794: an inked SVG piece keeps its ink in the saved file (as a scaled group over the artwork).
+          if (window.__artPieceInkSvg) {
+            var box = svg.viewBox && svg.viewBox.baseVal;
+            var inkW = (box && box.width) || svg.getBoundingClientRect().width || 300;
+            var inkH = (box && box.height) || svg.getBoundingClientRect().height || 150;
+            var closeAt = svgText.lastIndexOf('</svg>');
+            if (closeAt >= 0) {
+              svgText = svgText.slice(0, closeAt) + window.__artPieceInkSvg(inkW, inkH) + svgText.slice(closeAt);
+            }
+          }
           saveBlob(new Blob([svgText], { type: 'image/svg+xml' }), filename.replace('.png', '.svg'));
         }
       } catch (e) {

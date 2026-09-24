@@ -134,6 +134,8 @@ export async function captureArtPieceThumbnailFromSource(
   versionId: number,
   source: string,
   engine: ArtPieceLibrary,
+  /** #794: the piece's ink layer, so its thumbnail shows the marks. */
+  ink?: unknown,
 ): Promise<boolean> {
   const iframe = document.createElement('iframe');
   iframe.setAttribute('sandbox', ART_PIECE_IFRAME_SANDBOX);
@@ -144,7 +146,7 @@ export async function captureArtPieceThumbnailFromSource(
   iframe.style.height = `${THUMBNAIL_HEIGHT}px`;
   iframe.style.opacity = '0';
   iframe.style.pointerEvents = 'none';
-  iframe.srcdoc = buildArtPieceSandboxDocument(source, engine);
+  iframe.srcdoc = buildArtPieceSandboxDocument(source, engine, 'regular', { ink });
   document.body.appendChild(iframe);
 
   try {

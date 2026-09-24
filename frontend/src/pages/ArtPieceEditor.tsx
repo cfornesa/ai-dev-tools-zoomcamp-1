@@ -439,7 +439,12 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     iframe.style.height = '240px';
     iframe.style.opacity = '0';
     iframe.style.pointerEvents = 'none';
-    iframe.srcdoc = buildArtPieceSandboxDocument(piece.current_version.source, piece.engine);
+    iframe.srcdoc = buildArtPieceSandboxDocument(
+      piece.current_version.source,
+      piece.engine,
+      'regular',
+      { ink: piece.current_version.ink },
+    );
     document.body.appendChild(iframe);
     try {
       await new Promise<void>((resolve, reject) => {

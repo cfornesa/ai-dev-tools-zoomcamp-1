@@ -180,6 +180,10 @@ ${svg}
       ctx.restore();
     });
   }
+  // SVG artwork is exported as vector markup, so it takes the ink as a scaled group instead of pixels.
+  window.__artPieceInkSvg = function (w, h) {
+    return '<g transform="scale(' + (w / ink.width) + ' ' + (h / ink.height) + ')">' + svg.innerHTML + '</g>';
+  };
   window.__artPieceInkPaint = paint;
   window.__artPieceScreenshotExtras = (window.__artPieceScreenshotExtras || []).concat([paint]);
 })();

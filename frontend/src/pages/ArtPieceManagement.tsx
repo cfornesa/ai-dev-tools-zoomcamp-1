@@ -52,6 +52,7 @@ function ArtPieceManagement() {
           version.id,
           version.source,
           piece.engine,
+          version.ink ?? undefined,
         );
       } catch {
         captured = false;

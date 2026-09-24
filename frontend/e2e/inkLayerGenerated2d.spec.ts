@@ -5,6 +5,8 @@
  * the immersive viewer, screenshots, and the ZIP export. Replaces the fixed-snippet #667 spec.
  */
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import JSZip from 'jszip';
 import { expect, test, type Page } from '@playwright/test';
@@ -58,7 +60,11 @@ async function overlayVisible(page: Page, frameTitle: string) {
 
 /** Counts pixels near the ink colour (#1d4ed8) in a PNG file. */
 async function inkPixelsInPng(page: Page, path: string) {
-  const base64 = fs.readFileSync(path).toString('base64');
+  return inkPixelsInBuffer(page, fs.readFileSync(path));
+}
+
+async function inkPixelsInBuffer(page: Page, buffer: Buffer) {
+  const base64 = buffer.toString('base64');
   return page.evaluate(async (data) => {
     const image = new Image();
     await new Promise((resolve, reject) => {
@@ -140,6 +146,20 @@ test.describe('Generated 2D ink layer (#776)', () => {
       expect(v2.ink?.shapes).toHaveLength(1);
       expect(v2.ink?.shapes[0]!.type).toBe('path');
 
+      // #794: the new version's thumbnail is recaptured with the ink in it (not the placeholder).
+      await expect
+        .poll(
+          async () => {
+            const response = await apiGet(
+              context,
+              `/api/art-pieces/${piece.public_id}/thumbnail.png`,
+            );
+            return response.ok() ? inkPixelsInBuffer(page, await response.body()) : 0;
+          },
+          { timeout: 30_000, intervals: [1000] },
+        )
+        .toBeGreaterThan(50);
+
       // The editor preview shows the ink over the piece.
       await overlayVisible(page, 'Art piece with ink layer');
       await page.screenshot({ path: testInfo.outputPath(`${engine}-editor.png`) });
@@ -167,6 +187,27 @@ test.describe('Generated 2D ink layer (#776)', () => {
       const zip = await JSZip.loadAsync(fs.readFileSync((await (await download).path())!));
       const indexHtml = await zip.files['index.html']!.async('string');
       expect(indexHtml).toContain('id="art-piece-ink-overlay"');
+
+      if (engine === 'svg') {
+        // #794: an inked SVG piece's exported screenshot (vector) carries the ink group.
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ink794-'));
+        try {
+          for (const [name, entry] of Object.entries(zip.files)) {
+            if (entry.dir) continue;
+            const target = path.join(root, name);
+            fs.mkdirSync(path.dirname(target), { recursive: true });
+            fs.writeFileSync(target, await entry.async('nodebuffer'));
+          }
+          await page.goto(`file://${path.join(root, 'index.html')}`);
+          const svgShot = page.waitForEvent('download');
+          await page.getByRole('button', { name: /take screenshot/i }).click();
+          const svgText = fs.readFileSync((await (await svgShot).path())!, 'utf8');
+          expect(svgText).toContain('stroke="#1d4ed8"');
+          expect(svgText).toMatch(/<g transform="scale\(/);
+        } finally {
+          fs.rmSync(root, { recursive: true, force: true });
+        }
+      }
 
       await page.goto(`/embed/art-pieces/${piece.public_id}`);
       await overlayVisible(page, 'Art piece preview');

@@ -15,6 +15,7 @@ import {
   ART_PIECE_SANDBOX_MESSAGE_SOURCE,
   buildArtPieceSandboxDocument,
 } from '../generative/artPieceSandbox';
+import { captureArtPieceThumbnailFromSource } from '../generative/artPieceThumbnailCapture';
 import { InkEditor } from '../ink/InkEditor';
 import type { InkTool } from '../ink/inkModel';
 import type { DrawingDocument, DrawingShape } from '../pages/scene3dTypes';
@@ -126,6 +127,14 @@ export default function GeneratedInkPanel({
       });
       setSession(null);
       onSaved(created);
+      // #794: the new version's thumbnail shows the ink (best effort; the placeholder stays on failure).
+      void captureArtPieceThumbnailFromSource(
+        piece.public_id,
+        created.id,
+        created.source,
+        piece.engine,
+        created.ink ?? undefined,
+      ).catch(() => undefined);
     } catch {
       setMessage('Could not save the ink layer. Your marks are still here; try again.');
     } finally {

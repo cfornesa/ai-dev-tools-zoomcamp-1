@@ -199,3 +199,47 @@ describe('buildAFrameSceneMarkup (#772)', () => {
     expect(buildAFrameSceneMarkup(scene())).toBe(buildAFrameSceneMarkup(scene()));
   });
 });
+
+describe('buildAFrameSceneMarkup: drawing planes (#780)', () => {
+  const plane = {
+    id: 'draw',
+    type: 'drawingPlane' as const,
+    groupId: null,
+    transform: {
+      position: { x: 0, y: 0, z: 0 },
+      rotation: { x: 0, y: 0, z: 0 },
+      scale: { x: 1, y: 1, z: 1 },
+      opacity: 1,
+    },
+    material: { color: '#336699', opacity: 0.9 },
+    visible: true,
+    width: 4,
+    height: 3,
+    drawing: { width: 64, height: 48, shapes: [] },
+  };
+
+  it('embeds the rasterised drawing as an asset and maps it with transparency', () => {
+    const html = buildAFrameSceneMarkup(scene({ objects: [plane], groups: [] }), {
+      rasterize: () => 'data:image/png;base64,iVBORw0KGgo=',
+    });
+    expect(html).toContain('<a-assets timeout="10000"><img id="drawing-texture-0"');
+    expect(html).toContain('src="data:image/png;base64,iVBORw0KGgo="');
+    expect(html).toContain(
+      'material="src: #drawing-texture-0; color: #ffffff; opacity: 0.9; transparent: true',
+    );
+    expect(html).toContain('side: double');
+  });
+
+  it('falls back to the plain material colour when nothing can be rasterised or the URL is unsafe', () => {
+    for (const rasterize of [
+      () => null,
+      () => 'data:text/html;base64,PHNjcmlwdD4=',
+      () => 'javascript:alert(1)',
+    ]) {
+      const html = buildAFrameSceneMarkup(scene({ objects: [plane], groups: [] }), { rasterize });
+      expect(html).not.toContain('<a-assets');
+      expect(html).not.toContain('javascript:');
+      expect(html).toContain('color: #336699');
+    }
+  });
+});

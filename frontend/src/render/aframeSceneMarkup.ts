@@ -21,8 +21,10 @@
  *   the origin, exactly as the Three.js builder does.
  * - A zero-content scene uses the same neutral grey background, and planes are double-sided.
  */
+import { rasterizeDrawing } from './drawingRaster';
 import type {
   Camera3D,
+  DrawingDocument,
   Group3D,
   Light3D,
   Object3D as SceneObject3D,
@@ -100,8 +102,15 @@ function transformAttrs(transform: { position: Vec3; rotation: Vec3; scale: Vec3
   return `position="${vec(transform.position)}" rotation="${vec(eulerXYZToAFrameDegrees(transform.rotation))}" scale="${vec(transform.scale)}"`;
 }
 
-function materialAttr(object: SceneObject3D): string {
+function materialAttr(object: SceneObject3D, textureId?: string): string {
   const opacity = object.material.opacity ?? 1;
+  if (textureId) {
+    // #780: a drawing plane shows its rasterised vector drawing as a transparent texture; white keeps
+    // the drawing's own colours unmodified.
+    return `material="${escapeAttr(
+      `src: #${textureId}; color: #ffffff; opacity: ${num(opacity)}; transparent: true; alphaTest: 0.01; side: ${object.doubleSided === false ? 'front' : 'double'}`,
+    )}"`;
+  }
   const parts = [
     `color: ${sanitizeColor(object.material.color, '#ffffff')}`,
     `opacity: ${num(opacity)}`,
@@ -115,8 +124,8 @@ function materialAttr(object: SceneObject3D): string {
   return `material="${escapeAttr(parts.join('; '))}"`;
 }
 
-function objectMarkup(object: SceneObject3D): string {
-  const base = `id="${escapeAttr(object.id)}" ${materialAttr(object)} ${transformAttrs(object.transform)} visible="${object.visible ? 'true' : 'false'}"`;
+function objectMarkup(object: SceneObject3D, textureId?: string): string {
+  const base = `id="${escapeAttr(object.id)}" ${materialAttr(object, textureId)} ${transformAttrs(object.transform)} visible="${object.visible ? 'true' : 'false'}"`;
   switch (object.type) {
     case 'box':
       return `<a-box ${base} width="${num(object.width ?? 1)}" height="${num(object.height ?? 1)}" depth="${num(object.depth ?? 1)}"></a-box>`;
@@ -174,7 +183,26 @@ function groupMarkup(group: Group3D, children: string): string {
 }
 
 /** The declarative A-Frame markup (`<a-scene>...</a-scene>`) for a validated scene3d document. */
-export function buildAFrameSceneMarkup(scene3d: Scene3DDocument): string {
+export type AFrameMarkupOptions = {
+  /** Rasterises a drawing plane's drawing to a PNG data URL; defaults to the shared canvas painter. */
+  rasterize?: (drawing: DrawingDocument) => string | null;
+};
+
+function defaultRasterize(drawing: DrawingDocument): string | null {
+  const canvas = rasterizeDrawing(drawing);
+  if (!canvas) return null;
+  try {
+    return canvas.toDataURL('image/png');
+  } catch {
+    return null;
+  }
+}
+
+export function buildAFrameSceneMarkup(
+  scene3d: Scene3DDocument,
+  options: AFrameMarkupOptions = {},
+): string {
+  const rasterize = options.rasterize ?? defaultRasterize;
   const zeroContent =
     scene3d.objects.length === 0 && scene3d.lights.length === 0 && scene3d.groups.length === 0;
   const background = sanitizeColor(
@@ -183,8 +211,17 @@ export function buildAFrameSceneMarkup(scene3d: Scene3DDocument): string {
   );
   const byGroup = new Map<string, string[]>();
   const topLevel: string[] = [];
-  for (const object of scene3d.objects) {
-    const markup = objectMarkup(object);
+  const assets: string[] = [];
+  for (const [index, object] of scene3d.objects.entries()) {
+    let textureId: string | undefined;
+    if (object.type === 'drawingPlane' && object.drawing) {
+      const dataUrl = rasterize(object.drawing);
+      if (dataUrl && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(dataUrl)) {
+        textureId = `drawing-texture-${index}`;
+        assets.push(`<img id="${textureId}" src="${dataUrl}" alt="">`);
+      }
+    }
+    const markup = objectMarkup(object, textureId);
     if (object.groupId !== null && scene3d.groups.some((group) => group.id === object.groupId)) {
       const bucket = byGroup.get(object.groupId) ?? [];
       bucket.push(markup);
@@ -198,6 +235,7 @@ export function buildAFrameSceneMarkup(scene3d: Scene3DDocument): string {
   );
   return [
     `<a-scene embedded vr-mode-ui="enabled: false" background="color: ${background}" renderer="antialias: true">`,
+    assets.length > 0 ? `<a-assets timeout="10000">${assets.join('')}</a-assets>` : '',
     ...scene3d.lights.map(lightMarkup),
     ...groups,
     ...topLevel,

@@ -1503,3 +1503,12 @@ contract was documented before implementation. Commit `034e447` passed 57
 focused tests and `make backend-check` (1668 passed / 39 skipped); QA fixed one
 prompt-registry import defect before accepting the final diff. No production or
 browser evidence was required or performed.
+
+## 2026-09-24 — Generated art refine mentions (#819)
+
+#819 was routed as complex logic with Ollama Cloud / Kimi K3 / medium rostered;
+Codex / GPT-5 / medium substituted. Commit `371b0a7` passed 7 focused refine
+tests, 148 art-piece tests, and the full backend gate (1670 passed / 39
+skipped). QA corrected preflight ordering and optional-version narrowing before
+acceptance. Preservation and frontend typeahead remain separate open issues;
+no production or browser evidence was required or performed.

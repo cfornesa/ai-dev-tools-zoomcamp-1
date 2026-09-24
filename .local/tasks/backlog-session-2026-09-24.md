@@ -432,3 +432,32 @@ deferred.
 - Dependency/order rationale: #819 is the next dependency-ready issue,
   followed by #820/#821; #815 remains independent. Production/browser work
   stays on #748/#788/#803/#806/#807 with no unauthorized rollout.
+
+## #819 transaction — 2026-09-24 continuation
+
+- Groom: criterion-ready Stage 2b refine mention-resolution contract; #818
+  supplied the region parser prerequisite. Preservation enforcement remains
+  explicitly shifted to #820, with no new issue needed.
+- Engineering: Ollama Cloud / Kimi K3 / medium rostered; Codex / GPT-5 /
+  medium substituted. Commit `371b0a7` adds bounded mention validation,
+  owner-local resolution for ink/assets/SVG elements/regions, structured prompt
+  targeting, and 422 preflight failure behavior.
+- QA self-review: Claude / Sonnet 5 / medium rostered; Codex / GPT-5 / medium
+  substituted. Stage 3 independent-family review not run. QA found and fixed
+  two in-scope defects before final verification: unresolved mentions created a
+  run before failing, and mypy required local current-version narrowing.
+  Focused refine tests passed 7; `pytest tests -k art_piece` passed 148;
+  `make backend-check` passed 1670 tests / 39 skips.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/819#issuecomment-5824253548`;
+  issue #819 closed. Evidence is local automated only; no production action.
+
+## Distillation refresh 10 — 2026-09-24 continuation
+
+- #819 is terminal CLOSED/QA PASS. The authenticated open inventory is 15
+  issues: #748, #788, #798–#807, #815, and #820–#821.
+- Duplicate/follow-up audit: no new issue emerged from #819; preservation is
+  correctly deferred to #820 and frontend typeahead is out of scope.
+- Dependency/order rationale: #820 is next and #821 follows it; #815 remains
+  independent. Production/browser work remains authorization-gated on
+  #748/#788/#803/#806/#807.

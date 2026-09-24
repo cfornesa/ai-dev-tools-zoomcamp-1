@@ -458,12 +458,25 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
         <EditableProject3DTitle id={id} project={project} setProject={setProject} />
         {id && <PublishControl3D id={id} project={project} setProject={setProject} />}
         {workingScene && (
-          // #771: the piece's explicit rendering library, shown read-only until the A-Frame
-          // builder ships (#772) and makes it selectable.
-          <p data-testid="project3d-engine" className="editor-engine-label">
-            Rendering library:{' '}
-            {resolveScene3DRenderer(workingScene) === 'aframe' ? 'A-Frame' : 'Three.js'}
-          </p>
+          // #771/#772: the piece's explicit rendering library. Changing it is an undoable edit
+          // that is saved as a new version like any other scene change.
+          <label className="editor-engine-label" htmlFor="project3d-engine-select">
+            Rendering library
+            <select
+              id="project3d-engine-select"
+              data-testid="project3d-engine"
+              value={resolveScene3DRenderer(workingScene)}
+              onChange={(event) =>
+                updateWorkingScene({
+                  ...workingScene,
+                  renderer: { preferred: event.target.value as 'threejs' | 'aframe' },
+                })
+              }
+            >
+              <option value="threejs">Three.js</option>
+              <option value="aframe">A-Frame</option>
+            </select>
+          </label>
         )}
         <p
           role="status"

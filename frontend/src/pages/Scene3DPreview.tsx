@@ -38,6 +38,8 @@ import type { TrackingFrame } from '../tracking/types';
 import HandGestureGuideDialog from './HandGestureGuideDialog';
 import type { Scene3DDocument } from './scene3dTypes';
 import { useFullscreenToggle } from './useFullscreenToggle';
+import Scene3DAFramePreview from './Scene3DAFramePreview';
+import { resolveScene3DRenderer } from '../validation/scene3d';
 import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
 
 const HAND_MOVE_PINCH_THRESHOLD = 0.75;
@@ -212,7 +214,7 @@ export function getImmersiveHandMoveAxes(signals: HandSignals): {
  * consolidate it (plus keyboard/mic/camera-theremin from #307-#309) into a
  * proper "Piece controls" settings surface.
  */
-function Scene3DPreview({
+function ThreeScenePreview({
   scene,
   showScreenshotButton = true,
   showGestureControl = true,
@@ -1127,6 +1129,21 @@ function Scene3DPreview({
         </p>
       )}
     </div>
+  );
+}
+
+export type Scene3DPreviewProps = Parameters<typeof ThreeScenePreview>[0];
+
+/**
+ * The structured 3D stage. #770/#772: a scene's optional `renderer.preferred` picks its rendering
+ * library. Three.js is the default (every legacy scene), A-Frame renders through the sandboxed
+ * markup path in `Scene3DAFramePreview.tsx`.
+ */
+function Scene3DPreview(props: Scene3DPreviewProps) {
+  return resolveScene3DRenderer(props.scene) === 'aframe' ? (
+    <Scene3DAFramePreview {...props} />
+  ) : (
+    <ThreeScenePreview {...props} />
   );
 }
 

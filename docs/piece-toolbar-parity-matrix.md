@@ -104,3 +104,7 @@ the issue. Closed issues stay closed; contradictions become new issues.
 ZIP exports (#755/#756): Reset view is an icon in the toolbar (engine-tool slot, row 7) because a
 downloaded piece has no separate route to recover its view; mic, camera, and Steer sit in the
 Piece controls popover; the hand guide appears only when steering is enabled.
+
+Structured 3D pieces on the A-Frame renderer (#772) show Screenshot, Download, Immersive, and
+Fullscreen. Sound, Piece controls (camera preview), and Steer are Three.js-only today, so they are
+absent rather than shown non-functional.

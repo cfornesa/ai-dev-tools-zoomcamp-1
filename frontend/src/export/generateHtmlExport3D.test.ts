@@ -237,6 +237,27 @@ describe('generateScene3DBundle', () => {
     );
   });
 
+  it('exports an A-Frame scene through the A-Frame runtime with the same toolbar (#772)', async () => {
+    const aframeScene = validScene({ renderer: { preferred: 'aframe' } });
+    for (const immersive of [false, true]) {
+      const result = await generateScene3DBundle(aframeScene, 'Frame scene', {
+        variant: 'non-camera',
+        immersive,
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.filename).toBe('frame-scene.zip');
+      const zip = await JSZip.loadAsync(result.zipBlob);
+      expect(fileNames(zip)).toContain('runtime/aframe.min.js');
+      expect(fileNames(zip)).not.toContain('runtime/three.min.js');
+      const html = await zip.files['index.html'].async('string');
+      expect(html).toContain('<a-scene');
+      expect(html).toContain('id="sphere"'.replace('sphere', 'obj-1'));
+      expect(html).toContain('data-action="fullscreen"');
+      expect(html).not.toContain('cdn.jsdelivr.net');
+    }
+  });
+
   it('keeps regular exports explicitly marked as regular', async () => {
     const result = await generateScene3DBundle(validScene(), 'Regular scene', {
       variant: 'non-camera',

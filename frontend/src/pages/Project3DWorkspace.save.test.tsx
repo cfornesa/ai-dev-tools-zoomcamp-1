@@ -73,13 +73,11 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe('Project3DWorkspace rendering library (#771)', () => {
+describe('Project3DWorkspace rendering library (#771, #772)', () => {
   it('shows Three.js for a legacy scene without a renderer and A-Frame when declared', async () => {
     mockedGetProject3D.mockResolvedValueOnce(baseProject());
     const legacy = renderWorkspace();
-    expect(await screen.findByTestId('project3d-engine')).toHaveTextContent(
-      'Rendering library: Three.js',
-    );
+    expect(await screen.findByTestId('project3d-engine')).toHaveValue('threejs');
     legacy.unmount();
 
     const declared = baseProject();
@@ -88,9 +86,25 @@ describe('Project3DWorkspace rendering library (#771)', () => {
     };
     mockedGetProject3D.mockResolvedValueOnce(declared);
     renderWorkspace();
-    expect(await screen.findByTestId('project3d-engine')).toHaveTextContent(
-      'Rendering library: A-Frame',
-    );
+    expect(await screen.findByTestId('project3d-engine')).toHaveValue('aframe');
+  });
+
+  it('switching the library is an unsaved edit that saves the explicit renderer', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject());
+    mockedSaveSceneVersion3D.mockImplementation(async (_id, scene) => ({
+      id: 2,
+      sequence: 2,
+      origin: 'manual',
+      created_by: 'alice',
+      created_at: '2026-01-03T00:00:00Z',
+      scene_json: scene,
+    }));
+    const user = userEvent.setup();
+    renderWorkspace();
+    const select = await screen.findByTestId('project3d-engine');
+    await user.selectOptions(select, 'aframe');
+    expect(select).toHaveValue('aframe');
+    expect(screen.getByTestId('project3d-save-status')).toHaveTextContent('Unsaved changes');
   });
 });
 

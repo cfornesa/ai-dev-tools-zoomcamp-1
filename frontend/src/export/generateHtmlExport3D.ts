@@ -19,7 +19,9 @@
  */
 import JSZip from 'jszip';
 
-import { validateScene3D } from '../validation/scene3d';
+import { resolveScene3DRenderer, validateScene3D } from '../validation/scene3d';
+import { generateArtPieceBundle } from '../generative/artPieceBundle';
+import { buildAFrameSceneMarkup } from '../render/aframeSceneMarkup';
 import { downloadBlob } from './downloadBlob';
 import { EXPORT_STAGE_TOOLBAR_CSS, renderExportStageToolbar } from './exportStageToolbar';
 import { buildStandaloneThreeRuntimeScript } from './standaloneThreeRuntimeSource';
@@ -341,6 +343,17 @@ export async function generateScene3DBundle(
 
   const variant = options.variant ?? 'full';
   const immersive = options.immersive ?? false;
+
+  // #772: an A-Frame scene exports through the generated-piece ZIP builder (pinned, vendored
+  // A-Frame runtime, same icon-only toolbar) using the same markup the preview renders.
+  if (resolveScene3DRenderer(scene) === 'aframe') {
+    const zipBlob = await generateArtPieceBundle('aframe', buildAFrameSceneMarkup(scene), {
+      mode: variant === 'non-camera' ? 'non-camera' : 'full',
+      presentation: immersive ? 'immersive' : 'regular',
+      capabilities: { screenshot: true, fullscreen: true },
+    });
+    return { ok: true, zipBlob, filename: `${slugifyFilename(baseName)}.zip` };
+  }
   const runtimeBytes = await fetchThreeRuntime();
   const mediapipeAssets = variant === 'full' ? await fetchMediaPipeAssets() : null;
 

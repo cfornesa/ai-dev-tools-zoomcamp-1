@@ -66,3 +66,17 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #806 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | production verification depends on #798–#803 and owner-gated live evidence |
 | #807 | IMPLEMENTED / QA FAIL environment boundary | d0819d0 | focused Vitest/Layout 20 passed; `make check` backend 1615 passed / frontend 276 files 2969 tests; Compose preflight PASS; Chromium E2E blocked by macOS Mach-port launch permission | FAIL (browser evidence unavailable) | open | first-party CSS/React star field, bounded 90 nodes, cosmic-only rendering, E2E spec added; needs real browser runner screenshots and animation delta |
 | #808 | CLOSED / QA PASS | 47d7827 | focused importer 9 passed; `make check` backend 1615 passed / frontend 276 files 2968 tests | PASS | closed | local-only reconciliation fix; production re-import intentionally not run; QA comment 5822184052 |
+
+## Production-readiness — 2026-09-24
+
+- Repository quality: backend 1615 passed / 39 skipped; frontend 276 files / 2969 tests passed on the completed frontend run; lint, format, typecheck, and focused #803 tests pass. Two unrelated editor-workspace timeout tests passed when isolated after a later full-gate run encountered them.
+- Published evidence: #747's production release and smoke are verified; #788's single authorized production import is recorded as failed/no-op for the two changed sources and was not repeated; #803's fix is not published.
+- Browser evidence: owner Chrome was available and verified the live #748 3D regular/mobile/embed surfaces and reproduced #803's immersive layout gap. Playwright Chromium remains blocked before test execution by the macOS Mach-port launch failure.
+- Readiness decision: NO-GO for this batch. #748, #788, #803, #807, and dependent #798–#806 remain open; no production publish is authorized for #803 in this session.
+
+## Session-completion — 2026-09-24
+
+- Distilled open inventory: 14 at start; duplicate audit found no new issue for the reported immersive layout because #803 already owns that contract.
+- Terminal outcomes: 2 closed (#747, #808), 1 implemented but QA-failed on browser boundary (#803), 11 open/dependent or production-gated (#748, #788, #798–#802, #804–#807).
+- Routing audit: Stage 2b #808 and stage 2a #803 used Codex/GPT-5 substitutions for rostered engineering; stage 4 used Codex/GPT-5 substitutions for rostered Claude QA; no second-opinion service ran. Stage 5 readiness and completion were performed as documented Codex substitutions because the rostered service was unavailable.
+- Follow-up audit: #803's user-reported layout gap is linked to the existing issue; no duplicate was created. Remaining open work and evidence boundaries are preserved in the issue list and this ledger.

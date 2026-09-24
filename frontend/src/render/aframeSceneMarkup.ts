@@ -111,7 +111,7 @@ function materialAttr(object: SceneObject3D): string {
     parts.push(`emissive: ${sanitizeColor(object.material.emissive, '#000000')}`);
     parts.push('emissiveIntensity: 1');
   }
-  if (object.type === 'plane') parts.push('side: double');
+  if (object.type === 'plane' || object.type === 'drawingPlane') parts.push('side: double');
   return `material="${escapeAttr(parts.join('; '))}"`;
 }
 
@@ -135,6 +135,7 @@ function objectMarkup(object: SceneObject3D): string {
       return `<a-entity ${base} geometry="${geometry}"></a-entity>`;
     }
     case 'plane':
+    case 'drawingPlane':
       return `<a-plane ${base} width="${num(object.width ?? 1)}" height="${num(object.height ?? 1)}"></a-plane>`;
   }
 }

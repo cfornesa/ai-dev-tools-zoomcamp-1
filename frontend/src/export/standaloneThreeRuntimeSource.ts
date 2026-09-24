@@ -52,6 +52,7 @@ export function buildStandaloneThreeRuntimeScript(
           16
         );
       case 'plane':
+      case 'drawingPlane':
         return new THREE.PlaneGeometry(object.width || 1, object.height || 1);
       default:
         throw new Error('Unknown object type: ' + object.type);
@@ -64,7 +65,7 @@ export function buildStandaloneThreeRuntimeScript(
       color: new THREE.Color(object.material.color),
       opacity: opacity,
       transparent: opacity < 1,
-      side: object.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide,
+      side: object.type === 'plane' || object.type === 'drawingPlane' ? THREE.DoubleSide : THREE.FrontSide,
     };
     if (object.material.emissive) {
       options.emissive = new THREE.Color(object.material.emissive);

@@ -4,5 +4,8 @@
   "maxObjects": 500,
   "maxGroups": 50,
   "maxLights": 16,
+  "maxDrawingPlanes": 20,
+  "maxDrawingShapesPerPlane": 500,
+  "maxDrawingPointsPerPath": 2000,
   "maxScenePayloadBytes": 307200
 }

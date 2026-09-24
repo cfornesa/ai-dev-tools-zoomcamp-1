@@ -68,3 +68,33 @@ def test_ensure_explicit_renderer_keeps_a_declaration_and_upgrades_legacy_scenes
 
     # A legacy scene saved after an A-Frame version keeps that library.
     assert ensure_explicit_scene3d_renderer(legacy, declared)["renderer"] == {"preferred": "aframe"}
+
+
+# --- #778: drawingPlane scene objects ---
+
+
+def test_drawing_plane_fixtures_validate_and_limits_are_enforced():
+    for name in ("valid/drawing_plane.json", "valid/drawing_plane_multicolour.json"):
+        assert validate_scene3d(_fixture(name)).valid, name
+
+    too_many = validate_scene3d(_fixture("malicious/drawing_plane_too_many_shapes.json"))
+    assert not too_many.valid
+    assert any(e.rule == "limitExceeded" and "drawing.shapes" in e.path for e in too_many.errors)
+
+    long_path = _fixture("valid/drawing_plane_multicolour.json")
+    shapes = long_path["objects"][0]["drawing"]["shapes"]
+    path = next(shape for shape in shapes if shape["type"] == "path")
+    path["points"] = [{"x": i % 512, "y": i % 384} for i in range(2001)]
+    result = validate_scene3d(long_path)
+    assert any(e.rule == "limitExceeded" and "points" in e.path for e in result.errors)
+
+    many_planes = _fixture("valid/drawing_plane.json")
+    template = many_planes["objects"][0]
+    many_planes["objects"] = [{**template, "id": f"plane-{i}"} for i in range(21)]
+    result = validate_scene3d(many_planes)
+    assert any(e.rule == "limitExceeded" for e in result.errors)
+
+
+def test_drawing_plane_legacy_and_renderer_resolution_are_unaffected():
+    plane_scene = _fixture("valid/drawing_plane.json")
+    assert resolve_scene3d_engine(plane_scene) == "threejs"

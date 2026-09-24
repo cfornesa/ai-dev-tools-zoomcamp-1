@@ -215,7 +215,7 @@
           "minLength": 1,
           "maxLength": 200
         },
-        "type": { "enum": ["box", "sphere", "cylinder", "plane"] },
+        "type": { "enum": ["box", "sphere", "cylinder", "plane", "drawingPlane"] },
         "groupId": {
           "description": "The containing group's id, or null for a top-level object -- mirrors the 2D schema's identical groupId convention.",
           "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }]
@@ -286,12 +286,407 @@
       ],
       "unevaluatedProperties": false
     },
+    "drawingShape": {
+      "description": "One vector shape inside a drawingPlane's drawing (#778), in the drawing's own pixel coordinate space (origin top-left, y down). Closed vocabulary: rect, ellipse, line, path. Fill and stroke are colours or null; opacity is a unit interval.",
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "type": "object",
+              "required": [
+                "id",
+                "type",
+                "x",
+                "y",
+                "width",
+                "height"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/id"
+                },
+                "type": {
+                  "const": "rect"
+                },
+                "x": {
+                  "type": "number",
+                  "minimum": -100000,
+                  "maximum": 100000
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": -100000,
+                  "maximum": 100000
+                },
+                "width": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100000
+                },
+                "height": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100000
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "fill": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/color"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "stroke": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/color"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "strokeWidth": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 256
+                },
+                "opacity": {
+                  "$ref": "#/$defs/unitInterval"
+                }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "type": "object",
+              "required": [
+                "id",
+                "type",
+                "cx",
+                "cy",
+                "rx",
+                "ry"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/id"
+                },
+                "type": {
+                  "const": "ellipse"
+                },
+                "cx": {
+                  "type": "number",
+                  "minimum": -100000,
+                  "maximum": 100000
+                },
+                "cy": {
+                  "type": "number",
+                  "minimum": -100000,
+                  "maximum": 100000
+                },
+                "rx": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100000
+                },
+                "ry": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100000
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "fill": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/color"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "stroke": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/color"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "strokeWidth": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 256
+                },
+                "opacity": {
+                  "$ref": "#/$defs/unitInterval"
+                }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "type": "object",
+              "required": [
+                "id",
+                "type",
+                "x1",
+                "y1",
+                "x2",
+                "y2"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/id"
+                },
+                "type": {
+                  "const": "line"
+                },
+                "x1": {
+                  "type": "number",
+                  "minimum": -100000,
+                  "maximum": 100000
+                },
+                "y1": {
+                  "type": "number",
+                  "minimum": -100000,
+                  "maximum": 100000
+                },
+                "x2": {
+                  "type": "number",
+                  "minimum": -100000,
+                  "maximum": 100000
+                },
+                "y2": {
+                  "type": "number",
+                  "minimum": -100000,
+                  "maximum": 100000
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "fill": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/color"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "stroke": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/color"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "strokeWidth": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 256
+                },
+                "opacity": {
+                  "$ref": "#/$defs/unitInterval"
+                }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        },
+        {
+          "allOf": [
+            {
+              "type": "object",
+              "required": [
+                "id",
+                "type",
+                "points",
+                "closed"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/$defs/id"
+                },
+                "type": {
+                  "const": "path"
+                },
+                "points": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "properties": {
+                      "x": {
+                        "type": "number",
+                        "minimum": -100000,
+                        "maximum": 100000
+                      },
+                      "y": {
+                        "type": "number",
+                        "minimum": -100000,
+                        "maximum": 100000
+                      }
+                    }
+                  }
+                },
+                "closed": {
+                  "type": "boolean"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "fill": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/color"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "stroke": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/color"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "strokeWidth": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 256
+                },
+                "opacity": {
+                  "$ref": "#/$defs/unitInterval"
+                }
+              }
+            }
+          ],
+          "unevaluatedProperties": false
+        }
+      ]
+    },
+    "drawingDocument": {
+      "description": "The 2D vector drawing carried by a drawingPlane (#778): a pixel-space canvas (width x height), an optional background colour (null = transparent), and an ordered list of shapes drawn bottom to top. Per-plane shape and point counts are capped by schema/limits3d.json.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "width",
+        "height",
+        "shapes"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 2048
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 2048
+        },
+        "background": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/color"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "shapes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/drawingShape"
+          }
+        }
+      }
+    },
+    "drawingPlaneObject": {
+      "description": "A flat plane asset in the 3D scene that displays a 2D vector drawing (#778). It is a normal scene object: the standard transform, visibility, group, name, and material apply (the material colour tints the fallback surface used when a renderer cannot draw the vector content, for example a thumbnail). width/height are the plane's size in world units; the drawing is stretched over it.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseObjectFields"
+        },
+        {
+          "type": "object",
+          "required": [
+            "width",
+            "height",
+            "drawing"
+          ],
+          "properties": {
+            "type": {
+              "const": "drawingPlane"
+            },
+            "width": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 10000
+            },
+            "height": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 10000
+            },
+            "doubleSided": {
+              "type": "boolean"
+            },
+            "drawing": {
+              "$ref": "#/$defs/drawingDocument"
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "object3d": {
       "oneOf": [
         { "$ref": "#/$defs/boxObject" },
         { "$ref": "#/$defs/sphereObject" },
         { "$ref": "#/$defs/cylinderObject" },
-        { "$ref": "#/$defs/planeObject" }
+        { "$ref": "#/$defs/planeObject" },
+        { "$ref": "#/$defs/drawingPlaneObject" }
       ]
     }
   }

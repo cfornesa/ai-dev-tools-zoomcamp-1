@@ -20,7 +20,52 @@ export type Material3D = {
   emissive?: string;
 };
 
-export type Object3DType = 'box' | 'sphere' | 'cylinder' | 'plane';
+export type Object3DType = 'box' | 'sphere' | 'cylinder' | 'plane' | 'drawingPlane';
+
+/** #778: shapes of a drawing plane's vector drawing, in the drawing's pixel space (y down). */
+export type DrawingShapeStyle = {
+  fill?: string | null;
+  stroke?: string | null;
+  strokeWidth?: number;
+  opacity?: number;
+};
+export type DrawingShape =
+  | ({
+      id: string;
+      type: 'rect';
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    } & DrawingShapeStyle)
+  | ({
+      id: string;
+      type: 'ellipse';
+      cx: number;
+      cy: number;
+      rx: number;
+      ry: number;
+    } & DrawingShapeStyle)
+  | ({
+      id: string;
+      type: 'line';
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+    } & DrawingShapeStyle)
+  | ({
+      id: string;
+      type: 'path';
+      points: Array<{ x: number; y: number }>;
+      closed: boolean;
+    } & DrawingShapeStyle);
+export type DrawingDocument = {
+  width: number;
+  height: number;
+  background?: string | null;
+  shapes: DrawingShape[];
+};
 
 export type Object3D = {
   id: string;
@@ -38,6 +83,9 @@ export type Object3D = {
   radius?: number;
   radiusTop?: number;
   radiusBottom?: number;
+  /** drawingPlane only (#778). */
+  doubleSided?: boolean;
+  drawing?: DrawingDocument;
 };
 
 export type Group3D = {
@@ -90,6 +138,7 @@ export const OBJECT_TYPE_DISPLAY_NAMES: Record<Object3DType, string> = {
   sphere: 'Sphere',
   cylinder: 'Cylinder',
   plane: 'Plane',
+  drawingPlane: 'Drawing plane',
 };
 
 /** Mirrors `sceneShapes.ts`'s `shapeLabel` convention: `<type display

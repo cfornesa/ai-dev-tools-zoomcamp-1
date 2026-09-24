@@ -105,6 +105,7 @@ function buildGeometry(object: SceneObject3D): THREE.BufferGeometry {
         16,
       );
     case 'plane':
+    case 'drawingPlane':
       return new THREE.PlaneGeometry(object.width ?? 1, object.height ?? 1);
   }
 }
@@ -118,7 +119,10 @@ function buildMaterial(object: SceneObject3D): THREE.MeshStandardMaterial {
       : undefined),
     opacity,
     transparent: opacity < 1,
-    side: object.type === 'plane' ? THREE.DoubleSide : THREE.FrontSide,
+    side:
+      object.type === 'plane' || object.type === 'drawingPlane'
+        ? THREE.DoubleSide
+        : THREE.FrontSide,
   });
 }
 

@@ -127,6 +127,7 @@ const OBJECT_TYPE_DIMENSION_FIELDS: Record<Object3DType, (keyof Object3D)[]> = {
   sphere: ['radius'],
   cylinder: ['radiusTop', 'radiusBottom', 'height'],
   plane: ['width', 'height'],
+  drawingPlane: ['width', 'height'],
 };
 
 /**

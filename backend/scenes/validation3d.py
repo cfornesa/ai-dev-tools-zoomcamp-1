@@ -44,6 +44,7 @@ PRIMITIVE_REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
     "sphere": ("radius",),
     "cylinder": ("radiusTop", "radiusBottom", "height"),
     "plane": ("width", "height"),
+    "drawingPlane": ("width", "height"),
 }
 
 PRIMITIVE_DEFAULT_DIMENSIONS: dict[str, dict[str, int]] = {
@@ -51,6 +52,7 @@ PRIMITIVE_DEFAULT_DIMENSIONS: dict[str, dict[str, int]] = {
     "sphere": {"radius": 1},
     "cylinder": {"radiusTop": 1, "radiusBottom": 1, "height": 1},
     "plane": {"width": 1, "height": 1},
+    "drawingPlane": {"width": 1, "height": 1},
 }
 
 
@@ -236,6 +238,19 @@ def _check_references(data: dict) -> list[Scene3DValidationError]:
                 )
             )
 
+    # #778: shape ids must be unique within their drawing plane.
+    for index, obj in enumerate(objects):
+        if obj.get("type") != "drawingPlane":
+            continue
+        for error in _duplicate_ids(obj["drawing"]["shapes"], "shapes"):
+            errors.append(
+                Scene3DValidationError(
+                    path=f"$.objects[{index}].drawing.shapes",
+                    rule=error.rule,
+                    message=error.message,
+                )
+            )
+
     return errors
 
 
@@ -259,6 +274,19 @@ def _check_limits(data: dict) -> list[Scene3DValidationError]:
     lights = data.get("lights", [])
 
     _cap("$.objects", len(objects), "maxObjects")
+    # #778: drawing planes carry vector content, so their count and content are capped too.
+    planes = [(i, o) for i, o in enumerate(objects) if o.get("type") == "drawingPlane"]
+    _cap("$.objects", len(planes), "maxDrawingPlanes")
+    for object_index, plane in planes:
+        shapes = plane["drawing"]["shapes"]
+        _cap(f"$.objects[{object_index}].drawing.shapes", len(shapes), "maxDrawingShapesPerPlane")
+        for shape_index, shape in enumerate(shapes):
+            if shape.get("type") == "path":
+                _cap(
+                    f"$.objects[{object_index}].drawing.shapes[{shape_index}].points",
+                    len(shape["points"]),
+                    "maxDrawingPointsPerPath",
+                )
     _cap("$.groups", len(groups), "maxGroups")
     _cap("$.lights", len(lights), "maxLights")
 

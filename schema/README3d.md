@@ -122,3 +122,14 @@ every existing document stays valid, and a document without it resolves to
 read this one schema; the resolvers are `scenes.piece_engine.resolve_scene3d_engine`
 and `frontend/src/validation/scene3d.ts`'s `resolveScene3DRenderer`. The A-Frame
 builder itself is tracked separately (#772).
+
+## `drawingPlane` objects (issue #778)
+
+A `drawingPlane` is a fifth object type: a flat plane asset that carries a 2D vector drawing
+(`drawing: { width, height, background, shapes }`, shapes in the drawing's pixel space:
+`rect`, `ellipse`, `line`, `path`, each with optional fill, stroke, strokeWidth, opacity). It is an
+additive type, so no `schemaVersion` bump and every existing scene stays valid. It uses the normal
+object transform, visibility, group, name, and material (the material colour is the fallback surface
+for renderers that do not draw the vector content, e.g. card thumbnails). Validators enforce the
+limits in `limits3d.json`: `maxDrawingPlanes`, `maxDrawingShapesPerPlane`,
+`maxDrawingPointsPerPath`, and unique shape ids per plane. Renderers: Three.js (#779), A-Frame (#780).

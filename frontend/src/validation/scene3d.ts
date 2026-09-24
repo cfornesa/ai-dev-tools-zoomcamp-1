@@ -162,6 +162,15 @@ function checkReferences(data: any): Scene3DValidationError[] {
     }
   });
 
+  // #778: shape ids must be unique within their drawing plane.
+  objects.forEach((obj, index) => {
+    const plane = obj as { type?: unknown; drawing?: { shapes?: Array<{ id?: unknown }> } };
+    if (plane.type !== 'drawingPlane') return;
+    for (const error of checkDuplicateIds(plane.drawing?.shapes ?? [], 'shapes')) {
+      errors.push({ ...error, path: `$.objects[${index}].drawing.shapes` });
+    }
+  });
+
   return errors;
 }
 
@@ -186,6 +195,24 @@ function checkLimits(data: any): Scene3DValidationError[] {
   const lights: unknown[] = data.lights ?? [];
 
   cap('$.objects', objects.length, 'maxObjects');
+  // #778: drawing planes carry vector content, so their count and content are capped too.
+  const planes = objects
+    .map((object, index) => ({ object: object as Record<string, any>, index })) // eslint-disable-line @typescript-eslint/no-explicit-any
+    .filter(({ object }) => object.type === 'drawingPlane');
+  cap('$.objects', planes.length, 'maxDrawingPlanes');
+  for (const { object, index } of planes) {
+    const shapes: Array<Record<string, any>> = object.drawing?.shapes ?? []; // eslint-disable-line @typescript-eslint/no-explicit-any
+    cap(`$.objects[${index}].drawing.shapes`, shapes.length, 'maxDrawingShapesPerPlane');
+    shapes.forEach((shape, shapeIndex) => {
+      if (shape.type === 'path') {
+        cap(
+          `$.objects[${index}].drawing.shapes[${shapeIndex}].points`,
+          (shape.points ?? []).length,
+          'maxDrawingPointsPerPath',
+        );
+      }
+    });
+  }
   cap('$.groups', groups.length, 'maxGroups');
   cap('$.lights', lights.length, 'maxLights');
 

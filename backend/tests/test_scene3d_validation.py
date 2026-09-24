@@ -36,6 +36,8 @@ VALIDATOR_ONLY_REJECTIONS = {
     "malicious/duplicate_ids.json": "duplicateId",
     "malicious/dangling_group_reference.json": "danglingReference",
     "malicious/oversized_document.json": "limitExceeded",
+    "malicious/drawing_plane_duplicate_shape_ids.json": "duplicateId",
+    "malicious/drawing_plane_too_many_shapes.json": "limitExceeded",
 }
 
 

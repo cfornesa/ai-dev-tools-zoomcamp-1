@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "documentType": "scene3d",
+  "id": "scene3d-drawing-plane-bad-shape",
+  "scene": {
+    "backgroundColor": "#808080"
+  },
+  "camera": {
+    "position": {
+      "x": 0,
+      "y": 5,
+      "z": 10
+    },
+    "target": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "fov": 50,
+    "near": 0.1,
+    "far": 1000
+  },
+  "lights": [],
+  "groups": [],
+  "objects": [
+    {
+      "id": "plane-bad",
+      "type": "drawingPlane",
+      "groupId": null,
+      "transform": {
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "rotation": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "scale": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "opacity": 1
+      },
+      "material": {
+        "color": "#ffffff"
+      },
+      "visible": true,
+      "width": 4,
+      "height": 3,
+      "drawing": {
+        "width": 512,
+        "height": 384,
+        "background": null,
+        "shapes": [
+          {
+            "id": "r1",
+            "type": "star",
+            "x": 32,
+            "y": 32,
+            "width": 448,
+            "height": 320,
+            "fill": "#22c55e",
+            "stroke": null,
+            "strokeWidth": 0
+          }
+        ]
+      }
+    }
+  ],
+  "randomness": {
+    "seed": 0,
+    "enabled": false
+  }
+}

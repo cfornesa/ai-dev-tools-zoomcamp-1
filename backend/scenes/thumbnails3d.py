@@ -431,7 +431,9 @@ def _draw_faces(scene: dict, camera: _Camera) -> list[tuple[float, str, list, tu
                 float(obj["radiusTop"]), float(obj["radiusBottom"]), float(obj["height"])
             )
             cull = True
-        elif obj_type == "plane":
+        elif obj_type in ("plane", "drawingPlane"):
+            # A drawingPlane's vector content is not rasterized into card thumbnails; the flat
+            # surface is drawn with its material colour (#778).
             faces = _plane_faces(float(obj["width"]), float(obj["height"]))
             cull = False
         elif obj_type == "sphere":

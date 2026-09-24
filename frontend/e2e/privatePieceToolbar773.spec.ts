@@ -136,4 +136,58 @@ test.describe('owner (private) vs public regular view toolbar (#773)', () => {
       await page.keyboard.press('Escape');
     }
   });
+
+  test('the owner opens the regular view of their own private structured 3D and 2D pieces (#790)', async ({
+    page,
+    browser,
+  }, testInfo) => {
+    test.setTimeout(150_000);
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    const profileResponse = await page.request.get('/api/account/profile/');
+    const { handle } = (await profileResponse.json()) as { handle: string };
+    const urls: Record<string, string> = {};
+
+    for (const [menuItem, kind] of [
+      ['Create a new 3D project', '3d'],
+      ['Create a new 2D project with p5.js', '2d'],
+    ] as const) {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto('/');
+      await page.getByRole('button', { name: 'More creation options' }).click();
+      await page.getByRole('menuitem', { name: menuItem }).click();
+      await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
+      const slug = new URL(page.url()).pathname.split('/').pop()!;
+      urls[kind] = `/users/@${handle}/pieces/${slug}`;
+
+      for (const viewport of [
+        { width: 1280, height: 900 },
+        { width: 375, height: 812 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await page.goto(urls[kind]!);
+        // The stage renders for the owner (not bounced to the gallery), with the shared icon row.
+        await expect(page).toHaveURL(new RegExp(`/users/@${handle}/pieces/${slug}$`));
+        const stage =
+          kind === '3d'
+            ? page.getByTestId('scene3d-preview-canvas-frame')
+            : page.locator('.piece-stage-shell, [data-testid="scene-canvas-host"], canvas').first();
+        await expect(stage).toBeVisible({ timeout: 20_000 });
+        await expect(
+          page.getByRole('toolbar', { name: /Piece actions|Preview actions/ }).first(),
+        ).toBeVisible();
+        await page.screenshot({
+          path: testInfo.outputPath(`private-${kind}-${viewport.width}.png`),
+        });
+      }
+    }
+
+    // Anonymous visitors still get nothing for a private structured piece.
+    const anonymous = await browser.newContext();
+    const anonPage = await anonymous.newPage();
+    for (const url of Object.values(urls)) {
+      await anonPage.goto(url);
+      await expect(anonPage).toHaveURL(/\/gallery/);
+    }
+    await anonymous.close();
+  });
 });

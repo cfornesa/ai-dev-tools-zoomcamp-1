@@ -56,47 +56,64 @@ class PublicPieceBySlugView(APIView):
         except PublicProfile.DoesNotExist as exc:
             raise Http404 from exc
         owner = profile.user
-        project = (
-            eligible_projects()
-            .filter(owner=owner, public_slug=piece_slug)
-            .prefetch_related(
+        is_owner = request.user.is_authenticated and request.user.pk == owner.pk
+
+        def own_or_public(model_manager, public_queryset):
+            """The public record, or (owner only, #790) their own private one."""
+            record = public_queryset.filter(owner=owner, public_slug=piece_slug)
+            found = record.first()
+            if found is None and is_owner:
+                found = model_manager.filter(
+                    owner=owner, public_slug=piece_slug, is_deleted=False
+                ).first()
+            return found
+
+        def with_edit_url(payload: dict) -> dict:
+            if is_owner:
+                payload["edit_url"] = f"/users/@{handle}/edit/{piece_slug}"
+            return payload
+
+        project = own_or_public(
+            Project.objects,
+            eligible_projects().prefetch_related(
                 Prefetch(
                     "versions",
                     queryset=SceneVersion.objects.order_by("-sequence", "-id"),
                     to_attr="_public_version_summaries",
                 )
-            )
-            .first()
+            ),
         )
         if project:
             return Response(
-                {
-                    "canonical_url": f"/users/@{handle}/pieces/{project.public_slug}",
-                    "viewer_url": f"/users/@{handle}/pieces/{project.public_slug}",
-                    "type": "2d",
-                    "piece": PublicProjectSerializer(project).data,
-                }
+                with_edit_url(
+                    {
+                        "canonical_url": f"/users/@{handle}/pieces/{project.public_slug}",
+                        "viewer_url": f"/users/@{handle}/pieces/{project.public_slug}",
+                        "type": "2d",
+                        "piece": PublicProjectSerializer(project).data,
+                    }
+                )
             )
-        project3d = (
-            eligible_projects3d()
-            .filter(owner=owner, public_slug=piece_slug)
-            .prefetch_related(
+        project3d = own_or_public(
+            Project3D.objects,
+            eligible_projects3d().prefetch_related(
                 Prefetch(
                     "versions",
                     queryset=SceneVersion3D.objects.order_by("-sequence", "-id"),
                     to_attr="_public_version_summaries",
                 )
-            )
-            .first()
+            ),
         )
         if project3d:
             return Response(
-                {
-                    "canonical_url": f"/users/@{handle}/pieces/{project3d.public_slug}",
-                    "viewer_url": f"/users/@{handle}/pieces/{project3d.public_slug}",
-                    "type": "3d",
-                    "piece": PublicProject3DSerializer(project3d).data,
-                }
+                with_edit_url(
+                    {
+                        "canonical_url": f"/users/@{handle}/pieces/{project3d.public_slug}",
+                        "viewer_url": f"/users/@{handle}/pieces/{project3d.public_slug}",
+                        "type": "3d",
+                        "piece": PublicProject3DSerializer(project3d).data,
+                    }
+                )
             )
         art_piece_query = ArtPiece.objects.filter(
             owner=owner,

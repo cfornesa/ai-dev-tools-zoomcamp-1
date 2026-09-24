@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
@@ -470,3 +473,101 @@ def test_owner_editor_slug_resolver_mounts_structured_2d_and_3d_pieces(client):
     assert three_d.status_code == 200
     assert three_d.json()["type"] == "3d"
     assert three_d.json()["piece"]["id"] == str(project3d.public_id)
+
+
+# --- #790: the owner can open the regular view of their own private structured piece ---
+
+
+_MINIMAL_SCENE_3D = json.loads(
+    (Path(__file__).resolve().parents[2] / "schema/fixtures3d/valid/minimal.json").read_text()
+)
+
+
+def _private_structured(user):
+    project = Project.objects.create(
+        owner=user, title="Private Canvas", public_slug="private-canvas"
+    )
+    version = SceneVersion.objects.create(project=project, sequence=1, scene_json={"a": 1})
+    project.current_version = version
+    project.save(update_fields=["current_version"])
+    project3d = Project3D.objects.create(
+        owner=user, title="Private Scene", public_slug="private-scene"
+    )
+    version3d = SceneVersion3D.objects.create(
+        project=project3d, sequence=1, scene_json=_MINIMAL_SCENE_3D
+    )
+    project3d.current_version = version3d
+    project3d.save(update_fields=["current_version"])
+    return project, project3d
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(("slug", "kind"), [("private-canvas", "2d"), ("private-scene", "3d")])
+def test_owner_sees_their_own_private_structured_piece_at_the_regular_route(client, slug, kind):
+    user = get_user_model().objects.create_user(username="private-owner")
+    PublicProfile.objects.create(user=user, handle="private-owner", is_public=True)
+    _private_structured(user)
+    client.force_login(user)
+
+    response = client.get(
+        reverse("public-piece-by-slug", kwargs={"handle": "private-owner", "piece_slug": slug})
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["type"] == kind
+    assert body["piece"]["current_version"]["scene_json"]
+    assert body["edit_url"] == f"/users/@private-owner/edit/{slug}"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("slug", ["private-canvas", "private-scene"])
+def test_anonymous_and_other_users_never_see_a_private_structured_piece(client, slug):
+    owner = get_user_model().objects.create_user(username="private-owner2")
+    PublicProfile.objects.create(user=owner, handle="private-owner2", is_public=True)
+    _private_structured(owner)
+    url = reverse("public-piece-by-slug", kwargs={"handle": "private-owner2", "piece_slug": slug})
+
+    assert client.get(url).status_code == 404
+    other = get_user_model().objects.create_user(username="someone-else")
+    client.force_login(other)
+    assert client.get(url).status_code == 404
+
+
+@pytest.mark.django_db
+def test_a_deleted_private_structured_piece_is_not_shown_even_to_its_owner(client):
+    owner = get_user_model().objects.create_user(username="private-owner3")
+    PublicProfile.objects.create(user=owner, handle="private-owner3", is_public=True)
+    project, project3d = _private_structured(owner)
+    project.is_deleted = True
+    project.save(update_fields=["is_deleted"])
+    project3d.is_deleted = True
+    project3d.save(update_fields=["is_deleted"])
+    client.force_login(owner)
+    for slug in ("private-canvas", "private-scene"):
+        url = reverse(
+            "public-piece-by-slug", kwargs={"handle": "private-owner3", "piece_slug": slug}
+        )
+        assert client.get(url).status_code == 404
+
+
+@pytest.mark.django_db
+def test_published_structured_pieces_expose_edit_url_only_to_their_owner(client):
+    owner = get_user_model().objects.create_user(username="pub-owner")
+    PublicProfile.objects.create(user=owner, handle="pub-owner", is_public=True)
+    project = Project.objects.create(
+        owner=owner,
+        title="Published",
+        public_slug="published-canvas",
+        visibility=Project.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    version = SceneVersion.objects.create(project=project, sequence=1, scene_json={})
+    project.current_version = version
+    project.save(update_fields=["current_version"])
+    url = reverse(
+        "public-piece-by-slug", kwargs={"handle": "pub-owner", "piece_slug": "published-canvas"}
+    )
+    assert "edit_url" not in client.get(url).json()
+    client.force_login(owner)
+    assert client.get(url).json()["edit_url"] == "/users/@pub-owner/edit/published-canvas"

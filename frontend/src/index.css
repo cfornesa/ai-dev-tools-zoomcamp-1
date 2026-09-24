@@ -72,6 +72,10 @@
 }
 
 :root[data-site-backdrop='cosmic'] {
+  --cosmic-star-color: color-mix(in srgb, var(--text-h) 75%, var(--accent));
+  --cosmic-nebula-primary: color-mix(in srgb, var(--accent) 65%, transparent);
+  --cosmic-nebula-secondary: color-mix(in srgb, var(--text-h) 28%, var(--accent));
+  --cosmic-nebula-warm: color-mix(in srgb, var(--accent) 42%, var(--text-h));
   --site-backdrop:
     radial-gradient(circle at 18% 15%, rgb(192 132 252 / 22%) 0 1px, transparent 2px),
     radial-gradient(circle at 76% 28%, rgb(255 255 255 / 18%) 0 1px, transparent 2px),
@@ -6665,21 +6669,33 @@ select.ai-proposal-field-full-width {
 .cosmic-nebula-1 {
   top: -20%;
   left: -10%;
-  background: radial-gradient(circle, rgb(192 132 252 / 45%), transparent 65%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--cosmic-nebula-primary) 70%, transparent),
+    transparent 65%
+  );
   animation: nebula-drift-1 55s ease-in-out infinite alternate;
 }
 
 .cosmic-nebula-2 {
   right: -15%;
   bottom: -25%;
-  background: radial-gradient(circle, rgb(56 189 248 / 35%), transparent 65%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--cosmic-nebula-secondary) 70%, transparent),
+    transparent 65%
+  );
   animation: nebula-drift-2 65s ease-in-out infinite alternate;
 }
 
 .cosmic-nebula-3 {
   top: 30%;
   left: 35%;
-  background: radial-gradient(circle, rgb(251 191 36 / 22%), transparent 65%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--cosmic-nebula-warm) 70%, transparent),
+    transparent 65%
+  );
   animation: nebula-drift-3 75s ease-in-out infinite alternate;
 }
 
@@ -6690,7 +6706,7 @@ select.ai-proposal-field-full-width {
   width: 90vmin;
   height: 90vmin;
   margin: -45vmin 0 0 -45vmin;
-  border: 1px solid rgb(192 132 252 / 12%);
+  border: 1px solid color-mix(in srgb, var(--cosmic-star-color) 18%, transparent);
   border-radius: 50%;
   animation: astrolabe-rotation 300s linear infinite;
 }
@@ -6704,12 +6720,28 @@ select.ai-proposal-field-full-width {
 .cosmic-star {
   position: absolute;
   border-radius: 50%;
-  background: #fff;
+  background: var(--cosmic-star-color);
   animation: cosmos-star-twinkle ease-in-out infinite;
 }
 
 .cosmic-star-amber {
-  background: #fbbf24;
+  background: color-mix(in srgb, var(--cosmic-star-color) 45%, var(--accent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmic-nebula,
+  .cosmic-astrolabe,
+  .cosmic-stars,
+  .cosmic-star {
+    animation-name: none !important;
+  }
+}
+
+:root[data-low-power='true'] .cosmic-nebula,
+:root[data-low-power='true'] .cosmic-astrolabe,
+:root[data-low-power='true'] .cosmic-stars,
+:root[data-low-power='true'] .cosmic-star {
+  animation-name: none !important;
 }
 
 @keyframes nebula-drift-1 {

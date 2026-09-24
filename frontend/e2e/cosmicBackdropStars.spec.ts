@@ -48,4 +48,23 @@ test.describe('Cosmic backdrop star field (#807)', () => {
       expect(Buffer.compare(before, after)).not.toBe(0);
     });
   }
+
+  test('disables cosmic animation under reduced motion', async ({ page }) => {
+    await stubCosmicTheme(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await expect(page.getByTestId('cosmic-starfield')).toBeVisible();
+    await expect(page.locator('.cosmic-nebula-1')).toHaveCSS('animation-name', 'none');
+    await expect(page.locator('.cosmic-star').first()).toHaveCSS('animation-name', 'none');
+  });
+
+  test('disables cosmic animation for the low-power root opt-out', async ({ page }) => {
+    await stubCosmicTheme(page);
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'hardwareConcurrency', { configurable: true, value: 2 });
+    });
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-low-power', 'true');
+    await expect(page.locator('.cosmic-astrolabe')).toHaveCSS('animation-name', 'none');
+  });
 });

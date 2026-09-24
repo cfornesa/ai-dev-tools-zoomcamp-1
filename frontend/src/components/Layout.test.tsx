@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as siteThemeApi from '../api/siteTheme';
 import * as publicPagesApi from '../api/publicPages';
 import { AuthContext } from '../auth/context';
-import Layout from './Layout';
+import Layout, { shouldUseLowPowerEnvironment } from './Layout';
 import { MOBILE_HEADER_BREAKPOINT_PX } from './useIsMobileHeader';
 
 vi.mock('../api/siteTheme', () => ({
@@ -146,6 +146,16 @@ describe('Layout: cosmic backdrop (#807)', () => {
     } as Awaited<ReturnType<typeof siteThemeApi.fetchSiteTheme>>);
     renderWithAuth({ status: 'signed-out', user: null });
     expect(screen.queryByTestId('cosmic-starfield')).not.toBeInTheDocument();
+  });
+
+  it('detects low-power hardware or Save-Data without requiring either signal', () => {
+    expect(shouldUseLowPowerEnvironment({ hardwareConcurrency: 2 })).toBe(true);
+    expect(
+      shouldUseLowPowerEnvironment({ hardwareConcurrency: 8, connection: { saveData: true } }),
+    ).toBe(true);
+    expect(
+      shouldUseLowPowerEnvironment({ hardwareConcurrency: 8, connection: { saveData: false } }),
+    ).toBe(false);
   });
 });
 

@@ -16,6 +16,14 @@ import {
   type ThemePreference,
 } from '../theme';
 
+export function shouldUseLowPowerEnvironment(
+  navigatorLike: Pick<Navigator, 'hardwareConcurrency'> & {
+    connection?: { saveData?: boolean };
+  } = navigator,
+) {
+  return navigatorLike.hardwareConcurrency <= 2 || navigatorLike.connection?.saveData === true;
+}
+
 /**
  * Task 64 (issue #64): app-shell skip link, per `_docs/plan.md`'s
  * "Accessibility and alternate controls" → "Keyboard access" list ("Use
@@ -77,6 +85,8 @@ function Layout() {
   useEffect(() => {
     if (!siteTheme) return;
     const root = document.documentElement;
+    if (shouldUseLowPowerEnvironment(navigator)) root.dataset.lowPower = 'true';
+    else delete root.dataset.lowPower;
     const mode = resolveThemeMode(themePreference);
     const palette = siteTheme.theme_palettes?.[mode] ?? siteTheme;
     const mapping: Record<string, string> = {

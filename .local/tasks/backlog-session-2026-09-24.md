@@ -30,3 +30,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #771 | CLOSED | de85f37 | backend focused 195; vitest 37 | PASS | closed | local |
 | #772 | CLOSED | c43029c | vitest 99; playwright aframeStructured772 | PASS | closed | local |
 | #778 | CLOSED | 2d635c3 | backend 66; vitest 118 | PASS | closed | local; no migration |
+| #779 | CLOSED | 99f07a5 | vitest 170; playwright drawingPlane3d threejs | PASS | closed | local |

@@ -19,3 +19,5 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #768 | CLOSED | 65a784a | playwright regularToolbar2d768 | PASS | closed | local |
 | #769 | CLOSED | 2758bab | playwright immersive3dToolbar769 | PASS | closed | local; drift #789 |
 | #773 | CLOSED | d8faf86 | playwright privatePieceToolbar773 | PASS | closed | local; follow-up #790 |
+
+**Cluster gate (toolbar/ZIP-canvas, #752-#754,#761-#764,#766-#769,#773):** `make check`: backend green; frontend 2826/2828, two load-only timing flakes (App.embedRoute, useDraftAutosave) pass alone (3 files/21 tests); filed as a workflow defect (issue below).

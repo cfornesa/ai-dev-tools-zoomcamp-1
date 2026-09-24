@@ -72,6 +72,10 @@ def test_validate_plan_requires_explicit_scope():
     with pytest.raises(ai_runs.InvalidTarget, match="plan scope"):
         ai_runs.validate_plan(plan)
 
+    plan["scope"] = "unknown"
+    with pytest.raises(ai_runs.InvalidTarget, match="plan scope"):
+        ai_runs.validate_plan(plan)
+
 
 def test_run_scope_rejects_out_of_scope_changes_and_preserves_scene_scope_rules():
     before = {

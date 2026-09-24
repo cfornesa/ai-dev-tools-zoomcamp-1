@@ -238,10 +238,10 @@ describe('Scene3DPreview public camera overlay geometry (issue #728)', () => {
   it('keeps immersive stages centered and viewport-proportional while retaining the shared camera contract', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
     expect(css).toMatch(
-      /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)\s*\{[^}]*min-height:\s*100dvh;[^}]*padding:\s*var\(--site-density\) 1\.25rem 1\.25rem;/s,
+      /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)\s*\{[^}]*min-height:\s*100dvh;[^}]*padding:\s*var\(--space-8\) clamp\(var\(--space-6\), 4vw, var\(--space-8\)\);/s,
     );
     expect(css).toMatch(
-      /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)\s*> \[data-panel='preview'\]\s*\{[^}]*display:\s*grid;[^}]*min-height:\s*100dvh;[^}]*place-items:\s*center;/s,
+      /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)\s*> \[data-panel='preview'\]\s*\{[^}]*display:\s*grid;[^}]*min-height:\s*min\(100dvh, calc\(100vw \* 9 \/ 16\)\);[^}]*place-items:\s*center;/s,
     );
     expect(css).toMatch(
       /\.immersive-project3d-viewer:not\(\.immersive-project3d-viewer--embed\)[\s\S]*?\.scene3d-preview\s*\{[^}]*width:\s*min\(100%, calc\(100dvh \* 16 \/ 9\)\);/s,

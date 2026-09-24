@@ -1451,6 +1451,8 @@ The authorized production reference import was run exactly once. Replit logged t
 
 Owner-authorized Chrome inspection reproduced the reported production mismatch on `/users/@cfornesa/immersive/untitled-3d-scene-3`: the preview/control region appeared before the title and description, with insufficient surrounding padding. Because the existing #803 contract covers the same 3D regular/immersive/embed identity boundary, no duplicate issue was created. Commit `793f0e8` moves the descriptive identity above the stage, keeps stage controls with the stage, places actions/version details below, and adds focused plus E2E-order coverage. Local focused checks pass; the required Playwright browser matrix remains blocked by the macOS Mach-port launch failure, so #803 stays open and unpublished.
 
+The follow-up contract assertion is in `dcbdeb0`. A final full frontend run completed 276 files / 2969 tests; the subsequent full `make check` encountered two unrelated editor-workspace timeout flakes (2,967/2,969), and both files passed when isolated (39/39). This does not change #803's browser-evidence boundary.
+
 ## 2026-09-24 — AI generation/editing distillation; work restricted to task-distillation
 
 Owner restricted this session to task-distillation only. Added #809-#816 (new only). Interrupted #807 implementation wrote no files (tool rejected); tree clean. Star-field issues #807/#798 remain queued.

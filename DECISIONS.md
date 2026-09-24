@@ -1438,3 +1438,11 @@ Owner decision (asked in session): after a slug change the old URL is a hard 404
 ## 2026-09-24 — External-repo parity distillation
 
 Added #807, #798–#806 (new issues only; no closed issue reopened). Star field implemented first-party CSS/React, not theme JS. Claude Sonnet 5 / Medium ran distillation. Production verification #806 stays owner/Codex-gated.
+
+## 2026-09-24 — Production importer reconciliation boundary (#788/#808)
+
+The authorized production reference import was run exactly once. Replit logged the six marked pieces, but C2.js and C2.js Interactive remained on their snapshotted version-1 fixed-coordinate sources, so #788 is QA FAIL and stays open. No rollback was needed because the snapshot was unchanged, and no second production data action is authorized in this session. #808 adds source comparison, dry-run update reporting, immutable next-version creation, and idempotence coverage; it is locally green and production re-import remains a new-owner-authorization follow-up.
+
+## 2026-09-24 — Browser evidence boundary for #807
+
+#807's first-party cosmic star field implementation and focused tests are committed as `d0819d0`. Compose preflight and local checks pass, but the required Playwright Chromium launch fails on this macOS host at the OS Mach-port permission boundary; the issue remains open until a real browser runner supplies the two viewport screenshots and animation-delta evidence.

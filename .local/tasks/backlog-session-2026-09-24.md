@@ -52,3 +52,17 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #796 | CLOSED | c23882b | vitest 2963; playwright drawingPlaneAframe796 2 + 3D regression 9 | PASS | closed | local |
 | #749 | CLOSED | b39eaa2 | playwright publishingAndRemix 13, responsiveShell 3, drawioPublicSurfaces 1, aiAndRecovery 7 all pass; vitest PublicProjectViewer 44 | PASS | closed | 1 product fix + test repairs |
 | #750 | CLOSED | a17724d | backend full 1613; vitest 2965; playwright pieceSlugEdit750 2 | PASS | closed | local; no migration |
+| #747 | QA PASS / production verified | d87b711, 16ceca5 | `make check`; published smoke; live view-source metadata | PASS evidence gathered; GitHub close/comment pending Chrome unlock | open | production release verified at augmentrart.com; metadata backend forwarding confirmed |
+| #748 | BLOCKED | — | local checks green; required live Chrome matrix not completed in this handoff | FAIL/INCOMPLETE | open | requires live 1280x900 and 375x812 inspection of toolbar, routes, ZIP, ink, drawing planes, slug, and private-owner view |
+| #788 | QA FAIL / production blocked | 652c36ed production release; no source-update commit | rehearsal + one authorized production run + post-run live API/Chrome inspection + cleanup smoke | FAIL | open | production command ran exactly once; source rows stayed version 1 with old fixed-coordinate sources; no second run authorized |
+| #798 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | depends on #807; reduced-motion, low-power, and style-token scoping |
+| #799 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | 2D runtime template parity |
+| #800 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | 3D runtime template parity |
+| #801 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | all-engine ready/error runtime template |
+| #802 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | 2D regular/immersive/embed presentation identity |
+| #803 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | 3D regular/immersive/embed presentation identity |
+| #804 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | collection parity matrix and presentation gaps |
+| #805 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | profile/personalization parity matrix |
+| #806 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | production verification depends on #798–#803 and owner-gated live evidence |
+| #807 | IMPLEMENTED / QA FAIL environment boundary | d0819d0 | focused Vitest/Layout 20 passed; `make check` backend 1615 passed / frontend 276 files 2969 tests; Compose preflight PASS; Chromium E2E blocked by macOS Mach-port launch permission | FAIL (browser evidence unavailable) | open | first-party CSS/React star field, bounded 90 nodes, cosmic-only rendering, E2E spec added; needs real browser runner screenshots and animation delta |
+| #808 | IMPLEMENTED / QA PASS | 47d7827 | focused importer 9 passed; `make check` backend 1615 passed / frontend 276 files 2968 tests | PASS | open | local-only reconciliation fix; production re-import intentionally not run |

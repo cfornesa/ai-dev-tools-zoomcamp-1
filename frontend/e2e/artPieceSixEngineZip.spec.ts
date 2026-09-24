@@ -106,6 +106,8 @@ test.describe('Six-engine offline regular and immersive bundles (#609)', () => {
     page,
     context,
   }) => {
+    // Twelve downloads (six engines x regular/immersive), each extracted and served.
+    test.setTimeout(300_000);
     const runId = Date.now().toString(36);
     const handle = `e2e-zip-${runId}`;
     await loginViaUI(page, e2eFixtures.owner.email, e2eFixtures.password);
@@ -150,14 +152,10 @@ test.describe('Six-engine offline regular and immersive bundles (#609)', () => {
             : `/art-pieces/immersive/${piece.publicId}`,
         );
         const menuButton = page.getByRole('button', { name: 'Open download menu' });
-        if (presentation === 'regular') {
-          await expect(menuButton).toBeVisible();
-        } else {
-          await page.getByRole('button', { name: 'Piece controls' }).click();
-        }
+        await expect(menuButton).toBeVisible();
         const downloadPromise = page.waitForEvent('download');
-        if (presentation === 'regular') await menuButton.click();
-        await page.getByRole('button', { name: 'Download full piece' }).click();
+        await menuButton.click();
+        await page.getByRole('menuitem', { name: 'Download Full ZIP' }).click();
         const download = await downloadPromise;
         const zip = await JSZip.loadAsync(fs.readFileSync((await download.path())!));
         expect(Object.keys(zip.files)).toContain('index.html');

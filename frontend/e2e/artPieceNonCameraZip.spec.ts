@@ -264,7 +264,7 @@ test.describe('Generated Non-Camera ZIP: preserve artwork while enforcing device
     ).toBeVisible();
     await page.getByRole('button', { name: 'Open download menu' }).click();
     const zipDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download non-camera piece' }).click();
+    await page.getByRole('menuitem', { name: 'Download Non-Camera ZIP' }).click();
     const zipFile = await zipDownload;
     const zip = await JSZip.loadAsync(fs.readFileSync((await zipFile.path())!));
 
@@ -348,14 +348,14 @@ test.describe('Generated Non-Camera ZIP: preserve artwork while enforcing device
     await expect(page.getByRole('heading', { name: 'Non-Camera ZIP flat fixture' })).toBeVisible();
     await page.getByRole('button', { name: 'Open download menu' }).click();
     const fullDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download full piece' }).click();
+    await page.getByRole('menuitem', { name: 'Download Full ZIP' }).click();
     const fullZip = await JSZip.loadAsync(fs.readFileSync((await (await fullDownload).path())!));
     const fullHtml = await fullZip.files['index.html'].async('string');
     expect(fullHtml).not.toContain('guardedGetUserMedia');
 
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Open download menu' }).click();
     const nonCameraDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download non-camera piece' }).click();
+    await page.getByRole('menuitem', { name: 'Download Non-Camera ZIP' }).click();
     const nonCameraZip = await JSZip.loadAsync(
       fs.readFileSync((await (await nonCameraDownload).path())!),
     );

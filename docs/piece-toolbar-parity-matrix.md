@@ -48,7 +48,8 @@ control ON when unset. Here they are explicit per-version author capabilities
 (the editor's Camera view and Hand steering checkboxes), so a button appears only
 when its capability is enabled. Steer lives inside the Piece controls popover
 (never its own toolbar button), and the popover exists whenever sound, microphone,
-keyboard, camera view, or hand steering is enabled.
+keyboard, camera view, or hand steering is enabled, and always on immersive surfaces
+(it holds Reset view, which a walkable piece must always offer).
 
 ## Matrix
 
@@ -99,3 +100,7 @@ Notes:
 
 Any button-set or order change edits this file in the same change and cites
 the issue. Closed issues stay closed; contradictions become new issues.
+
+ZIP exports (#755/#756): Reset view is an icon in the toolbar (engine-tool slot, row 7) because a
+downloaded piece has no separate route to recover its view; mic, camera, and Steer sit in the
+Piece controls popover; the hand guide appears only when steering is enabled.

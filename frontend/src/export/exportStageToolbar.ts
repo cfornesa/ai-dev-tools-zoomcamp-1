@@ -13,7 +13,8 @@
  * Screenshot, Sound, Piece controls, Hand gesture guide, Fullscreen.
  */
 
-export type ExportToolbarButtonId = 'screenshot' | 'sound' | 'controls' | 'guide' | 'fullscreen';
+export type ExportToolbarButtonId =
+  'screenshot' | 'sound' | 'controls' | 'guide' | 'reset' | 'fullscreen';
 
 type ExportToolbarButton = {
   id: ExportToolbarButtonId;
@@ -34,6 +35,7 @@ const ICONS: Record<ExportToolbarButtonId, string> = {
   controls: '<path d="M5 6h14M5 12h14M5 18h14"/><path d="M9 4v4M15 10v4M11 16v4"/>',
   guide:
     '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v5"/><circle cx="12" cy="16.5" r=".7" fill="currentColor" stroke="none"/>',
+  reset: '<path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4h4"/>',
   fullscreen: '<path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4"/>',
 };
 
@@ -65,6 +67,12 @@ const BUTTONS: Record<ExportToolbarButtonId, ExportToolbarButton> = {
     toggles: true,
     icon: ICONS.guide,
   },
+  reset: {
+    id: 'reset',
+    domId: 'piece-reset-view',
+    label: 'Reset view',
+    icon: ICONS.reset,
+  },
   fullscreen: {
     id: 'fullscreen',
     domId: 'piece-fullscreen',
@@ -74,7 +82,14 @@ const BUTTONS: Record<ExportToolbarButtonId, ExportToolbarButton> = {
 };
 
 /** Canonical left-to-right order; callers pass the subset they support. */
-const ORDER: ExportToolbarButtonId[] = ['screenshot', 'sound', 'controls', 'guide', 'fullscreen'];
+const ORDER: ExportToolbarButtonId[] = [
+  'screenshot',
+  'sound',
+  'controls',
+  'guide',
+  'reset',
+  'fullscreen',
+];
 
 export type ExportToolbarOptions = {
   buttons: ExportToolbarButtonId[];
@@ -82,13 +97,22 @@ export type ExportToolbarOptions = {
   controlsDomId?: string;
   /** `aria-controls` target of the `controls` toggle. */
   controlsPanelId?: string;
+  /** Emit `data-action="<id>"` on every button (the generated-art runtime binds by action). */
+  dataActions?: boolean;
+  /** Per-button accessible-name overrides (e.g. the runtime's 'Unmute sound'). */
+  labels?: Partial<Record<ExportToolbarButtonId, string>>;
+  /** Explicit DOM ids per button, overriding the defaults. */
+  domIds?: Partial<Record<ExportToolbarButtonId, string>>;
 };
 
 function renderButton(button: ExportToolbarButton, options: ExportToolbarOptions): string {
   const domId =
-    button.id === 'controls' && options.controlsDomId ? options.controlsDomId : button.domId;
+    options.domIds?.[button.id] ??
+    (button.id === 'controls' && options.controlsDomId ? options.controlsDomId : button.domId);
+  const label = options.labels?.[button.id] ?? button.label;
   const aria = [
-    `aria-label="${button.label}"`,
+    `aria-label="${label}"`,
+    options.dataActions ? `data-action="${button.id === 'controls' ? 'controls' : button.id}"` : '',
     button.toggles ? 'aria-expanded="false"' : '',
     button.toggles && button.id === 'controls' && options.controlsPanelId
       ? `aria-controls="${options.controlsPanelId}"`
@@ -97,7 +121,7 @@ function renderButton(button: ExportToolbarButton, options: ExportToolbarOptions
   ]
     .filter(Boolean)
     .join(' ');
-  return `<button id="${domId}" type="button" class="piece-stage-icon-button" ${aria}><svg class="piece-stage-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${button.icon}</svg><span class="piece-stage-tooltip" role="presentation" aria-hidden="true">${button.label}</span></button>`;
+  return `<button id="${domId}" type="button" class="piece-stage-icon-button" ${aria}><svg class="piece-stage-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${button.icon}</svg><span class="piece-stage-tooltip" role="presentation" aria-hidden="true">${label}</span></button>`;
 }
 
 /** Renders the inline, always-visible icon-only toolbar. */

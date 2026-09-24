@@ -75,7 +75,7 @@ test.describe('Generated art pieces (#315)', () => {
     expect(screenshotBytes.readUInt32BE(20)).toBe(240);
     await page.getByRole('button', { name: 'Open download menu' }).click();
     const bundleDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download full piece' }).click();
+    await page.getByRole('menuitem', { name: 'Download Full ZIP' }).click();
     const fullBundle = await bundleDownload;
     expect(fullBundle.suggestedFilename()).toBe(`${title}-full.zip`);
     const fullZip = await JSZip.loadAsync(fs.readFileSync((await fullBundle.path())!));
@@ -85,7 +85,7 @@ test.describe('Generated art pieces (#315)', () => {
     expect(fullHtml).not.toContain('Download full piece');
     await page.getByRole('button', { name: 'Piece controls' }).click();
     const nonCameraDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download non-camera piece' }).click();
+    await page.getByRole('menuitem', { name: 'Download Non-Camera ZIP' }).click();
     const nonCameraBundle = await nonCameraDownload;
     const nonCameraZip = await JSZip.loadAsync(fs.readFileSync((await nonCameraBundle.path())!));
     const nonCameraHtml = await nonCameraZip.files['index.html'].async('string');

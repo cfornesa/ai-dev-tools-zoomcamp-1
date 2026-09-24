@@ -102,6 +102,66 @@ describe('generateArtPieceBundle', () => {
     }
   });
 
+  it('exports the icon-only toolbar in matrix order with Fullscreen last and no hamburger (#755)', async () => {
+    for (const presentation of ['regular', 'immersive'] as const) {
+      const blob = await generateArtPieceBundle('c2js', C2_CODE, {
+        presentation,
+        mode: 'full',
+        capabilities: {
+          screenshot: true,
+          fullscreen: true,
+          sound: true,
+          microphone: true,
+          camera_view: true,
+          hand_steering: true,
+        },
+      });
+      const zip = await JSZip.loadAsync(blob);
+      const html = await zip.files['index.html'].async('string');
+      const toolbar = html.slice(
+        html.indexOf('<div id="piece-toolbar"'),
+        html.indexOf('</div>', html.indexOf('<div id="piece-toolbar"')),
+      );
+      const actions = [...toolbar.matchAll(/data-action="([a-z-]+)"/g)].map((match) => match[1]);
+      expect(actions).toEqual(['screenshot', 'sound', 'controls', 'guide', 'reset', 'fullscreen']);
+      expect(toolbar).toContain('aria-label="Unmute sound"');
+      expect(toolbar).toContain('aria-label="Show hand gesture guide"');
+      expect(toolbar).toContain('class="piece-stage-tooltip"');
+      // Mic, camera, and steer live inside the Piece controls popover, never in the icon row.
+      expect(toolbar).not.toContain('data-action="microphone"');
+      expect(html.indexOf('id="art-piece-controls-panel"')).toBeGreaterThan(
+        html.indexOf('</div>', html.indexOf('<div id="piece-toolbar"')),
+      );
+      expect(html).toContain('data-action="microphone"');
+      expect(html).toContain('data-action="camera"');
+      expect(html).toContain('data-action="hand"');
+      expect(html).not.toContain('\u2630');
+      const css = await zip.files['styles/piece.css'].async('string');
+      expect(css).toContain('@media (hover: hover) and (pointer: fine)');
+    }
+  });
+
+  it('non-camera export drops camera, steer, and the hand guide from the toolbar (#755)', async () => {
+    const blob = await generateArtPieceBundle('c2js', C2_CODE, {
+      mode: 'non-camera',
+      capabilities: {
+        screenshot: true,
+        fullscreen: true,
+        camera_view: true,
+        hand_steering: true,
+      },
+    });
+    const zip = await JSZip.loadAsync(blob);
+    const html = await zip.files['index.html'].async('string');
+    const toolbar = html.slice(
+      html.indexOf('<div id="piece-toolbar"'),
+      html.indexOf('</div>', html.indexOf('<div id="piece-toolbar"')),
+    );
+    const actions = [...toolbar.matchAll(/data-action="([a-z-]+)"/g)].map((match) => match[1]);
+    expect(actions).toEqual(['screenshot', 'reset', 'fullscreen']);
+    expect(html).not.toContain('id="art-piece-guide-dialog"');
+  });
+
   it('adds viewer controls without a recursive download control', async () => {
     const blob = await generateArtPieceBundle('canvas2d', CANVAS2D_CODE, {
       capabilities: { screenshot: true, sound: true, hand_steering: true, camera_view: true },

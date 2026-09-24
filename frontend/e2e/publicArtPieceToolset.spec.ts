@@ -75,7 +75,7 @@ test.describe('generated art-piece public toolset (#690)', () => {
       );
       // Steer lives inside the Piece controls popover; the guide is its own button (#766).
       await expect(page.getByRole('button', { name: /^Hand tracking$/ })).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Hand gesture guide' })).toHaveCount(
+      await expect(page.getByRole('button', { name: 'Show hand gesture guide' })).toHaveCount(
         engine === 'threejs' ? 1 : 0,
       );
       await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveCount(

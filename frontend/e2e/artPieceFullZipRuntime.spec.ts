@@ -146,6 +146,8 @@ async function verifyExtractedRuntime(page: Page): Promise<void> {
   );
 
   // Camera + steering: the full lifecycle, exactly like the live preview.
+  // Camera, microphone, and Steer live inside the Piece controls popover (#755).
+  await page.getByRole('button', { name: 'Piece controls' }).click();
   const cameraButton = page.getByRole('button', { name: 'Enable camera view' });
   await cameraButton.click();
   await expect(page.getByRole('button', { name: 'Disable camera view' })).toHaveAttribute(
@@ -219,7 +221,7 @@ test.describe('Generated Full ZIP: execute packaged runtime controls after extra
     await expect(page.getByRole('heading', { name: 'Full ZIP runtime fixture' })).toBeVisible();
     await page.getByRole('button', { name: 'Open download menu' }).click();
     const zipDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download full piece' }).click();
+    await page.getByRole('menuitem', { name: 'Download Full ZIP' }).click();
     const zipFile = await zipDownload;
     const zip = await JSZip.loadAsync(fs.readFileSync((await zipFile.path())!));
 
@@ -313,7 +315,7 @@ test.describe('Generated Full ZIP: execute packaged runtime controls after extra
     await expect(page.getByRole('heading', { name: 'Full ZIP real-camera fixture' })).toBeVisible();
     await page.getByRole('button', { name: 'Open download menu' }).click();
     const zipDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download full piece' }).click();
+    await page.getByRole('menuitem', { name: 'Download Full ZIP' }).click();
     const zipFile = await zipDownload;
     const zip = await JSZip.loadAsync(fs.readFileSync((await zipFile.path())!));
 
@@ -347,6 +349,7 @@ test.describe('Generated Full ZIP: execute packaged runtime controls after extra
         // Enable the camera view; the top-level document calls
         // navigator.mediaDevices.getUserMedia directly (no sandboxed iframe),
         // so the fake-device stream is accepted.
+        await fakePage.getByRole('button', { name: 'Piece controls' }).click();
         await fakePage.getByRole('button', { name: 'Enable camera view' }).click();
         await expect(fakePage.getByRole('button', { name: 'Disable camera view' })).toHaveAttribute(
           'aria-pressed',

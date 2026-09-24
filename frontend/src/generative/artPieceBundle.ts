@@ -47,6 +47,11 @@ import JSZip from 'jszip';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import { buildStandaloneArtPieceRuntimeScript } from '../export/standaloneArtPieceRuntimeSource';
+import {
+  EXPORT_STAGE_TOOLBAR_CSS,
+  renderExportStageToolbar,
+  type ExportToolbarButtonId,
+} from '../export/exportStageToolbar';
 
 export type ArtPieceExportMode = 'full' | 'non-camera';
 
@@ -124,7 +129,54 @@ canvas {
   width: 100%;
   height: ${stageHeight};
 }
-${cameraBackground ? '#art-piece-container, a-scene, canvas, svg { position: relative; z-index: 1; }' : ''}
+${cameraBackground ? '#art-piece-container, a-scene, canvas, svg:not(.piece-stage-icon) { position: relative; z-index: 1; }' : ''}
+${EXPORT_STAGE_TOOLBAR_CSS}
+#art-piece-controls-panel, #art-piece-guide-dialog { font: 14px/1.4 system-ui, sans-serif; }
+#art-piece-controls-panel {
+  position: fixed;
+  top: 4.5rem;
+  left: .75rem;
+  z-index: 10;
+  display: grid;
+  gap: .5rem;
+  width: min(22rem, calc(100vw - 1.5rem));
+  box-sizing: border-box;
+  padding: .75rem;
+  color: #fff;
+  background: rgba(10,12,20,.97);
+  border: 1px solid rgba(255,255,255,.5);
+  border-radius: .75rem;
+}
+#art-piece-controls-panel[hidden] { display: none; }
+#art-piece-controls-panel button, #art-piece-guide-dialog button {
+  min-height: 2.75rem;
+  padding: .4rem .75rem;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: .75rem;
+  background: rgba(10,12,20,.94);
+  color: #fff;
+  cursor: pointer;
+}
+#art-piece-controls-panel p { margin: 0; font-size: .85rem; }
+#art-piece-guide-dialog {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: min(28rem, calc(100vw - 2rem));
+  box-sizing: border-box;
+  padding: 1rem;
+  color: #fff;
+  background: rgba(10,12,20,.97);
+  border: 1px solid rgba(255,255,255,.5);
+  border-radius: .75rem;
+}
+#art-piece-guide-dialog[hidden] { display: none; }
+#art-piece-runtime-error { position: fixed; left: 1rem; right: 1rem; bottom: 1rem; z-index: 30; margin: 0; padding: .8rem; color: #fee2e2; background: #450a0a; border: 1px solid #fca5a5; }
+#art-piece-runtime-error[hidden] { display: none; }
+#art-piece-navigation-pose { position: fixed; right: .75rem; top: .75rem; z-index: 10; margin: 0; color: #fff; font: .75rem/1.2 system-ui, sans-serif; }
+.art-piece-sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 a-scene canvas.a-canvas {
   display: block;
   width: 100% !important;
@@ -133,22 +185,11 @@ a-scene canvas.a-canvas {
 ${
   immersive
     ? `
-canvas, svg {
+canvas, svg:not(.piece-stage-icon) {
   width: 100% !important;
   height: 100% !important;
   object-fit: contain;
-}
-.art-piece-controls {
-  position: fixed;
-  z-index: 20;
-  top: 1rem;
-  left: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  max-width: calc(100vw - 2rem);
-}
-`
+}`
     : ''
 }
 `;
@@ -279,40 +320,55 @@ function buildExportControls(
 ): string {
   const includeCamera = mode === 'full' && capabilities.camera_view === true;
   const includeSteering = mode === 'full' && capabilities.hand_steering === true;
+  const includeMicrophone = capabilities.microphone === true;
   const includeNavigation =
     presentation === 'immersive' && SPATIAL_ART_PIECE_LIBRARIES.includes(library);
-  const buttons = [
-    capabilities.screenshot !== false ? '<button data-action="screenshot">Screenshot</button>' : '',
-    capabilities.sound === true
-      ? '<button data-action="sound" aria-pressed="false">Unmute sound</button>'
-      : '',
-    capabilities.microphone === true
-      ? '<button data-action="microphone" aria-pressed="false">Enable microphone</button>'
+  // Issue #755: the same icon-only toolbar as the live stage, in the parity-matrix order
+  // (docs/piece-toolbar-parity-matrix.md) minus Download/Immersive, Fullscreen last. Reset view
+  // is the spatial engines' tool (row 7). Steer, camera, and microphone live in the single
+  // Piece controls popover, and the hand guide exists only when steering does.
+  const buttons: ExportToolbarButtonId[] = [
+    ...(capabilities.screenshot !== false ? (['screenshot'] as const) : []),
+    ...(capabilities.sound === true ? (['sound'] as const) : []),
+    ...(includeMicrophone || includeCamera || includeSteering ? (['controls'] as const) : []),
+    ...(includeSteering ? (['guide'] as const) : []),
+    'reset',
+    ...(capabilities.fullscreen !== false ? (['fullscreen'] as const) : []),
+  ];
+  const toolbar = renderExportStageToolbar({
+    buttons,
+    dataActions: true,
+    controlsPanelId: 'art-piece-controls-panel',
+    labels: {
+      sound: 'Unmute sound',
+      guide: 'Show hand gesture guide',
+      fullscreen: 'Fullscreen',
+    },
+  });
+  const panelRows = [
+    includeMicrophone
+      ? '<button type="button" data-action="microphone" aria-pressed="false">Enable microphone</button>\n  <p id="art-piece-microphone-status" role="status">Microphone is off.</p>'
       : '',
     includeCamera
-      ? '<button data-action="camera" aria-pressed="false">Enable camera view</button>'
+      ? '<button type="button" data-action="camera" aria-pressed="false">Enable camera view</button>\n  <p id="art-piece-camera-status" role="status">Camera is off.</p>'
       : '',
     includeSteering
-      ? '<button data-action="hand" aria-pressed="false">Steer the piece</button>'
+      ? '<button type="button" data-action="hand" aria-pressed="false">Steer the piece</button>\n  <p id="art-piece-steering-status" role="status">Steering is off.</p>'
       : '',
-    capabilities.fullscreen !== false ? '<button data-action="fullscreen">Fullscreen</button>' : '',
-    '<button data-action="reset">Reset view</button>',
-    // Issue #448: unconditional, matching PieceStageControls.tsx's own
-    // always-present "Show hand gesture guide" button.
-    '<button data-action="guide">Show hand gesture guide</button>',
   ].filter(Boolean);
-  const statuses = [
+  const panel =
+    panelRows.length > 0
+      ? `<div id="art-piece-controls-panel" role="group" aria-label="Piece controls" hidden>\n  ${panelRows.join('\n  ')}\n</div>`
+      : '';
+  const soundStatus =
     capabilities.sound === true
-      ? '<p id="art-piece-sound-status" role="status">Sound is off.</p>'
-      : '',
-    capabilities.microphone === true
-      ? '<p id="art-piece-microphone-status" role="status">Microphone is off.</p>'
-      : '',
-    includeCamera ? '<p id="art-piece-camera-status" role="status">Camera is off.</p>' : '',
-    includeSteering ? '<p id="art-piece-steering-status" role="status">Steering is off.</p>' : '',
-    includeNavigation ? '<p id="art-piece-navigation-pose"></p>' : '',
-  ].filter(Boolean);
-  const guideDialog = `<div id="art-piece-guide-dialog" role="dialog" aria-label="Hand gesture guide" aria-modal="true" hidden>
+      ? '<p id="art-piece-sound-status" role="status" class="art-piece-sr-only">Sound is off.</p>'
+      : '';
+  const navigationPose = includeNavigation
+    ? '<p id="art-piece-navigation-pose" role="status">0.00,0.00,5.00</p>'
+    : '';
+  const guideDialog = includeSteering
+    ? `<div id="art-piece-guide-dialog" role="dialog" aria-label="Hand gesture guide" aria-modal="true" hidden>
   <h3>Hand gesture guide</h3>
   <ol>
     <li>Look around with an open hand.</li>
@@ -322,11 +378,18 @@ function buildExportControls(
     <li>Disable steering safely from Piece controls.</li>
   </ol>
   <button type="button" data-action="guide-close">Close</button>
-</div>`;
-  return `<nav class="art-piece-controls" aria-label="Piece controls">${buttons.join('')}</nav>
-${statuses.join('\n')}
-${guideDialog}
-<p id="art-piece-runtime-error" role="alert" hidden></p>`;
+</div>`
+    : '';
+  return [
+    toolbar,
+    panel,
+    soundStatus,
+    navigationPose,
+    guideDialog,
+    '<p id="art-piece-runtime-error" role="alert" hidden></p>',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 function buildIndexHtml(

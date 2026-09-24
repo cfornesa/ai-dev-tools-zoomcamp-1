@@ -170,7 +170,7 @@ test.describe('Generated immersive viewer: walkable navigation and stage control
       // exercise/WebKit gesture quirks are covered by the existing
       // manual2dStageChrome.spec.ts convention, not duplicated here).
       await expect(
-        page.getByRole('button', { name: /expand fullscreen|exit fullscreen/i }),
+        page.getByRole('button', { name: /expand piece to fullscreen|exit fullscreen/i }),
       ).toBeVisible();
 
       // Entry/return preserves piece identity.

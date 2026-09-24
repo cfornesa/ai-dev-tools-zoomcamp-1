@@ -82,7 +82,7 @@ test.describe('Generated Full ZIP: flat-piece Steer button (#459)', () => {
     ).toBeVisible();
     await page.getByRole('button', { name: 'Open download menu' }).click();
     const zipDownload = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Download full piece' }).click();
+    await page.getByRole('menuitem', { name: 'Download Full ZIP' }).click();
     const zipFile = await zipDownload;
     const zip = await JSZip.loadAsync(fs.readFileSync((await zipFile.path())!));
 
@@ -112,6 +112,8 @@ test.describe('Generated Full ZIP: flat-piece Steer button (#459)', () => {
 
       await page.goto(`file://${path.join(root, 'index.html')}`);
 
+      // Camera, microphone, and Steer live inside the Piece controls popover (#755).
+      await page.getByRole('button', { name: 'Piece controls' }).click();
       await page.getByRole('button', { name: 'Enable camera view' }).click();
       await expect(page.getByRole('button', { name: 'Disable camera view' })).toHaveAttribute(
         'aria-pressed',

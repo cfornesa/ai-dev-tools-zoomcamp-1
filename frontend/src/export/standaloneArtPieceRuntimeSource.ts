@@ -107,7 +107,7 @@ export function buildStandaloneArtPieceRuntimeScript(
   }
   function ensureFlatSpatialShell() {
     if (registeredCamera) return true;
-    var artwork = document.querySelector('canvas') || document.querySelector('svg');
+    var artwork = document.querySelector('canvas') || document.querySelector('svg:not(.piece-stage-icon)');
     if (!artwork) return false;
     flatShellArtwork = artwork;
     flatShellOriginalStyle = artwork.getAttribute('style');
@@ -140,6 +140,13 @@ export function buildStandaloneArtPieceRuntimeScript(
 
   function setupControls() {
   function byAction(action) { return document.querySelector('[data-action="' + action + '"]'); }
+  // Icon buttons (#755) carry an aria-label plus a tooltip span instead of visible text; text
+  // buttons (mic/camera/steer inside Piece controls) still show their label.
+  function setLabel(button, label) {
+    button.setAttribute('aria-label', label);
+    var tip = button.querySelector('.piece-stage-tooltip');
+    if (tip) tip.textContent = label; else button.textContent = label;
+  }
   function setStatus(id, text) {
     var el = document.getElementById(id);
     if (el) el.textContent = text;
@@ -201,6 +208,29 @@ export function buildStandaloneArtPieceRuntimeScript(
   `
       : ''
   }
+
+  // Piece controls popover (#755): opens the mic/camera/steer rows; Escape closes it (or the
+  // guide dialog first) and returns focus to its trigger.
+  var controlsToggle = byAction('controls');
+  var controlsPanel = document.getElementById('art-piece-controls-panel');
+  if (controlsToggle && controlsPanel) {
+    controlsToggle.addEventListener('click', function () {
+      controlsPanel.hidden = !controlsPanel.hidden;
+      controlsToggle.setAttribute('aria-expanded', String(!controlsPanel.hidden));
+    });
+  }
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    var dialog = document.getElementById('art-piece-guide-dialog');
+    var dialogTrigger = byAction('guide');
+    if (dialog && !dialog.hidden) {
+      dialog.hidden = true;
+      if (dialogTrigger) dialogTrigger.focus();
+    } else if (controlsPanel && !controlsPanel.hidden) {
+      controlsPanel.hidden = true;
+      if (controlsToggle) { controlsToggle.setAttribute('aria-expanded', 'false'); controlsToggle.focus(); }
+    }
+  });
 
   ${
     includeNavigation
@@ -333,7 +363,7 @@ export function buildStandaloneArtPieceRuntimeScript(
           var dataUrl = compositeScreenshot(canvas);
           fetch(dataUrl).then(function (r) { return r.blob(); }).then(function (blob) { saveBlob(blob, filename); });
         } else {
-          var svg = document.querySelector('svg');
+          var svg = document.querySelector('svg:not(.piece-stage-icon)');
           if (!svg) throw new Error('This piece has no capturable artwork.');
           var svgText = new XMLSerializer().serializeToString(svg);
           saveBlob(new Blob([svgText], { type: 'image/svg+xml' }), filename.replace('.png', '.svg'));
@@ -371,7 +401,7 @@ export function buildStandaloneArtPieceRuntimeScript(
       soundOn = !soundOn;
       if (soundOn) { audioCtx.resume(); } else { audioCtx.suspend(); }
       soundButton.setAttribute('aria-pressed', String(soundOn));
-      soundButton.textContent = soundOn ? 'Mute sound' : 'Unmute sound';
+      setLabel(soundButton, soundOn ? 'Mute sound' : 'Unmute sound');
       setStatus('art-piece-sound-status', soundOn ? 'Sound is on.' : 'Sound is off.');
     });
   }
@@ -538,7 +568,7 @@ export function buildStandaloneArtPieceRuntimeScript(
   }
   function ensureFlatSpatialShell() {
     if (registeredCamera) return true;
-    var artwork = document.querySelector('canvas') || document.querySelector('svg');
+    var artwork = document.querySelector('canvas') || document.querySelector('svg:not(.piece-stage-icon)');
     if (!artwork) return false;
     flatShellArtwork = artwork;
     flatShellOriginalStyle = artwork.getAttribute('style');
@@ -629,7 +659,7 @@ export function buildStandaloneArtPieceRuntimeScript(
       }
     });
     document.addEventListener('fullscreenchange', function () {
-      fullscreenButton.textContent = document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen';
+      setLabel(fullscreenButton, document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen');
     });
   }
   `

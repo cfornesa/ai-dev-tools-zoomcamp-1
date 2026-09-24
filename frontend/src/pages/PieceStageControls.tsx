@@ -636,7 +636,10 @@ function PieceStageControls({
       capabilities.camera_view === true ||
       capabilities.microphone === true ||
       capabilities.keyboard === true ||
-      capabilities.hand_steering === true,
+      capabilities.hand_steering === true ||
+      // Reset view lives in the popover, and a walkable immersive piece must always be able to
+      // return home, so the popover exists on immersive surfaces regardless of capabilities.
+      presentation === 'immersive',
     gesture: false,
     gestureGuide: capabilities.hand_steering === true,
     fullscreen: capabilities.fullscreen !== false,
@@ -701,7 +704,7 @@ function PieceStageControls({
           <button
             type="button"
             className="piece-stage-icon-button"
-            aria-label="Hand gesture guide"
+            aria-label="Show hand gesture guide"
             onClick={() => setGuide(true)}
           >
             <PieceStageIcon name="guide" />

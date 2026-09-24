@@ -23945,3 +23945,15 @@ Owner requirement: button SETS on regular, immersive, and downloaded pieces matc
 | react-node #122 | Explicit engine for every piece; legacy backfill (owner approval before prod run) | 2b | cross-repo |
 
 **Open discrepancy (owner input needed via #765):** the PHP `piece-stage.php` order is Screenshot, Download, Immersive, Sound, Controls, Guide, Fullscreen, but live augmenthumankind.com (react-node) is Screenshot, Immersive, Sound, Controls, Download, Fullscreen, Guide. The owner asked for the latter earlier; the set must still match PHP.
+
+### 2026-09-24 addendum 2 — order decision, ink layers, A-Frame scope (#773–#777)
+
+| Issue | Scope | Routing | Notes |
+|---|---|---|---|
+| #773 | Owner (private) vs public regular view use the same toolbar | 2a | dep #765–#768 |
+| #774 | Owner decision/design: ink layer, 3D anchoring, freeze contract | owner | blocks #775–#777 |
+| #775 | Structured 2D ink layer (pen, eraser, select, undo/redo, freeze) | 2b | dep #774 |
+| #776 | Generated 2D pieces: real ink layer replaces fixed-snippet tools | 2b | dep #774, #763 |
+| #777 | 3D ink layer, Three.js and A-Frame | 2b | dep #774, #770, #772 |
+
+Order decided (PHP order, Fullscreen last): recorded on #765 and all toolbar issues in both repos. #772 scope confirmed by the owner (A-Frame required). react-node already has Three.js and A-Frame as generated engines; its gap is ZIP wiring and explicit engine association (#122).

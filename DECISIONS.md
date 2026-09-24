@@ -1374,3 +1374,7 @@ The owner decided the piece stage toolbar is icon-only on all surfaces (regular,
 ## 2026-09-24 — C2.js canvas uses the reference 1280x720 (#759)
 
 The owner decided C2.js and C2.js Interactive canvases use the reference dimensions, superseding the 320x240 rule in memory `c2-opaque-sandbox-rendering`. Implementation: #763 (live sandbox), #764 (ZIP); real c2 runtime #760.
+
+## 2026-09-24 — Toolbar order follows PHP; A-Frame in scope; ink layers requested
+
+The owner decided the stage toolbar order follows the PHP augment-humankind implementation where sensible: Screenshot, Download, Immersive/VR, Sound, Piece controls, Hand guide, engine-specific tools, Fullscreen last; icon-only with desktop hover labels. It supersedes the earlier react-node-order note in #751 and applies to augmenthumankind.com (restore) and to augmentrart.com private (owner) and public regular views, embeds, immersive, and downloads (ZIPs omit Download/Immersive). The owner also confirmed A-Frame must be implemented for structured 3D pieces (#772) and that both repos treat Three.js and A-Frame as required engines. A single ink layer with a frozen-scene edit mode across 2D and 3D was assessed as feasible and is tracked in #774-#777 (design decision first).

@@ -92,7 +92,12 @@ function artworkSelector(engine: 'canvas2d' | 'svg'): string {
 async function readArtworkStyle(
   page: Page,
   engine: 'canvas2d' | 'svg',
-): Promise<{ transform: string; pointerEvents: string; hasStyleAttribute: boolean }> {
+): Promise<{
+  transform: string;
+  pointerEvents: string;
+  hasStyleAttribute: boolean;
+  styleAttribute: string | null;
+}> {
   return page
     .frameLocator('iframe[title="Art piece preview"]')
     .locator(artworkSelector(engine))
@@ -100,6 +105,7 @@ async function readArtworkStyle(
       transform: (el as HTMLElement).style.transform,
       pointerEvents: getComputedStyle(el).pointerEvents,
       hasStyleAttribute: el.hasAttribute('style'),
+      styleAttribute: el.getAttribute('style'),
     }));
 }
 
@@ -183,7 +189,12 @@ test.describe('Generated flat-piece runtime: reversible spatial steering for Can
         // all -- the shell is genuinely lazy, not pre-built on load.
         const beforeActivation = await readArtworkStyle(page, engine);
         expect(beforeActivation.transform).toBe('');
-        expect(beforeActivation.hasStyleAttribute).toBe(false);
+        // Since #705 the sandbox's responsive prelude gives the artwork an inline sizing style before
+        // steering, so "no style attribute" is no longer the contract. What #449 guarantees is that the
+        // steering shell adds nothing of its own (no perspective/rotate) until activation, and that
+        // disposal restores this exact baseline.
+        const baselineStyle = beforeActivation.styleAttribute;
+        expect(baselineStyle ?? '').not.toMatch(/perspective|rotate/);
 
         await page.getByRole('button', { name: 'Enable camera view' }).click();
         await expect(page.getByTestId('camera-status')).toContainText('Camera is active.');
@@ -227,14 +238,14 @@ test.describe('Generated flat-piece runtime: reversible spatial steering for Can
 
         // Reset after steering off returns to the exact framed home
         // presentation and disposes the shell entirely -- the artwork's
-        // original style attribute (none, for these fixtures) is
-        // restored, not merely re-homed.
+        // original style attribute (the pre-activation baseline) is
+        // restored exactly, not merely re-homed.
         // A postMessage-driven reset is delivered asynchronously -- poll
         // rather than reading state in the same tick as the click.
         await page.getByRole('button', { name: 'Reset view' }).click();
         await expect
-          .poll(async () => (await readArtworkStyle(page, engine)).hasStyleAttribute)
-          .toBe(false);
+          .poll(async () => (await readArtworkStyle(page, engine)).styleAttribute)
+          .toBe(baselineStyle);
 
         // Screenshot still works after the full lifecycle, at both
         // viewports.

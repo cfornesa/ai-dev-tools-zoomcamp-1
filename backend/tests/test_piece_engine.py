@@ -52,3 +52,19 @@ def test_scene3d_resolution_is_defensive_for_unexpected_documents():
 def test_scene2d_renderer_maps_to_registry_engine_ids(preferred, expected):
     assert resolve_scene2d_engine({"renderer": {"preferred": preferred}}) == expected
     assert resolve_scene2d_engine(None) == "p5js"
+
+
+def test_ensure_explicit_renderer_keeps_a_declaration_and_upgrades_legacy_scenes():
+    from scenes.piece_engine import ensure_explicit_scene3d_renderer
+
+    declared = _fixture("valid/renderer_aframe.json")
+    assert ensure_explicit_scene3d_renderer(declared) is declared
+
+    legacy = _fixture("valid/minimal.json")
+    upgraded = ensure_explicit_scene3d_renderer(legacy)
+    assert upgraded["renderer"] == {"preferred": "threejs"}
+    assert "renderer" not in legacy  # input is never mutated
+    assert validate_scene3d(upgraded).valid
+
+    # A legacy scene saved after an A-Frame version keeps that library.
+    assert ensure_explicit_scene3d_renderer(legacy, declared)["renderer"] == {"preferred": "aframe"}

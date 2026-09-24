@@ -73,6 +73,27 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+describe('Project3DWorkspace rendering library (#771)', () => {
+  it('shows Three.js for a legacy scene without a renderer and A-Frame when declared', async () => {
+    mockedGetProject3D.mockResolvedValueOnce(baseProject());
+    const legacy = renderWorkspace();
+    expect(await screen.findByTestId('project3d-engine')).toHaveTextContent(
+      'Rendering library: Three.js',
+    );
+    legacy.unmount();
+
+    const declared = baseProject();
+    (declared.current_version!.scene_json as unknown as Record<string, unknown>).renderer = {
+      preferred: 'aframe',
+    };
+    mockedGetProject3D.mockResolvedValueOnce(declared);
+    renderWorkspace();
+    expect(await screen.findByTestId('project3d-engine')).toHaveTextContent(
+      'Rendering library: A-Frame',
+    );
+  });
+});
+
 describe('Project3DWorkspace Save action', () => {
   it('exposes 3D authoring commands in the stage menu and makes object edits undoable', async () => {
     mockedGetProject3D.mockResolvedValue(baseProject());

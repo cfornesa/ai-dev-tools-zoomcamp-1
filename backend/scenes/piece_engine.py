@@ -45,3 +45,20 @@ def resolve_scene2d_engine(scene: Any) -> str:
             if mapped:
                 return mapped
     return DEFAULT_SCENE2D_ENGINE
+
+
+def ensure_explicit_scene3d_renderer(scene: Any, fallback: Any = None) -> Any:
+    """Return `scene` with an explicit `renderer.preferred` (#771), never mutating the input.
+
+    Every NEW version of a structured 3D piece is tied to one rendering library. A scene that
+    already declares a valid one is returned unchanged. Otherwise the library of the piece's
+    previous version (`fallback`, a scene document) is kept, or Three.js when there is none,
+    so a legacy piece is upgraded to an explicit declaration the first time it is saved
+    without ever changing how it renders.
+    """
+    if not isinstance(scene, dict):
+        return scene
+    renderer = scene.get("renderer")
+    if isinstance(renderer, dict) and renderer.get("preferred") in SCENE3D_ENGINES:
+        return scene
+    return {**scene, "renderer": {"preferred": resolve_scene3d_engine(fallback)}}

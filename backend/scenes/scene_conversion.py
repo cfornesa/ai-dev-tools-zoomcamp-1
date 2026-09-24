@@ -74,6 +74,7 @@ from scenes.models import (
     SceneConversionRun,
     SceneVersion3D,
 )
+from scenes.piece_engine import ensure_explicit_scene3d_renderer
 from scenes.validation3d import Scene3DValidationResult, validate_scene3d
 
 FEATURE_KEY = "ai_scene_convert_3d"
@@ -484,7 +485,8 @@ def accept_conversion(run: SceneConversionRun) -> tuple[SceneConversionRun, Proj
             version = SceneVersion3D.objects.create(
                 project=project3d,
                 sequence=1,
-                scene_json=scene_json,
+                # #771: a converted scene is a new piece, so it gets an explicit rendering library.
+                scene_json=ensure_explicit_scene3d_renderer(scene_json),
                 created_by=run.owner,
                 origin=SceneVersion3D.Origin.CONVERTED_FROM_2D,
                 source_project=locked_source,

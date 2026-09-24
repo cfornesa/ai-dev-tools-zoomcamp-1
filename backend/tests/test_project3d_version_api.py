@@ -134,3 +134,24 @@ def test_saving_to_a_nonexistent_project_is_404(owner_client):
     )
 
     assert response.status_code == 404
+
+
+# --- #771: saves keep or upgrade to an explicit rendering library ---
+
+
+@pytest.mark.django_db
+def test_saving_a_legacy_scene_without_a_renderer_stores_an_explicit_one(owner_client):
+
+    created = owner_client.post("/api/projects3d/")
+    public_id = created.json()["id"]
+    legacy = copy.deepcopy(created.json()["current_version"]["scene_json"])
+    legacy.pop("renderer")
+
+    saved = owner_client.post(
+        f"/api/projects3d/{public_id}/versions/", {"scene_json": legacy}, format="json"
+    )
+    assert saved.status_code == 201
+    assert saved.json()["scene_json"]["renderer"] == {"preferred": "threejs"}
+    assert Project3D.objects.get(public_id=public_id).current_version.scene_json["renderer"] == {
+        "preferred": "threejs"
+    }

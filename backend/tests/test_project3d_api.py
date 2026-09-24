@@ -202,3 +202,25 @@ def test_version_history_is_not_hard_deleted_with_project3d(owner_client):
     owner_client.delete(f"/api/projects3d/{public_id}/")
 
     assert SceneVersion3D.objects.filter(pk=version_id).exists()
+
+
+# --- #771: every new piece is tied to one explicit rendering library ---
+
+
+@pytest.mark.django_db
+def test_created_project3d_declares_an_explicit_renderer(owner_client):
+    response = owner_client.post("/api/projects3d/", {}, format="json")
+    assert response.status_code == 201
+    scene = response.json()["current_version"]["scene_json"]
+    assert scene["renderer"] == {"preferred": "threejs"}
+
+
+@pytest.mark.django_db
+def test_created_project3d_accepts_aframe_and_rejects_unknown_renderers(owner_client):
+    created = owner_client.post("/api/projects3d/", {"renderer": "aframe"}, format="json")
+    assert created.status_code == 201
+    assert created.json()["current_version"]["scene_json"]["renderer"] == {"preferred": "aframe"}
+
+    rejected = owner_client.post("/api/projects3d/", {"renderer": "babylon"}, format="json")
+    assert rejected.status_code == 422
+    assert "renderer" in rejected.json()["errors"]

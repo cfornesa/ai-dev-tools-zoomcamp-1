@@ -68,6 +68,7 @@ from scenes.models import (
     SceneVersion,
     SceneVersion3D,
 )
+from scenes.piece_engine import ensure_explicit_scene3d_renderer
 from scenes.validation import SceneValidationResult, validate_scene
 from scenes.validation3d import Scene3DValidationResult, validate_scene3d
 
@@ -772,10 +773,14 @@ def accept_run(run: AIRun) -> tuple[AIRun, SceneVersion | SceneVersion3D]:
                 next_sequence = (
                     locked_3d.versions.aggregate(Max("sequence"))["sequence__max"] or 0
                 ) + 1
+                previous_3d = locked_3d.current_version
                 version = SceneVersion3D.objects.create(
                     project=locked_3d,
                     sequence=next_sequence,
-                    scene_json=scene_json,
+                    # #771: agentic accepts are stored with an explicit rendering library.
+                    scene_json=ensure_explicit_scene3d_renderer(
+                        scene_json, previous_3d.scene_json if previous_3d else None
+                    ),
                     created_by=run.owner,
                     origin=origin,
                     ai_request_id=ai_request_id,

@@ -24,6 +24,11 @@ from rest_framework.views import APIView
 
 from scenes.models import Project3D, SceneVersion3D, Thumbnail3D
 from scenes.permissions import Action, can
+from scenes.piece_engine import (
+    DEFAULT_SCENE3D_ENGINE,
+    SCENE3D_ENGINES,
+    ensure_explicit_scene3d_renderer,
+)
 from scenes.publishing import validate_meaningful_metadata_3d
 from scenes.serializers import (
     Project3DMetadataSerializer,
@@ -83,8 +88,16 @@ class Project3DListCreateView(APIView):
         if not can(request.user, Action.PROJECT3D_CREATE):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
+        requested = request.data.get("renderer") if hasattr(request.data, "get") else None
+        if requested is not None and requested not in SCENE3D_ENGINES:
+            return Response(
+                {"errors": {"renderer": ["Must be one of: threejs, aframe."]}},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
         scene = copy.deepcopy(_MINIMAL_SCENE_3D_FIXTURE)
         scene["id"] = f"scene3d-{uuid.uuid4()}"
+        # #771: a new piece is always created with an explicit rendering library.
+        scene["renderer"] = {"preferred": requested or DEFAULT_SCENE3D_ENGINE}
 
         result = validate_scene3d(scene)
         if not result.valid:  # pragma: no cover — would mean the fixture itself is broken
@@ -258,10 +271,14 @@ class SceneVersion3DListCreateView(APIView):
                 next_sequence = (
                     locked_project.versions.aggregate(Max("sequence"))["sequence__max"] or 0
                 ) + 1
+                previous = locked_project.current_version
                 version = SceneVersion3D.objects.create(
                     project=locked_project,
                     sequence=next_sequence,
-                    scene_json=scene_json,
+                    # #771: every new version carries an explicit rendering library.
+                    scene_json=ensure_explicit_scene3d_renderer(
+                        scene_json, previous.scene_json if previous else None
+                    ),
                     created_by=request.user,
                     origin=SceneVersion3D.Origin.MANUAL,
                 )

@@ -12,7 +12,7 @@ import {
 import { resourceOwnershipStatus } from '../auth/resourceOwnership';
 import { useAuth } from '../auth/useAuth';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
-import { validateScene3D } from '../validation/scene3d';
+import { resolveScene3DRenderer, validateScene3D } from '../validation/scene3d';
 import {
   generateScene3DBundle,
   triggerScene3DBundleDownload,
@@ -457,6 +457,14 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
       <header className="editor-workspace-header">
         <EditableProject3DTitle id={id} project={project} setProject={setProject} />
         {id && <PublishControl3D id={id} project={project} setProject={setProject} />}
+        {workingScene && (
+          // #771: the piece's explicit rendering library, shown read-only until the A-Frame
+          // builder ships (#772) and makes it selectable.
+          <p data-testid="project3d-engine" className="editor-engine-label">
+            Rendering library:{' '}
+            {resolveScene3DRenderer(workingScene) === 'aframe' ? 'A-Frame' : 'Three.js'}
+          </p>
+        )}
         <p
           role="status"
           aria-live="polite"

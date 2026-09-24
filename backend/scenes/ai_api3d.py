@@ -64,6 +64,7 @@ from scenes.entitlements import is_unlimited
 from scenes.models import Project3D, SceneVersion3D
 from scenes.patch import PatchErrorReason
 from scenes.permissions import Action, can
+from scenes.piece_engine import ensure_explicit_scene3d_renderer
 from scenes.serializers import SceneVersion3DSerializer
 from scenes.thumbnail_generation3d import maybe_schedule_thumbnail_generation3d
 from scenes.validation3d import validate_scene3d
@@ -543,10 +544,14 @@ class AIAcceptProposal3DView(APIView):
                 next_sequence = (
                     locked_project.versions.aggregate(Max("sequence"))["sequence__max"] or 0
                 ) + 1
+                previous = locked_project.current_version
                 version = SceneVersion3D.objects.create(
                     project=locked_project,
                     sequence=next_sequence,
-                    scene_json=scene_json,
+                    # #771: an accepted proposal is stored with an explicit rendering library.
+                    scene_json=ensure_explicit_scene3d_renderer(
+                        scene_json, previous.scene_json if previous else None
+                    ),
                     created_by=request.user,
                     origin=operation,
                     ai_request_id=client_request_id,

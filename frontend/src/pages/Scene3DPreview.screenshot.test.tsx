@@ -20,6 +20,7 @@ vi.mock('three/examples/jsm/controls/OrbitControls.js', () => {
     target = { set: vi.fn() };
     enableDamping = false;
     listenToKeyEvents = vi.fn();
+    addEventListener = vi.fn();
     update = vi.fn();
     dispose = vi.fn();
   }

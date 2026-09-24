@@ -216,6 +216,13 @@ export function getImmersiveHandMoveAxes(signals: HandSignals): {
  * consolidate it (plus keyboard/mic/camera-theremin from #307-#309) into a
  * proper "Piece controls" settings surface.
  */
+/** What the stage tells an overlay so it can project scene objects onto the canvas. */
+export type StageOverlayContext = {
+  camera: THREE.PerspectiveCamera | null;
+  width: number;
+  height: number;
+};
+
 function ThreeScenePreview({
   scene,
   showScreenshotButton = true,
@@ -230,8 +237,14 @@ function ThreeScenePreview({
   editorControls,
   createGestureCameraProvider,
   frozen = false,
+  onPickObject,
+  renderOverlay,
 }: {
   scene: Scene3DDocument;
+  /** #782: a click (not a drag) on the stage reports the scene object under it, or null for empty space. */
+  onPickObject?: (objectId: string | null) => void;
+  /** #782: selection chrome (handles, floating toolbar, precise panel) drawn over the stage in canvas-frame pixels. */
+  renderOverlay?: (context: StageOverlayContext) => ReactNode;
   /** #783/#781: while true (draw mode) object animations hold their authored pose. */
   frozen?: boolean;
   showScreenshotButton?: boolean;
@@ -265,6 +278,15 @@ function ThreeScenePreview({
 }) {
   const frozenRef = useRef(frozen);
   frozenRef.current = frozen;
+  const viewStateRef = useRef<{
+    key: string;
+    position: THREE.Vector3;
+    target: THREE.Vector3;
+  } | null>(null);
+  const onPickRef = useRef(onPickObject);
+  onPickRef.current = onPickObject;
+  // Bumped whenever the camera moves or the stage resizes so the overlay re-projects.
+  const [, setOverlayTick] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasFrameRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -540,6 +562,7 @@ function ThreeScenePreview({
       const height = canvasFrame.clientHeight || 1;
       renderer.setSize(width, height, false);
       if (cameraRef.current) updateThreeCameraAspect(cameraRef.current, width, height);
+      setOverlayTick((tick) => tick + 1);
     }
     resize();
 
@@ -579,6 +602,15 @@ function ThreeScenePreview({
     // existing whole-graph-rebuild-on-change architecture.
     const controls = new OrbitControls(camera, activeRenderer.domElement);
     controls.target.set(scene.camera.target.x, scene.camera.target.y, scene.camera.target.z);
+    // #782: editing the scene (dragging a handle, a precise value) rebuilds this graph, which used to snap
+    // the camera back to the authored pose. Keep the visitor's current view while the authored camera
+    // itself is unchanged.
+    const cameraKey = JSON.stringify(scene.camera);
+    const savedView = viewStateRef.current;
+    if (savedView && savedView.key === cameraKey) {
+      camera.position.copy(savedView.position);
+      controls.target.copy(savedView.target);
+    }
     controls.enableDamping = true;
     // Issue #311: `flyControls` (the immersive view) drives arrow keys
     // itself (see the fly-translation block in `tick()` below) -- calling
@@ -588,6 +620,51 @@ function ThreeScenePreview({
     // drag orbit, wheel/pinch zoom) is unaffected either way.
     if (!flyControls) controls.listenToKeyEvents(window);
     controls.update();
+    controls.addEventListener('change', () => {
+      viewStateRef.current = {
+        key: cameraKey,
+        position: camera.position.clone(),
+        target: controls.target.clone(),
+      };
+      setOverlayTick((tick) => tick + 1);
+    });
+
+    // #782: a click that is not a drag picks the scene object under the pointer (or clears the pick).
+    const objectIds = new Set(scene.objects.map((object) => object.id));
+    const pickDom = activeRenderer.domElement;
+    const raycaster = new THREE.Raycaster();
+    let pointerDown: { x: number; y: number } | null = null;
+    const handlePickDown = (event: PointerEvent) => {
+      pointerDown = { x: event.clientX, y: event.clientY };
+    };
+    const handlePickUp = (event: PointerEvent) => {
+      const start = pointerDown;
+      pointerDown = null;
+      if (!start || !onPickRef.current || frozenRef.current) return;
+      if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 5) return;
+      const rect = pickDom.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      raycaster.setFromCamera(
+        new THREE.Vector2(
+          ((event.clientX - rect.left) / rect.width) * 2 - 1,
+          -(((event.clientY - rect.top) / rect.height) * 2 - 1),
+        ),
+        camera,
+      );
+      let picked: string | null = null;
+      for (const hit of raycaster.intersectObjects(threeScene.children, true)) {
+        let node: THREE.Object3D | null = hit.object;
+        while (node && !objectIds.has(node.name)) node = node.parent;
+        if (node) {
+          picked = node.name;
+          break;
+        }
+      }
+      onPickRef.current(picked);
+    };
+    pickDom.addEventListener('pointerdown', handlePickDown);
+    pickDom.addEventListener('pointerup', handlePickUp);
+    setOverlayTick((tick) => tick + 1);
 
     // Issue #294: applies the latest smoothed hand signals (if "Steer the
     // piece" is on and a hand is present) as an orbit/zoom adjustment,
@@ -761,6 +838,8 @@ function ThreeScenePreview({
         window.removeEventListener('keydown', handleFlyKeyDown);
         window.removeEventListener('keyup', handleFlyKeyUp);
       }
+      pickDom.removeEventListener('pointerdown', handlePickDown);
+      pickDom.removeEventListener('pointerup', handlePickUp);
       controls.dispose();
       disposeThreeSceneGraph(threeScene);
       cameraRef.current = null;
@@ -837,6 +916,11 @@ function ThreeScenePreview({
         data-testid="scene3d-preview-canvas-frame"
       >
         <canvas ref={canvasRef} data-testid="scene3d-preview-canvas" />
+        {renderOverlay?.({
+          camera: cameraRef.current,
+          width: canvasFrameRef.current?.clientWidth ?? 0,
+          height: canvasFrameRef.current?.clientHeight ?? 0,
+        })}
         {showGestureControl && gestureControlEnabled && gestureCameraStream && (
           <video
             ref={gestureCameraVideoRef}

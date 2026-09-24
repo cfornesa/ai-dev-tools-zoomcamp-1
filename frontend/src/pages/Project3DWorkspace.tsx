@@ -1,4 +1,11 @@
-import { useEffect, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+} from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
@@ -19,6 +26,7 @@ import {
 } from '../export/generateHtmlExport3D';
 import AIProposalPanel3D from './AIProposalPanel3D';
 import Outline3DInspector from './Outline3DInspector';
+import PlaneSelectionOverlay from './PlaneSelectionOverlay';
 import PublishControl3D from './PublishControl3D';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
@@ -159,6 +167,15 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
   const [selectedOutlineItem, setSelectedOutlineItem] = useState<Outline3DSelection>(null);
   // #781: the drawing plane currently being drawn on (Draw mode), or null.
   const [drawObjectId, setDrawObjectId] = useState<string | null>(null);
+  // #782: lets the stage (a click on an object, Escape) drive the outline selection.
+  const [selectionRequest, setSelectionRequest] = useState<{
+    selection: Outline3DSelection;
+    nonce: number;
+  }>({ selection: null, nonce: 0 });
+  // #782: a drag gesture edits the scene transiently and is folded into ONE undo step when it ends.
+  const gestureBaseRef = useRef<Scene3DDocument | null>(null);
+  const workingSceneRef = useRef<Scene3DDocument | null>(null);
+  workingSceneRef.current = workingScene;
   const [undoStack, setUndoStack] = useState<Scene3DDocument[]>([]);
   const [redoStack, setRedoStack] = useState<Scene3DDocument[]>([]);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
@@ -396,6 +413,51 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
       )
     : undefined;
 
+  function requestSelection(selection: Outline3DSelection) {
+    setSelectionRequest((current) => ({ selection, nonce: current.nonce + 1 }));
+  }
+
+  function replaceObject(next: Object3D): Scene3DDocument {
+    return {
+      ...currentScene,
+      objects: currentScene.objects.map((object) => (object.id === next.id ? next : object)),
+    };
+  }
+
+  function beginGesture() {
+    gestureBaseRef.current = workingSceneRef.current;
+  }
+
+  function changeGesture(next: Object3D) {
+    setWorkingScene((scene) =>
+      scene
+        ? {
+            ...scene,
+            objects: scene.objects.map((object) => (object.id === next.id ? next : object)),
+          }
+        : scene,
+    );
+  }
+
+  function endGesture() {
+    const base = gestureBaseRef.current;
+    gestureBaseRef.current = null;
+    if (!base) return;
+    // Defer one tick so `workingSceneRef` reflects the gesture's last transient edit.
+    window.setTimeout(() => {
+      if (workingSceneRef.current === base) return;
+      setUndoStack((history) => [...history, base]);
+      setRedoStack([]);
+    }, 0);
+  }
+
+  const overlayObject =
+    selectedOutlineItem?.kind === 'object' && drawObjectId === null
+      ? currentScene.objects.find(
+          (object) => object.id === selectedOutlineItem.id && object.type === 'drawingPlane',
+        )
+      : undefined;
+
   function confirmDrawing(shapes: DrawingShape[]) {
     if (!drawTarget?.drawing) return;
     const drawing = drawTarget.drawing;
@@ -606,6 +668,36 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
                 #226 placeholder. */}
             <Scene3DPreview
               frozen={drawTarget !== undefined}
+              onPickObject={(objectId) =>
+                requestSelection(objectId ? { kind: 'object', id: objectId } : null)
+              }
+              renderOverlay={
+                overlayObject
+                  ? (stage) => (
+                      <PlaneSelectionOverlay
+                        object={overlayObject}
+                        group={
+                          overlayObject.groupId
+                            ? (currentScene.groups.find(
+                                (group) => group.id === overlayObject.groupId,
+                              ) ?? null)
+                            : null
+                        }
+                        camera={stage.camera}
+                        width={stage.width}
+                        height={stage.height}
+                        onGestureStart={beginGesture}
+                        onGestureChange={changeGesture}
+                        onGestureEnd={endGesture}
+                        onCommit={(next) => updateWorkingScene(replaceObject(next))}
+                        onEditDrawing={() => setDrawObjectId(overlayObject.id)}
+                        onDuplicate={duplicateSelected}
+                        onDelete={deleteSelected}
+                        onDeselect={() => requestSelection(null)}
+                      />
+                    )
+                  : undefined
+              }
               scene={workingScene}
               screenshotBaseName={project?.title}
               immersiveHref={id ? `/immersive/p3d/${id}` : undefined}
@@ -728,6 +820,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
           scene={workingScene}
           onChange={updateWorkingScene}
           onSelectionChange={setSelectedOutlineItem}
+          requestedSelection={selectionRequest}
           onAskAiChange={handleAskAiChangeItem}
         />
         <section aria-label="Tools" role="region" data-panel="tools" className="editor-panel">

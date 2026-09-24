@@ -6303,3 +6303,290 @@ select.ai-proposal-field-full-width {
     0 0,
     12px 12px;
 }
+
+/* Issue #782: photo-editor-style selection chrome for a drawing plane (handles, floating toolbar, precise panel). */
+.plane-selection-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+.plane-selection-outline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.plane-selection-outline polygon {
+  fill: rgba(37, 99, 235, 0.08);
+  stroke: #2563eb;
+  stroke-width: 2;
+}
+.plane-selection-outline line {
+  stroke: #2563eb;
+  stroke-width: 2;
+}
+.plane-handle {
+  position: absolute;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  touch-action: none;
+  cursor: pointer;
+  border: 2px solid #2563eb;
+  background: #fff;
+  color: #1d4ed8;
+  font: inherit;
+  line-height: 1;
+}
+/* 44px touch target around every small handle without enlarging what is drawn. */
+.plane-handle::before {
+  content: '';
+  position: absolute;
+  inset: -16px;
+}
+.plane-handle:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+.plane-handle--corner {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  cursor: nwse-resize;
+}
+.plane-handle--edge {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #dbeafe;
+  cursor: ew-resize;
+}
+.plane-handle--move {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: move;
+  font-size: 18px;
+}
+.plane-handle--rotate {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: grab;
+  font-size: 15px;
+}
+.plane-resize-readout {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+.plane-selection-toolbar {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.94);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+.plane-selection-toolbar[data-dragging='true'] {
+  /* Get out of the way of the handle being dragged, like a photo editor's tool strip. */
+  opacity: 0.2;
+  pointer-events: none;
+}
+.plane-selection-toolbar[data-dock='bottom'] {
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  top: auto;
+  transform: none;
+  justify-content: space-between;
+}
+.plane-selection-toolbar button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.plane-selection-toolbar[data-dock='bottom'] {
+  gap: 2px;
+  padding: 2px;
+}
+.plane-selection-toolbar[data-dock='bottom'] > button,
+.plane-selection-toolbar[data-dock='bottom'] .plane-more > button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+}
+.plane-selection-toolbar[data-dock='bottom'] .plane-more {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.plane-selection-toolbar[data-dock='bottom'] .plane-more > button {
+  width: 100%;
+}
+.plane-selection-toolbar button[aria-pressed='true'] {
+  background: #2563eb;
+  border-color: #93c5fd;
+}
+.plane-selection-toolbar button:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+/* Hover/focus label instead of permanent text (icon-only toolbar convention). */
+.plane-toolbar-label {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #0b1220;
+  color: #fff;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+}
+.plane-selection-toolbar button:hover > .plane-toolbar-label,
+.plane-selection-toolbar button:focus-visible > .plane-toolbar-label {
+  opacity: 1;
+}
+.plane-selection-toolbar[data-dock='bottom'] .plane-toolbar-label {
+  display: none;
+}
+.plane-more {
+  position: relative;
+  display: inline-flex;
+}
+.plane-more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #0b1220;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  z-index: 5;
+}
+.plane-selection-toolbar[data-dock='bottom'] .plane-more-menu {
+  /* Phone: a small bottom sheet over the docked toolbar (the stage itself is too short for a popover). */
+  position: fixed;
+  z-index: 61;
+  top: auto;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  flex-direction: row;
+  gap: 4px;
+  padding: 6px;
+}
+.plane-selection-toolbar[data-dock='bottom'] .plane-more-menu button {
+  flex: 1 1 0;
+  min-height: 44px;
+  justify-content: center;
+}
+.plane-selection-toolbar .plane-more-menu button {
+  justify-content: flex-start;
+  min-height: 40px;
+  border-color: transparent;
+  text-align: left;
+}
+.plane-precise-panel {
+  position: absolute;
+  z-index: 4;
+  /* Below the shared stage toolbar band (z-index 20) so its buttons stay clickable. */
+  top: 64px;
+  right: 8px;
+  width: 260px;
+  max-height: calc(100% - 72px);
+  overflow: auto;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.96);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  font-size: 0.85rem;
+}
+.plane-precise-panel[data-dock='bottom'] {
+  /* On a phone the stage is short, so the panel becomes a bottom sheet over the page (still non-modal). */
+  position: fixed;
+  z-index: 60;
+  top: auto;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  width: auto;
+  max-height: 45vh;
+}
+.plane-precise-panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.plane-precise-panel header button {
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.plane-precise-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 8px;
+}
+.plane-precise-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.plane-precise-field input {
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  background: #fff;
+  color: #0b1220;
+  font: inherit;
+}
+.plane-precise-lock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}

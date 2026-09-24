@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import {
   object3DLabel,
@@ -25,6 +25,8 @@ type Props = {
   scene: Scene3DDocument;
   onChange: (next: Scene3DDocument) => void;
   onSelectionChange?: (selection: Outline3DSelection) => void;
+  /** #782: lets the stage (a click on an object, Escape) set the selection; applied whenever `nonce` changes. */
+  requestedSelection?: { selection: Outline3DSelection; nonce: number };
   // Issue #284: called with a group/object/light row's own display
   // name/label when its "Ask AI to change this" button is clicked --
   // mirrors LayersPanel.tsx's identically-named prop (#282) exactly.
@@ -229,8 +231,22 @@ const OBJECT_TYPE_DIMENSION_FIELDS: Record<Object3DType, (keyof Object3D)[]> = {
  * prop in memory -- no server save wiring here (that's a separate follow-
  * on once this UI's shape is concrete, filed alongside this issue).
  */
-function Outline3DInspector({ scene, onChange, onSelectionChange, onAskAiChange }: Props) {
+function Outline3DInspector({
+  scene,
+  onChange,
+  onSelectionChange,
+  onAskAiChange,
+  requestedSelection,
+}: Props) {
   const [selection, setSelectionState] = useState<Outline3DSelection>(null);
+  const appliedNonce = useRef<number | null>(null);
+  useEffect(() => {
+    if (!requestedSelection || appliedNonce.current === requestedSelection.nonce) return;
+    appliedNonce.current = requestedSelection.nonce;
+    setSelectionState(requestedSelection.selection);
+    onSelectionChange?.(requestedSelection.selection);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedSelection]);
 
   function setSelection(next: Outline3DSelection) {
     setSelectionState(next);

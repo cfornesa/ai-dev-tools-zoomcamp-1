@@ -32,6 +32,7 @@ vi.mock('three/examples/jsm/controls/OrbitControls.js', () => {
       lastConstructedDomElement = domElement;
     }
     listenToKeyEvents = listenToKeyEventsSpy;
+    addEventListener = vi.fn();
     update = updateSpy;
     dispose = disposeSpy;
   }

@@ -27,3 +27,4 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #758 | CLOSED | afdc93c | same | PASS | closed | local |
 | #760 | CLOSED | 38829df | vitest 54; playwright c2ZipRuntime760 + zip specs | PASS | closed | local |
 | #770 | CLOSED | 38c4ef2 | backend full (1538); vitest 275 | PASS | closed | local; no migration |
+| #771 | CLOSED | de85f37 | backend focused 195; vitest 37 | PASS | closed | local |

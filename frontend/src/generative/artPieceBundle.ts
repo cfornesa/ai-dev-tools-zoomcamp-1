@@ -46,6 +46,7 @@
 import JSZip from 'jszip';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
+import { buildInkOverlayBlock } from './inkOverlay';
 import { buildStandaloneArtPieceRuntimeScript } from '../export/standaloneArtPieceRuntimeSource';
 import {
   buildVisitorDrawingScript,
@@ -83,6 +84,8 @@ export type ArtPieceExportOptions = {
   mode?: ArtPieceExportMode;
   presentation?: ArtPieceExportPresentation;
   cameraPlacement?: CameraPlacement | null;
+  /** #776: the owner's ink layer, composited over the exported piece. */
+  ink?: unknown;
 };
 
 export class ArtPieceBundleError extends Error {
@@ -135,7 +138,7 @@ canvas {
   width: 100%;
   height: ${stageHeight};
 }
-${cameraBackground ? '#art-piece-container, a-scene, canvas, svg:not(.piece-stage-icon) { position: relative; z-index: 1; }' : ''}
+${cameraBackground ? '#art-piece-container, a-scene, canvas, svg:not(.piece-stage-icon):not(#art-piece-ink-overlay) { position: relative; z-index: 1; }' : ''}
 ${EXPORT_STAGE_TOOLBAR_CSS}
 ${library === 'c2js-interactive' ? VISITOR_DRAWING_CSS : ''}
 #art-piece-controls-panel, #art-piece-guide-dialog { font: 14px/1.4 system-ui, sans-serif; }
@@ -192,7 +195,7 @@ a-scene canvas.a-canvas {
 ${
   immersive
     ? `
-canvas:not(#art-piece-drawing-overlay), svg:not(.piece-stage-icon) {
+canvas:not(#art-piece-drawing-overlay), svg:not(.piece-stage-icon):not(#art-piece-ink-overlay) {
   width: 100% !important;
   height: 100% !important;
   object-fit: contain;
@@ -499,6 +502,7 @@ ${deviceIsolationScript}${runtimeScriptTag}${runtimeControlsScript}${library ===
 <body>
 ${body}
 ${controls}
+${buildInkOverlayBlock(options.ink)}
 </body>
 </html>
 `;

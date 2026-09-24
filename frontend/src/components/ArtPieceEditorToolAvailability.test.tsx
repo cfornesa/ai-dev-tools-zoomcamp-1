@@ -7,14 +7,22 @@ describe('ArtPieceEditorToolAvailability', () => {
   it('keeps unsupported tools visible with accessible reasons', () => {
     render(<ArtPieceEditorToolAvailability engine="p5js" />);
 
-    const addShape = screen.getByTestId('art-piece-editor-tool-add-shape');
-    expect(addShape).toBeDisabled();
-    expect(addShape).toHaveAttribute('aria-describedby', 'art-piece-editor-tool-add-shape-reason');
+    const transform = screen.getByTestId('art-piece-editor-tool-transform');
+    expect(transform).toBeDisabled();
+    expect(transform).toHaveAttribute('aria-describedby', 'art-piece-editor-tool-transform-reason');
     expect(
-      screen.getByText(/manual source editing for this engine is not available/i, {
-        selector: '#art-piece-editor-tool-add-shape-reason',
+      screen.getByText(/transform editing is planned/i, {
+        selector: '#art-piece-editor-tool-transform-reason',
       }),
     ).toBeVisible();
+  });
+
+  it('enables the ink drawing tools for every 2D engine (#776)', () => {
+    render(<ArtPieceEditorToolAvailability engine="p5js" />);
+
+    for (const tool of ['add-shape', 'add-ellipse', 'add-line', 'freehand-draw', 'erase']) {
+      expect(screen.getByTestId(`art-piece-editor-tool-${tool}`)).toBeEnabled();
+    }
   });
 
   it('keeps the supported AI edit action enabled', () => {

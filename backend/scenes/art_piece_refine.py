@@ -24,6 +24,7 @@ from scenes.art_piece_api import (
 from scenes.art_piece_persistence import _piece_or_404, regenerate_thumbnail
 from scenes.art_piece_validation import validate_art_piece_source
 from scenes.entitlements import get_effective_cap, is_unlimited
+from scenes.ink_document import metadata_with_inherited_ink
 from scenes.models import AIRetryPreference, ArtPiece, ArtPieceRefineRun, ArtPieceVersion
 from scenes.permissions import Action, can
 
@@ -196,7 +197,10 @@ def refine_art_piece(
                                 sequence=next_sequence,
                                 source=candidate,
                                 capabilities=source_version.capabilities,
-                                generation_metadata={"refine_run_id": run.pk},
+                                generation_metadata=metadata_with_inherited_ink(
+                                    source_version.generation_metadata,
+                                    {"refine_run_id": run.pk},
+                                ),
                             )
                             locked_piece.current_version = version
                             locked_piece.save(update_fields=["current_version", "updated_at"])

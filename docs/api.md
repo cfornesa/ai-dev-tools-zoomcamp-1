@@ -21,6 +21,20 @@ allowlisted command bridge; camera and hand-tracking permissions remain in the
 trusted parent runtime. Exported local runtimes are separate artifacts and do
 not carry app credentials.
 
+## Art-piece ink layer (#776)
+
+`ArtPieceVersion` responses (owner, public, and canonical projections) include the additive
+`ink` field: a validated `drawingDocument` (`schema/scene3d.schema.json#/$defs/drawingDocument`,
+the same vocabulary as a 3D drawing plane) drawn over a generated **2D** piece, or `null`.
+It is stored in `generation_metadata["ink"]`, so there is no migration, and the generated
+`source` is never edited.
+
+Version-create requests may send `generation_metadata: {"ink": <document>}` to set the ink,
+`{"ink": null}` to clear it, or omit `ink` to inherit the previous version's ink (so a
+source-only edit or an AI refinement never drops it). Ink on a 3D piece, an invalid
+document (shape/point/payload limits, unknown shape types, non-hex colours), or a duplicate
+shape id is a 400. Versions stay immutable: changing ink creates a new version.
+
 ## Art-piece camera placement (#742)
 
 `ArtPieceVersion` responses now include the additive `camera_placement` field

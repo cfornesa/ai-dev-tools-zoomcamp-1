@@ -21,8 +21,14 @@ describe('art piece editor capability matrix (issue #666)', () => {
       expect(Object.keys(capabilities)).toEqual(ART_PIECE_EDITOR_TOOL_KEYS);
       expect(capabilities['ai-edit'].enabled).toBe(true);
       for (const tool of ART_PIECE_EDITOR_TOOL_KEYS.slice(0, -1)) {
-        if (engine === 'canvas2d' || engine === 'svg') {
-          expect(capabilities[tool].reason || capabilities[tool].enabled).toBeTruthy();
+        if (['canvas2d', 'svg', 'p5js', 'c2js', 'c2js-interactive'].includes(engine)) {
+          // #776: the drawing tools open the ink layer on every 2D engine.
+          if (tool === 'transform' || tool === 'media') {
+            expect(capabilities[tool]).toMatchObject({ enabled: false });
+            expect(capabilities[tool].reason).toBeTruthy();
+          } else {
+            expect(capabilities[tool].enabled).toBe(true);
+          }
         } else if (engine === 'threejs' || engine === 'aframe') {
           if (tool === 'add-shape' || tool === 'transform') {
             expect(capabilities[tool].enabled).toBe(true);

@@ -4,6 +4,7 @@ import type { DrawingShape } from '../pages/scene3dTypes';
 import {
   INK_MAX_STROKES,
   addStroke,
+  buildDraggedShape,
   buildStroke,
   canRedo,
   canUndo,
@@ -132,6 +133,40 @@ describe('ink model (#775)', () => {
     const result = addStroke(createInkState(many), buildStroke('x', 'pen', line(3), brush));
     expect(result.error).toMatch(/full/);
     expect(inkShapes(result.state)).toHaveLength(INK_MAX_STROKES);
+  });
+
+  it('builds dragged rectangles, ellipses and lines from two corners', () => {
+    const a = { x: 50, y: 40 };
+    const b = { x: 10, y: 10 };
+    expect(buildDraggedShape('r', 'rect', a, b, brush, false)).toMatchObject({
+      type: 'rect',
+      x: 10,
+      y: 10,
+      width: 40,
+      height: 30,
+      fill: null,
+      stroke: '#112233',
+      strokeWidth: 6,
+    });
+    expect(buildDraggedShape('r', 'rect', a, b, brush, true)).toMatchObject({
+      fill: '#112233',
+      stroke: null,
+    });
+    expect(buildDraggedShape('e', 'ellipse', a, b, brush, true)).toMatchObject({
+      type: 'ellipse',
+      cx: 30,
+      cy: 25,
+      rx: 20,
+      ry: 15,
+    });
+    expect(buildDraggedShape('l', 'line', a, b, brush, true)).toMatchObject({
+      type: 'line',
+      x1: 50,
+      y1: 40,
+      x2: 10,
+      y2: 10,
+      stroke: '#112233',
+    });
   });
 
   it('generates unused ids', () => {

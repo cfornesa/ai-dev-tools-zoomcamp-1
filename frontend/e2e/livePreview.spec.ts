@@ -74,7 +74,7 @@ test.describe('Generated-piece live preview (#669)', () => {
       ).toBeVisible();
       await page
         .getByTestId(
-          engine === 'canvas2d' ? 'art-piece-editor-tool-add-shape' : 'art-piece-editor-add-box',
+          engine === 'canvas2d' ? 'art-piece-editor-edit-source' : 'art-piece-editor-add-box',
         )
         .click();
       await expect(page.getByTestId('art-piece-editor-preview')).toBeVisible();

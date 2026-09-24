@@ -26,6 +26,8 @@ import {
   redo,
   selectAt,
   undo,
+  buildDraggedShape,
+  isShapeTool,
   type InkState,
   type InkTool,
 } from './inkModel';
@@ -39,6 +41,8 @@ export type InkEditorProps = {
   /** A picture of the frozen piece drawn behind the ink so the author can annotate in place. */
   snapshotUrl?: string | null;
   strokeIdPrefix?: string;
+  /** The tool that is active when the editor opens (defaults to the pen). */
+  initialTool?: InkTool;
   /** Per-stroke point cap and per-layer stroke cap, from the owning document's limits. */
   maxPointsPerStroke?: number;
   maxStrokes?: number;
@@ -49,6 +53,9 @@ export type InkEditorProps = {
 const TOOLS: Array<{ id: InkTool; label: string }> = [
   { id: 'pen', label: 'Pen' },
   { id: 'pencil', label: 'Pencil' },
+  { id: 'rect', label: 'Rectangle' },
+  { id: 'ellipse', label: 'Ellipse' },
+  { id: 'line', label: 'Line' },
   { id: 'eraser', label: 'Eraser' },
   { id: 'select', label: 'Select' },
 ];
@@ -60,15 +67,17 @@ export function InkEditor({
   background = null,
   snapshotUrl = null,
   strokeIdPrefix = 'ink',
+  initialTool = 'pen',
   maxPointsPerStroke,
   maxStrokes,
   onConfirm,
   onCancel,
 }: InkEditorProps) {
   const [state, setState] = useState<InkState>(() => createInkState(initialShapes));
-  const [tool, setTool] = useState<InkTool>('pen');
+  const [tool, setTool] = useState<InkTool>(initialTool);
   const [color, setColor] = useState('#1d4ed8');
   const [size, setSize] = useState(6);
+  const [filled, setFilled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [live, setLive] = useState<InkPoint[] | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -77,22 +86,29 @@ export function InkEditor({
   stateRef.current = state;
 
   const shapes = inkShapes(state);
-  const liveShape = useMemo(
-    () =>
-      live && (tool === 'pen' || tool === 'pencil') && live.length > 0
-        ? buildStroke(
-            '__live__',
-            tool,
-            live.length === 1 ? [live[0]!, live[0]!] : live,
-            {
-              color,
-              size,
-            },
-            maxPointsPerStroke,
-          )
-        : null,
-    [live, tool, color, size],
-  );
+  const liveShape = useMemo(() => {
+    if (!live || live.length === 0) return null;
+    if (tool === 'pen' || tool === 'pencil') {
+      return buildStroke(
+        '__live__',
+        tool,
+        live.length === 1 ? [live[0]!, live[0]!] : live,
+        { color, size },
+        maxPointsPerStroke,
+      );
+    }
+    if (isShapeTool(tool)) {
+      return buildDraggedShape(
+        '__live__',
+        tool,
+        live[0]!,
+        live[live.length - 1]!,
+        { color, size },
+        filled,
+      );
+    }
+    return null;
+  }, [live, tool, color, size, filled, maxPointsPerStroke]);
 
   // Repaint whenever the strokes, the in-progress stroke, or the selection change.
   useEffect(() => {
@@ -130,7 +146,7 @@ export function InkEditor({
     const point = toDrawingPoint(event);
     setMessage(null);
     dragRef.current = { last: point, moved: false };
-    if (tool === 'pen' || tool === 'pencil') setLive([point]);
+    if (tool === 'pen' || tool === 'pencil' || isShapeTool(tool)) setLive([point]);
     else if (tool === 'eraser') setState((s) => eraseAt(s, [point], size + 2));
     else setState((s) => selectAt(s, point, 6));
   };
@@ -141,6 +157,8 @@ export function InkEditor({
     const point = toDrawingPoint(event);
     if (tool === 'pen' || tool === 'pencil') {
       setLive((points) => (points ? [...points, point] : [point]));
+    } else if (isShapeTool(tool)) {
+      setLive((points) => (points ? [points[0]!, point] : [point]));
     } else if (tool === 'eraser') {
       setState((s) => eraseAt(s, [point], size + 2));
     } else if (tool === 'select' && stateRef.current.selectedId) {
@@ -168,6 +186,18 @@ export function InkEditor({
         maxPointsPerStroke,
       );
       const result = addStroke(state, stroke, maxStrokes);
+      setState(result.state);
+      setMessage(result.error ?? null);
+    } else if (isShapeTool(tool) && live && live.length > 1) {
+      const shape = buildDraggedShape(
+        nextInkId(shapes, strokeIdPrefix),
+        tool,
+        live[0]!,
+        live[live.length - 1]!,
+        { color, size },
+        filled,
+      );
+      const result = addStroke(state, shape, maxStrokes);
       setState(result.state);
       setMessage(result.error ?? null);
     }
@@ -225,6 +255,17 @@ export function InkEditor({
             onChange={(e) => setColor(e.target.value)}
           />
         </label>
+        {isShapeTool(tool) && tool !== 'line' && (
+          <label className="ink-editor-field">
+            <input
+              type="checkbox"
+              checked={filled}
+              data-testid="ink-fill"
+              onChange={(e) => setFilled(e.target.checked)}
+            />
+            Fill
+          </label>
+        )}
         <label className="ink-editor-field">
           Size
           <input

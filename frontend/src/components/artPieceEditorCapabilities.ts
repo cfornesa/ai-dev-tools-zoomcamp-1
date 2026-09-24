@@ -23,21 +23,7 @@ export type ArtPieceEditorCapabilities = Record<
   ArtPieceEditorToolCapability
 >;
 
-const MANUAL_TOOL_REASON =
-  'Manual source editing for this engine is not available yet; use AI edit or wait for the engine-specific manual tools.';
-
-function manualTools(): Omit<ArtPieceEditorCapabilities, 'ai-edit'> {
-  return {
-    'add-shape': { enabled: false, reason: MANUAL_TOOL_REASON },
-    'add-ellipse': { enabled: false, reason: MANUAL_TOOL_REASON },
-    'add-line': { enabled: false, reason: MANUAL_TOOL_REASON },
-    'freehand-draw': { enabled: false, reason: MANUAL_TOOL_REASON },
-    erase: { enabled: false, reason: MANUAL_TOOL_REASON },
-    transform: { enabled: false, reason: MANUAL_TOOL_REASON },
-    media: { enabled: false, reason: MANUAL_TOOL_REASON },
-  };
-}
-
+/** #776: drawing tools on a 2D piece open its ink layer, which works for every 2D engine. */
 function supported2DManualTools(): Omit<ArtPieceEditorCapabilities, 'ai-edit'> {
   return {
     'add-shape': { enabled: true },
@@ -76,9 +62,9 @@ function supported3DManualTools(): Omit<ArtPieceEditorCapabilities, 'ai-edit'> {
 export const ART_PIECE_EDITOR_CAPABILITIES: Record<ArtPieceLibrary, ArtPieceEditorCapabilities> = {
   canvas2d: { ...supported2DManualTools(), 'ai-edit': { enabled: true } },
   svg: { ...supported2DManualTools(), 'ai-edit': { enabled: true } },
-  p5js: { ...manualTools(), 'ai-edit': { enabled: true } },
-  c2js: { ...manualTools(), 'ai-edit': { enabled: true } },
-  'c2js-interactive': { ...manualTools(), 'ai-edit': { enabled: true } },
+  p5js: { ...supported2DManualTools(), 'ai-edit': { enabled: true } },
+  c2js: { ...supported2DManualTools(), 'ai-edit': { enabled: true } },
+  'c2js-interactive': { ...supported2DManualTools(), 'ai-edit': { enabled: true } },
   threejs: { ...supported3DManualTools(), 'ai-edit': { enabled: true } },
   aframe: { ...supported3DManualTools(), 'ai-edit': { enabled: true } },
 };

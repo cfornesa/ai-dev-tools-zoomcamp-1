@@ -13,7 +13,10 @@ import {
 import type { DrawingShape } from '../pages/scene3dTypes';
 import { moveShape, shapeHit, thinPoints, topShapeAt, type InkPoint } from './inkGeometry';
 
-export type InkTool = 'pen' | 'pencil' | 'eraser' | 'select';
+export type InkTool = 'pen' | 'pencil' | 'rect' | 'ellipse' | 'line' | 'eraser' | 'select';
+export type InkShapeTool = 'rect' | 'ellipse' | 'line';
+export const isShapeTool = (tool: InkTool): tool is InkShapeTool =>
+  tool === 'rect' || tool === 'ellipse' || tool === 'line';
 export type InkBrush = { color: string; size: number };
 
 export const INK_MAX_POINTS_PER_STROKE = 2000;
@@ -64,6 +67,59 @@ export function buildStroke(
     stroke: brush.color,
     strokeWidth: tool === 'pencil' ? Math.max(1, brush.size * 0.5) : brush.size,
     opacity: tool === 'pencil' ? 0.7 : 1,
+  };
+}
+
+/** A rectangle, ellipse or line dragged from `a` to `b` (an ellipse is inscribed in the drag box). */
+export function buildDraggedShape(
+  id: string,
+  tool: InkShapeTool,
+  a: InkPoint,
+  b: InkPoint,
+  brush: InkBrush,
+  filled: boolean,
+): DrawingShape {
+  const style = {
+    fill: filled && tool !== 'line' ? brush.color : null,
+    stroke: filled && tool !== 'line' ? null : brush.color,
+    strokeWidth: filled && tool !== 'line' ? 0 : brush.size,
+    opacity: 1,
+  };
+  const round = (n: number) => Math.round(n * 10) / 10;
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  const w = Math.max(1, Math.abs(b.x - a.x));
+  const h = Math.max(1, Math.abs(b.y - a.y));
+  if (tool === 'rect') {
+    return {
+      id,
+      type: 'rect',
+      x: round(x),
+      y: round(y),
+      width: round(w),
+      height: round(h),
+      ...style,
+    };
+  }
+  if (tool === 'ellipse') {
+    return {
+      id,
+      type: 'ellipse',
+      cx: round(x + w / 2),
+      cy: round(y + h / 2),
+      rx: round(w / 2),
+      ry: round(h / 2),
+      ...style,
+    };
+  }
+  return {
+    id,
+    type: 'line',
+    x1: round(a.x),
+    y1: round(a.y),
+    x2: round(b.x),
+    y2: round(b.y),
+    ...style,
   };
 }
 

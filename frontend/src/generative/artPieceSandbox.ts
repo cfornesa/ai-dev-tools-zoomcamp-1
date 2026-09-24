@@ -45,6 +45,7 @@
  * the payload once that identity check has already passed.
  */
 
+import { buildInkOverlayBlock } from './inkOverlay';
 import type { ArtPieceLibrary } from '../api/artPieces';
 
 export const ART_PIECE_SANDBOX_MESSAGE_SOURCE = 'art-piece-sandbox';
@@ -571,7 +572,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   }
   function ensureFlatSpatialShell() {
     if (registeredCamera) return true;
-    var artwork = document.querySelector('canvas') || document.querySelector('svg');
+    var artwork = document.querySelector('canvas') || document.querySelector('svg:not(#art-piece-ink-overlay)');
     if (!artwork) return false;
     flatShellArtwork = artwork;
     flatShellOriginalStyle = artwork.getAttribute('style');
@@ -735,10 +736,24 @@ function buildListenerScript(library: ArtPieceLibrary): string {
             status: 'screenshot', data: data, filename: name
           }, '*');
         }
+        // Issue #776: the piece's ink layer (registered by the ink overlay block) is composited into
+        // the capture unless the parent asks for the bare artwork (includeInk: false, used by the
+        // ink editor so its own snapshot never double-paints existing ink).
+        var inkExtras = data.includeInk === false ? [] : (window.__artPieceScreenshotExtras || []);
+        function withInk(base) {
+          if (!inkExtras.length) return base.toDataURL('image/png');
+          var composite = document.createElement('canvas');
+          composite.width = base.width;
+          composite.height = base.height;
+          var compositeCtx = composite.getContext('2d');
+          compositeCtx.drawImage(base, 0, 0);
+          inkExtras.forEach(function (draw) { draw(compositeCtx, composite.width, composite.height); });
+          return composite.toDataURL('image/png');
+        }
         if (canvas && canvas.toBlob) {
-          reportScreenshot(canvas.toDataURL('image/png'), filename);
+          reportScreenshot(withInk(canvas), filename);
         } else {
-          var svg = document.querySelector('svg');
+          var svg = document.querySelector('svg:not(#art-piece-ink-overlay)');
           if (!svg) throw new Error('The generated piece has no capturable artwork.');
           var svgText = new XMLSerializer().serializeToString(svg);
           var svgViewBox = svg.viewBox && svg.viewBox.baseVal;
@@ -756,7 +771,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
               rasterCanvas.height = svgHeight;
               var rasterContext = rasterCanvas.getContext('2d');
               rasterContext.drawImage(svgImage, 0, 0, svgWidth, svgHeight);
-              reportScreenshot(rasterCanvas.toDataURL('image/png'), filename);
+              reportScreenshot(withInk(rasterCanvas), filename);
             } catch (rasterError) {
               report('error', (rasterError && rasterError.message) || 'The generated piece could not be captured as an image.');
             }
@@ -896,7 +911,7 @@ export function buildArtPieceSandboxDocument(
   snippet: string,
   library: ArtPieceLibrary = 'canvas2d',
   presentation: 'regular' | 'immersive' = 'regular',
-  options: { background?: string } = {},
+  options: { background?: string; ink?: unknown } = {},
 ): string {
   const cdnUrl = LIBRARY_CDN[library];
   const cdnScriptTag = cdnUrl ? `<script src="${cdnUrl}"></script>` : '';
@@ -926,6 +941,7 @@ ${buildListenerScript(library)}
 </head>
 <body>
 ${body}
+${buildInkOverlayBlock(options.ink)}
 </body>
 </html>`;
 }

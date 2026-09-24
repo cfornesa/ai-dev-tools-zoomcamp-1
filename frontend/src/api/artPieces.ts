@@ -12,6 +12,7 @@
  */
 import { apiFetch } from './client';
 import type { SeoConfig } from './adminPages';
+import type { DrawingDocument } from '../pages/scene3dTypes';
 
 /** The stable engine identifiers this endpoint persists -- mirrors
  * `scenes.art_piece_contract`. Generation availability is separate from
@@ -153,6 +154,8 @@ export type ArtPieceVersion = {
   thumbnail_is_fallback: boolean;
   created_at: string;
   generation_metadata?: Record<string, unknown>;
+  /** #776: the ink layer drawn over a generated 2D piece (a validated drawing document), or null. */
+  ink?: DrawingDocument | null;
 };
 
 export type PublicArtPieceVersionSummary = {
@@ -329,6 +332,8 @@ export function createArtPieceVersion(
     source: string;
     capabilities?: ArtPieceCapabilitySet;
     camera_placement?: CameraPlacement | null;
+    /** `{ ink: <document> }` sets the ink layer, `{ ink: null }` clears it; omitted keeps the previous ink. */
+    generation_metadata?: Record<string, unknown>;
   },
 ): Promise<ArtPieceVersion> {
   return apiFetch<ArtPieceVersion>(`/api/art-pieces/${publicId}/versions/`, {

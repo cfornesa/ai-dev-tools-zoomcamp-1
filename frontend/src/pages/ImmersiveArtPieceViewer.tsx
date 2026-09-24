@@ -358,6 +358,7 @@ function ImmersiveArtPieceViewer({
             {
               background:
                 piece.current_version.camera_placement === 'background' ? 'transparent' : '#111827',
+              ink: piece.current_version.ink,
             },
           )}
           // Issue #434: a cross-document iframe captures pointer/wheel
@@ -390,6 +391,7 @@ function ImmersiveArtPieceViewer({
           immersiveHref={immersiveHref}
           library={piece.engine}
           source={piece.current_version.source}
+          ink={piece.current_version.ink}
           cameraPlacement={piece.current_version.camera_placement}
           title={piece.title}
           presentation="immersive"

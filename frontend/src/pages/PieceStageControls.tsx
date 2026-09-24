@@ -49,6 +49,8 @@ type Props = {
   immersiveHref: string;
   library: ArtPieceLibrary;
   source: string;
+  /** #776: the owner's ink layer, carried into the ZIP export. */
+  ink?: unknown;
   cameraPlacement?: CameraPlacement | null;
   title: string;
   /** Regular public viewers render the toolbar above the stage, then move it
@@ -88,6 +90,7 @@ function PieceStageControls({
   immersiveHref,
   library,
   source,
+  ink,
   cameraPlacement,
   title,
   toolbarPortalTarget,
@@ -615,6 +618,7 @@ function PieceStageControls({
         mode,
         presentation,
         cameraPlacement: resolvedCameraPlacement,
+        ink,
       });
       triggerArtPieceBundleDownload(blob, `${title || 'art-piece'}-${label}.zip`);
       setOpen(false);

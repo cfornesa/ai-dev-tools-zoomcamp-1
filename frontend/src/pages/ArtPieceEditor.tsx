@@ -31,7 +31,8 @@ import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbna
 import MentionPromptField from './MentionPromptField';
 import { buildArtPieceTargetOptions } from './artPieceTargets';
 import ArtPieceEditorToolAvailability from '../components/ArtPieceEditorToolAvailability';
-import { appendGenerated2DEdit, type Generated2DManualTool } from './generated2dManualTools';
+import GeneratedInkPanel, { type InkRequest } from '../components/GeneratedInkPanel';
+import type { InkTool } from '../ink/inkModel';
 import Generated3DManualTools from '../components/Generated3DManualTools';
 import {
   appendGenerated3DPrimitive,
@@ -39,6 +40,14 @@ import {
   type Generated3DPrimitive,
   type Generated3DTransform,
 } from './generated3dManualTools';
+
+const INK_TOOL_FOR: Partial<Record<string, InkTool>> = {
+  'add-shape': 'rect',
+  'add-ellipse': 'ellipse',
+  'add-line': 'line',
+  'freehand-draw': 'pen',
+  erase: 'eraser',
+};
 
 type RevisionPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
@@ -109,6 +118,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const auth = useAuth();
 
   const [piece, setPiece] = useState<ArtPiece | null>(null);
+  const [inkRequest, setInkRequest] = useState<InkRequest | null>(null);
   const [versions, setVersions] = useState<ArtPieceVersion[]>([]);
   const [loadError, setLoadError] = useState(false);
 
@@ -303,11 +313,19 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     setCapabilities((current) => ({ ...current, [key]: !current[key] }));
   }
 
-  function applyManualTool(tool: Generated2DManualTool) {
-    if (!piece || (piece.engine !== 'canvas2d' && piece.engine !== 'svg')) return;
-    const current = reviseCode ?? piece.current_version?.source ?? '';
-    const next = appendGenerated2DEdit(current, piece.engine, tool);
-    applyManualCode(next);
+  /** Opens the editable-source panel (with its live sandbox preview) on the current version's source. */
+  function openSourceEditor() {
+    if (!piece?.current_version) return;
+    const source = piece.current_version.source;
+    setReviseCode(source);
+    setPreviewCode(source);
+    setPreviewError(null);
+    setRevisePhase('previewing');
+    setRefineRun(null);
+  }
+
+  function openInk(tool: InkTool) {
+    setInkRequest((current) => ({ tool, nonce: (current?.nonce ?? 0) + 1 }));
   }
 
   function applyManualCode(next: string) {
@@ -494,15 +512,11 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       <ArtPieceEditorToolAvailability
         engine={piece.engine}
         onActivate={(tool) => {
-          if (
-            ((piece.engine === 'canvas2d' || piece.engine === 'svg') && tool === 'add-shape') ||
-            ((piece.engine === 'canvas2d' || piece.engine === 'svg') &&
-              (tool === 'add-ellipse' ||
-                tool === 'add-line' ||
-                tool === 'freehand-draw' ||
-                tool === 'erase'))
-          ) {
-            applyManualTool(tool);
+          if (engineCapability.family === '2d') {
+            // #776: every 2D drawing tool opens the ink layer (a separate validated document composited
+            // over the piece) instead of appending fixed snippets to the generated source.
+            const inkTool = INK_TOOL_FOR[tool];
+            if (inkTool) openInk(inkTool);
           } else if (
             tool === 'add-shape' &&
             (piece.engine === 'threejs' || piece.engine === 'aframe')
@@ -511,6 +525,27 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           }
         }}
       />
+      {engineCapability.family === '2d' && !reviseCode && (
+        <p>
+          <button
+            type="button"
+            data-testid="art-piece-editor-edit-source"
+            onClick={openSourceEditor}
+          >
+            Edit source
+          </button>
+        </p>
+      )}
+      {engineCapability.family === '2d' && (
+        <GeneratedInkPanel
+          piece={piece}
+          request={inkRequest}
+          onSaved={(created) => {
+            setVersions((current) => [...current, created]);
+            setPiece((current) => (current ? { ...current, current_version: created } : current));
+          }}
+        />
+      )}
       {(piece.engine === 'threejs' || piece.engine === 'aframe') && (
         <Generated3DManualTools
           engine={piece.engine}

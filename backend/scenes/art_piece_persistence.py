@@ -38,6 +38,11 @@ from scenes.art_piece_contract import art_piece_engine_capability
 from scenes.art_piece_validation import validate_art_piece_source
 from scenes.canonical_piece_signals import normalize_public_slug
 from scenes.content_metadata import sanitize_content_seo
+from scenes.ink_document import (
+    ink_from_metadata,
+    metadata_with_inherited_ink,
+    validate_ink_document,
+)
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
 from scenes.permissions import Action, can
 from scenes.public_identity import public_author_name
@@ -196,6 +201,8 @@ def _version_data(version: ArtPieceVersion, *, public: bool):
             else f"/api/art-pieces/{version.piece.public_id}/thumbnail.png"
         ),
         "thumbnail_is_fallback": thumbnail is None or thumbnail.is_fallback,
+        # #776: the owner's ink layer composited over a generated 2D piece (null when none).
+        "ink": ink_from_metadata(version.generation_metadata),
     }
     if public:
         data["source"] = version.source
@@ -312,6 +319,15 @@ class ArtPieceVersionSerializer(serializers.Serializer):
         engine = self.context.get("engine")
         if engine is not None:
             attrs["source"] = validate_art_piece_source(engine, attrs["source"])
+        ink = attrs.get("generation_metadata", {}).get("ink")
+        if ink is not None:
+            if engine is not None and art_piece_engine_capability(engine)["family"] != "2d":
+                raise serializers.ValidationError(
+                    {"generation_metadata": ["Ink layers are only available for 2D pieces."]}
+                )
+            problems = validate_ink_document(ink)
+            if problems:
+                raise serializers.ValidationError({"generation_metadata": {"ink": problems}})
         return attrs
 
 
@@ -448,9 +464,12 @@ class ArtPieceVersionListCreateView(APIView):
                 locked.versions.order_by("-sequence").values_list("sequence", flat=True).first()
                 or 0
             ) + 1
-            version = ArtPieceVersion.objects.create(
-                piece=locked, sequence=sequence, **serializer.validated_data
+            values = dict(serializer.validated_data)
+            values["generation_metadata"] = metadata_with_inherited_ink(
+                getattr(locked.current_version, "generation_metadata", None),
+                values.get("generation_metadata") or {},
             )
+            version = ArtPieceVersion.objects.create(piece=locked, sequence=sequence, **values)
             locked.current_version = version
             locked.save(update_fields=["current_version", "updated_at"])
             regenerate_thumbnail(version)

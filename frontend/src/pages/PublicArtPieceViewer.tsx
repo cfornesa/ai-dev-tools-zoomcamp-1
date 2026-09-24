@@ -276,6 +276,7 @@ export default function PublicArtPieceViewer({
               'regular',
               {
                 background: 'transparent',
+                ink: piece.current_version.ink,
               },
             )}
             // Issue #435: browsers apply a default iframe border a few px
@@ -305,6 +306,7 @@ export default function PublicArtPieceViewer({
             }
             library={piece.engine}
             source={piece.current_version.source}
+            ink={piece.current_version.ink}
             cameraPlacement={piece.current_version.camera_placement}
             title={piece.title}
             toolbarPortalTarget={toolbarHost}

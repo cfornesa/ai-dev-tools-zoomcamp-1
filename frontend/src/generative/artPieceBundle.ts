@@ -213,6 +213,14 @@ const LIBRARY_CDN: Partial<Record<ArtPieceLibrary, { url: string; filename: stri
     url: 'https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js',
     filename: 'p5.min.js',
   },
+  c2js: {
+    url: 'https://cdn.jsdelivr.net/npm/c2.js@1.0.9/dist/c2.min.js',
+    filename: 'c2.min.js',
+  },
+  'c2js-interactive': {
+    url: 'https://cdn.jsdelivr.net/npm/c2.js@1.0.9/dist/c2.min.js',
+    filename: 'c2.min.js',
+  },
   threejs: {
     url: 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
     filename: 'three.min.js',
@@ -440,6 +448,9 @@ function buildIndexHtml(
       this.circle = function (x, y, radius) { this.context.beginPath(); this.context.arc(x, y, radius, 0, Math.PI * 2); this.context.fill(); };
     }
   };
+  // Issue #760: the vendored upstream c2.js (runtime/c2.min.js) is the real reference runtime; the
+  // three-method adapter above is only a fallback if that file failed to load.
+  var c2Runtime = window.c2 && typeof window.c2.Renderer === 'function' ? window.c2 : c2Fallback;
   if (typeof window.sketch !== 'function') throw new Error('C2.js sketch runtime was not initialized.');
   var frame = 0;
   var callback = null;
@@ -453,7 +464,7 @@ function buildIndexHtml(
     }
     window.requestAnimationFrame(tick);
   }
-  window.__artPieceInstance = window.sketch({ c2: c2Fallback, canvas: canvas, startFrame: startFrame });
+  window.__artPieceInstance = window.sketch({ c2: c2Runtime, canvas: canvas, startFrame: startFrame });
 }());</script>`;
   } else {
     // canvas2d, svg, aframe: natural content already includes whatever
@@ -505,12 +516,13 @@ generated markup directly in index.html) for behavior, then reopen
 index.html.
 
 runtime/ (if present) holds a vendored copy of this piece's rendering
-library (p5.js, Three.js, or A-Frame), fetched once at export time so this piece
+library (p5.js, C2.js, Three.js, or A-Frame), fetched once at export time so this piece
 works completely offline -- it never depends on a live CDN connection
 after you download it.
 
-C2.js and C2.js Interactive use the bundled compatibility adapter matching
-the live opaque-sandbox contract; no external runtime is required.
+C2.js and C2.js Interactive use the vendored upstream c2.js runtime (runtime/c2.min.js,
+fetched once at export time), falling back to a small built-in Canvas2D adapter only if
+that file cannot load.
 `;
 
 /** Fetches `url` and returns its bytes as a `Uint8Array` (JSZip's most

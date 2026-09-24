@@ -77,18 +77,32 @@ describe('generateArtPieceBundle', () => {
     expect(html).not.toContain('cdn.jsdelivr.net');
   });
 
-  it('C2.js and C2.js Interactive: bundle the opaque-sandbox compatibility adapter inline', async () => {
+  it('C2.js and C2.js Interactive: vendor the real pinned c2.min.js with the small adapter as fallback (#760)', async () => {
     for (const library of ['c2js', 'c2js-interactive'] as const) {
       const blob = await generateArtPieceBundle(library, C2_CODE, { presentation: 'immersive' });
       const zip = await JSZip.loadAsync(blob);
-      expect(fileNames(zip)).toEqual(['README.txt', 'index.html', 'styles/piece.css']);
+      expect(fileNames(zip)).toEqual([
+        'README.txt',
+        'index.html',
+        'runtime/c2.min.js',
+        'styles/piece.css',
+      ]);
       const html = await zip.files['index.html'].async('string');
       const css = await zip.files['styles/piece.css'].async('string');
+      expect(html).toContain('<script src="runtime/c2.min.js"></script>');
+      expect(html).not.toContain('cdn.jsdelivr.net');
       expect(html).toContain('id="c2-canvas" width="1280" height="720"');
-      expect(html).toContain('var c2Fallback = {');
+      // The real runtime wins when present; the adapter only backs it up.
+      expect(html).toContain(
+        "var c2Runtime = window.c2 && typeof window.c2.Renderer === 'function' ? window.c2 : c2Fallback;",
+      );
+      expect(html).toContain('window.sketch({ c2: c2Runtime, canvas: canvas');
       expect(html).toContain('art-piece-navigation-pose');
       expect(css).toContain('height: 100dvh');
     }
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://cdn.jsdelivr.net/npm/c2.js@1.0.9/dist/c2.min.js',
+    );
   });
 
   it('C2.js regular ZIP: canvas is the reference 1280x720 and fills the stage width at 16:9 (#764)', async () => {

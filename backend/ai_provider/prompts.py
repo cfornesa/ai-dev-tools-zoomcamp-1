@@ -79,7 +79,8 @@ SCENE3D_DRAWING_PLANE_RULES = (
     '\n- Resizing a "drawingPlane" changes width and height by the SAME factor. Change them by '
     "different factors only when the prompt explicitly asks to elongate, stretch, widen, or "
     "make it taller."
-    '\n- Any object may have animation with kind "rotate", "orbit", "oscillate", or "pulse"; axis x, y, '
+    '\n- Any object may have animation with kind "rotate", "orbit", "oscillate", or "pulse"; '
+    'axis x, y, '
     "or z; speed; amplitude; and center for orbit. Remove animation to stop it.\n"
 )
 

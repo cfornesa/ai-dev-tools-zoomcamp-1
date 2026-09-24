@@ -66,6 +66,7 @@ Stage provenance default for this session (flagged per issue as run): scoping = 
 | #806 | BLOCKED / dependent | — | not implemented in this transaction | not run | open | production verification depends on #798–#803 and owner-gated live evidence |
 | #807 | IMPLEMENTED / QA FAIL environment boundary | d0819d0 | focused Vitest/Layout 20 passed; `make check` backend 1615 passed / frontend 276 files 2969 tests; Compose preflight PASS; Chromium E2E blocked by macOS Mach-port launch permission | FAIL (browser evidence unavailable) | open | first-party CSS/React star field, bounded 90 nodes, cosmic-only rendering, E2E spec added; needs real browser runner screenshots and animation delta |
 | #808 | CLOSED / QA PASS | 47d7827 | focused importer 9 passed; `make check` backend 1615 passed / frontend 276 files 2968 tests | PASS | closed | local-only reconciliation fix; production re-import intentionally not run; QA comment 5822184052 |
+| #810 | CLOSED / QA PASS | 8e34e85 | shared provider prompts 30 passed; full backend 1619 passed / 39 skipped; mypy and ruff pass | PASS | closed | 3D create/edit/convert prompts are shared across Mistral/Gemini/DeepSeek; Gemini drawing-plane validation/proportionalization parity covered; QA comment 5822745870 |
 
 ## Production-readiness — 2026-09-24
 
@@ -144,6 +145,22 @@ order is:
   was performed because production authorization covers #747, #748, and #788,
   not this release.
 
-Next groomed issue: #798, because its prerequisite #807 has an implemented
-commit and it is the only small independent follow-up in the site-shell chain;
-its required production evidence remains separately owned by #806.
+### #810 transaction
+
+- Groom: criterion-ready Stage 2b shared-provider contract after #809; no
+  duplicate. The issue has three finite backend acceptance criteria and no
+  production/browser boundary.
+- Engineering: Codex / GPT-5 / current session substituted for Ollama Cloud
+  Kimi K3; commit `8e34e85` adds shared 3D create/edit/convert prompt text,
+  routes all three providers through it, and aligns Gemini's 3D patch path
+  with Mistral's drawing-plane proportionalization.
+- QA self-review: Codex / GPT-5 / current session substituted for Claude
+  Sonnet 5; focused 30-test provider set, full backend `1619 passed, 39
+  skipped`, mypy, and ruff pass. New tests capture the actual outbound system
+  prompt for each vendor and exercise a fake Gemini drawingPlane patch.
+- Reconciliation: QA PASS was posted on issue #810 and the issue was closed;
+  stage 3 independent-family review was not run. No new dependency, migration,
+  route, secret, or public API change.
+
+Next groomed issue: #811, now that its #809 and #810 shared-prompt
+prerequisites are implemented; its six-library provider matrix remains open.

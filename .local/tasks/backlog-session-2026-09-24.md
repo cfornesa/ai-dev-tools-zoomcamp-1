@@ -3098,3 +3098,36 @@ deferred.
 - Reconcile: CLOSED after QA comment
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/866#issuecomment-5834717743
   and issue close. No follow-up issue was required.
+
+## Distillation refresh 59 — 2026-09-25 — SOUND BACKLOG RECONCILIATION
+
+- Fresh duplicate/status audit confirms the remaining sound items are distinct:
+  #841 is structured-2D/generated sound-bridge verification, #842 is extracted
+  ZIP audio-graph verification, #851 is key/scale/transpose propagation, and
+  #852 is the authored ambient/keyboard contract and editor round-trip. Their
+  implementation commits are present on `main`; no new implementation gap was
+  found in this pass.
+- #846 remains browser-evidence incomplete for the optional effects chain;
+  #847 remains dependency-blocked because the requested owner-uploaded sample
+  lacks an authorized public asset/ZIP delivery contract. #853–#862 remain
+  verification/reporting work, not candidates for speculative code changes.
+- Targeted #852 Playwright execution was attempted exactly as documented but
+  the macOS downloaded Chromium process failed before test execution at
+  MachPort startup. Active Chrome local evidence is recorded in the issue
+  update, but this cannot be promoted to the missing Playwright/production
+  evidence class. No duplicate issue was created.
+
+## Transaction #852 — 2026-09-25 — QA BLOCKED / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+- Engineer: COMPLETED in prior transaction. implementation-complex /
+  Codex-GPT-5 / medium / substituted: yes; authored ambient/keyboard schema,
+  backend normalization, editor controls, viewer hydration, and ZIP runtime
+  wiring are present in commit `771f84d`.
+- QA self-review: BLOCKED, not failed. Local full gate is PASS and active
+  Chrome confirms the local editor/public/embed/immersive control surfaces, but
+  the required per-surface Playwright proof could not launch on this host.
+  The exact failure and evidence boundary were posted in issue comment
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/852#issuecomment-5834763541.
+- Reconcile: KEEP OPEN pending an approved browser-runner or owner-approved
+  equivalent artifact proof. No production publish or production data write.

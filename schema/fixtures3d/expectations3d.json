@@ -8,6 +8,7 @@
   "valid/drawing_plane.json": { "valid": true },
   "valid/animated_objects.json": { "valid": true },
   "valid/drawing_plane_multicolour.json": { "valid": true },
+  "valid/sonic_authored.json": { "valid": true },
   "invalid/unsupported_document_type.json": { "valid": false, "rule": "invalidValue" },
   "invalid/unknown_field.json": { "valid": false, "rule": "unknownField" },
   "invalid/missing_required.json": { "valid": false, "rule": "missingRequired" },

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "documentType": "scene3d",
+  "id": "scene3d-sonic-authored",
+  "scene": { "backgroundColor": "#808080" },
+  "camera": {
+    "position": { "x": 0, "y": 5, "z": 10 },
+    "target": { "x": 0, "y": 0, "z": 0 },
+    "fov": 50,
+    "near": 0.1,
+    "far": 1000
+  },
+  "lights": [],
+  "groups": [],
+  "objects": [],
+  "randomness": { "seed": 0, "enabled": false },
+  "sonic": {
+    "tempo": 120,
+    "root": "D",
+    "scale": "dorian",
+    "keyboard_scale": "minor",
+    "transpose": 3,
+    "instrument": "synth",
+    "feel": "serene fixture",
+    "extras": {
+      "default_volume": 80,
+      "voices": {
+        "ambient": "synth",
+        "movement": "amsynth",
+        "melodic": "fmsynth"
+      },
+      "synth": {
+        "oscillator": "square",
+        "filter_type": "highpass",
+        "filter_cutoff": 1800,
+        "filter_resonance": 1.2,
+        "octave_min": 2,
+        "octave_max": 5,
+        "envelope": {
+          "attack": 0.02,
+          "decay": 0.2,
+          "sustain": 0.6,
+          "release": 0.4
+        },
+        "effects": { "chorus": 0.1, "pitch_shift": 2 }
+      }
+    }
+  }
+}

@@ -13,39 +13,5 @@
   "lights": [],
   "groups": [],
   "objects": [],
-  "randomness": { "seed": 0, "enabled": false },
-  "sonic": {
-    "tempo": 120,
-    "root": "D",
-    "scale": "dorian",
-    "keyboard_scale": "minor",
-    "transpose": 3,
-    "instrument": "synth",
-    "feel": "serene fixture",
-    "extras": {
-      "default_volume": 80,
-      "voices": {
-        "ambient": "synth",
-        "movement": "amsynth",
-        "melodic": "fmsynth"
-      },
-      "synth": {
-        "oscillator": "square",
-        "filter_type": "highpass",
-        "filter_cutoff": 1800,
-        "filter_resonance": 1.2,
-        "octave_min": 2,
-        "octave_max": 5,
-        "envelope": {
-          "attack": 0.02,
-          "decay": 0.2,
-          "sustain": 0.6,
-          "release": 0.4
-        },
-        "effects": { "chorus": 0.1, "pitch_shift": 2, "unknown_effect": 99 }
-      },
-      "unknown_extra": true
-    },
-    "unknown_sonic_key": "removed"
-  }
+  "randomness": { "seed": 0, "enabled": false }
 }

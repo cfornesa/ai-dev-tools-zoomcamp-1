@@ -1703,3 +1703,27 @@ deferred.
 - Duplicate/follow-up audit: the Mach-port failure is already recorded against
   #838/#839 and no new issue is created; no other actionable gap was found.
   Service/model/effort: Codex/GPT-5 substitution, medium effort.
+
+## Backlog transaction 40 — #840
+
+- State: `GROOMED → ENGINEERING → QA/OPEN-BLOCKED`.
+- Engineering commit: `abbff20`; added a 17-key C4–E5 on-screen piano inside
+  the structured 3D sound controls. Pointer/touch press and release, keyboard
+  Enter/Space activation, physical-key held-state tracking, accessible names,
+  and responsive overflow-safe styling are covered. Service/model/effort:
+  Codex/GPT-5 substitution, medium effort; rostered Stage 2a service
+  unavailable.
+- Focused QA: `cd frontend && npm test -- --run
+  src/pages/Scene3DPreview.sound.test.tsx` passed (29 tests), typecheck passed,
+  and lint passed with existing warnings only. GitHub QA FAIL comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/840#issuecomment-5829408354`.
+- Exact E2E attempt:
+  `E2E_DOCKER_COMPOSE=true npx playwright test
+  e2e/soundEngine3d.spec.ts --project=chromium` failed before test execution
+  because the macOS Playwright Chromium process hit
+  `bootstrap_check_in ... Permission denied (1100)`. The test remains
+  discoverable with `--list`, but real engine-event, toolbar-overlap, and
+  1280x900/375x812 screenshot evidence are missing. This is the existing
+  `verification-boundary` / workflow infrastructure blocker shared with
+  #838/#839; no duplicate issue was created. #840 remains OPEN pending the
+  approved Docker/CI Chromium runner.

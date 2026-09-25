@@ -1374,3 +1374,23 @@ deferred.
 - QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5828150414
 - Reconciliation: issue remains open pending a supported owner-approved
   production execution mechanism; no rollback required because no write ran.
+
+## Distillation refresh 29 — 2026-09-26 continuation
+
+- Current authoritative open inventory: #788, #806, #832–#862. #748 is
+  closed with its production QA PASS; no closed issue is being reopened.
+- Duplicate audit: #788 remains the existing production-data-action contract;
+  the Replit shell limitation is not a new product issue. #806 remains the
+  published six-engine verification parent, while #852–#862 are its
+  criterion-sized authored-sound/engine verification children. #832 remains
+  the live/download sound prerequisite. #833 is the explicit owner decision
+  gate; #834–#851 depend on that contract and/or #832.
+- Blocker triage: #788 is verification-boundary blocked by the absence of a
+  supported Replit production shell; no new issue created because the
+  limitation is already the issue's execution boundary. #806 is dependency-
+  blocked on the complete six-engine matrix. #832 is production-verification
+  blocked pending an authorized publish and live audio evidence. #833 is
+  owner-decision blocked until the sonic contract is explicitly selected.
+- Next independent transaction: #833 grooming/decision capture. No product
+  implementation began during distillation. Service/model/effort:
+  task-distillation orchestrator, Codex/GPT-5 substitution, medium effort.

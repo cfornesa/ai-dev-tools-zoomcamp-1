@@ -1686,3 +1686,20 @@ deferred.
   infrastructure blocker as #838; no duplicate issue created. Next action is
   approved Docker/CI Chromium execution plus 1280x900/375px screenshot review,
   then full Vitest and reconciliation. #839 remains OPEN.
+
+## Task-distillation refresh 39 — 2026-09-26 continuation
+
+- Reconciled open inventory: #788 and #838–#862. #837 and earlier sound-engine
+  contracts remain closed historical transactions; no reopening or duplicate
+  issue is warranted.
+- #838/#839 retain the same actionable browser/workflow boundary and are not
+  dependency blockers for the next local capability issue. Their exact next
+  action is approved Docker/CI Chromium execution with viewport screenshots,
+  then full Vitest and QA reconciliation.
+- Next groomed transaction: #840, which depends on closed #837 and is a local
+  3D-preview keyboard surface. #841–#852 remain ordered consumers; #853–#862
+  remain browser QA/reporting children. #788 remains an independent
+  production-runtime verification boundary.
+- Duplicate/follow-up audit: the Mach-port failure is already recorded against
+  #838/#839 and no new issue is created; no other actionable gap was found.
+  Service/model/effort: Codex/GPT-5 substitution, medium effort.

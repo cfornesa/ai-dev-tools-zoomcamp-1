@@ -1206,3 +1206,18 @@ deferred.
   then exposed a separate `native_schema` warning with `TRUNCATE ... CASCADE`.
   Production remains unchanged. Next action is to push #830, verify the exact
   Replit review contains no destructive operation, then continue #748.
+- QA self-review/reconciliation: Replit free-agent read-only diagnosis showed
+  Development had `native_schema` without a database default while Production
+  lacked the column and contained 5 rows. Applied `python manage.py migrate
+  scenes 0095` to Replit Development only. The refreshed review contained only
+  `DROP DEFAULT` for the existing profile-image content-type column and
+  `ADD COLUMN native_schema boolean DEFAULT true NOT NULL`; no `TRUNCATE`,
+  `CASCADE`, or column drops. Approved once, and Replit reported “Published
+  your app just now” at revision `a7290ce1`. No production data deletion was
+  proposed or observed. Service/model/effort: Claude/Codex primary
+  substitution for Sonnet 5 QA, medium effort.
+- Production smoke after the approved publish passed (`/health/` 200,
+  share-metadata backend reachable, root 200, anonymous whoami 401, login
+  200); live HTML serves `assets/index-7tcNeam-.js`. This publish evidence is
+  recorded for #748; #830's migration contract is now reconciled and ready to
+  close.

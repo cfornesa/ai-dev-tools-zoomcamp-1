@@ -77,7 +77,11 @@ describe('soundSettings', () => {
   it('maps authored sonic defaults into the visitor runtime baseline', () => {
     const sonic = normalizeSonic({
       tempo: 120,
+      root: 'D',
       scale: 'major',
+      keyboard_scale: 'dorian',
+      transpose: 3,
+      follow_key: true,
       extras: {
         default_volume: 64,
         synth: {
@@ -92,6 +96,10 @@ describe('soundSettings', () => {
       soundVolume: 0.64,
       ambientBpm: 120,
       ambientScale: 'major',
+      keyboardRoot: 'D',
+      keyboardScale: 'dorian',
+      keyboardTranspose: 3,
+      followKey: true,
       keyboardVolume: 64,
       keyboardOscillator: 'square',
       keyboardFilterType: 'highpass',

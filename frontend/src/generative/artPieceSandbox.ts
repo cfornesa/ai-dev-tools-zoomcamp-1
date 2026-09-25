@@ -56,6 +56,9 @@ export type ArtPieceSoundCommand =
   | 'set-volume'
   | 'set-tempo'
   | 'set-scale'
+  | 'set-key'
+  | 'set-transpose'
+  | 'set-follow-key'
   | 'set-voice-volume'
   | 'set-voice-muted'
   | 'set-filter'
@@ -77,11 +80,18 @@ export function isValidArtPieceSoundCommand(
   const finite = (value: unknown): value is number =>
     typeof value === 'number' && Number.isFinite(value);
   if (type === 'toggle-sound') return true;
-  if (type === 'set-volume' || type === 'set-tempo' || type === 'set-octave') {
+  if (
+    type === 'set-volume' ||
+    type === 'set-tempo' ||
+    type === 'set-octave' ||
+    type === 'set-transpose'
+  ) {
     return finite(extra.value);
   }
   if (type === 'set-scale' || type === 'set-oscillator') return typeof extra.value === 'string';
-  if (type === 'set-keyboard-enabled') return typeof extra.enabled === 'boolean';
+  if (type === 'set-key') return typeof extra.root === 'string' && typeof extra.scale === 'string';
+  if (type === 'set-keyboard-enabled' || type === 'set-follow-key')
+    return typeof extra.enabled === 'boolean';
   if (type === 'set-voice-volume') {
     return (extra.voice === 'ambient' || extra.voice === 'melodic') && finite(extra.value);
   }
@@ -528,6 +538,9 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   var ambientVolume = 0.5;
   var ambientMuted = false;
   var ambientScale = 'pentatonic';
+  var keyboardRoot = 'C';
+  var keyboardScale = 'major';
+  var keyboardTranspose = 0;
   var keyboardEnabled = false;
   var melodicVolume = 0.5;
   var melodicMuted = false;
@@ -747,6 +760,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     phrygian: [0, 1, 3, 5, 7, 8, 10], lydian: [0, 2, 4, 6, 7, 9, 11],
     mixolydian: [0, 2, 4, 5, 7, 9, 10], wholetone: [0, 2, 4, 6, 8, 10]
   };
+  var PIANO_ROOTS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   var ambientTimer = null;
   var ambientIndex = 0;
   function voiceOutput(voice) {
@@ -831,9 +845,10 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   function finite(value) { return typeof value === 'number' && isFinite(value); }
   function validSoundCommand(data) {
     if (data.type === 'toggle-sound' || data.type === 'screenshot') return true;
-    if (data.type === 'set-volume' || data.type === 'set-tempo' || data.type === 'set-octave') return finite(data.value);
+    if (data.type === 'set-volume' || data.type === 'set-tempo' || data.type === 'set-octave' || data.type === 'set-transpose') return finite(data.value);
     if (data.type === 'set-scale' || data.type === 'set-oscillator') return typeof data.value === 'string';
-    if (data.type === 'set-keyboard-enabled') return typeof data.enabled === 'boolean';
+    if (data.type === 'set-key') return typeof data.root === 'string' && typeof data.scale === 'string';
+    if (data.type === 'set-keyboard-enabled' || data.type === 'set-follow-key') return typeof data.enabled === 'boolean';
     if (data.type === 'set-voice-volume') return (data.voice === 'ambient' || data.voice === 'melodic') && finite(data.value);
     if (data.type === 'set-voice-muted') return (data.voice === 'ambient' || data.voice === 'melodic') && typeof data.enabled === 'boolean';
     if (data.type === 'set-filter') return typeof data.filterType === 'string' && finite(data.cutoff) && finite(data.resonance);
@@ -850,7 +865,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     // reference can pass this identity check.
     if (event.source !== window.parent) return;
     var data = event && event.data;
-    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'set-tempo', 'set-scale', 'set-voice-volume', 'set-voice-muted', 'set-filter', 'set-oscillator', 'set-envelope', 'set-octave', 'set-keyboard-enabled', 'set-camera-active', 'enable-hand-steering', 'disable-hand-steering', 'steer-signal', 'navigate-signal', 'reset-view'];
+    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'set-tempo', 'set-scale', 'set-key', 'set-transpose', 'set-follow-key', 'set-voice-volume', 'set-voice-muted', 'set-filter', 'set-oscillator', 'set-envelope', 'set-octave', 'set-keyboard-enabled', 'set-camera-active', 'enable-hand-steering', 'disable-hand-steering', 'steer-signal', 'navigate-signal', 'reset-view'];
     if (!data || data.source !== 'art-piece-parent' || data.version !== 1 || allowed.indexOf(data.type) < 0) return;
     if (!validSoundCommand(data)) return;
     try {
@@ -929,6 +944,12 @@ function buildListenerScript(library: ArtPieceLibrary): string {
         restartAmbient();
       } else if (data.type === 'set-scale') {
         if (AMBIENT_SCALES[data.value]) { ambientScale = data.value; }
+      } else if (data.type === 'set-key') {
+        if (PIANO_ROOTS.indexOf(data.root) >= 0 && AMBIENT_SCALES[data.scale]) { keyboardRoot = data.root; keyboardScale = data.scale; }
+      } else if (data.type === 'set-transpose') {
+        keyboardTranspose = Math.max(-12, Math.min(12, Math.round(data.value)));
+      } else if (data.type === 'set-follow-key') {
+        if (data.enabled) keyboardScale = ambientScale;
       } else if (data.type === 'set-voice-volume') {
         var voice = data.voice === 'ambient' ? 'ambient' : 'melodic';
         var voiceValue = Math.max(0, Math.min(100, data.value)) / 100;

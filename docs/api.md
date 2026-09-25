@@ -16,9 +16,12 @@ than rejecting an otherwise valid piece.
 | `sonic.scale` | `major`, `minor`, `pentatonic`, `chromatic`, `dorian`, `phrygian`, `lydian`, `mixolydian`, `wholetone` | `major` | Unknown scales make the authored block absent. |
 | `sonic.keyboard_scale` | same scale enum | `sonic.scale` | Unknown values make the authored block absent. |
 | `sonic.transpose` | integer semitones, -12–12 | 0 | Clamp to the inclusive range. |
+| `sonic.follow_key` | boolean | `false` | When true, keyboard scale changes link the ambient scale. |
 | `sonic.instrument` | `synth`, `amsynth`, `fmsynth`, `membranesynth`, `metalsynth`, `plucksynth`, `duosynth` | `synth` | Unknown instruments make the authored block absent. |
 | `sonic.feel` | string, at most 400 characters | `""` | Truncate to 400 characters. |
 | `sonic.extras.default_volume` | number, 0–100 percent | 100 | Clamp to the inclusive range. |
+| `sonic.extras.ambient_volume` | number, 0–100 percent | `default_volume` | Clamp to the inclusive range. |
+| `sonic.extras.keyboard_volume` | number, 0–100 percent | `default_volume` | Clamp to the inclusive range. |
 | `sonic.extras.voices.ambient` | instrument enum | `synth` | Unknown values make the authored block absent. |
 | `sonic.extras.voices.movement` | instrument enum | `synth` | Unknown values make the authored block absent. |
 | `sonic.extras.voices.melodic` | instrument enum | `sonic.instrument` | Unknown values make the authored block absent. |

@@ -2973,3 +2973,28 @@ deferred.
   browser pass repeated successfully. #844 can close for its implemented
   generated-default contract; six-engine production/local workflow issues
   remain separately scoped and deferred.
+
+## Transaction #852 — 2026-09-25 — IMPLEMENTED / QA BLOCKED
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+  #852 is a distinct implementation gap after #844: its editor/runtime
+  contract did not separate ambient and keyboard key/scale/transpose/volume
+  defaults. No duplicate was filed.
+- Engineer: COMPLETED. implementation-complex / Codex-GPT-5 / medium /
+  substituted: yes; rostered Ollama Cloud `kimi-k3` was unavailable. The
+  additive sonic contract now includes link-to-ambient plus separate ambient
+  and keyboard volume fallbacks; the editor renders labelled Ambient and
+  Keyboard fieldsets; structured 3D, generated viewers, embeds, immersive
+  viewers and exported ZIP controls hydrate authored key/scale/transpose and
+  sound defaults while legacy pieces retain their former fallback behavior.
+  No migration or dependency was added.
+- QA self-review: PASS for local implementation checks, not terminal for the
+  issue. Focused frontend tests (126), backend sonic-contract tests (7),
+  typecheck, lint, format, and backend portion of `make check` passed; the
+  full gate was rerun after formatting and must be repeated to capture the
+  final frontend result. No exact 1280x900/375x812 screenshots or approved
+  Playwright-per-surface evidence has been collected yet.
+- Reconcile: KEEP OPEN / QA-BLOCKED. Local code evidence supports the
+  implementation criteria, but the issue's browser screenshot and
+  viewer/embed/immersive/ZIP criteria require fresh browser verification and
+  cannot be closed from Vitest or Compose-only evidence.

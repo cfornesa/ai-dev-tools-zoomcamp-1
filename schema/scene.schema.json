@@ -541,6 +541,7 @@
         "scale": { "enum": ["major", "minor", "pentatonic", "chromatic", "dorian", "phrygian", "lydian", "mixolydian", "wholetone"] },
         "keyboard_scale": { "enum": ["major", "minor", "pentatonic", "chromatic", "dorian", "phrygian", "lydian", "mixolydian", "wholetone"] },
         "transpose": { "type": "integer", "minimum": -12, "maximum": 12 },
+        "follow_key": { "type": "boolean" },
         "instrument": { "enum": ["synth", "amsynth", "fmsynth", "membranesynth", "metalsynth", "plucksynth", "duosynth"] },
         "feel": { "type": "string", "maxLength": 400 },
         "extras": { "$ref": "#/$defs/sonicExtras" }
@@ -550,6 +551,8 @@
       "type": "object", "additionalProperties": false,
       "properties": {
         "default_volume": { "type": "number", "minimum": 0, "maximum": 100 },
+        "ambient_volume": { "type": "number", "minimum": 0, "maximum": 100 },
+        "keyboard_volume": { "type": "number", "minimum": 0, "maximum": 100 },
         "ambient_sample": { "type": "string", "minLength": 1, "maxLength": 255, "pattern": "^(?!https?:|//)" },
         "voices": { "type": "object", "additionalProperties": false, "properties": {
           "ambient": { "enum": ["synth", "amsynth", "fmsynth", "membranesynth", "metalsynth", "plucksynth", "duosynth"] },

@@ -39,10 +39,13 @@ export type SonicDefaults = {
   scale: (typeof SONIC_SCALES)[number];
   keyboard_scale: (typeof SONIC_SCALES)[number];
   transpose: number;
+  follow_key?: boolean;
   instrument: (typeof SONIC_INSTRUMENTS)[number];
   feel: string;
   extras: {
     default_volume: number;
+    ambient_volume?: number;
+    keyboard_volume?: number;
     voices: Record<'ambient' | 'movement' | 'melodic', string>;
     synth: {
       oscillator: 'sine' | 'square' | 'sawtooth' | 'triangle';
@@ -122,10 +125,23 @@ export function normalizeSonic(value: unknown): SonicDefaults | undefined {
     scale,
     keyboard_scale: keyboardScale,
     transpose: clamp(raw.transpose, 0, -12, 12, true),
+    follow_key: raw.follow_key === true,
     instrument,
     feel: raw.feel ?? '',
     extras: {
       default_volume: clamp(extras.default_volume, 100, 0, 100),
+      ambient_volume: clamp(
+        extras.ambient_volume,
+        clamp(extras.default_volume, 100, 0, 100),
+        0,
+        100,
+      ),
+      keyboard_volume: clamp(
+        extras.keyboard_volume,
+        clamp(extras.default_volume, 100, 0, 100),
+        0,
+        100,
+      ),
       voices: {
         ambient: voices.ambient ?? 'synth',
         movement: voices.movement ?? 'synth',

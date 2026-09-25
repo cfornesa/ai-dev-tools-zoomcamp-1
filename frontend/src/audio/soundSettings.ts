@@ -24,6 +24,10 @@ export type SoundSettings = {
   ambientVolume: number;
   ambientMuted: boolean;
   ambientScale: (typeof SOUND_SCALES)[number];
+  keyboardRoot: SonicDefaults['root'];
+  keyboardScale: (typeof SOUND_SCALES)[number];
+  keyboardTranspose: number;
+  followKey: boolean;
   keyboardEnabled: boolean;
   keyboardVolume: number;
   keyboardOscillator: (typeof SOUND_OSCILLATORS)[number];
@@ -45,6 +49,10 @@ export const DEFAULT_SOUND_SETTINGS: SoundSettings = {
   ambientVolume: 50,
   ambientMuted: false,
   ambientScale: 'pentatonic',
+  keyboardRoot: 'C',
+  keyboardScale: 'major',
+  keyboardTranspose: 0,
+  followKey: false,
   keyboardEnabled: false,
   keyboardVolume: 50,
   keyboardOscillator: 'sine',
@@ -118,9 +126,13 @@ export function soundSettingsFromSonic(sonic?: SonicDefaults): SoundSettings {
     ...defaults,
     soundVolume: sonic.extras.default_volume / 100,
     ambientBpm: sonic.tempo,
-    ambientVolume: sonic.extras.default_volume,
+    ambientVolume: sonic.extras.ambient_volume ?? sonic.extras.default_volume,
     ambientScale: sonic.scale,
-    keyboardVolume: sonic.extras.default_volume,
+    keyboardRoot: sonic.root,
+    keyboardScale: sonic.keyboard_scale,
+    keyboardTranspose: sonic.transpose,
+    followKey: sonic.follow_key ?? false,
+    keyboardVolume: sonic.extras.keyboard_volume ?? sonic.extras.default_volume,
     keyboardOscillator: synth.oscillator,
     keyboardFilterType: synth.filter_type,
     keyboardFilterCutoff: synth.filter_cutoff,

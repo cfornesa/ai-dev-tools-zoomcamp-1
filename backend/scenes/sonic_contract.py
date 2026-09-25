@@ -173,10 +173,23 @@ def normalize_sonic(value: Any) -> dict[str, Any] | None:
         "scale": scale,
         "keyboard_scale": keyboard_scale,
         "transpose": int(_bounded(value.get("transpose"), 0, -12, 12, integer=True)),
+        "follow_key": value.get("follow_key") is True,
         "instrument": instrument,
         "feel": feel,
         "extras": {
             "default_volume": _bounded(extras.get("default_volume"), 100, 0, 100),
+            "ambient_volume": _bounded(
+                extras.get("ambient_volume"),
+                _bounded(extras.get("default_volume"), 100, 0, 100),
+                0,
+                100,
+            ),
+            "keyboard_volume": _bounded(
+                extras.get("keyboard_volume"),
+                _bounded(extras.get("default_volume"), 100, 0, 100),
+                0,
+                100,
+            ),
             "voices": voice_values,
             "synth": {
                 "oscillator": oscillator,

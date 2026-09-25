@@ -362,8 +362,12 @@ function buildExportControls(
   const sonicSynth = sonic?.extras.synth;
   const selected = (value: string, current: string) => (value === current ? ' selected' : '');
   const ambientBpm = sonic?.tempo ?? 90;
-  const defaultVolume = sonic?.extras.default_volume ?? 50;
+  const ambientVolume = sonic?.extras.ambient_volume ?? sonic?.extras.default_volume ?? 50;
+  const keyboardVolume = sonic?.extras.keyboard_volume ?? sonic?.extras.default_volume ?? 50;
   const ambientScale = sonic?.scale ?? 'pentatonic';
+  const keyboardRoot = sonic?.root ?? 'C';
+  const keyboardScale = sonic?.keyboard_scale ?? 'major';
+  const keyboardTranspose = sonic?.transpose ?? 0;
   const toolbar = renderExportStageToolbar({
     buttons,
     dataActions: true,
@@ -377,11 +381,14 @@ function buildExportControls(
   const panelRows = [
     capabilities.sound === true
       ? `<label for="art-piece-ambient-bpm">Ambient BPM: <output id="art-piece-ambient-bpm-value">${ambientBpm}</output><input id="art-piece-ambient-bpm" type="range" min="40" max="220" value="${ambientBpm}"></label>
-  <label for="art-piece-ambient-volume">Ambient volume: <output id="art-piece-ambient-volume-value">${defaultVolume}%</output><input id="art-piece-ambient-volume" type="range" min="0" max="100" value="${defaultVolume}"></label>
+  <label for="art-piece-ambient-volume">Ambient volume: <output id="art-piece-ambient-volume-value">${ambientVolume}%</output><input id="art-piece-ambient-volume" type="range" min="0" max="100" value="${ambientVolume}"></label>
   <label for="art-piece-ambient-muted"><input id="art-piece-ambient-muted" type="checkbox"> Mute ambient</label>
   <label for="art-piece-ambient-scale">Scale <select id="art-piece-ambient-scale"><option${selected('major', ambientScale)}>major</option><option${selected('minor', ambientScale)}>minor</option><option${selected('pentatonic', ambientScale)}>pentatonic</option><option${selected('chromatic', ambientScale)}>chromatic</option><option${selected('dorian', ambientScale)}>dorian</option><option${selected('phrygian', ambientScale)}>phrygian</option><option${selected('lydian', ambientScale)}>lydian</option><option${selected('mixolydian', ambientScale)}>mixolydian</option><option${selected('wholetone', ambientScale)}>wholetone</option></select></label>
+  <fieldset><legend>Keyboard</legend><label for="art-piece-keyboard-root">Key <select id="art-piece-keyboard-root"><option${selected('C', keyboardRoot)}>C</option><option${selected('C#', keyboardRoot)}>C#</option><option${selected('D', keyboardRoot)}>D</option><option${selected('D#', keyboardRoot)}>D#</option><option${selected('E', keyboardRoot)}>E</option><option${selected('F', keyboardRoot)}>F</option><option${selected('F#', keyboardRoot)}>F#</option><option${selected('G', keyboardRoot)}>G</option><option${selected('G#', keyboardRoot)}>G#</option><option${selected('A', keyboardRoot)}>A</option><option${selected('A#', keyboardRoot)}>A#</option><option${selected('B', keyboardRoot)}>B</option></select></label>
+  <label for="art-piece-keyboard-scale">Scale <select id="art-piece-keyboard-scale"><option${selected('major', keyboardScale)}>major</option><option${selected('minor', keyboardScale)}>minor</option><option${selected('pentatonic', keyboardScale)}>pentatonic</option><option${selected('chromatic', keyboardScale)}>chromatic</option><option${selected('dorian', keyboardScale)}>dorian</option><option${selected('phrygian', keyboardScale)}>phrygian</option><option${selected('lydian', keyboardScale)}>lydian</option><option${selected('mixolydian', keyboardScale)}>mixolydian</option><option${selected('wholetone', keyboardScale)}>wholetone</option></select></label>
+  <label for="art-piece-keyboard-transpose">Transpose: <output id="art-piece-keyboard-transpose-value">${keyboardTranspose}</output><input id="art-piece-keyboard-transpose" type="range" min="-12" max="12" step="1" value="${keyboardTranspose}"></label>
   <button type="button" id="art-piece-keyboard" aria-pressed="false">Keyboard notes</button>
-  <fieldset><legend>Keyboard synth</legend><label for="art-piece-keyboard-volume">Volume: <output id="art-piece-keyboard-volume-value">${defaultVolume}%</output><input id="art-piece-keyboard-volume" type="range" min="0" max="100" value="${defaultVolume}"></label>
+  <label for="art-piece-keyboard-volume">Volume: <output id="art-piece-keyboard-volume-value">${keyboardVolume}%</output><input id="art-piece-keyboard-volume" type="range" min="0" max="100" value="${keyboardVolume}"></label>
   <label for="art-piece-keyboard-oscillator">Oscillator <select id="art-piece-keyboard-oscillator"><option${selected('sine', sonicSynth?.oscillator ?? 'sine')}>sine</option><option${selected('square', sonicSynth?.oscillator ?? 'sine')}>square</option><option${selected('sawtooth', sonicSynth?.oscillator ?? 'sine')}>sawtooth</option><option${selected('triangle', sonicSynth?.oscillator ?? 'sine')}>triangle</option></select></label>
   <label for="art-piece-keyboard-filter-type">Filter type <select id="art-piece-keyboard-filter-type"><option${selected('lowpass', sonicSynth?.filter_type ?? 'lowpass')}>lowpass</option><option${selected('highpass', sonicSynth?.filter_type ?? 'lowpass')}>highpass</option><option${selected('bandpass', sonicSynth?.filter_type ?? 'lowpass')}>bandpass</option></select></label>
   <label for="art-piece-keyboard-filter-cutoff">Cutoff <input id="art-piece-keyboard-filter-cutoff" type="range" min="20" max="20000" step="20" value="${sonicSynth?.filter_cutoff ?? 2000}"></label>

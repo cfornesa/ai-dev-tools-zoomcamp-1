@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import type { SonicDefaults } from '../audio/sonicContract';
+import { SONIC_ROOTS, SONIC_SCALES } from '../audio/sonicContract';
 import {
   ART_PIECE_BRIDGE_VERSION,
   isValidArtPieceSoundCommand,
@@ -133,6 +134,12 @@ function PieceStageControls({
   const [ambientMuted, setAmbientMuted] = useState(initialSoundSettings.ambientMuted);
   const [ambientScale, setAmbientScale] = useState(initialSoundSettings.ambientScale);
   const [keyboardEnabled, setKeyboardEnabled] = useState(false);
+  const [keyboardRoot, setKeyboardRoot] = useState(initialSoundSettings.keyboardRoot);
+  const [keyboardScale, setKeyboardScale] = useState(initialSoundSettings.keyboardScale);
+  const [keyboardTranspose, setKeyboardTranspose] = useState(
+    initialSoundSettings.keyboardTranspose,
+  );
+  const [followKey, setFollowKey] = useState(initialSoundSettings.followKey);
   const [keyboardVolume, setKeyboardVolume] = useState(initialSoundSettings.keyboardVolume);
   const [keyboardOscillator, setKeyboardOscillator] = useState(
     initialSoundSettings.keyboardOscillator,
@@ -485,6 +492,9 @@ function PieceStageControls({
       type === 'set-volume' ||
       type === 'set-tempo' ||
       type === 'set-scale' ||
+      type === 'set-key' ||
+      type === 'set-transpose' ||
+      type === 'set-follow-key' ||
       type === 'set-voice-volume' ||
       type === 'set-voice-muted' ||
       type === 'set-filter' ||
@@ -517,6 +527,10 @@ function PieceStageControls({
     setAmbientMuted(settings.ambientMuted);
     setAmbientScale(settings.ambientScale);
     setKeyboardVolume(settings.keyboardVolume);
+    setKeyboardRoot(settings.keyboardRoot);
+    setKeyboardScale(settings.keyboardScale);
+    setKeyboardTranspose(settings.keyboardTranspose);
+    setFollowKey(settings.followKey);
     setKeyboardOscillator(settings.keyboardOscillator);
     setKeyboardFilterType(settings.keyboardFilterType);
     setKeyboardFilterCutoff(settings.keyboardFilterCutoff);
@@ -533,6 +547,9 @@ function PieceStageControls({
     commandRef.current('set-voice-volume', { voice: 'ambient', value: settings.ambientVolume });
     commandRef.current('set-voice-muted', { voice: 'ambient', enabled: settings.ambientMuted });
     commandRef.current('set-scale', { value: settings.ambientScale });
+    commandRef.current('set-key', { root: settings.keyboardRoot, scale: settings.keyboardScale });
+    commandRef.current('set-transpose', { value: settings.keyboardTranspose });
+    commandRef.current('set-follow-key', { enabled: settings.followKey });
     commandRef.current('set-voice-volume', { voice: 'melodic', value: settings.keyboardVolume });
     commandRef.current('set-oscillator', { value: settings.keyboardOscillator });
     commandRef.current('set-filter', {
@@ -580,6 +597,10 @@ function PieceStageControls({
       ambientVolume,
       ambientMuted,
       ambientScale: ambientScale as SoundSettings['ambientScale'],
+      keyboardRoot,
+      keyboardScale: keyboardScale as SoundSettings['keyboardScale'],
+      keyboardTranspose,
+      followKey,
       keyboardEnabled,
       keyboardVolume,
       keyboardOscillator: keyboardOscillator as SoundSettings['keyboardOscillator'],
@@ -606,6 +627,10 @@ function PieceStageControls({
     keyboardFilterType,
     keyboardOctave,
     keyboardOscillator,
+    keyboardRoot,
+    keyboardScale,
+    keyboardTranspose,
+    followKey,
     keyboardRelease,
     keyboardSustain,
     keyboardVolume,
@@ -1129,77 +1154,118 @@ function PieceStageControls({
               <button type="button" onClick={resetVisitorSoundSettings}>
                 Reset sound settings
               </button>
-              <label htmlFor="art-piece-ambient-bpm">Ambient BPM: {ambientBpm}</label>
-              <input
-                id="art-piece-ambient-bpm"
-                type="range"
-                min={40}
-                max={220}
-                value={ambientBpm}
-                disabled={!soundOn}
-                onChange={(event) => {
-                  const value = Number(event.target.value);
-                  setAmbientBpm(value);
-                  command('set-tempo', { value });
-                }}
-              />
-              <label htmlFor="art-piece-ambient-volume">Ambient volume: {ambientVolume}%</label>
-              <input
-                id="art-piece-ambient-volume"
-                type="range"
-                min={0}
-                max={100}
-                value={ambientVolume}
-                disabled={!soundOn}
-                onChange={(event) => {
-                  const value = Number(event.target.value);
-                  setAmbientVolume(value);
-                  command('set-voice-volume', { voice: 'ambient', value });
-                }}
-              />
-              <label htmlFor="art-piece-ambient-muted">
+              <fieldset>
+                <legend>Ambient</legend>
+                <label htmlFor="art-piece-ambient-bpm">Ambient BPM: {ambientBpm}</label>
                 <input
-                  id="art-piece-ambient-muted"
-                  type="checkbox"
-                  checked={ambientMuted}
+                  id="art-piece-ambient-bpm"
+                  type="range"
+                  min={40}
+                  max={220}
+                  value={ambientBpm}
                   disabled={!soundOn}
                   onChange={(event) => {
-                    const enabled = event.target.checked;
-                    setAmbientMuted(enabled);
-                    command('set-voice-muted', { voice: 'ambient', enabled });
+                    const value = Number(event.target.value);
+                    setAmbientBpm(value);
+                    command('set-tempo', { value });
                   }}
                 />
-                Mute ambient
-              </label>
-              <label htmlFor="art-piece-ambient-scale">Scale: {ambientScale}</label>
-              <select
-                id="art-piece-ambient-scale"
-                value={ambientScale}
-                disabled={!soundOn}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setAmbientScale(value as SoundSettings['ambientScale']);
-                  command('set-scale', { value });
-                }}
-              >
-                {[
-                  'major',
-                  'minor',
-                  'pentatonic',
-                  'chromatic',
-                  'dorian',
-                  'phrygian',
-                  'lydian',
-                  'mixolydian',
-                  'wholetone',
-                ].map((scale) => (
-                  <option key={scale} value={scale}>
-                    {scale}
-                  </option>
-                ))}
-              </select>
+                <label htmlFor="art-piece-ambient-volume">Ambient volume: {ambientVolume}%</label>
+                <input
+                  id="art-piece-ambient-volume"
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={ambientVolume}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setAmbientVolume(value);
+                    command('set-voice-volume', { voice: 'ambient', value });
+                  }}
+                />
+                <label htmlFor="art-piece-ambient-muted">
+                  <input
+                    id="art-piece-ambient-muted"
+                    type="checkbox"
+                    checked={ambientMuted}
+                    disabled={!soundOn}
+                    onChange={(event) => {
+                      const enabled = event.target.checked;
+                      setAmbientMuted(enabled);
+                      command('set-voice-muted', { voice: 'ambient', enabled });
+                    }}
+                  />
+                  Mute ambient
+                </label>
+                <label htmlFor="art-piece-ambient-scale">Scale: {ambientScale}</label>
+                <select
+                  id="art-piece-ambient-scale"
+                  value={ambientScale}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setAmbientScale(value as SoundSettings['ambientScale']);
+                    command('set-scale', { value });
+                  }}
+                >
+                  {SONIC_SCALES.map((scale) => (
+                    <option key={scale} value={scale}>
+                      {scale}
+                    </option>
+                  ))}
+                </select>
+              </fieldset>
               <fieldset>
-                <legend>Keyboard synth</legend>
+                <legend>Keyboard</legend>
+                <label htmlFor="art-piece-keyboard-root">Key</label>
+                <select
+                  id="art-piece-keyboard-root"
+                  value={keyboardRoot}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = event.target.value as SoundSettings['keyboardRoot'];
+                    setKeyboardRoot(value);
+                    command('set-key', { root: value, scale: keyboardScale });
+                  }}
+                >
+                  {SONIC_ROOTS.map((root) => (
+                    <option key={root} value={root}>
+                      {root}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="art-piece-keyboard-scale">Scale</label>
+                <select
+                  id="art-piece-keyboard-scale"
+                  value={keyboardScale}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = event.target.value as SoundSettings['keyboardScale'];
+                    setKeyboardScale(value);
+                    command('set-key', { root: keyboardRoot, scale: value });
+                  }}
+                >
+                  {SONIC_SCALES.map((scale) => (
+                    <option key={scale} value={scale}>
+                      {scale}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="art-piece-keyboard-transpose">Transpose: {keyboardTranspose}</label>
+                <input
+                  id="art-piece-keyboard-transpose"
+                  type="range"
+                  min={-12}
+                  max={12}
+                  value={keyboardTranspose}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setKeyboardTranspose(value);
+                    command('set-transpose', { value });
+                  }}
+                />
                 <button
                   type="button"
                   aria-pressed={keyboardEnabled}

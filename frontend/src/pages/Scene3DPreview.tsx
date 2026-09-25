@@ -356,7 +356,10 @@ function ThreeScenePreview({
     setKeyboardKey(authored.root as PitchClass);
     setKeyboardScale(authored.keyboard_scale);
     setTranspose(authored.transpose);
+    setFollowKey(authored.follow_key ?? false);
     setSoundVolume(authored.extras.default_volume);
+    setAmbientVolume(authored.extras.ambient_volume ?? authored.extras.default_volume);
+    setKeyboardVolume(authored.extras.keyboard_volume ?? authored.extras.default_volume);
     setVoiceInstruments(authored.extras.voices as Record<SonicVoice, SonicInstrument>);
     setMelodicSynthSettings((current) => ({
       ...current,
@@ -400,6 +403,10 @@ function ThreeScenePreview({
       engine.setVoiceVolume('ambient', ambientVolume);
       engine.setVoiceMuted('ambient', ambientMuted);
       engine.setScale(ambientScale);
+      engine.setKey({ root: keyboardKey, scale: keyboardScale });
+      engine.setTranspose(transpose);
+      engine.setFollowKey(followKey);
+      engine.setVoiceVolume('melodic', keyboardVolume);
       Object.entries(effects).forEach(([name, settings]) => {
         engine.setEffect(name as SonicEffectName, settings);
       });

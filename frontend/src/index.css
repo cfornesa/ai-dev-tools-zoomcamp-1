@@ -6075,6 +6075,41 @@ select.ai-proposal-field-full-width {
   gap: 8px;
 }
 
+/* Issue #840: a compact touch/keyboard piano for the same melodic voice as
+   the computer-key mapping. Keep it inside the sound popover so it cannot
+   cover the stage toolbar or controls on narrow screens. */
+.scene3d-piano-keyboard {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+  overflow-x: auto;
+  padding: 4px 0;
+  touch-action: none;
+}
+
+.scene3d-piano-keyboard button {
+  flex: 0 0 42px;
+  min-height: 52px;
+  padding: 6px 4px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-color, var(--code-bg));
+  color: var(--text);
+  font-size: 0.75rem;
+  line-height: 1;
+  touch-action: none;
+}
+
+.scene3d-piano-keyboard button[aria-pressed='true'] {
+  background: var(--accent, #5b5bd6);
+  color: #fff;
+}
+
+.scene3d-piano-keyboard button:focus-visible {
+  outline: 2px solid var(--accent, #5b5bd6);
+  outline-offset: 2px;
+}
+
 /* Issue #343: touch-friendly immersive travel controls. Pointer release,
    cancel, and leave handlers in Scene3DPreview keep a held direction from
    surviving a cancelled or dragged-off touch. */

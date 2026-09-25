@@ -57,7 +57,17 @@ const {
 }));
 
 vi.mock('../audio/sonicEngine', () => ({
-  SONIC_SCALE_OPTIONS: ['major', 'minor', 'pentatonic', 'chromatic', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'wholetone'],
+  SONIC_SCALE_OPTIONS: [
+    'major',
+    'minor',
+    'pentatonic',
+    'chromatic',
+    'dorian',
+    'phrygian',
+    'lydian',
+    'mixolydian',
+    'wholetone',
+  ],
   SONIC_INSTRUMENT_OPTIONS: [
     { value: 'synth', label: 'Synth' },
     { value: 'amsynth', label: 'AM Synth' },
@@ -356,6 +366,36 @@ describe('Scene3DPreview keyboard-triggered notes (issue #307)', () => {
 
     expect(triggerMelodicNoteSpy).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: /keyboard notes/i, pressed: true })).toBeNull();
+  });
+
+  it('renders accessible on-screen piano keys only while keyboard notes are enabled', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+
+    expect(
+      screen.queryByRole('group', { name: 'On-screen piano keyboard' }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
+
+    const keyboard = screen.getByRole('group', { name: 'On-screen piano keyboard' });
+    const key = screen.getByRole('button', { name: 'C4' });
+    expect(keyboard).toContainElement(key);
+    expect(screen.getAllByRole('button', { name: /^[A-G](?:#)?[45]$/ })).toHaveLength(17);
+
+    fireEvent.pointerDown(key);
+    expect(key).toHaveAttribute('aria-pressed', 'true');
+    expect(triggerMelodicNoteSpy).toHaveBeenCalledWith('C4');
+    fireEvent.pointerUp(key);
+    expect(key).toHaveAttribute('aria-pressed', 'false');
+
+    triggerMelodicNoteSpy.mockClear();
+    key.focus();
+    await user.keyboard('{Enter}');
+    expect(triggerMelodicNoteSpy).toHaveBeenCalledWith('C4');
+    expect(key).toHaveAttribute('aria-pressed', 'false');
   });
 });
 

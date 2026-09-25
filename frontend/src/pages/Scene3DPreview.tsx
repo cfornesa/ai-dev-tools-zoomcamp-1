@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -48,6 +48,7 @@ import { resolveScene3DRenderer } from '../validation/scene3d';
 import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
 
 const HAND_MOVE_PINCH_THRESHOLD = 0.75;
+const PIANO_NOTES = Object.values(PIANO_KEY_MAP);
 
 /** Translate normalized hand signals into bounded immersive travel axes. */
 export function getImmersiveHandMoveAxes(signals: HandSignals): {
@@ -347,6 +348,7 @@ function ThreeScenePreview({
       engine.disable();
       setSoundEnabled(false);
       setKeyboardEnabled(false);
+      setPressedPianoNotes(new Set());
       setMicState('idle');
       setMicFailure(null);
       setThereminEnabled(false);
@@ -386,17 +388,46 @@ function ThreeScenePreview({
   // both sound and this toggle are on, and torn down immediately if sound
   // itself is muted (see `handleToggleSound` above).
   const [keyboardEnabled, setKeyboardEnabled] = useState(false);
+  const [pressedPianoNotes, setPressedPianoNotes] = useState<Set<string>>(new Set());
+
+  const pressPianoNote = useCallback(
+    (note: string) => {
+      if (!soundEnabled || !keyboardEnabled) return;
+      sonicEngineRef.current?.triggerMelodicNote(note);
+      setPressedPianoNotes((current) => new Set(current).add(note));
+    },
+    [keyboardEnabled, soundEnabled],
+  );
+
+  const releasePianoNote = useCallback((note: string) => {
+    setPressedPianoNotes((current) => {
+      if (!current.has(note)) return current;
+      const next = new Set(current);
+      next.delete(note);
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     if (!soundEnabled || !keyboardEnabled) return;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.repeat || isEditableElement(event.target)) return;
       const note = PIANO_KEY_MAP[event.key.toLowerCase()];
       if (!note) return;
-      sonicEngineRef.current?.triggerMelodicNote(note);
+      pressPianoNote(note);
+    }
+    function handleKeyUp(event: KeyboardEvent) {
+      const note = PIANO_KEY_MAP[event.key.toLowerCase()];
+      if (note) releasePianoNote(note);
     }
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [soundEnabled, keyboardEnabled]);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      setPressedPianoNotes(new Set());
+    };
+  }, [keyboardEnabled, pressPianoNote, releasePianoNote, soundEnabled]);
 
   // Issue #308: "Live mic" -- raw microphone input mixed into the shared
   // bus, reusing `CameraControl.tsx`'s own friendly-failure/privacy-notice
@@ -1193,9 +1224,7 @@ function ThreeScenePreview({
                   </div>
                   <fieldset className="editor-tool-group scene3d-keyboard-synth-controls">
                     <legend>Keyboard synth</legend>
-                    <label htmlFor="scene3d-keyboard-volume">
-                      Volume: {keyboardVolume}%
-                    </label>
+                    <label htmlFor="scene3d-keyboard-volume">Volume: {keyboardVolume}%</label>
                     <input
                       id="scene3d-keyboard-volume"
                       type="range"
@@ -1219,11 +1248,15 @@ function ThreeScenePreview({
                           oscillator: event.target.value as MelodicSynthSettings['oscillator'],
                         })
                       }
-                      disabled={['membranesynth', 'metalsynth', 'plucksynth'].includes(voiceInstruments.melodic)}
+                      disabled={['membranesynth', 'metalsynth', 'plucksynth'].includes(
+                        voiceInstruments.melodic,
+                      )}
                       title="Percussive instruments do not support oscillator waveform controls."
                     >
                       {(['sine', 'square', 'sawtooth', 'triangle'] as const).map((waveform) => (
-                        <option key={waveform} value={waveform}>{waveform}</option>
+                        <option key={waveform} value={waveform}>
+                          {waveform}
+                        </option>
                       ))}
                     </select>
                     <label htmlFor="scene3d-keyboard-filter-type">Filter type</label>
@@ -1233,16 +1266,25 @@ function ThreeScenePreview({
                       onChange={(event) =>
                         applyMelodicSynthSettings({
                           ...melodicSynthSettings,
-                          filter: { ...melodicSynthSettings.filter, type: event.target.value as MelodicSynthSettings['filter']['type'] },
+                          filter: {
+                            ...melodicSynthSettings.filter,
+                            type: event.target.value as MelodicSynthSettings['filter']['type'],
+                          },
                         })
                       }
                     >
-                      {(['lowpass', 'highpass', 'bandpass'] as const).map((type) => <option key={type} value={type}>{type}</option>)}
+                      {(['lowpass', 'highpass', 'bandpass'] as const).map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
                     </select>
-                    {([
-                      ['cutoff', 'Cutoff', 20, 20000, 20],
-                      ['resonance', 'Resonance', 0.1, 20, 0.1],
-                    ] as const).map(([field, label, min, max, step]) => (
+                    {(
+                      [
+                        ['cutoff', 'Cutoff', 20, 20000, 20],
+                        ['resonance', 'Resonance', 0.1, 20, 0.1],
+                      ] as const
+                    ).map(([field, label, min, max, step]) => (
                       <label key={field} htmlFor={`scene3d-keyboard-filter-${field}`}>
                         {label}: {melodicSynthSettings.filter[field]}
                         <input
@@ -1256,7 +1298,10 @@ function ThreeScenePreview({
                           onChange={(event) =>
                             applyMelodicSynthSettings({
                               ...melodicSynthSettings,
-                              filter: { ...melodicSynthSettings.filter, [field]: Number(event.target.value) },
+                              filter: {
+                                ...melodicSynthSettings.filter,
+                                [field]: Number(event.target.value),
+                              },
                             })
                           }
                         />
@@ -1273,18 +1318,25 @@ function ThreeScenePreview({
                           step={field === 'sustain' ? 0.01 : 0.001}
                           value={melodicSynthSettings.envelope[field]}
                           aria-valuetext={`${melodicSynthSettings.envelope[field]}`}
-                          disabled={['membranesynth', 'metalsynth', 'plucksynth'].includes(voiceInstruments.melodic)}
+                          disabled={['membranesynth', 'metalsynth', 'plucksynth'].includes(
+                            voiceInstruments.melodic,
+                          )}
                           title="Percussive instruments do not support ADSR envelope controls."
                           onChange={(event) =>
                             applyMelodicSynthSettings({
                               ...melodicSynthSettings,
-                              envelope: { ...melodicSynthSettings.envelope, [field]: Number(event.target.value) },
+                              envelope: {
+                                ...melodicSynthSettings.envelope,
+                                [field]: Number(event.target.value),
+                              },
                             })
                           }
                         />
                       </label>
                     ))}
-                    <label htmlFor="scene3d-keyboard-octave">Octave: {melodicSynthSettings.octaveShift}</label>
+                    <label htmlFor="scene3d-keyboard-octave">
+                      Octave: {melodicSynthSettings.octaveShift}
+                    </label>
                     <input
                       id="scene3d-keyboard-octave"
                       type="range"
@@ -1293,9 +1345,16 @@ function ThreeScenePreview({
                       step={1}
                       value={melodicSynthSettings.octaveShift}
                       aria-valuetext={`${melodicSynthSettings.octaveShift}`}
-                      onChange={(event) => applyMelodicSynthSettings({ ...melodicSynthSettings, octaveShift: Number(event.target.value) })}
+                      onChange={(event) =>
+                        applyMelodicSynthSettings({
+                          ...melodicSynthSettings,
+                          octaveShift: Number(event.target.value),
+                        })
+                      }
                     />
-                    <label htmlFor="scene3d-master-filter-cutoff">Master filter cutoff: {masterFilterCutoff}</label>
+                    <label htmlFor="scene3d-master-filter-cutoff">
+                      Master filter cutoff: {masterFilterCutoff}
+                    </label>
                     <input
                       id="scene3d-master-filter-cutoff"
                       type="range"
@@ -1307,7 +1366,11 @@ function ThreeScenePreview({
                       onChange={(event) => {
                         const next = Number(event.target.value);
                         setMasterFilterCutoff(next);
-                        sonicEngineRef.current?.setFilter({ type: 'lowpass', cutoff: next, resonance: 1 });
+                        sonicEngineRef.current?.setFilter({
+                          type: 'lowpass',
+                          cutoff: next,
+                          resonance: 1,
+                        });
                       }}
                     />
                   </fieldset>
@@ -1315,7 +1378,13 @@ function ThreeScenePreview({
                     <button
                       type="button"
                       aria-pressed={keyboardEnabled}
-                      onClick={() => setKeyboardEnabled((current) => !current)}
+                      onClick={() => {
+                        setKeyboardEnabled((current) => {
+                          const next = !current;
+                          if (!next) setPressedPianoNotes(new Set());
+                          return next;
+                        });
+                      }}
                     >
                       {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
                     </button>
@@ -1339,6 +1408,44 @@ function ThreeScenePreview({
                       {thereminEnabled ? 'Stop camera theremin' : 'Camera theremin'}
                     </button>
                   </div>
+                  {keyboardEnabled && (
+                    <div
+                      className="scene3d-piano-keyboard"
+                      role="group"
+                      aria-label="On-screen piano keyboard"
+                    >
+                      {PIANO_NOTES.map((note) => (
+                        <button
+                          key={note}
+                          type="button"
+                          aria-label={note}
+                          aria-pressed={pressedPianoNotes.has(note)}
+                          onPointerDown={(event) => {
+                            event.preventDefault();
+                            pressPianoNote(note);
+                          }}
+                          onPointerUp={() => releasePianoNote(note)}
+                          onPointerCancel={() => releasePianoNote(note)}
+                          onPointerLeave={() => releasePianoNote(note)}
+                          onBlur={() => releasePianoNote(note)}
+                          onKeyDown={(event) => {
+                            if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) {
+                              event.preventDefault();
+                              pressPianoNote(note);
+                            }
+                          }}
+                          onKeyUp={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              releasePianoNote(note);
+                            }
+                          }}
+                        >
+                          {note}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {(micState === 'requesting' || micState === 'active') && (
                     <p role="status" aria-live="polite" data-testid="mic-privacy-notice">
                       Audio from your microphone is processed locally in your browser. It is never

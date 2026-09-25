@@ -70,6 +70,15 @@ test.describe('3D sound engine', () => {
     await toolbar.getByLabel(/Octave:/).fill('2');
     await expect(toolbar.getByLabel(/Octave:/)).toHaveValue('2');
 
+    await toolbar.getByRole('button', { name: 'Keyboard notes' }).click();
+    const piano = toolbar.getByRole('group', { name: 'On-screen piano keyboard' });
+    await expect(piano).toBeVisible();
+    const c4 = piano.getByRole('button', { name: 'C4' });
+    await c4.dispatchEvent('pointerdown');
+    await expect(c4).toHaveAttribute('aria-pressed', 'true');
+    await c4.dispatchEvent('pointerup');
+    await expect(c4).toHaveAttribute('aria-pressed', 'false');
+
     await mute.click();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toHaveAttribute(
       'aria-pressed',

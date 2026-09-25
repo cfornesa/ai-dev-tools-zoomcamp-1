@@ -3952,6 +3952,44 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Transaction #880 — 2026-09-26 — IMPLEMENTATION + QA PASS / CLOSED
+
+- Groom: distinct Three.js false-readiness timeout discovered in #858 after
+  #879; duplicate audit found no open equivalent. Criterion-ready issue #880
+  created before engineering.
+- Engineer: Codex/GPT-5 medium substitution. The trusted Three.js camera
+  registration hook now reports runtime ready; focused regression added.
+  Commit `93159a358dd1746dd6f907f0dd3b3c0e68f936d3`.
+- QA self-review: PASS. Fresh Chrome after a rebuilt Compose frontend showed a
+  non-blank Three.js canvas, no timeout status, running sound/defaults, and an
+  empty fresh error log. Focused sandbox tests 36 passed; issue closed with
+  comment #880 comment 5840351241.
+- Evidence boundary: local disposable Compose + Chrome only; no production
+  publish or data action.
+
+## Transaction #858 reconciliation — 2026-09-26 — QA FAIL / OPEN
+
+- Groom: verification-only Three.js workflow; #880 was distilled and resolved
+  before final reconciliation.
+- Engineer: no separate #858 engineering stage; readiness implementation was
+  routed to #880.
+- QA self-review: FAIL / VALID WITH GAPS. Fresh fixed-runtime Chrome passed
+  desktop rendering, runtime readiness, sound activation, and authored default
+  visibility. Full ambient/keyboard/reset/mobile trace and exact decoded
+  per-pixel motion evidence remain outstanding. Comment #858 comment
+  5840351775. Codex/GPT-5 medium substitution; second opinion not run.
+- Reconcile: keep #858 OPEN; no production evidence or production change.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #859
+
+- Open inventory now includes #875, #874, #862, #861, #860, #859, #858,
+  #857, #856, #847, and #788; #879 and #880 are closed and immutable.
+- Duplicate audit: Three.js/A-Frame readiness blockers are closed in #879/#880;
+  remaining workflow evidence belongs to its engine/surface issue.
+- Routing: #859 is verification-only immersive-surface Chrome work; distill any
+  distinct implementation blocker before changing code.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
 ## Transaction #879 — 2026-09-26 — IMPLEMENTATION + QA PASS / CLOSED
 
 - Groom: distinct A-Frame runtime readiness/Permissions Policy blocker found

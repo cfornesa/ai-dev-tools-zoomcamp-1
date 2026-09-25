@@ -2998,3 +2998,27 @@ deferred.
   implementation criteria, but the issue's browser screenshot and
   viewer/embed/immersive/ZIP criteria require fresh browser verification and
   cannot be closed from Vitest or Compose-only evidence.
+
+## Production-readiness refresh 55 — 2026-09-25 — BLOCKED
+
+- Commit `771f84d` is safely pushed to `origin/main`; it has not been
+  published to Replit production.
+- Final local `make check` is PASS: backend 1710 passed / 39 skipped;
+  frontend 280 files / 3013 tests; action pins, lint, format, typecheck and
+  mypy passed (existing warnings only).
+- Production readiness remains blocked by the explicit production/browser
+  evidence requirements for #747/#748/#788 and open #841/#842/#846/#847/
+  #851/#852/#853–#862. No migration or production data write was performed
+  in this implementation transaction.
+
+## Session-completion refresh 56 — 2026-09-25 — INCOMPLETE / HANDOFF
+
+- Open inventory after #844 closure and #852 implementation remains 17:
+  #788, #841, #842, #846, #847, #851–#862. #852 is implementation-complete
+  but QA-blocked, not closed.
+- Routing audit: #852 correctly used task-distillation →
+  implementation-complex → qa-self-review → reconcile; no duplicate issue
+  was created. Follow-up audit: browser evidence and production authorization
+  remain the next gates, not additional code claims.
+- Current safe handoff is `origin/main` at `771f84d`; the deployed app was not
+  changed by this transaction.

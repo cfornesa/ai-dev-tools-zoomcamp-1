@@ -2407,3 +2407,39 @@ deferred.
 - Reconcile: CLOSED. QA comment:
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/843#issuecomment-5832518633
   records the matrix, commands, provenance, and local-only boundary.
+
+## Distillation refresh 38 — 2026-09-25 — post-#843 reconciliation
+
+- #843 is CLOSED with passing live browser persistence/reset evidence and
+  commits `04039a6`, `25b99a4`, and `d8b44bd`; no production publish was made.
+- Current open set is #788, #841, #842, #844–#847, and #851–#862, #865.
+  No duplicate or closed issue was reopened. #844 is the next queue item, but
+  its remaining criterion is specifically ZIP artifact evidence; it is not
+  safe to infer that from source tests or a synthetic Blob download.
+- #865 is a report requiring reproduction before any implementation; #841 and
+  #842 retain independent structured-2D and generated/Non-Camera ZIP gaps.
+  The hamburger observation remains covered by the existing route verification
+  issues and current canonical production AX evidence, which shows direct
+  buttons and no hamburger.
+- Next action: groom #844, then attempt its approved browser artifact path;
+  if the host cannot produce the artifact, record the evidence boundary and
+  proceed to the next independent issue without closing #844.
+
+## Transaction #844 — 2026-09-25 — OPEN / QA FAIL
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. #844 is distinct from #841/#842: its schema,
+  editor, viewer, and ZIP contract is implemented, but its browser artifact
+  criterion is not satisfied. No duplicate was found.
+- Engineer: NOT REQUIRED. Stage owner implementation-complex; Codex/GPT-5
+  substitution; low effort. This pass found no safe implementation gap to
+  change; the remaining work is evidence acquisition.
+- QA self-review: FAIL / INCOMPLETE. Stage owner qa-self-review; Codex/GPT-5
+  substitution; medium effort. Current-checkout Compose Chrome verified the
+  authored controls and prior checks are green, but the synthetic Blob download
+  did not yield a browser artifact and Playwright could not launch on this host
+  because of the macOS MachPort permission failure before the test.
+- Reconcile: OPEN. QA comments:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/844#issuecomment-5832552150
+  (corrected recheck) and the prior implementation matrix remain the evidence
+  boundary. Do not close or publish #844 from local evidence.

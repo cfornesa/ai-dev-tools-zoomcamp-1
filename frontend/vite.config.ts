@@ -475,18 +475,15 @@ export default defineConfig({
     // the same way vitest's own default `exclude` already excludes
     // node_modules/dist/etc.
     exclude: [...configDefaults.exclude, 'e2e/**'],
-    // Issue #302: repeated, non-deterministic ~5s-timeout failures on
-    // whichever test file happened to draw a slow worker during a full
-    // `make check`/`npm test` run (never a fixed file, and every affected
-    // test passes instantly in isolation) -- consistent with Vitest's
-    // *default* 5000ms `testTimeout` being too tight once ~180 test files'
-    // worth of worker threads are genuinely contending for this machine's
-    // CPU, not with any actual test being slow or broken. Tripling both
-    // timeouts gives real async work (userEvent interactions, timers,
-    // component mount/unmount) enough headroom under that contention
-    // without masking a test that's actually hung (15s is still a hard
-    // ceiling, not "wait forever").
-    testTimeout: 15000,
-    hookTimeout: 15000,
+    // Issues #302/#864: the full suite contains many interaction-heavy
+    // jsdom files. Vitest's unrestricted worker pool makes otherwise-fast
+    // EditorWorkspace and route-fixture tests exceed their timeout under
+    // CPU/memory contention, while the same files pass in isolation. Keep
+    // the worker count bounded and give real userEvent/mount/cleanup work
+    // enough headroom. This is a harness-only setting; it does not change
+    // product behavior or individual test assertions.
+    maxWorkers: 4,
+    testTimeout: 30000,
+    hookTimeout: 30000,
   },
 });

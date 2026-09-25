@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import type { SonicDefaults } from '../audio/sonicContract';
 import { SONIC_ROOTS, SONIC_SCALES } from '../audio/sonicContract';
+import { createSonicEngine, type SonicEngine } from '../audio/sonicEngine';
+import { isEditableElement, PIANO_KEY_MAP } from '../audio/pianoKeyMap';
+import { scaleNotes, transposeNote } from '../audio/scaleTheory';
 import {
   ART_PIECE_BRIDGE_VERSION,
   isValidArtPieceSoundCommand,
@@ -53,6 +56,33 @@ import {
 // values #455's own (now-removed) in-sandbox implementation used.
 const HAND_PAN_SENSITIVITY = 6;
 const HAND_ZOOM_SENSITIVITY = 20;
+
+const PARENT_SOUND_COMMANDS = new Set([
+  'toggle-sound',
+  'set-volume',
+  'set-tempo',
+  'set-scale',
+  'set-key',
+  'set-transpose',
+  'set-follow-key',
+  'set-voice-volume',
+  'set-voice-muted',
+  'set-filter',
+  'set-oscillator',
+  'set-envelope',
+  'set-octave',
+  'set-keyboard-enabled',
+]);
+
+function noteFrequency(note: string): number | null {
+  const match = /^([A-G](?:#|b)?)(-?\d+)$/.exec(note);
+  if (!match) return null;
+  const pitchClasses = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const pitch = pitchClasses.indexOf(match[1]);
+  if (pitch < 0) return null;
+  const midi = (Number(match[2]) + 1) * 12 + pitch;
+  return 440 * 2 ** ((midi - 69) / 12);
+}
 
 type Props = {
   stageRef: RefObject<HTMLDivElement | null>;
@@ -129,6 +159,7 @@ function PieceStageControls({
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [audioContextState, setAudioContextState] = useState<string | null>(null);
+  const sonicEngineRef = useRef<SonicEngine | null>(null);
   const [volume, setVolume] = useState(initialSoundSettings.soundVolume);
   const [ambientBpm, setAmbientBpm] = useState(initialSoundSettings.ambientBpm);
   const [ambientVolume, setAmbientVolume] = useState(initialSoundSettings.ambientVolume);
@@ -418,6 +449,138 @@ function PieceStageControls({
     else undoVisitorStrokes();
   }
 
+  function configureParentSound(engine: SonicEngine) {
+    engine.setVolume(volume * 100);
+    engine.setTempo(ambientBpm);
+    engine.setVoiceVolume('ambient', ambientVolume);
+    engine.setVoiceMuted('ambient', ambientMuted);
+    engine.setScale(ambientScale);
+    engine.setKey({ root: keyboardRoot, scale: keyboardScale });
+    engine.setTranspose(keyboardTranspose);
+    engine.setFollowKey(followKey);
+    engine.setVoiceVolume('melodic', keyboardVolume);
+    engine.setFilter({
+      type: keyboardFilterType,
+      cutoff: keyboardFilterCutoff,
+      resonance: keyboardFilterResonance,
+    });
+    engine.setMelodicSynth({
+      oscillator: keyboardOscillator,
+      envelope: {
+        attack: keyboardAttack,
+        decay: keyboardDecay,
+        sustain: keyboardSustain,
+        release: keyboardRelease,
+      },
+      filter: {
+        type: keyboardFilterType,
+        cutoff: keyboardFilterCutoff,
+        resonance: keyboardFilterResonance,
+      },
+      octaveShift: keyboardOctave,
+    });
+  }
+
+  async function enableParentSound() {
+    const engine = (sonicEngineRef.current ??= createSonicEngine());
+    configureParentSound(engine);
+    await engine.enable();
+    if (engine.status !== 'active') {
+      setAudioContextState('error');
+      setSoundOn(false);
+      return;
+    }
+    setSoundOn(true);
+    setAudioContextState('running');
+  }
+
+  function disableParentSound() {
+    sonicEngineRef.current?.disable();
+    setKeyboardEnabled(false);
+    setSoundOn(false);
+    setAudioContextState('idle');
+  }
+
+  function applyParentSoundCommand(type: string, extra: Record<string, unknown> = {}) {
+    const engine = sonicEngineRef.current;
+    if (!engine || engine.status !== 'active') return;
+    if (type === 'set-volume' && typeof extra.value === 'number')
+      engine.setVolume(extra.value * 100);
+    else if (type === 'set-tempo' && typeof extra.value === 'number') engine.setTempo(extra.value);
+    else if (type === 'set-scale' && typeof extra.value === 'string') engine.setScale(extra.value);
+    else if (
+      type === 'set-key' &&
+      typeof extra.root === 'string' &&
+      typeof extra.scale === 'string'
+    ) {
+      engine.setKey({ root: extra.root, scale: extra.scale });
+    } else if (type === 'set-transpose' && typeof extra.value === 'number') {
+      engine.setTranspose(extra.value);
+    } else if (type === 'set-follow-key' && typeof extra.enabled === 'boolean') {
+      engine.setFollowKey(extra.enabled);
+    } else if (
+      type === 'set-voice-volume' &&
+      (extra.voice === 'ambient' || extra.voice === 'melodic') &&
+      typeof extra.value === 'number'
+    ) {
+      engine.setVoiceVolume(extra.voice, extra.value);
+    } else if (
+      type === 'set-voice-muted' &&
+      (extra.voice === 'ambient' || extra.voice === 'melodic') &&
+      typeof extra.enabled === 'boolean'
+    ) {
+      engine.setVoiceMuted(extra.voice, extra.enabled);
+    } else if (
+      type === 'set-filter' &&
+      typeof extra.filterType === 'string' &&
+      typeof extra.cutoff === 'number' &&
+      typeof extra.resonance === 'number'
+    ) {
+      engine.setFilter({
+        type: extra.filterType as 'lowpass' | 'highpass' | 'bandpass',
+        cutoff: extra.cutoff,
+        resonance: extra.resonance,
+      });
+    } else if (type === 'set-oscillator' || type === 'set-envelope' || type === 'set-octave') {
+      configureParentSound(engine);
+    }
+  }
+
+  useEffect(() => () => sonicEngineRef.current?.dispose(), []);
+
+  useEffect(() => {
+    if (!capabilities.keyboard) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (!soundOn || !keyboardEnabled || event.repeat || isEditableElement(event.target)) return;
+      const key = event.key.toLowerCase();
+      const baseNote = PIANO_KEY_MAP[key];
+      const engine = sonicEngineRef.current;
+      if (!baseNote || !engine || engine.status !== 'active') return;
+      const index = Object.values(PIANO_KEY_MAP).indexOf(baseNote);
+      const resolved = scaleNotes(keyboardRoot, keyboardScale, [4, 6])[index] ?? baseNote;
+      const note = transposeNote(resolved, keyboardTranspose + keyboardOctave * 12);
+      engine.triggerMelodicNote(baseNote);
+      setLastNote(key);
+      setLastNoteFrequency(noteFrequency(note));
+    }
+    window.addEventListener('keydown', onKeyDown);
+    const frameWindow = iframeRef.current?.contentWindow;
+    frameWindow?.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      frameWindow?.removeEventListener('keydown', onKeyDown);
+    };
+  }, [
+    capabilities.keyboard,
+    iframeRef,
+    keyboardEnabled,
+    keyboardOctave,
+    keyboardRoot,
+    keyboardScale,
+    keyboardTranspose,
+    soundOn,
+  ]);
+
   useEffect(() => {
     function onMessage(event: MessageEvent) {
       if (event.source !== iframeRef.current?.contentWindow) return;
@@ -514,6 +677,15 @@ function PieceStageControls({
       if (type !== 'toggle-sound') resetSoundSettingsRef.current = false;
     }
     if (type === 'screenshot') setScreenshotError(null);
+    if (PARENT_SOUND_COMMANDS.has(type)) {
+      if (type === 'toggle-sound') {
+        if (soundOn) disableParentSound();
+        else void enableParentSound();
+      } else {
+        applyParentSoundCommand(type, extra);
+      }
+      return;
+    }
     iframeRef.current?.contentWindow?.postMessage(
       {
         source: 'art-piece-parent',

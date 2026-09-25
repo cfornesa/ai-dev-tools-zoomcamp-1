@@ -21,8 +21,10 @@ import { isEditableElement, PIANO_KEY_MAP } from '../audio/pianoKeyMap';
 import {
   createSonicEngine,
   SONIC_INSTRUMENT_OPTIONS,
+  SONIC_SCALE_OPTIONS,
   type SonicEngine,
   type SonicInstrument,
+  type SonicScale,
   type SonicVoice,
 } from '../audio/sonicEngine';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
@@ -310,6 +312,10 @@ function ThreeScenePreview({
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundControlsResetKey, setSoundControlsResetKey] = useState(0);
   const [soundVolume, setSoundVolume] = useState(50);
+  const [ambientBpm, setAmbientBpm] = useState(90);
+  const [ambientVolume, setAmbientVolume] = useState(50);
+  const [ambientMuted, setAmbientMuted] = useState(false);
+  const [ambientScale, setAmbientScale] = useState<SonicScale>('pentatonic');
   const [voiceInstruments, setVoiceInstruments] = useState<Record<SonicVoice, SonicInstrument>>({
     ambient: 'synth',
     movement: 'synth',
@@ -340,6 +346,10 @@ function ThreeScenePreview({
     await engine.enable();
     if (engine.status === 'active') {
       engine.setVolume(soundVolume);
+      engine.setTempo(ambientBpm);
+      engine.setVoiceVolume('ambient', ambientVolume);
+      engine.setVoiceMuted('ambient', ambientMuted);
+      engine.setScale(ambientScale);
       setSoundEnabled(true);
     }
   }
@@ -1058,6 +1068,71 @@ function ThreeScenePreview({
               )}
               {showSoundControl && soundEnabled && (
                 <div className="scene3d-sound-settings-inline">
+                  <div className="editor-camera-overlay-control">
+                    <label htmlFor="scene3d-ambient-bpm">Ambient BPM: {ambientBpm}</label>
+                    <input
+                      id="scene3d-ambient-bpm"
+                      type="range"
+                      min={40}
+                      max={220}
+                      step={1}
+                      value={ambientBpm}
+                      aria-valuetext={`${ambientBpm} BPM`}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        setAmbientBpm(next);
+                        sonicEngineRef.current?.setTempo(next);
+                      }}
+                    />
+                  </div>
+                  <div className="editor-camera-overlay-control">
+                    <label htmlFor="scene3d-ambient-volume">Ambient volume: {ambientVolume}%</label>
+                    <input
+                      id="scene3d-ambient-volume"
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={ambientVolume}
+                      aria-valuetext={`${ambientVolume}%`}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        setAmbientVolume(next);
+                        sonicEngineRef.current?.setVoiceVolume('ambient', next);
+                      }}
+                    />
+                  </div>
+                  <label htmlFor="scene3d-ambient-muted">
+                    <input
+                      id="scene3d-ambient-muted"
+                      type="checkbox"
+                      checked={ambientMuted}
+                      onChange={(event) => {
+                        const next = event.target.checked;
+                        setAmbientMuted(next);
+                        sonicEngineRef.current?.setVoiceMuted('ambient', next);
+                      }}
+                    />
+                    Mute ambient
+                  </label>
+                  <div className="editor-camera-overlay-control">
+                    <label htmlFor="scene3d-ambient-scale">Scale: {ambientScale}</label>
+                    <select
+                      id="scene3d-ambient-scale"
+                      aria-label="Scale"
+                      value={ambientScale}
+                      onChange={(event) => {
+                        const next = event.target.value as SonicScale;
+                        if (sonicEngineRef.current?.setScale(next)) setAmbientScale(next);
+                      }}
+                    >
+                      {SONIC_SCALE_OPTIONS.map((scale) => (
+                        <option key={scale} value={scale}>
+                          {scale}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="editor-camera-overlay-control">
                     <label htmlFor="scene3d-sound-volume">Sound volume</label>
                     <input

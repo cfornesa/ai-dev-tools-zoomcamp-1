@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -57,6 +57,7 @@ const {
 }));
 
 vi.mock('../audio/sonicEngine', () => ({
+  SONIC_SCALE_OPTIONS: ['major', 'minor', 'pentatonic', 'chromatic', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'wholetone'],
   SONIC_INSTRUMENT_OPTIONS: [
     { value: 'synth', label: 'Synth' },
     { value: 'amsynth', label: 'AM Synth' },
@@ -237,6 +238,28 @@ describe('Scene3DPreview sound control (issue #306)', () => {
     slider.dispatchEvent(new Event('change', { bubbles: true }));
 
     expect(setVolumeSpy).toHaveBeenCalled();
+  });
+
+  it('adjusts ambient BPM, volume, mute, and scale through the engine API', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+
+    fireEvent.change(screen.getByLabelText(/Ambient BPM/) as HTMLInputElement, {
+      target: { value: '120' },
+    });
+    fireEvent.change(screen.getByLabelText(/Ambient volume/) as HTMLInputElement, {
+      target: { value: '30' },
+    });
+    await user.click(screen.getByLabelText('Mute ambient'));
+    await user.selectOptions(screen.getByLabelText('Scale'), 'major');
+
+    expect(setTempoSpy).toHaveBeenCalledWith(120);
+    expect(setVoiceVolumeSpy).toHaveBeenCalledWith('ambient', 30);
+    expect(setVoiceMutedSpy).toHaveBeenCalledWith('ambient', true);
+    expect(setScaleSpy).toHaveBeenCalledWith('major');
   });
 
   it('muting calls engine.disable() and hides the volume slider again', async () => {

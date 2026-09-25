@@ -39,6 +39,19 @@ test.describe('3D sound engine', () => {
     await volume.fill('80');
     await expect(volume).toHaveValue('80');
 
+    const ambientBpm = toolbar.getByLabel(/Ambient BPM/);
+    await ambientBpm.fill('120');
+    await expect(ambientBpm).toHaveValue('120');
+    const ambientVolume = toolbar.getByLabel(/Ambient volume/);
+    await ambientVolume.fill('30');
+    await expect(ambientVolume).toHaveValue('30');
+    const ambientMute = toolbar.getByLabel('Mute ambient');
+    await ambientMute.check();
+    await expect(ambientMute).toBeChecked();
+    const scale = toolbar.getByLabel('Scale');
+    await scale.selectOption('major');
+    await expect(scale).toHaveValue('major');
+
     const ambient = toolbar.getByLabel('Ambient instrument');
     const movement = toolbar.getByLabel('Movement instrument');
     const melodic = toolbar.getByLabel('Melodic instrument');

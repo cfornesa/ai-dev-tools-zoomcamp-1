@@ -2260,3 +2260,22 @@ deferred.
 - Reconcile: CLOSED. QA comment:
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/838#issuecomment-5831949442
   records the matrix, commands, provenance, and local-only evidence boundary.
+
+## Transaction #839 — 2026-09-25 — CLOSED
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. Dependencies #832–#837 were closed and #838
+  was reconciled first; no duplicate issue was found.
+- Engineer: COMPLETE. Stage owner implementation-mechanical; Codex/GPT-5
+  substitution; medium effort. Existing implementation from `b786e1a` was
+  retained; `2955e19` adds criterion-level component and Compose browser
+  coverage for every keyboard synth control, unsupported-state titles, and
+  master filter behavior.
+- QA self-review: PASS. Stage owner qa-self-review; Codex/GPT-5 substitution;
+  medium effort. Focused 61 tests passed; exact Compose Chromium flow passed
+  1/1; active Chrome screenshots and mobile no-horizontal-overflow geometry
+  passed; full frontend 280 files / 3005 tests, typecheck, format, and lint
+  passed.
+- Reconcile: CLOSED. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/839#issuecomment-5832040924
+  records the matrix, commands, provenance, and local-only evidence boundary.

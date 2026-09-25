@@ -1876,3 +1876,15 @@ deferred.
   `bootstrap_check_in ... Permission denied (1100)` Mach-port error. Live
   interaction and 1280x900/375x812 screenshots remain unverified; #850 stays
   OPEN pending the approved Docker/CI Chromium runner.
+
+### #850 QA reconciliation update — 2026-09-25
+
+- Repository-wide `make check` passed on the pushed state: backend lint,
+  format, mypy, and tests (`1698 passed, 39 skipped`); frontend lint,
+  format, typecheck, and full Vitest (`279 files, 3000 tests passed`); and
+  action-pin checks. The initial unsandboxed attempt stopped before checks
+  because uv could not access its cache; the escalated exact gate completed
+  successfully. Existing lint/test warnings remain non-failing.
+- The issue remains `QA/OPEN-BLOCKED`: `make check` does not supply the
+  missing real-browser interaction or viewport screenshots, and the exact
+  Playwright run remains blocked by the host Mach-port failure.

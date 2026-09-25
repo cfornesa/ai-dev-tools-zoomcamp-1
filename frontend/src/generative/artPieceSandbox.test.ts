@@ -66,6 +66,15 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain("scene.addEventListener('loaded', reportAframeReady");
   });
 
+  it('#880 treats Three.js camera registration as a runtime-ready signal', () => {
+    const doc = buildArtPieceSandboxDocument(
+      '<script>window.__registerArtPieceCamera({});</script>',
+      'threejs',
+    );
+    expect(doc).toContain("if (pieceLibrary === 'threejs') report('re' + 'ady', '');");
+    expect(doc).toContain('window.__registerArtPieceCamera = function (adapter)');
+  });
+
   it('#866 does not surface browser ResizeObserver loop notifications as piece errors', () => {
     const doc = buildArtPieceSandboxDocument(SNIPPET);
     expect(doc).toContain('ResizeObserver loop completed with undelivered notifications.');

@@ -620,6 +620,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     } catch (e) {
       initialCameraPose = null;
     }
+    if (pieceLibrary === 'threejs') report('re' + 'ady', '');
   };
   var STEER_MIN_RADIUS = 1.5;
   var STEER_MAX_RADIUS = 20;

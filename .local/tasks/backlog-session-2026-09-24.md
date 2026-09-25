@@ -1037,3 +1037,17 @@ deferred.
 - Next stage: engineer #826 as the sole active transaction, using the
   stage-2b implementation-complex route. Preserve public HTTPS redirects and
   secure-cookie/HSTS policy; do not weaken production settings globally.
+
+## Distillation refresh 22 — 2026-09-24
+
+- The owner supplied fresh Chrome evidence for the canonical immersive 3D URL
+  showing the identity block below the stage and cramped spacing. #803 is
+  CLOSED and immutable; its local-only closure cannot be reused as production
+  evidence and it was not reopened.
+- Duplicate search found only historical #803. Created criterion-ready #827
+  for the deployed immersive surface, with fixed 1280x900 and 375x812 visual
+  criteria, named controls, reference spacing, screenshot evidence, and a
+  stage-2a frontend routing hint.
+- #827 is dependency-blocked on #826 producing a healthy exact-revision
+  deployment. The current public screenshot remains evidence for #827, not a
+  pass for #803.

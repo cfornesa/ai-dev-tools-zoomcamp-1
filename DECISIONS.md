@@ -1620,3 +1620,13 @@ search found no existing coverage, so #826 was created as a criterion-ready
 stage-2b follow-up. The fix must preserve public HTTPS redirects, secure
 cookies, HSTS, and forwarded-protocol handling; globally disabling
 `SECURE_SSL_REDIRECT` is not an acceptable resolution.
+
+## 2026-09-24 — Production immersive layout follow-up (#827)
+
+Fresh owner-authorized Chrome evidence showed the live immersive 3D route still
+has the title/description/version block below the stage and insufficient
+reference padding. Closed #803 is immutable and was closed with local-only
+evidence, so it was not reopened. Duplicate search found only #803; criterion-
+ready #827 now owns the deployed 1280x900 and 375x812 layout/screenshot
+contract. #827 remains blocked until #826 produces a healthy exact-revision
+deployment.

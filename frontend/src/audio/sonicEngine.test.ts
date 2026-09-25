@@ -17,6 +17,7 @@ function createFakeToneModule() {
   const attackCalls: Array<{ kind: string; note: string }> = [];
   const releaseCalls: string[] = [];
   const rampToCalls: Array<{ kind: string; value: number }> = [];
+  let filterInstance: { type: string; frequency: { value: number }; Q: { value: number } } | null = null;
   let synthCount = 0;
 
   class FakeSynth {
@@ -62,9 +63,13 @@ function createFakeToneModule() {
   class FakeFilter {
     freq: number;
     type: string;
+    frequency = { value: 0 };
+    Q = { value: 0 };
     constructor(freq: number, type: string) {
       this.freq = freq;
       this.type = type;
+      this.frequency.value = freq;
+      filterInstance = this;
     }
     toDestination() {
       return this;
@@ -157,6 +162,7 @@ function createFakeToneModule() {
     fireAmbientLoopTick: (time = 0) => loopCallback?.(time),
     getLoopInterval: () => loopInterval,
     volumeInstances,
+    getFilter: () => filterInstance,
     getTransportBpm: () => (fakeModule.Transport as unknown as { bpm: { value: number } }).bpm.value,
   };
 }
@@ -325,6 +331,18 @@ describe('createSonicEngine', () => {
     expect(fake.volumeInstances[2].volume.value).toBe(0);
     engine.setVoiceVolume('ambient', 500);
     expect(fake.volumeInstances[1].volume.value).toBe(0);
+  });
+
+  it('validates and clamps the live master filter without recreating voices', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+    const filter = fake.getFilter();
+    expect(filter).toMatchObject({ type: 'lowpass', frequency: { value: 2000 }, Q: { value: 1 } });
+
+    expect(engine.setFilter({ type: 'invalid' as 'lowpass', cutoff: 0, resonance: 0 })).toBe(false);
+    expect(engine.setFilter({ type: 'bandpass', cutoff: 50000, resonance: 100 })).toBe(true);
+    expect(filter).toMatchObject({ type: 'bandpass', frequency: { value: 20000 }, Q: { value: 20 } });
   });
 
   it('disable() releases every audio resource and returns to idle', async () => {

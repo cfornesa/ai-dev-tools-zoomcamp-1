@@ -41,6 +41,12 @@ export type MovementDelta = { dx: number; dy: number; dz: number };
 export type SonicVoice = 'ambient' | 'movement' | 'melodic';
 export type SonicInstrument =
   'synth' | 'amsynth' | 'fmsynth' | 'membranesynth' | 'metalsynth' | 'plucksynth' | 'duosynth';
+export type SonicFilterType = 'lowpass' | 'highpass' | 'bandpass';
+export type SonicFilterSettings = {
+  type: SonicFilterType;
+  cutoff: number;
+  resonance: number;
+};
 
 export const SONIC_INSTRUMENT_OPTIONS: ReadonlyArray<{
   value: SonicInstrument;
@@ -138,6 +144,8 @@ export interface SonicEngine {
   setVoiceVolume(voice: SonicVoice, percent: number): void;
   /** Mutes one voice while preserving the other voice gains. */
   setVoiceMuted(voice: SonicVoice, muted: boolean): void;
+  /** Updates the shared master filter without rebuilding the voice graph. */
+  setFilter(settings: SonicFilterSettings): boolean;
   /** Replaces one voice's instrument without changing the other voices. */
   setVoiceInstrument(voice: SonicVoice, instrument: SonicInstrument): boolean;
   /** Called every frame by the 3D preview's own render loop with the
@@ -211,6 +219,7 @@ export function createSonicEngine(
   let lastMovementTriggerAt = 0;
   let tempo = DEFAULT_TEMPO;
   let scale: SonicScale = DEFAULT_SCALE;
+  let filterSettings: SonicFilterSettings = { type: 'lowpass', cutoff: 2000, resonance: 1 };
   const voiceVolumes: Record<SonicVoice, number> = { ambient: 100, movement: 100, melodic: 100 };
   const voiceMuted: Record<SonicVoice, boolean> = { ambient: false, movement: false, melodic: false };
 
@@ -220,7 +229,8 @@ export function createSonicEngine(
       tone = await loadTone();
       await tone.start();
 
-      filter = new tone.Filter(2000, 'lowpass').toDestination();
+      filter = new tone.Filter(filterSettings.cutoff, filterSettings.type).toDestination();
+      filter.Q.value = filterSettings.resonance;
       bus = new tone.Volume(0).connect(filter);
       voiceBuses.ambient = new tone.Volume(0).connect(bus);
       voiceBuses.movement = new tone.Volume(0).connect(bus);
@@ -314,6 +324,21 @@ export function createSonicEngine(
     voiceMuted[voice] = muted;
     const voiceBus = voiceBuses[voice];
     if (voiceBus) voiceBus.volume.value = muted ? -60 : volumeToDb(voiceVolumes[voice]);
+  }
+
+  function setFilter(settings: SonicFilterSettings): boolean {
+    if (!['lowpass', 'highpass', 'bandpass'].includes(settings.type)) return false;
+    filterSettings = {
+      type: settings.type,
+      cutoff: Math.min(20000, Math.max(20, settings.cutoff)),
+      resonance: Math.min(20, Math.max(0.1, settings.resonance)),
+    };
+    if (filter && status === 'active') {
+      filter.type = filterSettings.type;
+      filter.frequency.value = filterSettings.cutoff;
+      filter.Q.value = filterSettings.resonance;
+    }
+    return true;
   }
 
   function volumeToDb(percent: number): number {
@@ -440,6 +465,7 @@ export function createSonicEngine(
     setScale,
     setVoiceVolume,
     setVoiceMuted,
+    setFilter,
     setVoiceInstrument,
     reportMovement,
     triggerMelodicNote,

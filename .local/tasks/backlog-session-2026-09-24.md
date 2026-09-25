@@ -1648,3 +1648,24 @@ deferred.
   independent and production-runtime blocked; #853–#862 remain browser QA and
   reporting contracts. Service/model/effort: Codex/GPT-5 substitution, medium
   effort; no stage-3 independent-family review.
+
+## Backlog transaction 37 — #838
+
+- State: `GROOMED → ENGINEERING → QA/OPEN-BLOCKED`.
+- Engineering commit: `de6f247`; added labelled ambient BPM/volume/mute/scale
+  controls to the structured 3D Piece controls popover and extended the
+  existing 3D Playwright spec. Service/model/effort: Codex/GPT-5 substitution,
+  medium effort; rostered Stage 2a service unavailable.
+- Focused QA: `cd frontend && npm test -- --run
+  src/pages/Scene3DPreview.sound.test.tsx` passed (28 tests); typecheck and
+  lint passed. GitHub QA FAIL comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/838#issuecomment-5829281327`.
+- Exact E2E attempt:
+  `E2E_DOCKER_COMPOSE=true npx playwright test e2e/soundEngine3d.spec.ts
+  --project=chromium` failed before test execution with Chromium Mach-port
+  permission error `bootstrap_check_in ... Permission denied (1100)`. The
+  test is discoverable with `--list`, but 375px/1280px screenshot evidence and
+  full Vitest evidence remain missing. Blocker class:
+  `verification-boundary` / workflow infrastructure. Next action: run on the
+  approved Docker/CI Chromium runner, inspect both viewports, then rerun full
+  Vitest and reconcile; issue remains OPEN.

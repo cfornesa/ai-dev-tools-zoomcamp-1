@@ -3952,6 +3952,60 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Transaction #876 reconciliation — 2026-09-26 — QA PASS / CLOSED
+
+- Groom/engineer: implementation remained scoped to the parent-trusted
+  generated sound telemetry contract; no duplicate was created.
+- QA self-review: PASS. `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`
+  passed with backend 1710 passed/39 skipped and frontend 281 files/3021
+  tests. Active Chrome local fixture showed running sound and valid ambient
+  note telemetry. Safe push advanced `origin/main` to `8e8a984`.
+- Reconcile: GitHub QA comment #876 comment 5839640069 records the criterion
+  matrix and evidence boundary. The issue is closed. Production is not
+  claimed because #876 has no production acceptance criterion.
+- Provenance: reconcile / Codex-GPT-5 / medium / substituted: no.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #853
+
+- The active Chrome session is usable and can now be resized to exact
+  1280x720 and 375x667 browser viewports. The earlier local unavailable-page
+  report was caused by using the owner-protected editor route while signed
+  out; the anonymous public fixture route is
+  `/users/@e2e_owner/pieces/serene-p5js`.
+- #853 remained verification-only. The local editor saved corrected authored
+  p5 source as draft version 2; the disposable published duplicate was
+  advanced through a new immutable version 4 using the same source and
+  preserved sonic metadata. No production data was touched.
+- Closure contract was satisfied locally: smooth nonblank scene at both exact
+  viewports, responsive toolbar, sound activation/90 BPM telemetry, temporary
+  120 BPM control change and reset, A-S-D-F keyboard trace, and no app errors.
+  Chrome-extension warnings were explicitly excluded from app evidence.
+- GitHub QA comment #853 comment 5839737004 records the matrix and local-only
+  evidence boundary; #853 is closed. #854–#861 remain distinct verification
+  transactions; #862 remains their aggregate report.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Transaction #853 reconciliation — 2026-09-26 — QA PASS / CLOSED
+
+- Groom: verification-only issue; no implementation stage was required after
+  the fixture source-quality defect was corrected through the supported local
+  editor/version workflow and disposable local published fixture.
+- Engineer: local fixture correction only; no repository source change and no
+  production mutation. Service/model/effort: Codex-GPT-5 / medium /
+  substituted: no.
+- QA self-review: exact Chrome viewport evidence at 1280x720 and 375x667;
+  smooth nonblank p5 scene; responsive controls; sound running at 90 BPM;
+  temporary 120 BPM update and reset; A-S-D-F keyboard trace; no app errors.
+  Local Compose only, with the evidence boundary recorded in comment
+  #853 comment 5839737004.
+- Reconcile: all issue criteria passed in their permitted evidence class;
+  #853 was closed. Production sound/ZIP/engine reports remain open under
+  #854–#862 and are not inferred from this local result.
+- Provenance per stage: groom / Codex-GPT-5 / medium / substituted: no;
+  engineer / Codex-GPT-5 / medium / substituted: no;
+  QA self-review / Codex-GPT-5 / medium / substituted: no;
+  reconcile / Codex-GPT-5 / medium / substituted: no.
+
 ## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #877
 
 - Open inventory now includes #877 in addition to #874, #862, #861, #860,

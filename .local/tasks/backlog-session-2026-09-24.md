@@ -2687,3 +2687,68 @@ deferred.
   declared Chromium runtime and screenshot evidence. #851 and #853–#862
   remain transitively blocked. #842, #844, and #846 retain independent
   evidence boundaries.
+
+## Transaction #842 — 2026-09-25 — OPEN / QA INCOMPLETE
+
+- Groom: ACCEPTED as a standalone-export verification transaction;
+  task-distillation / Codex-GPT-5 / medium / substituted: yes. The export
+  controls and runtime bindings already exist; no duplicate implementation gap
+  was found.
+- Engineer: NOT REQUIRED. Stage owner implementation-complex;
+  Codex/GPT-5 / low / substituted: yes. Source-level Full and Non-Camera
+  contracts are present; adding code solely to compensate for unavailable
+  extracted-ZIP browser evidence would be speculative.
+- QA self-review: INCOMPLETE. Stage owner qa-self-review; Codex/GPT-5 / low /
+  substituted: yes. The remaining generated Full ZIP, direct Non-Camera ZIP,
+  and viewport screenshot criteria require approved Chromium.
+- Reconcile: OPEN. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/842#issuecomment-5833307772
+  records the evidence boundary. No production publish or closure claimed.
+
+## Transaction #844 — 2026-09-25 — OPEN / QA INCOMPLETE
+
+- Groom: ACCEPTED as a distinct authored-defaults verification transaction;
+  task-distillation / Codex-GPT-5 / medium / substituted: yes. Existing
+  schema/editor/viewer/export implementation is separate from #842 and no
+  duplicate was found.
+- Engineer: NOT REQUIRED. Stage owner implementation-complex;
+  Codex/GPT-5 / low / substituted: yes. Current checkout already covers the
+  implementation criteria; the remaining gap is browser ZIP artifact proof.
+- QA self-review: INCOMPLETE. Stage owner qa-self-review; Codex-GPT-5 / low /
+  substituted: yes. Local Chrome/editor evidence and source tests do not close
+  the extracted download artifact criterion.
+- Reconcile: OPEN. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/844#issuecomment-5833309448
+  records the evidence boundary. No production publish or closure claimed.
+
+## Distillation refresh 48 — 2026-09-25 — export/defaults audit
+
+- #842 and #844 have no justified follow-on implementation at this time;
+  both remain open for approved browser evidence. #846 remains the next
+  independent implementation/evidence candidate, while #851–#862 remain
+  dependency-blocked behind the sound/defaults verification chain.
+
+## Transaction #846 recheck — 2026-09-25 — OPEN / QA INCOMPLETE
+
+- Groom: RECONFIRMED. Stage owner task-distillation orchestrator;
+  Codex/GPT-5 substitution; medium effort. The effects-chain implementation
+  is distinct from authored defaults and ZIP artifact verification; no
+  duplicate was found.
+- Engineer: NOT REQUIRED on recheck. Stage owner implementation-complex;
+  Codex/GPT-5 / low / substituted: yes. Commit `b80ba29` already provides
+  the engine API, lazy fixed-order chain, clamps, and six-control disclosure.
+- QA self-review: INCOMPLETE. Stage owner qa-self-review; Codex/GPT-5 / low /
+  substituted: yes. Focused/full local tests and static checks pass, but the
+  current-checkout authored-3D browser fixture and 1280x900 / 375x812
+  screenshots are still missing.
+- Reconcile: OPEN. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/846#issuecomment-5833316131
+  records the evidence boundary. No production publish or closure claimed.
+
+## Distillation refresh 49 — 2026-09-25 — effects-chain recheck
+
+- #846 has no justified source change at this evidence boundary. #841, #842,
+  #844, and #846 are now locally implementation-complete but browser-open;
+  #847 remains dependency-blocked by the missing published media contract;
+  #851–#862 remain blocked behind the verification chain. No duplicate issue
+  or new gap was created.

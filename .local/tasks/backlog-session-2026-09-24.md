@@ -3952,6 +3952,47 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Transaction #879 — 2026-09-26 — IMPLEMENTATION + QA PASS / CLOSED
+
+- Groom: distinct A-Frame runtime readiness/Permissions Policy blocker found
+  during #857; duplicate audit found no open equivalent. Criterion-ready issue
+  created before implementation: #879.
+- Engineer: Codex/GPT-5 medium substitution for the rostered implementation
+  service. Added A-Frame scene-loaded readiness reporting and narrowly scoped
+  `xr-spatial-tracking` iframe policy; camera/microphone remained absent. Added
+  focused regression coverage. Commit `85817596fdd596b89f48a54ab0b82deefc7dccde`.
+- QA self-review: PASS. Fresh Chrome after rebuilt Compose frontend showed no
+  runtime-start failure, non-blank A-Frame scene, and empty fresh error log at
+  1280x720 and 375x667. Focused tests and checks passed. GitHub comment #879
+  comment 5840282740; issue closed.
+- Evidence boundary: local disposable Compose + Chrome only; no production
+  publish or production data action.
+
+## Transaction #857 reconciliation — 2026-09-26 — QA FAIL / OPEN
+
+- Groom: verification-only A-Frame workflow; #879 was distilled and resolved
+  before the final workflow pass.
+- Engineer: no separate #857 engineering stage; implementation was routed to
+  #879 and reconciled there.
+- QA self-review: FAIL / VALID WITH GAPS. Fixed-runtime Chrome passed scene,
+  controls, running sound, eight C-major ambient notes, A-K C4–C5 mapping,
+  BPM/scale/reset, exact desktop/mobile screenshots, and fresh console checks.
+  Exact decoded per-pixel one-second motion delta remains unverified. Comment:
+  #857 comment 5840296413. Codex/GPT-5 medium substitution; second opinion not
+  run.
+- Reconcile: keep #857 open; no production evidence or production change.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #858
+
+- Open inventory remains #875, #874, #862, #861, #860, #859, #858, #857,
+  #856, #847, and #788; #879 is closed and immutable.
+- Duplicate audit: A-Frame readiness is resolved in #879; the remaining exact
+  motion evidence gap belongs to each engine workflow and aggregate #862, not a
+  duplicate implementation issue.
+- Routing: #858 is verification-only Three.js regular-view Chrome work; distill
+  any distinct runtime defect before implementation.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
 ## Transaction #856 — 2026-09-26 — QA FAIL / OPEN
 
 - Groom: verification-only SVG workflow; duplicate audit found no replacement.

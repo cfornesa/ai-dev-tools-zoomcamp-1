@@ -1105,3 +1105,20 @@ deferred.
 - Posted `## QA: PASS` with the production/local evidence boundary and closed
   #825. Its remaining dependent production work is tracked separately in
   #827/#828/#748/#806.
+
+## #828 transaction and reconciliation — 2026-09-25
+
+- Groom/engineer: confirmed migration `0094_publicprofile_image_data` is
+  additive only (one nullable `bytea` column and one `varchar(50)` column with
+  an empty-string default). Replit Production Database inspection showed both
+  columns absent; the workspace Shell was not used because it targets
+  Development. Service/model/effort: Claude/Codex primary, implementation-
+  complex, medium effort; owner authorization received in chat.
+- QA self-review: applied the exact idempotent two-column `ALTER TABLE` once in
+  the authorized Replit Production Database editor, then restored read-only
+  mode. Read-only verification returned both expected columns and no row/data
+  mutation was performed. Published piece API returned 200; Chrome hard reload
+  rendered the immersive route; published smoke passed.
+- QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/828#issuecomment-5826748314
+- Reconciled and closed #828. This unblocks the deployed #827 layout review;
+  no migration-ledger claim was used as evidence.

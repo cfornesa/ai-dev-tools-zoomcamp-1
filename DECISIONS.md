@@ -1640,3 +1640,13 @@ column from migration 0094. This is a new criterion-ready stage-2b issue,
 #828. No production schema mutation is authorized by the existing #747/#748/#788
 authorization, so #827/#748/#788 remain open until the owner authorizes and the
 schema is reconciled through the approved production mechanism.
+
+## 2026-09-25 — Authorized production schema reconciliation (#828)
+
+The owner explicitly authorized the new #828 production action. Replit
+Production Database inspection confirmed both migration-0094 PublicProfile
+image-data columns were absent. The workspace Shell was not treated as
+production. The exact additive two-column ALTER TABLE was run once, verified
+read-only, and the editor was returned to read-only mode. No row/data action or
+migration-ledger claim was used; the published piece API, smoke script, and
+Chrome immersive route then passed.

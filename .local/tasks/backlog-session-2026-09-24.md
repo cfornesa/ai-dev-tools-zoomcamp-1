@@ -984,3 +984,32 @@ deferred.
   #825 stays OPEN. No production data action was run. The safe local
   disposable-PostgreSQL rehearsal for #788 completed dry-run, import, and
   cleanup, creating six isolated fixture rows and deleting only those rows.
+
+## Production-readiness — 2026-09-26
+
+- Local deployment/build and CI-equivalent checks are PASS: `make check` is
+  green and the disposable PostgreSQL reference-import rehearsal completed.
+- Approved-browser/production publication is BLOCKED: the authorized Replit
+  retry from `f9461d1` failed without a revision-matched deployment, and the
+  deployed bundle remains `index-0pRO1VzA.js`. Consequently #748 and #806
+  remain verification-blocked, and #788 remains data-action-blocked.
+- Intended functionality is locally implemented and tested, but the batch is
+  not production-ready. Next action: diagnose/retry the Replit publish from
+  the exact pushed revision, then run smoke, schema, live browser, and only
+  afterward the one authorized production import.
+
+## Session-completion — 2026-09-26
+
+- Rollup: discovered 5 issues in this continuation; completed 0 of the
+  remaining production-gated issues; #825 implementation complete but
+  dependency-blocked; #748/#788/#806 remain open. Missing-terminal-status is
+  0 because all four open issues have explicit next actions.
+- Routing audit: #825 groom/distillation and Stage 2a implementation were
+  recorded as Opencode Go / qwen3.6-plus / medium roster with Codex / GPT-5 /
+  medium substitution; QA was recorded as Claude / Sonnet 5 / medium roster
+  with Codex / GPT-5 / medium substitution; Stage 3 was not credited. The
+  readiness gate used the same flagged Codex / GPT-5 / medium substitution;
+  no independent review was credited.
+- Follow-up audit: the only actionable new gap is covered by open #825; no
+  duplicate or unlinked issue was created. The production boundary is the
+  failed Replit publish, not a local test failure.

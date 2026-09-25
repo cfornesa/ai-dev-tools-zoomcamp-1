@@ -2462,3 +2462,17 @@ deferred.
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/845#issuecomment-5832672624
   records the criterion matrix, commands, provenance, and no-production-
   publish boundary.
+
+## Distillation refresh 39 — 2026-09-25 — post-#845 reconciliation
+
+- #845 is CLOSED with backend implementation and full-suite evidence at
+  `25aab6d`/`d9eaee3`; no production publish was performed.
+- Current open set is #788, #841, #842, #844, #846–#847, #851–#862, and
+  #865. No duplicate or closed issue was reopened.
+- #846 is a genuine implementation item: the shared Tone graph currently has
+  no effects-chain API or UI. It is not safe to close from the existing
+  contract-normalization tests. #847 is a separate optional ambient-sample
+  feature, while #851/#852 are authored-default/runtime propagation items.
+- Next action is to implement #846 only with focused engine/UI work and its
+  fake-Tone/browser coverage; do not conflate it with #844's missing ZIP
+  artifact or the Chrome verification issues.

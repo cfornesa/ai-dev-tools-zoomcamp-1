@@ -2659,3 +2659,31 @@ deferred.
 
 - #862 remains dependency-blocked by #853–#861. The open set is unchanged;
   the next actionable engineering transaction is #841.
+
+## Transaction #841 recheck — 2026-09-25 — OPEN / QA INCOMPLETE
+
+- Groom: RECONFIRMED. Stage owner task-distillation orchestrator;
+  Codex/GPT-5 substitution; medium effort. The structured-2D runtime gap is
+  distinct from the generated sandbox bridge and no duplicate was found.
+- Engineer: COMPLETE. Stage owner implementation-complex; Codex/GPT-5
+  substitution; medium effort. Commit `aa3d691` wires the public structured-2D
+  viewer to the shared SonicEngine, capability-gates sound, forwards ambient
+  and keyboard controls, and adds ASDF-row melodic note triggering.
+- QA self-review: INCOMPLETE. Stage owner qa-self-review; Codex/GPT-5
+  substitution; medium effort. Focused viewer/component tests (35), full
+  frontend (280 files / 3011 tests), typecheck, format, lint, and exact
+  `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed (backend 1709
+  passed / 39 skipped). Real-browser structured-2D/generated slider evidence
+  and 1280x900 / 375x812 screenshots remain unavailable.
+- Reconcile: OPEN. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/841#issuecomment-5833295738
+  records the implementation matrix and local-versus-production boundary.
+  Do not publish or close #841 from local evidence.
+
+## Distillation refresh 47 — 2026-09-25 — #841 implementation recheck
+
+- #841 is no longer an implementation-gap handoff: its structured-2D engine
+  path is implemented and locally verified, but it remains OPEN pending the
+  declared Chromium runtime and screenshot evidence. #851 and #853–#862
+  remain transitively blocked. #842, #844, and #846 retain independent
+  evidence boundaries.

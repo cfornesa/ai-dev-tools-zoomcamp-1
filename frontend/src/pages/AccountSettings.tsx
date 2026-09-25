@@ -31,7 +31,13 @@ import {
 } from '../api/credentials';
 import EntitlementsSummary from './EntitlementsSummary';
 import { ApiError } from '../api/client';
-import { fetchProfile, type PublicProfile, updateProfile } from '../api/profile';
+import {
+  deleteProfileImage,
+  fetchProfile,
+  type PublicProfile,
+  updateProfile,
+  uploadProfileImage,
+} from '../api/profile';
 import { useAuth } from '../auth/useAuth';
 import DesignPreview from '../components/DesignPreview';
 import type { DesignPalettes, PresentationOptions } from '../api/adminSettings';
@@ -446,6 +452,9 @@ function ProfileSettings() {
   const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
   const [profileLoadAttempt, setProfileLoadAttempt] = useState(0);
   const [handleError, setHandleError] = useState<string | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [profilePhotoBusy, setProfilePhotoBusy] = useState(false);
+  const [profilePhotoMessage, setProfilePhotoMessage] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     setProfileLoadError(null);
@@ -518,6 +527,36 @@ function ProfileSettings() {
   function updateDraft(nextProfile: PublicProfile) {
     profileDirtyRef.current = true;
     setProfile(nextProfile);
+  }
+  async function uploadPhoto() {
+    if (!profilePhoto) return;
+    setProfilePhotoBusy(true);
+    setProfilePhotoMessage(null);
+    try {
+      setProfile(await uploadProfileImage(profilePhoto));
+      setProfilePhoto(null);
+      setProfilePhotoMessage('Profile photo uploaded.');
+    } catch (caught) {
+      const detail =
+        caught instanceof ApiError && typeof caught.body === 'object' && caught.body
+          ? (caught.body as { detail?: string }).detail
+          : null;
+      setProfilePhotoMessage(detail ?? 'Profile photo could not be uploaded.');
+    } finally {
+      setProfilePhotoBusy(false);
+    }
+  }
+  async function removePhoto() {
+    setProfilePhotoBusy(true);
+    setProfilePhotoMessage(null);
+    try {
+      setProfile(await deleteProfileImage());
+      setProfilePhotoMessage('Profile photo removed.');
+    } catch {
+      setProfilePhotoMessage('Profile photo could not be removed.');
+    } finally {
+      setProfilePhotoBusy(false);
+    }
   }
   function designPalettes(): DesignPalettes {
     if (currentProfile.design_palettes) return currentProfile.design_palettes;
@@ -777,6 +816,29 @@ function ProfileSettings() {
           onChange={(event) => updateDraft({ ...profile, profile_image_url: event.target.value })}
         />
       </div>
+      <section className="account-settings-field" aria-labelledby="profile-photo-upload-heading">
+        <h3 id="profile-photo-upload-heading">Profile photo upload</h3>
+        <label htmlFor="profile-image-file">Image file</label>
+        <input
+          id="profile-image-file"
+          type="file"
+          accept="image/png,image/jpeg,image/gif,image/webp"
+          onChange={(event) => setProfilePhoto(event.target.files?.[0] ?? null)}
+        />
+        <button
+          type="button"
+          disabled={!profilePhoto || profilePhotoBusy}
+          onClick={() => void uploadPhoto()}
+        >
+          {profilePhotoBusy ? 'Uploading photo…' : 'Upload photo'}
+        </button>
+        {currentProfile.profile_image_url && (
+          <button type="button" disabled={profilePhotoBusy} onClick={() => void removePhoto()}>
+            Remove photo
+          </button>
+        )}
+        {profilePhotoMessage && <p role="status">{profilePhotoMessage}</p>}
+      </section>
       <button
         className="shell-action"
         type="button"

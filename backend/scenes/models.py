@@ -173,6 +173,8 @@ class PublicProfile(models.Model):
     website_url = models.URLField(max_length=300, blank=True, default="")
     social_links = models.JSONField(default=dict, blank=True)
     profile_image_url = models.URLField(max_length=500, blank=True, default="")
+    profile_image_data = models.BinaryField(null=True, blank=True)
+    profile_image_content_type = models.CharField(max_length=50, blank=True, default="")
     is_public = models.BooleanField(default=True)
     theme_config = models.JSONField(default=dict, blank=True)
     palette_key = models.SlugField(max_length=32, default="original", db_default="original")

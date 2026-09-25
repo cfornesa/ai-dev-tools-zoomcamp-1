@@ -48,6 +48,19 @@ export async function updateProfile(profile: PublicProfile): Promise<PublicProfi
   });
 }
 
+export function uploadProfileImage(image: File): Promise<PublicProfile> {
+  const formData = new FormData();
+  formData.append('image', image, image.name || 'profile-photo');
+  return apiFetch<PublicProfile>('/api/account/profile/image/', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export function deleteProfileImage(): Promise<PublicProfile> {
+  return apiFetch<PublicProfile>('/api/account/profile/image/', { method: 'DELETE' });
+}
+
 export type PublicProfilePage = {
   profile: PublicProfile;
   collections: Array<{

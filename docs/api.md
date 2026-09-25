@@ -1,5 +1,17 @@
 # Public gallery API contract
 
+## Profile photo upload/removal (#824)
+
+Authenticated owners may `POST multipart/form-data` with an `image` field to
+`/api/account/profile/image/`, or `DELETE` that endpoint to remove the stored
+photo. Accepted uploads are PNG, JPEG, GIF, or WebP, are normalized to PNG,
+and are limited to 2 MiB before and after normalization. Invalid files return
+an accessible structured 400 response and do not replace the current image.
+The response is the normal profile payload with the additive
+`profile_image_url` pointing at `/api/profile-images/<handle>/`. That image
+route is readable by the owner even while private and by anonymous visitors
+only when the profile is public; foreign/private requests return 404.
+
 ## Public collection download (#823)
 
 `GET /api/public/collections/<handle>/<slug>/download/` is an anonymous,

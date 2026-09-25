@@ -1,10 +1,12 @@
 """Owner profile settings and privacy-safe public profile reads (#520)."""
 
 import re
+from io import BytesIO
 
 from django.db import transaction
 from django.db.utils import OperationalError, ProgrammingError
-from django.http import HttpResponsePermanentRedirect
+from django.http import HttpResponse, HttpResponsePermanentRedirect
+from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -36,6 +38,8 @@ from scenes.theme import (
 
 RESERVED_HANDLES = {"admin", "api", "account", "accounts", "users", "gallery"}
 HANDLE_MAX_LENGTH = 32
+MAX_PROFILE_IMAGE_BYTES = 2 * 1024 * 1024
+PROFILE_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 
 
 def _handle_candidate(user) -> str:
@@ -103,7 +107,11 @@ def _profile_payload(profile: PublicProfile) -> dict:
         "bio": profile.bio,
         "website_url": profile.website_url,
         "social_links": profile.social_links,
-        "profile_image_url": profile.profile_image_url,
+        "profile_image_url": (
+            f"/api/profile-images/{profile.handle}/"
+            if profile.profile_image_data and profile.handle
+            else profile.profile_image_url
+        ),
         "is_public": profile.is_public,
         "revision": profile.revision,
         "theme_config": effective_profile_theme(
@@ -332,10 +340,6 @@ class AccountProfileView(APIView):
                 .first()
             )
             # An owner may reclaim a handle from their own redirect history.
-            # This keeps test/dev fixture identities resettable and is also a
-            # reasonable product rule: once the owner reclaims the old name,
-            # the old alias is no longer needed. Redirects owned by another
-            # profile remain hard conflicts.
             if (
                 handle
                 and handle != profile.handle
@@ -381,6 +385,131 @@ class AccountProfileView(APIView):
                 PublicProfileHandleRedirect.objects.update_or_create(
                     old_handle=old_handle, defaults={"profile": profile}
                 )
+        payload = _profile_payload(profile)
+        payload["available_styles"] = _available_styles()
+        payload["available_palettes"] = available_palettes()
+        return Response(payload)
+
+
+def _profile_for_image(request, handle: str) -> PublicProfile | None:
+    profile = (
+        PublicProfile.objects.filter(handle=handle.lower(), user__is_active=True)
+        .select_related("user")
+        .first()
+    )
+    if profile is None or not profile.profile_image_data:
+        return None
+    if profile.is_public or (request.user.is_authenticated and request.user.pk == profile.user_id):
+        return profile
+    return None
+
+
+class ProfileImageView(APIView):
+    def get(self, request, handle):
+        profile = _profile_for_image(request, handle)
+        if profile is None:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        response = HttpResponse(
+            bytes(profile.profile_image_data),
+            content_type=profile.profile_image_content_type or "image/png",
+        )
+        response["Cache-Control"] = "public, max-age=300" if profile.is_public else "private"
+        return response
+
+
+class AccountProfileImageView(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required."}, status=401)
+        upload = request.FILES.get("image")
+        if upload is None:
+            return Response(
+                {"error": "validation_failed", "detail": "Choose an image file."}, status=400
+            )
+        if upload.content_type not in PROFILE_IMAGE_TYPES:
+            return Response(
+                {
+                    "error": "validation_failed",
+                    "detail": "Profile photo must be a PNG, JPEG, GIF, or WebP image.",
+                },
+                status=400,
+            )
+        if upload.size > MAX_PROFILE_IMAGE_BYTES:
+            return Response(
+                {
+                    "error": "validation_failed",
+                    "detail": (
+                        f"Profile photo must be no larger than {MAX_PROFILE_IMAGE_BYTES} bytes."
+                    ),
+                },
+                status=400,
+            )
+        image_bytes = upload.read()
+        if len(image_bytes) > MAX_PROFILE_IMAGE_BYTES:
+            return Response(
+                {
+                    "error": "validation_failed",
+                    "detail": (
+                        f"Profile photo must be no larger than {MAX_PROFILE_IMAGE_BYTES} bytes."
+                    ),
+                },
+                status=400,
+            )
+        try:
+            with Image.open(BytesIO(image_bytes)) as image:
+                image.verify()
+            with Image.open(BytesIO(image_bytes)) as image:
+                normalized = BytesIO()
+                image.convert("RGBA").save(normalized, format="PNG", optimize=True)
+                image_bytes = normalized.getvalue()
+        except (Image.DecompressionBombError, OSError, UnidentifiedImageError):
+            return Response(
+                {"error": "validation_failed", "detail": "Uploaded file is not a valid image."},
+                status=400,
+            )
+        if len(image_bytes) > MAX_PROFILE_IMAGE_BYTES:
+            return Response(
+                {
+                    "error": "validation_failed",
+                    "detail": (
+                        "Normalized profile photo must be no larger than "
+                        f"{MAX_PROFILE_IMAGE_BYTES} bytes."
+                    ),
+                },
+                status=400,
+            )
+        profile = PublicProfile.objects.get_or_create(user=request.user)[0]
+        profile.profile_image_data = image_bytes
+        profile.profile_image_content_type = "image/png"
+        profile.revision += 1
+        profile.save(
+            update_fields=[
+                "profile_image_data",
+                "profile_image_content_type",
+                "revision",
+                "updated_at",
+            ]
+        )
+        payload = _profile_payload(profile)
+        payload["available_styles"] = _available_styles()
+        payload["available_palettes"] = available_palettes()
+        return Response(payload)
+
+    def delete(self, request):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required."}, status=401)
+        profile = PublicProfile.objects.get_or_create(user=request.user)[0]
+        profile.profile_image_data = None
+        profile.profile_image_content_type = ""
+        profile.revision += 1
+        profile.save(
+            update_fields=[
+                "profile_image_data",
+                "profile_image_content_type",
+                "revision",
+                "updated_at",
+            ]
+        )
         payload = _profile_payload(profile)
         payload["available_styles"] = _available_styles()
         payload["available_palettes"] = available_palettes()

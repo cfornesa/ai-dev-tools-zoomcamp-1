@@ -111,7 +111,12 @@ from scenes.collections_api import (
     PublicCollectionDownloadView,
 )
 from scenes.pages_api import PublicPageDetailView, PublicPageNavigationView
-from scenes.profile_api import AccountProfileView, PublicProfileView
+from scenes.profile_api import (
+    AccountProfileImageView,
+    AccountProfileView,
+    ProfileImageView,
+    PublicProfileView,
+)
 from scenes.profile_styles_api import AdminProfileStyleDetailView, AdminProfileStyleListCreateView
 from scenes.provider_credentials_api import ProviderCredentialView
 from scenes.public_search_api import PublicGallerySearchView
@@ -233,6 +238,8 @@ urlpatterns = [
         name="provider-credentials",
     ),
     path("account/profile/", AccountProfileView.as_view(), name="account-profile"),
+    path("account/profile/image/", AccountProfileImageView.as_view(), name="account-profile-image"),
+    path("profile-images/<str:handle>/", ProfileImageView.as_view(), name="profile-image"),
     path(
         "account/collections/",
         CollectionListCreateView.as_view(),

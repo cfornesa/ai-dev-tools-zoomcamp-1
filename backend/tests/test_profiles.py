@@ -1,8 +1,12 @@
+from io import BytesIO
+
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.utils import ProgrammingError
 from django.urls import reverse
 from django.utils import timezone
+from PIL import Image
 
 from scenes.models import (
     ArtPiece,
@@ -36,6 +40,56 @@ def test_owner_can_create_and_update_profile_with_revision(client):
     assert updated.json()["theme_config"]["accent"] == "#00ff00"
     assert set(updated.json()["theme_palettes"]) == {"light", "dark"}
     assert client.get("/api/users/@alice/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_owner_can_upload_read_and_remove_profile_photo(client):
+    user = get_user_model().objects.create_user(username="photo-owner", password="x")
+    client.force_login(user)
+    client.get(reverse("account-profile"))
+    image_buffer = BytesIO()
+    Image.new("RGBA", (32, 32), (220, 38, 38, 255)).save(image_buffer, format="PNG")
+
+    uploaded = client.post(
+        reverse("account-profile-image"),
+        {
+            "image": SimpleUploadedFile(
+                "avatar.png", image_buffer.getvalue(), content_type="image/png"
+            )
+        },
+    )
+    assert uploaded.status_code == 200
+    image_url = uploaded.json()["profile_image_url"]
+    assert image_url == "/api/profile-images/photo-owner/"
+    image_response = client.get(image_url)
+    assert image_response.status_code == 200
+    assert image_response["Content-Type"] == "image/png"
+    assert image_response.content.startswith(b"\x89PNG")
+    assert client.delete(reverse("account-profile-image")).status_code == 200
+    assert client.get(image_url).status_code == 404
+    assert client.get(reverse("account-profile")).json()["profile_image_url"] == ""
+
+
+@pytest.mark.django_db
+def test_profile_photo_rejects_invalid_and_oversized_files_without_replacing_photo(client):
+    user = get_user_model().objects.create_user(username="photo-validation", password="x")
+    client.force_login(user)
+    invalid = client.post(
+        reverse("account-profile-image"),
+        {"image": SimpleUploadedFile("avatar.txt", b"not an image", content_type="text/plain")},
+    )
+    assert invalid.status_code == 400
+    assert "profile_image_url" not in invalid.json()
+    oversized = client.post(
+        reverse("account-profile-image"),
+        {
+            "image": SimpleUploadedFile(
+                "avatar.png", b"0" * (2 * 1024 * 1024 + 1), content_type="image/png"
+            )
+        },
+    )
+    assert oversized.status_code == 400
+    assert client.get(reverse("account-profile")).json()["profile_image_url"] == ""
 
 
 @pytest.mark.django_db

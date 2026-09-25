@@ -542,6 +542,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const editorModeLabel = engineCapability.family === '3d' ? '3D AI editor' : '2D AI editor';
 
   const isSourceOnlyEditor = engineCapability.family === '2d';
+  const canEditGeneratedSource = supportsGeneratedSourceEditing(piece.engine);
 
   return (
     <section
@@ -586,7 +587,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           {versionSaving ? 'Saving sound defaults…' : 'Save sound defaults'}
         </button>
       </details>
-      {engineCapability.family === '2d' && !reviseCode && (
+      {canEditGeneratedSource && !reviseCode && (
         <p>
           <button
             type="button"
@@ -617,7 +618,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           onTransform={transformManual3DObject}
         />
       )}
-      {supportsGeneratedSourceEditing(piece.engine) && reviseCode && (
+      {canEditGeneratedSource && reviseCode && (
         <div className="behavior-card-field" data-testid="art-piece-editor-code-panel">
           <label htmlFor="art-piece-editor-code">Editable source preview</label>
           <textarea

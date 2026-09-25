@@ -3565,3 +3565,136 @@ deferred.
   verification inventory. #846/#847 remain optional feature work.
 - Final handoff: no production publish or production data write occurred;
   production readiness remains NOT READY.
+
+## Task-distillation manifest — 2026-09-26 — current continuation
+
+Distillation owner: Codex / GPT-5 / medium / substituted for the rostered
+distillation profile: no. GitHub, docs/tasks.md, DECISIONS.md, current
+worktree, and the active Chrome inventory were reread. No duplicate issue was
+created. The open inventory is exactly #788, #846, #847, #853–#862.
+
+| Order | Issue | Classification | Routing / dependency | Exact next action |
+|---:|---|---|---|---|
+| 1 | #853 | verification / open | Chrome; independent of #854–#858 | Capture exact motion and runtime-audio evidence or record a concrete follow-up. |
+| 2 | #854 | verification / open | Chrome; current C2.js fixture exists | Reconcile public version and capture runtime-audio evidence. |
+| 3 | #855 | verification / open | Chrome; C2.js Interactive fixture/public parity | Reconcile draft/published state and capture runtime-audio evidence. |
+| 4 | #856 | verification / ready | Chrome; depends on #832/#833/#844/#852 and sound slices | Create SVG fixture and run the finite regular-view contract. |
+| 5 | #857 | verification / ready | Chrome; same sound dependencies | Create A-Frame fixture and run the finite regular-view contract. |
+| 6 | #858 | verification / ready | Chrome; same sound dependencies | Create Three.js fixture and run the finite regular-view contract. |
+| 7 | #859 | verification / dependency-blocked | Depends on #853–#858 fixtures | Run six-engine immersive matrix after fixture transactions terminalize. |
+| 8 | #860 | verification / dependency-blocked | Depends on #853–#858 fixtures | Run six-engine embed matrix after fixture transactions terminalize. |
+| 9 | #861 | verification / dependency-blocked | Depends on #853–#858 fixtures | Run six-engine Full/Non-Camera ZIP matrix after fixture transactions terminalize. |
+| 10 | #862 | docs synthesis / dependency-blocked | Depends on #853–#861 terminal comments | Write the six-by-nine workflow-validity report. |
+| 11 | #846 | implementation / dependency-blocked | Stage 2b; explicitly waits for #832 and #838/#839 | Do not engineer until dependencies are terminal; then route complex implementation. |
+| 12 | #847 | implementation / dependency-blocked | Stage 2b; explicitly waits for #832/#833/#844 and media assets | Do not engineer until dependencies are terminal; then route complex implementation. |
+| 13 | #788 | owner production data action / blocked | Authorized production path still required; no local substitute | Inspect the active Replit/production UI for a confirmed production shell or dry-run path; run once only after snapshot/rollback evidence. |
+
+Duplicate/already-covered report: #870 covers the shared generated-source
+editor omission discovered during #853 and is closed; it is not reopened.
+The hamburger observation is covered by the existing toolbar parity contract
+and produced no separate issue. #853–#861 are separate route/workflow
+contracts by design, not duplicates. #846/#847 are optional implementation
+items and remain distinct from verification-only sound issues.
+
+Blocker triage: missing exact audio traces are verification boundaries owned by
+the Chrome verification issues, not untracked work; #855's inconsistent public
+version is an implementation/publication-state defect owned by #855; #859–
+#862 are dependency-blocked; #788 is an owner-authorized production-access
+boundary; #846/#847 are dependency-blocked by #832 and their named sound/media
+prerequisites. No new issue is required by this pass.
+
+Next groomed transaction: #853. Its closure contract is finite: one p5.js
+regular route, two viewports, authored defaults, exact motion bounds, runtime
+audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
+
+## Transaction #856 — 2026-09-26 — QA FAIL / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: no;
+  SVG is an independent rendering-engine workflow and not a duplicate of the
+  p5/C2 transactions.
+- Engineer: NONE (verification issue). No product diff was required; the
+  fixture source was authored through the existing editor UI.
+- QA self-review: FAIL with workflow verdict VALID WITH GAPS. Active Chrome on
+  disposable Compose verified a hand-authored six-region SVG, 24 animated
+  stars, non-blank rendering at 1280x720 and 375x667, persisted 90 BPM/major
+  and C/major/0/sine defaults, direct piece controls, and 120/minor then Reset
+  back to 90/major. Numeric motion bounds and independent audio context,
+  ambient-note, and A-K traces were not captured.
+- Reconcile: QA FAIL comment posted; issue remains open with exact next action
+  to capture the missing objective traces.
+
+## Transaction #857 — 2026-09-26 — QA FAIL / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: no;
+  A-Frame regular-view verification is independent of SVG and the later
+  immersive/embed/ZIP sweeps.
+- Engineer: SHIFTED to new #871. The run found that 3D generated source editing
+  was absent from the editor, so the gap was deduplicated into #871 rather than
+  silently passing a generated fallback as hand-authored code.
+- QA self-review: FAIL with workflow verdict VALID WITH GAPS. After the #871
+  local implementation, active Chrome exposed A-Frame Editable source preview;
+  authored source with sky, moon, 24 stars, three hills, misty water, camera,
+  and light saved versions 2/3. The 375x667 public route rendered non-blank and
+  exposed the direct controls plus A-Frame VR/fullscreen affordance. The
+  1280x720 screenshot, numeric motion bound, and independent audio traces were
+  not captured.
+- Reconcile: QA FAIL comment posted; #857 remains open pending its exact
+  objective traces and #871's terminal implementation gate.
+
+## Transaction #871 — 2026-09-26 — ENGINEERED / QA IN PROGRESS
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: no;
+  new issue created for the distinct 3D source-authoring gap after duplicate
+  search found only closed historical 3D-editor integration issues.
+- Engineer: COMPLETED. implementation-mechanical frontend / Codex-GPT-5 /
+  medium / substituted: yes. Reused the existing generated-source editor
+  contract for Three.js and A-Frame by gating the Edit source and source-panel
+  controls on supportsGeneratedSourceEditing rather than 2D family only.
+- Focused checks: source-editability test passed (1 file / 1 test) and
+  frontend typecheck passed. Disposable Compose was rebuilt successfully.
+- QA self-review: active Chrome confirmed Edit source and Editable source
+  preview for an A-Frame generated piece, then saved an authored version and
+  retained the same public URL/version history. Full make check remains to be
+  run before reconciliation; issue is not closed yet.
+
+## Transaction #871 reconciliation — 2026-09-26 — QA PASS / CLOSED
+
+- QA self-review: PASS after the full gate. The rebuilt Compose and active
+  Chrome verified the A-Frame source editor, authored save, and version/URL
+  preservation; the shared regression covers both Three.js and A-Frame.
+- GitHub: QA PASS comment posted and #871 closed. No production evidence is
+  claimed; regular/immersive/embed/ZIP behavior remains in #857–#861.
+
+## Transaction #858 — 2026-09-26 — QA FAIL / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: no;
+  Three.js regular-view verification is independent of A-Frame and later
+  surface sweeps.
+- Engineer: #871 prerequisite completed and reconciled; no additional product
+  diff was needed for this verification issue.
+- QA self-review: FAIL with workflow verdict VALID WITH GAPS. Active Chrome
+  verified authored Three.js source with sky, moon, 24 stars, three hill mesh
+  layers, water, camera, and gentle motion; saved sound defaults and rendered
+  non-blank views at 1280x720 and 375x667 with direct toolbar actions. Exact
+  motion bounds and independent runtime-audio/keyboard traces were not
+  captured.
+- Reconcile: QA FAIL comment posted; issue remains open pending objective
+  motion/audio evidence.
+
+## Transactions #859–#861 — 2026-09-26 — QA FAIL / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: no;
+  immersive, embed, and extracted ZIP are separate surface contracts and were
+  processed only after the six regular fixture routes existed.
+- Engineer: NONE (verification issues). No product diff was inferred from the
+  surface captures.
+- QA self-review: #859 PASS for inspected six-engine immersive screenshots at
+  1280x720 and 375x667, title-before-stage ordering, Close control, direct
+  toolbar, and absence of hamburger; runtime audio, numeric motion, and full
+  console evidence remain unverified. #860 PASS for inspected six-engine
+  375x667 embed screenshots and direct toolbar/visitor drawing, but desktop,
+  runtime audio, numeric motion, and console evidence remain unverified. #861
+  PASS only for observing the Full/Non-Camera download choices; extraction,
+  offline serving, and artifact runtime evidence were not performed.
+- Reconcile: QA FAIL comments posted for all three; all remain open with exact
+  next actions in their comments. No production evidence is claimed.

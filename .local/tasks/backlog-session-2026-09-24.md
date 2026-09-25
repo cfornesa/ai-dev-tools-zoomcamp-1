@@ -2539,3 +2539,27 @@ deferred.
 - Current open set remains #788, #841, #842, #844, #846–#847, #851–#862, and
   #865. #846 is still open with browser evidence outstanding; the next
   independent implementation candidate is #851.
+
+## Transaction #865 — 2026-09-25 — CLOSED
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. #865 is a distinct workflow/full-check
+  regression report, not a product behavior issue; no duplicate was found.
+- Engineer: NOT REQUIRED. Stage owner implementation-mechanical; Codex/GPT-5
+  substitution; low effort. The historical failures did not reproduce on the
+  current checkout, so no harness or product change was justified.
+- QA self-review: PASS. Stage owner qa-self-review; Codex/GPT-5 substitution;
+  medium effort. Exact `make check` passed: backend 1709/39 skipped and
+  frontend 280/3010, with typecheck, format, and lint passing.
+- Reconcile: CLOSED. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/865#issuecomment-5832984245
+  records the non-reproduction, commands, provenance, and evidence boundary.
+
+## Distillation refresh 42 — 2026-09-25 — post-#865 reconciliation
+
+- #865 is CLOSED as a QA-only non-reproduction with exact full-check evidence;
+  no source change was made and no closed issue was reopened.
+- Current open set remains #788, #841, #842, #844, #846–#847, and #851–#862.
+  #851 and #852 are dependency-blocked by open #841/#842/#844 respectively;
+  #853–#862 are browser/production verification queue items. Next independent
+  action is #853, unless #841/#842 are first made closure-ready.

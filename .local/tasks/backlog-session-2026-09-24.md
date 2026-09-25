@@ -1507,3 +1507,33 @@ deferred.
   rerun; no new issue was required. Next action for every remaining item is
   recorded by dependency order: resolve #788/#832, implement and QA #834–#852,
   then re-distill and execute #853–#862.
+
+## Distillation refresh 32 — 2026-09-26 active-browser recheck
+
+- The owner-corrected session rechecked the active Chrome session. Chrome and
+  the Replit `creatrweb` workspace are available; the six-engine production
+  reference tab remains open. This removes the earlier “browser unavailable”
+  assumption but does not by itself satisfy #832's exact-revision production
+  audio criterion.
+- Published HTML still references `assets/index-7tcNeam-.js`, while #832's
+  sound implementation is commit `9280101` and has not been published. The
+  live A-Frame reference tab exposes screenshot/download/immersive/fullscreen
+  controls but no sound control; it therefore cannot prove #832's live
+  ambient/keyboard/theremin contract. Console errors observed were Grammarly
+  extension connection noise, not treated as product evidence.
+- Replit's active Publish review currently proposes truncating
+  `scenes_aiprovidermodel` with `CASCADE` before adding `native_schema` because
+  Production lacks the column. This is the same already-covered schema
+  reconciliation boundary as closed #830, not a new issue; no Publish or
+  migration approval was given, and no production data was changed.
+- #788 remains blocked because Replit's visible Shell is Development-only and
+  the Replit Agent confirmed no direct published-deployment shell. #832
+  remains blocked pending an explicitly authorized safe publish and exact
+  live/download audio verification. Dependent issues remain in dependency
+  order; no implementation issue was started against shared sound files while
+  #832 remains non-terminal.
+- Duplicate audit: the Replit schema warning maps to closed #830; the
+  production importer boundary maps to #788; live/download audio maps to
+  #832. No new issue created. Service/model/effort: task-distillation and
+  backlog-session by Codex/GPT-5 substitution, medium effort; active Chrome
+  verification by Codex, medium effort.

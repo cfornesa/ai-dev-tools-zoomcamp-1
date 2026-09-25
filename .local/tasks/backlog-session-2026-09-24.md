@@ -1285,3 +1285,31 @@ deferred.
 - Service/model/effort: task-distillation orchestrator, Codex/GPT-5
   substitution, medium effort. Next action: groom and engineer #832 after
   reconciling the current release-verification transactions.
+
+## Distillation refresh 28 — 2026-09-25
+
+- The remote backlog reconciliation added criterion-ready open issues #833–#862
+  while this session was working. They are in scope for the same backlog goal;
+  none are silently deferred or treated as closed.
+- Sound branch: #833 is the authored-sound contract decision; #834–#847 are
+  dependent sound-engine, UI, export, persistence, AI, effect-chain, sample,
+  and verification slices. #832 remains the current prerequisite for actual
+  live/download sound evidence. Duplicate search found no overlap requiring a
+  closed issue to be reopened; the new issues' source-of-truth is
+  `docs/distillation-2026-09-25-sound-controls.md`.
+- Scale/key branch: #848–#851 are the scale theory, engine, live UI, and
+  generated/ZIP propagation slices. They depend on the sound contract and
+  should be processed in issue order, with any owner decision gates stopped
+  before implementation.
+- Chrome verification branch: #852–#862 covers authored defaults, six-engine
+  creation/live/embed/immersive/download verification, and the workflow-validity
+  report. It is verification-heavy and depends on the sound contract and
+  production/Chrome access; no local-only evidence may close a deployed
+  criterion. Source-of-truth: `docs/distillation-2026-09-25-chrome-workflow-validity.md`.
+- Current open inventory is #748, #788, #806, #832–#862. The previous #831
+  implementation is reconciled and closed with QA comment
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/831#issuecomment-5827735813.
+- Service/model/effort: task-distillation orchestrator, Codex/GPT-5
+  substitution, medium effort. Next routing audit: groom #833 first because
+  it is the decision/contract prerequisite for the sound branch, then return
+  to the owner-authorized production release transactions.

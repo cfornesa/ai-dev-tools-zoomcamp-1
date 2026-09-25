@@ -951,3 +951,16 @@ deferred.
   divergence evidence. #788 production import was not attempted. Further
   production work is paused pending owner direction on preserving or
   replacing the Replit-only commits.
+
+## Distillation refresh 20 — 2026-09-26
+
+- Re-ran task-distillation against the current checkout, ledger, memory,
+  GitHub issue inventory, and active Chrome/Replit state. Existing open
+  production work remains #748 -> #788 -> #806; no duplicate was found for
+  the Replit startup failure.
+- New actionable gap: the authorized revision built in Replit but crashed
+  because Replit supplied `PORT=8000`, colliding with Django's fixed backend
+  port when `vite preview` started. Created criterion-ready #825 with a
+  stage-2a startup/configuration routing hint and linked evidence.
+- Next transaction: #825. #748, #788, and #806 remain dependency- or
+  verification-bound until #825 produces a healthy authorized deployment.

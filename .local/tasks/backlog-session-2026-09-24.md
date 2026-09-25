@@ -1940,3 +1940,47 @@ deferred.
   importer only from a supported production shell; rerun production-readiness
   after those transactions; then rerun session-completion with zero
   missing-terminal-status entries.
+
+## Distillation refresh 29 — 2026-09-25 — live Chrome and deployment reconciliation
+
+- The approved active Chrome session is available and functional; the earlier
+  macOS Playwright Mach-port failure is a CLI/runner boundary, not a blanket
+  browser-unavailability blocker. Direct Chrome evidence is now valid for
+  production-surface checks, while Compose-specific Playwright criteria remain
+  unexecuted until their required runner is available.
+- Replit's workspace was safely aligned to the pushed `origin/main` tip
+  `e8ed3422efd4f427b2516dbac4ff487260010b13`; its prior publish checkpoint and
+  ignored backlog copy were preserved separately. Production was republished
+  at that exact revision. `PUBLISHED_APP_URL=https://augmentrart.com
+  scripts/smoke-published.sh` passed: health 200, share-metadata diagnostic
+  backend reachable, root 200, anonymous whoami 401, and login 200.
+- Current production Chrome evidence at the requested route confirms the
+  published immersive surface: title/description above the stage; toolbar
+  order Screenshot, Download, Sound, Piece controls, Guide, Fullscreen; direct
+  Share/Embed actions above the Current version context and Versions headings.
+  At 1280x900 and 375x812 the screenshots were inspected. The live sound
+  control transitioned to `Mute sound` with `aria-pressed=true`; Piece controls
+  exposed volume, Ambient/Movement/Melodic instruments, Keyboard notes, Live
+  mic, and Camera theremin. The Full ZIP downloaded as
+  `/Users/Fornesus/Downloads/untitled-3d-scene (11).zip` and contains the
+  structured sound-control markers/runtime (`piece-audio-controls`, ambient
+  and keyboard controls, `AudioContext`, keyboard and theremin code). No
+  microphone/camera permission was requested.
+- The authenticated 3D editor was separately inspected. Its Piece controls
+  panel contains Ambient BPM/volume/mute/scale, Keyboard synth, key/scale/
+  transpose/detected-scale controls, and the 17-key on-screen piano. However,
+  the editor preview still exposes those actions behind an editor-only
+  hamburger menu, unlike the published surface. Historical closed parity
+  issues were not reopened; duplicate search found no open owner for this
+  current editor-only mismatch. Created criterion-ready #863:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/863
+- #863 routing: Stage 2a frontend/editor mechanical parity; no schema, auth,
+  migration, or production-data action. Service/model/effort: task-distillation
+  orchestrator, Codex/GPT-5 substitution, medium effort. It must be groomed
+  and engineered before the next production-readiness pass.
+- The previous open inventory is therefore 26 issues plus the new #863; no
+  closed issue was reopened. The next exact issue is #863, followed by the
+  already-open implementation/verification dependency order. The public
+  production evidence does not close #838–#843/#850 or #853–#862 because
+  their exact local/fixture/Compose criteria are distinct from this published
+  route.

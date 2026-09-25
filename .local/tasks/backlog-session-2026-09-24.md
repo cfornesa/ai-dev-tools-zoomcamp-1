@@ -1777,3 +1777,16 @@ deferred.
   `verification-boundary` / workflow infrastructure blocker; no duplicate
   issue was created. #842 remains OPEN pending the approved Docker/CI runner
   and the repository-wide `make check` result.
+
+### #842 QA reconciliation update — 2026-09-26
+
+- `make check` is now PASS on `110a329`: action pins, backend lint/format/
+  mypy, backend tests (`1698 passed, 39 skipped`), frontend lint/format/
+  typecheck, and the full frontend suite (`277 files, 2988 tests passed`).
+  The two audio source files were format-normalized because the gate exposed
+  their pre-existing formatting drift. The follow-up GitHub QA comment is
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/842#issuecomment-5829679157`.
+- The issue remains `QA/OPEN-BLOCKED`: exact extracted-ZIP Chromium execution
+  still fails before test execution with the host Mach-port permission error,
+  so browser runtime acknowledgements and both viewport screenshots remain
+  outstanding.

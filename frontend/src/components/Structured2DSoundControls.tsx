@@ -11,6 +11,9 @@ export type Structured2DAudioEngine = {
   connectMic?(): Promise<void>;
   setTempo?(bpm: number): void;
   setScale?(name: string): boolean;
+  setKey?(key: { root: string; scale: string }): boolean;
+  setTranspose?(semitones: number): void;
+  setFollowKey?(follow: boolean): void;
   setVoiceVolume?(voice: 'ambient' | 'melodic', percent: number): void;
   setVoiceMuted?(voice: 'ambient' | 'melodic', muted: boolean): void;
   setFilter?(settings: { type: string; cutoff: number; resonance: number }): boolean;
@@ -62,6 +65,10 @@ export default function Structured2DSoundControls({
   const [ambientMuted, setAmbientMuted] = useState(false);
   const [ambientScale, setAmbientScale] = useState('pentatonic');
   const [keyboardEnabled, setKeyboardEnabled] = useState(false);
+  const [keyboardRoot, setKeyboardRoot] = useState('C');
+  const [keyboardScale, setKeyboardScale] = useState('major');
+  const [keyboardTranspose, setKeyboardTranspose] = useState(0);
+  const [followKey, setFollowKey] = useState(false);
   const [keyboardVolume, setKeyboardVolume] = useState(50);
   const [oscillator, setOscillator] = useState('sine');
   const [filterType, setFilterType] = useState('lowpass');
@@ -194,6 +201,7 @@ export default function Structured2DSoundControls({
           const next = event.target.value;
           setAmbientScale(next);
           engine.setScale?.(next);
+          if (followKey) setKeyboardScale(next);
         }}
       >
         {[
@@ -220,6 +228,79 @@ export default function Structured2DSoundControls({
         >
           {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
         </button>
+        <label htmlFor="structured-2d-keyboard-root">Key</label>
+        <select
+          id="structured-2d-keyboard-root"
+          value={keyboardRoot}
+          disabled={!controlledActive}
+          onChange={(event) => {
+            const next = event.target.value;
+            setKeyboardRoot(next);
+            engine.setKey?.({ root: next, scale: keyboardScale });
+          }}
+        >
+          {['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map((root) => (
+            <option key={root}>{root}</option>
+          ))}
+        </select>
+        <label htmlFor="structured-2d-keyboard-scale">Scale</label>
+        <select
+          id="structured-2d-keyboard-scale"
+          value={keyboardScale}
+          disabled={!controlledActive || followKey}
+          onChange={(event) => {
+            const next = event.target.value;
+            setKeyboardScale(next);
+            engine.setKey?.({ root: keyboardRoot, scale: next });
+          }}
+        >
+          {[
+            'major',
+            'minor',
+            'pentatonic',
+            'chromatic',
+            'dorian',
+            'phrygian',
+            'lydian',
+            'mixolydian',
+            'wholetone',
+          ].map((scale) => (
+            <option key={scale}>{scale}</option>
+          ))}
+        </select>
+        <label htmlFor="structured-2d-keyboard-transpose">Transpose: {keyboardTranspose}</label>
+        <input
+          id="structured-2d-keyboard-transpose"
+          type="range"
+          min="-12"
+          max="12"
+          step="1"
+          value={keyboardTranspose}
+          disabled={!controlledActive}
+          onChange={(event) => {
+            const next = Number(event.target.value);
+            setKeyboardTranspose(next);
+            engine.setTranspose?.(next);
+          }}
+        />
+        <label htmlFor="structured-2d-follow-key">
+          <input
+            id="structured-2d-follow-key"
+            type="checkbox"
+            checked={followKey}
+            disabled={!controlledActive}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setFollowKey(next);
+              engine.setFollowKey?.(next);
+              if (next) {
+                setKeyboardScale(ambientScale);
+                engine.setKey?.({ root: keyboardRoot, scale: ambientScale });
+              }
+            }}
+          />{' '}
+          Link keyboard to ambient scale
+        </label>
         <label htmlFor="structured-2d-keyboard-volume">Volume: {keyboardVolume}%</label>
         <input
           id="structured-2d-keyboard-volume"

@@ -3436,3 +3436,27 @@ deferred.
   current-checkout structured-3D fixture and finish #842; (3) re-run
   task-distillation and process the dependent sound issues; (4) only then
   rerun production-readiness and session-completion for a terminal batch.
+
+## Transaction #851 — 2026-09-25 — ENGINEERED / QA PASS / CLOSED
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+  The issue was confirmed as a structured-2D sound-control contract gap, not a
+  duplicate of the generated-artifact issues.
+- Engineer: COMPLETED. implementation-mechanical frontend / Codex-GPT-5 /
+  medium / substituted: yes. `Structured2DSoundControls` now exposes keyboard
+  root, keyboard scale, transpose, and ambient-scale linking, forwarding each
+  change to the optional audio-engine contract. Focused regression coverage was
+  updated.
+- QA self-review: PASS. Focused test passed (1 file, 5 tests). Full current
+  checkout gate passed: backend 1710 passed / 39 skipped and frontend 280 files
+  / 3016 tests passed. Active Chrome inspected the rebuilt disposable Compose
+  route at 375x812 and 1280x900; the new controls were present, interactive,
+  and the mobile page remained within the viewport. Generated Full and
+  Non-Camera artifact evidence remains covered by #842/#869.
+- Exact commands: `cd frontend && npm test -- --run
+  src/components/Structured2DSoundControls.test.tsx`; `UV_CACHE_DIR=/tmp/ai-dev-tools-zoomcamp-1
+  make check`.
+- Evidence boundary: current-checkout disposable Compose plus active Chrome;
+  no production publish or deployed-URL claim.
+- Reconcile: QA PASS comment posted and issue closed after the scoped change was
+  committed and safely pushed.

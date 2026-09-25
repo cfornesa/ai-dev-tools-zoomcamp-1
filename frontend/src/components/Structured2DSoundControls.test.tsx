@@ -19,6 +19,9 @@ function makeEngine(status: 'idle' | 'active' | 'error' = 'idle') {
     setVoiceVolume: vi.fn(),
     setVoiceMuted: vi.fn(),
     setScale: vi.fn(() => true),
+    setKey: vi.fn(() => true),
+    setTranspose: vi.fn(),
+    setFollowKey: vi.fn(),
     setFilter: vi.fn(() => true),
     setMelodicSynth: vi.fn(),
     triggerMelodicNote: vi.fn(),
@@ -82,12 +85,21 @@ describe('Structured2DSoundControls', () => {
     fireEvent.change(screen.getByRole('slider', { name: /Ambient volume/ }), {
       target: { value: '60' },
     });
-    await user.selectOptions(screen.getByRole('combobox', { name: /Scale/ }), 'major');
+    await user.selectOptions(screen.getAllByRole('combobox', { name: /Scale/ })[0], 'major');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Key' }), 'D');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Scale' }), 'minor');
+    fireEvent.change(screen.getByRole('slider', { name: /Transpose/ }), {
+      target: { value: '5' },
+    });
+    await user.click(screen.getByRole('checkbox', { name: 'Link keyboard to ambient scale' }));
     await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Oscillator' }), 'square');
     expect(audio.setTempo).toHaveBeenCalled();
     expect(audio.setVoiceVolume).toHaveBeenCalledWith('ambient', expect.any(Number));
     expect(audio.setScale).toHaveBeenCalledWith('major');
+    expect(audio.setKey).toHaveBeenCalledWith({ root: 'D', scale: 'minor' });
+    expect(audio.setTranspose).toHaveBeenCalledWith(5);
+    expect(audio.setFollowKey).toHaveBeenCalledWith(true);
     expect(audio.setMelodicSynth).toHaveBeenCalledWith({ oscillator: 'square' });
   });
 });

@@ -3952,6 +3952,60 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Transaction #881 — 2026-09-26 — QA PASS / CLOSED
+
+- Groom: the repeated screenshot-motion verification gap was distinct and
+  actionable, so #881 was created. Active Chrome CDP was then tested before
+  any implementation work.
+- QA self-review: PASS / non-actionable follow-up. `Page.captureScreenshot`
+  plus same-page DOM image/canvas decoding produced a valid stage-only
+  one-second delta for SVG at 1280x720: 473/291600 = 0.1622085%. Comment
+  #881-5840530605; issue closed. No product/dependency change.
+
+## Transaction #882 distillation — 2026-09-26 — OPEN / CONTRACT GAP
+
+- Groom: exact editor SVG preview delta was 0% because the ink-layer preview
+  explicitly freezes the piece while drawing, conflicting with #856–#858's
+  editor motion criterion. This is a distinct editor contract gap; issue #882
+  was created before any implementation.
+- Routing: implementation-complex/editor lifecycle contract. Current next
+  action is decide and implement an animated editor-preview contract or
+  formally separate the frozen drawing surface from the animated preview,
+  then re-enter QA for #856–#858.
+- Evidence boundary: local Compose + active Chrome only; no production action.
+
+## Transaction #875 reconciliation — 2026-09-26 — QA PASS / CLOSED
+
+- Groom: existing corrective issue had a prior PASS and no duplicate; current
+  full `make check` revalidated the claimed scope.
+- QA self-review: ACCEPTED; local Chrome desktop/mobile, opaque-sandbox
+  security boundary, parent sound/keyboard bridge, focused 79-test evidence,
+  and full make-check evidence all pass. Comment #875-5840568672; closed.
+- No production evidence or publish claimed.
+
+## Production-readiness refresh — 2026-09-26 — NOT READY
+
+- `make check` remains green: backend 1710 passed/39 skipped; frontend 281
+  files/3024 tests passed.
+- #879/#880 implementation blockers and #875 are closed PASS; #881 is closed
+  after discovering the CDP evidence path.
+- #882, #874, #788, #847, #856–#862, and #861 remain open or incomplete.
+  Production record mismatch, production import boundary, editor preview
+  contract, optional media, and surface QA evidence remain unresolved.
+- No production publish/import or production data mutation is claimed.
+
+## Session-completion refresh — 2026-09-26 — INCOMPLETE / OPEN FOLLOW-UPS
+
+- Closed this pass: #875 and #881 QA PASS; #879/#880 remain closed historical
+  implementation PASS. Open: #882, #874, #862, #861, #860, #859, #858,
+  #857, #856, #847, and #788.
+- Routing audit: implementation defects were distilled before engineering;
+  QA-only gaps remain in their route/surface issues; production/data work is
+  not silently performed.
+- Follow-up audit: resolve #882, finish #856–#862 and #861 surface evidence,
+  then rerun production-readiness and session-completion. This session is not
+  complete.
+
 ## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #881
 
 - New actionable gap: the required decoded screenshot pixel-diff evidence path

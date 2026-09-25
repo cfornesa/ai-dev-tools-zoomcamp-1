@@ -1,0 +1,82 @@
+{
+  "structured_2d": {
+    "source_templates": ["schema/fixtures/valid/blank.json", "schema/README.md"],
+    "engines": ["p5", "canvas2d", "svg"],
+    "create_prompts": [
+      "a calm sunrise with a named Sun layer",
+      "a geometric garden with Background and Flowers layers",
+      "a night sky with named Moon and Stars layers",
+      "a kinetic city grid with foreground shapes",
+      "a warm ocean study with wave and horizon layers",
+      "a responsive constellation with accessible contrast"
+    ],
+    "edit_sequences": [
+      {"name": "sunrise", "steps": ["make the sun warmer", "add a cloud", "increase contrast"], "preserve": ["Background", "Subject"]},
+      {"name": "garden", "steps": ["make flowers blue", "add a path", "reduce motion"], "preserve": ["Background", "Flowers"]},
+      {"name": "night", "steps": ["brighten the moon", "add two stars", "darken the sky"], "preserve": ["Moon", "Stars"]},
+      {"name": "city", "steps": ["add a tower", "make the grid teal", "hide the tower"], "preserve": ["Grid", "Foreground"]},
+      {"name": "ocean", "steps": ["raise the horizon", "add a wave", "soften the palette"], "preserve": ["Horizon", "Waves"]},
+      {"name": "constellation", "steps": ["add a comet", "increase spacing", "make it accessible"], "preserve": ["Stars", "Labels"]}
+    ]
+  },
+  "structured_3d": {
+    "source_templates": ["schema/fixtures3d/valid/feature_rich.json", "schema/README.md"],
+    "engines": ["threejs", "aframe"],
+    "create_prompts": [
+      "a named Hero Box under a warm Sun",
+      "a small observatory with named Dome and Telescope objects",
+      "a floating garden with named Ground and Tree objects",
+      "a museum plinth with a named Sculpture object",
+      "a kinetic room with named Floor and Beacon objects",
+      "a calm planetarium with named Planet and Ring objects"
+    ],
+    "edit_sequences": [
+      {"name": "hero-box", "steps": ["move the Hero Box", "add a rim light", "make the box blue"], "preserve": ["Hero Box", "Sun"]},
+      {"name": "observatory", "steps": ["rotate the Dome", "add a star", "raise the Telescope"], "preserve": ["Dome", "Telescope"]},
+      {"name": "garden", "steps": ["scale the Tree", "add a pond", "brighten the Ground"], "preserve": ["Ground", "Tree"]},
+      {"name": "museum", "steps": ["move the Sculpture", "add a spotlight", "lower the plinth"], "preserve": ["Sculpture", "Plinth"]},
+      {"name": "room", "steps": ["rotate the Beacon", "add a wall", "dim the Floor"], "preserve": ["Floor", "Beacon"]},
+      {"name": "planetarium", "steps": ["tilt the Planet", "add a Ring", "slow the orbit"], "preserve": ["Planet", "Ring"]}
+    ]
+  },
+  "generated_2d": {
+    "source_templates": ["backend/ai_provider/prompts.py:ART_PIECE_2D_CREATE_PROMPTS", "backend/scenes/art_piece_validation.py"],
+    "engines": ["canvas2d", "svg", "p5js", "c2js", "c2js-interactive"],
+    "create_prompts": [
+      "a teal sunrise with Background and Subject sections",
+      "a coral garden with Background and Flowers sections",
+      "a violet moon with Sky and Moon sections",
+      "a cyan city with Grid and Foreground sections",
+      "a gold ocean with Horizon and Waves sections",
+      "a white constellation with Stars and Labels sections"
+    ],
+    "edit_sequences": [
+      {"name": "sunrise", "steps": ["warm the subject", "add a cloud", "increase contrast"], "preserve": ["Background", "Subject"]},
+      {"name": "garden", "steps": ["make flowers blue", "add a path", "reduce motion"], "preserve": ["Background", "Flowers"]},
+      {"name": "moon", "steps": ["brighten the moon", "add stars", "darken the sky"], "preserve": ["Sky", "Moon"]},
+      {"name": "city", "steps": ["add a tower", "make the grid teal", "hide the tower"], "preserve": ["Grid", "Foreground"]},
+      {"name": "ocean", "steps": ["raise the horizon", "add a wave", "soften the palette"], "preserve": ["Horizon", "Waves"]},
+      {"name": "constellation", "steps": ["add a comet", "increase spacing", "improve contrast"], "preserve": ["Stars", "Labels"]}
+    ]
+  },
+  "generated_3d": {
+    "source_templates": ["backend/ai_provider/art_piece_provider.py:_THREEJS_SYSTEM_PROMPT", "backend/ai_provider/art_piece_provider.py:_AFRAME_SYSTEM_PROMPT"],
+    "engines": ["threejs", "aframe"],
+    "create_prompts": [
+      "a named Hero Box under a warm Sun",
+      "a small observatory with Dome and Telescope sections",
+      "a floating garden with Ground and Tree sections",
+      "a museum plinth with a Sculpture section",
+      "a kinetic room with Floor and Beacon sections",
+      "a calm planetarium with Planet and Ring sections"
+    ],
+    "edit_sequences": [
+      {"name": "hero-box", "steps": ["move the Hero Box", "add a rim light", "make the box blue"], "preserve": ["Hero Box", "Sun"]},
+      {"name": "observatory", "steps": ["rotate the Dome", "add a star", "raise the Telescope"], "preserve": ["Dome", "Telescope"]},
+      {"name": "garden", "steps": ["scale the Tree", "add a pond", "brighten the Ground"], "preserve": ["Ground", "Tree"]},
+      {"name": "museum", "steps": ["move the Sculpture", "add a spotlight", "lower the Plinth"], "preserve": ["Sculpture", "Plinth"]},
+      {"name": "room", "steps": ["rotate the Beacon", "add a wall", "dim the Floor"], "preserve": ["Floor", "Beacon"]},
+      {"name": "planetarium", "steps": ["tilt the Planet", "add a Ring", "slow the orbit"], "preserve": ["Planet", "Ring"]}
+    ]
+  }
+}

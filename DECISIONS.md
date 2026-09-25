@@ -1702,3 +1702,18 @@ are completed with documented defaults and unknown keys are removed. The 3D
 editor and generated Three.js ZIP consume that same normalized object. This
 does not claim production or Playwright evidence; those remain explicit QA
 criteria, and no database migration was introduced.
+
+## 2026-09-25 — #844 browser evidence boundary and stale local image
+
+The active Chrome session initially showed an old hamburger-era toolbar because
+the disposable Compose frontend/backend containers predated the current
+checkout. Rebuilding from `d71b0a2` established the current behavior: stage
+controls are direct buttons at 1280x900 and 375x812; the hamburger is only
+global site navigation; Share/Embed sit above the versions box. Current-source
+local save/reload and immersive hydration proof passed.
+
+The repository Playwright command could not launch on this macOS host due to a
+MachPort permission error before test execution, and the active Chrome bridge
+did not emit a download event for the synthetic Blob ZIP download. These are
+explicit evidence boundaries; #844 remains open and no production publish is
+claimed. The corrected commits are `40f7e24` and `d71b0a2`.

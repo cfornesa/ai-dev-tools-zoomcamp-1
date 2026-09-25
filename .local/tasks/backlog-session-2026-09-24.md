@@ -2174,3 +2174,59 @@ deferred.
   #865's current failures are linked to #865; no duplicate or closed issue was
   reopened. Next action is #844 browser/fixture verification, then #865
   reproduction, followed by the remaining open backlog in dependency order.
+
+## Distillation refresh 33 — 2026-09-25 — #844 recheck
+
+- Reproduced the evidence boundary with active Chrome. The stale Compose bundle
+  had been serving pre-#863 code; rebuilding backend/frontend from the current
+  checkout showed direct stage buttons at 1280x900 and 375x812. The hamburger
+  observed previously is global site navigation, not a replacement for the
+  stage toolbar. Share/Embed are separate actions above the versions box.
+- On the disposable local Compose stack, authored sonic values saved as version
+  2, reloaded, and hydrated in the immersive viewer. Fixtures were cleaned
+  afterward (`deleted: 23`). The ZIP menu exposed Full ZIP and Non-Camera ZIP,
+  but Chrome did not emit a download event for the synthetic Blob download.
+  Playwright also failed before test execution because this macOS host denied
+  the browser MachPort launch; this is an evidence boundary, not a product pass.
+
+## Transaction #844 — 2026-09-25 — QA RECHECK / REMAINS OPEN
+
+- Engineer follow-up: COMPLETE. Stage owner implementation-mechanical;
+  Codex/GPT-5 substitution; medium effort. `40f7e24` adds stable IDs to the
+  Sound controls; `d71b0a2` adds separate valid 2D/3D authored-sonic fixtures
+  without changing legacy blank/minimal fixtures. No migration/dependency.
+- QA self-review: FAIL. Stage owner qa-self-review; Codex/GPT-5 substitution;
+  medium effort. Editor save/reload, local immersive hydration, direct controls,
+  and Share/Embed/version ordering passed at both target viewports. `make check`
+  passed with backend 1704 passed/39 skipped and frontend 280 files/3004
+  tests. Criterion 3 remains unproven for the required Playwright ZIP artifact.
+- Reconcile: REMAINS OPEN. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/844#issuecomment-5831797598
+  records the matrix and commands. Commits are pushed to `origin/main` at
+  `d71b0a2`; no production publish was performed.
+
+## Production-readiness gate — 2026-09-25 — BLOCKED / NOT READY
+
+- Local deployment: PASS for `d71b0a2`; full `make check` is green and there
+  are no migration/dependency changes.
+- Browser/CI: FAIL for #844 criterion 3. Current-checkout Chrome verified the
+  viewer/defaults and toolbar ordering locally; Playwright could not launch and
+  the ZIP download event was not captured.
+- Production: NOT RUN. #844 has not been published; no live claim is made.
+- Release decision: NOT READY. Next exact action is an approved
+  Playwright-capable browser run capturing the ZIP artifact, followed by
+  production publish/readiness if separately authorized.
+
+## Session-completion gate — 2026-09-25 — INCOMPLETE / HANDED-OFF
+
+- This continuation reprocessed #844 and completed its implementation follow-up
+  but did not close it: #844 remains open solely on the documented browser
+  evidence boundary. #865 remains open and unreproduced; no closed issue was
+  reopened. Project-wide completion is not claimed because dependent
+  #838–#847/#850–#862 and #788 remain open.
+- Counts: discovered 0 new issues; implementation follow-up complete 1; QA
+  incomplete 1; production actions 0; data mutations 0. Routing audit:
+  implementation-mechanical, QA, readiness, and session-completion used
+  Codex/GPT-5 substitutions at medium effort; no second opinion was credited.
+- Follow-up audit: #844 owns missing Playwright ZIP evidence; #865 remains a
+  separate unverified report; no duplicate or closed issue was reopened.

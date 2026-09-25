@@ -644,3 +644,61 @@ deferred.
 - Next routing: #815 remains the next independent local transaction; #748 and
   #788 remain the only explicitly authorized production operations. No
   unauthorized publish or production data action is permitted.
+
+## #815 transaction — 2026-09-25
+
+- Groom: criterion-ready Stage 2a fixture/test issue; related prompt/provider
+  issues are reference-only and remain closed. No duplicate or new follow-up
+  issue was needed.
+- Engineering: Stage 2a Opencode Go / Kimi K3 / medium rostered; Codex /
+  GPT-5 / medium substituted. Commits `0e1c73b` and `c5d4c48` add the four
+  family corpus, vendor-shaped replay harness, six prompts and six three-step
+  edit sequences per family, preservation assertions, and the explicit
+  README source map.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Stage 3 independent-family review not run. Focused
+  corpus tests passed 13; full backend check passed 1691 tests / 39 skips,
+  Ruff, format, and mypy.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/815#issuecomment-5825026259`;
+  issue #815 is CLOSED. Evidence is offline/local only; no live vendor or
+  production action was taken.
+
+## Distillation refresh 15 — 2026-09-25 continuation
+
+- #803 and #815 are terminal CLOSED/QA PASS. Authenticated open inventory is
+  11 issues: #748, #788, and #798–#807.
+- Duplicate/follow-up audit: #815 introduced no runtime or provider gap; live
+  vendor evaluation is explicitly out of scope and no follow-up was created.
+- Next routing: #798 is the next independent local issue if its criteria are
+  still implementation-ready; #806/#807 and #748/#788 retain their explicit
+  production/browser authorization boundaries. No unauthorized publish or
+  production data action is permitted.
+
+## #798 transaction — 2026-09-25
+
+- Groom: criterion-ready Stage 2a shell accessibility issue. The current
+  checkout already contains the scoped implementation from the #807 shell
+  batch; no duplicate code or follow-up issue was needed.
+- Engineering: Stage 2a Opencode Go / Kimi K3 / medium rostered; Codex /
+  GPT-5 / medium substituted for verification-only reconciliation. Existing
+  `CosmicStarField`, Layout low-power detection, theme-token CSS, and
+  state-driven backdrop rendering were accepted as the in-scope implementation.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Stage 3 independent-family review not run. Focused
+  Vitest passed 2 files / 21 tests; typecheck/lint passed with existing
+  warnings; named Chromium E2E passed 4 tests at 1280x900 and 375x812;
+  screenshots were inspected for both viewports.
+- Reconciliation: QA PASS comment to be posted after this transaction; issue
+  #798 is eligible for closure. Evidence is local/disposable Compose only; no
+  production action was taken.
+
+## Distillation refresh 16 — 2026-09-25 continuation
+
+- #798, #803, and #815 are terminal-ready/closed after their QA PASS records;
+  current open inventory remains #748, #788, and #799–#807 excluding #803.
+- No duplicate or new issue emerged from #798; the cosmic shell contract is
+  covered by existing implementation and focused browser evidence.
+- Next independent local routing is #799, but it is Stage 2b and must be
+  groomed/split if its four-engine online/ZIP scope is too broad. Production
+  authorization remains limited to #748/#788.

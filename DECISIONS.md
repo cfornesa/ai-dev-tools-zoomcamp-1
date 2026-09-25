@@ -1552,3 +1552,21 @@ the remaining #734 anonymous secondary-browser flow times out reopening Piece
 controls, while the alternate public camera geometry suite passes both viewports.
 The issue is closed on the alternate product evidence; no production rollout
 was authorized or performed.
+
+## 2026-09-25 — Offline AI quality corpus (#815)
+
+#815 was routed as mechanical fixture/test work. Commits `0e1c73b` and
+`c5d4c48` add six prompts and six three-step edit sequences for structured and
+generated 2D/3D families, replayed through Mistral, Gemini, and DeepSeek
+transport shapes with layer/object/region preservation checks. Focused replay
+passed 13 cases and the full backend gate passed 1691/39 skipped. QA PASS
+closed the issue; live vendor calls and production rollout were not authorized
+or performed.
+
+## 2026-09-25 — Cosmic shell accessibility verification (#798)
+
+#798 was already implemented in the current shell batch: CosmicStarField is
+state-driven, theme-token scoped, and disables motion under reduced-motion or
+low-power root state. Focused Vitest passed 21 tests and the named Chromium
+spec passed all 4 scenarios at 1280x900/375x812; screenshots were inspected.
+No production rollout was authorized or performed.

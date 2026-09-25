@@ -3344,3 +3344,34 @@ deferred.
 - Evidence boundary: disposable local Compose, freshly downloaded ZIPs, and
   active Chrome only; no production publish or deployed-URL claim.
 - Reconcile: ready to post QA PASS, close #869, commit, and push.
+
+## Transaction #842 — 2026-09-25 — ENGINEERED / QA INCOMPLETE / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+- Engineer: COMPLETED follow-up in `b2ef0d7`: sound-only generated ZIPs now
+  include a reachable Piece controls disclosure; #869 separately fixed their
+  mobile panel layout. No new dependencies or schema changes.
+- QA self-review: INCOMPLETE. Fresh generated Full and Non-Camera ZIPs from
+  rebuilt disposable Compose were verified in active Chrome at 1280x900 and
+  375x812, including sound activation, BPM, scale, Keyboard notes, no
+  horizontal overflow, and no console errors. The current disposable DB has
+  no structured-3D fixture, so the structured-3D Full/Non-Camera criterion is
+  not satisfied by generated-art evidence.
+- Exact gate: `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` — PASS,
+  backend 1710 passed / 39 skipped; frontend 280 files / 3016 tests passed.
+- Reconcile: KEEP OPEN. QA boundary comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/842#issuecomment-5835487923`;
+  current-checkout structured-3D artifact verification remains required.
+
+## Transaction #788 — 2026-09-25 — QA FAIL / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+- Engineer: existing importer inspected; no source change authorized or needed.
+- QA self-review: FAIL at production-access gate. The disposable local
+  PostgreSQL run and dry-run showed exactly two C2 updates (public ids,
+  slugs, and sequence 1→2); the production public-API snapshot was recorded
+  in the issue comment. Replit's visible shell is development-only and the
+  deployment has no interactive production shell; the launcher gate would run
+  the all-six import without dry-run. No production write occurred.
+- Reconcile: KEEP OPEN pending an approved production-shell path. Comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5835510593`.

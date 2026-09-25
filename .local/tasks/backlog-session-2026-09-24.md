@@ -1818,3 +1818,20 @@ deferred.
   Playwright Chromium process hit `bootstrap_check_in ... Permission denied
   (1100)`. Local evidence does not close the live-viewer criterion; #843
   remains OPEN pending the approved Docker/CI Chromium runner.
+
+## Backlog transaction 44 — #848
+
+- State: `GROOMED → ENGINEERING → QA → RECONCILED → CLOSED`.
+- Grooming/routing: pure frontend audio theory, no schema, auth, persistence,
+  or browser boundary; routed Stage 2a mechanical. Service/model/effort:
+  Codex/GPT-5 substitution, medium effort; rostered implementation service
+  unavailable.
+- Engineering commit: `fceaae2`; added the shared nine-scale interval table,
+  note parsing with flat-to-sharp normalization, scale-note generation,
+  membership, down-on-tie snapping, MIDI-equivalent transposition, and
+  deterministic ranked scale identification.
+- QA: `cd frontend && npx vitest run src/audio` passed (5 files / 46 tests);
+  `npm run typecheck`, `npm run lint`, and `git diff --check` passed. GitHub
+  QA PASS comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/848#issuecomment-5829828030`.
+- Evidence boundary: unit-test scoped; no production or browser criterion.

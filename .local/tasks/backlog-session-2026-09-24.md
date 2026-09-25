@@ -3131,3 +3131,38 @@ deferred.
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/852#issuecomment-5834763541.
 - Reconcile: KEEP OPEN pending an approved browser-runner or owner-approved
   equivalent artifact proof. No production publish or production data write.
+
+## Production-readiness refresh 60 — 2026-09-25 — BLOCKED
+
+- Repository readiness: PASS on checkout `6d9d9a8`; the completed full gate
+  recorded 1710 backend tests passed / 39 skipped and 280 frontend files /
+  3014 tests passed, with lint, formatting, typecheck, and action-pin checks
+  green.
+- Production readiness: BLOCKED. #747/#748/#788 still require the explicitly
+  authorized production publish/live verification/import transaction. The
+  remaining #841/#842/#846/#851/#852 and #853–#862 items still require their
+  named real-browser evidence; #847 lacks its prerequisite public asset
+  contract. No publish or production database action was performed in this
+  continuation.
+- Deployment evidence boundary: local Compose and active Chrome evidence do
+  not close deployed-URL criteria. No migration-bearing release was published,
+  so no production schema inspection or published smoke run is claimed.
+
+## Session-completion refresh 61 — 2026-09-25 — INCOMPLETE / HANDOFF
+
+- Transaction counts for this continuation: #866 groomed, engineered, QA
+  passed, reconciled, and closed; #852 groomed and reconciled as QA-blocked /
+  open. One new issue was created (#866), duplicate-audited, implemented, and
+  closed with a `## QA: PASS` comment.
+- Routing audit: #866 used task-distillation → implementation-mechanical →
+  qa-self-review → reconcile; #852 used task-distillation →
+  implementation-complex → qa-self-review → reconcile. Both required Codex
+  GPT-5 medium substitutions because the rostered services were unavailable;
+  this provenance is recorded in the issue comments and ledger.
+- Follow-up audit: no untracked implementation gap was found in the sound
+  verification pass. The next actions are evidence/production gates, not
+  speculative code changes: approved Playwright/CI browser execution for the
+  sound matrix, then the explicitly authorized #747/#748/#788 production
+  transaction. Current handoff remains incomplete with 17 open issues.
+- Safe handoff commit: `6d9d9a8` is pushed to `origin/main`; production was
+  not changed by this continuation.

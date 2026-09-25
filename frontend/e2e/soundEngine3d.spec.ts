@@ -70,8 +70,36 @@ test.describe('3D sound engine', () => {
     const oscillator = toolbar.getByLabel('Oscillator');
     await oscillator.selectOption('square');
     await expect(oscillator).toHaveValue('square');
+    const filterType = toolbar.getByLabel('Filter type');
+    await filterType.selectOption('highpass');
+    await expect(filterType).toHaveValue('highpass');
+    await toolbar.locator('#scene3d-keyboard-filter-cutoff').fill('10000');
+    await expect(toolbar.locator('#scene3d-keyboard-filter-cutoff')).toHaveValue('10000');
+    await toolbar.locator('#scene3d-keyboard-filter-resonance').fill('3');
+    await expect(toolbar.locator('#scene3d-keyboard-filter-resonance')).toHaveValue('3');
+    for (const [id, value] of [
+      ['scene3d-keyboard-attack', '0.2'],
+      ['scene3d-keyboard-decay', '0.4'],
+      ['scene3d-keyboard-sustain', '0.8'],
+      ['scene3d-keyboard-release', '0.6'],
+    ]) {
+      await toolbar.locator(`#${id}`).fill(value);
+      await expect(toolbar.locator(`#${id}`)).toHaveValue(value);
+    }
+    await melodic.selectOption('membranesynth');
+    await expect(oscillator).toBeDisabled();
+    await expect(oscillator).toHaveAttribute('title', /do not support oscillator/);
+    await expect(toolbar.locator('#scene3d-keyboard-attack')).toBeDisabled();
+    await expect(toolbar.locator('#scene3d-keyboard-attack')).toHaveAttribute(
+      'title',
+      /do not support ADSR/,
+    );
+    await melodic.selectOption('synth');
+    await expect(oscillator).toBeEnabled();
     await toolbar.getByLabel(/Octave:/).fill('2');
     await expect(toolbar.getByLabel(/Octave:/)).toHaveValue('2');
+    await toolbar.locator('#scene3d-master-filter-cutoff').fill('8000');
+    await expect(toolbar.locator('#scene3d-master-filter-cutoff')).toHaveValue('8000');
 
     await toolbar.getByRole('button', { name: 'Keyboard notes' }).click();
     const piano = toolbar.getByRole('group', { name: 'On-screen piano keyboard' });

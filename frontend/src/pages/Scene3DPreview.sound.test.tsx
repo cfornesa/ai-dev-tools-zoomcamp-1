@@ -281,6 +281,47 @@ describe('Scene3DPreview sound control (issue #306)', () => {
     expect(setScaleSpy).toHaveBeenCalledWith('major');
   });
 
+  it('adjusts every keyboard synth control and the master filter through the engine API', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+
+    fireEvent.change(screen.getByLabelText(/^Volume: 50%$/) as HTMLInputElement, {
+      target: { value: '80' },
+    });
+    await user.selectOptions(screen.getByLabelText('Oscillator'), 'square');
+    await user.selectOptions(screen.getByLabelText('Filter type'), 'highpass');
+    fireEvent.change(document.getElementById('scene3d-keyboard-filter-cutoff')!, {
+      target: { value: '10000' },
+    });
+    fireEvent.change(document.getElementById('scene3d-keyboard-filter-resonance')!, {
+      target: { value: '3' },
+    });
+    for (const [id, value] of [
+      ['scene3d-keyboard-attack', '0.2'],
+      ['scene3d-keyboard-decay', '0.4'],
+      ['scene3d-keyboard-sustain', '0.8'],
+      ['scene3d-keyboard-release', '0.6'],
+      ['scene3d-keyboard-octave', '2'],
+      ['scene3d-master-filter-cutoff', '8000'],
+    ]) {
+      fireEvent.change(document.getElementById(id)!, { target: { value } });
+    }
+
+    expect(setVoiceVolumeSpy).toHaveBeenCalledWith('melodic', 80);
+    expect(setMelodicSynthSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        oscillator: 'square',
+        filter: { type: 'highpass', cutoff: 10000, resonance: 3 },
+        envelope: { attack: 0.2, decay: 0.4, sustain: 0.8, release: 0.6 },
+        octaveShift: 2,
+      }),
+    );
+    expect(setFilterSpy).toHaveBeenCalledWith({ type: 'lowpass', cutoff: 8000, resonance: 1 });
+  });
+
   it('controls keyboard key, transpose, follow-key, and detected scale', async () => {
     render(<Scene3DPreview scene={baseScene()} />);
     const user = userEvent.setup();

@@ -3953,3 +3953,36 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
   Existing implementation-complex substitutions and missing independent-review
   slots remain explicitly recorded in their issue transactions.
+
+## Production-readiness — 2026-09-26 — NOT READY
+
+- Code/deployment: READY for the implemented #873/#874 changes. Checkout
+  `1606a76` is on `origin/main`; the published app smoke check is green, and
+  the deployed editor toolbar geometry is verified in signed-in Chrome.
+- Functional readiness: NOT READY. #874 still has a private production record
+  with no renderable object, while the populated public `untitled-3d-scene-3`
+  record is a separate slug. #873 remains browser-verification-blocked because
+  the active Chrome runtime exposes no Web Audio API. #788 still lacks a
+  supported production-shell dry-run/one-shot path; #847 and #862 remain
+  dependency-blocked.
+- Evidence boundary: local Compose and automated tests establish implementation
+  behavior only. They do not close the production scene-data or browser-audio
+  criteria.
+
+## Session-completion — 2026-09-26 — INCOMPLETE / BLOCKED
+
+- Counts: #872 closed; #873 and #874 reconciled with QA FAIL/open; #853–#861,
+  #862, #847, and #788 remain open with their existing dependency or external
+  evidence blockers. No issue was falsely closed.
+- Routing audit: the gray editor report was deduplicated into #874; sound
+  telemetry and actual AudioContext reporting were deduplicated into #873;
+  dependent verification reports were not re-engineered or closed on local
+  evidence.
+- Follow-up audit: use a browser with Web Audio enabled for #873 and its
+  dependent reports; resolve the private/public Three.js record identity for
+  #874 through an owner-authorized data or route decision; obtain the guarded
+  Replit production import path for #788; then rerun #862.
+- Handoff: current implementation, tests, safe push, publish, smoke, and QA
+  comments are recorded. The requested “no open issues” state is not reached
+  because the remaining blockers require external browser capability,
+  production data authorization, or production-shell access.

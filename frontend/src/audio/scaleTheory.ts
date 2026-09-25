@@ -11,19 +11,7 @@ export const SCALE_INTERVALS = {
 } as const;
 
 export type ScaleName = keyof typeof SCALE_INTERVALS;
-export type PitchClass =
-  | 'C'
-  | 'C#'
-  | 'D'
-  | 'D#'
-  | 'E'
-  | 'F'
-  | 'F#'
-  | 'G'
-  | 'G#'
-  | 'A'
-  | 'A#'
-  | 'B';
+export type PitchClass = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
 
 export const PITCH_CLASSES: readonly PitchClass[] = [
   'C',
@@ -70,7 +58,11 @@ function noteName(midi: number): string {
   return `${PITCH_CLASSES[((rounded % 12) + 12) % 12]}${octave}`;
 }
 
-export function scaleNotes(root: PitchClass, scale: ScaleName, octaveRange: [number, number]): string[] {
+export function scaleNotes(
+  root: PitchClass,
+  scale: ScaleName,
+  octaveRange: [number, number],
+): string[] {
   const rootIndex = pitchClassIndex(root);
   const intervals = SCALE_INTERVALS[scale];
   if (rootIndex < 0 || octaveRange.length !== 2) return [];
@@ -114,7 +106,14 @@ export function transposeNote(note: string, semitones: number): string {
 export type ScaleMatch = { root: PitchClass; scale: ScaleName; coverage: number };
 
 export function identifyScale(notes: string[]): ScaleMatch[] {
-  const pitchClasses = [...new Set(notes.map(parseNote).filter(Boolean).map((note) => note!.pitchClass))];
+  const pitchClasses = [
+    ...new Set(
+      notes
+        .map(parseNote)
+        .filter(Boolean)
+        .map((note) => note!.pitchClass),
+    ),
+  ];
   if (pitchClasses.length < 3) return [];
   const matches: ScaleMatch[] = [];
   PITCH_CLASSES.forEach((root, rootIndex) => {

@@ -44,9 +44,9 @@ describe('scale theory', () => {
       scale: 'major',
       coverage: 1,
     });
-    expect(identifyScale(['A3', 'C4', 'D4', 'E4', 'G4']).filter((match) => match.coverage === 1)).toEqual(
-      expect.arrayContaining([{ root: 'A', scale: 'minor', coverage: 1 }]),
-    );
+    expect(
+      identifyScale(['A3', 'C4', 'D4', 'E4', 'G4']).filter((match) => match.coverage === 1),
+    ).toEqual(expect.arrayContaining([{ root: 'A', scale: 'minor', coverage: 1 }]));
     expect(identifyScale(['C4', 'C#4'])).toEqual([]);
   });
 });

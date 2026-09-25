@@ -470,15 +470,15 @@ export function createSonicEngine(
       movementScale.length - 1,
       Math.floor(Math.abs(delta.dy) * movementScale.length),
     );
-    movementSynth.triggerAttackRelease(
-      transposeNote(movementScale[scaleIndex], transpose),
-      '16n',
-    );
+    movementSynth.triggerAttackRelease(transposeNote(movementScale[scaleIndex], transpose), '16n');
   }
 
   function triggerMelodicNote(note: string) {
     melodicSynth?.triggerAttackRelease(
-      transposeNote(shiftNoteOctave(keyboardNote(note), melodicSynthSettings.octaveShift), transpose),
+      transposeNote(
+        shiftNoteOctave(keyboardNote(note), melodicSynthSettings.octaveShift),
+        transpose,
+      ),
       '8n',
     );
   }

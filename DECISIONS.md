@@ -1610,3 +1610,13 @@ retry from `f9461d1` still returned to Failed without a usable deployment
 revision, while the public asset remained the pre-fix bundle. #825 therefore
 remains open despite complete local implementation and checks; no production
 data action may proceed until a revision-matched deployment is healthy.
+
+## 2026-09-24 — Replit internal health-probe protocol follow-up (#826)
+
+The exact-current-revision publish built and promoted, then failed Replit startup
+health checks because its internal HTTPS probe received Django's HTTP-to-HTTPS
+301 from `/`, followed by a reported probe 500 and process exit 143. Duplicate
+search found no existing coverage, so #826 was created as a criterion-ready
+stage-2b follow-up. The fix must preserve public HTTPS redirects, secure
+cookies, HSTS, and forwarded-protocol handling; globally disabling
+`SECURE_SSL_REDIRECT` is not an acceptable resolution.

@@ -1013,3 +1013,27 @@ deferred.
 - Follow-up audit: the only actionable new gap is covered by open #825; no
   duplicate or unlinked issue was created. The production boundary is the
   failed Replit publish, not a local test failure.
+
+## Distillation refresh 21 — 2026-09-24
+
+- Reconciled the latest exact-revision Replit publish logs, current settings,
+  health route, open GitHub inventory, and duplicate search. The #825 port
+  collision fix was present in the build, but startup still failed because the
+  platform probe requested the internal deployment URL over HTTPS while the
+  app returned an HTTP-to-HTTPS 301; Replit then reported a probe 500 and
+  exited the process with status 143.
+- Classified as a workflow/infrastructure defect with repository work needed,
+  not a verification boundary. No existing issue covers the protocol mismatch;
+  created criterion-ready #826 with stage-2b implementation-complex routing.
+- Dependency order: #826 must produce a healthy exact-revision deployment
+  before #825 can pass production QA; #748, #788, and #806 remain blocked on
+  that deployment. No production data action was run.
+
+## #826 transaction — 2026-09-24
+
+- Groom/distill: duplicate search was empty; issue body names the affected
+  settings, health route, launcher, exact failure evidence, finite criteria,
+  commands, security constraints, and dependent issues.
+- Next stage: engineer #826 as the sole active transaction, using the
+  stage-2b implementation-complex route. Preserve public HTTPS redirects and
+  secure-cookie/HSTS policy; do not weaken production settings globally.

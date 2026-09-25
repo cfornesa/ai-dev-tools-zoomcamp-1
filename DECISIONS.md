@@ -1525,10 +1525,9 @@ required or performed.
 ## 2026-09-24 — Generated art @ typeahead (#821)
 
 #821 was routed as mechanical frontend work with Opencode Go / Kimi K3 / medium
-rostered; Codex / GPT-5 / medium substituted. Commits `e848834` and `cd4ab57`
-add typed ink/asset/element/region discovery, structured refine mentions, and
-focused Playwright coverage. Local Vitest/typecheck/lint passed; the two
-existing viewport Playwright scenarios passed. The new region scenario could
-not complete because the already-running disposable Compose frontend served a
-revision without the current region discovery, so QA recorded a verification
-boundary and left #821 open. No production rollout was authorized or performed.
+rostered; Codex / GPT-5 / medium substituted. Commits `e848834`, `cd4ab57`, and
+`4562bc2` add typed ink/asset/element/region discovery, structured refine
+mentions, focused Playwright coverage, and legacy Canvas-part compatibility.
+After rebuilding Compose from the checkout, all 3 Chromium scenarios passed and
+the 1280x900/375x812 screenshots were inspected. QA PASS closed #821; no
+production rollout was authorized or performed.

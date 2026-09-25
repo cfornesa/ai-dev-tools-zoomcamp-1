@@ -506,22 +506,25 @@ deferred.
   new region scenario received `No matches` from the already-running Compose
   frontend revision even though the API returned the labelled source; this is
   a stale-stack verification boundary, not a product verdict.
-- Reconciliation: QA FAIL / verification-boundary comment
-  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/821#issuecomment-5824465668`;
-  issue remains OPEN. Next action is to rebuild/restart the disposable Compose
-  frontend from `cd4ab57`, rerun the focused Playwright scenario, inspect both
-  viewport screenshots, and then reconcile. No production action was taken.
+- Reconciliation update: the disposable Compose stack was rebuilt from the
+  current checkout. The focused Chromium run passed all 3 scenarios, including
+  both viewport cases and the labelled-region preservation case; screenshots
+  were inspected. QA found and fixed the legacy Canvas `@augmentr-part`
+  compatibility defect in commit `4562bc2` before the final pass.
+- Final reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/821#issuecomment-5824611634`;
+  issue #821 is CLOSED. No production action was taken.
 
 ## Distillation refresh 12 — 2026-09-24 continuation
 
-- #821 remains OPEN/verification-boundary. Authenticated open inventory is 14
-  issues: #748, #788, #798–#807, #815, and #821.
-- Duplicate/follow-up audit: no new issue emerged from #821 QA; the stale
-  Compose revision is an environment/evidence boundary, not a new product
-  issue. No closed issue was reopened.
+- #821 is terminal CLOSED/QA PASS. Authenticated open inventory is 13
+  issues: #748, #788, #798–#807, and #815.
+- Duplicate/follow-up audit: the stale Compose revision produced no new issue;
+  the only product defect found was in-scope legacy-part compatibility and was
+  fixed before closure. No closed issue was reopened.
 - Dependency/order rationale: #815 is independent and next for local
   implementation; production/browser issues remain authorization-gated on
-  #748/#788/#803/#806/#807, and #821 awaits a rebuilt disposable browser stack.
+  #748/#788/#803/#806/#807.
 
 ## Production-readiness — 2026-09-24 continuation
 

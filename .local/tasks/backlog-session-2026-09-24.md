@@ -2752,3 +2752,34 @@ deferred.
   #847 remains dependency-blocked by the missing published media contract;
   #851–#862 remain blocked behind the verification chain. No duplicate issue
   or new gap was created.
+
+## Transaction #851 — 2026-09-25 — DEPENDENCY-BLOCKED / OPEN
+
+- Groom: ACCEPTED as a dependent key/scale/transposition verification issue;
+  task-distillation / Codex-GPT-5 / medium / substituted: yes. No duplicate
+  implementation gap found; its criteria consume #841 and #842 evidence.
+- Engineer: NOT REQUIRED. Stage owner implementation-complex;
+  Codex/GPT-5 / low / substituted: yes. Local source wiring exists, and a
+  speculative second implementation would not improve the missing browser
+  evidence.
+- QA self-review: BLOCKED. Stage owner qa-self-review; Codex/GPT-5 / low /
+  substituted: yes. #841 structured/generated browser proof and #842 extracted
+  ZIP proof are not terminal.
+- Reconcile: OPEN / dependency-blocked. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/851#issuecomment-5833424876
+  records the matrix and local-only check boundary.
+
+## Transaction #852 — 2026-09-25 — DEPENDENCY-BLOCKED / OPEN
+
+- Groom: ACCEPTED as a dependent authored-defaults verification issue;
+  task-distillation / Codex-GPT-5 / medium / substituted: yes. No duplicate
+  implementation gap found; its criteria consume #844 evidence.
+- Engineer: NOT REQUIRED. Stage owner implementation-complex;
+  Codex/GPT-5 / low / substituted: yes. Local schema/editor/viewer wiring
+  exists; no speculative implementation added.
+- QA self-review: BLOCKED. Stage owner qa-self-review; Codex/GPT-5 / low /
+  substituted: yes. #844 browser round-trip and extracted artifact proof are
+  not terminal.
+- Reconcile: OPEN / dependency-blocked. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/852#issuecomment-5833425113
+  records the matrix and local-only check boundary.

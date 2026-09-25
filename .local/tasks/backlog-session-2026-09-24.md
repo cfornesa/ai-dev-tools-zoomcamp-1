@@ -562,6 +562,43 @@ deferred.
 - Final verification boundary: production URLs, owner-only editor routes,
   and any Replit publish/database action are not closed by local evidence.
   Owner authorization remains limited to #747/#748/#788.
-- Handoff: next action is to implement #815 through its full loop, rebuild the
-  disposable Compose stack from `cd4ab57` for #821, then process the authorized
-  production/browser items without publishing unrelated commits.
+- Handoff update: #821 is now terminal and the next work is #803’s structured
+  parity verification, followed by #815 and the authorized production/browser
+  items; do not publish unrelated commits.
+
+## #803 transaction update — 2026-09-25 continuation
+
+- Distillation/groom: user-reported generated immersive route is covered by
+  existing #803; no duplicate issue created. The local fix is a scoped
+  presentation-identity change, with structured 3D parity still in the same
+  issue contract.
+- Engineering: Stage 2a Opencode Go / Kimi K3 / medium rostered; Codex /
+  GPT-5 / medium substituted. Commit `306bb2b` adds normal-flow identity and
+  description above the generated immersive stage, moves embed actions below,
+  and adds responsive spacing/order assertions.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Stage 3 independent-family review not run. Full frontend
+  Vitest passed 277 files / 2976 tests; focused React tests 3 passed;
+  generated immersive/embed Chromium coverage passed 6 tests and screenshots
+  at 1280x900/375x812 were inspected. Structured route parity harnesses timed
+  out before assertions, so the issue remains open as a workflow/fixture
+  verification boundary.
+- Reconciliation: QA FAIL comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/803#issuecomment-5824741561`.
+  Issue remains OPEN. Next action: repair/reconcile the structured-3D fixture
+  navigation, execute the full regular/immersive/embed matrix at both
+  viewports, inspect screenshots, and rerun QA. No production action taken.
+
+## Distillation refresh 13 — 2026-09-25 continuation
+
+- #821 is terminal CLOSED/QA PASS. #803 remains OPEN with a workflow/fixture
+  verification boundary, not a new duplicate. Authenticated open inventory is
+  13 issues: #748, #788, #798–#807, and #815.
+- Duplicate/follow-up audit: the generated immersive identity report reuses
+  #803; no new issue was created. The absent `presentationIdentity3d.spec.ts`
+  name and structured fixture timeout are covered by #803’s required evidence
+  boundary and do not warrant a parallel issue yet.
+- Dependency/order rationale: #803 is the next active transaction because it
+  contains the current owner-reported route. #815 is independent after that;
+  #748/#788 remain explicitly authorized production work, while #798–#807
+  otherwise require local/browser evidence before any release decision.

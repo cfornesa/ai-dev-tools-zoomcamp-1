@@ -1531,3 +1531,13 @@ mentions, focused Playwright coverage, and legacy Canvas-part compatibility.
 After rebuilding Compose from the checkout, all 3 Chromium scenarios passed and
 the 1280x900/375x812 screenshots were inspected. QA PASS closed #821; no
 production rollout was authorized or performed.
+
+## 2026-09-25 — Generated immersive identity follow-up (#803)
+
+The owner’s generated immersive route report was reproduced in Chrome: the
+identity block existed below the full-height stage. Commit `306bb2b` moves the
+title/description above a bounded responsive stage and places Embed/CMS actions
+below, with 1280x900 and 375x812 screenshots inspected locally. Generated
+immersive/embed browser coverage passed. Structured 3D parity harnesses timed
+out during fixture navigation before assertions, so #803 remains open; no
+production rollout was authorized or performed.

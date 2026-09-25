@@ -28,6 +28,7 @@ import {
   type MelodicSynthSettings,
   type SonicVoice,
 } from '../audio/sonicEngine';
+import { identifyScale, noteInScale, type PitchClass, type ScaleMatch } from '../audio/scaleTheory';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
@@ -326,6 +327,11 @@ function ThreeScenePreview({
     octaveShift: 0,
   });
   const [masterFilterCutoff, setMasterFilterCutoff] = useState(2000);
+  const [keyboardKey, setKeyboardKey] = useState<PitchClass>('C');
+  const [keyboardScale, setKeyboardScale] = useState<SonicScale>('chromatic');
+  const [transpose, setTranspose] = useState(0);
+  const [followKey, setFollowKey] = useState(false);
+  const [playedNotes, setPlayedNotes] = useState<string[]>([]);
   const [voiceInstruments, setVoiceInstruments] = useState<Record<SonicVoice, SonicInstrument>>({
     ambient: 'synth',
     movement: 'synth',
@@ -395,6 +401,7 @@ function ThreeScenePreview({
       if (!soundEnabled || !keyboardEnabled) return;
       sonicEngineRef.current?.triggerMelodicNote(note);
       setPressedPianoNotes((current) => new Set(current).add(note));
+      setPlayedNotes((current) => [...current, note].slice(-16));
     },
     [keyboardEnabled, soundEnabled],
   );
@@ -407,6 +414,15 @@ function ThreeScenePreview({
       return next;
     });
   }, []);
+
+  const detectedScale: ScaleMatch | null = identifyScale(playedNotes)[0] ?? null;
+
+  function applyKeyboardKey(root: PitchClass, scale: SonicScale) {
+    if (sonicEngineRef.current?.setKey({ root, scale })) {
+      setKeyboardKey(root);
+      setKeyboardScale(scale);
+    }
+  }
 
   useEffect(() => {
     if (!soundEnabled || !keyboardEnabled) return;
@@ -426,6 +442,7 @@ function ThreeScenePreview({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       setPressedPianoNotes(new Set());
+      setPlayedNotes([]);
     };
   }, [keyboardEnabled, pressPianoNote, releasePianoNote, soundEnabled]);
 
@@ -1224,6 +1241,93 @@ function ThreeScenePreview({
                   </div>
                   <fieldset className="editor-tool-group scene3d-keyboard-synth-controls">
                     <legend>Keyboard synth</legend>
+                    <label htmlFor="scene3d-keyboard-key">Key</label>
+                    <select
+                      id="scene3d-keyboard-key"
+                      aria-label="Key"
+                      value={keyboardKey}
+                      onChange={(event) =>
+                        applyKeyboardKey(event.target.value as PitchClass, keyboardScale)
+                      }
+                    >
+                      {(
+                        ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
+                      ).map((root) => (
+                        <option key={root} value={root}>
+                          {root}
+                        </option>
+                      ))}
+                    </select>
+                    <label htmlFor="scene3d-keyboard-scale">Keyboard scale</label>
+                    <select
+                      id="scene3d-keyboard-scale"
+                      aria-label="Keyboard scale"
+                      value={keyboardScale}
+                      onChange={(event) =>
+                        applyKeyboardKey(keyboardKey, event.target.value as SonicScale)
+                      }
+                    >
+                      {SONIC_SCALE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    <label htmlFor="scene3d-transpose">
+                      Transpose: {transpose >= 0 ? '+' : ''}
+                      {transpose} st
+                    </label>
+                    <input
+                      id="scene3d-transpose"
+                      type="range"
+                      min={-12}
+                      max={12}
+                      step={1}
+                      value={transpose}
+                      aria-valuetext={`${transpose >= 0 ? '+' : ''}${transpose} st`}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        setTranspose(next);
+                        sonicEngineRef.current?.setTranspose(next);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTranspose(0);
+                        sonicEngineRef.current?.setTranspose(0);
+                      }}
+                    >
+                      Reset transpose
+                    </button>
+                    <label htmlFor="scene3d-follow-key">
+                      <input
+                        id="scene3d-follow-key"
+                        type="checkbox"
+                        checked={followKey}
+                        onChange={(event) => {
+                          const next = event.target.checked;
+                          setFollowKey(next);
+                          sonicEngineRef.current?.setFollowKey(next);
+                        }}
+                      />
+                      Follow key for ambient
+                    </label>
+                    <p role="status" data-testid="scene3d-detected-scale">
+                      Detected scale:{' '}
+                      {detectedScale
+                        ? `${detectedScale.root} ${detectedScale.scale} (${Math.round(detectedScale.coverage * 100)}%)`
+                        : 'Play a few notes'}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={!detectedScale}
+                      onClick={() =>
+                        detectedScale && applyKeyboardKey(detectedScale.root, detectedScale.scale)
+                      }
+                    >
+                      Apply detected scale
+                    </button>
                     <label htmlFor="scene3d-keyboard-volume">Volume: {keyboardVolume}%</label>
                     <input
                       id="scene3d-keyboard-volume"
@@ -1414,36 +1518,42 @@ function ThreeScenePreview({
                       role="group"
                       aria-label="On-screen piano keyboard"
                     >
-                      {PIANO_NOTES.map((note) => (
-                        <button
-                          key={note}
-                          type="button"
-                          aria-label={note}
-                          aria-pressed={pressedPianoNotes.has(note)}
-                          onPointerDown={(event) => {
-                            event.preventDefault();
-                            pressPianoNote(note);
-                          }}
-                          onPointerUp={() => releasePianoNote(note)}
-                          onPointerCancel={() => releasePianoNote(note)}
-                          onPointerLeave={() => releasePianoNote(note)}
-                          onBlur={() => releasePianoNote(note)}
-                          onKeyDown={(event) => {
-                            if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) {
+                      {PIANO_NOTES.map((note) => {
+                        const outsideScale =
+                          keyboardScale !== 'chromatic' &&
+                          !noteInScale(note, keyboardKey, keyboardScale);
+                        return (
+                          <button
+                            key={note}
+                            type="button"
+                            className={outsideScale ? 'scene3d-piano-key-outside-scale' : undefined}
+                            aria-label={outsideScale ? `${note}, outside scale` : note}
+                            aria-pressed={pressedPianoNotes.has(note)}
+                            onPointerDown={(event) => {
                               event.preventDefault();
                               pressPianoNote(note);
-                            }
-                          }}
-                          onKeyUp={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              releasePianoNote(note);
-                            }
-                          }}
-                        >
-                          {note}
-                        </button>
-                      ))}
+                            }}
+                            onPointerUp={() => releasePianoNote(note)}
+                            onPointerCancel={() => releasePianoNote(note)}
+                            onPointerLeave={() => releasePianoNote(note)}
+                            onBlur={() => releasePianoNote(note)}
+                            onKeyDown={(event) => {
+                              if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) {
+                                event.preventDefault();
+                                pressPianoNote(note);
+                              }
+                            }}
+                            onKeyUp={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                releasePianoNote(note);
+                              }
+                            }}
+                          >
+                            {note}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                   {(micState === 'requesting' || micState === 'active') && (

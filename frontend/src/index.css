@@ -6105,6 +6105,10 @@ select.ai-proposal-field-full-width {
   color: #fff;
 }
 
+.scene3d-piano-keyboard button.scene3d-piano-key-outside-scale {
+  opacity: 0.5;
+}
+
 .scene3d-piano-keyboard button:focus-visible {
   outline: 2px solid var(--accent, #5b5bd6);
   outline-offset: 2px;

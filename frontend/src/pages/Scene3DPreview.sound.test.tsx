@@ -27,6 +27,9 @@ const {
   setMelodicSynthSpy,
   setTempoSpy,
   setScaleSpy,
+  setKeySpy,
+  setTransposeSpy,
+  setFollowKeySpy,
   setVoiceInstrumentSpy,
   reportMovementSpy,
   triggerMelodicNoteSpy,
@@ -46,6 +49,9 @@ const {
   setMelodicSynthSpy: vi.fn(() => ({ applied: [], unsupported: [] })),
   setTempoSpy: vi.fn(),
   setScaleSpy: vi.fn(() => true),
+  setKeySpy: vi.fn(() => true),
+  setTransposeSpy: vi.fn(),
+  setFollowKeySpy: vi.fn(),
   setVoiceInstrumentSpy: vi.fn(() => true),
   reportMovementSpy: vi.fn(),
   triggerMelodicNoteSpy: vi.fn(),
@@ -96,9 +102,9 @@ vi.mock('../audio/sonicEngine', () => ({
     setMelodicSynth: setMelodicSynthSpy,
     setTempo: setTempoSpy,
     setScale: setScaleSpy,
-    setKey: vi.fn(() => true),
-    setTranspose: vi.fn(),
-    setFollowKey: vi.fn(),
+    setKey: setKeySpy,
+    setTranspose: setTransposeSpy,
+    setFollowKey: setFollowKeySpy,
     setVoiceInstrument: setVoiceInstrumentSpy,
     reportMovement: reportMovementSpy,
     triggerMelodicNote: triggerMelodicNoteSpy,
@@ -273,6 +279,34 @@ describe('Scene3DPreview sound control (issue #306)', () => {
     expect(setVoiceVolumeSpy).toHaveBeenCalledWith('ambient', 30);
     expect(setVoiceMutedSpy).toHaveBeenCalledWith('ambient', true);
     expect(setScaleSpy).toHaveBeenCalledWith('major');
+  });
+
+  it('controls keyboard key, transpose, follow-key, and detected scale', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+
+    await user.selectOptions(screen.getByLabelText('Key'), 'D');
+    await user.selectOptions(screen.getByLabelText('Keyboard scale'), 'major');
+    fireEvent.change(screen.getByLabelText(/Transpose/) as HTMLInputElement, {
+      target: { value: '3' },
+    });
+    await user.click(screen.getByLabelText('Follow key for ambient'));
+
+    expect(setKeySpy).toHaveBeenCalledWith({ root: 'D', scale: 'chromatic' });
+    expect(setKeySpy).toHaveBeenCalledWith({ root: 'D', scale: 'major' });
+    expect(setTransposeSpy).toHaveBeenCalledWith(3);
+    expect(setFollowKeySpy).toHaveBeenCalledWith(true);
+    expect(screen.getByTestId('scene3d-detected-scale')).toHaveTextContent('Play a few notes');
+
+    await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
+    await user.click(screen.getByRole('button', { name: 'C4, outside scale' }));
+    await user.click(screen.getByRole('button', { name: 'E4' }));
+    await user.click(screen.getByRole('button', { name: 'G4' }));
+    expect(screen.getByTestId('scene3d-detected-scale')).not.toHaveTextContent('Play a few notes');
+    expect(screen.getByRole('button', { name: 'Apply detected scale' })).toBeEnabled();
   });
 
   it('muting calls engine.disable() and hides the volume slider again', async () => {

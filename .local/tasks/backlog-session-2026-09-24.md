@@ -2388,3 +2388,22 @@ deferred.
 - Blocker triage: Chrome/browser access is not a blocker; the active session
   was re-observed. Production publish remains unauthorized for the newly
   modified #841/#842 code under the owner's stated authorization boundary.
+
+## Transaction #843 — 2026-09-25 — CLOSED
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. The existing utility and UI implementation
+  covered the contract shape; the remaining live-viewer persistence/reset
+  evidence was closure-sized and had no duplicate issue.
+- Engineer: COMPLETE. Stage owner implementation-mechanical; Codex/GPT-5
+  substitution; medium effort. Added the live browser persistence/reset
+  regression and fixed the reset/effect race in `PieceStageControls.tsx` so
+  clearing storage is not followed by an immediate default snapshot write.
+  Commit `PENDING_COMMIT_843`.
+- QA self-review: PASS. Stage owner qa-self-review; Codex/GPT-5 substitution;
+  medium effort. Final current-checkout Compose Chromium flow passed 1/1;
+  focused tests passed 67; full frontend passed 280 files / 3009 tests;
+  typecheck, format, and lint passed with existing warnings only.
+- Reconcile: CLOSED. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/843#issuecomment-5832518633
+  records the matrix, commands, provenance, and local-only boundary.

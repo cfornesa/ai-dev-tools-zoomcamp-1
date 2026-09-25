@@ -188,6 +188,7 @@ function PieceStageControls({
   const cameraStateRef = useRef<'off' | 'active' | 'denied' | 'unavailable' | 'ended'>('off');
   const steeringActiveRef = useRef(false);
   const commandRef = useRef<(type: string, extra?: Record<string, unknown>) => void>(() => {});
+  const resetSoundSettingsRef = useRef(false);
   const visitorOverlayRef = useRef<HTMLCanvasElement | null>(null);
   const visitorStrokesRef = useRef<VisitorStroke[]>([]);
   const visitorPointerIdRef = useRef<number | null>(null);
@@ -470,6 +471,7 @@ function PieceStageControls({
       type === 'set-keyboard-enabled'
     ) {
       if (!isValidArtPieceSoundCommand(type, extra)) return;
+      if (type !== 'toggle-sound') resetSoundSettingsRef.current = false;
     }
     if (type === 'screenshot') setScreenshotError(null);
     iframeRef.current?.contentWindow?.postMessage(
@@ -525,17 +527,29 @@ function PieceStageControls({
     commandRef.current('set-keyboard-enabled', { enabled: settings.keyboardEnabled });
   }, []);
 
+  function resetVisitorSoundSettings() {
+    applySoundSettings(resetSoundSettings(pieceId), soundOn);
+    resetSoundSettingsRef.current = true;
+    // React's persistence effect may already be queued by the same gesture;
+    // remove the key once the reset state has committed so that reset remains
+    // a true clear operation rather than a write of the default snapshot.
+    window.setTimeout(() => resetSoundSettings(pieceId), 0);
+  }
+
   useEffect(() => {
     // The sandbox reports the acknowledged Sound state asynchronously. Read
     // the current validated snapshot here so a setting saved before a mute,
     // reset, or route revisit is applied only after activation succeeds.
-    if (soundOn) applySoundSettings(readSoundSettings(pieceId), true);
+    if (soundOn && !resetSoundSettingsRef.current) {
+      applySoundSettings(readSoundSettings(pieceId), true);
+    }
   }, [applySoundSettings, pieceId, soundOn]);
 
   useEffect(() => {
     // Do not let the initial runtime-off state overwrite a visitor's saved
     // keyboard preference before the user has activated Sound.
     if (!soundOn) return;
+    if (resetSoundSettingsRef.current) return;
     writeSoundSettings(pieceId, {
       version: 1,
       soundVolume: volume,
@@ -1088,10 +1102,7 @@ function PieceStageControls({
                   command('set-volume', { value });
                 }}
               />
-              <button
-                type="button"
-                onClick={() => applySoundSettings(resetSoundSettings(pieceId), soundOn)}
-              >
+              <button type="button" onClick={resetVisitorSoundSettings}>
                 Reset sound settings
               </button>
               <label htmlFor="art-piece-ambient-bpm">Ambient BPM: {ambientBpm}</label>

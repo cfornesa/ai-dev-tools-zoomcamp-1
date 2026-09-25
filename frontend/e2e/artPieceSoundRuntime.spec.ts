@@ -352,3 +352,82 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
     }
   });
 });
+
+test.describe('Generated regular viewer: per-piece sound settings (#843)', () => {
+  let fixture: ReturnType<typeof requireE2EFixtures>;
+  test.beforeAll(() => {
+    fixture = requireE2EFixtures();
+  });
+
+  test('restores settings only after activation and reset clears the per-piece key', async ({
+    page,
+    context,
+  }) => {
+    await loginViaUI(page, fixture.owner.email, fixture.password);
+    const created = await apiPost(context, '/api/art-pieces/', {
+      title: 'Sound settings persistence fixture',
+      description: 'A disposable fixture for per-piece visitor settings.',
+      prompt: 'red rectangle',
+      engine: 'canvas2d',
+      capabilities: { screenshot: true, sound: true, keyboard: true, download: false },
+      source: CANVAS_RED_RECTANGLE,
+    });
+    expect(created.status()).toBe(201);
+    const piece = (await created.json()) as { public_id: string };
+    expect(
+      (
+        await apiPatch(context, `/api/art-pieces/${piece.public_id}/`, {
+          status: 'published',
+        })
+      ).ok(),
+    ).toBe(true);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`/art-pieces/p/${piece.public_id}`);
+    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Unmute sound' }).click();
+    await page.getByLabel(/Ambient BPM/).fill('120');
+    await page.getByLabel(/Ambient volume/).fill('30');
+    await page.getByLabel('Scale').selectOption('dorian');
+    await page
+      .getByRole('group', { name: 'Keyboard synth' })
+      .getByLabel('Oscillator')
+      .selectOption('square');
+    await page
+      .getByRole('group', { name: 'Keyboard synth' })
+      .getByLabel(/Octave:/)
+      .fill('1');
+
+    const storedBeforeReload = await page.evaluate(
+      (publicId) => localStorage.getItem(`creatr.sound.${publicId}`),
+      piece.public_id,
+    );
+    expect(storedBeforeReload).not.toBeNull();
+
+    await page.reload();
+    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await expect(page.getByLabel(/Ambient BPM/)).toHaveValue('120');
+    await expect(page.getByLabel(/Ambient volume/)).toHaveValue('30');
+    await expect(page.getByLabel('Scale')).toHaveValue('dorian');
+    const keyboard = page.getByRole('group', { name: 'Keyboard synth' });
+    await expect(keyboard.getByLabel('Oscillator')).toHaveValue('square');
+    await expect(keyboard.getByLabel(/Octave:/)).toHaveValue('1');
+    await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+
+    await page.getByRole('button', { name: 'Unmute sound' }).click();
+    await page.getByRole('button', { name: 'Reset sound settings' }).click();
+    await expect(page.getByLabel(/Ambient BPM/)).toHaveValue('90');
+    await expect(page.getByLabel(/Ambient volume/)).toHaveValue('50');
+    await expect(page.getByLabel('Scale')).toHaveValue('pentatonic');
+    await expect(keyboard.getByLabel('Oscillator')).toHaveValue('sine');
+    await expect(keyboard.getByLabel(/Octave:/)).toHaveValue('0');
+    const storedSettings = await page.evaluate(
+      (publicId) => localStorage.getItem(`creatr.sound.${publicId}`),
+      piece.public_id,
+    );
+    expect(storedSettings).toBeNull();
+  });
+});

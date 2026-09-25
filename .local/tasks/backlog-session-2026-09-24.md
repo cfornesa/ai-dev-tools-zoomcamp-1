@@ -2854,3 +2854,40 @@ deferred.
 - Release boundary: commits `aa3d691`, `20fa07a`, `c27089a`, `30ed0c9`, and
   `0548cbd` are pushed to `origin/main`; no current-checkout production
   publish was performed in this continuation.
+
+## Distillation refresh 50 — 2026-09-25 — ACTIVE-CHROME RECONCILIATION
+
+- The earlier “Chrome unavailable” boundary is corrected. The owner’s active
+  Chrome session was inspected successfully. On the canonical immersive URL,
+  the piece toolbar is direct-button mode: screenshot, download, sound, piece
+  controls, guide, and fullscreen. The title/description remain above the
+  stage and Share/Embed remain below it, above the versions box.
+- Source reconciliation: `CanonicalPublicPiece.tsx` and
+  `ImmersiveProject3DViewer.tsx` pass `toolbarMode="inline"`; the default
+  `toolbarMode="menu"` belongs to legacy/compatibility viewer surfaces. The
+  responsive global header also has an intentional hamburger below 768px.
+  The reported hamburger therefore maps to a different/stale surface or
+  revision, not to the canonical immersive piece toolbar. Closed #761/#693
+  already cover the duplicate inline-toolbar implementation gap; open
+  #859/#860 cover route-level verification. No new duplicate issue was filed.
+- New live authored-3D export evidence: Full ZIP and Non-Camera ZIP were each
+  downloaded from the published canonical route, extracted, served locally,
+  and exercised in active Chrome. Both rendered direct controls and sound
+  settings; Full ZIP exposed ambient/keyboard/live-mic/camera-theremin paths,
+  while Non-Camera exposed ambient/keyboard sound and no camera UI. Keyboard
+  note A changed the live status to “Keyboard note A is playing.” This is
+  browser evidence for #842’s authored-3D/export slice only, not generated or
+  structured-2D fixture evidence.
+- #841 remains OPEN: Chrome availability is no longer the blocker, but the
+  live authored 3D fixture does not prove the structured-2D/generated sound
+  contract and the published revision does not match `aa3d691`.
+- #842 remains OPEN with a partial QA pass: published Full/Non-Camera ZIP
+  behavior is evidenced, but the required generated artifact and exact 1280x900
+  and 375x812 viewport evidence remain outstanding. #844/#846 remain OPEN for
+  their respective browser round-trip/effects criteria. The headless Playwright
+  viewport attempt hit the host Chromium MachPort permission failure, so it is
+  recorded as an environment boundary rather than product evidence.
+- Duplicate audit: no new actionable issue was found. Next queue remains
+  #841/#842/#844/#846 browser verification, then dependent #851–#862; #788 and
+  #847 remain externally blocked. This refresh supersedes only the earlier
+  browser-unavailable wording; it does not close or reopen an issue.

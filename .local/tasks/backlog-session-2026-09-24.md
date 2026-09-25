@@ -1632,3 +1632,19 @@ deferred.
 - Next groomed transaction: #837. Service/model/effort for this distillation:
   Codex/GPT-5 substitution, medium effort. No production-readiness or final
   session-completion claim is valid until the open manifest is terminal.
+
+## Distillation refresh 36 — 2026-09-25 #837 reconciliation
+
+- #837 completed the Stage 2b transaction in commit `6234398`: melodic
+  oscillator/ADSR/filter/octave controls, validation/clamping, unsupported
+  instrument reporting, and octave-shifted keyboard notes were implemented.
+  QA PASS comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/837#issuecomment-5829230996`.
+- Required QA checks passed: `cd frontend && npm test -- --run src/audio`
+  (3 files, 37 tests), `npm run typecheck`, and `npm run lint` (existing
+  warnings only). Local-only evidence; #839–#842 retain the UI/export follow-up
+  scope. #837 is closed and no new gap was found.
+- Next transaction is #838, then #839–#852 in dependency order. #788 remains
+  independent and production-runtime blocked; #853–#862 remain browser QA and
+  reporting contracts. Service/model/effort: Codex/GPT-5 substitution, medium
+  effort; no stage-3 independent-family review.

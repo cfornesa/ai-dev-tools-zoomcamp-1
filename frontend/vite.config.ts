@@ -208,6 +208,12 @@ function siteMetadataDescriptor(pathname: string): string | null {
   return null;
 }
 
+function canonicalPieceDescriptor(pathname: string): { handle: string; slug: string } | null {
+  const match = pathname.match(/^\/users\/@([^/]+)\/(?:pieces|immersive)\/([^/]+)\/?$/);
+  if (!match) return null;
+  return { handle: match[1], slug: match[2] };
+}
+
 function legacyCollectionDescriptor(pathname: string): {
   handle: string;
   slug: string;
@@ -233,10 +239,10 @@ async function fetchShareMetadata(pathname: string): Promise<ShareMetadata | nul
   if (direct) {
     ({ kind, publicId } = direct);
   } else {
-    const canonical = pathname.match(/^\/users\/@([^/]+)\/pieces\/([^/]+)\/?$/);
+    const canonical = canonicalPieceDescriptor(pathname);
     if (!canonical) return null;
     const response = await fetch(
-      `${backendProxyTarget}/api/users/@${encodeURIComponent(canonical[1])}/pieces/${encodeURIComponent(canonical[2])}/`,
+      `${backendProxyTarget}/api/users/@${encodeURIComponent(canonical.handle)}/pieces/${encodeURIComponent(canonical.slug)}/`,
       { headers: backendRequestHeaders() },
     );
     if (!response.ok) return null;
@@ -345,7 +351,7 @@ function shareMetadataPlugin(): Plugin {
       }
       if (
         !routeDescriptor(requestPath) &&
-        !/^\/users\/@[^/]+\/pieces\/[^/]+\/?$/.test(requestPath) &&
+        !canonicalPieceDescriptor(requestPath) &&
         !siteMetadataDescriptor(requestPath)
       ) {
         return next();

@@ -63,6 +63,21 @@ describe('vite preview share metadata (production run path)', () => {
         );
         return;
       }
+      if (request.url?.includes('/api/users/@artist/pieces/')) {
+        response.end(JSON.stringify({ type: '3d', piece: { id: 'canonical-piece-id' } }));
+        return;
+      }
+      if (request.url === '/api/public/share-meta/3d/canonical-piece-id/') {
+        response.end(
+          JSON.stringify({
+            title: 'Canonical 3D piece',
+            description: 'Canonical description',
+            canonical_path: '/users/@artist/pieces/canonical-piece',
+            image_url: '/api/public/share-image/3d/canonical-piece-id.png',
+          }),
+        );
+        return;
+      }
       response.statusCode = 404;
       response.end('{}');
     });
@@ -111,6 +126,20 @@ describe('vite preview share metadata (production run path)', () => {
     const html = await (await fetch(`${baseUrl}/`)).text();
     expect(html).toContain('og:title');
     expect(html).toContain('https://example.test/');
+  });
+
+  it('injects metadata for canonical regular and immersive piece routes', async () => {
+    for (const route of [
+      '/users/@artist/pieces/canonical-piece',
+      '/users/@artist/immersive/canonical-piece',
+    ]) {
+      const html = await (await fetch(`${baseUrl}${route}`)).text();
+      expect(html).toContain('property="og:title" content="Canonical 3D piece"');
+      expect(html).toContain(
+        'property="og:url" content="https://example.test/users/@artist/pieces/canonical-piece"',
+      );
+      expect(html).toContain('property="og:image"');
+    }
   });
 
   it('accepts a bare host and removes a deployment-console path', async () => {

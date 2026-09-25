@@ -3776,3 +3776,30 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
 - Handoff: no production data write or new publish was performed in this
   continuation. The worktree contains only the ledger append after the pushed
   #871 commit.
+
+## Transaction #872 — 2026-09-26 — ENGINEERED / QA PENDING PRODUCTION
+
+- Distillation: DISCOVERED during the authorized live recheck after deployment
+  revision `0e457e07`. The canonical immersive URL returned bare SPA HTML even
+  though the metadata diagnostic and backend were healthy. Closed #747 was not
+  reopened; this distinct corrective issue was created as #872. task-distillation
+  / Codex-GPT-5 / medium / substituted: no.
+- Groom: ACCEPTED. Canonical `/users/@handle/pieces/:slug` and
+  `/users/@handle/immersive/:slug` must both receive server-rendered share
+  metadata; legacy/site/feed behavior must remain unchanged. Routed to complex
+  implementation because Vite middleware route translation and backend
+  metadata lookup are involved. issue-scoping / Codex-GPT-5 / medium /
+  substituted: no.
+- Engineer: PASS locally. `frontend/vite.config.ts` now recognizes both
+  canonical route forms and reuses the existing metadata lookup; the focused
+  test covers regular and immersive canonical paths. implementation-complex /
+  Codex-GPT-5 / medium / substituted: no.
+- QA self-review: PASS for local source and regression scope. The focused
+  metadata suite passed 7/7, and the full gate passed backend 1710 passed / 39
+  skipped plus frontend 281 files / 3018 tests, with lint, format-check, and
+  typecheck passing. qa-self-review / Codex-GPT-5 / medium / substituted: no.
+- Reconcile: PENDING production publish and live curl evidence. Do not close
+  until the deployed canonical immersive HTML contains server metadata and the
+  regular canonical route remains covered; then post `## QA: PASS` with the
+  production revision and close. backlog-session / Codex-GPT-5 / medium /
+  substituted: no.

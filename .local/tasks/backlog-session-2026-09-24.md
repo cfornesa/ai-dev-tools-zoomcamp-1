@@ -1835,3 +1835,21 @@ deferred.
   QA PASS comment:
   `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/848#issuecomment-5829828030`.
 - Evidence boundary: unit-test scoped; no production or browser criterion.
+
+## Backlog transaction 45 — #849
+
+- State: `GROOMED → ENGINEERING → QA → RECONCILED → CLOSED`.
+- Grooming/routing: engine-only pitch mapping and transpose behavior, routed
+  Stage 2b because it spans four voice paths but does not change persistence,
+  schema, or migrations. Service/model/effort: Codex/GPT-5 substitution,
+  medium effort; rostered implementation service unavailable.
+- Engineering commit: `7981bba`; added validated independent melodic key/scale
+  state, chromatic-preserving keyboard mapping, follow-key ambient linkage,
+  clamped global transpose, and transpose application at ambient, movement,
+  melodic, and camera-theremin pitch boundaries.
+- QA: focused engine/UI tests passed (2 files / 59 tests), typecheck and lint
+  passed with existing warnings only, and `git diff --check` passed. GitHub QA
+  PASS comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/849#issuecomment-5829867475`.
+- Evidence boundary: the issue's specified mocked engine fixture is covered;
+  UI wiring and screenshots belong to dependent #850 and later surfaces.

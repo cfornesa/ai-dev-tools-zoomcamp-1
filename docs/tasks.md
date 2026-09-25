@@ -24010,3 +24010,9 @@ See `docs/distillation-2026-09-24-external-repo-parity.md`. Issues #807, #798–
 See `docs/distillation-2026-09-24-ai-generation-editing.md`. Issues #809-#816. Next: #809. Implementation is paused pending owner go-ahead (distillation-only instruction).
 
 Addendum 6 update: #814 closed; added #817-#821 (see distillation doc). Still distillation-only.
+
+### 2026-09-26 production-boundary follow-up
+
+| Issue | Scope | Routing | Status |
+|---|---|---|---|
+| #825 | Replit launcher avoids frontend/backend `PORT=8000` collision | 2a | implementation complete; production publish retry failed, remains OPEN |

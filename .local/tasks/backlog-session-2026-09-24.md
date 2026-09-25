@@ -964,3 +964,23 @@ deferred.
   stage-2a startup/configuration routing hint and linked evidence.
 - Next transaction: #825. #748, #788, and #806 remain dependency- or
   verification-bound until #825 produces a healthy authorized deployment.
+
+## #825 transaction — 2026-09-26
+
+- Groom: production logs exposed a distinct Replit `PORT=8000` collision;
+  duplicate search found no existing issue, so criterion-ready #825 was
+  created with stage-2a startup/configuration routing.
+- Engineering: Stage 2a roster Opencode Go / qwen3.6-plus / medium;
+  Codex / GPT-5 / medium substituted. Commit `f9461d1` keeps Django on 8000
+  and selects Vite port 5000 for the Replit deployment topology, with a
+  launcher regression test. Safe push advanced `origin/main` to that commit.
+- QA self-review: focused startup tests (20 passed), shell syntax and diff
+  checks passed, and `make check` passed (backend 1697 passed/39 skipped;
+  frontend 277 files/2979 tests). The authorized Replit retry was started
+  from a fresh branch at `f9461d1`, but Replit returned to its failed state
+  without a usable new deployment/revision; public assets remained the
+  pre-fix `index-0pRO1VzA.js` rather than local `index-7rb7LLxZ.js`.
+- Reconciliation: QA remains FAIL/BLOCKED on the deployment criterion;
+  #825 stays OPEN. No production data action was run. The safe local
+  disposable-PostgreSQL rehearsal for #788 completed dry-run, import, and
+  cleanup, creating six isolated fixture rows and deleting only those rows.

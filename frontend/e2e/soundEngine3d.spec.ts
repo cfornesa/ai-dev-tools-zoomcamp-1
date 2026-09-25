@@ -63,6 +63,13 @@ test.describe('3D sound engine', () => {
     await expect(ambient).toHaveValue('synth');
     await expect(melodic).toHaveValue('synth');
 
+    await expect(toolbar.getByRole('group', { name: 'Keyboard synth' })).toBeVisible();
+    const oscillator = toolbar.getByLabel('Oscillator');
+    await oscillator.selectOption('square');
+    await expect(oscillator).toHaveValue('square');
+    await toolbar.getByLabel(/Octave:/).fill('2');
+    await expect(toolbar.getByLabel(/Octave:/)).toHaveValue('2');
+
     await mute.click();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toHaveAttribute(
       'aria-pressed',

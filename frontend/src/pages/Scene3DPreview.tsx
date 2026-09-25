@@ -25,6 +25,7 @@ import {
   type SonicEngine,
   type SonicInstrument,
   type SonicScale,
+  type MelodicSynthSettings,
   type SonicVoice,
 } from '../audio/sonicEngine';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
@@ -316,6 +317,14 @@ function ThreeScenePreview({
   const [ambientVolume, setAmbientVolume] = useState(50);
   const [ambientMuted, setAmbientMuted] = useState(false);
   const [ambientScale, setAmbientScale] = useState<SonicScale>('pentatonic');
+  const [keyboardVolume, setKeyboardVolume] = useState(50);
+  const [melodicSynthSettings, setMelodicSynthSettings] = useState<MelodicSynthSettings>({
+    oscillator: 'sine',
+    envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 },
+    filter: { type: 'lowpass', cutoff: 2000, resonance: 1 },
+    octaveShift: 0,
+  });
+  const [masterFilterCutoff, setMasterFilterCutoff] = useState(2000);
   const [voiceInstruments, setVoiceInstruments] = useState<Record<SonicVoice, SonicInstrument>>({
     ambient: 'synth',
     movement: 'synth',
@@ -356,6 +365,11 @@ function ThreeScenePreview({
 
   function dispatchFlyKey(key: string, type: 'keydown' | 'keyup') {
     window.dispatchEvent(new KeyboardEvent(type, { key, bubbles: true }));
+  }
+
+  function applyMelodicSynthSettings(next: MelodicSynthSettings) {
+    setMelodicSynthSettings(next);
+    sonicEngineRef.current?.setMelodicSynth(next);
   }
 
   function releaseFlyKey(key: string) {
@@ -1177,6 +1191,126 @@ function ThreeScenePreview({
                       </label>
                     ))}
                   </div>
+                  <fieldset className="editor-tool-group scene3d-keyboard-synth-controls">
+                    <legend>Keyboard synth</legend>
+                    <label htmlFor="scene3d-keyboard-volume">
+                      Volume: {keyboardVolume}%
+                    </label>
+                    <input
+                      id="scene3d-keyboard-volume"
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={keyboardVolume}
+                      aria-valuetext={`${keyboardVolume}%`}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        setKeyboardVolume(next);
+                        sonicEngineRef.current?.setVoiceVolume('melodic', next);
+                      }}
+                    />
+                    <label htmlFor="scene3d-keyboard-oscillator">Oscillator</label>
+                    <select
+                      id="scene3d-keyboard-oscillator"
+                      value={melodicSynthSettings.oscillator}
+                      onChange={(event) =>
+                        applyMelodicSynthSettings({
+                          ...melodicSynthSettings,
+                          oscillator: event.target.value as MelodicSynthSettings['oscillator'],
+                        })
+                      }
+                      disabled={['membranesynth', 'metalsynth', 'plucksynth'].includes(voiceInstruments.melodic)}
+                      title="Percussive instruments do not support oscillator waveform controls."
+                    >
+                      {(['sine', 'square', 'sawtooth', 'triangle'] as const).map((waveform) => (
+                        <option key={waveform} value={waveform}>{waveform}</option>
+                      ))}
+                    </select>
+                    <label htmlFor="scene3d-keyboard-filter-type">Filter type</label>
+                    <select
+                      id="scene3d-keyboard-filter-type"
+                      value={melodicSynthSettings.filter.type}
+                      onChange={(event) =>
+                        applyMelodicSynthSettings({
+                          ...melodicSynthSettings,
+                          filter: { ...melodicSynthSettings.filter, type: event.target.value as MelodicSynthSettings['filter']['type'] },
+                        })
+                      }
+                    >
+                      {(['lowpass', 'highpass', 'bandpass'] as const).map((type) => <option key={type} value={type}>{type}</option>)}
+                    </select>
+                    {([
+                      ['cutoff', 'Cutoff', 20, 20000, 20],
+                      ['resonance', 'Resonance', 0.1, 20, 0.1],
+                    ] as const).map(([field, label, min, max, step]) => (
+                      <label key={field} htmlFor={`scene3d-keyboard-filter-${field}`}>
+                        {label}: {melodicSynthSettings.filter[field]}
+                        <input
+                          id={`scene3d-keyboard-filter-${field}`}
+                          type="range"
+                          min={min}
+                          max={max}
+                          step={step}
+                          value={melodicSynthSettings.filter[field]}
+                          aria-valuetext={`${melodicSynthSettings.filter[field]}`}
+                          onChange={(event) =>
+                            applyMelodicSynthSettings({
+                              ...melodicSynthSettings,
+                              filter: { ...melodicSynthSettings.filter, [field]: Number(event.target.value) },
+                            })
+                          }
+                        />
+                      </label>
+                    ))}
+                    {(['attack', 'decay', 'sustain', 'release'] as const).map((field) => (
+                      <label key={field} htmlFor={`scene3d-keyboard-${field}`}>
+                        {field}: {melodicSynthSettings.envelope[field]}
+                        <input
+                          id={`scene3d-keyboard-${field}`}
+                          type="range"
+                          min={field === 'sustain' ? 0 : 0.001}
+                          max={field === 'sustain' ? 1 : 10}
+                          step={field === 'sustain' ? 0.01 : 0.001}
+                          value={melodicSynthSettings.envelope[field]}
+                          aria-valuetext={`${melodicSynthSettings.envelope[field]}`}
+                          disabled={['membranesynth', 'metalsynth', 'plucksynth'].includes(voiceInstruments.melodic)}
+                          title="Percussive instruments do not support ADSR envelope controls."
+                          onChange={(event) =>
+                            applyMelodicSynthSettings({
+                              ...melodicSynthSettings,
+                              envelope: { ...melodicSynthSettings.envelope, [field]: Number(event.target.value) },
+                            })
+                          }
+                        />
+                      </label>
+                    ))}
+                    <label htmlFor="scene3d-keyboard-octave">Octave: {melodicSynthSettings.octaveShift}</label>
+                    <input
+                      id="scene3d-keyboard-octave"
+                      type="range"
+                      min={-2}
+                      max={2}
+                      step={1}
+                      value={melodicSynthSettings.octaveShift}
+                      aria-valuetext={`${melodicSynthSettings.octaveShift}`}
+                      onChange={(event) => applyMelodicSynthSettings({ ...melodicSynthSettings, octaveShift: Number(event.target.value) })}
+                    />
+                    <label htmlFor="scene3d-master-filter-cutoff">Master filter cutoff: {masterFilterCutoff}</label>
+                    <input
+                      id="scene3d-master-filter-cutoff"
+                      type="range"
+                      min={20}
+                      max={20000}
+                      step={20}
+                      value={masterFilterCutoff}
+                      aria-valuetext={`${masterFilterCutoff} Hz`}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        setMasterFilterCutoff(next);
+                        sonicEngineRef.current?.setFilter({ type: 'lowpass', cutoff: next, resonance: 1 });
+                      }}
+                    />
+                  </fieldset>
                   <div className="editor-tool-group">
                     <button
                       type="button"

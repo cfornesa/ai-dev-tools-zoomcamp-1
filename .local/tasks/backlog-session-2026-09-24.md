@@ -3952,6 +3952,58 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #877
+
+- Open inventory now includes #877 in addition to #874, #862, #861, #860,
+  #859, #858, #857, #856, #855, #854, #853, #847, and #788. #873 and #875
+  remain closed historical/implementation evidence; #876 is implemented and
+  locally QA-passed but awaits release authorization before production mutation.
+- Duplicate audit: #877 is distinct from #855 because it owns the fixture's
+  authored-source correctness and six-layer/particle acceptance contract;
+  #855 remains the verification report for the resulting interactive runtime.
+  #876 is distinct because it owns parent ambient telemetry, not source data.
+- Routing: #877 is a local editor/data-fixture corrective transaction. After
+  its local publication and re-verification, retry #853–#861; #862 remains the
+  aggregate report. #874 and #788 retain their separate production/data
+  boundaries, and #847 retains its owner-scoped media-delivery blocker.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Transaction #876 — 2026-09-26 — ENGINEERED / QA PASS LOCAL / DEPLOYMENT PENDING
+
+- Groom: ambient event evidence was missing from the parent-owned sound
+  bridge. Duplicate audit found no existing issue that records actual parent
+  ambient emission telemetry; #873 covers sound activation and keyboard
+  telemetry, while #876 covers ambient verification observability.
+- Engineer: added optional SonicEngine note-event telemetry, emitted after the
+  ambient Tone loop triggers a note, and surfaced the last ambient note in the
+  shared PieceStageControls panel without changing existing callers.
+  Commit `7a71052`.
+- QA self-review: PASS locally. Focused unit tests passed (2 files / 66
+  tests), typecheck, lint, format-check, and Compose frontend rebuild passed.
+  Active Chrome local embed showed `Sound is on at 100% volume (running)` and
+  `Last ambient note: C4 (261.63 Hz) at 90 BPM`.
+- GitHub QA comment: #876 comment 5839128956. Production publish is pending
+  explicit release authorization for this newly discovered issue.
+
+## Transaction #877 — 2026-09-26 — ENGINEERED / QA PARTIAL LOCAL / OPEN
+
+- Groom: confirmed the fixture's source was a one-color fallback and that the
+  open issue is distinct from #855's runtime verification. The local owner
+  editor and duplicate-row identity were resolved before mutation.
+- Engineer: replaced only the disposable local C2.js Interactive draft source
+  with an authored six-region scene and 24 drifting particles. The stale
+  duplicate was moved to a local legacy draft slug, and the corrected row was
+  made canonical/public locally. Sound defaults were saved as a new version.
+  No repository source, production data, schema, dependency, or secret changed.
+- QA self-review: PARTIAL. Local database confirms version 3 is published with
+  major / 90 BPM / C / keyboard major / transpose 0. Active Chrome renders the
+  corrected scene at 959x864 with no page/runtime errors. Exact 1280x720 and
+  375x667 captures remain pending because the active browser control session
+  did not expose a safe viewport-resize capability.
+- GitHub QA comment: #877 comment 5839223069. Keep open; once exact viewport
+  evidence is available, use this canonical local fixture to retry #855 and
+  the dependent regular/immersive/embed/ZIP reports.
+
 ## Transaction #875 — 2026-09-26 — ENGINEERED / QA PASS LOCAL / DEPLOYMENT PENDING
 
 - Groom: new issue created during #853 because the current generated viewer

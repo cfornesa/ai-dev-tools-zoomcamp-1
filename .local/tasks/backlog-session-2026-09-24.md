@@ -1066,3 +1066,33 @@ deferred.
 - Next action: explicitly reconcile the existing Replit `.replit` change with
   pushed `origin/main` in the authorized workspace, then publish from a clean
   exact revision. Do not use Replit Fix with Agent or discard the change.
+
+## Distillation refresh 23 — 2026-09-25
+
+- Reconciled the active Chrome session and Replit workspace. The stale `.replit`
+  override was inspected and discarded after owner confirmation; Replit `main`
+  was fetched and pulled. The pull exposed an in-progress rebase; the ignored
+  session ledger was preserved with `git add -f`, and the rebase completed with
+  two empty historical publish commits remaining. Replit then reported
+  `main...origin/main [ahead 2]` and an empty `git diff origin/main..HEAD`.
+- The authorized publish completed as deployment revision `da0ce0fb`; `/health/`
+  and the anonymous smoke passed. Fresh Chrome reload and direct API verification
+  found a production failure: `/api/users/@cfornesa/pieces/untitled-3d-scene-3/`
+  returns HTTP 500 and the immersive route says the piece is unavailable.
+- Replit deployment logs identify the cause as
+  `psycopg.errors.UndefinedColumn: column scenes_publicprofile.profile_image_data does not exist`.
+  This is a new schema-reconciliation gap, not evidence for closing #827.
+  Duplicate search was empty; created criterion-ready #828, stage-2b complex,
+  requiring owner authorization before any production schema mutation.
+
+## #827 QA reconciliation — 2026-09-25
+
+- `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`: shell
+  PASS, but the criterion-specific public piece API returned HTTP 500.
+- Active Chrome after a hard reload at the canonical immersive URL: FAIL; the
+  page says `This immersive piece isn’t available.` The initial pre-reload
+  state also showed the old stage-before-identity order, so no layout criterion
+  is credited. Production evidence is tied to deployment `da0ce0fb`; local
+  evidence cannot close this issue.
+- QA comment: pending on #827 after the production schema gap is authorized and
+  reconciled through #828.

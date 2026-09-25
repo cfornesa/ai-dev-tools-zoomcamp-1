@@ -1630,3 +1630,13 @@ evidence, so it was not reopened. Duplicate search found only #803; criterion-
 ready #827 now owns the deployed 1280x900 and 375x812 layout/screenshot
 contract. #827 remains blocked until #826 produces a healthy exact-revision
 deployment.
+
+## 2026-09-25 — Production schema gap after healthy publish (#828)
+
+The authorized Replit publish completed as deployment `da0ce0fb` and passed
+the anonymous smoke, but the canonical public piece API returned HTTP 500.
+Deployment logs identify the missing `scenes_publicprofile.profile_image_data`
+column from migration 0094. This is a new criterion-ready stage-2b issue,
+#828. No production schema mutation is authorized by the existing #747/#748/#788
+authorization, so #827/#748/#788 remain open until the owner authorizes and the
+schema is reconciled through the approved production mechanism.

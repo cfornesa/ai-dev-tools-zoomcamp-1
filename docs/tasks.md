@@ -24011,10 +24011,11 @@ See `docs/distillation-2026-09-24-ai-generation-editing.md`. Issues #809-#816. N
 
 Addendum 6 update: #814 closed; added #817-#821 (see distillation doc). Still distillation-only.
 
-### 2026-09-26 production-boundary follow-up
+### 2026-09-25 production-boundary follow-up
 
 | Issue | Scope | Routing | Status |
 |---|---|---|---|
 | #825 | Replit launcher avoids frontend/backend `PORT=8000` collision | 2a | implementation complete; production publish retry failed, remains OPEN |
 | #826 | Replit production health probe avoids internal HTTPS redirect startup failure | 2b | criterion-ready; blocks exact-revision production verification |
 | #827 | Production immersive 3D surface moves identity above stage and restores reference spacing | 2a | criterion-ready; dependency-blocked on #826 publish |
+| #828 | Production schema missing PublicProfile image-data columns after publish | 2b | criterion-ready; Replit revision `da0ce0fb` logs `UndefinedColumn`; owner authorization required before production schema mutation |

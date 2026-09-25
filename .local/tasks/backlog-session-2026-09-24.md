@@ -2117,3 +2117,60 @@ deferred.
   records local evidence and the missing browser/fixture boundary. No
   production publish was performed for this new feature; dependent runtime
   verification issues remain separate.
+
+## Distillation refresh 32 — 2026-09-25 — post-QA follow-up audit
+
+- Open inventory is now #788, #838–#847, #850–#862, and newly discovered #865
+  (25 open issues). #865 is an externally created follow-up for the same
+  full-frontend-harness class as closed #864, but it reports a different
+  current pair of failures; it is not silently merged into or used to reopen
+  #864. Duplicate search and status review leave #865 as an open follow-up
+  requiring reproduction before engineering.
+- The current checkout's exact `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make
+  check` passed 280 files / 3002 tests, so #865's report is untrusted until
+  reproduced. Next action: reproduce #865 under its exact command and route
+  only if the failure recurs; otherwise document it as a flaky external
+  report.
+- #844 remains the current implementation transaction with QA incomplete;
+  no production action is authorized by this refresh.
+
+## Production-readiness gate — 2026-09-25 — BLOCKED / NOT READY
+
+- Local deployment: PASS for the committed checkout; exact root `make check`
+  passed after the #844 diff, with no migration or dependency changes.
+- Approved-browser/CI: #863 production browser evidence remains PASS at
+  1280x900 and 375x812; #844's required real-piece Playwright evidence is
+  missing. #865 is an unverified external follow-up because this checkout's
+  exact full check is green.
+- Intended functionality: BLOCKED by #844 criterion 3 and the dependent
+  #838–#847/#850–#862 verification/runtime backlog; #788 remains owner-gated
+  production data work.
+- Replit publication/production: NOT RUN for #844. Existing deployed evidence
+  is not evidence for this new commit; no published revision comparison or
+  production sound verification is claimed.
+- Release decision: NOT READY. Exact next action is to run the real-piece
+  Playwright/Chrome proof for #844, complete shared fixture coverage, then
+  rerun readiness before any publish.
+- Gate provenance: production-readiness ran as a Codex/GPT-5 substitution at
+  medium effort under the owner-authorized continuation; no independent Stage
+  3 review was credited.
+
+## Session-completion gate — 2026-09-25 — INCOMPLETE / HANDED-OFF
+
+- Processed this continuation: #863 CLOSED, #864 CLOSED, #844 IMPLEMENTED but
+  OPEN after QA FAIL/INCOMPLETE. Newly discovered #865 is OPEN and pending
+  reproduction. The remaining #788/#838–#843/#845–#847/#850–#862 issues were
+  not processed in this continuation and retain their prior open status.
+- Rollup for this continuation: discovered 4 (#863, #864, #844, #865),
+  completed 2 (#863/#864), blocked/incomplete 1 (#844), handed-off 1 (#865),
+  missing terminal statuses 0 for the four processed records. Project-wide
+  completion is not claimed because 25 open issues remain.
+- Routing audit: #863/#864 Stage 2a and #844 Stage 2b used Codex/GPT-5
+  substitutions at medium effort; QA used the same substitution; second
+  opinion was not run; readiness used owner-authorized Codex/GPT-5 medium.
+  #865 has no engineering/QA stages yet and is explicitly handed off for
+  reproduction. No stage is credited to an unavailable rostered service.
+- Follow-up audit: #844's missing browser/fixture evidence is linked to #844;
+  #865's current failures are linked to #865; no duplicate or closed issue was
+  reopened. Next action is #844 browser/fixture verification, then #865
+  reproduction, followed by the remaining open backlog in dependency order.

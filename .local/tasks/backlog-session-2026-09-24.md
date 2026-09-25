@@ -3986,3 +3986,62 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   comments are recorded. The requested “no open issues” state is not reached
   because the remaining blockers require external browser capability,
   production data authorization, or production-shell access.
+
+## Transaction #873 reconciliation — 2026-09-26 — QA PASS / DEPLOYED
+
+- Groom: unchanged criterion-ready complex issue; no duplicate created. The
+  earlier browser diagnosis was corrected after re-testing the active Chrome
+  session against the production immersive page and the local generated
+  fixture.
+- Engineer: `frontend/src/pages/PieceStageControls.tsx` now runs generated
+  sound through the existing trusted-parent `createSonicEngine` while keeping
+  the opaque preview iframe sandboxed. Sound commands, AudioContext state,
+  and keyboard-note telemetry remain surfaced through the parent contract.
+  Commit `03a8984b8aba363251bc3dbe5c66542e981396ec`.
+- QA self-review: PASS. Focused tests 3 files/79 tests; `npm run typecheck`,
+  lint, format-check, build, and `git diff --check` passed. Full
+  `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed with backend
+  1710 passed/39 skipped and frontend 281 files/3020 tests.
+- Browser evidence: active Chrome local generated fixture reported
+  `Sound is on at 100% volume (running)` and pressing A reported
+  `Last note played: a (1046.50 Hz)`. Production Chrome independently
+  activated sound on the structured immersive piece (`Mute sound`, pressed).
+- Production evidence: safe push advanced `origin/main` to the commit above;
+  Replit reported the app published just now; the served production root
+  referenced `assets/index-BNUJhmq3.js`; and
+  `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`
+  passed. The public gallery has no generated `serene-threejs` fixture, so
+  generated telemetry remains local-Chrome evidence, not a claim that a
+  production generated record exists.
+- Reconcile: GitHub QA comment `#873 comment 5838775017` supersedes the stale
+  browser-capability FAIL comment. #873 is ready to close; dependent #853–#861
+  may now be processed as verification transactions, subject to their own
+  evidence criteria.
+
+## Production-readiness refresh — 2026-09-26 — NOT READY
+
+- #873 is implementation-ready, tested, safely pushed, published, and
+  reconciled with a PASS comment.
+- #874 remains open because the signed-in production editor record is empty
+  while the public `untitled-3d-scene-3` record is populated; no authorized
+  production data mutation covers that mismatch.
+- #788 remains blocked: Replit's visible shell is development-only and the
+  checked-in production startup gate does not provide a dry-run importer.
+  Do not enable `RUN_REFERENCE_IMPORT_ON_START` or mutate production data.
+- #853–#861 remain open verification work; their production generated-fixture
+  evidence is not implied by #873's local generated-fixture evidence.
+
+## Session-completion refresh — 2026-09-26 — INCOMPLETE / OPEN FOLLOW-UPS
+
+- Counts: #873 implementation reconciled PASS; #874 remains open; #788 and
+  #853–#862 remain open for production/data/browser evidence. No closed issue
+  was reopened and no production data was changed.
+- Routing audit: #873's former browser-capability blocker was corrected in
+  code; #874 is a production-record/data-boundary investigation; #788 is an
+  external Replit production-shell blocker; #853–#861 are dependent browser
+  verification issues; #862 is the aggregate workflow-validity report.
+- Follow-up audit: close #873 after recording the new PASS comment if the
+  project policy permits direct closure; continue the dependent Chrome
+  verification pass; preserve #788 as blocked until a supported production
+  dry-run/import path exists; and keep #874 open until the production record
+  mismatch is resolved without unauthorized data changes.

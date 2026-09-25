@@ -3906,6 +3906,19 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   explain the disabled Save state. Focused editor tests, typecheck, format,
   and build are passing; full gate and browser/production QA remain pending.
 - Second opinion: NOT RUN / Mistral Vibe / medium / substituted: no.
-- QA self-review: PENDING. The production screenshot is reproduction evidence,
-  not closure evidence; the deployed route must be checked after a safe push and
-  publish with revision provenance.
+- QA self-review: PASS for the local implementation and deployed toolbar
+  contract; FAIL for the complete production criterion. `make check` passed
+  after the final geometry fix (backend 1749 collected; frontend 281 files /
+  3020 tests; lint, format, typecheck green), and the safe pushes were
+  `4bdacae` then `e7f365e`. Replit's first publish used a stale divergent
+  workspace; after a normal merge of `origin/main` and a fetch/merge of `e7f365e`,
+  the final publish was verified at the exact signed-in production route.
+  Chrome shows direct toolbar controls, fullscreen at upper-right, and
+  `Save scene` followed by `Ask AI to improve this scene` at lower-left.
+  `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` passed.
+  The stage remains gray and the live Scene outline contains only `Camera`, so
+  the stored production scene has no renderable object; this is a production
+  data/content blocker and prevents closure of the criterion requiring the
+  piece to render. Local anonymous owner-route failure is an auth boundary,
+  not evidence against the signed-in production route. Do not alter production
+  scene data outside the separately authorized #788 import action.

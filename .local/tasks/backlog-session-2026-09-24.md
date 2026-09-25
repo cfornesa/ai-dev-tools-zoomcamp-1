@@ -2616,3 +2616,46 @@ deferred.
   The next engineering candidate is #841, but its structured-2D runtime
   defect must be implemented and independently QA-verified before dependent
   verification work can resume.
+
+## Transactions #859–#861 — 2026-09-25 — DEPENDENCY-BLOCKED / HANDED-OFF
+
+- Groom: ACCEPTED as three distinct route/artifact sweeps; stage owner
+  task-distillation orchestrator / Codex/GPT-5 / medium / substituted: yes.
+  Each depends on #853–#858 and no duplicate was found.
+- Engineer: NOT STARTED; stage owner implementation-mechanical / Codex/GPT-5 /
+  low / substituted: yes. These are verification-only issues and their
+  declared engine fixtures are not valid until the prerequisite behavior is
+  terminal.
+- QA self-review: HANDED-OFF; stage owner qa-self-review / Codex/GPT-5 / low /
+  substituted: yes. No route, ZIP, screenshot, or production result was
+  claimed.
+- Reconcile: DEPENDENCY-BLOCKED / OPEN. QA comments:
+  #859 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/859#issuecomment-5833021798
+  #860 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/860#issuecomment-5833022062
+  #861 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/861#issuecomment-5833022322
+  record the prerequisite chain and evidence boundary.
+
+## Distillation refresh 45 — 2026-09-25 — route/artifact sweep reconciliation
+
+- #859–#861 remain dependency-blocked; no new issue or duplicate was created.
+  #862 is also blocked until #853–#861 are terminal. The next independent
+  implementation candidate remains #841.
+
+## Transaction #862 — 2026-09-25 — DEPENDENCY-BLOCKED / HANDED-OFF
+
+- Groom: ACCEPTED as a distinct cross-engine workflow report; stage owner
+  task-distillation orchestrator / Codex/GPT-5 / medium / substituted: yes.
+  It depends on #853–#861 and no duplicate was found.
+- Engineer: NOT STARTED; stage owner implementation-mechanical / Codex/GPT-5 /
+  low / substituted: yes. The report must be generated from terminal Chrome
+  verification results, which do not yet exist.
+- QA self-review: HANDED-OFF; stage owner qa-self-review / Codex/GPT-5 / low /
+  substituted: yes. No synthetic or partial result was promoted to a
+  workflow-validity conclusion.
+- Reconcile: DEPENDENCY-BLOCKED / OPEN. No QA pass comment was claimed; the
+  issue remains routed behind its declared verification prerequisites.
+
+## Distillation refresh 46 — 2026-09-25 — workflow-report dependency audit
+
+- #862 remains dependency-blocked by #853–#861. The open set is unchanged;
+  the next actionable engineering transaction is #841.

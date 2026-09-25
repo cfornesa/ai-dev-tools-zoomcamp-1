@@ -2587,3 +2587,32 @@ deferred.
 - Next independent open implementation item remains #841; #844 and #846
   retain separate evidence boundaries. Do not run the six-engine workflow
   issues until their declared dependencies are reconciled.
+
+## Transactions #854–#858 — 2026-09-25 — DEPENDENCY-BLOCKED / HANDED-OFF
+
+- Groom: ACCEPTED as five distinct engine-specific verification transactions;
+  stage owner task-distillation orchestrator / Codex/GPT-5 / medium / substituted:
+  yes. Each has the same declared prerequisite chain (#841, #842, #844,
+  #852), no duplicate was found, and each has its own fixture/view contract.
+- Engineer: NOT STARTED; stage owner implementation-mechanical / Codex/GPT-5 /
+  low / substituted: yes. These are verification-only issues and must not run
+  against incomplete authored-default or bridge behavior.
+- QA self-review: HANDED-OFF; stage owner qa-self-review / Codex/GPT-5 / low /
+  substituted: yes. No engine fixture, screenshot, or audio result was claimed.
+- Reconcile: DEPENDENCY-BLOCKED / OPEN. QA comments:
+  #854 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/854#issuecomment-5833011439
+  #855 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/855#issuecomment-5833011698
+  #856 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/856#issuecomment-5833011983
+  #857 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/857#issuecomment-5833012257
+  #858 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/858#issuecomment-5833012537
+  record the exact blocker and next action for each issue.
+
+## Distillation refresh 44 — 2026-09-25 — six-engine prerequisite audit
+
+- #854–#858 are all terminal handoffs at the dependency boundary, not passes;
+  #859–#861 remain transitively blocked on those fixture issues, and #862
+  remains blocked on #853–#861 becoming terminal.
+- Current open set remains #788, #841, #842, #844, #846–#847, and #851–#862.
+  The next engineering candidate is #841, but its structured-2D runtime
+  defect must be implemented and independently QA-verified before dependent
+  verification work can resume.

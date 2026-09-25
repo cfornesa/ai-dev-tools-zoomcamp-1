@@ -1438,3 +1438,32 @@ deferred.
 - Service/model/effort: task-distillation/backlog-session orchestration and QA
   self-review by Codex/GPT-5 substitution, medium effort; no independent-family
   second opinion was run for the verification-only transactions.
+
+## Distillation refresh 31 — 2026-09-26 routing clarification
+
+- Owner correction supersedes the prior QA-only shortcut: every issue,
+  including verification issues, must still be distilled and groomed to decide
+  whether its evidence is testing-only or exposes an implementation gap. QA
+  self-review remains the evidence gate, but implementation is allowed when
+  the distilled criterion requires it. The prior refresh's statement that
+  #853–#862 should bypass issue-level distillation is superseded; their
+  existing QA comments remain evidence boundaries, not final scope decisions.
+- Project-wide verification: the first `UV_CACHE_DIR=/private/tmp/codex-uv-cache
+  make check` run had one frontend timeout in
+  `src/pages/EditorWorkspace.shapeInspector.test.tsx` (276 files passed,
+  2978 passed, 1 timed out). Duplicate search found no existing issue for that
+  timeout. The focused test then passed in 2.04s, and a complete standalone
+  `cd frontend && npm test` rerun passed 277/277 files and 2979/2979 tests.
+  Backend 1698 passed/39 skipped, lint, format-check, and typecheck also passed
+  in the original full run. The first timeout is classified as non-actionable
+  transient test-run noise unless it recurs; no follow-up issue was created.
+- #806 remains closed because its own published verification contract passed;
+  the owner correction does not reopen a closed issue. Its evidence can still
+  inform the distillation of dependent sound/workflow issues.
+- Current next routing: re-run task-distillation against #832, #834–#862 and
+  the newly observed test failure, check duplicates before creating any issue,
+  then process each transaction in order with grooming, implementation when
+  warranted, QA self-review, reconciliation, and terminal status.
+- Service/model/effort: task-distillation and backlog-session orchestration by
+  Codex/GPT-5 substitution, medium effort; project-wide check by Codex/GPT-5,
+  medium effort.

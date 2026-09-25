@@ -4,6 +4,7 @@ import {
   ART_PIECE_IFRAME_SANDBOX,
   ART_PIECE_SANDBOX_MESSAGE_SOURCE,
   buildArtPieceSandboxDocument,
+  isValidArtPieceSoundCommand,
   parseArtPieceSandboxMessage,
 } from './artPieceSandbox';
 
@@ -292,6 +293,40 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(cdnIndex).toBeGreaterThan(-1);
     expect(listenerIndex).toBeGreaterThan(cdnIndex);
     expect(snippetIndex).toBeGreaterThan(listenerIndex);
+  });
+});
+
+describe('isValidArtPieceSoundCommand', () => {
+  it('#841 accepts every sound command with its required payload shape', () => {
+    const valid: Array<[string, Record<string, unknown>]> = [
+      ['toggle-sound', {}],
+      ['set-volume', { value: 0.75 }],
+      ['set-tempo', { value: 120 }],
+      ['set-scale', { value: 'dorian' }],
+      ['set-voice-volume', { voice: 'ambient', value: 30 }],
+      ['set-voice-muted', { voice: 'melodic', enabled: true }],
+      ['set-filter', { filterType: 'lowpass', cutoff: 2000, resonance: 1 }],
+      ['set-oscillator', { value: 'square' }],
+      ['set-envelope', { attack: 0.01, decay: 0.2, sustain: 0.7, release: 0.4 }],
+      ['set-octave', { value: 1 }],
+      ['set-keyboard-enabled', { enabled: true }],
+    ];
+    for (const [type, payload] of valid)
+      expect(isValidArtPieceSoundCommand(type, payload)).toBe(true);
+  });
+
+  it('#841 rejects unknown commands and malformed sound payloads before posting', () => {
+    const invalid: Array<[string, Record<string, unknown>]> = [
+      ['set-tempo', { value: '120' }],
+      ['set-voice-volume', { voice: 'unknown', value: 30 }],
+      ['set-voice-muted', { voice: 'ambient', enabled: 'yes' }],
+      ['set-filter', { filterType: 'lowpass', cutoff: 2000 }],
+      ['set-envelope', { attack: 0.01, decay: 0.2, sustain: 0.7 }],
+      ['set-keyboard-enabled', {}],
+      ['set-not-a-command', { value: 1 }],
+    ];
+    for (const [type, payload] of invalid)
+      expect(isValidArtPieceSoundCommand(type, payload)).toBe(false);
   });
 });
 

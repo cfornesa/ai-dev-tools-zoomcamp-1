@@ -51,6 +51,56 @@ import type { ArtPieceLibrary } from '../api/artPieces';
 export const ART_PIECE_SANDBOX_MESSAGE_SOURCE = 'art-piece-sandbox';
 export const ART_PIECE_BRIDGE_VERSION = 1;
 
+export type ArtPieceSoundCommand =
+  | 'toggle-sound'
+  | 'set-volume'
+  | 'set-tempo'
+  | 'set-scale'
+  | 'set-voice-volume'
+  | 'set-voice-muted'
+  | 'set-filter'
+  | 'set-oscillator'
+  | 'set-envelope'
+  | 'set-octave'
+  | 'set-keyboard-enabled';
+
+/**
+ * Keep the trusted parent and opaque sandbox on the same sound-command
+ * contract. The sandbox repeats this validation inside its own generated
+ * runtime because the iframe receives untrusted window messages; the parent
+ * check prevents malformed values from leaving the trusted frame at all.
+ */
+export function isValidArtPieceSoundCommand(
+  type: string,
+  extra: Record<string, unknown> = {},
+): type is ArtPieceSoundCommand {
+  const finite = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isFinite(value);
+  if (type === 'toggle-sound') return true;
+  if (type === 'set-volume' || type === 'set-tempo' || type === 'set-octave') {
+    return finite(extra.value);
+  }
+  if (type === 'set-scale' || type === 'set-oscillator') return typeof extra.value === 'string';
+  if (type === 'set-keyboard-enabled') return typeof extra.enabled === 'boolean';
+  if (type === 'set-voice-volume') {
+    return (extra.voice === 'ambient' || extra.voice === 'melodic') && finite(extra.value);
+  }
+  if (type === 'set-voice-muted') {
+    return (
+      (extra.voice === 'ambient' || extra.voice === 'melodic') && typeof extra.enabled === 'boolean'
+    );
+  }
+  if (type === 'set-filter') {
+    return typeof extra.filterType === 'string' && finite(extra.cutoff) && finite(extra.resonance);
+  }
+  if (type === 'set-envelope') {
+    return (
+      finite(extra.attack) && finite(extra.decay) && finite(extra.sustain) && finite(extra.release)
+    );
+  }
+  return false;
+}
+
 export type ArtPieceSandboxMessage =
   | { source: typeof ART_PIECE_SANDBOX_MESSAGE_SOURCE; status: 'ready' }
   | { source: typeof ART_PIECE_SANDBOX_MESSAGE_SOURCE; status: 'error'; message: string };

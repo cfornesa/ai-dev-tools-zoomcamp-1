@@ -2,7 +2,10 @@ import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
-import { ART_PIECE_BRIDGE_VERSION } from '../generative/artPieceSandbox';
+import {
+  ART_PIECE_BRIDGE_VERSION,
+  isValidArtPieceSoundCommand,
+} from '../generative/artPieceSandbox';
 import {
   generateArtPieceBundle,
   triggerArtPieceBundleDownload,
@@ -453,6 +456,21 @@ function PieceStageControls({
   }, [iframeRef]);
 
   function command(type: string, extra?: Record<string, unknown>) {
+    if (
+      type === 'toggle-sound' ||
+      type === 'set-volume' ||
+      type === 'set-tempo' ||
+      type === 'set-scale' ||
+      type === 'set-voice-volume' ||
+      type === 'set-voice-muted' ||
+      type === 'set-filter' ||
+      type === 'set-oscillator' ||
+      type === 'set-envelope' ||
+      type === 'set-octave' ||
+      type === 'set-keyboard-enabled'
+    ) {
+      if (!isValidArtPieceSoundCommand(type, extra)) return;
+    }
     if (type === 'screenshot') setScreenshotError(null);
     iframeRef.current?.contentWindow?.postMessage(
       {

@@ -120,7 +120,7 @@ export default function MentionPromptField({
               data-testid={`ai-target-chip-${option.id}`}
             >
               <span>{option.label}</span>
-              <small>{option.type}</small>
+              <small>{option.mentionKind ?? option.type}</small>
               <button
                 type="button"
                 aria-label={`Remove ${option.label} target`}
@@ -189,7 +189,7 @@ export default function MentionPromptField({
                   <span>
                     <HighlightedLabel label={option.label} query={query} />
                   </span>{' '}
-                  <small>{option.type}</small>
+                  <small>{option.mentionKind ?? option.type}</small>
                   {option.disabledReason && <em> — {option.disabledReason}</em>}
                 </button>
               </div>

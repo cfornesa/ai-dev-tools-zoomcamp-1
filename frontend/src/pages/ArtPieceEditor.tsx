@@ -13,6 +13,7 @@ import {
   type ArtPiece,
   type ArtPieceCapabilitySet,
   type ArtPieceVersion,
+  type ArtPieceMention,
   type CameraPlacement,
 } from '../api/artPieces';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
@@ -29,7 +30,7 @@ import {
 } from '../generative/artPieceSandbox';
 import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
 import MentionPromptField from './MentionPromptField';
-import { buildArtPieceTargetOptions } from './artPieceTargets';
+import { buildArtPieceTargetOptionsForPiece } from './artPieceTargets';
 import ArtPieceEditorToolAvailability from '../components/ArtPieceEditorToolAvailability';
 import PieceSlugField from '../components/PieceSlugField';
 import GeneratedInkPanel, { type InkRequest } from '../components/GeneratedInkPanel';
@@ -280,6 +281,10 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         trimmed,
         selectedTargetIds,
         controller.signal,
+        selectedTargetIds.flatMap((id) => {
+          const option = targetOptions.find((candidate) => candidate.id === id);
+          return option?.mentionKind ? [{ kind: option.mentionKind, id }] : [];
+        }) as ArtPieceMention[],
       );
       if (abortControllerRef.current !== controller) return;
       setRefineRun(result);
@@ -493,7 +498,11 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
 
   const sandboxDoc = previewCode ? buildArtPieceSandboxDocument(previewCode, piece.engine) : null;
   const currentVersion = piece.current_version;
-  const targetOptions = buildArtPieceTargetOptions(currentVersion?.source ?? '');
+  const targetOptions = buildArtPieceTargetOptionsForPiece(
+    currentVersion?.source ?? '',
+    piece.engine,
+    Boolean(currentVersion?.ink),
+  );
   const engineCapability = ART_PIECE_ENGINE_CAPABILITIES[piece.engine];
   const editorModeLabel = engineCapability.family === '3d' ? '3D AI editor' : '2D AI editor';
 

@@ -235,15 +235,25 @@ export type ArtPieceRefineRun = {
   updated_at: string;
 };
 
+export type ArtPieceMention = {
+  kind: 'ink' | 'asset' | 'element' | 'region';
+  id: string;
+};
+
 export function refineArtPiece(
   publicId: string,
   instruction: string,
   targetReferences: string[] = [],
   signal?: AbortSignal,
+  mentions: ArtPieceMention[] = [],
 ): Promise<ArtPieceRefineRun> {
   return apiFetch<ArtPieceRefineRun>(`/api/art-pieces/${publicId}/refine/`, {
     method: 'POST',
-    body: JSON.stringify({ instruction, target_references: targetReferences }),
+    body: JSON.stringify({
+      instruction,
+      target_references: targetReferences,
+      ...(mentions.length > 0 ? { mentions } : {}),
+    }),
     signal,
   });
 }

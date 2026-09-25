@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildArtPieceTargetOptions } from './artPieceTargets';
+import { buildArtPieceTargetOptions, buildArtPieceTargetOptionsForPiece } from './artPieceTargets';
 
 describe('generated art-piece refinement targets', () => {
   it('discovers stable part and asset IDs from markup and comments', () => {
@@ -23,5 +23,24 @@ describe('generated art-piece refinement targets', () => {
     expect(buildArtPieceTargetOptions('<img data-augmentr-asset="logo.png" />')).toEqual([
       expect.objectContaining({ id: 'logo.png', type: 'media' }),
     ]);
+  });
+
+  it('discovers layer regions, SVG ids, and the ink layer with mention kinds', () => {
+    const options = buildArtPieceTargetOptionsForPiece(
+      '<svg>\n<g id="Sky"><circle /></g>\n<!-- @layer Hills -->\n</svg>',
+      'svg',
+      true,
+    );
+    expect(options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'ink', mentionKind: 'ink' }),
+        expect.objectContaining({ id: 'Sky', mentionKind: 'element' }),
+        expect.objectContaining({ id: 'Hills', mentionKind: 'region' }),
+      ]),
+    );
+  });
+
+  it('keeps an unmarked source as a plain prompt with no discovered targets', () => {
+    expect(buildArtPieceTargetOptionsForPiece('const sketch = 1;', 'p5js', false)).toEqual([]);
   });
 });

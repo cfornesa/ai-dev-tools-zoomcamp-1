@@ -17,6 +17,7 @@ export type AITargetOption = {
     | 'material'
     | 'part';
   category?: string;
+  mentionKind?: 'ink' | 'asset' | 'element' | 'region';
   disabled?: boolean;
   disabledReason?: string;
   descendantIds: string[];

@@ -2010,3 +2010,29 @@ deferred.
   records the criterion matrix, commands, provenance, and evidence boundary.
   Issue remains OPEN because the full frontend gate and exact two-viewport
   production evidence are outstanding.
+
+## Production-readiness gate — 2026-09-25 — NOT READY
+
+- Deployment provenance: commit `28183fbb` was synchronized into Replit and
+  republished through the authorized production flow. Live Chrome confirmed
+  the editor direct toolbar and the public immersive ordering. The deployed
+  URL smoke check passed: health 200, metadata diagnostic reachable, root 200,
+  anonymous whoami 401, and login 200.
+- Local gate: backend checks passed; the full frontend check is not green
+  (275 files, 2993 passed / 7 failed). No migration-bearing changes were in
+  the #863 batch, so no production schema inspection was required.
+- Release decision: NOT READY for backlog closure. #863 remains open and the
+  broader backlog still contains implementation, browser-verification, and
+  the authorized production data-action issue #788.
+
+## Session-completion gate — 2026-09-25 — INCOMPLETE / HANDED-OFF
+
+- Transaction reconciliation: #863 has a committed implementation and a
+  posted `## QA: FAIL` comment, but is intentionally not closed.
+- Routing audit: the current inventory remains open; no closed issue was
+  reopened. The next pass must resolve the #863 evidence/test gate or leave it
+  explicitly blocked before selecting another issue.
+- Follow-up audit: no new duplicate issue was created for the unrelated full
+  frontend failures because the failures are outside the three-file #863 diff
+  and match existing editor/embed test surfaces; investigate only after a
+  duplicate check in the next distillation pass.

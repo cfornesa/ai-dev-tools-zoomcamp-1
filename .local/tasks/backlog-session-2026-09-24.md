@@ -3952,6 +3952,34 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Transaction #856 — 2026-09-26 — QA FAIL / OPEN
+
+- Groom: verification-only SVG workflow; duplicate audit found no replacement.
+- Engineer: no product engineering stage; fixture already existed and no source
+  change was authorized or required for this transaction.
+- QA self-review: FAIL / VALID WITH GAPS. Codex-GPT-5 medium substitution for
+  the rostered verification/QA services; independent-family second opinion not
+  run. GitHub comment: #856 comment 5840176016.
+- Evidence: local disposable Compose + active Chrome only. Exact 1280x720 and
+  375x667 viewports were inspected; serene SVG, controls, running sound, eight
+  C-major ambient notes, A-K C4–C5 mapping, and 90→120/minor→reset all passed.
+  Fresh public console errors were empty. Exact decoded per-pixel 1-second
+  motion delta was not captured; PNG byte changes were explicitly rejected as
+  invalid pixel evidence.
+- Reconcile: keep #856 OPEN. Workflow verdict VALID WITH GAPS. No production
+  evidence, production data, migration, route, or dependency change.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #857
+
+- Open inventory remains #875, #874, #862, #861, #860, #859, #858, #857,
+  #856, #847, and #788; #856 is intentionally open for the motion-evidence
+  gap. No closed issue was reopened.
+- Duplicate audit: exact pixel-delta capture is part of #856's existing
+  criterion, not a new product defect; #862 remains the aggregate report.
+- Routing: #857 is verification-only A-Frame regular-view Chrome work; do not
+  implement unless its own run discovers a distinct repeatable product gap.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
 ## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #855
 
 - Current GitHub inventory was re-read: open issues are #875, #874, #862,

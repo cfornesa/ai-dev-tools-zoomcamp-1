@@ -1521,3 +1521,14 @@ tests, 156 art-piece tests, and the full backend gate (1678 passed / 39
 skipped). QA corrected the final-region wrapper-span edge case and expanded
 coverage across six engine families. No production or browser evidence was
 required or performed.
+
+## 2026-09-24 — Generated art @ typeahead (#821)
+
+#821 was routed as mechanical frontend work with Opencode Go / Kimi K3 / medium
+rostered; Codex / GPT-5 / medium substituted. Commits `e848834` and `cd4ab57`
+add typed ink/asset/element/region discovery, structured refine mentions, and
+focused Playwright coverage. Local Vitest/typecheck/lint passed; the two
+existing viewport Playwright scenarios passed. The new region scenario could
+not complete because the already-running disposable Compose frontend served a
+revision without the current region discovery, so QA recorded a verification
+boundary and left #821 open. No production rollout was authorized or performed.

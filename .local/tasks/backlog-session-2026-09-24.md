@@ -489,3 +489,36 @@ deferred.
 - Dependency/order rationale: #821 is the next dependency-ready issue; #815
   remains independent. Production/browser work remains authorization-gated on
   #748/#788/#803/#806/#807.
+
+## #821 transaction — 2026-09-24 continuation
+
+- Groom: criterion-ready Stage 2a frontend issue; #818/#819/#820 provide the
+  region parser, mention contract, and preservation gate. No duplicate or
+  newly discovered issue was created.
+- Engineering: Opencode Go / Kimi K3 / medium rostered; Codex / GPT-5 /
+  medium substituted. Commit `e848834` adds typed mention payloads, ink/asset/
+  SVG-element/region discovery, and kind badges; commit `cd4ab57` adds the
+  focused Playwright region scenario and corrects its disposable fixtures.
+- QA self-review: Claude / Sonnet 5 / medium rostered; Codex / GPT-5 / medium
+  substituted. Stage 3 independent-family review not run. Vitest focused
+  tests passed (6), typecheck and lint passed with existing warnings. The
+  Chromium run passed both existing 1280x900 and 375x812 scenarios, but the
+  new region scenario received `No matches` from the already-running Compose
+  frontend revision even though the API returned the labelled source; this is
+  a stale-stack verification boundary, not a product verdict.
+- Reconciliation: QA FAIL / verification-boundary comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/821#issuecomment-5824465668`;
+  issue remains OPEN. Next action is to rebuild/restart the disposable Compose
+  frontend from `cd4ab57`, rerun the focused Playwright scenario, inspect both
+  viewport screenshots, and then reconcile. No production action was taken.
+
+## Distillation refresh 12 — 2026-09-24 continuation
+
+- #821 remains OPEN/verification-boundary. Authenticated open inventory is 14
+  issues: #748, #788, #798–#807, #815, and #821.
+- Duplicate/follow-up audit: no new issue emerged from #821 QA; the stale
+  Compose revision is an environment/evidence boundary, not a new product
+  issue. No closed issue was reopened.
+- Dependency/order rationale: #815 is independent and next for local
+  implementation; production/browser issues remain authorization-gated on
+  #748/#788/#803/#806/#807, and #821 awaits a rebuilt disposable browser stack.

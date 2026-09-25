@@ -1666,3 +1666,7 @@ Added #833-#847 (new only). Implementation blocked on #832 (Codex audio refineme
 ## 2026-09-25 — Scale/key/transposition added
 
 Added #848-#851; commented on #833/#844 for contract fields. Blocked on #832.
+
+## 2026-09-25 — Chrome workflow-validity test per engine
+
+Added #852-#862. Purpose (owner): gauge workflow validity per rendering engine. Local-only, no production data actions; blocked on #832.

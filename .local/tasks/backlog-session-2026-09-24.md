@@ -1580,3 +1580,28 @@ deferred.
   claim complete or run final session-completion until all remaining issues
   have terminal QA evidence and the #788 boundary is resolved or explicitly
   escalated. Service/model/effort: Codex/GPT-5 substitution, medium effort.
+
+## Distillation refresh 34 — 2026-09-25 audio-engine implementation pass
+
+- #834 closed after commit `e6b47d5`: live tempo clamping/transport interval,
+  nine-scale selection, default note-sequence regression, and lazy audio
+  boundary were implemented; QA PASS was posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/834#issuecomment-5829111158`.
+  Required `src/audio` suite passed (34 tests), typecheck and lint passed.
+- #835 closed after commit `a0fb4d2`: per-voice gain/mute nodes preserve the
+  master bus and default levels; QA PASS was posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/835#issuecomment-5829135776`.
+  Required `src/audio` suite passed (35 tests), typecheck and lint passed.
+- #836 closed after commit `4079f4e`: validated/clamped live master filter
+  type/cutoff/resonance without recreating voices; QA PASS was posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/836#issuecomment-5829154816`.
+  Required `src/audio` suite passed (36 tests), typecheck and lint passed.
+- A full frontend `npm test` attempt remains a separate workflow/infrastructure
+  boundary: unrelated EditorWorkspace suites timed out broadly. No test was
+  weakened and the complete relevant `src/audio` suite passed for each issue.
+  No new issue was created because this reproduces the documented full-suite
+  boundary. Service/model/effort: Codex/GPT-5 substitution, medium effort; no
+  stage-3 independent-family review.
+- Current routing: continue with #837 onward in dependency order; #788 remains
+  the only production-runtime blocker. #853–#862 remain verification/reporting
+  work and are not implementation substitutions.

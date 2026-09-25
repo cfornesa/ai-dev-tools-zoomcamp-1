@@ -5664,6 +5664,20 @@ select.ai-proposal-field-full-width {
   max-width: calc(100vw - 5rem);
 }
 
+/* The shared toolbar wrapper normally sizes itself to the compact icon rail.
+   An inline editor toolbar is a full-stage overlay, so its containing block
+   must also cover the stage; otherwise lower-left text actions resolve their
+   bottom offset against the icon row. */
+.editor-piece-stage-toolbar-host {
+  inset: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+.editor-piece-stage-toolbar-host > * {
+  pointer-events: auto;
+}
+
 .editor-piece-stage-toolbar > * {
   pointer-events: auto;
 }

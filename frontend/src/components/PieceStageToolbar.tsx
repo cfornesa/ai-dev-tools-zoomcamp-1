@@ -277,7 +277,7 @@ export default function PieceStageToolbar({
       <div
         role="toolbar"
         aria-label={ariaLabel}
-        className="piece-stage-toolbar"
+        className={`piece-stage-toolbar${toolbarMode === 'inline' && editorControls ? ' editor-piece-stage-toolbar-host' : ''}`}
         data-toolbar-mode={toolbarMode}
       >
         {toolbarMode === 'inline' ? (

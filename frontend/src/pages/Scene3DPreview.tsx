@@ -23,6 +23,8 @@ import {
   SONIC_INSTRUMENT_OPTIONS,
   SONIC_SCALE_OPTIONS,
   type SonicEngine,
+  type SonicEffectName,
+  type SonicEffectSettings,
   type SonicInstrument,
   type SonicScale,
   type MelodicSynthSettings,
@@ -332,6 +334,14 @@ function ThreeScenePreview({
   const [keyboardScale, setKeyboardScale] = useState<SonicScale>('chromatic');
   const [transpose, setTranspose] = useState(0);
   const [followKey, setFollowKey] = useState(false);
+  const [effects, setEffects] = useState<Record<SonicEffectName, SonicEffectSettings>>({
+    distortion: { enabled: false, amount: 0 },
+    chorus: { enabled: false, amount: 0, rate: 4, depth: 0.5 },
+    tremolo: { enabled: false, amount: 0, rate: 4 },
+    pitch_shift: { enabled: false, semitones: 0 },
+    bitcrusher: { enabled: false, bits: 16 },
+    flanger: { enabled: false, amount: 0, rate: 0.25, depth: 0.5 },
+  });
   const [playedNotes, setPlayedNotes] = useState<string[]>([]);
   const [voiceInstruments, setVoiceInstruments] = useState<Record<SonicVoice, SonicInstrument>>({
     ambient: 'synth',
@@ -390,6 +400,9 @@ function ThreeScenePreview({
       engine.setVoiceVolume('ambient', ambientVolume);
       engine.setVoiceMuted('ambient', ambientMuted);
       engine.setScale(ambientScale);
+      Object.entries(effects).forEach(([name, settings]) => {
+        engine.setEffect(name as SonicEffectName, settings);
+      });
       setSoundEnabled(true);
     }
   }
@@ -401,6 +414,14 @@ function ThreeScenePreview({
   function applyMelodicSynthSettings(next: MelodicSynthSettings) {
     setMelodicSynthSettings(next);
     sonicEngineRef.current?.setMelodicSynth(next);
+  }
+
+  function updateEffect(name: SonicEffectName, update: SonicEffectSettings) {
+    setEffects((current) => {
+      const next = { ...current[name], ...update };
+      sonicEngineRef.current?.setEffect(name, next);
+      return { ...current, [name]: next };
+    });
   }
 
   function releaseFlyKey(key: string) {
@@ -1500,6 +1521,58 @@ function ThreeScenePreview({
                         });
                       }}
                     />
+                    <details>
+                      <summary>Effects</summary>
+                      {(Object.entries(effects) as [SonicEffectName, SonicEffectSettings][]).map(
+                        ([name, settings]) => {
+                          const isPitch = name === 'pitch_shift';
+                          const isCrusher = name === 'bitcrusher';
+                          const value = isPitch
+                            ? (settings.semitones ?? 0)
+                            : isCrusher
+                              ? (settings.bits ?? 16)
+                              : (settings.amount ?? 0);
+                          const min = isPitch ? -24 : isCrusher ? 1 : 0;
+                          const max = isPitch ? 24 : isCrusher ? 16 : 1;
+                          const step = isPitch || isCrusher ? 1 : 0.01;
+                          return (
+                            <div key={name} className="scene3d-effect-control">
+                              <label htmlFor={`scene3d-effect-${name}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={settings.enabled}
+                                  onChange={(event) =>
+                                    updateEffect(name, { enabled: event.target.checked })
+                                  }
+                                />
+                                {name}
+                              </label>
+                              <input
+                                id={`scene3d-effect-${name}`}
+                                type="range"
+                                min={min}
+                                max={max}
+                                step={step}
+                                value={value}
+                                disabled={!settings.enabled}
+                                aria-label={`${name} amount`}
+                                onChange={(event) => {
+                                  const next = Number(event.target.value);
+                                  updateEffect(
+                                    name,
+                                    isPitch
+                                      ? { enabled: settings.enabled, semitones: next }
+                                      : isCrusher
+                                        ? { enabled: settings.enabled, bits: next }
+                                        : { enabled: settings.enabled, amount: next },
+                                  );
+                                }}
+                              />
+                            </div>
+                          );
+                        },
+                      )}
+                    </details>
                   </fieldset>
                   <div className="editor-tool-group">
                     <button

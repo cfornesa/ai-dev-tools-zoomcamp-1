@@ -18,6 +18,7 @@ function createFakeToneModule() {
   const releaseCalls: string[] = [];
   const rampToCalls: Array<{ kind: string; value: number }> = [];
   const synthSetCalls: unknown[] = [];
+  const effectConstructors: string[] = [];
   let filterInstance: { type: string; frequency: { value: number }; Q: { value: number } } | null =
     null;
   let synthCount = 0;
@@ -82,8 +83,25 @@ function createFakeToneModule() {
     connect() {
       return this;
     }
+    disconnect() {}
     dispose() {
       disposeCalls.push('filter');
+    }
+  }
+
+  class FakeEffect {
+    wet = { value: 0 };
+    constructor(kind: string) {
+      effectConstructors.push(kind);
+    }
+    connect() {
+      return this;
+    }
+    toDestination() {
+      return this;
+    }
+    dispose() {
+      disposeCalls.push('effect');
     }
   }
 
@@ -141,6 +159,31 @@ function createFakeToneModule() {
     DuoSynth: FakeSynth,
     Volume: FakeVolume,
     Filter: FakeFilter,
+    Distortion: class extends FakeEffect {
+      constructor(value: number) {
+        super(`distortion:${value}`);
+      }
+    },
+    Chorus: class extends FakeEffect {
+      constructor(rate: number) {
+        super(`chorus:${rate}`);
+      }
+    },
+    Tremolo: class extends FakeEffect {
+      constructor(rate: number) {
+        super(`tremolo:${rate}`);
+      }
+    },
+    PitchShift: class extends FakeEffect {
+      constructor(semitones: number) {
+        super(`pitch_shift:${semitones}`);
+      }
+    },
+    BitCrusher: class extends FakeEffect {
+      constructor(bits: number) {
+        super(`bitcrusher:${bits}`);
+      }
+    },
     Loop: FakeLoop,
     UserMedia: FakeUserMedia,
     Transport: {
@@ -159,6 +202,7 @@ function createFakeToneModule() {
     releaseCalls,
     rampToCalls,
     synthSetCalls,
+    effectConstructors,
     loopStartCalls,
     transportStartCalls,
     transportStopCalls,
@@ -389,6 +433,21 @@ describe('createSonicEngine', () => {
       frequency: { value: 20000 },
       Q: { value: 20 },
     });
+  });
+
+  it('constructs enabled effects in fixed order and removes them without touching voices', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+
+    expect(engine.setEffect('distortion', { enabled: true, amount: 2 })).toBe(true);
+    expect(engine.setEffect('pitch_shift', { enabled: true, semitones: 30 })).toBe(true);
+    await engine.enable();
+
+    expect(fake.effectConstructors).toEqual(['distortion:1', 'pitch_shift:24']);
+    expect(engine.setEffect('distortion', { enabled: false })).toBe(true);
+    expect(fake.effectConstructors).toEqual(['distortion:1', 'pitch_shift:24', 'pitch_shift:24']);
+    expect(fake.disposeCalls.filter((value) => value === 'effect')).toHaveLength(2);
+    expect(fake.triggerCalls).toHaveLength(0);
   });
 
   it('applies melodic synth settings, clamps envelope/octave values, and reports unsupported fields', async () => {

@@ -68,6 +68,16 @@ export type MelodicSynthSettings = {
   octaveShift: number;
 };
 export type MelodicSynthUpdate = { applied: string[]; unsupported: string[] };
+export type SonicEffectName =
+  'distortion' | 'chorus' | 'tremolo' | 'pitch_shift' | 'bitcrusher' | 'flanger';
+export type SonicEffectSettings = {
+  enabled: boolean;
+  amount?: number;
+  rate?: number;
+  depth?: number;
+  semitones?: number;
+  bits?: number;
+};
 
 export const SONIC_INSTRUMENT_OPTIONS: ReadonlyArray<{
   value: SonicInstrument;
@@ -175,6 +185,8 @@ export interface SonicEngine {
   setVoiceMuted(voice: SonicVoice, muted: boolean): void;
   /** Updates the shared master filter without rebuilding the voice graph. */
   setFilter(settings: SonicFilterSettings): boolean;
+  /** Enables one optional shared-bus effect without rebuilding voices. */
+  setEffect(name: SonicEffectName, settings: SonicEffectSettings): boolean;
   /** Applies live keyboard-voice synth settings and reports unsupported fields. */
   setMelodicSynth(settings: MelodicSynthSettings): MelodicSynthUpdate;
   /** Replaces one voice's instrument without changing the other voices. */
@@ -241,6 +253,33 @@ export function createSonicEngine(
   let ambientSynth: VoiceSynth | null = null;
   let movementSynth: VoiceSynth | null = null;
   let melodicSynth: VoiceSynth | null = null;
+  type EffectNode = {
+    connect(destination: unknown): unknown;
+    dispose(): void;
+    wet?: { value: number };
+    feedback?: { value: number };
+    depth?: { value: number };
+    frequency?: { value: number };
+    delayTime?: { value: number };
+    bits?: { value: number };
+  };
+  const effectOrder: SonicEffectName[] = [
+    'distortion',
+    'chorus',
+    'tremolo',
+    'pitch_shift',
+    'bitcrusher',
+    'flanger',
+  ];
+  const effectSettings: Record<SonicEffectName, SonicEffectSettings> = {
+    distortion: { enabled: false, amount: 0 },
+    chorus: { enabled: false, amount: 0, rate: 4, depth: 0.5 },
+    tremolo: { enabled: false, amount: 0, rate: 4 },
+    pitch_shift: { enabled: false, semitones: 0 },
+    bitcrusher: { enabled: false, bits: 16 },
+    flanger: { enabled: false, amount: 0, rate: 0.25, depth: 0.5 },
+  };
+  let effectNodes: EffectNode[] = [];
   const voiceInstruments: Record<SonicVoice, SonicInstrument> = {
     ambient: 'synth',
     movement: 'synth',
@@ -275,9 +314,10 @@ export function createSonicEngine(
       tone = await loadTone();
       await tone.start();
 
-      filter = new tone.Filter(filterSettings.cutoff, filterSettings.type).toDestination();
+      filter = new tone.Filter(filterSettings.cutoff, filterSettings.type);
       filter.Q.value = filterSettings.resonance;
       bus = new tone.Volume(0).connect(filter);
+      rebuildEffects();
       voiceBuses.ambient = new tone.Volume(0).connect(bus);
       voiceBuses.movement = new tone.Volume(0).connect(bus);
       voiceBuses.melodic = new tone.Volume(0).connect(bus);
@@ -322,6 +362,8 @@ export function createSonicEngine(
     melodicSynth?.dispose();
     bus?.dispose();
     filter?.dispose();
+    effectNodes.forEach((effect) => effect.dispose());
+    effectNodes = [];
     melodicFilter?.dispose();
     voiceBuses.ambient?.dispose();
     voiceBuses.movement?.dispose();
@@ -410,6 +452,64 @@ export function createSonicEngine(
       filter.frequency.value = filterSettings.cutoff;
       filter.Q.value = filterSettings.resonance;
     }
+    return true;
+  }
+
+  function rebuildEffects() {
+    if (!tone || !filter || status === 'error') return;
+    const filterNode = filter as unknown as EffectNode & {
+      disconnect?: () => void;
+      toDestination?: () => unknown;
+    };
+    filterNode.disconnect?.();
+    effectNodes.forEach((effect) => effect.dispose());
+    effectNodes = [];
+    const toneAny = tone as unknown as Record<string, new (...args: any[]) => EffectNode>;
+    for (const name of effectOrder) {
+      const settings = effectSettings[name];
+      if (!settings.enabled) continue;
+      let node: EffectNode;
+      if (name === 'distortion') node = new toneAny.Distortion(settings.amount ?? 0);
+      else if (name === 'chorus')
+        node = new toneAny.Chorus(settings.rate ?? 4, 2.5, settings.depth ?? 0.5);
+      else if (name === 'tremolo')
+        node = new toneAny.Tremolo(settings.rate ?? 4, settings.amount ?? 0);
+      else if (name === 'pitch_shift') node = new toneAny.PitchShift(settings.semitones ?? 0);
+      else if (name === 'bitcrusher') node = new toneAny.BitCrusher(settings.bits ?? 16);
+      else node = new toneAny.Chorus(settings.rate ?? 0.25, 0.1, settings.depth ?? 0.5);
+      if (node.wet) node.wet.value = name === 'pitch_shift' ? 1 : (settings.amount ?? 1);
+      effectNodes.push(node);
+    }
+    if (effectNodes.length === 0) {
+      filterNode.toDestination?.();
+      return;
+    }
+    (filter as unknown as { connect(destination: unknown): unknown }).connect(effectNodes[0]);
+    for (let index = 0; index < effectNodes.length - 1; index += 1) {
+      effectNodes[index].connect(effectNodes[index + 1]);
+    }
+    const last = effectNodes[effectNodes.length - 1] as EffectNode & {
+      toDestination?: () => unknown;
+    };
+    last.toDestination?.();
+  }
+
+  function setEffect(name: SonicEffectName, settings: SonicEffectSettings): boolean {
+    if (!effectOrder.includes(name)) return false;
+    const current = effectSettings[name];
+    const next = { ...current, ...settings, enabled: Boolean(settings.enabled) };
+    if (name === 'distortion' || name === 'chorus' || name === 'tremolo' || name === 'flanger') {
+      next.amount = Math.min(1, Math.max(0, Number(next.amount ?? 0)));
+    }
+    if (name === 'pitch_shift')
+      next.semitones = Math.min(24, Math.max(-24, Math.round(next.semitones ?? 0)));
+    if (name === 'bitcrusher') next.bits = Math.min(16, Math.max(1, Math.round(next.bits ?? 16)));
+    if (name === 'chorus' || name === 'tremolo' || name === 'flanger') {
+      next.rate = Math.min(20, Math.max(0.1, Number(next.rate ?? 4)));
+      next.depth = Math.min(1, Math.max(0, Number(next.depth ?? 0.5)));
+    }
+    effectSettings[name] = next;
+    if (status === 'active') rebuildEffects();
     return true;
   }
 
@@ -616,6 +716,7 @@ export function createSonicEngine(
     setVoiceVolume,
     setVoiceMuted,
     setFilter,
+    setEffect,
     setMelodicSynth,
     setVoiceInstrument,
     reportMovement,

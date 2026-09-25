@@ -99,6 +99,7 @@ vi.mock('../audio/sonicEngine', () => ({
     setVoiceVolume: setVoiceVolumeSpy,
     setVoiceMuted: setVoiceMutedSpy,
     setFilter: setFilterSpy,
+    setEffect: vi.fn(() => true),
     setMelodicSynth: setMelodicSynthSpy,
     setTempo: setTempoSpy,
     setScale: setScaleSpy,

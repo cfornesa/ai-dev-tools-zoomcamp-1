@@ -255,7 +255,10 @@ function ImmersiveProject3DViewer({
               </span>
             )}
           </div>
-          <div className="public-piece-version-context">
+          <div
+            className="public-piece-version-context immersive-project3d-version-details"
+            data-testid="immersive-version-details"
+          >
             <section aria-labelledby="immersive-current-version-heading">
               <h2 id="immersive-current-version-heading">Current version context</h2>
               {readyProject.current_version ? (

@@ -1136,3 +1136,22 @@ deferred.
 - QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/827#issuecomment-5826865323
 - Reconciled and closed #827. Remaining open production transactions are
   #806, #788, and #748.
+
+## #829 transaction — 2026-09-25
+
+- Distillation/groom: owner-reported follow-up reproduced from the live screenshot
+  after #827: the Share/Embed row was still inside the bordered version card.
+  Duplicate search found no matching open or closed issue; created criterion-ready
+  #829 linked to closed #827. Scope is the canonical immersive 3D detail route;
+  regular and embed routes are regression-only. Routing: stage 2a mechanical
+  frontend. Service/model/effort: Claude/Codex primary, medium effort.
+- Engineering: moved the immersive action row above a dedicated bordered
+  version-details container, preserved the semantic `Current version context`
+  and `Versions` headings, and added DOM-order/heading assertions in
+  `ImmersiveProject3DViewer.test.tsx`. Commit pending QA reconciliation.
+- QA self-review: focused component tests 7 passed; exact Chromium regression
+  suite 7 passed; `make check` passed (backend 1697 passed/39 skipped,
+  frontend 277 files/2979 tests, lint/format/typecheck green). Local/Compose
+  screenshots and tests do not claim deployed production evidence. Production
+  publish/live verification is a separate owner-authorized action.
+- GitHub issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/829

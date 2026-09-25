@@ -212,6 +212,8 @@ describe('ImmersiveProject3DViewer load states', () => {
 
     const header = await screen.findByTestId('immersive-info-header');
     const info = screen.getByTestId('immersive-info-block');
+    const actions = within(info).getByRole('group', { name: 'Piece actions' });
+    const versionDetails = within(info).getByTestId('immersive-version-details');
     const stage = screen.getByRole('region', { name: 'Preview' });
     expect(header.compareDocumentPosition(stage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(stage.compareDocumentPosition(info) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -222,12 +224,16 @@ describe('ImmersiveProject3DViewer load states', () => {
     expect(
       within(info).queryByRole('heading', { name: 'Rotating Cube', level: 1 }),
     ).not.toBeInTheDocument();
-    expect(within(info).getByRole('button', { name: 'Share' })).toBeInTheDocument();
-    expect(within(info).getByRole('button', { name: 'Embed (Custom)' })).toBeInTheDocument();
-    expect(within(info).getByRole('button', { name: 'Embed (CMS)' })).toBeInTheDocument();
+    expect(within(actions).getByRole('button', { name: 'Share' })).toBeInTheDocument();
+    expect(within(actions).getByRole('button', { name: 'Embed (Custom)' })).toBeInTheDocument();
+    expect(within(actions).getByRole('button', { name: 'Embed (CMS)' })).toBeInTheDocument();
     expect(
-      within(info).getByRole('heading', { name: 'Current version context' }),
+      actions.compareDocumentPosition(versionDetails) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      within(versionDetails).getByRole('heading', { name: 'Current version context' }),
     ).toBeInTheDocument();
+    expect(within(versionDetails).getByRole('heading', { name: 'Versions' })).toBeInTheDocument();
     expect(within(info).getByRole('heading', { name: 'Versions' })).toBeInTheDocument();
     expect(within(info).getByText('CURRENT')).toBeInTheDocument();
     expect(within(info).getByText('Version 3')).toBeInTheDocument();

@@ -4833,10 +4833,7 @@ select.ai-proposal-field-full-width {
 }
 
 .immersive-project3d-content--footer {
-  padding: var(--space-8);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
-  border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--panel-color, transparent) 75%, transparent);
+  padding: 0;
 }
 
 .immersive-project3d-content header {
@@ -4853,6 +4850,14 @@ select.ai-proposal-field-full-width {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  margin-bottom: var(--space-6);
+}
+
+.immersive-project3d-version-details {
+  padding: var(--space-8);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.2));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--panel-color, transparent) 75%, transparent);
 }
 
 .immersive-project3d-viewer--embed {
@@ -4882,8 +4887,11 @@ select.ai-proposal-field-full-width {
     padding: var(--space-6) var(--space-4) var(--space-6);
   }
 
-  .immersive-project3d-content--header,
-  .immersive-project3d-content--footer {
+  .immersive-project3d-content--header {
+    padding: var(--space-6);
+  }
+
+  .immersive-project3d-version-details {
     padding: var(--space-6);
   }
 

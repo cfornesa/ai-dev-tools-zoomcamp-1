@@ -1692,3 +1692,13 @@ complete field/default/range table is in `docs/api.md`; `schema/README.md`
 records the schema-version and persistence rationale. No product runtime or
 database migration is included in #833; implementation belongs to #844 and
 the dependent engine/UI/export issues.
+
+## 2026-09-25 — #844 authored-default implementation boundary
+
+#844 implements the #833 `sonic` contract as a canonical additive normalizer
+at both validation boundaries and before API persistence. A scene without
+`sonic` remains unchanged; a malformed block is omitted; valid partial blocks
+are completed with documented defaults and unknown keys are removed. The 3D
+editor and generated Three.js ZIP consume that same normalized object. This
+does not claim production or Playwright evidence; those remain explicit QA
+criteria, and no database migration was introduced.

@@ -2105,3 +2105,11 @@ deferred.
   substitution, medium effort. Next action: groom #844's current contract,
   inspect existing #833 sonic contract and duplicates, then engineer only
   #844 before any dependent issue.
+
+## Transaction #844 — 2026-09-25 — IMPLEMENTED / QA INCOMPLETE
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5 substitution; medium effort. Duplicate search found #833 as the closed contract source and no competing open issue.
+- Engineer: COMPLETE. Stage owner implementation-complex; Codex/GPT-5 substitution; medium effort. Commit `7a4e322` adds the additive `sonic` schema to 2D/3D, symmetric backend/frontend normalization, API persistence normalization, the 3D editor Sound panel, preview hydration, and authored defaults in generated Three.js ZIP controls. No migration or dependency.
+- Second opinion: NOT RUN; rostered service unavailable, and no independent review is credited.
+- QA self-review: INCOMPLETE. Backend full suite passed 1701/1701 runnable tests (39 expected skips); frontend full suite passed 280 files / 3002 tests; lint emitted only existing repository warnings; format and typecheck passed. Focused sonic/schema/export tests passed 3 files / 101 tests and backend sonic tests passed 3 tests. The Playwright one-piece requirement and shared fixture file matrix remain unevidenced.
+- Reconcile: REMAINS OPEN. No production publish was performed for this new feature. The QA comment records local evidence and the missing browser/fixture boundary; dependent runtime verification issues remain separate.

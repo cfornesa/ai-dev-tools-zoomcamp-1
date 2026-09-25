@@ -843,3 +843,52 @@ deferred.
 - Distillation provenance: Codex / GPT-5 / medium, supported distillation
   profile; no external service substitution. No product source or test was
   changed during this refresh.
+
+## #823 transaction — 2026-09-26
+
+- Groom: criterion-ready public collection detail issue. The external parity
+  audit found the explicit item-count and complete-download gap; duplicate
+  search found no existing issue, so #823 was created and linked from #804.
+  The download endpoint is an additive documented public API contract; no
+  migration or production data action is in scope.
+- Engineering: Stage 2b complex routing was required by the public endpoint.
+  Rostered Ollama Cloud / Kimi K3 / medium; Codex / GPT-5 / medium substituted.
+  Commit `4600aca` adds the visibility-safe ZIP manifest endpoint, public
+  count/download affordances, API documentation, backend regression coverage,
+  and the two-viewport browser spec. Formatting follow-up `0ac21fa` corrected
+  an existing #800 test file found by the full gate.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Stage 3 independent-family review not run. Focused
+  backend/frontend checks passed; Chromium passed both viewports with HTTP 200
+  ZIP evidence and inspected screenshots; full `UV_CACHE_DIR=/tmp/codex-uv-cache
+  make check` passed backend 1694/39 skipped and frontend 277 files/2979
+  tests. The initial full gate hit uv cache permissions, then passed with the
+  repository-safe temporary cache. Local Compose was rebuilt from checkout.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/823#issuecomment-5825677720`;
+  #823 is CLOSED. Evidence is local/disposable Compose only; no production
+  action was taken.
+
+## #804 transaction — 2026-09-26
+
+- Groom/engineering: Stage 2a parity audit, Opencode Go / Kimi K3 / medium
+  rostered; Codex / GPT-5 / medium substituted. Commit `4d995c1` adds the
+  external collection matrix and two-viewport Chromium spec. Duplicate audit
+  linked the only new actionable gap to #823.
+- QA/reconciliation: Stage 4 Claude / Sonnet 5 / medium rostered; Codex /
+  GPT-5 / medium substituted; Stage 3 not run. Browser passed both viewports,
+  screenshots were inspected, QA PASS comment is
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/804#issuecomment-5825549001`,
+  and #804 is CLOSED. Production evidence was not claimed.
+
+## #800 transaction — 2026-09-26
+
+- Groom/engineering: Stage 2a parity audit, Opencode Go / Kimi K3 / medium
+  rostered; Codex / GPT-5 / medium substituted. Commit `e5e27a0` adds the
+  Three.js/A-Frame online-vs-ZIP matrix and browser evidence; `0ac21fa` later
+  formatted its test file for the full gate.
+- QA/reconciliation: Stage 4 Claude / Sonnet 5 / medium rostered; Codex /
+  GPT-5 / medium substituted; Stage 3 not run. Chromium passed the 3D matrix,
+  screenshots were inspected, QA PASS comment is
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/800#issuecomment-5825523022`,
+  and #800 is CLOSED. Production evidence was not claimed.

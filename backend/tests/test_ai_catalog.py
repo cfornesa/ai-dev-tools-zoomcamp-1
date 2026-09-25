@@ -12,6 +12,13 @@ from scenes import ai_catalog, ai_runs
 from scenes.models import AIProviderModel, ApplicationAdmin, Project
 
 
+def test_native_schema_uses_a_database_default() -> None:
+    field = AIProviderModel._meta.get_field("native_schema")
+
+    assert field.default is True
+    assert field.db_default is True
+
+
 @pytest.fixture
 def admin_a():
     user = get_user_model().objects.create_user(username="catalog_admin", password="not-used")

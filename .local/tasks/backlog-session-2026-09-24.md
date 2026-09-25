@@ -1158,3 +1158,51 @@ deferred.
 - QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/829#issuecomment-5826990312
 - Reconciled and closed #829. Production publish/live verification remains
   intentionally unclaimed and outside this issue's closure contract.
+
+## Distillation refresh 24 — 2026-09-25
+
+- Open-issue inventory was reconciled against GitHub: #748, #788, and #806
+  remain open; #829 is closed. No duplicate issue was created.
+- #748 production transaction reached the authorized Replit Publish flow, but
+  Replit generated an unexpected destructive schema diff dropping
+  `scenes_publicprofile.profile_image_content_type` and
+  `scenes_publicprofile.profile_image_data` (2 rows each). The approval was
+  not given and the publish was cancelled; production data was not changed.
+- Classification: verification-boundary / workflow-infrastructure defect.
+  The source still defines and uses both fields, so this is not authorized as
+  a product migration. Next action is to reconcile Replit schema state before
+  retrying publication. Service/model/effort: Claude/Codex primary,
+  task-distillation, medium effort.
+- Production smoke after cancellation passed: `/health/` 200,
+  share-metadata `backend_reachable:true`, root 200, anonymous whoami 401,
+  login 200. The live immersive page still lacks the #829
+  `immersive-version-details` marker, so no deployed layout claim is made.
+- QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/748#issuecomment-5827189078
+
+## #830 transaction — 2026-09-25
+
+- Distillation/groom: Replit's second publish review exposed a distinct,
+  actionable schema-safety gap after Development was reconciled through
+  `scenes.0094`: adding `scenes_aiprovidermodel.native_schema` would truncate
+  five Production rows. Duplicate search found #817 (the feature) and closed
+  schema-history issues, but no open non-destructive migration issue. Created
+  criterion-ready #830 linked to #748. Routing: stage 2b complex migration and
+  schema work. Stage-1 service/model/effort: Claude/Codex primary substitution,
+  medium effort.
+- Engineering: added `db_default=True` to the existing `native_schema` field,
+  added migration `0095_aiprovidermodel_native_schema_db_default`, and added a
+  focused field-contract regression test. Stage-2b roster was Ollama
+  Cloud/kimi-k3; actual implementation was Codex/GPT-5 substitution, medium
+  effort. No production database was touched.
+- Rehearsal: rebuilt the disposable Compose backend, created a disposable
+  PostgreSQL database, rewound scenes to 0092, preserved 10 existing
+  `AIProviderModel` rows, applied 0093–0095, and verified 10 rows remained,
+  all had `native_schema=true`, the database default was `true`, and both
+  PublicProfile image columns remained. Database was dropped after the check.
+- Local focused test: `tests/test_ai_catalog.py` 26 passed; lint/format passed.
+  Full `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` passed: backend
+  1698 passed/39 skipped and frontend 277 files/2979 tests.
+- First schema-safe publish retry was stopped before approval because Replit
+  then exposed a separate `native_schema` warning with `TRUNCATE ... CASCADE`.
+  Production remains unchanged. Next action is to push #830, verify the exact
+  Replit review contains no destructive operation, then continue #748.

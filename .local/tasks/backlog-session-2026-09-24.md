@@ -1410,3 +1410,31 @@ deferred.
 - QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/833#issuecomment-5828200845
 - Reconciliation: all #833 criteria passed; issue closed. Dependent runtime,
   editor, AI, and export work remains in #834–#851 and must use this contract.
+
+## Distillation refresh 30 — 2026-09-26 QA-routing correction
+
+- Owner clarification applied: verification-only issues are integrated directly
+  into QA self-review; they do not receive an attempted engineering stage.
+- #806 transaction: QA self-review PASS and issue closed. Published smoke
+  passed; active Chrome inspected the six production engine routes at
+  1280x900 and 375x812; six production Full ZIPs were downloaded and listed;
+  published index gzip was 75,323 bytes versus 75,329 bytes for the checkout's
+  local index chunk; no dependency or migration change was made. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/806#issuecomment-5828293503
+- #853–#858 QA self-review transactions were recorded as FAIL/BLOCKED without
+  engineering because their exact Chrome workflows depend on #832 and the
+  authored-sound implementation prerequisites. Comments record the evidence
+  boundary and re-entry condition; none were closed.
+- #859–#861 QA self-review transactions were recorded as FAIL/BLOCKED without
+  engineering because the six-engine immersive/embed/ZIP sweeps depend on the
+  same non-terminal sound implementation branch. #862 was recorded as
+  FAIL/BLOCKED because its workflow-validity report must consume terminal
+  results from #853–#861. No production data or code was changed by these QA
+  transactions.
+- Current open inventory after this routing correction: #788, #832, #834–#862
+  except #833 and #806, which are closed. Implementation candidates are #832,
+  #834–#852; verification/reporting transactions are #853–#862. #788 remains
+  blocked at the supported production-runtime boundary.
+- Service/model/effort: task-distillation/backlog-session orchestration and QA
+  self-review by Codex/GPT-5 substitution, medium effort; no independent-family
+  second opinion was run for the verification-only transactions.

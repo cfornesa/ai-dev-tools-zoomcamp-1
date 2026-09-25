@@ -4006,6 +4006,34 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   QA self-review / Codex-GPT-5 / medium / substituted: no;
   reconcile / Codex-GPT-5 / medium / substituted: no.
 
+## Transaction #854 — 2026-09-26 — QA PASS / CLOSED
+
+- Groom: verification-only C2.js regular-view issue; no duplicate and no
+  implementation stage required.
+- Engineer: none; implementation provenance is not applicable. Service/model/
+  effort: Codex-GPT-5 / medium / substituted: no.
+- QA self-review: exact 1280x720 and 375x667 local Chrome evidence showed the
+  nonblank authored C2.js scene, running sound, major scale, 90 BPM telemetry,
+  animated frame changes, toolbar controls, and Full/Non-Camera ZIP menu
+  entries. No app errors observed.
+- Reconcile: GitHub QA comment #854 comment 5839762956 records the criterion
+  matrix and states the local-only evidence boundary. #854 is closed. ZIP
+  archive integrity remains separately owned by #861.
+- Provenance per stage: groom / Codex-GPT-5 / medium / substituted: no;
+  engineer / Codex-GPT-5 / medium / substituted: no-op;
+  QA self-review / Codex-GPT-5 / medium / substituted: no;
+  reconcile / Codex-GPT-5 / medium / substituted: no.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #855
+
+- Newly closed verification issues: #853 and #854. Their local evidence is
+  not generalized to other engines or ZIP/immersive/embed surfaces.
+- Remaining verification order is #855 C2.js Interactive, #856 SVG, #857
+  A-Frame, #858 Three.js, then #859–#861 dependent immersive/embed/ZIP
+  reports and #862 aggregate validity. #875, #877, #874, #847, and #788
+  remain independent open work.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
 ## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #877
 
 - Open inventory now includes #877 in addition to #874, #862, #861, #860,

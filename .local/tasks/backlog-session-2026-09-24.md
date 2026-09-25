@@ -1313,3 +1313,26 @@ deferred.
   substitution, medium effort. Next routing audit: groom #833 first because
   it is the decision/contract prerequisite for the sound branch, then return
   to the owner-authorized production release transactions.
+
+## #832 transaction — 2026-09-25
+
+- Grooming/deduplication: created as a distinct follow-up for live/download
+  sound behavior and evidence; closed #306–#310, #755, and #761 were not
+  reopened. Routing: stage 2b standalone runtime/audio behavior plus live
+  verification. Service/model/effort: Claude/Codex primary substitution,
+  medium effort.
+- Engineering: commit `9280101` adds the structured Three.js export's ambient
+  audio lifecycle and explicit Sound/Keyboard status, preserves the existing
+  movement, microphone, and camera-theremin bridges, adds the focused
+  `structuredExportSound.spec.ts`, and keeps Non-Camera camera paths omitted.
+- QA self-review: focused export/runtime tests 18 passed; corrected structured
+  Project3D Full ZIP browser test passed 1/1 at 1280x900 and 375x812; full
+  `UV_CACHE_DIR=/private/tmp/codex-uv-cache make check` passed with backend
+  1698 passed/39 skipped and frontend 277 files/2979 tests. Production Chrome
+  only proved the Sound control state transition (`Mute sound`, pressed=true);
+  it did not expose an inspectable AudioContext and no audible production claim
+  was made.
+- QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/832#issuecomment-5828003478
+- Reconciliation: local/Compose criteria PASS; production criterion remains
+  open pending an exact-revision authorized publish/live audio verification.
+  #832 stays open and blocks dependent sound-contract issues.

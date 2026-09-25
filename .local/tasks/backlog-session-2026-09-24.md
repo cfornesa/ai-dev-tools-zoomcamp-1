@@ -2399,7 +2399,7 @@ deferred.
   substitution; medium effort. Added the live browser persistence/reset
   regression and fixed the reset/effect race in `PieceStageControls.tsx` so
   clearing storage is not followed by an immediate default snapshot write.
-  Commit `PENDING_COMMIT_843`.
+  Commits `04039a6` and the follow-up ledger correction `PENDING_LEDGER_COMMIT_843`.
 - QA self-review: PASS. Stage owner qa-self-review; Codex/GPT-5 substitution;
   medium effort. Final current-checkout Compose Chromium flow passed 1/1;
   focused tests passed 67; full frontend passed 280 files / 3009 tests;

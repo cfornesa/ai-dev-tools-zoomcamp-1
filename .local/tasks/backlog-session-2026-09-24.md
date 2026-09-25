@@ -1336,3 +1336,41 @@ deferred.
 - Reconciliation: local/Compose criteria PASS; production criterion remains
   open pending an exact-revision authorized publish/live audio verification.
   #832 stays open and blocks dependent sound-contract issues.
+
+## #748 transaction — 2026-09-25
+
+- Grooming/reconciliation: verification-only release gate; dependency satisfied
+  after the owner-authorized publish history and live Chrome access were
+  available. Service/model/effort: Claude/Codex primary substitution, medium
+  effort.
+- Engineering: no code change; production verification only. Service/model/
+  effort: Claude/Codex primary substitution, low effort.
+- QA self-review: PASS. Active Chrome evidence covered regular and immersive
+  routes at 1280x900 and 375x812, toolbar order, identity/description/version
+  placement, active camera steering with opacity and mirror controls, and the
+  downloaded Full ZIP. 
+- Commands/evidence: 
+  `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh` PASS;
+  live HTML asset `assets/index-7tcNeam-.js`; checkout `591954a`; production
+  ZIP `/Users/Fornesus/Downloads/untitled-3d-scene (8).zip` inspected with
+  `unzip -l`.
+- QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/748#issuecomment-5828064439
+- Reconciliation: all #748 criteria passed; issue closed. Production evidence
+  is kept separate from local/Compose evidence.
+
+## #788 transaction — 2026-09-25
+
+- Grooming/reconciliation: owner-authorized one-time production data action;
+  dependency #748 is now closed. Service/model/effort: Claude/Codex primary
+  substitution, medium effort.
+- Engineering/preflight: command inspection confirmed explicit `--dry-run`,
+  owner-handle resolution, marked-fixture idempotency, and version creation on
+  changed source; prior disposable PostgreSQL rehearsal and production snapshot
+  remain recorded in the issue.
+- QA self-review: BLOCKED at the production execution boundary. Replit Agent
+  confirmed the visible Replit Shell is Development-only and no direct
+  published-deployment shell is exposed; the workspace shell had no `.env`.
+  No production command, data write, secret access, or second import was run.
+- QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5828150414
+- Reconciliation: issue remains open pending a supported owner-approved
+  production execution mechanism; no rollback required because no write ran.

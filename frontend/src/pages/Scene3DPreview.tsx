@@ -47,6 +47,7 @@ import { useFullscreenToggle } from './useFullscreenToggle';
 import Scene3DAFramePreview from './Scene3DAFramePreview';
 import { resolveScene3DRenderer } from '../validation/scene3d';
 import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
+import { normalizeSonic } from '../audio/sonicContract';
 
 const HAND_MOVE_PINCH_THRESHOLD = 0.75;
 const PIANO_NOTES = Object.values(PIANO_KEY_MAP);
@@ -337,6 +338,28 @@ function ThreeScenePreview({
     movement: 'synth',
     melodic: 'synth',
   });
+  useEffect(() => {
+    const authored = normalizeSonic(scene.sonic);
+    if (!authored) return;
+    setAmbientBpm(authored.tempo);
+    setAmbientScale(authored.scale);
+    setKeyboardKey(authored.root as PitchClass);
+    setKeyboardScale(authored.keyboard_scale);
+    setTranspose(authored.transpose);
+    setSoundVolume(authored.extras.default_volume);
+    setVoiceInstruments(authored.extras.voices as Record<SonicVoice, SonicInstrument>);
+    setMelodicSynthSettings((current) => ({
+      ...current,
+      oscillator: authored.extras.synth.oscillator,
+      filter: {
+        type: authored.extras.synth.filter_type,
+        cutoff: authored.extras.synth.filter_cutoff,
+        resonance: authored.extras.synth.filter_resonance,
+      },
+      envelope: authored.extras.synth.envelope,
+      octaveShift: authored.extras.synth.octave_min - 3,
+    }));
+  }, [scene.sonic]);
   useEffect(() => {
     const engine = sonicEngineRef.current;
     return () => engine?.dispose();

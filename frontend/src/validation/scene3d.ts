@@ -20,6 +20,7 @@ import Ajv2020, { type ErrorObject } from 'ajv/dist/2020';
 
 import scene3dSchema from '../../../schema/scene3d.schema.json';
 import rawLimits3d from '../../../schema/limits3d.json';
+import { normalizeSceneSonic } from '../audio/sonicContract';
 
 export const LIMITS3D: Record<string, number> = Object.fromEntries(
   Object.entries(rawLimits3d).filter(([key]) => !key.startsWith('$')),
@@ -223,6 +224,7 @@ function checkLimits(data: any): Scene3DValidationError[] {
 }
 
 export function validateScene3D(data: unknown): Scene3DValidationResult {
+  data = normalizeSceneSonic(data);
   if (typeof data !== 'object' || data === null) {
     return {
       valid: false,

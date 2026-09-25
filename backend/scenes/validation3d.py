@@ -22,6 +22,8 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from scenes.sonic_contract import normalize_scene_sonic
+
 SCHEMA_DIR = Path(__file__).resolve().parent.parent.parent / "schema"
 
 with (SCHEMA_DIR / "scene3d.schema.json").open() as _f:
@@ -308,6 +310,7 @@ def validate_scene3d(data: Any) -> Scene3DValidationResult:
     short-circuits the next so errors stay specific instead of cascading
     into noise. Mirrors `scenes.validation.validate_scene`'s pipeline.
     """
+    data = normalize_scene_sonic(data)
     if not isinstance(data, dict):
         return Scene3DValidationResult(
             errors=[

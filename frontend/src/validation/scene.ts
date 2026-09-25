@@ -22,6 +22,7 @@ import {
   SUPPORTED_MEDIA_MIME_TYPES,
   STORE_MEDIA_ASSETS,
 } from '../storage/localProjectRepository';
+import { normalizeSceneSonic } from '../audio/sonicContract';
 
 export const LIMITS: Record<string, number> = Object.fromEntries(
   Object.entries(rawLimits).filter(([key]) => !key.startsWith('$')),
@@ -759,6 +760,7 @@ export async function checkImageMediaReferences(
 }
 
 export function validateScene(data: unknown): SceneValidationResult {
+  data = normalizeSceneSonic(data);
   if (typeof data !== 'object' || data === null) {
     return {
       valid: false,

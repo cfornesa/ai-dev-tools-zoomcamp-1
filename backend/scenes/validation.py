@@ -34,6 +34,8 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from scenes.sonic_contract import normalize_scene_sonic
+
 SCHEMA_DIR = Path(__file__).resolve().parent.parent.parent / "schema"
 
 with (SCHEMA_DIR / "scene.schema.json").open() as _f:
@@ -657,6 +659,7 @@ def validate_scene(data: Any) -> SceneValidationResult:
     integrity, then complexity/payload limits — each stage short-circuits
     the next so errors stay specific instead of cascading into noise.
     """
+    data = normalize_scene_sonic(data)
     if not isinstance(data, dict):
         return SceneValidationResult(
             errors=[

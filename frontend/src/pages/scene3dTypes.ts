@@ -142,6 +142,8 @@ export type Scene3DDocument = {
   groups: Group3D[];
   objects: Object3D[];
   randomness: { seed: number; enabled: boolean };
+  /** #844: optional persisted authored sound defaults. */
+  sonic?: import('../audio/sonicContract').SonicDefaults;
 };
 
 export const OBJECT_TYPE_DISPLAY_NAMES: Record<Object3DType, string> = {

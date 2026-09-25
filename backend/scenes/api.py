@@ -68,6 +68,7 @@ from scenes.serializers import (
     TemplateCreateSerializer,
     TemplateSerializer,
 )
+from scenes.sonic_contract import normalize_scene_sonic
 from scenes.thumbnail_generation import (
     ensure_thumbnail_for_version,
     maybe_schedule_thumbnail_generation,
@@ -893,7 +894,7 @@ class SceneVersionListCreateView(APIView):
 
         input_serializer = SceneVersionCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
-        scene_json = input_serializer.validated_data["scene_json"]
+        scene_json = normalize_scene_sonic(input_serializer.validated_data["scene_json"])
 
         # Authoritative server-side validation, independent of whatever the
         # browser already checked (Task 6).

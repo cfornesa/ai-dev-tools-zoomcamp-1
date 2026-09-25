@@ -37,6 +37,7 @@ from scenes.serializers import (
     SceneVersion3DCreateSerializer,
     SceneVersion3DSerializer,
 )
+from scenes.sonic_contract import normalize_scene_sonic
 from scenes.thumbnail_generation3d import (
     ensure_thumbnail_for_version3d,
     maybe_schedule_thumbnail_generation3d,
@@ -251,7 +252,7 @@ class SceneVersion3DListCreateView(APIView):
 
         input_serializer = SceneVersion3DCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
-        scene_json = input_serializer.validated_data["scene_json"]
+        scene_json = normalize_scene_sonic(input_serializer.validated_data["scene_json"])
 
         result = validate_scene3d(scene_json)
         if not result.valid:

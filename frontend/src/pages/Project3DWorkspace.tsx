@@ -30,6 +30,8 @@ import PlaneSelectionOverlay from './PlaneSelectionOverlay';
 import PublishControl3D from './PublishControl3D';
 import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
+import SonicDefaultsPanel from './SonicDefaultsPanel';
+import { normalizeSonic } from '../audio/sonicContract';
 import {
   DRAWING_PLANE_MAX_POINTS,
   DRAWING_PLANE_MAX_SHAPES,
@@ -632,6 +634,15 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
               <option value="aframe">A-Frame</option>
             </select>
           </label>
+        )}
+        {workingScene && (
+          <details className="editor-sound-details">
+            <summary>Sound</summary>
+            <SonicDefaultsPanel
+              value={normalizeSonic(workingScene.sonic)}
+              onChange={(sonic) => updateWorkingScene({ ...workingScene, sonic })}
+            />
+          </details>
         )}
         <p
           role="status"

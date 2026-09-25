@@ -1662,3 +1662,7 @@ passed. #827 received QA PASS and was closed; #806, #788, and #748 remain.
 ## 2026-09-25 — Sound controls distillation
 
 Added #833-#847 (new only). Implementation blocked on #832 (Codex audio refinement) to avoid concurrent edits to the sound engine/export runtime. Reference lacks BPM slider/oscillator/ADSR; these are owner additions recorded in #833.
+
+## 2026-09-25 — Scale/key/transposition added
+
+Added #848-#851; commented on #833/#844 for contract fields. Blocked on #832.

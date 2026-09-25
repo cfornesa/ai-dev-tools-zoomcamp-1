@@ -36,3 +36,15 @@ Codex's uncommitted files were not touched or staged.
 - #832 (Codex) blocks all; #833 needs an owner answer (recommended default in the issue) and gates #844/#845/#847.
 - Audible quality is a verification boundary: tests assert engine/graph state via a Tone mock, not sound; live listening is owner/Codex-verified per #832's evidence rules.
 - #844 may need a DB migration; the issue says to split it into its own issue first.
+
+## Update — scale, key and transposition (owner request 2026-09-25)
+Investigation: `pianoKeyMap.ts` is a fixed chromatic layout and scales are hard-coded, so keys can neither snap to a scale nor be transposed; Tone.js `Frequency.transpose` covers transposition without a new dependency. New issues (all blocked on #832):
+
+| Order | Issue | Scope | Route |
+| --- | --- | --- | --- |
+| a | #848 | Scale-theory module: tables, snap, transpose, `identifyScale` | 2a |
+| b | #849 | Engine: keyboard key/scale mapping and global transposition (after #848, #834, #837) | 2b |
+| c | #850 | Live UI: Key, Scale, Transpose, detected-scale readout, out-of-key hints (after #849, #839, #840) | 2a |
+| d | #851 | 2D, generated pieces and ZIPs (after #850, #841, #842) | 2b |
+
+#833 and #844 received scope comments (root, keyboard_scale, transpose fields); nothing was edited or reopened.

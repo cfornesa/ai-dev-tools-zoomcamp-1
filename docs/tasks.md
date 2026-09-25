@@ -24024,3 +24024,5 @@ Addendum 6 update: #814 closed; added #817-#821 (see distillation doc). Still di
 ## Addendum 7 — sound and synth controls (2026-09-25)
 
 See `docs/distillation-2026-09-25-sound-controls.md`. Issues #833-#847, all blocked on Codex's #832. Distillation only.
+
+Addendum 7 update: #848-#851 (scale, key, transposition), blocked on #832.

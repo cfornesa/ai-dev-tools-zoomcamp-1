@@ -3072,15 +3072,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
           {sceneEditor.lockError}
         </p>
       )}
-      {id && (
-        <SaveControl
-          projectId={id}
-          workingCopy={workingCopy}
-          isDirty={isDirty}
-          onSaved={handleVersionSaved}
-          compact
-        />
-      )}
     </div>
   );
 
@@ -3941,6 +3932,24 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   }
                   editorControls={
                     <>
+                      <span
+                        role="group"
+                        aria-label="Editor actions"
+                        className="editor-stage-text-actions"
+                      >
+                        {id && (
+                          <SaveControl
+                            projectId={id}
+                            workingCopy={workingCopy}
+                            isDirty={isDirty}
+                            onSaved={handleVersionSaved}
+                            compact
+                          />
+                        )}
+                        <button type="button" onClick={handleAskAiImproveScene}>
+                          Ask AI to improve this scene
+                        </button>
+                      </span>
                       <InkModeButton
                         label={hasInkLayer(workingCopy ?? {}) ? 'Edit ink layer' : 'Draw ink layer'}
                         active={inkSession !== null}
@@ -3973,6 +3982,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                       ) : null}
                     </>
                   }
+                  toolbarMode="inline"
                 />
               </div>
             </div>
@@ -4098,7 +4108,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
               cameraLayerOrder={effectiveCameraLayerOrder}
               onCameraLayerOrderChange={updateCameraLayerOrder}
               onAskAiChange={handleAskAiChangeLayer}
-              onAskAiImprove={handleAskAiImproveScene}
             />
             {/* Issue #282: mirrors the "Ask AI to fix this error" panel
                 above exactly — a second, independent `AIProposalPanel`

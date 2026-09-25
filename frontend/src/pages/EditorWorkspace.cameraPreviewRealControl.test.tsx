@@ -223,7 +223,7 @@ describe('Preview panel through the REAL CameraControl lifecycle (Task 109, issu
     assertPreviewFullyRendered(1);
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
+    // expandAllCollapsibleSections also opens the direct Piece controls disclosure.
     const enableButton = await screen.findByRole('button', { name: /enable camera/i });
     await act(async () => {
       fireEvent.click(enableButton);
@@ -252,7 +252,7 @@ describe('Preview panel through the REAL CameraControl lifecycle (Task 109, issu
     await loadWorkspace(baseScene());
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
+    // expandAllCollapsibleSections also opens the direct Piece controls disclosure.
     const enableButton = await screen.findByRole('button', { name: /enable camera/i });
     await act(async () => {
       fireEvent.click(enableButton);
@@ -285,7 +285,7 @@ describe('Preview panel through the REAL CameraControl lifecycle (Task 109, issu
     await loadWorkspace(baseScene());
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
+    // expandAllCollapsibleSections also opens the direct Piece controls disclosure.
     const enableButton = await screen.findByRole('button', { name: /enable camera/i });
     await act(async () => {
       fireEvent.click(enableButton);

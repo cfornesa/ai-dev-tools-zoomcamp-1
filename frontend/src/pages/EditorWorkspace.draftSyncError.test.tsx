@@ -172,7 +172,7 @@ describe('draft-sync failure notice', () => {
 
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Save scene' }));
 
     await waitFor(() => expect(screen.queryByTestId('draft-sync-error')).not.toBeInTheDocument());
   });

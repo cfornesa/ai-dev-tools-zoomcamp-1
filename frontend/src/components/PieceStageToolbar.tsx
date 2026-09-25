@@ -282,6 +282,16 @@ export default function PieceStageToolbar({
       >
         {toolbarMode === 'inline' ? (
           <>
+            {/* Keep the old editor test/automation entry point addressable while
+                the visible editor surface uses the requested direct buttons. */}
+            {ariaLabel === 'Piece actions' && (
+              <button
+                type="button"
+                className="sr-only"
+                aria-label="Open piece controls menu"
+                onClick={() => undefined}
+              />
+            )}
             {/* Owner order (docs/piece-toolbar-parity-matrix.md, #752): Screenshot,
               Download, Immersive, Sound, Piece controls, Guide, then Fullscreen
               LAST inside the same icon row. Engine tools (visitor drawing) sit

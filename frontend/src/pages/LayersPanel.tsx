@@ -1142,7 +1142,6 @@ function LayersPanel({
   cameraLayerOrder,
   onCameraLayerOrderChange,
   onAskAiChange,
-  onAskAiImprove,
 }: {
   sceneEditor: SceneEditor;
   // Issue #171 (task 139): see `OutlineRowItem`'s identically-named prop
@@ -1157,7 +1156,6 @@ function LayersPanel({
   onAskAiChange?: (label: string) => void;
   // Issue #283: the unscoped, whole-scene counterpart of `onAskAiChange`
   // — takes no argument since it isn't referencing any specific item.
-  onAskAiImprove?: () => void;
 }) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [hover, setHover] = useState<HoverState | null>(null);
@@ -1324,15 +1322,6 @@ function LayersPanel({
         {sceneEditor.multiSelectedIds.length > 0 && (
           <button type="button" onClick={() => sceneEditor.clearMultiSelect()}>
             Clear group selection
-          </button>
-        )}
-        {/* Issue #283: unscoped, whole-scene counterpart to #282's
-            per-row "Ask AI to change this" -- not tied to any specific
-            layer/group/shape. Reuses the exact same seed mechanism via
-            `onAskAiChange`, called with no argument. */}
-        {onAskAiImprove && (
-          <button type="button" onClick={onAskAiImprove}>
-            Ask AI to improve this scene
           </button>
         )}
       </div>

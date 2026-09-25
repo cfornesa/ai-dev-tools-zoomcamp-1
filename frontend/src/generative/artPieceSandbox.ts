@@ -547,9 +547,8 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   var melodicOscillator = 'sine';
   var melodicEnvelope = { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 };
   var melodicOctave = 0;
-  var NOTE_FREQUENCIES = {
-    a: 220.0, s: 246.94, d: 261.63, f: 293.66, g: 329.63, h: 349.23, j: 392.0, k: 440.0
-  };
+  var KEYBOARD_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k'];
+  var PITCH_CLASSES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   function ensureAudio() {
     if (!audioCtx) {
       var Ctx = window.AudioContext || window.webkitAudioContext;
@@ -755,7 +754,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     if (audioCtx) { try { audioCtx.close(); } catch (e) {} }
   });
   var AMBIENT_SCALES = {
-    major: [0, 2, 4, 7, 9], minor: [0, 2, 3, 7, 8], pentatonic: [0, 3, 5, 7, 10],
+    major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], pentatonic: [0, 3, 5, 7, 10],
     chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], dorian: [0, 2, 3, 5, 7, 9, 10],
     phrygian: [0, 1, 3, 5, 7, 8, 10], lydian: [0, 2, 4, 6, 7, 9, 11],
     mixolydian: [0, 2, 4, 5, 7, 9, 10], wholetone: [0, 2, 4, 6, 8, 10]
@@ -763,6 +762,21 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   var PIANO_ROOTS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   var ambientTimer = null;
   var ambientIndex = 0;
+  function midiToNoteName(midi) {
+    var rounded = Math.round(midi);
+    return PITCH_CLASSES[((rounded % 12) + 12) % 12] + (Math.floor(rounded / 12) - 1);
+  }
+  function noteFrequency(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+  function keyboardNotes() {
+    var rootIndex = PITCH_CLASSES.indexOf(keyboardRoot);
+    var scale = AMBIENT_SCALES[keyboardScale] || AMBIENT_SCALES.major;
+    var rootMidi = (4 + 1) * 12 + rootIndex + keyboardTranspose;
+    return KEYBOARD_KEYS.map(function (_, index) {
+      var octaveOffset = Math.floor(index / scale.length);
+      var interval = scale[index % scale.length];
+      return rootMidi + interval + (octaveOffset * 12);
+    });
+  }
   function voiceOutput(voice) {
     return voiceGains[voice] || masterGain;
   }
@@ -794,7 +808,9 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     ambientTimer = setInterval(function () {
       var scale = AMBIENT_SCALES[ambientScale] || AMBIENT_SCALES.pentatonic;
       var semitone = scale[ambientIndex % scale.length];
-      playVoiceTone(130.81 * Math.pow(2, semitone / 12), 0.45, 'ambient', 'sine');
+      var ambientFrequency = 130.81 * Math.pow(2, semitone / 12);
+      playVoiceTone(ambientFrequency, 0.45, 'ambient', 'sine');
+      reportState('note', { kind: 'ambient', key: midiToNoteName(36 + semitone), frequency: ambientFrequency });
       ambientIndex += 1;
     }, ambientIntervalMs());
   }
@@ -804,11 +820,13 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   // snippet may separately bind to its own keyboard handling.
   window.addEventListener('keydown', function (event) {
     if (!soundOn || !keyboardEnabled || !audioCtx) return;
-    var frequency = NOTE_FREQUENCIES[(event.key || '').toLowerCase()];
-    if (!frequency) return;
-    var shiftedFrequency = frequency * Math.pow(2, melodicOctave);
-    playVoiceTone(shiftedFrequency, 0.2, 'melodic', melodicOscillator);
-    reportState('note', { key: event.key, frequency: frequency });
+    var keyIndex = KEYBOARD_KEYS.indexOf((event.key || '').toLowerCase());
+    if (keyIndex < 0) return;
+    var midi = keyboardNotes()[keyIndex] + (melodicOctave * 12);
+    var frequency = noteFrequency(midi);
+    var note = midiToNoteName(midi);
+    playVoiceTone(frequency, 0.2, 'melodic', melodicOscillator);
+    reportState('note', { kind: 'keyboard', key: event.key, note: note, frequency: frequency });
   });
   function isBenignResizeObserverNotification(event) {
     var message = (event && event.message) || '';
@@ -936,9 +954,20 @@ function buildListenerScript(library: ArtPieceLibrary): string {
       } else if (data.type === 'toggle-sound') {
         ensureAudio();
         soundOn = !soundOn;
-        if (soundOn) { audioCtx.resume(); startAmbient(); }
-        else { audioCtx.suspend(); keyboardEnabled = false; if (ambientTimer !== null) { clearInterval(ambientTimer); ambientTimer = null; } reportState('keyboard', { enabled: false }); }
-        reportState('sound', { enabled: soundOn, volume: masterGain.gain.value });
+        if (soundOn) {
+          audioCtx.resume().then(function () {
+            startAmbient();
+            reportState('sound', { enabled: audioCtx.state === 'running', state: audioCtx.state, volume: masterGain.gain.value });
+          }).catch(function (error) {
+            soundOn = false;
+            reportState('sound', { enabled: false, state: audioCtx.state, error: String(error && error.message || error) });
+          });
+        } else {
+          audioCtx.suspend(); keyboardEnabled = false;
+          if (ambientTimer !== null) { clearInterval(ambientTimer); ambientTimer = null; }
+          reportState('keyboard', { enabled: false });
+          reportState('sound', { enabled: false, state: audioCtx.state, volume: masterGain.gain.value });
+        }
       } else if (data.type === 'set-volume') {
         ensureAudio();
         var requestedVolume = typeof data.value === 'number' ? data.value : NaN;

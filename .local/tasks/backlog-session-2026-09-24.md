@@ -3857,3 +3857,55 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
 - Handoff: code, tests, safe push, publish, published smoke, and #872 QA
   evidence are complete. The session cannot claim full production readiness
   while the remaining external execution/evidence boundaries above persist.
+
+## Transaction #873 — 2026-09-26 — ENGINEERED / QA PENDING
+
+- Distillation: DISCOVERED while testing the open sound-verification batch.
+  Existing #430 only acknowledges command receipt/state; it does not expose the
+  authored note contract or actual AudioContext state. Duplicate search covered
+  open/closed audio telemetry and runtime-note issues; no duplicate found.
+  task-distillation / Codex-GPT-5 / medium / substituted: no.
+- Groom: ACCEPTED. The gap is implementation work and is a prerequisite for
+  objective verification of #853–#861: report actual audio state, ambient note
+  identity/frequency, and root/scale/transpose-resolved A–K keyboard notes.
+  issue-scoping / Codex-GPT-5 / medium / substituted: no. Routed to Stage 2b
+  complex because it changes the sandbox runtime contract and parent state UI;
+  no dependency, migration, upload, or production-data action.
+- Engineer: PASS locally, implementation-complex / Codex-GPT-5 / medium /
+  substituted: yes (rostered Ollama Cloud kimi-k3 unavailable in this execution
+  surface). The sandbox now reports AudioContext state, ambient note telemetry,
+  and authored keyboard note names/frequencies; the parent displays the state
+  and resolved note/frequency. Focused sandbox tests pass 2 files / 40 tests.
+- Second opinion: NOT RUN / Mistral Vibe / medium / substituted: no; the
+  independent review slot was unavailable, so this is explicitly carried into
+  QA rather than implied.
+- QA self-review: PENDING full frontend gate and Chrome verification. Do not
+  close the issue or its dependent verification reports until the real browser
+  observes sound activation, an actual running/suspended state, ambient events,
+  and the expected C-major default note sequence.
+
+## Transaction #874 — 2026-09-26 — GROOMED / ENGINEERING IN PROGRESS
+
+- Distillation: DISCOVERED from the owner's exact production editor URL and
+  screenshot. Duplicate search covered blank editor previews, Three.js editor
+  rendering, Save/AI actions, and fullscreen placement; existing #244/#669 are
+  historical/adjacent implementation work, not this unified manual-editor
+  contract. New issue created at
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/874.
+  task-distillation / Codex-GPT-5 / medium / substituted: no.
+- Groom: ACCEPTED. Criteria cover stored Three.js rendering, lower-left
+  `Save scene` then `Ask AI to improve this scene`, right-corner fullscreen,
+  honest disabled-save explanation, preserved 2D behavior, and local/production
+  evidence boundaries. issue-scoping / Codex-GPT-5 / medium / substituted: no.
+  Routed to Stage 2b complex because the blank stage is a renderer/data-path
+  defect, not a CSS-only issue.
+- Engineer: IN PROGRESS / implementation-complex / Codex-GPT-5 / medium /
+  substituted: yes (rostered Ollama Cloud kimi-k3 unavailable). Local changes
+  add a Three.js adapter to the shared preview factory, move editor text actions
+  into a lower-left stage group, anchor fullscreen to the right corner, and
+  explain the disabled Save state. Focused editor tests, typecheck, format,
+  and build are passing; full gate and browser/production QA remain pending.
+- Second opinion: NOT RUN / Mistral Vibe / medium / substituted: no.
+- QA self-review: PENDING. The production screenshot is reproduction evidence,
+  not closure evidence; the deployed route must be checked after a safe push and
+  publish with revision provenance.

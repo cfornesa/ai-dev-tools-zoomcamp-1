@@ -465,7 +465,7 @@ describe('issue #126: one-to-one across explicit save and reload/navigation', ()
       savedVersion = baseVersion(input.scene_json, { id: 2, sequence: 2 });
       return Promise.resolve(savedVersion);
     });
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Save scene' }));
     await waitFor(() =>
       expect(screen.getByTestId('editor-save-status')).toHaveTextContent('Saved as version 2'),
     );

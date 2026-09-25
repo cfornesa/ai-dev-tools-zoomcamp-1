@@ -128,6 +128,7 @@ function PieceStageControls({
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
+  const [audioContextState, setAudioContextState] = useState<string | null>(null);
   const [volume, setVolume] = useState(initialSoundSettings.soundVolume);
   const [ambientBpm, setAmbientBpm] = useState(initialSoundSettings.ambientBpm);
   const [ambientVolume, setAmbientVolume] = useState(initialSoundSettings.ambientVolume);
@@ -159,6 +160,7 @@ function PieceStageControls({
   const [keyboardRelease, setKeyboardRelease] = useState(initialSoundSettings.keyboardRelease);
   const [keyboardOctave, setKeyboardOctave] = useState(initialSoundSettings.keyboardOctave);
   const [lastNote, setLastNote] = useState<string | null>(null);
+  const [lastNoteFrequency, setLastNoteFrequency] = useState<number | null>(null);
   const [microphoneState, setMicrophoneState] = useState<
     'off' | 'active' | 'denied' | 'unavailable'
   >('off');
@@ -430,6 +432,9 @@ function PieceStageControls({
         active?: boolean;
         error?: string;
         key?: string;
+        note?: string;
+        kind?: string;
+        state?: string;
         frequency?: number;
         pose?: { x: number; y: number; z: number };
       } | null;
@@ -450,6 +455,7 @@ function PieceStageControls({
       // just because a command was sent.
       if (data.status === 'sound') {
         if (typeof data.enabled === 'boolean') setSoundOn(data.enabled);
+        if (typeof data.state === 'string') setAudioContextState(data.state);
         if (data.enabled) {
           // The sandbox reports its built-in 20% startup gain in the same
           // acknowledgement that turns Sound on. Re-apply the authored (or
@@ -468,7 +474,8 @@ function PieceStageControls({
         if (typeof data.enabled === 'boolean') setKeyboardEnabled(data.enabled);
       }
       if (data.status === 'note' && typeof data.key === 'string') {
-        setLastNote(data.key);
+        setLastNote(data.note || data.key);
+        if (typeof data.frequency === 'number') setLastNoteFrequency(data.frequency);
       }
       // Issue #432: activation is gated (engine/camera/registration) --
       // each rejection reason is its own distinct, actionable state, not
@@ -1134,7 +1141,9 @@ function PieceStageControls({
           {capabilities.sound && (
             <div role="group" aria-label="Sound">
               <p data-testid="sound-status">
-                {soundOn ? `Sound is on at ${Math.round(volume * 100)}% volume.` : 'Sound is off.'}
+                {soundOn
+                  ? `Sound is on at ${Math.round(volume * 100)}% volume${audioContextState ? ` (${audioContextState}).` : '.'}`
+                  : `Sound is off${audioContextState ? ` (${audioContextState})` : ''}.`}
               </p>
               <label htmlFor="art-piece-volume">Sound volume</label>
               <input
@@ -1424,7 +1433,7 @@ function PieceStageControls({
             <p data-testid="keyboard-note-status">
               {soundOn
                 ? lastNote
-                  ? `Last note played: ${lastNote}.`
+                  ? `Last note played: ${lastNote}${lastNoteFrequency ? ` (${lastNoteFrequency.toFixed(2)} Hz)` : ''}.`
                   : 'Keyboard notes available. Press A-K over the piece to play a note.'
                 : 'Turn on Sound to play keyboard notes.'}
             </p>

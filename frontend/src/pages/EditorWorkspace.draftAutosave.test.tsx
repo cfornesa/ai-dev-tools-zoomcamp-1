@@ -146,7 +146,7 @@ describe('explicit Save clears the matching local draft', () => {
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     expect(clearDraft).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Save scene' }));
 
     await waitFor(() => expect(clearDraft).toHaveBeenCalledTimes(1));
   });
@@ -157,7 +157,7 @@ describe('explicit Save clears the matching local draft', () => {
     mockedSaveSceneVersion.mockRejectedValue(new Error('boom'));
 
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Save scene' }));
 
     await waitFor(() => expect(mockedSaveSceneVersion).toHaveBeenCalled());
     expect(clearDraft).not.toHaveBeenCalled();

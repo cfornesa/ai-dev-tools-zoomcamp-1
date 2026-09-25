@@ -56,11 +56,25 @@ function SaveControl({
         className={compact ? 'piece-stage-icon-button' : undefined}
         onClick={() => void handleSave()}
         disabled={!workingCopy || !isDirty || saveState.pending}
-        aria-label={compact ? 'Save' : undefined}
-        title={compact ? 'Save scene' : undefined}
+        aria-label={compact ? 'Save scene' : undefined}
+        title={
+          compact
+            ? saveState.pending
+              ? 'Saving scene'
+              : !workingCopy || !isDirty
+                ? 'Save scene: no unsaved changes'
+                : 'Save scene'
+            : undefined
+        }
       >
         {compact ? <span aria-hidden="true">▣</span> : saveState.pending ? 'Saving…' : 'Save'}
       </button>
+
+      {compact && !saveState.pending && (!workingCopy || !isDirty) && (
+        <span className="editor-save-control-reason" role="status">
+          No unsaved changes
+        </span>
+      )}
 
       {saveState.error && <ActionErrorMessage error={saveState.error} testId="save-error" />}
     </div>

@@ -27,6 +27,12 @@ describe('resolveSceneRendererId', () => {
     );
   });
 
+  it('resolves stored Three.js scene documents to the Three.js adapter', () => {
+    expect(
+      resolveSceneRendererId({ documentType: 'scene3d', renderer: { preferred: 'threejs' } }),
+    ).toBe('threejs');
+  });
+
   it('defaults to "p5" for a scene missing/malformed renderer, without throwing', () => {
     expect(resolveSceneRendererId({})).toBe('p5');
     expect(resolveSceneRendererId(null)).toBe('p5');

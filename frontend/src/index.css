@@ -5654,11 +5654,51 @@ select.ai-proposal-field-full-width {
    capability, publication, and fullscreen actions do not collapse into a
    tall vertical column. */
 .editor-piece-stage-toolbar {
+  position: absolute;
+  inset: 0;
+  align-items: flex-start;
+  pointer-events: none;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
   gap: 0.65rem;
   max-width: calc(100vw - 5rem);
+}
+
+.editor-piece-stage-toolbar > * {
+  pointer-events: auto;
+}
+
+.editor-piece-stage-toolbar .editor-stage-text-actions {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.editor-piece-stage-toolbar .editor-stage-text-actions button {
+  min-height: 2.75rem;
+}
+
+.editor-save-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.editor-save-control-reason {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.editor-piece-stage-toolbar > button[aria-label='Expand piece to fullscreen'],
+.editor-piece-stage-toolbar > button[aria-label='Exit fullscreen'] {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
 }
 
 .piece-stage-toolbar .piece-stage-icon-button {

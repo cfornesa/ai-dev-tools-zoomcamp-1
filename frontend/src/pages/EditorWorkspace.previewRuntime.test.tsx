@@ -169,7 +169,7 @@ describe('live preview runtime (Task 83, issue #83)', () => {
   it('a Follow-hand binding visibly moves a shape in the live preview as demo input changes', async () => {
     await loadWorkspace(baseScene({ bindings: [FOLLOW_HAND_BINDING] }));
     await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
+    // expandAllCollapsibleSections also opens the direct Piece controls disclosure.
 
     // Set the slider to its target value *before* the hand becomes
     // present, so the one frame `setPresent(true)` emits is the first
@@ -238,7 +238,7 @@ describe('live preview runtime (Task 83, issue #83)', () => {
     });
     await loadWorkspace(scene);
     await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Piece controls' }));
+    // expandAllCollapsibleSections also opens the direct Piece controls disclosure.
 
     const slider = screen.getByLabelText(/Index fingertip X/i);
     fireEvent.change(slider, { target: { value: '0.9' } });

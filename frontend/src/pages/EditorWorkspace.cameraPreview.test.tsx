@@ -261,14 +261,16 @@ describe('Preview panel stays populated across camera activation (Task 109, issu
 
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
-    const controlsToggle = await screen.findByRole('button', { name: 'Hide piece controls' });
+    await user.click(screen.getByRole('button', { name: /^(?:Hide )?piece controls$/i }));
+    const controlsToggle = await screen.findByRole('button', {
+      name: /^(?:Hide )?piece controls$/i,
+    });
     await user.click(controlsToggle);
     expect(screen.getByTestId('fake-camera-control')).toBeInTheDocument();
 
     assertPreviewFullyRendered(1);
 
-    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+    await user.click(screen.getByRole('button', { name: /^(?:Hide )?piece controls$/i }));
     assertPreviewFullyRendered(1);
   });
 
@@ -294,8 +296,17 @@ describe('Preview panel stays populated across camera activation (Task 109, issu
 
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
-    const presentButton = screen.getByRole('button', { name: /hand (present|absent)/i });
+    const controlsButton = screen.getByRole('button', {
+      name: /^(?:Hide )?piece controls$/i,
+    });
+    if (controlsButton.getAttribute('aria-expanded') !== 'true') {
+      fireEvent.click(controlsButton);
+    }
+    expect(screen.getByRole('group', { name: 'Piece controls' })).not.toHaveAttribute('hidden');
+    const presentButton = within(screen.getByRole('group', { name: 'Piece controls' })).getByRole(
+      'button',
+      { name: /^Hand (?:present|absent)$/i },
+    );
     expect(presentButton).toBeEnabled();
     await user.click(presentButton);
     expect(presentButton).toBeEnabled();

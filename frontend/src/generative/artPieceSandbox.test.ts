@@ -116,6 +116,15 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain('finite(data.value)');
   });
 
+  it('#873 reports acknowledged audio state and authored keyboard-note resolution data', () => {
+    const doc = buildArtPieceSandboxDocument(SNIPPET, 'p5js');
+    expect(doc).toContain('audioCtx.state');
+    expect(doc).toContain("kind: 'ambient'");
+    expect(doc).toContain('function keyboardNotes()');
+    expect(doc).toContain('midiToNoteName');
+    expect(doc).toContain("kind: 'keyboard'");
+  });
+
   it("never references this app's own API/session surface", () => {
     const doc = buildArtPieceSandboxDocument(SNIPPET);
     expect(doc).not.toMatch(/\/api\//);

@@ -191,7 +191,7 @@ describe('save', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Save scene' }));
 
     await waitFor(() => expect(mockedSaveSceneVersion).toHaveBeenCalledTimes(1));
     const [, payload] = mockedSaveSceneVersion.mock.calls[0];
@@ -217,7 +217,7 @@ describe('save', () => {
     await user.click(screen.getByRole('button', { name: 'Add circle' }));
     const shapeCountBefore = screen.getByText(/shape\(s\) in the working copy/).textContent;
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Save scene' }));
 
     await waitFor(() => expect(screen.getByTestId('save-error')).toBeInTheDocument());
     expect(screen.getByTestId('save-error')).toHaveTextContent(/failed validation/i);
@@ -230,7 +230,7 @@ describe('save', () => {
 
   it('the Save control is unavailable while there is nothing unsaved to save', async () => {
     await loadReadyWorkspace();
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save scene' })).toBeDisabled();
   });
 });
 

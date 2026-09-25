@@ -167,7 +167,7 @@ export function exportRendererIdFor(scene: SceneDocument): RendererId {
   // Draw.io has a live editor/viewer adapter, but the standalone export
   // runtime is intentionally not claimed until issue #412 adds its explicit
   // safe packaging contract.
-  return resolved === 'p5' || resolved === 'drawio' ? 'p5js' : resolved;
+  return resolved === 'p5' || resolved === 'drawio' || resolved === 'threejs' ? 'p5js' : resolved;
 }
 
 /** Turns `title` into a filesystem-safe, lowercase, hyphenated basename.

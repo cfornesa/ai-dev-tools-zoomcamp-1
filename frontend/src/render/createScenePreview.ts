@@ -14,8 +14,15 @@ import { createP5ScenePreview } from './p5Adapter';
 import type { ScenePreview, SceneRendererId } from './scenePreview';
 import { createSVGScenePreview } from './svgAdapter';
 import { createDrawioScenePreview } from './drawioAdapter';
+import { createThreeScenePreview } from './threeSceneAdapter';
 
-const RECOGNIZED_RENDERER_IDS: readonly SceneRendererId[] = ['p5', 'canvas2d', 'svg', 'drawio'];
+const RECOGNIZED_RENDERER_IDS: readonly SceneRendererId[] = [
+  'p5',
+  'canvas2d',
+  'svg',
+  'drawio',
+  'threejs',
+];
 
 /** Reads `scene.renderer.preferred`, tolerating a scene that hasn't been
  * schema-validated yet (this runs before `render()`'s own validation) --
@@ -49,5 +56,7 @@ export function createScenePreview(
       return createP5ScenePreview(container);
     case 'drawio':
       return createDrawioScenePreview(container);
+    case 'threejs':
+      return createThreeScenePreview(container);
   }
 }

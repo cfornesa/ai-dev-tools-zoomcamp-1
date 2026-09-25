@@ -1727,3 +1727,29 @@ deferred.
   `verification-boundary` / workflow infrastructure blocker shared with
   #838/#839; no duplicate issue was created. #840 remains OPEN pending the
   approved Docker/CI Chromium runner.
+
+## Backlog transaction 41 — #841
+
+- State: `GROOMED → ENGINEERING → QA/OPEN-BLOCKED`.
+- Engineering commit: `b1fcf5d`; extended the existing PieceStageControls ↔
+  sandbox bridge for ambient BPM/volume/mute/scale and Keyboard synth
+  volume/oscillator/filter/envelope/octave/enablement. The sandbox validates
+  parent identity, version, allowlisted command names, and payload shapes,
+  then clamps/applies the settings to its Web Audio graph. The generated
+  viewer E2E scenario now exercises the controls. Service/model/effort:
+  Codex/GPT-5 substitution, medium effort; rostered Stage 2b service
+  unavailable.
+- Focused QA: sandbox bridge tests plus the relevant 3D sound component tests
+  passed (2 files / 59 tests), typecheck passed, and lint passed with existing
+  warnings only. GitHub QA FAIL comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/841#issuecomment-5829482624`.
+- Exact generated-viewer E2E attempt:
+  `E2E_DOCKER_COMPOSE=true npx playwright test
+  e2e/artPieceSoundRuntime.spec.ts --project=chromium --grep
+  "sound only starts from activation"` failed before test execution with the
+  macOS Chromium Mach-port error
+  `bootstrap_check_in ... Permission denied (1100)`. The spec is discoverable
+  with `--list`, but live 2D/generated runtime acknowledgements and 1280x900 /
+  375x812 screenshots remain unverified. This is the existing
+  `verification-boundary` / workflow infrastructure blocker; no duplicate
+  issue was created. #841 remains OPEN.

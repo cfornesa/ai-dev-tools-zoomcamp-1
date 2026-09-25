@@ -104,6 +104,21 @@ function PieceStageControls({
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [volume, setVolume] = useState(0.2);
+  const [ambientBpm, setAmbientBpm] = useState(90);
+  const [ambientVolume, setAmbientVolume] = useState(50);
+  const [ambientMuted, setAmbientMuted] = useState(false);
+  const [ambientScale, setAmbientScale] = useState('pentatonic');
+  const [keyboardEnabled, setKeyboardEnabled] = useState(false);
+  const [keyboardVolume, setKeyboardVolume] = useState(50);
+  const [keyboardOscillator, setKeyboardOscillator] = useState('sine');
+  const [keyboardFilterType, setKeyboardFilterType] = useState('lowpass');
+  const [keyboardFilterCutoff, setKeyboardFilterCutoff] = useState(2000);
+  const [keyboardFilterResonance, setKeyboardFilterResonance] = useState(1);
+  const [keyboardAttack, setKeyboardAttack] = useState(0.01);
+  const [keyboardDecay, setKeyboardDecay] = useState(0.1);
+  const [keyboardSustain, setKeyboardSustain] = useState(0.7);
+  const [keyboardRelease, setKeyboardRelease] = useState(0.3);
+  const [keyboardOctave, setKeyboardOctave] = useState(0);
   const [lastNote, setLastNote] = useState<string | null>(null);
   const [microphoneState, setMicrophoneState] = useState<
     'off' | 'active' | 'denied' | 'unavailable'
@@ -396,6 +411,9 @@ function PieceStageControls({
       if (data.status === 'sound') {
         if (typeof data.enabled === 'boolean') setSoundOn(data.enabled);
         if (typeof data.volume === 'number') setVolume(data.volume);
+      }
+      if (data.status === 'keyboard') {
+        if (typeof data.enabled === 'boolean') setKeyboardEnabled(data.enabled);
       }
       if (data.status === 'note' && typeof data.key === 'string') {
         setLastNote(data.key);
@@ -942,6 +960,229 @@ function PieceStageControls({
                   command('set-volume', { value });
                 }}
               />
+              <label htmlFor="art-piece-ambient-bpm">Ambient BPM: {ambientBpm}</label>
+              <input
+                id="art-piece-ambient-bpm"
+                type="range"
+                min={40}
+                max={220}
+                value={ambientBpm}
+                disabled={!soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setAmbientBpm(value);
+                  command('set-tempo', { value });
+                }}
+              />
+              <label htmlFor="art-piece-ambient-volume">Ambient volume: {ambientVolume}%</label>
+              <input
+                id="art-piece-ambient-volume"
+                type="range"
+                min={0}
+                max={100}
+                value={ambientVolume}
+                disabled={!soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setAmbientVolume(value);
+                  command('set-voice-volume', { voice: 'ambient', value });
+                }}
+              />
+              <label htmlFor="art-piece-ambient-muted">
+                <input
+                  id="art-piece-ambient-muted"
+                  type="checkbox"
+                  checked={ambientMuted}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const enabled = event.target.checked;
+                    setAmbientMuted(enabled);
+                    command('set-voice-muted', { voice: 'ambient', enabled });
+                  }}
+                />
+                Mute ambient
+              </label>
+              <label htmlFor="art-piece-ambient-scale">Scale: {ambientScale}</label>
+              <select
+                id="art-piece-ambient-scale"
+                value={ambientScale}
+                disabled={!soundOn}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setAmbientScale(value);
+                  command('set-scale', { value });
+                }}
+              >
+                {[
+                  'major',
+                  'minor',
+                  'pentatonic',
+                  'chromatic',
+                  'dorian',
+                  'phrygian',
+                  'lydian',
+                  'mixolydian',
+                  'wholetone',
+                ].map((scale) => (
+                  <option key={scale} value={scale}>
+                    {scale}
+                  </option>
+                ))}
+              </select>
+              <fieldset>
+                <legend>Keyboard synth</legend>
+                <button
+                  type="button"
+                  aria-pressed={keyboardEnabled}
+                  disabled={!soundOn}
+                  onClick={() => {
+                    const enabled = !keyboardEnabled;
+                    setKeyboardEnabled(enabled);
+                    command('set-keyboard-enabled', { enabled });
+                  }}
+                >
+                  {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
+                </button>
+                <label htmlFor="art-piece-keyboard-volume">Volume: {keyboardVolume}%</label>
+                <input
+                  id="art-piece-keyboard-volume"
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={keyboardVolume}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setKeyboardVolume(value);
+                    command('set-voice-volume', { voice: 'melodic', value });
+                  }}
+                />
+                <label htmlFor="art-piece-keyboard-oscillator">Oscillator</label>
+                <select
+                  id="art-piece-keyboard-oscillator"
+                  value={keyboardOscillator}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setKeyboardOscillator(value);
+                    command('set-oscillator', { value });
+                  }}
+                >
+                  {['sine', 'square', 'sawtooth', 'triangle'].map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="art-piece-keyboard-filter-type">Filter type</label>
+                <select
+                  id="art-piece-keyboard-filter-type"
+                  value={keyboardFilterType}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setKeyboardFilterType(value);
+                    command('set-filter', {
+                      filterType: value,
+                      cutoff: keyboardFilterCutoff,
+                      resonance: keyboardFilterResonance,
+                    });
+                  }}
+                >
+                  {['lowpass', 'highpass', 'bandpass'].map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="art-piece-keyboard-filter-cutoff">
+                  Cutoff: {keyboardFilterCutoff}
+                </label>
+                <input
+                  id="art-piece-keyboard-filter-cutoff"
+                  type="range"
+                  min={20}
+                  max={20000}
+                  step={20}
+                  value={keyboardFilterCutoff}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setKeyboardFilterCutoff(value);
+                    command('set-filter', {
+                      filterType: keyboardFilterType,
+                      cutoff: value,
+                      resonance: keyboardFilterResonance,
+                    });
+                  }}
+                />
+                <label htmlFor="art-piece-keyboard-filter-resonance">
+                  Resonance: {keyboardFilterResonance}
+                </label>
+                <input
+                  id="art-piece-keyboard-filter-resonance"
+                  type="range"
+                  min={0.1}
+                  max={20}
+                  step={0.1}
+                  value={keyboardFilterResonance}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setKeyboardFilterResonance(value);
+                    command('set-filter', {
+                      filterType: keyboardFilterType,
+                      cutoff: keyboardFilterCutoff,
+                      resonance: value,
+                    });
+                  }}
+                />
+                {(
+                  [
+                    ['attack', keyboardAttack, setKeyboardAttack],
+                    ['decay', keyboardDecay, setKeyboardDecay],
+                    ['sustain', keyboardSustain, setKeyboardSustain],
+                    ['release', keyboardRelease, setKeyboardRelease],
+                  ] as const
+                ).map(([field, value, setter]) => (
+                  <label key={field} htmlFor={`art-piece-keyboard-${field}`}>
+                    {field}: {value}
+                    <input
+                      id={`art-piece-keyboard-${field}`}
+                      type="range"
+                      min={field === 'sustain' ? 0 : 0.001}
+                      max={field === 'sustain' ? 1 : 10}
+                      step={field === 'sustain' ? 0.01 : 0.001}
+                      value={value}
+                      disabled={!soundOn}
+                      onChange={(event) => {
+                        const next = Number(event.target.value);
+                        setter(next);
+                        command('set-envelope', {
+                          attack: field === 'attack' ? next : keyboardAttack,
+                          decay: field === 'decay' ? next : keyboardDecay,
+                          sustain: field === 'sustain' ? next : keyboardSustain,
+                          release: field === 'release' ? next : keyboardRelease,
+                        });
+                      }}
+                    />
+                  </label>
+                ))}
+                <label htmlFor="art-piece-keyboard-octave">Octave: {keyboardOctave}</label>
+                <input
+                  id="art-piece-keyboard-octave"
+                  type="range"
+                  min={-2}
+                  max={2}
+                  value={keyboardOctave}
+                  disabled={!soundOn}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setKeyboardOctave(value);
+                    command('set-octave', { value });
+                  }}
+                />
+              </fieldset>
             </div>
           )}
           {capabilities.keyboard && (

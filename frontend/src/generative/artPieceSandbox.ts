@@ -471,7 +471,19 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   // never touches Sound never even requests one.
   var audioCtx = null;
   var masterGain = null;
+  var masterFilter = null;
+  var voiceGains = { ambient: null, melodic: null };
   var soundOn = false;
+  var ambientBpm = 90;
+  var ambientVolume = 0.5;
+  var ambientMuted = false;
+  var ambientScale = 'pentatonic';
+  var keyboardEnabled = false;
+  var melodicVolume = 0.5;
+  var melodicMuted = false;
+  var melodicOscillator = 'sine';
+  var melodicEnvelope = { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 };
+  var melodicOctave = 0;
   var NOTE_FREQUENCIES = {
     a: 220.0, s: 246.94, d: 261.63, f: 293.66, g: 329.63, h: 349.23, j: 392.0, k: 440.0
   };
@@ -481,7 +493,18 @@ function buildListenerScript(library: ArtPieceLibrary): string {
       audioCtx = new Ctx();
       masterGain = audioCtx.createGain();
       masterGain.gain.value = 0.2;
-      masterGain.connect(audioCtx.destination);
+      masterFilter = audioCtx.createBiquadFilter();
+      masterFilter.type = 'lowpass';
+      masterFilter.frequency.value = 2000;
+      masterFilter.Q.value = 1;
+      voiceGains.ambient = audioCtx.createGain();
+      voiceGains.melodic = audioCtx.createGain();
+      voiceGains.ambient.gain.value = ambientVolume;
+      voiceGains.melodic.gain.value = melodicVolume;
+      voiceGains.ambient.connect(masterGain);
+      voiceGains.melodic.connect(masterGain);
+      masterGain.connect(masterFilter);
+      masterFilter.connect(audioCtx.destination);
     }
     return audioCtx;
   }
@@ -668,19 +691,59 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   window.addEventListener('pagehide', function () {
     if (audioCtx) { try { audioCtx.close(); } catch (e) {} }
   });
+  var AMBIENT_SCALES = {
+    major: [0, 2, 4, 7, 9], minor: [0, 2, 3, 7, 8], pentatonic: [0, 3, 5, 7, 10],
+    chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], dorian: [0, 2, 3, 5, 7, 9, 10],
+    phrygian: [0, 1, 3, 5, 7, 8, 10], lydian: [0, 2, 4, 6, 7, 9, 11],
+    mixolydian: [0, 2, 4, 5, 7, 9, 10], wholetone: [0, 2, 4, 6, 8, 10]
+  };
+  var ambientTimer = null;
+  var ambientIndex = 0;
+  function voiceOutput(voice) {
+    return voiceGains[voice] || masterGain;
+  }
+  function playVoiceTone(frequency, duration, voice, oscillatorType) {
+    if (!soundOn || !audioCtx || !masterGain) return;
+    if (voice === 'ambient' && ambientMuted) return;
+    if (voice === 'melodic' && melodicMuted) return;
+    var oscillator = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    var envelope = voice === 'melodic' ? melodicEnvelope : { attack: 0.015, decay: 0.08, sustain: 0.7, release: 0.08 };
+    oscillator.type = oscillatorType || (voice === 'melodic' ? melodicOscillator : 'sine');
+    oscillator.frequency.value = frequency;
+    var start = audioCtx.currentTime;
+    var attackEnd = start + Math.max(0.001, envelope.attack);
+    var releaseStart = start + Math.max(envelope.attack + envelope.decay, duration - envelope.release);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(0.16, attackEnd);
+    gain.gain.linearRampToValueAtTime(Math.max(0.0001, 0.16 * envelope.sustain), releaseStart);
+    gain.gain.linearRampToValueAtTime(0.0001, start + duration);
+    oscillator.connect(gain);
+    gain.connect(voiceOutput(voice));
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.02);
+  }
+  function ambientIntervalMs() { return 60000 / Math.max(40, Math.min(220, ambientBpm)); }
+  function startAmbient() {
+    if (ambientTimer !== null) clearInterval(ambientTimer);
+    ambientIndex = 0;
+    ambientTimer = setInterval(function () {
+      var scale = AMBIENT_SCALES[ambientScale] || AMBIENT_SCALES.pentatonic;
+      var semitone = scale[ambientIndex % scale.length];
+      playVoiceTone(130.81 * Math.pow(2, semitone / 12), 0.45, 'ambient', 'sine');
+      ambientIndex += 1;
+    }, ambientIntervalMs());
+  }
+  function restartAmbient() { if (soundOn) startAmbient(); }
   // Keyboard notes: a real, audible tone per key, gated on Sound already
   // being on -- distinct from any application logic the generated
   // snippet may separately bind to its own keyboard handling.
   window.addEventListener('keydown', function (event) {
-    if (!soundOn || !audioCtx) return;
+    if (!soundOn || !keyboardEnabled || !audioCtx) return;
     var frequency = NOTE_FREQUENCIES[(event.key || '').toLowerCase()];
     if (!frequency) return;
-    var oscillator = audioCtx.createOscillator();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = frequency;
-    oscillator.connect(masterGain);
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + 0.2);
+    var shiftedFrequency = frequency * Math.pow(2, melodicOctave);
+    playVoiceTone(shiftedFrequency, 0.2, 'melodic', melodicOscillator);
     reportState('note', { key: event.key, frequency: frequency });
   });
   window.addEventListener('error', function (event) {
@@ -715,6 +778,18 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   }, 10000);
   // Versioned, allowlisted commands are surfaced as DOM events. Generated
   // code may opt into them, but never receives arbitrary parent messages.
+  function finite(value) { return typeof value === 'number' && isFinite(value); }
+  function validSoundCommand(data) {
+    if (data.type === 'toggle-sound' || data.type === 'screenshot') return true;
+    if (data.type === 'set-volume' || data.type === 'set-tempo' || data.type === 'set-octave') return finite(data.value);
+    if (data.type === 'set-scale' || data.type === 'set-oscillator') return typeof data.value === 'string';
+    if (data.type === 'set-keyboard-enabled') return typeof data.enabled === 'boolean';
+    if (data.type === 'set-voice-volume') return (data.voice === 'ambient' || data.voice === 'melodic') && finite(data.value);
+    if (data.type === 'set-voice-muted') return (data.voice === 'ambient' || data.voice === 'melodic') && typeof data.enabled === 'boolean';
+    if (data.type === 'set-filter') return typeof data.filterType === 'string' && finite(data.cutoff) && finite(data.resonance);
+    if (data.type === 'set-envelope') return finite(data.attack) && finite(data.decay) && finite(data.sustain) && finite(data.release);
+    return true;
+  }
   window.addEventListener('message', function (event) {
     // Issue #432 hardening: the untrusted generated snippet runs in this
     // exact window and could otherwise call window.postMessage({source:
@@ -725,8 +800,9 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     // reference can pass this identity check.
     if (event.source !== window.parent) return;
     var data = event && event.data;
-    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'set-camera-active', 'enable-hand-steering', 'disable-hand-steering', 'steer-signal', 'navigate-signal', 'reset-view'];
+    var allowed = ['screenshot', 'toggle-sound', 'set-volume', 'set-tempo', 'set-scale', 'set-voice-volume', 'set-voice-muted', 'set-filter', 'set-oscillator', 'set-envelope', 'set-octave', 'set-keyboard-enabled', 'set-camera-active', 'enable-hand-steering', 'disable-hand-steering', 'steer-signal', 'navigate-signal', 'reset-view'];
     if (!data || data.source !== 'art-piece-parent' || data.version !== 1 || allowed.indexOf(data.type) < 0) return;
+    if (!validSoundCommand(data)) return;
     try {
       if (data.type === 'screenshot') {
         // Issue #479: this now returns the artwork alone, uncomposited --
@@ -789,7 +865,8 @@ function buildListenerScript(library: ArtPieceLibrary): string {
       } else if (data.type === 'toggle-sound') {
         ensureAudio();
         soundOn = !soundOn;
-        if (soundOn) { audioCtx.resume(); } else { audioCtx.suspend(); }
+        if (soundOn) { audioCtx.resume(); startAmbient(); }
+        else { audioCtx.suspend(); keyboardEnabled = false; if (ambientTimer !== null) { clearInterval(ambientTimer); ambientTimer = null; } reportState('keyboard', { enabled: false }); }
         reportState('sound', { enabled: soundOn, volume: masterGain.gain.value });
       } else if (data.type === 'set-volume') {
         ensureAudio();
@@ -797,6 +874,40 @@ function buildListenerScript(library: ArtPieceLibrary): string {
         var clampedVolume = isNaN(requestedVolume) ? masterGain.gain.value : Math.max(0, Math.min(1, requestedVolume));
         masterGain.gain.value = clampedVolume;
         reportState('sound', { enabled: soundOn, volume: clampedVolume });
+      } else if (data.type === 'set-tempo') {
+        ambientBpm = Math.max(40, Math.min(220, data.value));
+        restartAmbient();
+      } else if (data.type === 'set-scale') {
+        if (AMBIENT_SCALES[data.value]) { ambientScale = data.value; }
+      } else if (data.type === 'set-voice-volume') {
+        var voice = data.voice === 'ambient' ? 'ambient' : 'melodic';
+        var voiceValue = Math.max(0, Math.min(100, data.value)) / 100;
+        if (voice === 'ambient') ambientVolume = voiceValue;
+        else melodicVolume = voiceValue;
+        if (voiceGains[voice]) voiceGains[voice].gain.value = voiceValue;
+      } else if (data.type === 'set-voice-muted') {
+        if (data.voice === 'ambient') ambientMuted = data.enabled;
+        else melodicMuted = data.enabled;
+      } else if (data.type === 'set-filter') {
+        if (masterFilter) {
+          masterFilter.type = ['lowpass', 'highpass', 'bandpass'].indexOf(data.filterType) >= 0 ? data.filterType : 'lowpass';
+          masterFilter.frequency.value = Math.max(20, Math.min(20000, data.cutoff));
+          masterFilter.Q.value = Math.max(0.1, Math.min(20, data.resonance));
+        }
+      } else if (data.type === 'set-oscillator') {
+        if (['sine', 'square', 'sawtooth', 'triangle'].indexOf(data.value) >= 0) melodicOscillator = data.value;
+      } else if (data.type === 'set-envelope') {
+        melodicEnvelope = {
+          attack: Math.max(0.001, Math.min(10, data.attack)),
+          decay: Math.max(0.001, Math.min(10, data.decay)),
+          sustain: Math.max(0, Math.min(1, data.sustain)),
+          release: Math.max(0.001, Math.min(10, data.release))
+        };
+      } else if (data.type === 'set-octave') {
+        melodicOctave = Math.max(-2, Math.min(2, Math.round(data.value)));
+      } else if (data.type === 'set-keyboard-enabled') {
+        keyboardEnabled = data.enabled;
+        reportState('keyboard', { enabled: keyboardEnabled });
       } else if (data.type === 'set-camera-active') {
         // Issue #479: the parent frame owns the real camera stream now
         // (getUserMedia unconditionally throws SecurityError from inside

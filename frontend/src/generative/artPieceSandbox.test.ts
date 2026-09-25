@@ -86,6 +86,28 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain('enable-hand-steering');
   });
 
+  it('#841 validates the sound-control bridge and exposes every live control command', () => {
+    const doc = buildArtPieceSandboxDocument(SNIPPET);
+    for (const command of [
+      'set-tempo',
+      'set-scale',
+      'set-voice-volume',
+      'set-voice-muted',
+      'set-filter',
+      'set-oscillator',
+      'set-envelope',
+      'set-octave',
+      'set-keyboard-enabled',
+    ]) {
+      expect(doc).toContain(`'${command}'`);
+    }
+    expect(doc).toContain('function validSoundCommand(data)');
+    expect(doc).toContain('event.source !== window.parent');
+    expect(doc).toContain("typeof data.enabled === 'boolean'");
+    expect(doc).toContain('function finite(value)');
+    expect(doc).toContain('finite(data.value)');
+  });
+
   it("never references this app's own API/session surface", () => {
     const doc = buildArtPieceSandboxDocument(SNIPPET);
     expect(doc).not.toMatch(/\/api\//);

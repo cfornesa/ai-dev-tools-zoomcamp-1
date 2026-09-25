@@ -149,6 +149,26 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
       await volumeSlider.fill('0.75');
       await expect(page.getByTestId('sound-status')).toContainText('Sound is on at 75% volume.');
 
+      const ambientBpm = page.getByLabel(/Ambient BPM/);
+      await ambientBpm.fill('120');
+      await expect(ambientBpm).toHaveValue('120');
+      const ambientVolume = page.getByLabel(/Ambient volume/);
+      await ambientVolume.fill('30');
+      await expect(ambientVolume).toHaveValue('30');
+      const ambientMute = page.getByLabel('Mute ambient');
+      await ambientMute.check();
+      await expect(ambientMute).toBeChecked();
+      await page.getByLabel('Scale').selectOption('major');
+
+      const keyboard = page.getByRole('group', { name: 'Keyboard synth' });
+      await expect(keyboard).toBeVisible();
+      await keyboard.getByRole('button', { name: 'Keyboard notes' }).click();
+      await expect(keyboard.getByRole('button', { name: 'Stop keyboard notes' })).toBeVisible();
+      await keyboard.getByLabel('Oscillator').selectOption('square');
+      await expect(keyboard.getByLabel('Oscillator')).toHaveValue('square');
+      await keyboard.getByLabel(/Octave:/).fill('2');
+      await expect(keyboard.getByLabel(/Octave:/)).toHaveValue('2');
+
       // Keyboard notes: focus the sandboxed iframe (a real click, not a
       // simulated key on the parent document -- the sandbox's own
       // `keydown` listener lives inside the iframe's window) then press a

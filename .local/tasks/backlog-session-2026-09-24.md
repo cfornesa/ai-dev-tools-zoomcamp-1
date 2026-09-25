@@ -1669,3 +1669,20 @@ deferred.
   `verification-boundary` / workflow infrastructure. Next action: run on the
   approved Docker/CI Chromium runner, inspect both viewports, then rerun full
   Vitest and reconcile; issue remains OPEN.
+
+## Backlog transaction 38 — #839
+
+- State: `GROOMED → ENGINEERING → QA/OPEN-BLOCKED`.
+- Engineering commit: `b786e1a`; added the labelled Keyboard synth control
+  region, disabled unsupported oscillator/ADSR fields with explanations, and
+  extended the 3D Playwright scenario for oscillator/octave interaction.
+  Service/model/effort: Codex/GPT-5 substitution, medium effort.
+- Focused QA: component sound suite passed (28 tests), typecheck and lint
+  passed. GitHub QA FAIL comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/839#issuecomment-5829321305`.
+- Browser and viewport criteria remain unverified because the exact Chromium
+  runner terminates before execution with the macOS Mach-port permission
+  error. This is the same documented `verification-boundary` / workflow
+  infrastructure blocker as #838; no duplicate issue created. Next action is
+  approved Docker/CI Chromium execution plus 1280x900/375px screenshot review,
+  then full Vitest and reconciliation. #839 remains OPEN.

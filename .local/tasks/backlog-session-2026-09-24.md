@@ -3022,3 +3022,60 @@ deferred.
   remain the next gates, not additional code claims.
 - Current safe handoff is `origin/main` at `771f84d`; the deployed app was not
   changed by this transaction.
+
+## Distillation refresh 57 — 2026-09-25 — LIVE CHROME CORRECTION
+
+- Fresh task-distillation used the active Chrome session and directly opened
+  the owner-provided production route
+  `/users/@cfornesa/immersive/untitled-3d-scene-3`.
+- At explicit 1280x900 and 375x812 viewport overrides, the live route showed
+  direct controls in this order: Screenshot, Download ZIP, Sound, Piece
+  controls, Guide, Fullscreen. The 375px rendered screenshot also showed the
+  title/description above the stage and Share/Embed below it. No hamburger was
+  present on this canonical immersive ArtPiece route.
+- The prior stale-deployment explanation is corrected: production already
+  contains the inline-toolbar behavior for this route. A hamburger remains a
+  valid observation only for a legacy/structured compatibility surface, the
+  responsive global header, or a different/cached route. Existing #859
+  comment records this distinction; no duplicate issue is needed.
+- #852 remains the next closure-ready transaction after its implementation
+  commit: fresh browser verification of the new split authored Sound panel
+  and viewer/embed/immersive/ZIP hydration. #859/#860 remain dependency-
+  blocked six-engine sweeps, not candidates for closure from this one-piece
+  production observation.
+
+## Distillation refresh 58 — 2026-09-25 — NEW FOLLOW-UP #866
+
+- The rebuilt local Compose app and active Chrome reproduced a visible
+  `ResizeObserver loop completed with undelivered notifications.` alert on
+  generated public ArtPiece `Authored Sound QA` at 375x812. At 1280x900 the
+  same route rendered the direct toolbar without that visible alert.
+- Duplicate audit: existing ResizeObserver issues (#276/#288) cover structured
+  editor/3D fullscreen behavior, and #841/#852 cover sound/runtime contracts;
+  none owns this generated public-viewer error-boundary regression. Created
+  criterion-ready follow-up #866:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/866
+- #866 is ordered after #852's current QA transaction because it is a newly
+  discovered frontend/runtime defect, routed initially to mechanical frontend
+  engineering with reroute if shared error-boundary logic is implicated.
+  Its initial evidence is local disposable Compose + active Chrome only; no
+  production behavior is inferred.
+
+## Transaction #866 — 2026-09-25 — ENGINEERED / QA PENDING
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+  The visible mobile ResizeObserver error was reproduced after rebuilding the
+  Compose image and was not covered by #276/#288 or the sound issues.
+- Engineer: COMPLETED. implementation-mechanical / Codex-GPT-5 / medium /
+  substituted: yes; rostered Opencode Go `kimi-k3` was unavailable. The
+  generated sandbox now ignores only the two standard browser ResizeObserver
+  loop notification messages before forwarding real runtime errors; a focused
+  regression assertion covers both messages. No dependency, route, schema, or
+  data-layer change was made.
+- Browser recheck pending the formal QA self-review: rebuilt disposable
+  Compose + Chrome showed no visible alert at 375x812 or 1280x900 on the
+  generated public viewer, and no alert on the generated embed surface at
+  375x812. Direct toolbar buttons remained present. This is local evidence
+  only, not production evidence.
+- Reconcile: KEEP OPEN until the full repository gate and formal `## QA: PASS`
+  comment are posted; then close only if all #866 criteria pass.

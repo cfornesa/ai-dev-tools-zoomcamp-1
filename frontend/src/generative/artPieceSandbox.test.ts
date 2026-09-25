@@ -57,6 +57,13 @@ describe('buildArtPieceSandboxDocument', () => {
     }
   });
 
+  it('#866 does not surface browser ResizeObserver loop notifications as piece errors', () => {
+    const doc = buildArtPieceSandboxDocument(SNIPPET);
+    expect(doc).toContain('ResizeObserver loop completed with undelivered notifications.');
+    expect(doc).toContain('ResizeObserver loop limit exceeded');
+    expect(doc).toContain('if (isBenignResizeObserverNotification(event)) return;');
+  });
+
   it('can make the regular sandbox transparent so its parent supplies the theme surface', () => {
     const doc = buildArtPieceSandboxDocument(SNIPPET, 'canvas2d', 'regular', {
       background: 'transparent',

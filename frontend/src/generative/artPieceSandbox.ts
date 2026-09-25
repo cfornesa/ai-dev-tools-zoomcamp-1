@@ -810,7 +810,13 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     playVoiceTone(shiftedFrequency, 0.2, 'melodic', melodicOscillator);
     reportState('note', { key: event.key, frequency: frequency });
   });
+  function isBenignResizeObserverNotification(event) {
+    var message = (event && event.message) || '';
+    return message === 'ResizeObserver loop completed with undelivered notifications.' ||
+      message === 'ResizeObserver loop limit exceeded';
+  }
   window.addEventListener('error', function (event) {
+    if (isBenignResizeObserverNotification(event)) return;
     report('error', (event && event.message) || 'The generated piece threw an error.');
   });
   window.addEventListener('unhandledrejection', function (event) {

@@ -869,6 +869,28 @@ deferred.
   #823 is CLOSED. Evidence is local/disposable Compose only; no production
   action was taken.
 
+## #805 transaction — 2026-09-26
+
+- Groom: criterion-ready profile/personalization parity audit. External
+  comparison and duplicate search found one actionable gap—file upload/remove
+  is absent because this repo currently exposes a URL field—so #824 was
+  created and linked. Style tokens, palette, presentation, public profile,
+  and admin-only exclusions were bounded in the matrix.
+- Engineering: Stage 2a audit routing rostered Opencode Go / Kimi K3 / medium;
+  Codex / GPT-5 / medium substituted. Commit `181fb3b` adds
+  `docs/profile-parity-matrix.md` and the two-viewport browser audit. No
+  product behavior was changed.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Stage 3 independent-family review not run. Profile
+  style backend tests passed 8; Chromium passed 2 viewport scenarios and
+  screenshots were inspected; full `UV_CACHE_DIR=/tmp/codex-uv-cache make
+  check` passed backend 1694/39 skipped and frontend 277 files/2979 tests.
+  The initial locator collision was fixed in the audit test and rerun.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/805#issuecomment-5825754491`;
+  #805 is CLOSED. Evidence is local/disposable Compose only; no production
+  action was taken.
+
 ## #804 transaction — 2026-09-26
 
 - Groom/engineering: Stage 2a parity audit, Opencode Go / Kimi K3 / medium

@@ -1570,3 +1570,12 @@ state-driven, theme-token scoped, and disables motion under reduced-motion or
 low-power root state. Focused Vitest passed 21 tests and the named Chromium
 spec passed all 4 scenarios at 1280x900/375x812; screenshots were inspected.
 No production rollout was authorized or performed.
+
+## 2026-09-25 — Celestial star field implementation reconciliation (#807)
+
+#807 was already implemented in the current shell batch and was verified
+without a new product diff. The decorative layer, bounded star generation,
+first-party keyframes, z-index/readability contract, two-viewport screenshots,
+and two-second animation change all passed. #798 remains the separate
+reduced-motion/low-power/profile-style transaction. QA PASS closed #807; no
+production rollout was authorized or performed.

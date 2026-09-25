@@ -702,3 +702,32 @@ deferred.
 - Next independent local routing is #799, but it is Stage 2b and must be
   groomed/split if its four-engine online/ZIP scope is too broad. Production
   authorization remains limited to #748/#788.
+
+## #807 transaction — 2026-09-25
+
+- Groom: criterion-ready Stage 2a shell implementation issue; #798 is the
+  explicitly separated accessibility/profile-style follow-up and remains
+  closed. No duplicate issue was needed.
+- Engineering: Stage 2a Opencode Go / Kimi K3 / medium rostered; Codex /
+  GPT-5 / medium substituted for verification-only reconciliation. The current
+  checkout already contains the bounded React star field and first-party CSS
+  keyframes, so no additional product diff was required.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Stage 3 independent-family review not run. Focused
+  Vitest passed 2 files / 21 tests; typecheck/lint passed with existing
+  warnings; named Chromium E2E passed 4 tests at both viewports and screenshots
+  were inspected, including two-second animation change evidence.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/807#issuecomment-5825060808`;
+  issue #807 is CLOSED. Evidence is local/disposable Compose only; no
+  production action was taken.
+
+## Distillation refresh 17 — 2026-09-25 continuation
+
+- #798, #803, #807, and #815 are terminal CLOSED/QA PASS. Open inventory is
+  now #748, #788, and #799–#806 excluding #807: 8 issues.
+- No duplicate/follow-up issue emerged from #807; reduced-motion, low-power,
+  and profile-style behavior remains correctly isolated in #798.
+- Next routing is #799. Its four-engine online/ZIP scope remains broad but has
+  one matrix and one named parity command; groom it as a single Stage 2b
+  transaction unless implementation reveals a separate backend contract.

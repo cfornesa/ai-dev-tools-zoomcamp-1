@@ -3879,10 +3879,17 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
 - Second opinion: NOT RUN / Mistral Vibe / medium / substituted: no; the
   independent review slot was unavailable, so this is explicitly carried into
   QA rather than implied.
-- QA self-review: PENDING full frontend gate and Chrome verification. Do not
-  close the issue or its dependent verification reports until the real browser
-  observes sound activation, an actual running/suspended state, ambient events,
-  and the expected C-major default note sequence.
+- QA self-review: FAIL / verification-blocked. Focused tests passed 2 files /
+  48 tests; `npm run typecheck`, `npm run lint`, and `git diff --check` passed,
+  and the full `make check` gate is green. The rebuilt Compose fixture loaded in
+  active Chrome and showed the authored scene/version contract plus the sound
+  controls, but both the parent document and generated preview reported
+  `typeof AudioContext === 'undefined'`. The UI honestly remained `Sound is
+  off` with dependent controls disabled, so no browser evidence of activation,
+  running/suspended state, ambient events, or keyboard note telemetry can be
+  claimed. GitHub QA comment: #873 comment 5838451208. Keep #873 open and carry
+  #853–#861 as dependency-blocked until a supported audio-capable browser
+  environment is available.
 
 ## Transaction #874 — 2026-09-26 — GROOMED / ENGINEERING IN PROGRESS
 
@@ -3919,6 +3926,30 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   The stage remains gray and the live Scene outline contains only `Camera`, so
   the stored production scene has no renderable object; this is a production
   data/content blocker and prevents closure of the criterion requiring the
-  piece to render. Local anonymous owner-route failure is an auth boundary,
-  not evidence against the signed-in production route. Do not alter production
-  scene data outside the separately authorized #788 import action.
+  piece to render. GitHub QA comment: #874 comment 5838462846. Read-only API
+  inspection confirms the populated public `untitled-3d-scene-3` record is a
+  different slug/record from the private editor URL `untitled-3d-scene`; the
+  anonymous editor API correctly returns 404, while the signed-in Chrome route
+  loads the private empty record. Local anonymous owner-route failure is an
+  auth boundary, not evidence against the signed-in production route. Do not
+  alter production scene data outside the separately authorized #788 import
+  action.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / CONTINUATION
+
+- Open-inventory snapshot: #874, #873, #862, #861, #860, #859, #858,
+  #857, #856, #855, #854, #853, #847, and #788 remain open. No #875 or
+  other new issue exists in the repository backlog.
+- Duplicate audit: the reported gray editor stage and missing stored object are
+  already #874; the local anonymous owner URL returning “not available” is the
+  documented authentication boundary, not a new product defect. The generated
+  sandbox sound-state gap is already #873. No duplicate issue was created.
+- Routing: #873 proceeds to QA self-review using the rebuilt Compose image and
+  current checkout. #874 proceeds to read-only canonical-resolver/data-identity
+  investigation before any further engineering. #853–#861 depend on #873;
+  #862 depends on their reports; #847 remains blocked on its owner-scoped media
+  delivery contract; #788 remains the separately authorized production data
+  action with its snapshot/rehearsal safeguards.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+  Existing implementation-complex substitutions and missing independent-review
+  slots remain explicitly recorded in their issue transactions.

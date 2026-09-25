@@ -42,6 +42,10 @@ class UnresolvedMention(ValueError):
     pass
 
 
+class PreservationError(ValueError):
+    pass
+
+
 class ArtPieceRefineRequestSerializer(serializers.Serializer):
     vendor = serializers.ChoiceField(choices=["mistral", "gemini", "deepseek"], default="mistral")
     instruction = serializers.CharField(max_length=4000, allow_blank=False, trim_whitespace=True)
@@ -113,6 +117,52 @@ def resolve_mentions(piece: ArtPiece, mentions: list[dict[str, str]]) -> list[di
             raise UnresolvedMention(f"{kind}:{identifier}")
         resolved.append(target)
     return resolved
+
+
+def _delete_intent(instruction: str, name: str) -> bool:
+    text = instruction.lower()
+    target = re.escape(name.lower())
+    return bool(
+        re.search(rf"\b(delete|remove|erase|drop)\b[^.\n]{{0,120}}\b{target}\b", text)
+        or re.search(rf"\b{target}\b[^.\n]{{0,120}}\b(delete|remove|erase|drop)\b", text)
+    )
+
+
+def _region_sources(source: str, engine: str) -> dict[str, str]:
+    lines = source.splitlines()
+    result: dict[str, str] = {}
+    for region in parse_regions(source, engine):
+        start = int(region["start"]) - 1
+        end = int(region["end"])
+        while end > start + 1 and lines[end - 1].strip() in {"}", "};", ")"}:
+            end -= 1
+        result[str(region["name"])] = "\n".join(lines[start:end])
+    if engine == "svg":
+        for line in lines:
+            for match in re.finditer(r"\bid=[\"']([^\"']+)[\"']", line):
+                result.setdefault(match.group(1), line)
+    return result
+
+
+def enforce_preservation(
+    *, engine: str, before: str, after: str, instruction: str, mentions: list[dict[str, str]]
+) -> None:
+    """Reject silent changes/removals to named code regions or SVG elements."""
+    previous = _region_sources(before, engine)
+    if not previous:
+        return
+    current = _region_sources(after, engine)
+    allowed = {mention["id"] for mention in mentions if mention["kind"] in {"region", "element"}}
+    broad_edit = bool(
+        re.search(r"\b(redo|rewrite|overhaul|whole piece|entire piece)\b", instruction, re.I)
+    )
+    for name, original in previous.items():
+        if name not in current:
+            if not _delete_intent(instruction, name):
+                raise PreservationError(f"region_removed:{name}")
+            continue
+        if name not in allowed and not broad_edit and current[name] != original:
+            raise PreservationError(f"unmentioned_region_changed:{name}")
 
 
 def _plan(piece: ArtPiece, references: list[str]) -> dict[str, Any]:
@@ -262,6 +312,13 @@ def refine_art_piece(
                 run.edits = result.edits or []
                 try:
                     candidate = _apply_edits(source, result.edits)
+                    enforce_preservation(
+                        engine=piece.engine,
+                        before=source,
+                        after=candidate,
+                        instruction=instruction,
+                        mentions=mentions or [],
+                    )
                     candidate = validate_art_piece_source(piece.engine, candidate)
                 except (ValueError, serializers.ValidationError) as exc:
                     feedback = str(exc)

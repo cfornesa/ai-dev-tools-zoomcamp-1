@@ -136,6 +136,97 @@ def test_unresolved_mention_returns_422_without_creating_run_or_call(monkeypatch
 
 
 @pytest.mark.django_db
+def test_refine_rejects_unmentioned_region_change(monkeypatch, owner):
+    source = (
+        "window.sketch = function (p) {\n// @layer Sky\nconst sky = 'blue';\n"
+        "// @layer Hills\nconst hills = 'green';\n};"
+    )
+    piece = ArtPiece.objects.create(owner=owner, prompt="p5", engine=ArtPiece.Engine.P5JS)
+    version = ArtPieceVersion.objects.create(piece=piece, sequence=1, source=source)
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+    provider = _Provider([_result("const hills = 'green';", "const hills = 'red';")])
+    monkeypatch.setattr(art_piece_refine, "_provider_for_user", lambda *args: provider)
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.post(
+        f"/api/art-pieces/{piece.public_id}/refine/",
+        {"instruction": "change Hills", "mentions": [{"kind": "region", "id": "Sky"}]},
+        format="json",
+    )
+
+    assert response.json()["status"] == "failed"
+    assert "unmentioned_region_changed:Hills" in response.json()["validation_summary"]
+
+
+@pytest.mark.django_db
+def test_refine_allows_explicit_region_delete(monkeypatch, owner):
+    source = (
+        "window.sketch = function (p) {\n// @layer Sky\nconst sky = 'blue';\n"
+        "// @layer Hills\nconst hills = 'green';\n};"
+    )
+    piece = ArtPiece.objects.create(owner=owner, prompt="p5", engine=ArtPiece.Engine.P5JS)
+    version = ArtPieceVersion.objects.create(piece=piece, sequence=1, source=source)
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+    provider = _Provider([_result("\n// @layer Hills\nconst hills = 'green';", "")])
+    monkeypatch.setattr(art_piece_refine, "_provider_for_user", lambda *args: provider)
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.post(
+        f"/api/art-pieces/{piece.public_id}/refine/",
+        {"instruction": "delete Hills region"},
+        format="json",
+    )
+
+    assert response.json()["status"] == "accepted"
+
+
+@pytest.mark.parametrize(
+    ("engine", "before", "after"),
+    [
+        (
+            "p5js",
+            "// @layer Sky\nconst sky = 1;\n// @layer Hills\nconst hills = 1;",
+            "// @layer Sky\nconst sky = 1;\n// @layer Hills\nconst hills = 2;",
+        ),
+        (
+            "canvas2d",
+            "// @layer Sky\nctx.fillStyle = 'blue';\n// @layer Hills\nctx.fillStyle = 'green';",
+            "// @layer Sky\nctx.fillStyle = 'blue';\n// @layer Hills\nctx.fillStyle = 'red';",
+        ),
+        (
+            "c2js",
+            "// @layer Sky\nctx.fillStyle = 'blue';\n// @layer Hills\nctx.fillStyle = 'green';",
+            "// @layer Sky\nctx.fillStyle = 'blue';\n// @layer Hills\nctx.fillStyle = 'red';",
+        ),
+        (
+            "svg",
+            '<svg>\n<g id="Sky"><rect /></g>\n<g id="Hills"><circle /></g>\n</svg>',
+            '<svg>\n<g id="Sky"><rect /></g>\n<g id="Hills"><path /></g>\n</svg>',
+        ),
+        (
+            "threejs",
+            "// @layer Sky\nscene.add(sky);\n// @layer Hills\nscene.add(hills);",
+            "// @layer Sky\nscene.add(sky);\n// @layer Hills\nscene.remove(hills);",
+        ),
+        (
+            "aframe",
+            "<!-- @layer Sky -->\n<a-sky></a-sky>\n<!-- @layer Hills -->\n<a-box></a-box>",
+            "<!-- @layer Sky -->\n<a-sky></a-sky>\n<!-- @layer Hills -->\n<a-sphere></a-sphere>",
+        ),
+    ],
+)
+def test_preservation_detects_unmentioned_changes_for_each_engine_family(engine, before, after):
+    with pytest.raises(art_piece_refine.PreservationError, match="Hills"):
+        art_piece_refine.enforce_preservation(
+            engine=engine, before=before, after=after, instruction="make Sky brighter", mentions=[]
+        )
+
+
+@pytest.mark.django_db
 def test_unmatched_edit_is_all_or_none_and_disabled_retry_stops_once(monkeypatch, owner, piece):
     provider = _Provider([_result("not in source", "replacement")])
     monkeypatch.setattr(art_piece_refine, "_provider_for_user", lambda *args: provider)

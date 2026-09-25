@@ -143,10 +143,10 @@ export function renderExportStageToolbar(options: ExportToolbarOptions): string 
 }
 
 /**
- * Shared CSS. The toolbar is fixed top-left with a solid dark backing and a
- * light border so it stays clearly visible on the black export page (owner
- * report: the old ☰ was near-invisible). Labels appear on hover/focus only for
- * hover-capable pointers; touch shows none. Targets are 44px.
+ * Shared CSS. The standalone runtime has no React stage wrapper, so the rail is
+ * viewport-fixed, but its controls intentionally use the same geometry and
+ * visual tokens as the live immersive stage toolbar. Labels appear on
+ * hover/focus only for hover-capable pointers; touch shows none.
  */
 export const EXPORT_STAGE_TOOLBAR_CSS = `
 #piece-toolbar {
@@ -156,7 +156,7 @@ export const EXPORT_STAGE_TOOLBAR_CSS = `
   z-index: 10;
   display: flex;
   flex-wrap: wrap;
-  gap: .5rem;
+  gap: .65rem;
   max-width: calc(100vw - 1.5rem);
 }
 .piece-stage-icon-button {
@@ -164,17 +164,20 @@ export const EXPORT_STAGE_TOOLBAR_CSS = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
-  border: 1px solid rgba(255,255,255,.7);
+  border: 1px solid rgba(255,255,255,.15);
   border-radius: .75rem;
-  background: rgba(10,12,20,.94);
+  background: rgba(0,0,0,.55);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   cursor: pointer;
 }
-.piece-stage-icon-button:hover, .piece-stage-icon-button:focus-visible { background: rgba(35,42,66,.98); }
-.piece-stage-icon-button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.piece-stage-icon-button:hover, .piece-stage-icon-button:focus-visible { border-color: #fff; background: rgba(0,0,0,.72); }
+.piece-stage-icon-button:focus-visible { outline: 3px solid #67e8f9; outline-offset: 2px; }
 .piece-stage-icon-button[aria-pressed="true"], .piece-stage-icon-button[aria-expanded="true"] { background: rgba(59,74,120,.98); }
 .piece-stage-tooltip {
   position: absolute;
@@ -185,7 +188,7 @@ export const EXPORT_STAGE_TOOLBAR_CSS = `
   border-radius: .4rem;
   background: #000;
   color: #fff;
-  border: 1px solid rgba(255,255,255,.5);
+  border: 1px solid rgba(255,255,255,.2);
   font: 600 .75rem/1.2 system-ui, sans-serif;
   white-space: nowrap;
   pointer-events: none;
@@ -193,6 +196,11 @@ export const EXPORT_STAGE_TOOLBAR_CSS = `
   visibility: hidden;
 }
 .piece-stage-icon { display: block; width: 1.25rem; height: 1.25rem; pointer-events: none; }
+@media (max-width: 700px) {
+  #piece-toolbar { right: .75rem; gap: .4rem; }
+  .piece-stage-icon-button { width: 2.5rem; height: 2.5rem; }
+  .piece-stage-tooltip { display: none; }
+}
 @media (hover: hover) and (pointer: fine) {
   .piece-stage-icon-button:hover > .piece-stage-tooltip,
   .piece-stage-icon-button:focus-visible > .piece-stage-tooltip { opacity: 1; visibility: visible; }

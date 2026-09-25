@@ -230,6 +230,14 @@ describe('generateScene3DBundle', () => {
     expect(toolbar).toContain('aria-label="Take screenshot"');
     expect(toolbar).toContain('class="piece-stage-tooltip"');
     expect(css).toContain('@media (hover: hover) and (pointer: fine)');
+    // #831: downloaded controls use the live immersive toolbar's geometry and
+    // visual tokens, not the old standalone opaque-button treatment.
+    expect(css).toContain('gap: .65rem');
+    expect(css).toContain('background: rgba(0,0,0,.55)');
+    expect(css).toContain('box-shadow: 0 4px 12px rgba(0,0,0,.5)');
+    expect(css).toContain('backdrop-filter: blur(4px)');
+    expect(css).toContain('@media (max-width: 700px)');
+    expect(css).toContain('width: 2.5rem; height: 2.5rem');
     expect(html).not.toContain('\u2630');
     // Reset view stays reachable inside the Piece controls panel.
     expect(html.indexOf('id="piece-reset-view"')).toBeGreaterThan(

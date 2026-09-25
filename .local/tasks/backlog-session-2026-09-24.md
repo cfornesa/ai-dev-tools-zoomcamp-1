@@ -1221,3 +1221,47 @@ deferred.
   200); live HTML serves `assets/index-7tcNeam-.js`. This publish evidence is
   recorded for #748; #830's migration contract is now reconciled and ready to
   close.
+
+## Distillation refresh 25 — 2026-09-25
+
+- Current GitHub inventory is exactly #748, #788, and #806; #830 is closed and
+  `main` is clean and synchronized with `origin/main` at `da9f341`.
+- #748 is no longer dependency-blocked: the owner-authorized Replit publish
+  completed at revision `a7290ce1`, with a non-destructive schema review and
+  post-publish smoke PASS. Its remaining closure contract is the complete
+  Chrome desktop/mobile live parity matrix, including ZIP download and the
+  immersive layout/order fix.
+- #788 is now independently actionable because #748's publish dependency is
+  satisfied. It remains a one-time owner-scoped production data action with a
+  preserved snapshot and rollback boundary; no new issue is needed. Order:
+  preflight command review → production run once → live API/version/source
+  verification → Chrome screenshot inspection → QA/reconcile.
+- #806 remains dependency-blocked until #748's live release verification is
+  complete. Its scope is verification-only; no source implementation is
+  authorized by its contract.
+- Duplicate search found no new actionable issue. No closed issue is reopened;
+  prior #788 failure remains historical and its documented follow-up is
+  handled only after the new owner-authorized production run.
+- Stage provenance for this refresh: task-distillation orchestrator,
+  Codex/GPT-5 substitution, medium effort. Next issue: #748, because it is
+  the parent release verification and unlocks #788/#806 closure evidence.
+
+## Distillation refresh 26 — 2026-09-25
+
+- New owner follow-up was investigated against the downloaded production Full
+  ZIP for the structured 3D scene. The ZIP successfully downloaded and
+  extracted, but its toolbar presentation is visibly different from the live
+  immersive toolbar and needs a direct parity pass.
+- Duplicate search found closed #761 (structured authored export toolbar) and
+  #756 (generated immersive ZIP toolbar), but neither owns this current
+  production structured-ZIP visual mismatch; closed issues were not reopened.
+  Created criterion-ready follow-up #831:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/831
+- #831 routing: stage 2b standalone structured export runtime/template styling;
+  no production data action. Acceptance covers retained Chrome screenshots at
+  1280x900 and 375x812, icon-only dimensions/spacing/contrast/placement,
+  downloaded control order and omissions, accessibility labels, focused tests,
+  and `make check`.
+- Service/model/effort: task-distillation orchestrator, Codex/GPT-5
+  substitution, medium effort. Next action: groom and engineer #831 after the
+  currently queued #748 release verification transaction.

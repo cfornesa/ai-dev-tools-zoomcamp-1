@@ -1650,3 +1650,11 @@ production. The exact additive two-column ALTER TABLE was run once, verified
 read-only, and the editor was returned to read-only mode. No row/data action or
 migration-ledger claim was used; the published piece API, smoke script, and
 Chrome immersive route then passed.
+
+## 2026-09-25 — Production immersive layout verified (#827)
+
+Following the authorized #828 schema repair, the published canonical immersive
+route rendered the identity card before the stage with the requested toolbar
+order and reference spacing. Focused component tests, full `make check`, and
+the exact regular/embed/immersive Playwright suite (7/7 after host permission)
+passed. #827 received QA PASS and was closed; #806, #788, and #748 remain.

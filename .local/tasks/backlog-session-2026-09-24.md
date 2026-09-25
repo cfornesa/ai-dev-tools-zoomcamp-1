@@ -1122,3 +1122,17 @@ deferred.
 - QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/828#issuecomment-5826748314
 - Reconciled and closed #828. This unblocks the deployed #827 layout review;
   no migration-ledger claim was used as evidence.
+
+## #827 reconciliation — 2026-09-25
+
+- After #828, published Chrome showed the requested identity-before-stage
+  order, padded identity card, and toolbar order. The regular/embed/immersive
+  Playwright suite passed 7/7 after rerunning with host permission; the initial
+  sandbox launch failure was environmental only.
+- `npm test -- --run src/pages/ImmersiveProject3DViewer.test.tsx`: 7 passed;
+  `make check`: backend 1697 passed/39 skipped and frontend 2979 passed;
+  published smoke and piece API returned 200. Service/model/effort:
+  Claude/Codex primary, QA self-review, medium effort.
+- QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/827#issuecomment-5826865323
+- Reconciled and closed #827. Remaining open production transactions are
+  #806, #788, and #748.

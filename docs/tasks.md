@@ -24017,5 +24017,5 @@ Addendum 6 update: #814 closed; added #817-#821 (see distillation doc). Still di
 |---|---|---|---|
 | #825 | Replit launcher avoids frontend/backend `PORT=8000` collision | 2a | CLOSED / QA PASS; deployment `da0ce0fb` serves Vite preview on 5000 and smoke passes |
 | #826 | Replit production health probe avoids internal HTTPS redirect startup failure | 2b | criterion-ready; blocks exact-revision production verification |
-| #827 | Production immersive 3D surface moves identity above stage and restores reference spacing | 2a | criterion-ready; production schema dependency #828 reconciled; pending layout QA |
+| #827 | Production immersive 3D surface moves identity above stage and restores reference spacing | 2a | CLOSED / QA PASS; published Chrome order/spacing and 7/7 regular/embed/immersive browser regression |
 | #828 | Production schema missing PublicProfile image-data columns after publish | 2b | CLOSED / QA PASS; authorized Replit Production Database additive repair and live API/browser verification |

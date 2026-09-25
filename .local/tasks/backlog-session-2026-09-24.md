@@ -3375,3 +3375,64 @@ deferred.
   the all-six import without dry-run. No production write occurred.
 - Reconcile: KEEP OPEN pending an approved production-shell path. Comment:
   `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5835510593`.
+
+## Production-readiness — 2026-09-25 — BLOCKED
+
+- Local deployment: PASS. Disposable Compose preflight passed; current
+  checkout is clean at `e0392fc624e564cebace927fe187c52d15725e3b`; no migration
+  was added in this continuation. `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache
+  make check` passed with backend 1710 passed / 39 skipped and frontend 280
+  files / 3016 tests passed.
+- Approved browser: PASS for the implemented local sound/layout slices. Active
+  Chrome verified generated and structured-2D live controls plus regenerated
+  generated Full/Non-Camera ZIPs at 1280x900 and 375x812. Playwright is a
+  runner boundary only: macOS Chromium fails before execution.
+- Intended functionality: OPEN FOLLOW-UP. #842 still needs a
+  current-checkout structured-3D Full/Non-Camera artifact pass. #852 and
+  #851–#862 remain open or dependency-ordered behind the sound contract and
+  artifact evidence. #846/#847 remain optional feature/dependency work.
+- Replit publication: BLOCKED for this continuation. No new production
+  publish was authorized or performed. #788 production re-import is BLOCKED
+  because Replit exposes only a development shell; the production launcher
+  gate is non-dry and all-six-fixture scoped.
+- Production readiness result: NOT READY. Exact next actions are to obtain an
+  approved production-shell/dry-run route for #788, create/verify a
+  current-checkout structured-3D fixture for #842, then process the dependent
+  sound verification issues. No issue was silently reopened; #867, #868, and
+  #869 remain closed with scoped evidence.
+- Routing audit: #841/#868/#869 implementation and QA were Codex GPT-5
+  medium substitutions; the rostered Opencode Go `kimi-k3` was unavailable.
+  The ledger records groom, engineer, QA, and reconcile owners for these
+  transactions. The readiness gate itself was run by the active Codex GPT-5
+  medium substitution under the owner-authorized continuation. Earlier issues
+  still have historical provenance gaps for optional second-opinion/scoping
+  fields; those are reconciliation gaps, not silently backfilled.
+
+## Session-completion — 2026-09-25 — INCOMPLETE / HANDED OFF
+
+- Manifest: `.local/tasks/backlog-session-2026-09-24.md`; GitHub open inventory
+  is 16 issues: #788, #842, #846, #847, #851–#862. Terminalized this
+  continuation: #841, #867, #868, #869. No new actionable gap is left only in
+  narrative: the export mobile defect is #869; the structured-3D artifact gap
+  remains owned by #842; production import access remains #788.
+- Batch counts for this continuation: discovered 3 new actionable defects /
+  boundaries (#867, #868, #869), completed 3, blocked 1 production action
+  (#788), dependency/open follow-ups 15 including #842 and the dependent
+  sound-verification inventory, handed off 0, missing terminal status 16 for
+  the remaining open issues.
+- Final verification boundary: local Compose + active Chrome is green for
+  generated/structured-2D live sound and generated ZIPs only. It does not
+  close deployed-URL, current structured-3D ZIP, or production-database
+  criteria. No PR was created; main contains the pushed commits through
+  `e0392fc`.
+- Follow-up audit: #842 has an explicit open criterion and QA comment; #788
+  has a production-access blocker and QA comment; #851–#862 are still tracked
+  in GitHub with their dependency/verification ownership. No duplicate issue
+  was created for the hamburger observation; canonical public immersive uses
+  direct buttons, while editor/export Piece controls are intentional
+  disclosures.
+- Next actions: (1) secure the approved production-shell/dry-run route and
+  perform #788 exactly once with snapshot/rollback evidence; (2) create a
+  current-checkout structured-3D fixture and finish #842; (3) re-run
+  task-distillation and process the dependent sound issues; (4) only then
+  rerun production-readiness and session-completion for a terminal batch.

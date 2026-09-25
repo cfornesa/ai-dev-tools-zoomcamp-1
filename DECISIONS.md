@@ -1717,3 +1717,17 @@ MachPort permission error before test execution, and the active Chrome bridge
 did not emit a download event for the synthetic Blob ZIP download. These are
 explicit evidence boundaries; #844 remains open and no production publish is
 claimed. The corrected commits are `40f7e24` and `d71b0a2`.
+
+## 2026-09-25 — backlog continuation readiness substitution
+
+The owner-authorized continuation permits the active GPT-5 runtime to
+substitute for unavailable rostered Opencode/Claude stages, with service,
+model, effort, and substitution recorded in the backlog ledger. Active Chrome
+is the approved browser substitute when the macOS Playwright Chromium runner
+fails before test execution; no Playwright result is claimed from that path.
+
+Production readiness is blocked for this batch: #842 lacks current-checkout
+structured-3D ZIP evidence, #788 lacks an approved production-shell path for
+its required dry-run/import/snapshot transaction, and the remaining sound
+verification issues depend on those prerequisites. No production data write or
+new publish was performed in this continuation.

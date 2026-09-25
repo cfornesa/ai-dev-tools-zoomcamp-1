@@ -2,8 +2,8 @@
 #
 # Start both services for Replit Preview and Publish.
 #
-# The web server is the externally visible process.  Django remains on 8000
-# because Vite proxies the API, auth, and health paths to that port.
+# The web server is the externally visible process. Django listens on a
+# separate loopback port because Replit's deployment PORT belongs to Vite.
 #
 # Issue #133: FRONTEND_SERVE_MODE selects how the frontend process is
 # started -- "dev" (default, used by the interactive Replit workflow) runs
@@ -36,16 +36,20 @@ if [[ "$frontend_serve_mode" != "dev" && "$frontend_serve_mode" != "preview" ]];
 fi
 
 frontend_port="${PORT:-5000}"
-# Replit's autoscale deployment supplies PORT=8000, which is also the fixed
-# internal Django port below. Keep the frontend on its normal 5000 port in
-# that topology so vite preview cannot collide with the backend.
-if [[ "$frontend_port" == "8000" ]]; then
-  frontend_port=5000
-fi
 if [[ ! "$frontend_port" =~ ^[0-9]+$ ]] || (( frontend_port < 1 || frontend_port > 65535 )); then
   printf 'Invalid PORT: %s\n' "$frontend_port" >&2
   exit 2
 fi
+
+backend_port="${BACKEND_PORT:-8000}"
+if [[ "$frontend_port" == "$backend_port" ]]; then
+  backend_port=8001
+fi
+if [[ ! "$backend_port" =~ ^[0-9]+$ ]] || (( backend_port < 1 || backend_port > 65535 )); then
+  printf 'Invalid BACKEND_PORT: %s\n' "$backend_port" >&2
+  exit 2
+fi
+export BACKEND_PROXY_TARGET="http://127.0.0.1:$backend_port"
 
 backend_serve_mode="${BACKEND_SERVE_MODE:-dev}"
 if [[ "$backend_serve_mode" != "dev" && "$backend_serve_mode" != "asgi" ]]; then
@@ -95,9 +99,9 @@ fi
 
 if [[ "$backend_serve_mode" == "asgi" ]]; then
   (cd "$backend_dir" && exec uv run --with 'uvicorn==0.46.0' uvicorn backend.main:app \
-    --host 0.0.0.0 --port 8000) &
+    --host 0.0.0.0 --port "$backend_port") &
 else
-  (cd "$backend_dir" && exec uv run python manage.py runserver 0.0.0.0:8000) &
+  (cd "$backend_dir" && exec uv run python manage.py runserver 0.0.0.0:"$backend_port") &
 fi
 django_pid=$!
 
@@ -117,7 +121,7 @@ while true; do
     exit 1
   fi
   if curl --silent --show-error --fail --max-time 2 \
-    http://127.0.0.1:8000/health/ >/dev/null 2>&1; then
+    "http://127.0.0.1:$backend_port/health/" >/dev/null 2>&1; then
     printf 'Django health check passed; starting Vite (%s mode)\n' "$frontend_serve_mode"
     break
   fi

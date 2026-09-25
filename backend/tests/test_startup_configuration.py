@@ -24,6 +24,7 @@ def launcher_doubles(tmp_path):
             if [[ "${DJANGO_EXITS_EARLY:-}" == "1" ]]; then
               exit "${DJANGO_EXIT_STATUS:-1}"
             fi
+            printf '%s\n' "$*" > "${STATE_FILE}.django-args"
             echo $$ > "${STATE_FILE}.django-pid"
             exec sleep 30
             """
@@ -135,7 +136,7 @@ def test_production_launcher_uses_pinned_asgi_server():
 
     assert 'backend_serve_mode="${BACKEND_SERVE_MODE:-dev}"' in launcher
     assert "uv run --with 'uvicorn==0.46.0' uvicorn backend.main:app" in launcher
-    assert "--host 0.0.0.0 --port 8000" in launcher
+    assert '--host 0.0.0.0 --port "$backend_port"' in launcher
     assert "manage.py runserver" in launcher
 
 
@@ -180,11 +181,13 @@ def test_launcher_has_publish_and_cleanup_contract():
     launcher = (ROOT / "scripts" / "start.sh").read_text()
 
     assert 'frontend_port="${PORT:-5000}"' in launcher
-    assert 'if [[ "$frontend_port" == "8000" ]]' in launcher
-    assert "frontend_port=5000" in launcher
-    assert "runserver 0.0.0.0:8000" in launcher
+    assert 'backend_port="${BACKEND_PORT:-8000}"' in launcher
+    assert 'if [[ "$frontend_port" == "$backend_port" ]]' in launcher
+    assert "backend_port=8001" in launcher
+    assert 'BACKEND_PROXY_TARGET="http://127.0.0.1:$backend_port"' in launcher
+    assert 'runserver 0.0.0.0:"$backend_port"' in launcher
     assert "npm --prefix frontend run dev" in launcher
-    assert "http://127.0.0.1:8000/health/" in launcher
+    assert '"http://127.0.0.1:$backend_port/health/"' in launcher
     assert "Django health check passed; starting Vite" in launcher
     assert "startup_deadline" in launcher
     assert "trap cleanup EXIT INT TERM" in launcher
@@ -207,9 +210,10 @@ def test_launcher_avoids_replit_backend_port_collision(launcher_doubles):
     )
 
     npm_args = (state_file.parent / "startup-state.npm-args").read_text()
+    django_args = (state_file.parent / "startup-state.django-args").read_text()
     assert "run preview" in npm_args
-    assert "--port 5000" in npm_args
-    assert "--port 8000" not in npm_args
+    assert "--port 8000" in npm_args
+    assert "0.0.0.0:8001" in django_args
 
 
 def test_published_smoke_waits_for_health_before_browser_routes():

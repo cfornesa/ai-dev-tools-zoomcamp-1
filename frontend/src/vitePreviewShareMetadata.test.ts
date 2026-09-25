@@ -9,10 +9,14 @@ import { preview, type PreviewServer } from 'vite';
 import { resolveBackendProxyTarget } from './viteBackendTarget.js';
 
 describe('backend proxy target selection', () => {
-  it('pins production preview to local HTTP even with an HTTPS browser-QA override', () => {
+  it('uses the deployment backend override for production preview', () => {
+    const previous = process.env.BACKEND_PROXY_TARGET;
+    process.env.BACKEND_PROXY_TARGET = 'http://127.0.0.1:8001';
     expect(resolveBackendProxyTarget('preview', 'https://qa-backend.example.test')).toBe(
-      'http://127.0.0.1:8000',
+      'http://127.0.0.1:8001',
     );
+    if (previous === undefined) delete process.env.BACKEND_PROXY_TARGET;
+    else process.env.BACKEND_PROXY_TARGET = previous;
   });
 
   it('keeps the browser-QA override available in development', () => {

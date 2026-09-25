@@ -3994,6 +3994,41 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   QA self-review / Codex-GPT-5 / medium / substituted: yes;
   reconcile / Codex-GPT-5 / medium / substituted: no.
 
+## Transaction #855 reconciliation — 2026-09-26 — QA PASS / CLOSED
+
+- Groom: dependency #877 was terminalized first; #855 remained the distinct
+  regular-view workflow and was not merged with immersive/embed/ZIP reports.
+- Engineer: no new product implementation stage was planned initially. During
+  QA, #878 was distilled and implemented for the discovered active-engine
+  reset defect; #878 is linked and closed. Stage provenance for #855's
+  verification: Codex-GPT-5 / medium / substituted for rostered Claude QA.
+- QA self-review: PASS. Exact editor/public viewport evidence, version history,
+  authored defaults after reload, first eight C-major ambient notes, A-K
+  keyboard mapping, live 220/minor change, immediate 90/major reset, motion,
+  toolbar, and no fresh public-tab app errors were checked. Full frontend
+  suite: 281 files/3022 tests passed.
+- Reconcile: GitHub QA comment #855-5840086346 records the `VALID` workflow
+  verdict, exact commands, extension-error boundary, and shifted immersive/
+  embed/ZIP scope. #855 is closed.
+- Provenance per stage: groom / Codex-GPT-5 / medium / substituted: no;
+  engineer / Codex-GPT-5 / medium / substituted: no-op initially;
+  QA self-review / Codex-GPT-5 / medium / substituted: yes;
+  reconcile / Codex-GPT-5 / medium / substituted: no.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #856
+
+- Closed in this loop: #877 fixture regeneration, #878 active reset
+  implementation, and #855 C2.js Interactive regular workflow. Their local
+  evidence is not generalized to other engines or surfaces.
+- Next independent issue: #856 SVG regular-view authored-sound workflow.
+  #857–#858 follow by engine; #859–#861 remain dependent surface sweeps;
+  #862 remains the aggregate report. #874, #875, #847, and #788 remain
+  independent open work with their existing data/production boundaries.
+- Duplicate/blocker audit: no new issue is needed for the Grammarly extension
+  messages; they are external browser integration noise and were explicitly
+  bounded in #855's QA record. No closed issue was reopened.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
 ## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #855
 
 - During #855 QA, a distinct implementation defect was reproduced: Reset

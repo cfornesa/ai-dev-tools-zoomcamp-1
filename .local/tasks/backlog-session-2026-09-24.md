@@ -1853,3 +1853,26 @@ deferred.
   `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/849#issuecomment-5829867475`.
 - Evidence boundary: the issue's specified mocked engine fixture is covered;
   UI wiring and screenshots belong to dependent #850 and later surfaces.
+
+## Backlog transaction 46 — #850
+
+- State: `GROOMED → ENGINEERING → QA/OPEN-BLOCKED`.
+- Grooming/routing: structured 3D sound-panel UI, routed Stage 2a mechanical
+  against the completed #848/#849 engine contracts. Service/model/effort:
+  Codex/GPT-5 substitution, medium effort; rostered implementation service
+  unavailable.
+- Engineering commits: `56d682a` added Key, Keyboard scale, transpose/reset,
+  follow-key, detected-scale/Apply controls, and accessible out-of-scale piano
+  states; `efb3af1` is formatter-only normalization revealed by the release
+  format gate.
+- Focused QA: `cd frontend && npm test -- --run
+  src/pages/Scene3DPreview.sound.test.tsx` passed (30 tests); typecheck, lint
+  (existing warnings only), `npm run format:check`, and `git diff --check`
+  passed. GitHub QA FAIL comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/850#issuecomment-5829926125`.
+- Exact browser attempt:
+  `E2E_DOCKER_COMPOSE=true npx playwright test e2e/soundEngine3d.spec.ts
+  --project=chromium` failed before test execution with the macOS Chromium
+  `bootstrap_check_in ... Permission denied (1100)` Mach-port error. Live
+  interaction and 1280x900/375x812 screenshots remain unverified; #850 stays
+  OPEN pending the approved Docker/CI Chromium runner.

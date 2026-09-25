@@ -3166,3 +3166,78 @@ deferred.
   transaction. Current handoff remains incomplete with 17 open issues.
 - Safe handoff commit: `6d9d9a8` is pushed to `origin/main`; production was
   not changed by this continuation.
+
+## Distillation refresh 62 — 2026-09-25 — SELECT #841
+
+- Current open inventory is 17 issues: #788, #841, #842, #846, #847,
+  #851–#862. Duplicate audit found no new issue for the user's hamburger
+  observation: canonical immersive already exposes inline controls; the editor
+  and responsive site header use separate menu affordances by contract.
+- Dependency/order rationale: #841 is the next independent implementation /
+  verification slice. Its prior implementation commit `aa3d691` is present;
+  #842 and #851 depend on its bridge evidence, and #853–#862 explicitly depend
+  on the sound contract/runtime prerequisites. #847 remains dependency-blocked
+  on a public owner-uploaded asset contract. #788 is an authorized production
+  data action and remains separately gated.
+- #841 closure contract: one current-checkout disposable Compose fixture for a
+  structured 2D piece and one generated piece; regular and immersive routes;
+  direct control labels, slider-to-runtime bridge behavior, 1280x900 and
+  375x812 inspected screenshots, exact focused/full checks, and explicit local
+  evidence boundary. Routing: complex/sandbox protocol review; no new
+  implementation until the browser observation confirms a defect.
+- Next transaction: groom and QA/engineer #841 only; after terminalizing it,
+  re-run duplicate/dependency reconciliation before selecting #842.
+
+## Transaction #841 — 2026-09-25 — QA INCOMPLETE / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+- Engineer: COMPLETED in prior transaction at `aa3d691`; the structured-2D
+  sound bridge and generated viewer controls are present. No product source was
+  changed during this QA pass.
+- QA self-review: INCOMPLETE. Active Chrome on the current checkout verified
+  the generated p5.js regular route at 1280x900: Sound activated, Ambient BPM
+  changed from 90 to 130, Scale changed to major, Keyboard notes activated,
+  and the console error log was empty. The required 375x812 screenshot exposed
+  a genuine responsive controls defect: the Sound panel clips beyond the
+  visible stage/page and labels/fields overlap. The structured-2D bridge still
+  needs its named sound fixture interaction. This is not a passing criterion.
+- Reconcile: KEEP OPEN. New criterion-ready follow-up #867 owns only the
+  responsive generated sound-controls layout defect; it was created after a
+  duplicate audit and linked to #841. The remaining structured-2D verification
+  remains in #841. Evidence is local disposable Compose + active Chrome only.
+
+## Distillation refresh 63 — 2026-09-25 — NEW FOLLOW-UP #867
+
+- #867 is a distinct implementation defect, not a duplicate of #841/#852:
+  those issues own sound behavior/contracts, while #867 owns the observed
+  rendered panel clipping/overlap at fixed desktop and mobile viewports.
+- Routing: implementation-mechanical frontend; fixed fixture is the local
+  generated p5.js piece `QA Sound Bridge p5`; required evidence is active
+  Chrome screenshots and interaction preservation at 375x812 and 1280x900.
+- Order: #867 must be terminalized before #841 can be reconciled; then fresh
+  task-distillation selects the remaining structured-2D fixture proof or #842
+  according to dependency state.
+
+## Transaction #867 — 2026-09-25 — ENGINEERED / QA PASS / CLOSED PENDING PUSH
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+- Engineer: COMPLETED. implementation-mechanical / Codex-GPT-5 / medium /
+  substituted: yes; rostered Opencode Go `kimi-k3` was unavailable. Scoped CSS
+  in `frontend/src/index.css` now stacks generated Sound fieldsets, constrains
+  controls to the panel, and makes the mobile panel viewport-anchored and
+  scrollable. No sound protocol, schema, route, or dependency changed.
+- QA self-review: PASS locally. Active Chrome inspected the rebuilt Compose
+  fixture at 375x812 and 1280x900. Mobile geometry: body/document scroll width
+  360 <= viewport 375; panel x=29, right=331, width=302, clientHeight=722,
+  scrollHeight=1529, `overflow:auto`. Desktop geometry: body/document scroll
+  width 1265 <= viewport 1280; panel right=398.5, width=360, clientHeight=799,
+  scrollHeight=1658, `overflow:auto`. Screenshots showed readable stacked
+  labels/sliders and no collisions; generated Sound activation, BPM change,
+  scale change, and Keyboard notes remained functional; browser error log was
+  empty.
+- Exact command: `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` — PASS,
+  backend 1710 passed / 39 skipped; frontend 280 files / 3014 tests passed;
+  lint, format, typecheck, and action-pin checks passed with existing warnings.
+- Evidence boundary: disposable local Compose + active Chrome from the
+  uncommitted implementation checkout; no production evidence or data write.
+- Reconcile: ready to post `## QA: PASS`, close #867, commit, and push.

@@ -5129,7 +5129,7 @@ select.ai-proposal-field-full-width {
   width: min(360px, calc(100vw - 1.5rem));
   max-height: calc(100dvh - 5.5rem);
   box-sizing: border-box;
-  overflow: visible;
+  overflow: auto;
   padding: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 0.75rem;
@@ -5141,6 +5141,51 @@ select.ai-proposal-field-full-width {
 .art-piece-stage > [role='region'][aria-label='Piece controls'] > [role='group'] {
   display: grid;
   gap: 0.5rem;
+}
+
+/* Generated-piece sound controls contain enough independent fields that the
+   old inline label flow collided inside the fixed-width stage overlay. Keep
+   every field on its own row and make the controls shrink to the panel at
+   narrow viewports; the panel itself remains scrollable for the full set of
+   keyboard settings. */
+.art-piece-stage > [role='region'][aria-label='Piece controls'] fieldset {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
+.art-piece-stage > [role='region'][aria-label='Piece controls'] fieldset > label,
+.art-piece-stage > [role='region'][aria-label='Piece controls'] fieldset > input,
+.art-piece-stage > [role='region'][aria-label='Piece controls'] fieldset > select,
+.art-piece-stage > [role='region'][aria-label='Piece controls'] fieldset > button {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.art-piece-stage > [role='region'][aria-label='Piece controls'] fieldset > label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.art-piece-stage
+  > [role='region'][aria-label='Piece controls']
+  fieldset
+  > label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.art-piece-stage
+  > [role='region'][aria-label='Piece controls']
+  fieldset
+  > label:has(input[type='checkbox'])
+  input[type='checkbox'] {
+  width: auto;
+  flex: 0 0 auto;
 }
 
 .art-piece-stage > [role='region'][aria-label='Piece controls'] button {
@@ -5936,6 +5981,13 @@ select.ai-proposal-field-full-width {
 /* On a narrow stage, keep the contextual panel inside the viewport while the
    shared command rows retain readable labels beside compact icons. */
 @media (max-width: 600px) {
+  .art-piece-stage > [role='region'][aria-label='Piece controls'] {
+    left: 0.75rem;
+    right: 0.75rem;
+    width: auto;
+    max-width: none;
+  }
+
   /* Keep the shared command surface readable on phones. A wrapping desktop
      row makes the action labels collide and forces an avoidable card
      scrollbar; stack each action as a compact, full-width row instead. */

@@ -3952,6 +3952,42 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #881
+
+- New actionable gap: the required decoded screenshot pixel-diff evidence path
+  is unavailable in the active Chrome automation surface. Duplicate audit
+  found no existing issue; criterion-ready observability issue #881 created.
+- Routing: verification infrastructure / tool-capability investigation first;
+  no dependency or product code should be added without separate approval.
+- The engine workflow issues remain open and link conceptually to #881 for the
+  objective motion criterion; no closed issue was reopened.
+
+## Production-readiness refresh — 2026-09-26 — NOT READY
+
+- Repository baseline is green: `make check` passed with backend 1710 passed /
+  39 skipped and frontend 281 files / 3024 tests.
+- Local implementation fixes #879/#880 are safely pushed and browser-verified,
+  but not production-published in this batch.
+- Open blockers: #874 production editor/public record mismatch; #788
+  production import blocked by lack of supported production dry-run/shell;
+  #847 optional owner-media implementation gap; #856–#860 and #862 incomplete
+  QA evidence; #881 screenshot-diff observability gap; #875 pending exact
+  browser verification; #861 ZIP sweep pending.
+- No production database mutation or Replit publish is claimed. Readiness
+  verdict: NOT READY.
+
+## Session-completion refresh — 2026-09-26 — INCOMPLETE / OPEN FOLLOW-UPS
+
+- Counts for this continuation: #879 and #880 implementation transactions
+  closed PASS; #856–#858 remain QA OPEN with valid-with-gaps evidence; #881 is
+  newly reconciled and open; other production/surface issues remain open.
+- Routing audit: implementation blockers were distilled before code changes;
+  verification gaps stayed in QA issues; production/data boundaries remain
+  blocked rather than being bypassed.
+- Follow-up audit: process #881, complete #856–#862 surface evidence, resolve
+  #874/#788/#847/#875/#861, then rerun production-readiness before any closure
+  claim. Session is not complete.
+
 ## Current-session continuation — 2026-09-26
 
 - #879 A-Frame implementation/QA PASS and closed; #880 Three.js

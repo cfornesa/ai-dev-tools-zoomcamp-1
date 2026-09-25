@@ -18,7 +18,8 @@ function createFakeToneModule() {
   const releaseCalls: string[] = [];
   const rampToCalls: Array<{ kind: string; value: number }> = [];
   const synthSetCalls: unknown[] = [];
-  let filterInstance: { type: string; frequency: { value: number }; Q: { value: number } } | null = null;
+  let filterInstance: { type: string; frequency: { value: number }; Q: { value: number } } | null =
+    null;
   let synthCount = 0;
 
   class FakeSynth {
@@ -171,7 +172,8 @@ function createFakeToneModule() {
     getLoopInterval: () => loopInterval,
     volumeInstances,
     getFilter: () => filterInstance,
-    getTransportBpm: () => (fakeModule.Transport as unknown as { bpm: { value: number } }).bpm.value,
+    getTransportBpm: () =>
+      (fakeModule.Transport as unknown as { bpm: { value: number } }).bpm.value,
   };
 }
 
@@ -350,7 +352,11 @@ describe('createSonicEngine', () => {
 
     expect(engine.setFilter({ type: 'invalid' as 'lowpass', cutoff: 0, resonance: 0 })).toBe(false);
     expect(engine.setFilter({ type: 'bandpass', cutoff: 50000, resonance: 100 })).toBe(true);
-    expect(filter).toMatchObject({ type: 'bandpass', frequency: { value: 20000 }, Q: { value: 20 } });
+    expect(filter).toMatchObject({
+      type: 'bandpass',
+      frequency: { value: 20000 },
+      Q: { value: 20 },
+    });
   });
 
   it('applies melodic synth settings, clamps envelope/octave values, and reports unsupported fields', async () => {
@@ -364,7 +370,10 @@ describe('createSonicEngine', () => {
       filter: { type: 'highpass', cutoff: 100, resonance: 2 },
       octaveShift: 4,
     });
-    expect(result).toEqual({ applied: ['oscillator', 'envelope', 'filter', 'octaveShift'], unsupported: [] });
+    expect(result).toEqual({
+      applied: ['oscillator', 'envelope', 'filter', 'octaveShift'],
+      unsupported: [],
+    });
     expect(fake.synthSetCalls).toHaveLength(1);
 
     fake.triggerCalls.length = 0;
@@ -372,12 +381,14 @@ describe('createSonicEngine', () => {
     expect(fake.triggerCalls.at(-1)?.note).toBe('C6');
 
     expect(engine.setVoiceInstrument('melodic', 'membranesynth')).toBe(true);
-    expect(engine.setMelodicSynth({
-      oscillator: 'sine',
-      envelope: { attack: 0.1, decay: 0.1, sustain: 0.5, release: 0.1 },
-      filter: { type: 'lowpass', cutoff: 1000, resonance: 1 },
-      octaveShift: 0,
-    }).unsupported).toEqual(['oscillator', 'envelope']);
+    expect(
+      engine.setMelodicSynth({
+        oscillator: 'sine',
+        envelope: { attack: 0.1, decay: 0.1, sustain: 0.5, release: 0.1 },
+        filter: { type: 'lowpass', cutoff: 1000, resonance: 1 },
+        octaveShift: 0,
+      }).unsupported,
+    ).toEqual(['oscillator', 'envelope']);
   });
 
   it('disable() releases every audio resource and returns to idle', async () => {

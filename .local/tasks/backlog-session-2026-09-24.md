@@ -1753,3 +1753,27 @@ deferred.
   375x812 screenshots remain unverified. This is the existing
   `verification-boundary` / workflow infrastructure blocker; no duplicate
   issue was created. #841 remains OPEN.
+
+## Backlog transaction 42 — #842
+
+- State: `GROOMED → ENGINEERING → QA/OPEN-BLOCKED`.
+- Engineering commit: `0594f51`; added the ambient and Keyboard synth
+  controls to structured-3D and generated-art downloadable ZIP markup and
+  bound them to the standalone Web Audio graphs. Full/Non-Camera capability
+  gates remain intact, so device features stay omitted from Non-Camera ZIPs.
+  Service/model/effort: Codex/GPT-5 substitution, medium effort; rostered
+  Stage 2b service unavailable.
+- Focused QA: export/runtime parse and bundle tests passed (4 files / 72
+  tests), typecheck passed, and lint passed with existing warnings only.
+  GitHub QA FAIL comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/842#issuecomment-5829550886`.
+- Exact ZIP E2E attempt:
+  `E2E_DOCKER_COMPOSE=true npx playwright test
+  e2e/structuredExportSound.spec.ts --project=chromium` failed before test
+  execution with the macOS Chromium Mach-port error
+  `bootstrap_check_in ... Permission denied (1100)`. The three ZIP tests are
+  discoverable with `--list`, but extracted-ZIP runtime acknowledgements and
+  1280x900 / 375x812 screenshots remain unverified. This is the existing
+  `verification-boundary` / workflow infrastructure blocker; no duplicate
+  issue was created. #842 remains OPEN pending the approved Docker/CI runner
+  and the repository-wide `make check` result.

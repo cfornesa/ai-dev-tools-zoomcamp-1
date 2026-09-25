@@ -244,7 +244,11 @@ export function createSonicEngine(
     octaveShift: 0,
   };
   const voiceVolumes: Record<SonicVoice, number> = { ambient: 100, movement: 100, melodic: 100 };
-  const voiceMuted: Record<SonicVoice, boolean> = { ambient: false, movement: false, melodic: false };
+  const voiceMuted: Record<SonicVoice, boolean> = {
+    ambient: false,
+    movement: false,
+    melodic: false,
+  };
 
   async function enable(): Promise<void> {
     if (status === 'active') return;
@@ -377,7 +381,8 @@ export function createSonicEngine(
 
   function createVoiceSynth(voice: SonicVoice): VoiceSynth {
     const voiceBus = voiceBuses[voice];
-    if (!tone || !voiceBus) throw new Error('Sound must be enabled before selecting an instrument.');
+    if (!tone || !voiceBus)
+      throw new Error('Sound must be enabled before selecting an instrument.');
     const instrument = voiceInstruments[voice];
     const synth =
       instrument === 'amsynth'
@@ -431,7 +436,10 @@ export function createSonicEngine(
   }
 
   function triggerMelodicNote(note: string) {
-    melodicSynth?.triggerAttackRelease(shiftNoteOctave(note, melodicSynthSettings.octaveShift), '8n');
+    melodicSynth?.triggerAttackRelease(
+      shiftNoteOctave(note, melodicSynthSettings.octaveShift),
+      '8n',
+    );
   }
 
   function shiftNoteOctave(note: string, shift: number): string {
@@ -459,7 +467,9 @@ export function createSonicEngine(
     };
     const unsupported: string[] = [];
     const applied: string[] = [];
-    const percussion = ['membranesynth', 'metalsynth', 'plucksynth'].includes(voiceInstruments.melodic);
+    const percussion = ['membranesynth', 'metalsynth', 'plucksynth'].includes(
+      voiceInstruments.melodic,
+    );
     if (percussion) {
       unsupported.push('oscillator', 'envelope');
     } else if (melodicSynth && 'set' in melodicSynth) {

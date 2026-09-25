@@ -2362,3 +2362,29 @@ deferred.
   records the criterion matrix, exact commands, provenance, and evidence
   boundary. Do not close until generated Full and Non-Camera ZIP browser
   verification is captured.
+
+## Distillation refresh 37 — 2026-09-25 — active Chrome recheck and next queue
+
+- Current authoritative open set: #788, #841–#847, #851–#862, and #865.
+  No duplicate or closed issue was reopened. #841 is an implementation defect
+  for structured 2D sound (the public structured-2D viewer still has sound
+  disabled); #842 is a verification boundary for generated and Non-Camera
+  extracted ZIPs. Both remain open with their exact next actions recorded.
+- Active Chrome is available in extension browser id `4`. The production
+  canonical immersive URL `/users/@cfornesa/immersive/untitled-3d-scene-3`
+  currently exposes direct stage actions in AX order: Screenshot, Download ZIP,
+  Mute sound, Piece controls, Guide, Fullscreen; Share/Embed are below the
+  stage and above the version headings. No hamburger is present on this
+  canonical route. A hamburger observation therefore maps to a different
+  Layout-wrapped route or stale deployed revision and must be treated as a
+  separate route/revision verification signal, not as closure evidence.
+- No new issue created: the hamburger discrepancy is covered by the existing
+  route/toolbar verification issues #859/#860 and the owner-reported live
+  deployment surface. Next closure-ready transaction is #843 (independent
+  localStorage persistence contract); stage owner implementation-mechanical,
+  Codex/GPT-5 substitution, medium effort. #843's existing utility tests
+  cover storage validation and failures; live viewer persistence/reset browser
+  evidence is the remaining criterion boundary.
+- Blocker triage: Chrome/browser access is not a blocker; the active session
+  was re-observed. Production publish remains unauthorized for the newly
+  modified #841/#842 code under the owner's stated authorization boundary.

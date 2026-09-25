@@ -2339,3 +2339,26 @@ deferred.
   records the criterion matrix, exact commands, provenance, and evidence
   boundary. Do not close or publish this partial implementation until the
   structured-2D sound target is implemented and verified.
+
+## Transaction #842 — 2026-09-25 — OPEN / QA INCOMPLETE
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. #832 and #834–#840 were reconciled; no
+  duplicate issue was found. Existing standalone implementations cover the
+  requested control family, so this pass is verification-first.
+- Engineer: COMPLETE FOR COVERAGE. Stage owner implementation-complex;
+  Codex/GPT-5 substitution; medium effort. Added source-level control-set and
+  Full/Non-Camera gating assertions for both standalone runtime families, and
+  expanded `structuredExportSound.spec.ts` to exercise every structured ZIP
+  sound control. No runtime product code changed.
+- QA self-review: INCOMPLETE. Stage owner qa-self-review; Codex/GPT-5
+  substitution; medium effort. Focused source tests passed (37), typecheck,
+  format, and lint passed; extracted structured Three.js ZIP passed 1/1 at
+  1280x900 and 375x812. Generated extracted ZIP and direct Non-Camera browser
+  evidence remain missing. A temporary six-engine test expansion was reverted
+  after a 4m20s non-terminating run; it is not counted as evidence.
+- Reconcile: OPEN. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/842#issuecomment-5832344604
+  records the criterion matrix, exact commands, provenance, and evidence
+  boundary. Do not close until generated Full and Non-Camera ZIP browser
+  verification is captured.

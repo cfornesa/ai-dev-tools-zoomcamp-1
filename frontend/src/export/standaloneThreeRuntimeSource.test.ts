@@ -19,4 +19,31 @@ describe('standalone Three.js runtime source (#787)', () => {
     expect(source).toContain('preserveDrawingBuffer: true');
     expect(source).toContain('new THREE.CanvasTexture');
   });
+
+  it('#842 exposes every live sound control and keeps device controls out of Non-Camera ZIPs', () => {
+    const full = buildStandaloneThreeRuntimeScript({ includeCameraFeatures: true });
+    const nonCamera = buildStandaloneThreeRuntimeScript({ includeCameraFeatures: false });
+    for (const id of [
+      'piece-volume',
+      'piece-ambient-bpm',
+      'piece-ambient-volume',
+      'piece-ambient-muted',
+      'piece-ambient-scale',
+      'piece-keyboard-volume',
+      'piece-keyboard-oscillator',
+      'piece-keyboard-filter-type',
+      'piece-keyboard-filter-cutoff',
+      'piece-keyboard-filter-resonance',
+      'piece-keyboard-octave',
+    ]) {
+      expect(full).toContain(id);
+      expect(nonCamera).toContain(id);
+    }
+    expect(full).toContain("['attack', 'decay', 'sustain', 'release']");
+    expect(nonCamera).toContain("['attack', 'decay', 'sustain', 'release']");
+    expect(full).toContain("getElementById('piece-mic')");
+    expect(full).toContain("getElementById('piece-theremin')");
+    expect(nonCamera).not.toContain("getElementById('piece-mic')");
+    expect(nonCamera).not.toContain("getElementById('piece-theremin')");
+  });
 });

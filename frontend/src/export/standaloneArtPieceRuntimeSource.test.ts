@@ -58,4 +58,38 @@ describe('standalone art-piece runtime source', () => {
     expect(source).toContain('art-piece-runtime-ready');
     expect(source).toContain('art-piece-runtime-error');
   });
+
+  it('#842 keeps the full live sound control set in Non-Camera exports while omitting device controls', () => {
+    const capabilities = {
+      sound: true,
+      keyboard: true,
+      microphone: true,
+      camera_view: true,
+      hand_steering: true,
+      fullscreen: true,
+      screenshot: true,
+      download: true,
+      immersive: true,
+    };
+    const full = buildStandaloneArtPieceRuntimeScript('canvas2d', capabilities, 'full');
+    const nonCamera = buildStandaloneArtPieceRuntimeScript('canvas2d', capabilities, 'non-camera');
+    for (const id of [
+      'art-piece-ambient-bpm',
+      'art-piece-ambient-volume',
+      'art-piece-ambient-muted',
+      'art-piece-ambient-scale',
+      'art-piece-keyboard-volume',
+      'art-piece-keyboard-oscillator',
+      'art-piece-keyboard-filter-type',
+      'art-piece-keyboard-filter-cutoff',
+      'art-piece-keyboard-filter-resonance',
+      'art-piece-keyboard-octave',
+    ]) {
+      expect(full).toContain(id);
+      expect(nonCamera).toContain(id);
+    }
+    expect(full).toContain("['attack', 'decay', 'sustain', 'release']");
+    expect(nonCamera).toContain("['attack', 'decay', 'sustain', 'release']");
+    expect(full).toContain("byAction('microphone')");
+  });
 });

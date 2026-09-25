@@ -67,6 +67,28 @@ test('structured Three.js Full ZIP sound controls activate and report state (#83
         'true',
       );
       await expect(page.locator('#piece-sound-status')).toContainText('Ambient sound is playing.');
+      await page.locator('#piece-ambient-bpm').fill('120');
+      await expect(page.locator('#piece-ambient-bpm')).toHaveValue('120');
+      await page.locator('#piece-ambient-volume').fill('30');
+      await expect(page.locator('#piece-ambient-volume')).toHaveValue('30');
+      await page.locator('#piece-ambient-muted').check();
+      await expect(page.locator('#piece-ambient-muted')).toBeChecked();
+      await page.locator('#piece-ambient-scale').selectOption('dorian');
+      await expect(page.locator('#piece-ambient-scale')).toHaveValue('dorian');
+      await page.locator('#piece-keyboard-volume').fill('65');
+      await expect(page.locator('#piece-keyboard-volume')).toHaveValue('65');
+      await page.locator('#piece-keyboard-oscillator').selectOption('square');
+      await expect(page.locator('#piece-keyboard-oscillator')).toHaveValue('square');
+      await page.locator('#piece-keyboard-filter-type').selectOption('highpass');
+      await expect(page.locator('#piece-keyboard-filter-type')).toHaveValue('highpass');
+      await page.locator('#piece-keyboard-filter-cutoff').fill('4000');
+      await page.locator('#piece-keyboard-filter-resonance').fill('2');
+      await page.locator('#piece-keyboard-attack').fill('0.2');
+      await page.locator('#piece-keyboard-decay').fill('0.4');
+      await page.locator('#piece-keyboard-sustain').fill('0.6');
+      await page.locator('#piece-keyboard-release').fill('0.8');
+      await page.locator('#piece-keyboard-octave').fill('1');
+      await expect(page.locator('#piece-keyboard-octave')).toHaveValue('1');
       await page.getByRole('button', { name: 'Keyboard notes' }).click();
       await expect(page.locator('#piece-keyboard-status')).toContainText('Keyboard notes enabled.');
       await page.keyboard.press('a');

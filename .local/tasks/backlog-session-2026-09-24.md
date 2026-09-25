@@ -1155,3 +1155,6 @@ deferred.
   screenshots and tests do not claim deployed production evidence. Production
   publish/live verification is a separate owner-authorized action.
 - GitHub issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/829
+- QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/829#issuecomment-5826990312
+- Reconciled and closed #829. Production publish/live verification remains
+  intentionally unclaimed and outside this issue's closure contract.

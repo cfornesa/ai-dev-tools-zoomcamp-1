@@ -914,3 +914,24 @@ deferred.
   screenshots were inspected, QA PASS comment is
   `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/800#issuecomment-5825523022`,
   and #800 is CLOSED. Production evidence was not claimed.
+
+## #824 transaction — 2026-09-26
+
+- Groom: criterion-ready profile photo upload/removal issue created from the
+  #805 parity audit. Duplicate search found no existing implementation issue;
+  URL-based profile image support remains backward-compatible.
+- Engineering: Stage 2b complex routing rostered Ollama Cloud / Kimi K3 /
+  medium; Codex / GPT-5 / medium substituted. Commit `d3f93dd` adds the
+  owner-authenticated multipart upload/delete API, validated normalized PNG
+  storage, public/private image delivery, migration `0094`, settings UI,
+  backend regression coverage, and the required responsive browser spec.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Stage 3 independent-family review not run. Focused
+  backend tests (11), frontend typecheck/settings tests (15), Chromium at
+  1280x900 and 375x812 (2 scenarios), and the full gate passed: backend
+  1735/39 skipped and frontend 277 files/2979 tests. Screenshots were
+  inspected. The initial class-boundary defect was fixed before final evidence.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/824#issuecomment-5825873830`;
+  #824 is CLOSED. Evidence is local/disposable Compose only; no production
+  data or deployment action was taken.

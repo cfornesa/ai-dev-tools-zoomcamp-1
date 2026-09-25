@@ -183,6 +183,8 @@ ${renderExportStageToolbar({ buttons: ['screenshot', 'sound', 'controls', 'guide
     <button id="piece-reset-view" type="button">Reset view</button>
     <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
     <button id="piece-keyboard" type="button" aria-pressed="false">Keyboard notes</button>
+    <p id="piece-sound-status" role="status">Sound is off.</p>
+    <p id="piece-keyboard-status" role="status">Turn on Sound to play keyboard notes.</p>
     ${variant === 'full' ? '<button id="piece-mic" type="button" aria-pressed="false">Live mic</button>' : ''}
     ${variant === 'full' ? '<button id="piece-theremin" type="button" aria-pressed="false">Camera theremin</button>' : ''}
     <p>Enable sound, then turn on keyboard notes to play A–L keys.</p>

@@ -211,6 +211,8 @@ ${ANIMATION_MATH_SOURCE}
     var masterGain = null;
     var soundEnabled = false;
     var keyboardEnabled = false;
+    var ambientTimer = null;
+    var volumePercent = 50;
     /* EXPORT_CAMERA_FEATURES_START */
     var micStream = null;
     var micSource = null;
@@ -220,6 +222,34 @@ ${ANIMATION_MATH_SOURCE}
     /* EXPORT_CAMERA_FEATURES_END */
     var lastToneAt = 0;
     var notes = { a: 261.63, s: 293.66, d: 329.63, f: 349.23, g: 392.0, h: 440.0, j: 493.88, k: 523.25, l: 587.33 };
+    var ambientNotes = [130.81, 146.83, 164.81, 196.0, 220.0, 261.63];
+
+    function setSoundStatus(text) {
+      var status = document.getElementById('piece-sound-status');
+      if (status) status.textContent = text;
+    }
+
+    function setKeyboardStatus(text) {
+      var status = document.getElementById('piece-keyboard-status');
+      if (status) status.textContent = text;
+    }
+
+    function stopAmbient() {
+      if (ambientTimer !== null) {
+        clearInterval(ambientTimer);
+        ambientTimer = null;
+      }
+    }
+
+    function startAmbient() {
+      stopAmbient();
+      var ambientIndex = 0;
+      ambientTimer = window.setInterval(function () {
+        if (!soundEnabled) return;
+        playTone(ambientNotes[ambientIndex % ambientNotes.length], 0.45);
+        ambientIndex += 1;
+      }, 1000);
+    }
 
     function setSoundButton() {
       var button = document.getElementById('piece-sound');
@@ -248,8 +278,11 @@ ${ANIMATION_MATH_SOURCE}
       if (soundEnabled) {
         soundEnabled = false;
         keyboardEnabled = false;
+        stopAmbient();
         var keyboardButton = document.getElementById('piece-keyboard');
         if (keyboardButton) keyboardButton.setAttribute('aria-pressed', 'false');
+        setSoundStatus('Sound is off.');
+        setKeyboardStatus('Turn on Sound to play keyboard notes.');
         if (typeof stopMic === 'function') stopMic();
         if (typeof stopTheremin === 'function') stopTheremin();
         if (masterGain) masterGain.gain.value = 0;
@@ -261,21 +294,26 @@ ${ANIMATION_MATH_SOURCE}
       audioContext = audioContext || new AudioContextClass();
       if (audioContext.state === 'suspended') audioContext.resume();
       masterGain = masterGain || audioContext.createGain();
-      masterGain.gain.value = 0.5;
+      masterGain.gain.value = volumePercent / 100;
       masterGain.connect(audioContext.destination);
       soundEnabled = true;
       setSoundButton();
+      setSoundStatus('Sound is on. Ambient sound is playing.');
+      setKeyboardStatus('Keyboard notes available. Press A–L over the piece to play a note.');
+      startAmbient();
       playTone(261.63, 0.25);
     }
 
     document.getElementById('piece-sound')?.addEventListener('click', toggleSound);
     document.getElementById('piece-volume')?.addEventListener('input', function (event) {
-      if (masterGain) masterGain.gain.value = Number(event.target.value) / 100;
+      volumePercent = Number(event.target.value);
+      if (masterGain) masterGain.gain.value = volumePercent / 100;
     });
     document.getElementById('piece-keyboard')?.addEventListener('click', function () {
       keyboardEnabled = !keyboardEnabled;
       this.setAttribute('aria-pressed', String(keyboardEnabled));
       this.textContent = keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes';
+      setKeyboardStatus(keyboardEnabled ? 'Keyboard notes enabled. Press A–L over the piece.' : 'Keyboard notes disabled.');
     });
     /* EXPORT_CAMERA_FEATURES_START */
     function stopMic() {
@@ -349,7 +387,10 @@ ${ANIMATION_MATH_SOURCE}
     window.addEventListener('keydown', function (event) {
       if (!soundEnabled || !keyboardEnabled || event.repeat || event.target instanceof HTMLInputElement) return;
       var frequency = notes[event.key.toLowerCase()];
-      if (frequency) playTone(frequency, 0.3);
+      if (frequency) {
+        playTone(frequency, 0.3);
+        setKeyboardStatus('Keyboard note ' + event.key.toUpperCase() + ' is playing.');
+      }
     });
     var initialPosition = graph.camera.position.clone();
     var initialTarget = new THREE.Vector3(

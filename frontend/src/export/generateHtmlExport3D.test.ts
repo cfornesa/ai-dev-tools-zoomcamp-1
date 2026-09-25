@@ -143,6 +143,9 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('piece-volume');
     expect(script).toContain('piece-keyboard');
     expect(script).toContain('keyboardEnabled');
+    expect(script).toContain('startAmbient');
+    expect(script).toContain('piece-sound-status');
+    expect(script).toContain('piece-keyboard-status');
     expect(script).toContain('getUserMedia({ audio: true, video: false })');
     expect(script).toContain('thereminEnabled');
     expect(script).toContain('getUserMedia');

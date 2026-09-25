@@ -1265,3 +1265,23 @@ deferred.
 - Service/model/effort: task-distillation orchestrator, Codex/GPT-5
   substitution, medium effort. Next action: groom and engineer #831 after the
   currently queued #748 release verification transaction.
+
+## Distillation refresh 27 — 2026-09-25
+
+- Owner follow-up identified a distinct sound-functionality/evidence gap across
+  live pieces and structured 3D downloads. Source inspection confirmed that
+  `generateHtmlExport3D.ts` emits Sound, Keyboard notes, Live mic, and Camera
+  theremin controls but only wires the panel disclosure; the exported runtime
+  has no actual audio graph or control bindings.
+- Duplicate search found closed #306–#310 (React/live sound implementation),
+  #755 (generated ZIP toolbar), and #761 (structured export toolbar), but no
+  issue owning actual structured-download sound behavior plus deployed live
+  evidence. Closed issues were not reopened. Created criterion-ready #832:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/832
+- #832 routing: stage 2b standalone runtime/audio behavior with live parity
+  verification. Acceptance separates local/Compose proof from production
+  proof, covers real audio-context/note behavior, microphone/camera permission
+  boundaries, Non-Camera isolation, focused browser tests, and `make check`.
+- Service/model/effort: task-distillation orchestrator, Codex/GPT-5
+  substitution, medium effort. Next action: groom and engineer #832 after
+  reconciling the current release-verification transactions.

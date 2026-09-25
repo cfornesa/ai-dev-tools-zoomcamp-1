@@ -2891,3 +2891,33 @@ deferred.
   #841/#842/#844/#846 browser verification, then dependent #851–#862; #788 and
   #847 remain externally blocked. This refresh supersedes only the earlier
   browser-unavailable wording; it does not close or reopen an issue.
+
+## Production-readiness refresh 51 — 2026-09-25 — BLOCKED
+
+- Local quality remains PASS from the recorded `make check` run (backend 1709
+  passed; frontend 280 files / 3011 tests; lint, format, typecheck and action
+  pin checks passed).
+- Production anonymous smoke remains PASS for `https://augmentrart.com`.
+- Browser evidence is improved but not terminal: active Chrome proved the
+  published authored-3D Full and Non-Camera ZIP controls and sound interaction,
+  and proved the canonical immersive toolbar is inline rather than hamburger.
+  It did not prove the six generated/structured-2D fixtures, the required exact
+  viewports, or the current-checkout revision in production.
+- Readiness remains BLOCKED by #841/#842/#844/#846 verification criteria,
+  #847's missing published media contract, dependent #851–#862, and #788's
+  unsupported production preview/write path. No publish or production data
+  write was performed in this refresh.
+
+## Session-completion refresh 52 — 2026-09-25 — INCOMPLETE / HANDOFF
+
+- Open inventory remains 18 issues: #788, #841, #842, #844, #846, #847,
+  #851–#862. No issue is closed by this refresh; the active Chrome evidence
+  narrowed two blockers without satisfying their full acceptance matrices.
+- Follow-up audit: hamburger report reconciled to existing inline-toolbar and
+  route-verification coverage (#761/#693 closed, #859/#860 open); no duplicate
+  issue created. #842 now has authored-3D ZIP evidence, while #841/#844/#846
+  and the six-engine verification chain still lack their required fixtures or
+  exact viewport evidence.
+- Release boundary: `fd97055` records the refresh locally. It is not a
+  production publish and requires the already-authorized safe push path before
+  remote release; current production was not changed.

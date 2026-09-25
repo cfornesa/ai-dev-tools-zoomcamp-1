@@ -109,6 +109,21 @@ test.describe('3D sound engine', () => {
     await expect(c4).toHaveAttribute('aria-pressed', 'true');
     await c4.dispatchEvent('pointerup');
     await expect(c4).toHaveAttribute('aria-pressed', 'false');
+    for (const note of ['C4', 'E4', 'G4']) {
+      const key = piano.getByRole('button', { name: note, exact: true });
+      await key.dispatchEvent('pointerdown');
+      await key.dispatchEvent('pointerup');
+    }
+    const detectedText = await toolbar.getByTestId('scene3d-detected-scale').textContent();
+    const detected = /Detected scale: ([A-G](?:#)?) (\w+)/.exec(detectedText ?? '');
+    expect(detected).not.toBeNull();
+    await toolbar.getByRole('button', { name: 'Apply detected scale' }).click();
+    await expect(toolbar.getByRole('combobox', { name: 'Key', exact: true })).toHaveValue(
+      detected![1],
+    );
+    await expect(
+      toolbar.getByRole('combobox', { name: 'Keyboard scale', exact: true }),
+    ).toHaveValue(detected![2]);
 
     await mute.click();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toHaveAttribute(

@@ -1051,3 +1051,18 @@ deferred.
 - #827 is dependency-blocked on #826 producing a healthy exact-revision
   deployment. The current public screenshot remains evidence for #827, not a
   pass for #803.
+
+## #826 QA reconciliation — 2026-09-24
+
+- Local implementation and full checks PASS: backend 1697 passed/39 skipped;
+  frontend 277 files/2979 tests.
+- Authorized Replit publish retry FAIL: the candidate again logged the HTTP
+  response to HTTPS probe, 301 `/`, health-check 500, and exit 143. The Git
+  panel shows the workspace is still on detached `publish-authorized-dc11456`,
+  not pulled from remote, with one uncommitted `.replit` change. This is an
+  external workspace reconciliation blocker, not proof that `56eb0b7` reached
+  production.
+- QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/826#issuecomment-5826495393
+- Next action: explicitly reconcile the existing Replit `.replit` change with
+  pushed `origin/main` in the authorized workspace, then publish from a clean
+  exact revision. Do not use Replit Fix with Agent or discard the change.

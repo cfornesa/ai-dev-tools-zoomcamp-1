@@ -2563,3 +2563,27 @@ deferred.
   #851 and #852 are dependency-blocked by open #841/#842/#844 respectively;
   #853–#862 are browser/production verification queue items. Next independent
   action is #853, unless #841/#842 are first made closure-ready.
+
+## Transaction #853 — 2026-09-25 — DEPENDENCY-BLOCKED / HANDED-OFF
+
+- Groom: DEPENDENCY-BLOCKED. Stage owner task-distillation orchestrator;
+  Codex/GPT-5 substitution; medium effort. #853's own contract requires
+  #841, #842, #844, and #852; those prerequisites are not terminal. No
+  duplicate was found.
+- Engineer: NOT STARTED. Stage owner implementation-mechanical; Codex/GPT-5
+  substitution; low effort. This is verification-only and must not be run
+  against incomplete sound/defaults behavior.
+- QA self-review: HANDED-OFF. Stage owner qa-self-review; Codex/GPT-5
+  substitution; low effort. No Chrome fixture or audio evidence was claimed.
+- Reconcile: DEPENDENCY-BLOCKED / OPEN. QA handoff:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/853#issuecomment-5833002202
+  records the prerequisite chain and next action.
+
+## Distillation refresh 43 — 2026-09-25 — #853 dependency reconciliation
+
+- #853 remains dependency-blocked; no new issue or duplicate was created.
+  #854–#858 share the same prerequisite chain, #859–#861 depend on those
+  fixtures, and #862 depends on all verification issues becoming terminal.
+- Next independent open implementation item remains #841; #844 and #846
+  retain separate evidence boundaries. Do not run the six-engine workflow
+  issues until their declared dependencies are reconciled.

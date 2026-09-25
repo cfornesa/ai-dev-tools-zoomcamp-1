@@ -23,6 +23,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Tempo (BPM)
         <input
+          id="project3d-sonic-tempo"
           type="number"
           min={40}
           max={220}
@@ -33,6 +34,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Root
         <select
+          id="project3d-sonic-root"
           value={current.root}
           onChange={(e) => update({ root: e.target.value as SonicDefaults['root'] })}
         >
@@ -44,6 +46,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Scale
         <select
+          id="project3d-sonic-scale"
           value={current.scale}
           onChange={(e) => update({ scale: e.target.value as SonicDefaults['scale'] })}
         >
@@ -55,6 +58,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Keyboard scale
         <select
+          id="project3d-sonic-keyboard-scale"
           value={current.keyboard_scale}
           onChange={(e) =>
             update({ keyboard_scale: e.target.value as SonicDefaults['keyboard_scale'] })
@@ -68,6 +72,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Transpose (semitones)
         <input
+          id="project3d-sonic-transpose"
           type="number"
           min={-12}
           max={12}
@@ -78,6 +83,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Instrument
         <select
+          id="project3d-sonic-instrument"
           value={current.instrument}
           onChange={(e) => update({ instrument: e.target.value as SonicDefaults['instrument'] })}
         >
@@ -89,6 +95,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Default volume
         <input
+          id="project3d-sonic-default-volume"
           type="range"
           min={0}
           max={100}
@@ -100,6 +107,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Oscillator
         <select
+          id="project3d-sonic-oscillator"
           value={current.extras.synth.oscillator}
           onChange={(e) =>
             updateSynth({
@@ -115,6 +123,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Filter
         <select
+          id="project3d-sonic-filter"
           value={current.extras.synth.filter_type}
           onChange={(e) =>
             updateSynth({
@@ -130,6 +139,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Filter cutoff
         <input
+          id="project3d-sonic-filter-cutoff"
           type="number"
           min={20}
           max={20000}
@@ -140,6 +150,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Filter resonance
         <input
+          id="project3d-sonic-filter-resonance"
           type="number"
           min={0.1}
           max={20}
@@ -152,6 +163,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
         <label key={name}>
           Envelope {name}
           <input
+            id={`project3d-sonic-envelope-${name}`}
             type="number"
             min={0}
             max={name === 'sustain' ? 1 : 10}
@@ -164,6 +176,7 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
       <label>
         Feel
         <input
+          id="project3d-sonic-feel"
           maxLength={400}
           value={current.feel}
           onChange={(e) => update({ feel: e.target.value })}

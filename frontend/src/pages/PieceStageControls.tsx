@@ -1,7 +1,8 @@
 import { createPortal } from 'react-dom';
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
+import type { SonicDefaults } from '../audio/sonicContract';
 import {
   ART_PIECE_BRIDGE_VERSION,
   isValidArtPieceSoundCommand,
@@ -18,6 +19,7 @@ import {
   resetSoundSettings,
   writeSoundSettings,
   type SoundSettings,
+  soundSettingsFromSonic,
 } from '../audio/soundSettings';
 import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
 import { createMediaPipeTrackingProvider } from '../tracking/mediapipeProvider';
@@ -73,6 +75,8 @@ type Props = {
    * passes `'immersive'` so its own download buttons produce the
    * full-viewport walkable export instead of the regular one. */
   presentation?: 'regular' | 'immersive';
+  /** Normalized creator-authored defaults; visitor local settings override them. */
+  authoredSonic?: SonicDefaults;
 };
 
 const VISITOR_SWATCHES = [
@@ -107,9 +111,16 @@ function PieceStageControls({
   toolbarPortalTarget,
   fullscreenToolbarPortalTarget,
   presentation = 'regular',
+  authoredSonic,
 }: Props) {
   const resolvedCameraPlacement: CameraPlacement = cameraPlacement ?? 'overlay';
-  const initialSoundSettingsRef = useRef<SoundSettings>(readSoundSettings(pieceId));
+  const authoredSoundSettings = useMemo(
+    () => soundSettingsFromSonic(authoredSonic),
+    [authoredSonic],
+  );
+  const initialSoundSettingsRef = useRef<SoundSettings>(
+    readSoundSettings(pieceId, undefined, authoredSoundSettings),
+  );
   const initialSoundSettings = initialSoundSettingsRef.current;
   const [open, setOpen] = useState(false);
   const [guide, setGuide] = useState(false);
@@ -432,7 +443,19 @@ function PieceStageControls({
       // just because a command was sent.
       if (data.status === 'sound') {
         if (typeof data.enabled === 'boolean') setSoundOn(data.enabled);
-        if (typeof data.volume === 'number') setVolume(data.volume);
+        if (data.enabled) {
+          // The sandbox reports its built-in 20% startup gain in the same
+          // acknowledgement that turns Sound on. Re-apply the authored (or
+          // visitor-local) baseline after that acknowledgement so activation
+          // cannot overwrite the creator's default volume.
+          const settings = readSoundSettings(pieceId, undefined, authoredSoundSettings);
+          setVolume(settings.soundVolume);
+          window.setTimeout(() => {
+            commandRef.current('set-volume', { value: settings.soundVolume });
+          }, 0);
+        } else if (typeof data.volume === 'number') {
+          setVolume(data.volume);
+        }
       }
       if (data.status === 'keyboard') {
         if (typeof data.enabled === 'boolean') setKeyboardEnabled(data.enabled);
@@ -454,7 +477,7 @@ function PieceStageControls({
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [iframeRef]);
+  }, [authoredSoundSettings, iframeRef, pieceId]);
 
   function command(type: string, extra?: Record<string, unknown>) {
     if (
@@ -528,7 +551,7 @@ function PieceStageControls({
   }, []);
 
   function resetVisitorSoundSettings() {
-    applySoundSettings(resetSoundSettings(pieceId), soundOn);
+    applySoundSettings(resetSoundSettings(pieceId, undefined, authoredSoundSettings), soundOn);
     resetSoundSettingsRef.current = true;
     // React's persistence effect may already be queued by the same gesture;
     // remove the key once the reset state has committed so that reset remains
@@ -541,9 +564,9 @@ function PieceStageControls({
     // the current validated snapshot here so a setting saved before a mute,
     // reset, or route revisit is applied only after activation succeeds.
     if (soundOn && !resetSoundSettingsRef.current) {
-      applySoundSettings(readSoundSettings(pieceId), true);
+      applySoundSettings(readSoundSettings(pieceId, undefined, authoredSoundSettings), true);
     }
-  }, [applySoundSettings, pieceId, soundOn]);
+  }, [applySoundSettings, authoredSoundSettings, pieceId, soundOn]);
 
   useEffect(() => {
     // Do not let the initial runtime-off state overwrite a visitor's saved
@@ -779,6 +802,7 @@ function PieceStageControls({
         presentation,
         cameraPlacement: resolvedCameraPlacement,
         ink,
+        sonic: authoredSonic,
       });
       triggerArtPieceBundleDownload(blob, `${title || 'art-piece'}-${label}.zip`);
       setOpen(false);

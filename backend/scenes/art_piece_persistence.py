@@ -46,6 +46,7 @@ from scenes.ink_document import (
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
 from scenes.permissions import Action, can
 from scenes.public_identity import public_author_name
+from scenes.sonic_contract import normalize_sonic
 from scenes.thumbnails import FALLBACK_PNG_BYTES
 
 THUMBNAIL_WIDTH = 320
@@ -96,6 +97,29 @@ def _capabilities(value):
             f"Capabilities must be true/false: {', '.join(sorted(non_boolean))}"
         )
     return {key: value.get(key, False) for key in CAPABILITY_KEYS}
+
+
+def _generation_metadata(value):
+    """Keep generated metadata opaque except for the optional sonic contract."""
+    if not isinstance(value, dict):
+        raise serializers.ValidationError("generation_metadata must be an object")
+    metadata = dict(value)
+    if "sonic" in metadata:
+        sonic = normalize_sonic(metadata["sonic"])
+        if sonic is None:
+            metadata.pop("sonic", None)
+        else:
+            metadata["sonic"] = sonic
+    return metadata
+
+
+def _metadata_with_inherited_sonic(previous, incoming):
+    metadata = _generation_metadata(incoming)
+    if "sonic" not in metadata and isinstance(previous, dict):
+        previous_sonic = normalize_sonic(previous.get("sonic"))
+        if previous_sonic is not None:
+            metadata["sonic"] = previous_sonic
+    return metadata
 
 
 def eligible_art_pieces():
@@ -206,6 +230,9 @@ def _version_data(version: ArtPieceVersion, *, public: bool):
     }
     if public:
         data["source"] = version.source
+        sonic = normalize_sonic((version.generation_metadata or {}).get("sonic"))
+        if sonic is not None:
+            data["sonic"] = sonic
         presentation = _public_presentation_metadata(version.generation_metadata)
         if presentation:
             data["presentation"] = presentation
@@ -315,6 +342,9 @@ class ArtPieceCreateSerializer(serializers.Serializer):
     def validate_capabilities(self, value):
         return _capabilities(value)
 
+    def validate_generation_metadata(self, value):
+        return _generation_metadata(value)
+
     def validate(self, attrs):
         raw_slug = attrs["public_slug"]
         attrs["public_slug"] = normalize_public_slug(raw_slug)
@@ -359,6 +389,9 @@ class ArtPieceVersionSerializer(serializers.Serializer):
 
     def validate_capabilities(self, value):
         return _capabilities(value)
+
+    def validate_generation_metadata(self, value):
+        return _generation_metadata(value)
 
     def validate(self, attrs):
         engine = self.context.get("engine")
@@ -510,9 +543,12 @@ class ArtPieceVersionListCreateView(APIView):
                 or 0
             ) + 1
             values = dict(serializer.validated_data)
+            previous_metadata = getattr(locked.current_version, "generation_metadata", None)
             values["generation_metadata"] = metadata_with_inherited_ink(
-                getattr(locked.current_version, "generation_metadata", None),
-                values.get("generation_metadata") or {},
+                previous_metadata,
+                _metadata_with_inherited_sonic(
+                    previous_metadata, values.get("generation_metadata") or {}
+                ),
             )
             version = ArtPieceVersion.objects.create(piece=locked, sequence=sequence, **values)
             locked.current_version = version

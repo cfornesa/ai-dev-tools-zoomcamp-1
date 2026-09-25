@@ -13,6 +13,7 @@
 import { apiFetch } from './client';
 import type { SeoConfig } from './adminPages';
 import type { DrawingDocument } from '../pages/scene3dTypes';
+import type { SonicDefaults } from '../audio/sonicContract';
 
 /** The stable engine identifiers this endpoint persists -- mirrors
  * `scenes.art_piece_contract`. Generation availability is separate from
@@ -154,6 +155,8 @@ export type ArtPieceVersion = {
   thumbnail_is_fallback: boolean;
   created_at: string;
   generation_metadata?: Record<string, unknown>;
+  /** Publicly safe, normalized authored defaults; absent for legacy versions. */
+  sonic?: SonicDefaults;
   presentation?: {
     aspect_ratio?: number | string;
     width?: number;

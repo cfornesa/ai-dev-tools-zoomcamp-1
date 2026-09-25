@@ -4,9 +4,11 @@ import {
   DEFAULT_SOUND_SETTINGS,
   readSoundSettings,
   resetSoundSettings,
+  soundSettingsFromSonic,
   soundSettingsKey,
   writeSoundSettings,
 } from './soundSettings';
+import { normalizeSonic } from './sonicContract';
 
 function storage(initial?: string): Storage {
   let value = initial ?? null;
@@ -70,5 +72,32 @@ describe('soundSettings', () => {
     const target = storage(JSON.stringify(DEFAULT_SOUND_SETTINGS));
     expect(resetSoundSettings('piece-1', target)).toEqual(DEFAULT_SOUND_SETTINGS);
     expect(target.removeItem).toHaveBeenCalledWith(soundSettingsKey('piece-1'));
+  });
+
+  it('maps authored sonic defaults into the visitor runtime baseline', () => {
+    const sonic = normalizeSonic({
+      tempo: 120,
+      scale: 'major',
+      extras: {
+        default_volume: 64,
+        synth: {
+          oscillator: 'square',
+          filter_type: 'highpass',
+          filter_cutoff: 900,
+          envelope: { attack: 0.2, decay: 0.4, sustain: 0.6, release: 0.8 },
+        },
+      },
+    });
+    expect(soundSettingsFromSonic(sonic)).toMatchObject({
+      soundVolume: 0.64,
+      ambientBpm: 120,
+      ambientScale: 'major',
+      keyboardVolume: 64,
+      keyboardOscillator: 'square',
+      keyboardFilterType: 'highpass',
+      keyboardFilterCutoff: 900,
+      keyboardAttack: 0.2,
+      keyboardRelease: 0.8,
+    });
   });
 });

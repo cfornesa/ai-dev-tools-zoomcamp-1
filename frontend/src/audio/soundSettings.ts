@@ -1,3 +1,5 @@
+import type { SonicDefaults } from './sonicContract';
+
 export const SOUND_SETTINGS_VERSION = 1;
 
 export const SOUND_SCALES = [
@@ -105,32 +107,49 @@ function isSoundSettings(value: unknown): value is SoundSettings {
   );
 }
 
-export function readSoundSettings(pieceId: string, storage?: Storage): SoundSettings {
+export function soundSettingsFromSonic(sonic?: SonicDefaults): SoundSettings {
+  const defaults = {
+    ...DEFAULT_SOUND_SETTINGS,
+    voiceInstruments: { ...DEFAULT_SOUND_SETTINGS.voiceInstruments },
+  };
+  if (!sonic) return defaults;
+  const synth = sonic.extras.synth;
+  return {
+    ...defaults,
+    soundVolume: sonic.extras.default_volume / 100,
+    ambientBpm: sonic.tempo,
+    ambientVolume: sonic.extras.default_volume,
+    ambientScale: sonic.scale,
+    keyboardVolume: sonic.extras.default_volume,
+    keyboardOscillator: synth.oscillator,
+    keyboardFilterType: synth.filter_type,
+    keyboardFilterCutoff: synth.filter_cutoff,
+    keyboardFilterResonance: synth.filter_resonance,
+    keyboardAttack: synth.envelope.attack,
+    keyboardDecay: synth.envelope.decay,
+    keyboardSustain: synth.envelope.sustain,
+    keyboardRelease: synth.envelope.release,
+    keyboardOctave: Math.max(-2, Math.min(2, synth.octave_min)),
+    voiceInstruments: { ...sonic.extras.voices },
+  };
+}
+
+export function readSoundSettings(
+  pieceId: string,
+  storage?: Storage,
+  fallback: SoundSettings = DEFAULT_SOUND_SETTINGS,
+): SoundSettings {
   const target = storage ?? (typeof window === 'undefined' ? undefined : window.localStorage);
-  if (!target)
-    return {
-      ...DEFAULT_SOUND_SETTINGS,
-      voiceInstruments: { ...DEFAULT_SOUND_SETTINGS.voiceInstruments },
-    };
+  if (!target) return { ...fallback, voiceInstruments: { ...fallback.voiceInstruments } };
   try {
     const raw = target.getItem(soundSettingsKey(pieceId));
-    if (!raw)
-      return {
-        ...DEFAULT_SOUND_SETTINGS,
-        voiceInstruments: { ...DEFAULT_SOUND_SETTINGS.voiceInstruments },
-      };
+    if (!raw) return { ...fallback, voiceInstruments: { ...fallback.voiceInstruments } };
     const parsed: unknown = JSON.parse(raw);
     if (!isSoundSettings(parsed))
-      return {
-        ...DEFAULT_SOUND_SETTINGS,
-        voiceInstruments: { ...DEFAULT_SOUND_SETTINGS.voiceInstruments },
-      };
+      return { ...fallback, voiceInstruments: { ...fallback.voiceInstruments } };
     return { ...parsed, voiceInstruments: { ...parsed.voiceInstruments } };
   } catch {
-    return {
-      ...DEFAULT_SOUND_SETTINGS,
-      voiceInstruments: { ...DEFAULT_SOUND_SETTINGS.voiceInstruments },
-    };
+    return { ...fallback, voiceInstruments: { ...fallback.voiceInstruments } };
   }
 }
 
@@ -148,15 +167,16 @@ export function writeSoundSettings(
   }
 }
 
-export function resetSoundSettings(pieceId: string, storage?: Storage): SoundSettings {
+export function resetSoundSettings(
+  pieceId: string,
+  storage?: Storage,
+  fallback: SoundSettings = DEFAULT_SOUND_SETTINGS,
+): SoundSettings {
   const target = storage ?? (typeof window === 'undefined' ? undefined : window.localStorage);
   try {
     target?.removeItem(soundSettingsKey(pieceId));
   } catch {
     // A blocked remove is also non-fatal; the next read still validates safely.
   }
-  return {
-    ...DEFAULT_SOUND_SETTINGS,
-    voiceInstruments: { ...DEFAULT_SOUND_SETTINGS.voiceInstruments },
-  };
+  return { ...fallback, voiceInstruments: { ...fallback.voiceInstruments } };
 }

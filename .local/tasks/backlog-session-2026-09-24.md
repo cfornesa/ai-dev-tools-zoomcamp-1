@@ -2921,3 +2921,55 @@ deferred.
 - Release boundary: `fd97055` records the refresh locally. It is not a
   production publish and requires the already-authorized safe push path before
   remote release; current production was not changed.
+
+## Distillation refresh 53 — 2026-09-25 — #844 IMPLEMENTATION GAP
+
+- Local Compose/browser inspection found a real #844 gap, not only a QA
+  boundary: `Project3DWorkspace` exposes `SonicDefaultsPanel`, but
+  `ArtPieceEditor` has no authored-sound panel for generated pieces. Generated
+  version metadata is persisted privately, yet `_version_data(..., public=True)`
+  does not expose a validated sonic block and the generated viewer/export path
+  therefore cannot start from authored defaults.
+- Existing #844 already owns this contract; no duplicate issue is needed. The
+  next closure-sized engineering slice is generated pieces only: add the
+  shared authored-sound editor to `ArtPieceEditor`, validate/normalize the
+  `generation_metadata.sonic` block server-side, expose only the normalized
+  block in public version data, initialize the generated viewer and ZIP runtime
+  from it, and preserve immutable version history/legacy defaults.
+- Routing: implementation-complex because it crosses the generated version API,
+  validation/business logic, editor persistence, viewer state initialization,
+  and export runtime. Focused frontend/backend tests plus `make check` are
+  required before QA. Structured-project behavior remains in scope only as
+  regression coverage; no migration is expected because version metadata is
+  already JSON-backed.
+- Exact next issue transaction: #844 (groom → engineer → qa-self-review →
+  reconcile). Dependent #841/#842/#852 and #853–#862 remain deferred until
+  this authored-default contract is terminal.
+
+## Transaction #844 — 2026-09-25 — QA PASS / RECONCILED
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+  The generated-piece authored-default gap was confirmed in the running local
+  stack and stayed within existing #844 scope; no duplicate issue was filed.
+- Engineer: COMPLETED. implementation-complex / Codex-GPT-5 / medium /
+  substituted: yes; rostered Ollama Cloud `kimi-k3` was unavailable. The
+  generated editor now exposes the shared authored Sound panel and saves
+  immutable versions with normalized `generation_metadata.sonic`; malformed
+  optional blocks are omitted, valid blocks are inherited on source-only
+  revisions, and public projections expose only normalized `sonic`. Viewer
+  activation, local reset, and Full/Non-Camera ZIP controls initialize from the
+  authored baseline. No migration or dependency was added.
+- QA self-review: PASS. qa-self-review / Codex-GPT-5 / medium / substituted: yes;
+  no independent-family second opinion ran. Focused backend tests (25), focused
+  frontend tests (66), typecheck, lint, formatting, and final `make check` all
+  passed. Active Chrome on disposable Compose verified editor display, BPM edit
+  and version-2 reload round-trip, public Sound activation preserving authored
+  120 BPM/major/64%/square/highpass/900 settings, and downloaded Full ZIP
+  contents containing the authored values. Evidence is local disposable
+  Compose + active Chrome only; it is not production evidence.
+- Reconcile: ACCEPTED-WITH-FIXES. The first browser pass exposed activation
+  overwriting authored volume with the sandbox's built-in 20% acknowledgement;
+  the implementation was returned to engineering, fixed, rebuilt, and the
+  browser pass repeated successfully. #844 can close for its implemented
+  generated-default contract; six-engine production/local workflow issues
+  remain separately scoped and deferred.

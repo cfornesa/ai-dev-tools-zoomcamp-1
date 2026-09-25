@@ -218,6 +218,53 @@ def test_publish_requires_meaningful_metadata_and_public_detail_hides_prompt(cli
     assert "source" in public.data["current_version"]
 
 
+def test_authored_sonic_metadata_is_normalized_inherited_and_publicly_projected(client):
+    sonic = {
+        "tempo": 240,
+        "scale": "major",
+        "instrument": "synth",
+        "extras": {"default_volume": 120, "synth": {"oscillator": "square"}},
+        "private": "drop",
+    }
+    response = client.post(
+        "/api/art-pieces/",
+        {
+            "prompt": "authored sound",
+            "engine": "p5js",
+            "source": "window.sketch = () => {};",
+            "title": "Authored sound",
+            "description": "A sound test",
+            "capabilities": {"sound": True, "keyboard": True},
+            "generation_metadata": {"sonic": sonic, "private": "keep-private"},
+        },
+        format="json",
+    )
+    assert response.status_code == 201
+    public_id = response.data["public_id"]
+    first = response.data["current_version"]["generation_metadata"]
+    assert first["sonic"]["tempo"] == 220
+    assert first["sonic"]["extras"]["default_volume"] == 100
+    assert "private" not in response.data["current_version"]
+
+    second = client.post(
+        f"/api/art-pieces/{public_id}/versions/",
+        {"source": "window.sketch = () => {};"},
+        format="json",
+    )
+    assert second.status_code == 201
+    assert second.data["generation_metadata"]["sonic"] == first["sonic"]
+    assert (
+        client.patch(
+            f"/api/art-pieces/{public_id}/", {"status": "published"}, format="json"
+        ).status_code
+        == 200
+    )
+    public = APIClient().get(f"/api/public/art-pieces/{public_id}/")
+    assert public.status_code == 200
+    assert public.data["current_version"]["sonic"]["tempo"] == 220
+    assert "generation_metadata" not in public.data["current_version"]
+
+
 def test_private_piece_is_not_confirmed_to_anonymous_or_other_user(client, owner):
     response = create_piece(client)
     public_id = response.data["public_id"]

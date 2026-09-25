@@ -92,4 +92,49 @@ describe('standalone art-piece runtime source', () => {
     expect(nonCamera).toContain("['attack', 'decay', 'sustain', 'release']");
     expect(full).toContain("byAction('microphone')");
   });
+
+  it('seeds the standalone audio graph from authored defaults', () => {
+    const source = buildStandaloneArtPieceRuntimeScript(
+      'canvas2d',
+      { sound: true, keyboard: true },
+      'full',
+      'regular',
+      'overlay',
+      {
+        tempo: 120,
+        root: 'C',
+        scale: 'major',
+        keyboard_scale: 'major',
+        transpose: 0,
+        instrument: 'synth',
+        feel: '',
+        extras: {
+          default_volume: 64,
+          voices: { ambient: 'synth', movement: 'synth', melodic: 'synth' },
+          synth: {
+            oscillator: 'square',
+            filter_type: 'highpass',
+            filter_cutoff: 900,
+            filter_resonance: 2,
+            octave_min: 3,
+            octave_max: 5,
+            envelope: { attack: 0.2, decay: 0.4, sustain: 0.6, release: 0.8 },
+            effects: {
+              distortion: 0,
+              chorus: 0,
+              tremolo: 0,
+              flanger: 0,
+              pitch_shift: 0,
+              bitcrusher: 0,
+            },
+          },
+        },
+      },
+    );
+    expect(source).toContain('var authoredSonic =');
+    expect(source).toContain('authoredSonic.tempo');
+    expect(source).toContain('authoredSonic.scale');
+    expect(source).toContain('authoredSynth.filter_type');
+    expect(() => new Function(scriptBody(source))).not.toThrow();
+  });
 });

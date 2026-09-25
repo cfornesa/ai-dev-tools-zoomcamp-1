@@ -20,6 +20,7 @@
  * (not just its CDN URLs) should be mirrored here.
  */
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
+import type { SonicDefaults } from '../audio/sonicContract';
 import type { ArtPieceExportMode, ArtPieceExportPresentation } from '../generative/artPieceBundle';
 
 const SPATIAL_LIBRARIES: ArtPieceLibrary[] = [
@@ -47,6 +48,7 @@ export function buildStandaloneArtPieceRuntimeScript(
   mode: ArtPieceExportMode,
   presentation: ArtPieceExportPresentation = 'regular',
   cameraPlacement: CameraPlacement = 'overlay',
+  sonic?: SonicDefaults,
 ): string {
   const includeSound = capabilities.sound === true;
   const includeKeyboard = capabilities.keyboard === true;
@@ -77,6 +79,7 @@ export function buildStandaloneArtPieceRuntimeScript(
   return `<script>
 (function () {
   var pieceLibrary = ${JSON.stringify(library)};
+  var authoredSonic = ${JSON.stringify(sonic ?? null)};
   var runtimeFailed = false;
   var runtimeReady = false;
   function reportRuntimeError(message) {
@@ -418,16 +421,18 @@ export function buildStandaloneArtPieceRuntimeScript(
   var audioCtx = null;
   var masterGain = null;
   var masterFilter = null;
-  var ambientBpm = 90;
-  var ambientVolume = 0.5;
+  var ambientBpm = authoredSonic && authoredSonic.tempo || 90;
+  var authoredVolume = authoredSonic && authoredSonic.extras && authoredSonic.extras.default_volume;
+  var ambientVolume = (typeof authoredVolume === 'number' ? authoredVolume : 50) / 100;
   var ambientMuted = false;
-  var ambientScale = 'pentatonic';
-  var melodicVolume = 0.5;
+  var ambientScale = authoredSonic && authoredSonic.scale || 'pentatonic';
+  var melodicVolume = (typeof authoredVolume === 'number' ? authoredVolume : 50) / 100;
   var melodicMuted = false;
   var keyboardEnabled = false;
-  var melodicOscillator = 'sine';
+  var melodicOscillator = authoredSonic && authoredSonic.extras && authoredSonic.extras.synth && authoredSonic.extras.synth.oscillator || 'sine';
   var melodicOctave = 0;
-  var melodicEnvelope = { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 };
+  var authoredSynth = authoredSonic && authoredSonic.extras && authoredSonic.extras.synth;
+  var melodicEnvelope = authoredSynth && authoredSynth.envelope || { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 };
   var voiceGains = { ambient: null, melodic: null };
   var ambientTimer = null;
   var ambientIndex = 0;
@@ -439,11 +444,11 @@ export function buildStandaloneArtPieceRuntimeScript(
       var Ctx = window.AudioContext || window.webkitAudioContext;
       audioCtx = new Ctx();
       masterGain = audioCtx.createGain();
-      masterGain.gain.value = 0.2;
+      masterGain.gain.value = (typeof authoredVolume === 'number' ? authoredVolume : 20) / 100;
       masterFilter = audioCtx.createBiquadFilter();
-      masterFilter.type = 'lowpass';
-      masterFilter.frequency.value = 2000;
-      masterFilter.Q.value = 1;
+      masterFilter.type = authoredSynth && authoredSynth.filter_type || 'lowpass';
+      masterFilter.frequency.value = authoredSynth && authoredSynth.filter_cutoff || 2000;
+      masterFilter.Q.value = authoredSynth && authoredSynth.filter_resonance || 1;
       voiceGains.ambient = audioCtx.createGain();
       voiceGains.melodic = audioCtx.createGain();
       voiceGains.ambient.gain.value = ambientVolume;

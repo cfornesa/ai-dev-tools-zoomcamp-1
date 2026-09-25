@@ -46,6 +46,7 @@
 import JSZip from 'jszip';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
+import type { SonicDefaults } from '../audio/sonicContract';
 import { webglCapturePrelude } from './artPieceSandbox';
 import { buildInkOverlayBlock } from './inkOverlay';
 import { buildStandaloneArtPieceRuntimeScript } from '../export/standaloneArtPieceRuntimeSource';
@@ -87,6 +88,7 @@ export type ArtPieceExportOptions = {
   cameraPlacement?: CameraPlacement | null;
   /** #776: the owner's ink layer, composited over the exported piece. */
   ink?: unknown;
+  sonic?: SonicDefaults;
 };
 
 export class ArtPieceBundleError extends Error {
@@ -336,6 +338,7 @@ function buildExportControls(
   mode: ArtPieceExportMode,
   presentation: ArtPieceExportPresentation,
   library: ArtPieceLibrary,
+  sonic?: SonicDefaults,
 ): string {
   const includeCamera = mode === 'full' && capabilities.camera_view === true;
   const includeSteering = mode === 'full' && capabilities.hand_steering === true;
@@ -356,6 +359,11 @@ function buildExportControls(
     'reset',
     ...(capabilities.fullscreen !== false ? (['fullscreen'] as const) : []),
   ];
+  const sonicSynth = sonic?.extras.synth;
+  const selected = (value: string, current: string) => (value === current ? ' selected' : '');
+  const ambientBpm = sonic?.tempo ?? 90;
+  const defaultVolume = sonic?.extras.default_volume ?? 50;
+  const ambientScale = sonic?.scale ?? 'pentatonic';
   const toolbar = renderExportStageToolbar({
     buttons,
     dataActions: true,
@@ -368,20 +376,20 @@ function buildExportControls(
   });
   const panelRows = [
     capabilities.sound === true
-      ? `<label for="art-piece-ambient-bpm">Ambient BPM: <output id="art-piece-ambient-bpm-value">90</output><input id="art-piece-ambient-bpm" type="range" min="40" max="220" value="90"></label>
-  <label for="art-piece-ambient-volume">Ambient volume: <output id="art-piece-ambient-volume-value">50%</output><input id="art-piece-ambient-volume" type="range" min="0" max="100" value="50"></label>
+      ? `<label for="art-piece-ambient-bpm">Ambient BPM: <output id="art-piece-ambient-bpm-value">${ambientBpm}</output><input id="art-piece-ambient-bpm" type="range" min="40" max="220" value="${ambientBpm}"></label>
+  <label for="art-piece-ambient-volume">Ambient volume: <output id="art-piece-ambient-volume-value">${defaultVolume}%</output><input id="art-piece-ambient-volume" type="range" min="0" max="100" value="${defaultVolume}"></label>
   <label for="art-piece-ambient-muted"><input id="art-piece-ambient-muted" type="checkbox"> Mute ambient</label>
-  <label for="art-piece-ambient-scale">Scale <select id="art-piece-ambient-scale"><option>major</option><option>minor</option><option selected>pentatonic</option><option>chromatic</option><option>dorian</option><option>phrygian</option><option>lydian</option><option>mixolydian</option><option>wholetone</option></select></label>
+  <label for="art-piece-ambient-scale">Scale <select id="art-piece-ambient-scale"><option${selected('major', ambientScale)}>major</option><option${selected('minor', ambientScale)}>minor</option><option${selected('pentatonic', ambientScale)}>pentatonic</option><option${selected('chromatic', ambientScale)}>chromatic</option><option${selected('dorian', ambientScale)}>dorian</option><option${selected('phrygian', ambientScale)}>phrygian</option><option${selected('lydian', ambientScale)}>lydian</option><option${selected('mixolydian', ambientScale)}>mixolydian</option><option${selected('wholetone', ambientScale)}>wholetone</option></select></label>
   <button type="button" id="art-piece-keyboard" aria-pressed="false">Keyboard notes</button>
-  <fieldset><legend>Keyboard synth</legend><label for="art-piece-keyboard-volume">Volume: <output id="art-piece-keyboard-volume-value">50%</output><input id="art-piece-keyboard-volume" type="range" min="0" max="100" value="50"></label>
-  <label for="art-piece-keyboard-oscillator">Oscillator <select id="art-piece-keyboard-oscillator"><option>sine</option><option>square</option><option>sawtooth</option><option>triangle</option></select></label>
-  <label for="art-piece-keyboard-filter-type">Filter type <select id="art-piece-keyboard-filter-type"><option>lowpass</option><option>highpass</option><option>bandpass</option></select></label>
-  <label for="art-piece-keyboard-filter-cutoff">Cutoff <input id="art-piece-keyboard-filter-cutoff" type="range" min="20" max="20000" step="20" value="2000"></label>
-  <label for="art-piece-keyboard-filter-resonance">Resonance <input id="art-piece-keyboard-filter-resonance" type="range" min="0.1" max="20" step="0.1" value="1"></label>
-  <label for="art-piece-keyboard-attack">Attack <input id="art-piece-keyboard-attack" type="range" min="0.001" max="10" step="0.001" value="0.01"></label>
-  <label for="art-piece-keyboard-decay">Decay <input id="art-piece-keyboard-decay" type="range" min="0.001" max="10" step="0.001" value="0.1"></label>
-  <label for="art-piece-keyboard-sustain">Sustain <input id="art-piece-keyboard-sustain" type="range" min="0" max="1" step="0.01" value="0.7"></label>
-  <label for="art-piece-keyboard-release">Release <input id="art-piece-keyboard-release" type="range" min="0.001" max="10" step="0.001" value="0.3"></label>
+  <fieldset><legend>Keyboard synth</legend><label for="art-piece-keyboard-volume">Volume: <output id="art-piece-keyboard-volume-value">${defaultVolume}%</output><input id="art-piece-keyboard-volume" type="range" min="0" max="100" value="${defaultVolume}"></label>
+  <label for="art-piece-keyboard-oscillator">Oscillator <select id="art-piece-keyboard-oscillator"><option${selected('sine', sonicSynth?.oscillator ?? 'sine')}>sine</option><option${selected('square', sonicSynth?.oscillator ?? 'sine')}>square</option><option${selected('sawtooth', sonicSynth?.oscillator ?? 'sine')}>sawtooth</option><option${selected('triangle', sonicSynth?.oscillator ?? 'sine')}>triangle</option></select></label>
+  <label for="art-piece-keyboard-filter-type">Filter type <select id="art-piece-keyboard-filter-type"><option${selected('lowpass', sonicSynth?.filter_type ?? 'lowpass')}>lowpass</option><option${selected('highpass', sonicSynth?.filter_type ?? 'lowpass')}>highpass</option><option${selected('bandpass', sonicSynth?.filter_type ?? 'lowpass')}>bandpass</option></select></label>
+  <label for="art-piece-keyboard-filter-cutoff">Cutoff <input id="art-piece-keyboard-filter-cutoff" type="range" min="20" max="20000" step="20" value="${sonicSynth?.filter_cutoff ?? 2000}"></label>
+  <label for="art-piece-keyboard-filter-resonance">Resonance <input id="art-piece-keyboard-filter-resonance" type="range" min="0.1" max="20" step="0.1" value="${sonicSynth?.filter_resonance ?? 1}"></label>
+  <label for="art-piece-keyboard-attack">Attack <input id="art-piece-keyboard-attack" type="range" min="0.001" max="10" step="0.001" value="${sonicSynth?.envelope.attack ?? 0.01}"></label>
+  <label for="art-piece-keyboard-decay">Decay <input id="art-piece-keyboard-decay" type="range" min="0.001" max="10" step="0.001" value="${sonicSynth?.envelope.decay ?? 0.1}"></label>
+  <label for="art-piece-keyboard-sustain">Sustain <input id="art-piece-keyboard-sustain" type="range" min="0" max="1" step="0.01" value="${sonicSynth?.envelope.sustain ?? 0.7}"></label>
+  <label for="art-piece-keyboard-release">Release <input id="art-piece-keyboard-release" type="range" min="0.001" max="10" step="0.001" value="${sonicSynth?.envelope.release ?? 0.3}"></label>
   <label for="art-piece-keyboard-octave">Octave: <output id="art-piece-keyboard-octave-value">0</output><input id="art-piece-keyboard-octave" type="range" min="-2" max="2" step="1" value="0"></label></fieldset>`
       : '',
     includeMicrophone
@@ -494,7 +502,13 @@ function buildIndexHtml(
     // these aren't split further.
     body = exportCode;
   }
-  const controls = buildExportControls(options.capabilities ?? {}, mode, presentation, library);
+  const controls = buildExportControls(
+    options.capabilities ?? {},
+    mode,
+    presentation,
+    library,
+    options.sonic,
+  );
   // The runtime script (defines window.__registerArtPieceCamera among
   // other globals) must load before scripts/piece.js, which calls it --
   // same execution-order requirement buildArtPieceSandboxDocument
@@ -505,6 +519,7 @@ function buildIndexHtml(
     mode,
     presentation,
     options.cameraPlacement ?? 'overlay',
+    options.sonic,
   );
   // Issue #437: must be the first script in the document -- before the
   // CDN/vendored runtime and before scripts/piece.js -- so no generated

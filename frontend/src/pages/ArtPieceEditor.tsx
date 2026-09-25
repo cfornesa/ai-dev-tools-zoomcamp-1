@@ -36,6 +36,8 @@ import PieceSlugField from '../components/PieceSlugField';
 import GeneratedInkPanel, { type InkRequest } from '../components/GeneratedInkPanel';
 import type { InkTool } from '../ink/inkModel';
 import Generated3DManualTools from '../components/Generated3DManualTools';
+import SonicDefaultsPanel from './SonicDefaultsPanel';
+import { normalizeSonic, type SonicDefaults } from '../audio/sonicContract';
 import {
   appendGenerated3DPrimitive,
   applyGenerated3DTransform,
@@ -144,6 +146,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [capabilities, setCapabilities] = useState<ArtPieceCapabilitySet>({});
   const [cameraPlacement, setCameraPlacement] = useState<CameraPlacement>('overlay');
+  const [sonic, setSonic] = useState<SonicDefaults | undefined>();
   const [versionSaving, setVersionSaving] = useState(false);
   const [versionSaveError, setVersionSaveError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -171,6 +174,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       setDescription(initialPiece.description);
       setCapabilities(initialPiece.current_version?.capabilities ?? {});
       setCameraPlacement(initialPiece.current_version?.camera_placement ?? 'overlay');
+      setSonic(normalizeSonic(initialPiece.current_version?.generation_metadata?.sonic));
       return;
     }
     Promise.all([getArtPiece(id), listArtPieceVersions(id)])
@@ -181,6 +185,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         setDescription(loadedPiece.description);
         setCapabilities(loadedPiece.current_version?.capabilities ?? {});
         setCameraPlacement(loadedPiece.current_version?.camera_placement ?? 'overlay');
+        setSonic(normalizeSonic(loadedPiece.current_version?.generation_metadata?.sonic));
       })
       .catch(() => setLoadError(true));
   }, [id, auth.status, initialPiece]);
@@ -406,9 +411,14 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         source: reviseCode,
         capabilities: sanitizeCapabilities(capabilities, piece.engine),
         camera_placement: cameraPlacement,
+        generation_metadata: {
+          ...(piece.current_version?.generation_metadata ?? {}),
+          sonic,
+        },
       });
       setVersions((current) => [...current, version]);
       setPiece((current) => (current ? { ...current, current_version: version } : current));
+      setSonic(normalizeSonic(version.generation_metadata?.sonic));
       // Issue #438: the revision preview iframe is still rendered right
       // now (handleSaveVersion is only reachable from revisePhase ===
       // 'ready') -- capture a real thumbnail from it before clearing it.
@@ -420,6 +430,30 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       setPrompt('');
     } catch {
       setVersionSaveError('Could not save this version. Please try again.');
+    } finally {
+      setVersionSaving(false);
+    }
+  }
+
+  async function handleSaveSoundDefaults() {
+    if (!id || !piece || versionSaving) return;
+    setVersionSaving(true);
+    setVersionSaveError(null);
+    try {
+      const version = await createArtPieceVersion(id, {
+        source: piece.current_version?.source ?? '',
+        capabilities: sanitizeCapabilities(capabilities, piece.engine),
+        camera_placement: cameraPlacement,
+        generation_metadata: {
+          ...(piece.current_version?.generation_metadata ?? {}),
+          sonic: sonic ?? normalizeSonic({}),
+        },
+      });
+      setVersions((current) => [...current, version]);
+      setPiece((current) => (current ? { ...current, current_version: version } : current));
+      setSonic(normalizeSonic(version.generation_metadata?.sonic));
+    } catch {
+      setVersionSaveError('Could not save the sound defaults. Please try again.');
     } finally {
       setVersionSaving(false);
     }
@@ -540,6 +574,17 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           }
         }}
       />
+      <details className="editor-sound-details">
+        <summary>Sound</summary>
+        <SonicDefaultsPanel value={sonic} onChange={setSonic} />
+        <button
+          type="button"
+          onClick={() => void handleSaveSoundDefaults()}
+          disabled={versionSaving}
+        >
+          {versionSaving ? 'Saving sound defaults…' : 'Save sound defaults'}
+        </button>
+      </details>
       {engineCapability.family === '2d' && !reviseCode && (
         <p>
           <button

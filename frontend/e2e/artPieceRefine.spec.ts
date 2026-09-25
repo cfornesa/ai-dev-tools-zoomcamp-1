@@ -30,7 +30,7 @@ test.describe('generated art-piece refinement (#663)', () => {
         '<canvas id="art-piece-canvas" data-augmentr-part="background"></canvas>' +
         '<script>// @augmentr-part particles\n// @augmentr-asset logo.png\n' +
         "const color = 'teal'; const c = document.getElementById('art-piece-canvas'); " +
-        'const ctx = c.getContext(\'2d\'); ctx.fillStyle = color; ' +
+        "const ctx = c.getContext('2d'); ctx.fillStyle = color; " +
         'ctx.fillRect(0, 0, 320, 180);</script>';
       const created = await apiPost(context, '/api/art-pieces/', {
         title: 'Refinement fixture',
@@ -113,10 +113,7 @@ test.describe('generated art-piece refinement (#663)', () => {
     await page.getByRole('button', { name: 'Refine piece' }).click();
     await expect(page.getByTestId('art-piece-refine-accepted')).toBeVisible();
 
-    const versionsResponse = await apiGet(
-      context,
-      `/api/art-pieces/${piece.public_id}/versions/`,
-    );
+    const versionsResponse = await apiGet(context, `/api/art-pieces/${piece.public_id}/versions/`);
     expect(versionsResponse.ok()).toBe(true);
     const versions = (await versionsResponse.json()) as Array<{
       sequence: number;

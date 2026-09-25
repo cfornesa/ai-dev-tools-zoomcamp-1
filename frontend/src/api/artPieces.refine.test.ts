@@ -16,16 +16,10 @@ describe('refineArtPiece mentions', () => {
   });
 
   it('sends structured mention kinds and ids in the refine payload', async () => {
-    await refineArtPiece(
-      'piece-1',
-      'make it warmer',
-      ['Sky'],
-      undefined,
-      [
-        { kind: 'region', id: 'Sky' },
-        { kind: 'ink', id: 'ink' },
-      ],
-    );
+    await refineArtPiece('piece-1', 'make it warmer', ['Sky'], undefined, [
+      { kind: 'region', id: 'Sky' },
+      { kind: 'ink', id: 'ink' },
+    ]);
     const request = vi.mocked(fetch).mock.calls[0]?.[1];
     expect(JSON.parse(String(request?.body))).toMatchObject({
       instruction: 'make it warmer',

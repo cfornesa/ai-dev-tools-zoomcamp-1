@@ -15,7 +15,11 @@ function markedOptions(source: string, pattern: RegExp, type: 'part' | 'media'):
       id,
       label: id,
       type,
-      mentionKind: type === 'media' ? 'asset' : 'element',
+      // Legacy @augmentr-part markers predate structured mentions and are
+      // valid target references for every generated engine. Structured
+      // `element` mentions are reserved for the SVG id discovery below,
+      // where the backend can resolve an actual SVG element safely.
+      mentionKind: type === 'media' ? 'asset' : undefined,
       category: type === 'part' ? 'Parts' : 'Assets',
       descendantIds: [id],
     });

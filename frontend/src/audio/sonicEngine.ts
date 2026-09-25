@@ -47,6 +47,19 @@ export type SonicFilterSettings = {
   cutoff: number;
   resonance: number;
 };
+export type SonicEnvelopeSettings = {
+  attack: number;
+  decay: number;
+  sustain: number;
+  release: number;
+};
+export type MelodicSynthSettings = {
+  oscillator: 'sine' | 'square' | 'sawtooth' | 'triangle';
+  envelope: SonicEnvelopeSettings;
+  filter: SonicFilterSettings;
+  octaveShift: number;
+};
+export type MelodicSynthUpdate = { applied: string[]; unsupported: string[] };
 
 export const SONIC_INSTRUMENT_OPTIONS: ReadonlyArray<{
   value: SonicInstrument;
@@ -146,6 +159,8 @@ export interface SonicEngine {
   setVoiceMuted(voice: SonicVoice, muted: boolean): void;
   /** Updates the shared master filter without rebuilding the voice graph. */
   setFilter(settings: SonicFilterSettings): boolean;
+  /** Applies live keyboard-voice synth settings and reports unsupported fields. */
+  setMelodicSynth(settings: MelodicSynthSettings): MelodicSynthUpdate;
   /** Replaces one voice's instrument without changing the other voices. */
   setVoiceInstrument(voice: SonicVoice, instrument: SonicInstrument): boolean;
   /** Called every frame by the 3D preview's own render loop with the
@@ -190,6 +205,7 @@ export function createSonicEngine(
   let tone: ToneModule | null = null;
   let bus: InstanceType<ToneModule['Volume']> | null = null;
   let filter: InstanceType<ToneModule['Filter']> | null = null;
+  let melodicFilter: InstanceType<ToneModule['Filter']> | null = null;
   type VoiceBus = InstanceType<ToneModule['Volume']>;
   const voiceBuses: Record<SonicVoice, VoiceBus | null> = {
     ambient: null,
@@ -201,6 +217,7 @@ export function createSonicEngine(
     triggerAttackRelease(note: string, duration: string, time?: number): void;
     triggerAttack(note: string): void;
     triggerRelease(): void;
+    set?(values: unknown): void;
     dispose(): void;
     volume: { value: number };
     frequency: { rampTo(value: number, duration?: number): void };
@@ -220,6 +237,12 @@ export function createSonicEngine(
   let tempo = DEFAULT_TEMPO;
   let scale: SonicScale = DEFAULT_SCALE;
   let filterSettings: SonicFilterSettings = { type: 'lowpass', cutoff: 2000, resonance: 1 };
+  let melodicSynthSettings: MelodicSynthSettings = {
+    oscillator: 'sine',
+    envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 },
+    filter: { type: 'lowpass', cutoff: 2000, resonance: 1 },
+    octaveShift: 0,
+  };
   const voiceVolumes: Record<SonicVoice, number> = { ambient: 100, movement: 100, melodic: 100 };
   const voiceMuted: Record<SonicVoice, boolean> = { ambient: false, movement: false, melodic: false };
 
@@ -235,6 +258,11 @@ export function createSonicEngine(
       voiceBuses.ambient = new tone.Volume(0).connect(bus);
       voiceBuses.movement = new tone.Volume(0).connect(bus);
       voiceBuses.melodic = new tone.Volume(0).connect(bus);
+      melodicFilter = new tone.Filter(
+        melodicSynthSettings.filter.cutoff,
+        melodicSynthSettings.filter.type,
+      ).connect(voiceBuses.melodic);
+      melodicFilter.Q.value = melodicSynthSettings.filter.resonance;
       setVoiceVolume('ambient', voiceVolumes.ambient);
       setVoiceVolume('movement', voiceVolumes.movement);
       setVoiceVolume('melodic', voiceVolumes.melodic);
@@ -271,6 +299,7 @@ export function createSonicEngine(
     melodicSynth?.dispose();
     bus?.dispose();
     filter?.dispose();
+    melodicFilter?.dispose();
     voiceBuses.ambient?.dispose();
     voiceBuses.movement?.dispose();
     voiceBuses.melodic?.dispose();
@@ -281,6 +310,7 @@ export function createSonicEngine(
     melodicSynth = null;
     bus = null;
     filter = null;
+    melodicFilter = null;
     voiceBuses.ambient = null;
     voiceBuses.movement = null;
     voiceBuses.melodic = null;
@@ -363,7 +393,8 @@ export function createSonicEngine(
                 : instrument === 'duosynth'
                   ? new tone.DuoSynth()
                   : new tone.Synth();
-    return synth.connect(voiceBus) as unknown as VoiceSynth;
+    const destination = voice === 'melodic' && melodicFilter ? melodicFilter : voiceBus;
+    return synth.connect(destination) as unknown as VoiceSynth;
   }
 
   function setVoiceInstrument(voice: SonicVoice, instrument: SonicInstrument): boolean {
@@ -400,7 +431,54 @@ export function createSonicEngine(
   }
 
   function triggerMelodicNote(note: string) {
-    melodicSynth?.triggerAttackRelease(note, '8n');
+    melodicSynth?.triggerAttackRelease(shiftNoteOctave(note, melodicSynthSettings.octaveShift), '8n');
+  }
+
+  function shiftNoteOctave(note: string, shift: number): string {
+    return note.replace(/^([A-G](?:#|b)?)(-?\d+)$/, (_, pitch: string, octave: string) => {
+      return `${pitch}${Number(octave) + shift}`;
+    });
+  }
+
+  function setMelodicSynth(settings: MelodicSynthSettings): MelodicSynthUpdate {
+    const clampedEnvelope = {
+      attack: Math.min(10, Math.max(0.001, settings.envelope.attack)),
+      decay: Math.min(10, Math.max(0.001, settings.envelope.decay)),
+      sustain: Math.min(1, Math.max(0, settings.envelope.sustain)),
+      release: Math.min(10, Math.max(0.001, settings.envelope.release)),
+    };
+    melodicSynthSettings = {
+      ...settings,
+      envelope: clampedEnvelope,
+      filter: {
+        type: settings.filter.type,
+        cutoff: Math.min(20000, Math.max(20, settings.filter.cutoff)),
+        resonance: Math.min(20, Math.max(0.1, settings.filter.resonance)),
+      },
+      octaveShift: Math.min(2, Math.max(-2, Math.round(settings.octaveShift))),
+    };
+    const unsupported: string[] = [];
+    const applied: string[] = [];
+    const percussion = ['membranesynth', 'metalsynth', 'plucksynth'].includes(voiceInstruments.melodic);
+    if (percussion) {
+      unsupported.push('oscillator', 'envelope');
+    } else if (melodicSynth && 'set' in melodicSynth) {
+      (melodicSynth as VoiceSynth & { set: (values: unknown) => void }).set({
+        oscillator: { type: melodicSynthSettings.oscillator },
+        envelope: melodicSynthSettings.envelope,
+      });
+      applied.push('oscillator', 'envelope');
+    }
+    if (melodicFilter) {
+      melodicFilter.type = melodicSynthSettings.filter.type;
+      melodicFilter.frequency.value = melodicSynthSettings.filter.cutoff;
+      melodicFilter.Q.value = melodicSynthSettings.filter.resonance;
+      applied.push('filter');
+    } else {
+      unsupported.push('filter');
+    }
+    applied.push('octaveShift');
+    return { applied, unsupported };
   }
 
   async function connectMic(): Promise<void> {
@@ -466,6 +544,7 @@ export function createSonicEngine(
     setVoiceVolume,
     setVoiceMuted,
     setFilter,
+    setMelodicSynth,
     setVoiceInstrument,
     reportMovement,
     triggerMelodicNote,

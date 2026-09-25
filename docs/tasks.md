@@ -24017,5 +24017,5 @@ Addendum 6 update: #814 closed; added #817-#821 (see distillation doc). Still di
 |---|---|---|---|
 | #825 | Replit launcher avoids frontend/backend `PORT=8000` collision | 2a | implementation complete; production publish retry failed, remains OPEN |
 | #826 | Replit production health probe avoids internal HTTPS redirect startup failure | 2b | criterion-ready; blocks exact-revision production verification |
-| #827 | Production immersive 3D surface moves identity above stage and restores reference spacing | 2a | criterion-ready; dependency-blocked on #826 publish |
+| #827 | Production immersive 3D surface moves identity above stage and restores reference spacing | 2a | criterion-ready; dependency-blocked on #828 production schema reconciliation |
 | #828 | Production schema missing PublicProfile image-data columns after publish | 2b | criterion-ready; Replit revision `da0ce0fb` logs `UndefinedColumn`; owner authorization required before production schema mutation |

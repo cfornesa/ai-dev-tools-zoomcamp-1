@@ -1579,3 +1579,15 @@ first-party keyframes, z-index/readability contract, two-viewport screenshots,
 and two-second animation change all passed. #798 remains the separate
 reduced-motion/low-power/profile-style transaction. QA PASS closed #807; no
 production rollout was authorized or performed.
+
+## 2026-09-25 — Public 2D presentation parity (#802/#822)
+
+#802's browser parity run exposed that public generated-piece projections omit
+all `generation_metadata`, preventing the viewer from preserving a declared
+canvas ratio. Duplicate search found no existing issue, so the data boundary
+was split into #822. Commit `076a7a2` adds a narrow public `presentation`
+projection (aspect ratio or positive dimensions only), keeps full owner
+metadata private, and makes regular/immersive/embed stages use the same ratio.
+The six-engine Chromium matrix passed at 1280x900 and 375x812; full `make
+check` passed. #802 and #822 were QA PASS closed with local-only evidence; no
+production rollout was authorized.

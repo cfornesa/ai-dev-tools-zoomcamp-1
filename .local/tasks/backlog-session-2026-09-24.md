@@ -731,3 +731,52 @@ deferred.
 - Next routing is #799. Its four-engine online/ZIP scope remains broad but has
   one matrix and one named parity command; groom it as a single Stage 2b
   transaction unless implementation reveals a separate backend contract.
+
+## #822 transaction — 2026-09-25
+
+- Groom: discovery from #802 found no duplicate for the public serializer gap;
+  #822 was created and linked as the required Stage 2b split. Scope is limited
+  to an allowlisted public presentation projection; #802 remains the browser
+  route/CSS owner.
+- Engineering: Stage 2b complex routing was required by the public data
+  projection. Rostered service/model/effort: Ollama Cloud / Kimi K3 / medium;
+  Codex / GPT-5 / medium substituted. Commit `076a7a2` documents the additive
+  contract, projects safe aspect metadata, preserves owner metadata, and adds
+  backend/canonical tests. No migration or production data action.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Focused persistence/canonical tests passed 39; full
+  `make check` passed backend 1693/39 skipped and frontend 277 files/2976
+  tests. Frontend typecheck, format, and lint passed with existing warnings.
+- Reconciliation: QA PASS comment posted and #822 closed. Evidence is local
+  test/Compose only; no production rollout was authorized or performed.
+
+## #802 transaction — 2026-09-25
+
+- Groom: criterion-ready Stage 2a browser parity issue; implementation exposed
+  the separate public metadata serializer gap, which was split to #822 after
+  duplicate search. Named `presentationIdentity2d.spec.ts` is absent; the
+  existing regular/immersive/embed six-engine suites are the equivalent
+  coverage and were strengthened with ratio assertions and per-engine
+  screenshots.
+- Engineering: Stage 2a frontend routing rostered Opencode Go / Kimi K3 /
+  medium; Codex / GPT-5 / medium substituted. Commit `076a7a2` consumes the
+  #822 presentation projection, removes route-specific max-height/fixed-height
+  distortion, and captures six-engine evidence at 1280x900 and 375x812.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Rebuilt disposable Compose; Chromium matrix passed 3/3
+  suites covering six engines across regular, immersive, and embed routes.
+  Measured 4:3 boxes were 1230x922.5 at desktop and 341x255.75 at mobile;
+  representative screenshots were inspected. Full `make check` passed.
+- Reconciliation: QA PASS comment posted and #802 closed. Evidence is local
+  disposable Compose only; no production rollout was authorized or performed.
+
+## Distillation refresh 18 — 2026-09-25 continuation
+
+- #802 and #822 are terminal CLOSED/QA PASS. Current open inventory is #748,
+  #788, and #799–#801, #804–#806: 8 issues.
+- Duplicate/follow-up audit: #822 is the only new serializer split from #802;
+  no additional issue was found. #802's absent named spec is a documentation
+  boundary, not a product gap, because equivalent six-engine suites now assert
+  the same criteria.
+- Next routing is #799. Production authorization remains limited to #748,
+  #788, and the already-authorized #748 live verification sequence.

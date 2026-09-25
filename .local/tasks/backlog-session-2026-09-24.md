@@ -2783,3 +2783,27 @@ deferred.
 - Reconcile: OPEN / dependency-blocked. QA comment:
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/852#issuecomment-5833425113
   records the matrix and local-only check boundary.
+
+## Transaction #788 — 2026-09-25 — DEPENDENCY-BLOCKED / OPEN
+
+- Groom: ACCEPTED as an authorized production-data transaction;
+  task-distillation / Codex-GPT-5 / medium / substituted: yes. Command
+  behavior was inspected, including `--allow-production`, `--dry-run`, atomic
+  import, idempotence, and the marked-fixture update path. No duplicate was
+  found.
+- Engineer: NOT REQUIRED. Stage owner implementation-complex;
+  Codex/GPT-5 / low / substituted: yes. A disposable PostgreSQL rehearsal
+  passed: dry-run planned six fixtures without writes; a real rehearsal then
+  created six marked fixtures and cleanup removed six. No production code or
+  data was changed.
+- QA self-review: BLOCKED. Stage owner qa-self-review; Codex/GPT-5 / low /
+  substituted: yes. Replit Agent confirmed the visible shell is development-
+  only, production deployments have no interactive shell, and the production
+  startup wrapper's opt-in importer does not support a dry-run argument. It
+  was not enabled because doing so would skip the required preview gate.
+- Reconcile: OPEN / dependency-blocked. Fresh production snapshot comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5833398215
+  QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5833447525
+  Live public API still reports C2 version 5 sequence 1 and C2 Interactive
+  version 6 sequence 1 with the snapshotted pre-import sources.

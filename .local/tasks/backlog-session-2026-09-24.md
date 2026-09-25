@@ -3265,4 +3265,48 @@ deferred.
   warnings.
 - Evidence boundary: disposable local Compose + active Chrome from the
   implementation checkout; no production evidence or data write.
-- Reconcile: ready to post `## QA: PASS`, close #868, commit, and push.
+- Reconcile: QA PASS comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/868#issuecomment-5835262734`;
+  issue closed; commit `6026d19` pushed to `origin/main`.
+
+## Distillation refresh 64 — 2026-09-25 — RESELECT #841
+
+- #868 is terminalized and pushed. Duplicate audit found no new issue beyond
+  the scoped structured-2D layout defect already linked to #841.
+- #841 is now the next reconciliation target: its parent/sandbox contract is
+  implemented, both current-checkout fixtures have active-Chrome interaction
+  evidence at 1280x900 and 375x812, and #867/#868 resolved the generated and
+  structured-2D layout defects discovered during that evidence pass.
+- The named Playwright criterion cannot run on this macOS host because the
+  configured Chromium process fails before test execution; owner-approved
+  active Chrome is the documented browser-evidence substitution. Keep that
+  provenance explicit in QA and do not claim Playwright execution.
+
+## Transaction #841 — 2026-09-25 — QA PASS / CLOSED
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+- Engineer: COMPLETED at `aa3d691`; follow-up responsive/layout defects were
+  implemented and closed as #867 (`8d63449`) and #868 (`6026d19`).
+- QA self-review: PASS within the approved evidence boundary. The parent and
+  sandbox validators and focused bridge tests pass. Active Chrome verified the
+  generated p5 and structured 2D fixtures at 1280x900 and 375x812, including
+  Sound activation, BPM, scale, and keyboard interactions; screenshots were
+  inspected and browser error logs were empty. The structured 2D immersive
+  criterion is N/A because its declared capability is `immersive=false`.
+  Playwright was not claimed because Chromium failed before execution on this
+  macOS host; owner-approved active Chrome was the browser substitution.
+- Exact gate: `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` — PASS,
+  backend 1710 passed / 39 skipped; frontend 280 files / 3014 tests passed.
+- Reconcile: QA PASS comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/841#issuecomment-5835285625`;
+  issue closed. Evidence remains local-only; no production claim.
+
+## Distillation refresh 65 — 2026-09-25 — SELECT #842
+
+- #841 is terminalized. Duplicate audit found no new issue for the sound bridge
+  controls. #842 is the next independent implementation/verification slice:
+  exported ZIP runtime behavior, with no production data action.
+- Route #842 through groom → inspect existing export/runtime implementation →
+  active-Chrome verification on the disposable local fixture → QA/reconcile.
+  Preserve the evidence boundary and create a new linked issue only if the
+  browser pass discovers a distinct implementation defect.

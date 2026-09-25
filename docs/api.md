@@ -1,5 +1,18 @@
 # Public gallery API contract
 
+## Public collection download (#823)
+
+`GET /api/public/collections/<handle>/<slug>/download/` is an anonymous,
+publication-gated additive endpoint. For a published collection it returns an
+`application/zip` attachment named `<slug>.zip` containing
+`collection.json`, a complete ordered public collection manifest with the
+collection metadata and visibility-safe item records (titles, kinds, viewer
+URLs, and thumbnail URLs). Private, deleted, missing, and unpublished
+collections return the same privacy-preserving `404` as the public detail
+route. Historical collection slugs permanently redirect to the canonical
+download URL. The endpoint never includes private source, prompt, credential,
+or unpublished item data.
+
 ## AI art-piece generation Persona context (#743)
 
 `POST /api/ai/art-pieces/generate/` accepts the optional owner-scoped

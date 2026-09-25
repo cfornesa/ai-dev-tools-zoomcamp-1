@@ -823,3 +823,23 @@ deferred.
 - Handoff: do not push/publish this checkout. Next action is process #799,
   then #800/#801/#804/#805, and execute #748/#788 only under their existing
   owner authorization before #806 verification.
+
+## Distillation refresh 19 — 2026-09-26 continuation
+
+- Current authoritative open inventory is #823, #805, #748, #788, and #806.
+  #800 and #804 are CLOSED with QA PASS comments; #804 produced the linked
+  #823 follow-up and no duplicate was found.
+- #823 is criterion-ready and dependency-independent. Its public collection
+  detail route is the next transaction; the complete-download behavior is an
+  additive public endpoint and therefore routes through Stage 2b. The exact
+  fixture, finite criteria, command, and local-only boundary are in #823.
+- #805 is the next independent audit after #823. #806 remains dependent on
+  the authorized publish/verification sequence; #748 must precede #788 and
+  #806. Production authorization remains limited to #748, #788, and #748's
+  live verification sequence.
+- Duplicate report: searched GitHub history and repository task records for
+  collection download/count and profile parity; only #823 covers the newly
+  identified collection detail gap. Closed collection issues remain closed.
+- Distillation provenance: Codex / GPT-5 / medium, supported distillation
+  profile; no external service substitution. No product source or test was
+  changed during this refresh.

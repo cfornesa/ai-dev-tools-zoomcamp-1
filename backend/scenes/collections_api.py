@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from django.http import HttpResponsePermanentRedirect
+import io
+import json
+import zipfile
+
+from django.http import HttpResponse, HttpResponsePermanentRedirect
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -162,3 +166,29 @@ class PublicCollectionDetailView(APIView):
                 )
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         return Response(collection_payload(collection, public=True))
+
+
+class PublicCollectionDownloadView(APIView):
+    """Download a visibility-safe ordered manifest for a public collection."""
+
+    def get(self, request, handle, slug):
+        collection = public_collection(handle=handle, slug=slug)
+        if collection is None:
+            redirected_collection = public_collection_redirect(handle=handle, slug=slug)
+            if redirected_collection:
+                return HttpResponsePermanentRedirect(
+                    f"/api/public/collections/{handle}/{redirected_collection.slug}/download/"
+                )
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        manifest = json.dumps(
+            collection_payload(collection, public=True),
+            ensure_ascii=False,
+            indent=2,
+        ).encode("utf-8")
+        archive = io.BytesIO()
+        with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
+            bundle.writestr("collection.json", manifest)
+        response = HttpResponse(archive.getvalue(), content_type="application/zip")
+        response["Content-Disposition"] = f'attachment; filename="{collection.slug}.zip"'
+        return response

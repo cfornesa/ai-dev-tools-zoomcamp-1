@@ -1,8 +1,10 @@
 """Owner collection domain/API tests for #567."""
 
 import copy
+import io
 import json
 from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -295,6 +297,43 @@ def test_public_collection_is_ordered_and_filters_items_that_become_private(
     )
     assert response.status_code == 200
     assert [item["kind"] for item in response.json()["items"]] == ["art_piece"]
+
+
+@pytest.mark.django_db
+def test_public_collection_download_is_a_visibility_safe_ordered_zip(
+    owner_client, anonymous_client, owner
+):
+    collection = _create_collection(owner_client, "Download collection")
+    project = _published_project(owner, "Download project")
+    assert (
+        owner_client.post(
+            f"/api/account/collections/{collection['id']}/items/",
+            {"items": [{"kind": "project", "id": str(project.public_id)}]},
+            format="json",
+        ).status_code
+        == 200
+    )
+    assert (
+        owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+        == 200
+    )
+
+    response = anonymous_client.get(
+        f"/api/public/collections/collection-owner/{collection['slug']}/download/"
+    )
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/zip"
+    assert response["Content-Disposition"] == 'attachment; filename="download-collection.zip"'
+    with ZipFile(io.BytesIO(response.content)) as archive:
+        manifest = json.loads(archive.read("collection.json"))
+    assert manifest["title"] == "Download collection"
+    assert [item["title"] for item in manifest["items"]] == ["Download project"]
+    assert (
+        anonymous_client.get(
+            "/api/public/collections/collection-owner/missing/download/"
+        ).status_code
+        == 404
+    )
 
 
 @pytest.mark.django_db

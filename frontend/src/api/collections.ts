@@ -27,6 +27,7 @@ export type Collection = {
   canonical_url?: string | null;
   immersive_url?: string | null;
   embed_url?: string | null;
+  download_url?: string | null;
 };
 
 export function fetchCollections() {

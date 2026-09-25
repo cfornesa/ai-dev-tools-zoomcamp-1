@@ -114,6 +114,7 @@ export default function PublicCollection() {
           </Link>
         </p>
         <h2 id="public-collection-heading">{collection.title}</h2>
+        <p className="page-kind">{collection.items.length} items</p>
         {collection.description && <p>{collection.description}</p>}
         <div className="public-collection-actions" aria-label="Collection actions">
           <button
@@ -165,6 +166,16 @@ export default function PublicCollection() {
           ))}
         </ol>
       )}
+      <p className="public-collection-download">
+        <a
+          href={
+            collection.download_url ??
+            `/api/public/collections/${handle}/${collection.slug}/download/`
+          }
+        >
+          Download complete collection
+        </a>
+      </p>
     </section>
   );
 }

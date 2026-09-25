@@ -142,6 +142,11 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
         "embed_url": (
             f"/embed/collections/@{profile.handle}/{collection.slug}" if profile else None
         ),
+        "download_url": (
+            f"/api/public/collections/{profile.handle}/{collection.slug}/download/"
+            if public and profile
+            else None
+        ),
     }
 
 

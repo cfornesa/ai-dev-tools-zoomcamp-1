@@ -108,6 +108,7 @@ from scenes.collections_api import (
     CollectionSnapshotView,
     CollectionVisibilityView,
     PublicCollectionDetailView,
+    PublicCollectionDownloadView,
 )
 from scenes.pages_api import PublicPageDetailView, PublicPageNavigationView
 from scenes.profile_api import AccountProfileView, PublicProfileView
@@ -268,6 +269,11 @@ urlpatterns = [
         "public/collections/<str:handle>/<slug:slug>/",
         PublicCollectionDetailView.as_view(),
         name="public-collection-detail",
+    ),
+    path(
+        "public/collections/<str:handle>/<slug:slug>/download/",
+        PublicCollectionDownloadView.as_view(),
+        name="public-collection-download",
     ),
     path("users/@<str:handle>/", PublicProfileView.as_view(), name="public-profile"),
     path(

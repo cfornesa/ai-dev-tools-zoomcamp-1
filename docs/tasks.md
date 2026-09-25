@@ -1,5 +1,9 @@
 # AugmentrART Backlog
 
+## 2026-09-26 — active follow-up batch
+
+- [#823](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/823) — **PROPOSED / next:** public collection detail item count and complete ZIP download. Entry point: `/users/@handle/collections/:slug`; fixture: three published ordered collection items; routing: Stage 2b because the complete download requires an additive public endpoint, then Stage 4 browser QA. Exact check: `E2E_DOCKER_COMPOSE=true npx playwright test e2e/publicCollectionDownload.spec.ts --project=chromium`. Production is out of scope.
+
 ## 2026-09-24 — active follow-up batch (#747, #748, #788, #798–#808)
 
 The current authoritative transaction ledger is

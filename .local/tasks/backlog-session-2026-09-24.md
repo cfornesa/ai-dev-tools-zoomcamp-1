@@ -2512,3 +2512,30 @@ deferred.
   #865. No duplicate or closed issue was reopened. #846 remains the current
   transaction's terminal OPEN/QA-INCOMPLETE item; next independent issue is
   #847 after this refresh.
+
+## Transaction #847 — 2026-09-25 — DEPENDENCY-BLOCKED / HANDED-OFF
+
+- Groom: DEPENDENCY-BLOCKED. Stage owner task-distillation orchestrator;
+  Codex/GPT-5 substitution; medium effort. Existing media issues #507–#513
+  provide local IndexedDB/cloud-backup assets, not an owner-scoped published
+  audio asset endpoint. No duplicate was found.
+- Engineer: NOT STARTED. Stage owner implementation-complex; Codex/GPT-5
+  substitution; low effort. The issue forbids creating a new upload pipeline,
+  and no safe existing public asset contract satisfies its prerequisite.
+- QA self-review: HANDED-OFF. Stage owner qa-self-review; Codex/GPT-5
+  substitution; low effort. No product diff or test result exists; the blocker
+  is a missing server/public media-delivery dependency, not a failed product
+  assertion.
+- Reconcile: DEPENDENCY-BLOCKED / OPEN. QA handoff:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/847#issuecomment-5832891719
+  records the blocker class, owner/context, and exact next action. Do not
+  close #847 or invent an upload pipeline.
+
+## Distillation refresh 41 — 2026-09-25 — #847 dependency reconciliation
+
+- #847 remains dependency-blocked by the absent owner-scoped published audio
+  asset contract; no new issue was created because the prerequisite must be
+  defined by the media/public-delivery owner before it can be criterion-ready.
+- Current open set remains #788, #841, #842, #844, #846–#847, #851–#862, and
+  #865. #846 is still open with browser evidence outstanding; the next
+  independent implementation candidate is #851.

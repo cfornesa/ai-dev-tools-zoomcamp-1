@@ -935,3 +935,19 @@ deferred.
   `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/824#issuecomment-5825873830`;
   #824 is CLOSED. Evidence is local/disposable Compose only; no production
   data or deployment action was taken.
+
+## Production boundary — 2026-09-26
+
+- The authorized safe push completed with `main` at `6ecdb61`. The active
+  Replit workspace was inspected before release and reported local HEAD
+  `4faeb...`, three commits ahead of its fetched `origin/main`, with a large
+  source diff. This did not match the authorized checkout.
+- A publish was started from that mismatched workspace, then canceled before
+  rollout when the discrepancy was discovered. Replit displayed `Build
+  cancelled`; no new deployment was accepted. Existing production remained
+  healthy: `PUBLISHED_APP_URL=https://augmentrart.com
+  scripts/smoke-published.sh` passed all checks.
+- #748 and #806 received QA BLOCKED comments with the exact revision and
+  divergence evidence. #788 production import was not attempted. Further
+  production work is paused pending owner direction on preserving or
+  replacing the Replit-only commits.

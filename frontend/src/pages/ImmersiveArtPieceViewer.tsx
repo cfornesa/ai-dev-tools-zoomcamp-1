@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { getPublicArtPiece, type ArtPiece } from '../api/artPieces';
@@ -9,6 +9,7 @@ import {
   buildArtPieceSandboxDocument,
 } from '../generative/artPieceSandbox';
 import PieceStageControls from './PieceStageControls';
+import { aspectRatioFromMetadata } from './artPiecePresentation';
 
 /** Issue #434: honest per-engine support -- only Three.js/A-Frame pieces
  * have a registerable spatial camera at all (same boundary #432's
@@ -241,6 +242,7 @@ function ImmersiveArtPieceViewer({
     );
 
   const isSpatial = SPATIAL_LIBRARIES.has(piece.engine);
+  const aspectRatio = aspectRatioFromMetadata(piece.current_version.presentation);
   const immersiveHref = canonicalHref ?? `/art-pieces/immersive/${piece.public_id}`;
   const isEmbedRoute = window.location.pathname.startsWith('/embed/art-pieces/immersive/');
 
@@ -291,6 +293,7 @@ function ImmersiveArtPieceViewer({
         tabIndex={0}
         role="region"
         aria-label="Immersive stage"
+        style={{ '--art-piece-aspect-ratio': aspectRatio } as CSSProperties}
       >
         <iframe
           ref={iframeRef}

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type TestInfo } from '@playwright/test';
 
 import { apiGet, apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -49,7 +49,7 @@ test.describe('Six-engine immersive canonical viewer (#608)', () => {
   test('renders every engine through the immersive slug route at both fixed viewports', async ({
     page,
     context,
-  }) => {
+  }, testInfo: TestInfo) => {
     const runId = Date.now().toString(36);
     const handle = `e2e-immersive-${runId}`;
     await loginViaUI(page, e2eFixtures.owner.email, e2eFixtures.password);
@@ -73,6 +73,7 @@ test.describe('Six-engine immersive canonical viewer (#608)', () => {
         engine: fixture.engine,
         public_slug: slug,
         capabilities: { screenshot: true, fullscreen: true, immersive: true },
+        generation_metadata: { aspect_ratio: '4:3', canvas: { width: 320, height: 240 } },
         source: fixture.source,
       });
       expect(response.status()).toBe(201);
@@ -97,9 +98,20 @@ test.describe('Six-engine immersive canonical viewer (#608)', () => {
         await expect(page.getByRole('link', { name: 'Back to regular viewer' })).toBeVisible();
         const frame = page.frameLocator('iframe[title="Immersive art piece preview"]');
         await expect(frame.locator(fixture.selector)).toBeVisible({ timeout: 15_000 });
+        const frameBox = await page
+          .locator('iframe[title="Immersive art piece preview"]')
+          .boundingBox();
+        expect(frameBox).not.toBeNull();
+        if (frameBox) expect(Math.abs(frameBox.width / frameBox.height - 4 / 3)).toBeLessThan(0.02);
         await page.locator('[aria-label="Immersive stage"]').focus();
         await page.keyboard.press('ArrowRight');
         await expect(page.locator('[aria-label="Immersive stage"]')).toBeVisible();
+        await page.screenshot({
+          path: testInfo.outputPath(
+            `presentation-2d-immersive-${fixture.engine}-${viewport.width}.png`,
+          ),
+          fullPage: true,
+        });
       }
     }
   });

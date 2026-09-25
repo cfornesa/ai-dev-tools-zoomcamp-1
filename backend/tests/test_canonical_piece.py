@@ -134,6 +134,35 @@ def test_canonical_generated_piece_exposes_safe_public_version_summaries(client)
 
 
 @pytest.mark.django_db
+def test_canonical_generated_piece_exposes_safe_presentation_metadata(client):
+    user = get_user_model().objects.create_user(username="presentation-artist")
+    PublicProfile.objects.create(user=user, handle="presentation-artist", is_public=True)
+    piece = _published_piece(user, "Presentation Study")
+    version = piece.versions.create(
+        sequence=2,
+        source="<svg />",
+        generation_metadata={
+            "canvas": {"width": 320, "height": 240},
+            "provider_secret": "omit",
+        },
+    )
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+
+    response = client.get(
+        reverse(
+            "public-piece-by-slug",
+            kwargs={"handle": "presentation-artist", "piece_slug": piece.public_slug},
+        )
+    )
+
+    assert response.status_code == 200
+    current = response.json()["piece"]["current_version"]
+    assert current["presentation"] == {"width": 320, "height": 240}
+    assert "provider_secret" not in current
+
+
+@pytest.mark.django_db
 def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client):
     user = get_user_model().objects.create_user(username="profile-artist")
     PublicProfile.objects.create(

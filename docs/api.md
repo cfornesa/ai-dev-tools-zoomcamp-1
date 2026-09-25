@@ -88,6 +88,19 @@ configuration only. Full ZIP exports preserve the resolved placement and
 Non-Camera exports omit camera runtime/configuration entirely; neither export
 variant contains a camera frame or secret.
 
+## Public art-piece presentation metadata (#822)
+
+Anonymous public and canonical generated-art-piece projections include the
+additive `current_version.presentation` object when a piece declares its
+rendering dimensions. It is an allowlisted presentation contract containing
+either `aspect_ratio` (a positive number or `"width:height"` string) or
+positive `width` and `height` values. It contains no provider, prompt, model,
+or other arbitrary `generation_metadata` fields. Authenticated owner
+projections continue to expose the full `generation_metadata` object. Public
+regular, immersive, and embed viewers use this safe projection to preserve
+the same stage framing across routes; missing metadata retains the historical
+16:9 fallback.
+
 ## Public 3D piece version summaries (#731)
 
 The anonymous public 3D piece payloads returned by

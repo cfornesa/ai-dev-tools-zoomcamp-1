@@ -72,6 +72,7 @@ test.describe('Six-engine chrome-less embeds (#615)', () => {
           download: true,
           immersive: true,
         },
+        generation_metadata: { aspect_ratio: '4:3', canvas: { width: 320, height: 240 } },
         source: fixture.source,
       });
       expect(created.status()).toBe(201);
@@ -110,6 +111,15 @@ test.describe('Six-engine chrome-less embeds (#615)', () => {
           });
           await expect(embed.locator('#c2-canvas')).toHaveAttribute('data-pointer-x', /\d+/);
         }
+        const frameBox = await page.locator('iframe[title="Art piece preview"]').boundingBox();
+        expect(frameBox).not.toBeNull();
+        if (frameBox) expect(Math.abs(frameBox.width / frameBox.height - 4 / 3)).toBeLessThan(0.02);
+        await page.screenshot({
+          path: testInfo.outputPath(
+            `presentation-2d-embed-${fixture.engine}-${viewport.width}.png`,
+          ),
+          fullPage: true,
+        });
       }
       await page.screenshot({
         path: testInfo.outputPath(`embeds-${viewport.width}x${viewport.height}.png`),

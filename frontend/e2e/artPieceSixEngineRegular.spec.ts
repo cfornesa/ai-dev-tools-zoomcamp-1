@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type TestInfo } from '@playwright/test';
 
 import { apiGet, apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -55,7 +55,7 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
   test('renders every engine through the slug route at both fixed viewports', async ({
     page,
     context,
-  }) => {
+  }, testInfo: TestInfo) => {
     await loginViaUI(page, e2eFixtures.owner.email, e2eFixtures.password);
     const profileResponse = await apiGet(context, '/api/account/profile/');
     expect(profileResponse.ok()).toBe(true);
@@ -82,6 +82,7 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
           fullscreen: true,
           immersive: fixture.immersive,
         },
+        generation_metadata: { aspect_ratio: '4:3', canvas: { width: 320, height: 240 } },
         source: fixture.source,
       });
       expect(response.status()).toBe(201);
@@ -106,6 +107,11 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
         ).toBeVisible();
         const frame = page.frameLocator('iframe[title="Art piece preview"]');
         await frame.locator(fixture.selector).waitFor({ state: 'attached', timeout: 10_000 });
+        const frameBox = await page.locator('iframe[title="Art piece preview"]').boundingBox();
+        expect(frameBox).not.toBeNull();
+        if (frameBox) {
+          expect(Math.abs(frameBox.width / frameBox.height - 4 / 3)).toBeLessThan(0.02);
+        }
         await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
         await expect(
           page.getByRole('button', { name: 'Expand piece to fullscreen' }),
@@ -115,6 +121,12 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
         } else {
           await expect(page.getByRole('button', { name: 'View immersive piece' })).toHaveCount(0);
         }
+        await page.screenshot({
+          path: testInfo.outputPath(
+            `presentation-2d-regular-${fixture.engine}-${viewport.width}.png`,
+          ),
+          fullPage: true,
+        });
       }
     }
 

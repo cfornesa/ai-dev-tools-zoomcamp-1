@@ -206,9 +206,54 @@ def _version_data(version: ArtPieceVersion, *, public: bool):
     }
     if public:
         data["source"] = version.source
+        presentation = _public_presentation_metadata(version.generation_metadata)
+        if presentation:
+            data["presentation"] = presentation
     else:
         data.update({"source": version.source, "generation_metadata": version.generation_metadata})
     return data
+
+
+def _public_presentation_metadata(metadata):
+    """Project only safe dimensions used to size an anonymous public stage."""
+    if not isinstance(metadata, dict):
+        return None
+
+    declared = metadata.get("aspect_ratio", metadata.get("aspectRatio", metadata.get("ratio")))
+    if isinstance(declared, bool):
+        declared = None
+    if isinstance(declared, (int, float)) and declared > 0:
+        return {"aspect_ratio": declared}
+    if isinstance(declared, str) and declared.strip():
+        candidate = declared.strip()
+        if _valid_ratio_string(candidate):
+            return {"aspect_ratio": candidate}
+
+    canvas = metadata.get("canvas")
+    dimensions = canvas if isinstance(canvas, dict) else metadata
+    width = dimensions.get("width")
+    height = dimensions.get("height")
+    if (
+        isinstance(width, (int, float))
+        and not isinstance(width, bool)
+        and width > 0
+        and isinstance(height, (int, float))
+        and not isinstance(height, bool)
+        and height > 0
+    ):
+        return {"width": width, "height": height}
+    return None
+
+
+def _valid_ratio_string(value: str) -> bool:
+    normalized = value.replace(":", "/")
+    parts = [part.strip() for part in normalized.split("/")]
+    if len(parts) != 2:
+        return False
+    try:
+        return float(parts[0]) > 0 and float(parts[1]) > 0
+    except ValueError:
+        return False
 
 
 def _piece_data(piece: ArtPiece, *, public: bool):

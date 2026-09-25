@@ -5051,7 +5051,6 @@ select.ai-proposal-field-full-width {
 .public-art-piece-stage {
   width: 100%;
   aspect-ratio: var(--art-piece-aspect-ratio, 16 / 9);
-  max-height: calc(100dvh - 8rem);
   background: color-mix(in srgb, var(--code-bg, #f4f3ec) 94%, var(--text, #111827));
 }
 
@@ -5196,8 +5195,9 @@ select.ai-proposal-field-full-width {
   position: relative;
   flex: 0 1 auto;
   width: 100%;
-  height: min(68dvh, 48rem);
-  min-height: min(28rem, 68dvh);
+  height: auto;
+  min-height: 0;
+  aspect-ratio: var(--art-piece-aspect-ratio, 16 / 9);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1rem;

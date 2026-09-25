@@ -154,6 +154,11 @@ export type ArtPieceVersion = {
   thumbnail_is_fallback: boolean;
   created_at: string;
   generation_metadata?: Record<string, unknown>;
+  presentation?: {
+    aspect_ratio?: number | string;
+    width?: number;
+    height?: number;
+  };
   /** #776: the ink layer drawn over a generated 2D piece (a validated drawing document), or null. */
   ink?: DrawingDocument | null;
 };

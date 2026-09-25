@@ -143,7 +143,14 @@ def test_public_piece_exposes_ink_but_never_the_prompt(client):
     public_id = create_piece(client)
     client.post(
         f"/api/art-pieces/{public_id}/versions/",
-        {"source": SOURCE, "generation_metadata": {"ink": ink()}},
+        {
+            "source": SOURCE,
+            "generation_metadata": {
+                "ink": ink(),
+                "aspect_ratio": "4:3",
+                "model_label": "private model",
+            },
+        },
         format="json",
     )
     client.patch(f"/api/art-pieces/{public_id}/", {"status": "published"}, format="json")
@@ -151,6 +158,26 @@ def test_public_piece_exposes_ink_but_never_the_prompt(client):
     assert public.data["current_version"]["ink"]["width"] == 1280
     assert "prompt" not in public.data
     assert "generation_metadata" not in public.data["current_version"]
+    assert public.data["current_version"]["presentation"] == {"aspect_ratio": "4:3"}
+
+
+def test_public_piece_allowlists_dimension_presentation_metadata(client):
+    public_id = create_piece(client)
+    client.post(
+        f"/api/art-pieces/{public_id}/versions/",
+        {
+            "source": SOURCE,
+            "generation_metadata": {
+                "canvas": {"width": 320, "height": 240},
+                "provider": "private provider",
+            },
+        },
+        format="json",
+    )
+    client.patch(f"/api/art-pieces/{public_id}/", {"status": "published"}, format="json")
+    public = APIClient().get(f"/api/public/art-pieces/{public_id}/")
+    assert public.data["current_version"]["presentation"] == {"width": 320, "height": 240}
+    assert "provider" not in public.data["current_version"]
 
 
 def test_metadata_inheritance_helper_prefers_an_explicit_ink():

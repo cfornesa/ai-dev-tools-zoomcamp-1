@@ -1888,3 +1888,55 @@ deferred.
 - The issue remains `QA/OPEN-BLOCKED`: `make check` does not supply the
   missing real-browser interaction or viewport screenshots, and the exact
   Playwright run remains blocked by the host Mach-port failure.
+
+## Production-readiness assessment — 2026-09-25 — BLOCKED
+
+- Local deployment/readiness: PASS for the current checkout. The exact
+  escalated `make check` completed with backend `1698 passed, 39 skipped` and
+  frontend `279 files, 3000 tests passed`; lint, format, typecheck, and
+  action-pin checks passed with existing warnings only.
+- Approved-browser/CI verification: BLOCKED. The exact Compose Playwright
+  Chromium commands for #843 and #850 fail before test execution on this
+  macOS host with `bootstrap_check_in ... Permission denied (1100)`. Next
+  action: run the named specs on the approved Docker/CI Chromium runner and
+  inspect the required 1280x900 and 375x812 screenshots.
+- Production publication/data action: BLOCKED. #788 still requires the
+  authorized production-shell importer, but Replit Agent confirmed its
+  visible shell is Development-only. Next action: use a supported signed-in
+  production shell path, first run the local disposable PostgreSQL rehearsal
+  and snapshot verification already recorded, then run importer once and
+  verify live corrected sketches/version history/untouched neighbors.
+- Intended functionality: OPEN FOLLOW-UP. #844–#847 and #851–#852 remain
+  implementation work; #853–#862 are browser verification/reporting children.
+  #838–#842 remain open on browser evidence; #843 is open on live-viewer
+  evidence; #850 is open on 3D UI browser evidence. No issue is silently
+  closed or reopened.
+- Production readiness result: NOT READY. Local evidence is explicitly
+  separated from browser, CI, and production evidence; no deployed revision
+  claim is made for the post-#832 commits.
+- Routing/provenance: processed transactions record Codex/GPT-5 substitution,
+  medium effort, because rostered implementation services were unavailable.
+  No independent second-opinion review was credited. The readiness gate is a
+  Codex/GPT-5 substitution and is recorded as blocked rather than a rostered
+  pass.
+
+## Session-completion reconciliation — INCOMPLETE / HANDED-OFF
+
+- Manifest audit: 25 open GitHub issues remain (#788, #838–#847, #850–#862);
+  #848 and #849 are closed with QA PASS; #843 and #850 have committed
+  implementation with QA OPEN-BLOCKED; #844 and #845–#847/#851–#852 remain
+  criterion-bearing implementation work; #853–#862 remain browser
+  verification/reporting work. The session cannot claim complete terminal
+  processing because those remaining issues were not all engineered and
+  reconciled in this pass.
+- Follow-up audit: no duplicate issue was created for the shared Chromium
+  Mach-port failure; it is an existing workflow/infrastructure boundary. The
+  #788 production-shell limitation is an external-state blocker with no safe
+  Development-shell workaround. The remaining implementation issues already
+  own their gaps; no actionable gap is left only in this report.
+- Exact next actions: approved CI Chromium execution for #838–#843/#850 and
+  #853–#862; complete #844 contract/editor/viewer/ZIP work, then #845–#847 and
+  #851–#852 in dependency order; execute the authorized #788 production
+  importer only from a supported production shell; rerun production-readiness
+  after those transactions; then rerun session-completion with zero
+  missing-terminal-status entries.

@@ -50,4 +50,12 @@ describe('standalone art-piece runtime source', () => {
     expect(source).toContain('__artPieceInkSvg');
     expect(source).toContain("lastIndexOf('</svg>')");
   });
+
+  it('#801 includes a shared ready marker and ten-second startup failure path', () => {
+    const source = buildStandaloneArtPieceRuntimeScript('svg', { screenshot: true }, 'full');
+    expect(source).toContain('The interactive runtime could not be started.');
+    expect(source).toContain('}, 10000);');
+    expect(source).toContain('art-piece-runtime-ready');
+    expect(source).toContain('art-piece-runtime-error');
+  });
 });

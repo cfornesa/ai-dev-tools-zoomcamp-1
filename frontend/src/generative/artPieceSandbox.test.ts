@@ -38,6 +38,24 @@ describe('buildArtPieceSandboxDocument', () => {
     expect(doc).toContain(SNIPPET);
   });
 
+  it('#801 applies one shared ready/error timeout contract to every engine', () => {
+    for (const library of [
+      'canvas2d',
+      'svg',
+      'p5js',
+      'c2js',
+      'c2js-interactive',
+      'threejs',
+      'aframe',
+    ] as const) {
+      const doc = buildArtPieceSandboxDocument(SNIPPET, library);
+      expect(doc).toContain('The interactive runtime could not be started.');
+      expect(doc).toContain('}, 10000);');
+      expect(doc).toContain("report('ready', '')");
+      expect(doc).toContain("report('error', 'The interactive runtime could not be started.')");
+    }
+  });
+
   it('can make the regular sandbox transparent so its parent supplies the theme surface', () => {
     const doc = buildArtPieceSandboxDocument(SNIPPET, 'canvas2d', 'regular', {
       background: 'transparent',
@@ -57,6 +75,7 @@ describe('buildArtPieceSandboxDocument', () => {
     const between = doc.slice(loadHandlerIndex, readyReportIndex);
     expect(between).not.toContain('requestAnimationFrame(');
     expect(between.match(/setTimeout\(function \(\)/g)).toHaveLength(2);
+    expect(doc).toContain('The interactive runtime could not be started.');
   });
 
   it('embeds the versioned, allowlisted parent command bridge', () => {

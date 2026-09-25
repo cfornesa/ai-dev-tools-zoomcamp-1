@@ -408,6 +408,7 @@ function buildExportControls(
     soundStatus,
     navigationPose,
     guideDialog,
+    '<p id="art-piece-runtime-ready" role="status" hidden>Art piece ready.</p>',
     '<p id="art-piece-runtime-error" role="alert" hidden></p>',
   ]
     .filter(Boolean)

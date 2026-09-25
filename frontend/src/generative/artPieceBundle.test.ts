@@ -155,6 +155,15 @@ describe('generateArtPieceBundle', () => {
     }
   });
 
+  it('exports a hidden ready status and visible alert target for runtime failures (#801)', async () => {
+    const blob = await generateArtPieceBundle('svg', '<svg></svg>');
+    const zip = await JSZip.loadAsync(blob);
+    const html = await zip.files['index.html'].async('string');
+    expect(html).toContain('id="art-piece-runtime-ready" role="status" hidden');
+    expect(html).toContain('id="art-piece-runtime-error" role="alert" hidden');
+    expect(html).toContain('The interactive runtime could not be started.');
+  });
+
   it('C2.js Interactive exports the session-only drawing toolset; other engines do not (#757)', async () => {
     for (const library of ['c2js-interactive', 'c2js'] as const) {
       for (const presentation of ['regular', 'immersive'] as const) {

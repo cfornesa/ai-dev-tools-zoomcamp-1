@@ -77,6 +77,23 @@ export function buildStandaloneArtPieceRuntimeScript(
   return `<script>
 (function () {
   var pieceLibrary = ${JSON.stringify(library)};
+  var runtimeFailed = false;
+  var runtimeReady = false;
+  function reportRuntimeError(message) {
+    runtimeFailed = true;
+    var el = document.getElementById('art-piece-runtime-error');
+    if (el) { el.textContent = message; el.hidden = false; }
+  }
+  window.addEventListener('error', function (event) {
+    reportRuntimeError((event && event.message) || 'The generated piece threw an error.');
+  });
+  window.addEventListener('unhandledrejection', function (event) {
+    var reason = event && event.reason;
+    reportRuntimeError((reason && reason.message) || String(reason) || 'An unhandled promise rejection occurred.');
+  });
+  setTimeout(function () {
+    if (!runtimeReady && !runtimeFailed) reportRuntimeError('The interactive runtime could not be started.');
+  }, 10000);
   // window.__registerArtPieceCamera must exist before scripts/piece.js
   // runs (Three.js calls it as soon as its own script executes), so this
   // part -- unlike everything else below, which touches DOM elements
@@ -152,6 +169,7 @@ export function buildStandaloneArtPieceRuntimeScript(
     if (el) el.textContent = text;
   }
   function reportError(message) {
+    runtimeFailed = true;
     var el = document.getElementById('art-piece-runtime-error');
     if (el) { el.textContent = message; el.hidden = false; }
   }
@@ -682,10 +700,24 @@ export function buildStandaloneArtPieceRuntimeScript(
       : ''
   }
   }
+  function markRuntimeReady() {
+    if (runtimeFailed) return;
+    runtimeReady = true;
+    var el = document.getElementById('art-piece-runtime-ready');
+    if (el) el.hidden = false;
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupControls);
+    document.addEventListener('DOMContentLoaded', function () {
+      setupControls();
+      setTimeout(function () {
+        setTimeout(markRuntimeReady, 0);
+      }, 0);
+    });
   } else {
     setupControls();
+    setTimeout(function () {
+      setTimeout(markRuntimeReady, 0);
+    }, 0);
   }
 })();
 </script>`;

@@ -441,6 +441,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   function report(status, message) {
     if (status === 'ready' && runtimeFailed) return;
     if (status === 'error') runtimeFailed = true;
+    if (status === 'ready') runtimeReady = true;
     try {
       window.parent.postMessage(
         { source: ${JSON.stringify(ART_PIECE_SANDBOX_MESSAGE_SOURCE)}, status: status, message: message },
@@ -452,6 +453,7 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     }
   }
   var runtimeFailed = false;
+  var runtimeReady = false;
   // Issue #430: reports acknowledged runtime state (not just command
   // receipt) for sound/microphone, so the parent -- and this suite's own
   // E2E spec -- observe what the sandbox actually did, never a spoofed
@@ -708,6 +710,9 @@ function buildListenerScript(library: ArtPieceLibrary): string {
       }, 0);
     }, 0);
   });
+  setTimeout(function () {
+    if (!runtimeReady && !runtimeFailed) report('error', 'The interactive runtime could not be started.');
+  }, 10000);
   // Versioned, allowlisted commands are surfaced as DOM events. Generated
   // code may opt into them, but never receives arbitrary parent messages.
   window.addEventListener('message', function (event) {

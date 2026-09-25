@@ -287,6 +287,7 @@ export default function PublicArtPieceViewer({
             source={piece.current_version.source}
             ink={piece.current_version.ink}
             cameraPlacement={piece.current_version.camera_placement}
+            pieceId={piece.public_id}
             title={piece.title}
             toolbarPortalTarget={toolbarHost}
             fullscreenToolbarPortalTarget={fullscreenToolbarHost}

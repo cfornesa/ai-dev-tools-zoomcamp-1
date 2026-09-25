@@ -10,6 +10,12 @@ import {
 import { downloadBlob } from '../export/downloadBlob';
 import { screenshotFilename } from '../export/captureLiveScreenshot';
 import { categorizeProviderError } from '../components/cameraFailure';
+import {
+  readSoundSettings,
+  resetSoundSettings,
+  writeSoundSettings,
+  type SoundSettings,
+} from '../audio/soundSettings';
 import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
 import { createMediaPipeTrackingProvider } from '../tracking/mediapipeProvider';
 import type { TrackingProvider, TrackingProviderError } from '../tracking/types';
@@ -52,6 +58,7 @@ type Props = {
   /** #776: the owner's ink layer, carried into the ZIP export. */
   ink?: unknown;
   cameraPlacement?: CameraPlacement | null;
+  pieceId: string;
   title: string;
   /** Regular public viewers render the toolbar above the stage, then move it
    * into the fullscreen host while the stage owns native fullscreen. */
@@ -92,33 +99,44 @@ function PieceStageControls({
   source,
   ink,
   cameraPlacement,
+  pieceId,
   title,
   toolbarPortalTarget,
   fullscreenToolbarPortalTarget,
   presentation = 'regular',
 }: Props) {
   const resolvedCameraPlacement: CameraPlacement = cameraPlacement ?? 'overlay';
+  const initialSoundSettingsRef = useRef<SoundSettings>(readSoundSettings(pieceId));
+  const initialSoundSettings = initialSoundSettingsRef.current;
   const [open, setOpen] = useState(false);
   const [guide, setGuide] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
-  const [volume, setVolume] = useState(0.2);
-  const [ambientBpm, setAmbientBpm] = useState(90);
-  const [ambientVolume, setAmbientVolume] = useState(50);
-  const [ambientMuted, setAmbientMuted] = useState(false);
-  const [ambientScale, setAmbientScale] = useState('pentatonic');
+  const [volume, setVolume] = useState(initialSoundSettings.soundVolume);
+  const [ambientBpm, setAmbientBpm] = useState(initialSoundSettings.ambientBpm);
+  const [ambientVolume, setAmbientVolume] = useState(initialSoundSettings.ambientVolume);
+  const [ambientMuted, setAmbientMuted] = useState(initialSoundSettings.ambientMuted);
+  const [ambientScale, setAmbientScale] = useState(initialSoundSettings.ambientScale);
   const [keyboardEnabled, setKeyboardEnabled] = useState(false);
-  const [keyboardVolume, setKeyboardVolume] = useState(50);
-  const [keyboardOscillator, setKeyboardOscillator] = useState('sine');
-  const [keyboardFilterType, setKeyboardFilterType] = useState('lowpass');
-  const [keyboardFilterCutoff, setKeyboardFilterCutoff] = useState(2000);
-  const [keyboardFilterResonance, setKeyboardFilterResonance] = useState(1);
-  const [keyboardAttack, setKeyboardAttack] = useState(0.01);
-  const [keyboardDecay, setKeyboardDecay] = useState(0.1);
-  const [keyboardSustain, setKeyboardSustain] = useState(0.7);
-  const [keyboardRelease, setKeyboardRelease] = useState(0.3);
-  const [keyboardOctave, setKeyboardOctave] = useState(0);
+  const [keyboardVolume, setKeyboardVolume] = useState(initialSoundSettings.keyboardVolume);
+  const [keyboardOscillator, setKeyboardOscillator] = useState(
+    initialSoundSettings.keyboardOscillator,
+  );
+  const [keyboardFilterType, setKeyboardFilterType] = useState(
+    initialSoundSettings.keyboardFilterType,
+  );
+  const [keyboardFilterCutoff, setKeyboardFilterCutoff] = useState(
+    initialSoundSettings.keyboardFilterCutoff,
+  );
+  const [keyboardFilterResonance, setKeyboardFilterResonance] = useState(
+    initialSoundSettings.keyboardFilterResonance,
+  );
+  const [keyboardAttack, setKeyboardAttack] = useState(initialSoundSettings.keyboardAttack);
+  const [keyboardDecay, setKeyboardDecay] = useState(initialSoundSettings.keyboardDecay);
+  const [keyboardSustain, setKeyboardSustain] = useState(initialSoundSettings.keyboardSustain);
+  const [keyboardRelease, setKeyboardRelease] = useState(initialSoundSettings.keyboardRelease);
+  const [keyboardOctave, setKeyboardOctave] = useState(initialSoundSettings.keyboardOctave);
   const [lastNote, setLastNote] = useState<string | null>(null);
   const [microphoneState, setMicrophoneState] = useState<
     'off' | 'active' | 'denied' | 'unavailable'
@@ -448,6 +466,98 @@ function PieceStageControls({
     );
   }
   commandRef.current = command;
+
+  const applySoundSettings = useCallback((settings: SoundSettings, applyRuntime: boolean) => {
+    setVolume(settings.soundVolume);
+    setAmbientBpm(settings.ambientBpm);
+    setAmbientVolume(settings.ambientVolume);
+    setAmbientMuted(settings.ambientMuted);
+    setAmbientScale(settings.ambientScale);
+    setKeyboardVolume(settings.keyboardVolume);
+    setKeyboardOscillator(settings.keyboardOscillator);
+    setKeyboardFilterType(settings.keyboardFilterType);
+    setKeyboardFilterCutoff(settings.keyboardFilterCutoff);
+    setKeyboardFilterResonance(settings.keyboardFilterResonance);
+    setKeyboardAttack(settings.keyboardAttack);
+    setKeyboardDecay(settings.keyboardDecay);
+    setKeyboardSustain(settings.keyboardSustain);
+    setKeyboardRelease(settings.keyboardRelease);
+    setKeyboardOctave(settings.keyboardOctave);
+    setKeyboardEnabled(applyRuntime ? settings.keyboardEnabled : false);
+    if (!applyRuntime) return;
+    commandRef.current('set-volume', { value: settings.soundVolume });
+    commandRef.current('set-tempo', { value: settings.ambientBpm });
+    commandRef.current('set-voice-volume', { voice: 'ambient', value: settings.ambientVolume });
+    commandRef.current('set-voice-muted', { voice: 'ambient', enabled: settings.ambientMuted });
+    commandRef.current('set-scale', { value: settings.ambientScale });
+    commandRef.current('set-voice-volume', { voice: 'melodic', value: settings.keyboardVolume });
+    commandRef.current('set-oscillator', { value: settings.keyboardOscillator });
+    commandRef.current('set-filter', {
+      filterType: settings.keyboardFilterType,
+      cutoff: settings.keyboardFilterCutoff,
+      resonance: settings.keyboardFilterResonance,
+    });
+    commandRef.current('set-envelope', {
+      attack: settings.keyboardAttack,
+      decay: settings.keyboardDecay,
+      sustain: settings.keyboardSustain,
+      release: settings.keyboardRelease,
+    });
+    commandRef.current('set-octave', { value: settings.keyboardOctave });
+    commandRef.current('set-keyboard-enabled', { enabled: settings.keyboardEnabled });
+  }, []);
+
+  useEffect(() => {
+    // The sandbox reports the acknowledged Sound state asynchronously. Read
+    // the current validated snapshot here so a setting saved before a mute,
+    // reset, or route revisit is applied only after activation succeeds.
+    if (soundOn) applySoundSettings(readSoundSettings(pieceId), true);
+  }, [applySoundSettings, pieceId, soundOn]);
+
+  useEffect(() => {
+    // Do not let the initial runtime-off state overwrite a visitor's saved
+    // keyboard preference before the user has activated Sound.
+    if (!soundOn) return;
+    writeSoundSettings(pieceId, {
+      version: 1,
+      soundVolume: volume,
+      ambientBpm,
+      ambientVolume,
+      ambientMuted,
+      ambientScale: ambientScale as SoundSettings['ambientScale'],
+      keyboardEnabled,
+      keyboardVolume,
+      keyboardOscillator: keyboardOscillator as SoundSettings['keyboardOscillator'],
+      keyboardFilterType: keyboardFilterType as SoundSettings['keyboardFilterType'],
+      keyboardFilterCutoff,
+      keyboardFilterResonance,
+      keyboardAttack,
+      keyboardDecay,
+      keyboardSustain,
+      keyboardRelease,
+      keyboardOctave,
+      voiceInstruments: { ambient: 'synth', movement: 'synth', melodic: 'synth' },
+    });
+  }, [
+    ambientBpm,
+    ambientMuted,
+    ambientScale,
+    ambientVolume,
+    keyboardAttack,
+    keyboardDecay,
+    keyboardEnabled,
+    keyboardFilterCutoff,
+    keyboardFilterResonance,
+    keyboardFilterType,
+    keyboardOctave,
+    keyboardOscillator,
+    keyboardRelease,
+    keyboardSustain,
+    keyboardVolume,
+    pieceId,
+    soundOn,
+    volume,
+  ]);
 
   // Issue #479: the sandbox now reports the artwork alone, uncomposited --
   // this composites the parent's own live camera frame on top (at the
@@ -960,6 +1070,12 @@ function PieceStageControls({
                   command('set-volume', { value });
                 }}
               />
+              <button
+                type="button"
+                onClick={() => applySoundSettings(resetSoundSettings(pieceId), soundOn)}
+              >
+                Reset sound settings
+              </button>
               <label htmlFor="art-piece-ambient-bpm">Ambient BPM: {ambientBpm}</label>
               <input
                 id="art-piece-ambient-bpm"
@@ -1009,7 +1125,7 @@ function PieceStageControls({
                 disabled={!soundOn}
                 onChange={(event) => {
                   const value = event.target.value;
-                  setAmbientScale(value);
+                  setAmbientScale(value as SoundSettings['ambientScale']);
                   command('set-scale', { value });
                 }}
               >
@@ -1064,7 +1180,7 @@ function PieceStageControls({
                   disabled={!soundOn}
                   onChange={(event) => {
                     const value = event.target.value;
-                    setKeyboardOscillator(value);
+                    setKeyboardOscillator(value as SoundSettings['keyboardOscillator']);
                     command('set-oscillator', { value });
                   }}
                 >
@@ -1081,7 +1197,7 @@ function PieceStageControls({
                   disabled={!soundOn}
                   onChange={(event) => {
                     const value = event.target.value;
-                    setKeyboardFilterType(value);
+                    setKeyboardFilterType(value as SoundSettings['keyboardFilterType']);
                     command('set-filter', {
                       filterType: value,
                       cutoff: keyboardFilterCutoff,

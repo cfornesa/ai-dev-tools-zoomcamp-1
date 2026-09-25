@@ -269,6 +269,9 @@ function ImmersiveArtPieceViewer({
           <p className="public-project-attribution">
             By {authorDisplayName || piece.owner || 'Public artist'}
           </p>
+          {!!piece.description && (
+            <p className="immersive-art-piece-description">{piece.description}</p>
+          )}
           {isSpatial ? (
             <p role="note">
               Drag to look around, scroll to zoom, and use the arrow keys to travel through the
@@ -279,63 +282,6 @@ function ImmersiveArtPieceViewer({
             <p role="status" data-testid="navigation-status">
               This piece hasn't set up a walkable camera yet.
             </p>
-          )}
-          <p>
-            <button
-              type="button"
-              onClick={() => {
-                setEmbedVariant((current) => (current === 'custom' ? 'none' : 'custom'));
-                setEmbedCopyStatus('idle');
-              }}
-              aria-expanded={embedVariant === 'custom'}
-              data-testid="toggle-immersive-embed-snippet"
-            >
-              {embedVariant === 'custom' ? 'Hide embed code' : 'Embed'}
-            </button>{' '}
-            <button
-              type="button"
-              onClick={() => {
-                setEmbedVariant((current) => (current === 'cms' ? 'none' : 'cms'));
-                setEmbedCopyStatus('idle');
-              }}
-              aria-expanded={embedVariant === 'cms'}
-              data-testid="toggle-immersive-cms-embed-snippet"
-            >
-              {embedVariant === 'cms' ? 'Hide CMS embed code' : 'CMS embed'}
-            </button>
-          </p>
-          {embedVariant !== 'none' && id && (
-            <div
-              className="immersive-art-piece-embed-snippet"
-              data-testid={
-                embedVariant === 'cms'
-                  ? 'immersive-cms-embed-snippet-panel'
-                  : 'immersive-embed-snippet-panel'
-              }
-            >
-              <label htmlFor="immersive-art-piece-embed-snippet-textarea">
-                {embedVariant === 'cms'
-                  ? 'Embed this immersive piece in a CMS block (responsive wrapper)'
-                  : 'Embed this immersive piece on another site'}
-              </label>
-              <textarea
-                id="immersive-art-piece-embed-snippet-textarea"
-                readOnly
-                value={embedVariant === 'cms' ? cmsEmbedSnippetFor(id) : embedSnippetFor(id)}
-                onFocus={(event) => event.currentTarget.select()}
-              />
-              <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
-                Copy
-              </button>
-              {embedCopyStatus === 'copied' && (
-                <p role="status" aria-live="polite">
-                  Copied!
-                </p>
-              )}
-              {embedCopyStatus === 'failed' && (
-                <p role="alert">Could not copy automatically -- select and copy the text above.</p>
-              )}
-            </div>
           )}
         </header>
       )}
@@ -397,6 +343,65 @@ function ImmersiveArtPieceViewer({
           presentation="immersive"
         />
       </div>
+      {!isEmbedRoute && (
+        <div className="immersive-art-piece-actions" aria-label="Piece actions" role="group">
+          <button
+            type="button"
+            onClick={() => {
+              setEmbedVariant((current) => (current === 'custom' ? 'none' : 'custom'));
+              setEmbedCopyStatus('idle');
+            }}
+            aria-expanded={embedVariant === 'custom'}
+            data-testid="toggle-immersive-embed-snippet"
+          >
+            {embedVariant === 'custom' ? 'Hide embed code' : 'Embed'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEmbedVariant((current) => (current === 'cms' ? 'none' : 'cms'));
+              setEmbedCopyStatus('idle');
+            }}
+            aria-expanded={embedVariant === 'cms'}
+            data-testid="toggle-immersive-cms-embed-snippet"
+          >
+            {embedVariant === 'cms' ? 'Hide CMS embed code' : 'CMS embed'}
+          </button>
+        </div>
+      )}
+      {!isEmbedRoute && embedVariant !== 'none' && id && (
+        <div
+          className="immersive-art-piece-embed-snippet"
+          data-testid={
+            embedVariant === 'cms'
+              ? 'immersive-cms-embed-snippet-panel'
+              : 'immersive-embed-snippet-panel'
+          }
+        >
+          <label htmlFor="immersive-art-piece-embed-snippet-textarea">
+            {embedVariant === 'cms'
+              ? 'Embed this immersive piece in a CMS block (responsive wrapper)'
+              : 'Embed this immersive piece on another site'}
+          </label>
+          <textarea
+            id="immersive-art-piece-embed-snippet-textarea"
+            readOnly
+            value={embedVariant === 'cms' ? cmsEmbedSnippetFor(id) : embedSnippetFor(id)}
+            onFocus={(event) => event.currentTarget.select()}
+          />
+          <button type="button" onClick={() => void handleCopyEmbedSnippet()}>
+            Copy
+          </button>
+          {embedCopyStatus === 'copied' && (
+            <p role="status" aria-live="polite">
+              Copied!
+            </p>
+          )}
+          {embedCopyStatus === 'failed' && (
+            <p role="alert">Could not copy automatically -- select and copy the text above.</p>
+          )}
+        </div>
+      )}
       {!isSpatial && (
         <p data-testid="navigation-unsupported" role="status">
           Walkable navigation isn't available for this piece type.

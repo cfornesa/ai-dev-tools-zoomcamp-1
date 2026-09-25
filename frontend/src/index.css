@@ -5143,28 +5143,22 @@ select.ai-proposal-field-full-width {
 /* #606: immersive art pieces own the viewport rather than rendering as a
    page-contained 640px preview. Header and stage controls remain overlays. */
 .immersive-art-piece-viewer {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
   display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: min(100% - 2rem, 80rem);
   min-height: 100dvh;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 4vw, 3rem) 0 3rem;
+  box-sizing: border-box;
   background: #11131a;
   color: #f4f6fb;
 }
 
 .immersive-art-piece-viewer header {
-  position: absolute;
-  z-index: 2;
-  top: 0;
-  right: 0;
-  left: 0;
-  padding: 4.25rem 24px 18px;
-  background: linear-gradient(#11131add, transparent);
-  pointer-events: none;
-}
-
-.immersive-art-piece-viewer header > * {
-  pointer-events: auto;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
 }
 
 .immersive-art-piece-heading-row {
@@ -5193,20 +5187,42 @@ select.ai-proposal-field-full-width {
 }
 
 .immersive-art-piece-viewer > .immersive-art-piece-stage {
-  position: absolute;
-  inset: 0;
-  min-height: 100dvh;
+  position: relative;
+  flex: 0 1 auto;
+  width: 100%;
+  height: min(68dvh, 48rem);
+  min-height: min(28rem, 68dvh);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  background: #080b12;
 }
 
 .immersive-art-piece-stage > iframe {
   height: 100% !important;
 }
 
+.immersive-art-piece-description {
+  max-width: 60rem;
+  margin: 0;
+  color: rgba(244, 246, 251, 0.82);
+  line-height: 1.6;
+}
+
+.immersive-art-piece-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.immersive-art-piece-actions button {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.85rem;
+}
+
 .immersive-art-piece-back-link {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 150;
+  align-self: flex-start;
   min-height: 2.5rem;
   padding: 0.55rem 0.8rem;
   border: 1px solid rgba(255, 255, 255, 0.24);

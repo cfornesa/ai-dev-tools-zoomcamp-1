@@ -67,6 +67,27 @@ describe('ImmersiveArtPieceViewer (#606)', () => {
     );
   });
 
+  it('places identity above the stage and embed actions below it', () => {
+    renderViewer();
+
+    const viewer = screen.getByRole('region', { name: 'Immersive stage' }).parentElement;
+    expect(viewer).not.toBeNull();
+    expect(viewer?.querySelector('#immersive-art-piece-heading')).not.toBeNull();
+    expect(viewer?.querySelector('.immersive-art-piece-description')).toHaveTextContent(
+      'A test piece',
+    );
+    expect(
+      viewer
+        ?.querySelector('#immersive-art-piece-heading')
+        ?.compareDocumentPosition(screen.getByRole('region', { name: 'Immersive stage' })),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(
+      screen
+        .getByRole('region', { name: 'Immersive stage' })
+        .compareDocumentPosition(viewer?.querySelector('.immersive-art-piece-actions') as Node),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
   it('closes the route on Escape when native fullscreen is not active', () => {
     renderViewer();
 

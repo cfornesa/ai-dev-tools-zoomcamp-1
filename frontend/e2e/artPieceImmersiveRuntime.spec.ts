@@ -65,7 +65,7 @@ test.describe('Generated immersive viewer: walkable navigation and stage control
     page,
     context,
     browserName,
-  }) => {
+  }, testInfo) => {
     await loginViaUI(page, fixture.owner.email, fixture.password);
     const created = await apiPost(context, '/api/art-pieces/', {
       title: 'Immersive runtime fixture',
@@ -97,10 +97,30 @@ test.describe('Generated immersive viewer: walkable navigation and stage control
       await page.setViewportSize(viewport);
       await page.goto(`/art-pieces/immersive/${piece.public_id}`);
       await expect(page.getByRole('heading', { name: 'Immersive runtime fixture' })).toBeVisible();
+      await expect(
+        page.getByText('A published Three.js piece for immersive navigation.'),
+      ).toBeVisible();
       await page
         .frameLocator('iframe[title="Immersive art piece preview"]')
         .locator('#art-piece-container canvas')
         .waitFor({ state: 'attached' });
+      const order = await page.evaluate(() => {
+        const heading = document.querySelector('#immersive-art-piece-heading');
+        const stage = document.querySelector('[aria-label="Immersive stage"]');
+        const actions = document.querySelector('.immersive-art-piece-actions');
+        return Boolean(
+          heading &&
+          stage &&
+          actions &&
+          heading.compareDocumentPosition(stage) & Node.DOCUMENT_POSITION_FOLLOWING &&
+          stage.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      });
+      expect(order).toBe(true);
+      await page.screenshot({
+        path: testInfo.outputPath(`immersive-identity-${viewport.width}.png`),
+        fullPage: true,
+      });
 
       // No load-time camera/mic activation: reachable stage toolbar,
       // but no camera/microphone control rendered at all here (this

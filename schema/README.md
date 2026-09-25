@@ -127,6 +127,23 @@ uses `sound`, `voiceInput`, and `microphone`; consumers must render only the
 controls explicitly enabled by this object and must activate audio or input
 from a visitor gesture.
 
+## Authored sonic parameters (#833)
+
+The optional authored `sonic` contract is the piece-specific extension to
+`runtimeCapabilities.sound`. It is intentionally absent from the required V1
+document fields: old documents remain valid and render with the existing
+sound behavior. The complete field table, defaults, persistence boundary, and
+lenient invalid-input policy are maintained in [`docs/api.md`](../docs/api.md)
+under “Authored per-piece sound contract (#833)”.
+
+For structured scene families, `sonic` is an additive sibling of `sound` in
+the scene document. For generated pieces, the equivalent object is stored in
+`generation_metadata["sonic"]`. Unknown keys are dropped; malformed authored
+blocks are treated as absent; no reader may turn an invalid optional sound
+block into a failure of an otherwise valid legacy document. Later sound issues
+own validation, runtime controls, and export propagation; this section is the
+contract boundary they implement.
+
 ## Referential integrity
 
 JSON Schema validates document *shape*, not cross-references within a

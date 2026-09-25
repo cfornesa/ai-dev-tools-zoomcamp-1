@@ -1670,3 +1670,25 @@ Added #848-#851; commented on #833/#844 for contract fields. Blocked on #832.
 ## 2026-09-25 — Chrome workflow-validity test per engine
 
 Added #852-#862. Purpose (owner): gauge workflow validity per rendering engine. Local-only, no production data actions; blocked on #832.
+
+## 2026-09-26 — #833 authored sonic contract
+
+Owner instruction recorded verbatim for this continuation: “Proceed with the
+backlog-session then proceed with the steps from qa-self-review before another
+production-readiness and session-completion run until no more issues are found
+or remain open.” This is the authorization basis for adopting the issue's
+recommended defaults below; it is not a new production-data authorization.
+
+The continuation instruction to proceed was treated as approval to adopt
+#833's recommended backward-compatible contract, with the requested additions
+from the issue comment: `root`, `keyboard_scale`, and `transpose`. Structured
+scene versions persist an optional `sonic` sibling of `sound`; generated
+versions persist the same object under `generation_metadata["sonic"]`.
+
+The contract is lenient at the boundary: unknown keys are dropped, numeric
+values are clamped to the documented ranges, and malformed authored blocks are
+treated as absent so existing pieces retain the boolean-sound behavior. The
+complete field/default/range table is in `docs/api.md`; `schema/README.md`
+records the schema-version and persistence rationale. No product runtime or
+database migration is included in #833; implementation belongs to #844 and
+the dependent engine/UI/export issues.

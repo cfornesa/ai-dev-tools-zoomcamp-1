@@ -1,5 +1,53 @@
 # Public gallery API contract
 
+## Authored per-piece sound contract (#833)
+
+Structured 2D and 3D scene documents may carry an optional `sonic` object
+next to the existing `sound` capability flag. Generated art pieces carry the
+same object under `generation_metadata["sonic"]`. The object is additive and
+optional: omitting it preserves the current boolean-sound behavior. Readers
+must ignore unknown keys and treat an invalid authored block as absent rather
+than rejecting an otherwise valid piece.
+
+| Field | Type / allowed values | Default | Clamp / invalid-input rule |
+| --- | --- | --- | --- |
+| `sonic.tempo` | integer, 40–220 BPM | 90 | Clamp to the inclusive range. |
+| `sonic.root` | `C`, `C#`, `D`, `D#`, `E`, `F`, `F#`, `G`, `G#`, `A`, `A#`, `B` | `C` | Unknown pitch classes make the authored block absent. |
+| `sonic.scale` | `major`, `minor`, `pentatonic`, `chromatic`, `dorian`, `phrygian`, `lydian`, `mixolydian`, `wholetone` | `major` | Unknown scales make the authored block absent. |
+| `sonic.keyboard_scale` | same scale enum | `sonic.scale` | Unknown values make the authored block absent. |
+| `sonic.transpose` | integer semitones, -12–12 | 0 | Clamp to the inclusive range. |
+| `sonic.instrument` | `synth`, `amsynth`, `fmsynth`, `membranesynth`, `metalsynth`, `plucksynth`, `duosynth` | `synth` | Unknown instruments make the authored block absent. |
+| `sonic.feel` | string, at most 400 characters | `""` | Truncate to 400 characters. |
+| `sonic.extras.default_volume` | number, 0–100 percent | 100 | Clamp to the inclusive range. |
+| `sonic.extras.voices.ambient` | instrument enum | `synth` | Unknown values make the authored block absent. |
+| `sonic.extras.voices.movement` | instrument enum | `synth` | Unknown values make the authored block absent. |
+| `sonic.extras.voices.melodic` | instrument enum | `sonic.instrument` | Unknown values make the authored block absent. |
+| `sonic.extras.synth.oscillator` | `sine`, `square`, `sawtooth`, `triangle` | `sine` | Unknown values make the authored block absent. |
+| `sonic.extras.synth.filter_type` | `lowpass`, `highpass`, `bandpass` | `lowpass` | Unknown values make the authored block absent. |
+| `sonic.extras.synth.filter_cutoff` | number, 20–20,000 Hz | 2,000 | Clamp to the inclusive range. |
+| `sonic.extras.synth.filter_resonance` | number, 0.1–20 | 1 | Clamp to the inclusive range. |
+| `sonic.extras.synth.envelope.attack` | number, 0–10 seconds | 0.01 | Clamp to the inclusive range. |
+| `sonic.extras.synth.envelope.decay` | number, 0–10 seconds | 0.1 | Clamp to the inclusive range. |
+| `sonic.extras.synth.envelope.sustain` | number, 0–1 | 0.7 | Clamp to the inclusive range. |
+| `sonic.extras.synth.envelope.release` | number, 0–10 seconds | 0.3 | Clamp to the inclusive range. |
+| `sonic.extras.synth.octave_min` | integer, -1–7 | 3 | Clamp; must not exceed `octave_max`. |
+| `sonic.extras.synth.octave_max` | integer, -1–7 | 5 | Clamp; must not be below `octave_min`. |
+| `sonic.extras.synth.effects.distortion` | number, 0–1 | 0 | Clamp to the inclusive range. |
+| `sonic.extras.synth.effects.chorus` | number, 0–1 | 0 | Clamp to the inclusive range. |
+| `sonic.extras.synth.effects.tremolo` | number, 0–1 | 0 | Clamp to the inclusive range. |
+| `sonic.extras.synth.effects.pitch_shift` | number, -24–24 semitones | 0 | Clamp to the inclusive range. |
+| `sonic.extras.synth.effects.bitcrusher` | integer, 0–16 bits of reduction | 0 | Clamp to the inclusive range. |
+| `sonic.extras.synth.effects.flanger` | number, 0–1 | 0 | Clamp to the inclusive range. |
+| `sonic.extras.ambient_sample` | optional owner-managed asset identifier, string ≤255 | absent | Reject external URLs and treat malformed values as absent. |
+
+Persistence is split by piece family: structured scene versions persist the
+additive `sonic` field in the canonical scene document, while generated
+versions persist it in the existing JSON metadata field. Existing readers
+that only understand `sound` continue to work, and canonical routes retain
+their current privacy boundary. This is a backward-compatible additive
+contract under Rule 5; no existing route or export signature is removed or
+reinterpreted.
+
 ## Profile photo upload/removal (#824)
 
 Authenticated owners may `POST multipart/form-data` with an `image` field to

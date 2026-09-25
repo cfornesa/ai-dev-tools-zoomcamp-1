@@ -1394,3 +1394,19 @@ deferred.
 - Next independent transaction: #833 grooming/decision capture. No product
   implementation began during distillation. Service/model/effort:
   task-distillation orchestrator, Codex/GPT-5 substitution, medium effort.
+
+## #833 transaction — 2026-09-26
+
+- Grooming: decision-sized contract issue; dependencies were rechecked and
+  the continuation instruction was used to adopt the issue's recommended
+  defaults plus `root`, `keyboard_scale`, and `transpose`. Service/model/
+  effort: Claude/Codex primary substitution, medium effort.
+- Engineering: documentation/decision-only implementation in `docs/api.md`,
+  `schema/README.md`, and `DECISIONS.md`; no product runtime, schema validator,
+  migration, or production data change. Commit pending at reconciliation.
+- QA self-review: PASS. `git diff --check` passed and required contract,
+  persistence, compatibility, and decision sections were found by `rg`.
+  Service/model/effort: Claude/Codex primary substitution, medium effort.
+- QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/833#issuecomment-5828200845
+- Reconciliation: all #833 criteria passed; issue closed. Dependent runtime,
+  editor, AI, and export work remains in #834–#851 and must use this contract.

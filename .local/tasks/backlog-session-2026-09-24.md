@@ -3497,3 +3497,71 @@ deferred.
 - Evidence boundary: disposable local Compose and active Chrome only; no
   production publish or deployed-URL claim.
 - Reconcile: QA PASS comment posted and issue closed.
+
+## Transaction #854 — 2026-09-25 — QA PARTIAL / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes;
+  C2.js verification remains distinct from the source-editor implementation
+  gap fixed by #870.
+- Engineer: NONE (verification issue). The browser run exposed no new
+  implementation gap after #870; exact audio-output instrumentation remains
+  an evidence gap rather than a code change inferred without proof.
+- QA self-review: PARTIAL/OPEN. Active Chrome created and published a
+  disposable C2.js fixture, authored a serene source, saved sound defaults,
+  and verified non-blank rendering, version history, direct piece actions,
+  mobile responsive layout, and Full/Non-Camera download choices. The mobile
+  hamburger was confirmed to be global navigation; it does not replace the
+  direct piece actions. No independent first-eight-note/audio-context trace
+  was captured.
+- Reconcile: QA PARTIAL comment posted; issue remains open pending objective
+  runtime-audio evidence and any production boundary required by the batch.
+
+## Transaction #855 — 2026-09-25 — QA FAIL / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes;
+  C2.js Interactive has its own visitor-drawing and publication workflow and is
+  not a duplicate of #854.
+- Engineer: NONE (verification issue). No implementation change was inferred
+  from this run.
+- QA self-review: FAIL/OPEN. Active Chrome on disposable Compose reached the
+  C2.js Interactive owner route with visitor-drawing controls and direct
+  Screenshot, Download, Unmute sound, Piece controls, and Fullscreen actions.
+  The editor showed the expected 90 BPM/major/synth and C/major/0/sine sound
+  defaults and saved a version, but the public route did not reflect the saved
+  sound/version state consistently; no independent runtime audio trace was
+  captured.
+- Reconcile: QA FAIL comments posted with a correction for shell-substitution
+  artifacts; issue remains open.
+
+## Production-readiness — 2026-09-25 — NOT READY
+
+- Local quality gate: PASS for the current checkout before the verification
+  runs; no implementation changes were made after the last green gate.
+- Browser readiness: PARTIAL. Active Chrome verified the direct action row and
+  responsive global-nav hamburger distinction, C2.js rendering/download menu,
+  and editor sound-default controls locally. #853, #854, and #855 retain
+  objective audio/public-version evidence gaps.
+- Production readiness: BLOCKED. #788 still lacks an approved production
+  shell/dry-run route, so no production database import was attempted. No new
+  publish was performed in this continuation.
+- Backlog readiness: NOT READY. Open verification inventory remains #788,
+  #846, #847, #853–#862; #855 additionally has a publication/version parity
+  failure. No issue was silently closed.
+
+## Session-completion — 2026-09-25 — INCOMPLETE / HANDED OFF
+
+- Transactions appended this continuation: #854 QA PARTIAL/OPEN and #855 QA
+  FAIL/OPEN. #870 remains the only implementation item closed in this slice;
+  #851 was already closed earlier in the same continuation.
+- New actionable gaps reconciled: C2.js runtime-audio evidence remains open;
+  C2.js Interactive public-version parity remains open. They were recorded on
+  their canonical issues rather than creating duplicates.
+- Routing audit: #854/#855 are verification issues; no implementation agent
+  was invoked because the observed failures were evidence/publication-state
+  boundaries, not a safely inferred code fix.
+- Follow-up audit: #788 requires owner-approved production access; #853/#854
+  require objective runtime-audio evidence; #855 requires public-version
+  reconciliation and runtime-audio evidence; #856–#862 remain unprocessed
+  verification inventory. #846/#847 remain optional feature work.
+- Final handoff: no production publish or production data write occurred;
+  production readiness remains NOT READY.

@@ -21,6 +21,7 @@ import { categorizeProviderError } from '../components/cameraFailure';
 import {
   readSoundSettings,
   resetSoundSettings,
+  applySoundSettingsToEngine,
   writeSoundSettings,
   type SoundSettings,
   soundSettingsFromSonic,
@@ -767,7 +768,11 @@ function PieceStageControls({
   }, []);
 
   function resetVisitorSoundSettings() {
-    applySoundSettings(resetSoundSettings(pieceId, undefined, authoredSoundSettings), soundOn);
+    const settings = resetSoundSettings(pieceId, undefined, authoredSoundSettings);
+    applySoundSettings(settings, soundOn);
+    if (soundOn && sonicEngineRef.current?.status === 'active') {
+      applySoundSettingsToEngine(sonicEngineRef.current, settings);
+    }
     resetSoundSettingsRef.current = true;
     // React's persistence effect may already be queued by the same gesture;
     // remove the key once the reset state has committed so that reset remains

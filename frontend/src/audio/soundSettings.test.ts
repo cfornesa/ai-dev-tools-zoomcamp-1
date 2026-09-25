@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  applySoundSettingsToEngine,
   DEFAULT_SOUND_SETTINGS,
   readSoundSettings,
   resetSoundSettings,
@@ -8,6 +9,22 @@ import {
   soundSettingsKey,
   writeSoundSettings,
 } from './soundSettings';
+import type { SonicEngine } from './sonicEngine';
+
+function engineSpy() {
+  return {
+    setVolume: vi.fn(),
+    setTempo: vi.fn(),
+    setVoiceVolume: vi.fn(),
+    setVoiceMuted: vi.fn(),
+    setScale: vi.fn(() => true),
+    setKey: vi.fn(() => true),
+    setTranspose: vi.fn(),
+    setFollowKey: vi.fn(),
+    setFilter: vi.fn(() => true),
+    setMelodicSynth: vi.fn(),
+  } as unknown as SonicEngine;
+}
 import { normalizeSonic } from './sonicContract';
 
 function storage(initial?: string): Storage {
@@ -29,6 +46,26 @@ function storage(initial?: string): Storage {
 }
 
 describe('soundSettings', () => {
+  it('applies reset settings to an active engine, not only to controls/storage', () => {
+    const engine = engineSpy();
+    const settings = {
+      ...DEFAULT_SOUND_SETTINGS,
+      ambientBpm: 90,
+      ambientScale: 'major' as const,
+    };
+
+    applySoundSettingsToEngine(engine, settings);
+
+    expect(engine.setTempo).toHaveBeenCalledWith(90);
+    expect(engine.setScale).toHaveBeenCalledWith('major');
+    expect(engine.setKey).toHaveBeenCalledWith({ root: 'C', scale: 'major' });
+    expect(engine.setTranspose).toHaveBeenCalledWith(0);
+    expect(engine.setVoiceMuted).toHaveBeenCalledWith('ambient', false);
+    expect(engine.setMelodicSynth).toHaveBeenCalledWith(
+      expect.objectContaining({ oscillator: 'sine', octaveShift: 0 }),
+    );
+  });
+
   it('uses the per-piece versioned key and round-trips valid settings', () => {
     const target = storage();
     const settings = { ...DEFAULT_SOUND_SETTINGS, ambientBpm: 120 };

@@ -3952,6 +3952,82 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #855
+
+- Current GitHub inventory was re-read: open issues are #875, #874, #862,
+  #861, #860, #859, #858, #857, #856, #855, #847, and #788. #853, #854,
+  #876, and #877 are closed; no closed issue is being reopened.
+- Duplicate audit: #877 owns the C2.js Interactive fixture regeneration;
+  #855 remains the separate regular-view create/sound workflow; #859–#861
+  remain separate immersive/embed/ZIP surfaces; #862 remains the aggregate
+  workflow report. No new issue is needed for the exact viewport capability.
+- #877 closure contract is satisfied locally after adding explicit layer
+  markers in immutable published version 4. The QA self-review comment
+  #877-5839819404 records `ACCEPTED-WITH-FIXES`, the Codex substitution for
+  stage 2b/4, and the exact local evidence boundary.
+- Next issue: #855, one regular public C2.js Interactive workflow. Its
+  precondition is now satisfied by #877; run the creator/editor/public sound
+  flow and capture the first eight ambient notes plus A-K mapping before
+  touching any dependent surface issue.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Transaction #877 reconciliation — 2026-09-26 — QA PASS / CLOSED
+
+- Groom: criterion-ready fixture/data workflow; no duplicate. The earlier
+  partial result was resolved by the newly available exact viewport control.
+- Engineer: local disposable C2.js Interactive published fixture advanced
+  from immutable version 3 to version 4, adding explicit `@layer` markers and
+  regenerating its fallback thumbnail. No repository product file, schema,
+  dependency, secret, or production data changed. Actual service/model/effort:
+  Codex-GPT-5 / medium; roster substitution for the intended complex stage.
+- QA self-review: PASS. Exact 1280x720 and 375x667 browser screenshots,
+  one-second motion pair, sound defaults, and no app console errors were
+  rechecked. Stage 3 was not run because this was a fixture-only change with
+  no product diff. QA actual service/model/effort: Codex-GPT-5 / medium;
+  roster substitution.
+- Reconcile: GitHub comments #877-5839812457 and #877-5839819404 record the
+  criterion matrix, self-review provenance, and local-only evidence boundary.
+  #877 is closed. Dependent #855 and #859–#861 remain open and must be
+  processed independently.
+- Provenance per stage: groom / Codex-GPT-5 / medium / substituted: no;
+  engineer / Codex-GPT-5 / medium / substituted: yes;
+  QA self-review / Codex-GPT-5 / medium / substituted: yes;
+  reconcile / Codex-GPT-5 / medium / substituted: no.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #855
+
+- During #855 QA, a distinct implementation defect was reproduced: Reset
+  sound settings changed controls/storage but left the active trusted parent
+  engine at the old 220 BPM/minor runtime. Duplicate audit found closed #843
+  covers persistence/reset storage only, so new linked issue #878 was created.
+- #878 routing: stage 2a frontend mechanical change in
+  `frontend/src/audio/soundSettings.ts`, `PieceStageControls.tsx`, and the
+  focused sound-settings test. It has no production/data/schema boundary.
+- #878 is now implemented and QA-passed locally; #855 remains the current
+  transaction until its full criterion matrix and workflow verdict are
+  reconciled.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Transaction #878 — 2026-09-26 — QA PASS / CLOSED
+
+- Groom: new runtime-synchronization defect, distinct from closed #843 and
+  linked to #855. Closure contract names the active engine and exact reset
+  behavior.
+- Engineer: added `applySoundSettingsToEngine` and invoked it from the reset
+  path so controls/storage and the active trusted Sonic engine receive the
+  same full snapshot. Added focused regression coverage. Actual service /
+  model / effort: Codex-GPT-5 / medium; substitution for Opencode Go/kimi-k3.
+- QA self-review: PASS. Focused test 6 passed; full frontend 281 files/3022
+  tests passed; typecheck/lint/format-check/diff-check passed; fresh Chrome
+  reproduced 220/minor then reset to a 90 BPM/major ambient note without
+  reload. No app errors in the fresh public tab.
+- Reconcile: GitHub QA comment #878-5840055529 records the criterion matrix,
+  exact commands, provenance, and local evidence boundary. #878 is closed.
+- Provenance per stage: groom / Codex-GPT-5 / medium / substituted: no;
+  engineer / Codex-GPT-5 / medium / substituted: yes;
+  QA self-review / Codex-GPT-5 / medium / substituted: yes;
+  reconcile / Codex-GPT-5 / medium / substituted: no.
+
 ## Transaction #876 reconciliation — 2026-09-26 — QA PASS / CLOSED
 
 - Groom/engineer: implementation remained scoped to the parent-trusted

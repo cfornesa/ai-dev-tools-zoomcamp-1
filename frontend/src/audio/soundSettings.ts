@@ -1,4 +1,5 @@
 import type { SonicDefaults } from './sonicContract';
+import type { SonicEngine } from './sonicEngine';
 
 export const SOUND_SETTINGS_VERSION = 1;
 
@@ -191,4 +192,37 @@ export function resetSoundSettings(
     // A blocked remove is also non-fatal; the next read still validates safely.
   }
   return { ...fallback, voiceInstruments: { ...fallback.voiceInstruments } };
+}
+
+/** Apply a complete visitor snapshot to an already-running trusted engine. */
+export function applySoundSettingsToEngine(engine: SonicEngine, settings: SoundSettings): void {
+  engine.setVolume(settings.soundVolume * 100);
+  engine.setTempo(settings.ambientBpm);
+  engine.setVoiceVolume('ambient', settings.ambientVolume);
+  engine.setVoiceMuted('ambient', settings.ambientMuted);
+  engine.setScale(settings.ambientScale);
+  engine.setKey({ root: settings.keyboardRoot, scale: settings.keyboardScale });
+  engine.setTranspose(settings.keyboardTranspose);
+  engine.setFollowKey(settings.followKey);
+  engine.setVoiceVolume('melodic', settings.keyboardVolume);
+  engine.setFilter({
+    type: settings.keyboardFilterType,
+    cutoff: settings.keyboardFilterCutoff,
+    resonance: settings.keyboardFilterResonance,
+  });
+  engine.setMelodicSynth({
+    oscillator: settings.keyboardOscillator,
+    envelope: {
+      attack: settings.keyboardAttack,
+      decay: settings.keyboardDecay,
+      sustain: settings.keyboardSustain,
+      release: settings.keyboardRelease,
+    },
+    filter: {
+      type: settings.keyboardFilterType,
+      cutoff: settings.keyboardFilterCutoff,
+      resonance: settings.keyboardFilterResonance,
+    },
+    octaveShift: settings.keyboardOctave,
+  });
 }

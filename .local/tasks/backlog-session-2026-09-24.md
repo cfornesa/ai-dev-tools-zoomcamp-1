@@ -2230,3 +2230,33 @@ deferred.
   Codex/GPT-5 substitutions at medium effort; no second opinion was credited.
 - Follow-up audit: #844 owns missing Playwright ZIP evidence; #865 remains a
   separate unverified report; no duplicate or closed issue was reopened.
+
+## Distillation refresh 34 — 2026-09-25 — next queue
+
+- #838 was the next closure-ready issue after #832–#837 closed. Its existing
+  implementation was valid; the focused Playwright spec had stale route,
+  hamburger, and ambiguous Scale locator assumptions. Those were corrected in
+  `4e9c3e8`, the exact Compose Chromium spec passed 1/1, active Chrome
+  screenshots/geometry passed at 1280x900 and 375x812, and #838 was closed:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/838#issuecomment-5831949442
+- No new issue was created: the discovered failures were within #838's own
+  verification artifact, and the broader full-suite two-test failure remains
+  covered by open #865. #844 remains open on its separate ZIP artifact
+  boundary. Next closure-ready issue: #839 (keyboard synth controls), then
+  #840/#850, followed by #841/#842/#843 and the per-engine verification batch.
+
+## Transaction #838 — 2026-09-25 — CLOSED
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. Dependencies #832–#837 were closed; no
+  duplicate issue was found.
+- Engineer: COMPLETE. Stage owner implementation-mechanical; Codex/GPT-5
+  substitution; medium effort. Fixed only the stale route/menu/locator
+  assertions in `frontend/e2e/soundEngine3d.spec.ts`; commit `4e9c3e8`.
+- QA self-review: PASS. Stage owner qa-self-review; Codex/GPT-5 substitution;
+  medium effort. Exact Compose Playwright 1/1 passed; frontend 280 files /
+  3004 tests, typecheck, and lint passed; active Chrome screenshots and mobile
+  no-horizontal-overflow geometry passed.
+- Reconcile: CLOSED. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/838#issuecomment-5831949442
+  records the matrix, commands, provenance, and local-only evidence boundary.

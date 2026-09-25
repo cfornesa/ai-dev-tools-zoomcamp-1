@@ -114,6 +114,16 @@ export type SonicScale =
 
 export type SonicKey = { root: PitchClass; scale: SonicScale };
 
+export type SonicNoteEvent = {
+  kind: 'ambient' | 'movement' | 'melodic';
+  note: string;
+  frequency: number;
+  tempo: number;
+  scale: SonicScale;
+  key: SonicKey;
+  transpose: number;
+};
+
 export const SONIC_SCALE_OPTIONS: ReadonlyArray<SonicScale> = [
   'major',
   'minor',
@@ -228,6 +238,7 @@ export interface SonicEngine {
 
 export function createSonicEngine(
   loadTone: () => Promise<ToneModule> = () => import('tone'),
+  onNote?: (event: SonicNoteEvent) => void,
 ): SonicEngine {
   let status: SonicEngineStatus = 'idle';
   let tone: ToneModule | null = null;
@@ -336,11 +347,17 @@ export function createSonicEngine(
       let ambientIndex = 0;
       ambientLoop = new tone.Loop((time) => {
         const ambientScale = scaleNotes(scale, 3);
-        ambientSynth?.triggerAttackRelease(
-          transposeNote(ambientScale[ambientIndex % ambientScale.length], transpose),
-          '8n',
-          time,
-        );
+        const note = transposeNote(ambientScale[ambientIndex % ambientScale.length], transpose);
+        ambientSynth?.triggerAttackRelease(note, '8n', time);
+        onNote?.({
+          kind: 'ambient',
+          note,
+          frequency: noteFrequency(note),
+          tempo,
+          scale,
+          key: { ...key },
+          transpose,
+        });
         ambientIndex += 1;
       }, eighthNoteInterval(tempo)).start(0);
       tone.Transport.bpm.value = tempo;
@@ -599,6 +616,15 @@ export function createSonicEngine(
     const rounded = Math.round(midi);
     const octave = Math.floor(rounded / 12) - 1;
     return `${PITCH_CLASSES[((rounded % 12) + 12) % 12]}${octave}`;
+  }
+
+  function noteFrequency(note: string): number {
+    const match = /^([A-G](?:#|b)?)(-?\d+)$/.exec(note);
+    if (!match) return 0;
+    const pitchIndex = PITCH_CLASSES.indexOf(match[1] as PitchClass);
+    if (pitchIndex < 0) return 0;
+    const midi = (Number(match[2]) + 1) * 12 + pitchIndex;
+    return 440 * 2 ** ((midi - 69) / 12);
   }
 
   function shiftNoteOctave(note: string, shift: number): string {

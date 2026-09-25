@@ -305,6 +305,30 @@ describe('createSonicEngine', () => {
     expect(fake.triggerCalls.map(({ note }) => note)).toEqual(['C3', 'D3', 'E3', 'G3', 'A3', 'C4']);
   });
 
+  it('reports the authored ambient note with its live sound settings', async () => {
+    const fake = createFakeToneModule();
+    const events: Array<Record<string, unknown>> = [];
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule), (event) =>
+      events.push(event),
+    );
+    engine.setScale('major');
+    engine.setTranspose(1);
+    await engine.enable();
+
+    fake.fireAmbientLoopTick();
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      kind: 'ambient',
+      note: 'C#3',
+      tempo: 90,
+      scale: 'major',
+      key: { root: 'C', scale: 'chromatic' },
+      transpose: 1,
+    });
+    expect(events[0].frequency).toBeCloseTo(138.591, 2);
+  });
+
   it('validates an independent melodic key and maps piano degrees through its scale', async () => {
     const fake = createFakeToneModule();
     const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import type { SonicDefaults } from '../audio/sonicContract';
 import { SONIC_ROOTS, SONIC_SCALES } from '../audio/sonicContract';
-import { createSonicEngine, type SonicEngine } from '../audio/sonicEngine';
+import { createSonicEngine, type SonicEngine, type SonicNoteEvent } from '../audio/sonicEngine';
 import { isEditableElement, PIANO_KEY_MAP } from '../audio/pianoKeyMap';
 import { scaleNotes, transposeNote } from '../audio/scaleTheory';
 import {
@@ -192,6 +192,7 @@ function PieceStageControls({
   const [keyboardOctave, setKeyboardOctave] = useState(initialSoundSettings.keyboardOctave);
   const [lastNote, setLastNote] = useState<string | null>(null);
   const [lastNoteFrequency, setLastNoteFrequency] = useState<number | null>(null);
+  const [lastAmbientNote, setLastAmbientNote] = useState<SonicNoteEvent | null>(null);
   const [microphoneState, setMicrophoneState] = useState<
     'off' | 'active' | 'denied' | 'unavailable'
   >('off');
@@ -482,7 +483,9 @@ function PieceStageControls({
   }
 
   async function enableParentSound() {
-    const engine = (sonicEngineRef.current ??= createSonicEngine());
+    const engine = (sonicEngineRef.current ??= createSonicEngine(undefined, (event) => {
+      if (event.kind === 'ambient') setLastAmbientNote(event);
+    }));
     configureParentSound(engine);
     await engine.enable();
     if (engine.status !== 'active') {
@@ -1625,6 +1628,12 @@ function PieceStageControls({
                   ? `Last note played: ${lastNote}${lastNoteFrequency ? ` (${lastNoteFrequency.toFixed(2)} Hz)` : ''}.`
                   : 'Keyboard notes available. Press A-K over the piece to play a note.'
                 : 'Turn on Sound to play keyboard notes.'}
+            </p>
+          )}
+          {soundOn && lastAmbientNote && (
+            <p data-testid="ambient-note-status">
+              Last ambient note: {lastAmbientNote.note} ({lastAmbientNote.frequency.toFixed(2)} Hz)
+              at {lastAmbientNote.tempo} BPM.
             </p>
           )}
           {capabilities.microphone && (

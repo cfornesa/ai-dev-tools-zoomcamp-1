@@ -3698,3 +3698,81 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   offline serving, and artifact runtime evidence were not performed.
 - Reconcile: QA FAIL comments posted for all three; all remain open with exact
   next actions in their comments. No production evidence is claimed.
+
+## Transaction #846 — 2026-09-26 — RECONCILED / QA PASS / CLOSED
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: no;
+  the issue was reread after all named sound dependencies terminalized.
+- Engineer: NONE in this transaction; the current checkout already contains
+  the effect chain, clamps, fixed-order rebuild, and structured 3D disclosure.
+- QA self-review: PASS. Focused sonicEngine and Scene3DPreview sound tests
+  passed 2 files / 62 tests. The prior full gate passed backend 1710 / 39
+  skipped and frontend 281 files / 3017 tests. No production claim.
+- Reconcile: QA PASS comment posted and #846 closed. The scoped optional
+  effect-chain contract is complete; live-production audio remains separate.
+
+## Transaction #847 — 2026-09-26 — QA FAIL / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: no;
+  this is distinct from #846's effects chain.
+- Engineer: BLOCKED / not started. Contract normalization exists, but the
+  owner-scoped existing-media selection, Tone.Player loop, BPM-disabled state,
+  and ZIP asset bundling are absent. This is an implementation-defect, not a
+  missing-browser-evidence boundary.
+- QA self-review: FAIL by source inspection; the current green full gate does
+  not prove unimplemented behavior.
+- Reconcile: QA FAIL comment posted. Route to Stage 2b implementation as the
+  next independent implementation transaction; do not touch production.
+
+## Transaction #862 — 2026-09-26 — DEPENDENCY-BLOCKED / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: no;
+  docs synthesis depends on terminal comments for #853–#861.
+- Engineer/QA: NOT STARTED. The required six-by-nine report would contain
+  unsupported cells while the child verification issues remain open.
+- Reconcile: dependency-blocked comment posted. Next action is to terminalize
+  #853–#861, then write and QA the docs-only report.
+
+## Production-readiness reconciliation — 2026-09-26 — NOT READY
+
+- Local implementation gate: PASS for the current checkout. The #871 change
+  is committed as `3963223` and safely pushed to `origin/main`; the full gate
+  recorded backend 1710 passed / 39 skipped and frontend 281 files / 3017
+  tests, with lint, format-check, and typecheck passing.
+- Local browser boundary: PASS only for the inspected local Compose routes and
+  screenshots. The local Chrome/IAB sweep verified the direct piece toolbar,
+  title-before-stage immersive ordering, six engine render presence, and the
+  generated 3D source editor. It did not establish independent AudioContext,
+  exact motion-bound, ZIP extraction/offline, or complete console evidence.
+- Production boundary: BLOCKED. The authorized Replit/Chrome production
+  session is no longer exposed by the current browser bridge (`getBrowser` for
+  Chrome is unavailable); no production shell, snapshot, import, publish, or
+  live deployed revision was claimed in this continuation. #788 remains open.
+- Implementation boundary: #847 remains open because the repository still has
+  no owner-scoped published audio-asset retrieval or ZIP-bundling contract;
+  implementing a new upload pipeline would violate its scope. #853–#861 remain
+  open with QA FAIL/VALID WITH GAPS, and #862 remains dependency-blocked.
+- Readiness verdict: NOT READY. The hamburger observation is explained by the
+  responsive global header contract, not a missing piece-toolbar button; no
+  separate issue was created.
+
+## Session-completion handoff — 2026-09-26 — INCOMPLETE / BLOCKED
+
+- Batch counts: 2 issues closed in this continuation (#846, #871); 10
+  verification/docs issues remain open (#853–#862); #847 remains an
+  implementation blocker; #788 remains an authorized production-access
+  blocker. No issue was closed on localhost-only evidence where its contract
+  names production or requires objective runtime traces.
+- Routing audit: verification-only observations stayed in their own issues;
+  #871 was routed as the distinct implementation gap it exposed; #847 was
+  routed to Stage 2b but not started because its required media delivery
+  dependency is absent; #862 was not started before its child evidence was
+  terminal.
+- Follow-up audit: restore the authorized Replit/Chrome binding, then perform
+  #788's one-time snapshot/dry-run/import/rollback verification. Separately
+  obtain the missing objective sound/motion/ZIP evidence for #853–#861 before
+  writing #862. Provide a criterion-ready published media-asset contract if
+  #847 is to proceed.
+- Handoff: no production data write or new publish was performed in this
+  continuation. The worktree contains only the ledger append after the pushed
+  #871 commit.

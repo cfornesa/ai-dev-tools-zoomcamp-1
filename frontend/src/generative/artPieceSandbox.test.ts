@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ART_PIECE_IFRAME_SANDBOX,
+  ART_PIECE_IFRAME_ALLOW,
   ART_PIECE_SANDBOX_MESSAGE_SOURCE,
   buildArtPieceSandboxDocument,
   isValidArtPieceSoundCommand,
@@ -55,6 +56,14 @@ describe('buildArtPieceSandboxDocument', () => {
       expect(doc).toContain("report('ready', '')");
       expect(doc).toContain("report('error', 'The interactive runtime could not be started.')");
     }
+  });
+
+  it('#879 treats the A-Frame scene loaded event as a runtime-ready signal', () => {
+    const doc = buildArtPieceSandboxDocument('<a-scene></a-scene>', 'aframe');
+    expect(ART_PIECE_IFRAME_ALLOW).toBe('xr-spatial-tracking');
+    expect(doc).toContain("pieceLibrary === 'aframe'");
+    expect(doc).toContain('scene.hasLoaded');
+    expect(doc).toContain("scene.addEventListener('loaded', reportAframeReady");
   });
 
   it('#866 does not surface browser ResizeObserver loop notifications as piece errors', () => {

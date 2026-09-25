@@ -137,7 +137,12 @@ export const ART_PIECE_IFRAME_SANDBOX = 'allow-scripts';
  * Real camera capture, hand-tracking, and microphone capture now happen
  * entirely in the trusted parent frame (`PieceStageControls.tsx`), which
  * has a real origin and needs no iframe `allow` delegation at all. */
-export const ART_PIECE_IFRAME_ALLOW = '';
+// A-Frame probes WebXR during scene startup. Without this narrowly scoped
+// policy token Chromium rejects that probe with "Disallowed by permissions
+// policy" even when the scene itself is otherwise renderable. Camera and
+// microphone remain intentionally absent: those capabilities belong to the
+// trusted parent frame and are never delegated to the opaque sandbox.
+export const ART_PIECE_IFRAME_ALLOW = 'xr-spatial-tracking';
 
 /** Issue #199 (Three.js/A-Frame extension): these libraries need
  * their own runtime loaded via a pinned CDN `<script>` this module
@@ -514,6 +519,22 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   }
   var runtimeFailed = false;
   var runtimeReady = false;
+  if (pieceLibrary === 'aframe') {
+    // A-Frame can finish its scene boot before the document-level load
+    // listener is useful in an opaque srcdoc (the CDN script and custom
+    // elements own the actual readiness boundary). Treat the scene's own
+    // loaded event as the authoritative ready signal so the parent does
+    // not report a false timeout after a visible A-Frame canvas exists.
+    function reportAframeReady() { report('re' + 'ady', ''); }
+    function observeAframeScene() {
+      var scene = document.querySelector('a-scene');
+      if (!scene) return;
+      if (scene.hasLoaded) reportAframeReady();
+      else scene.addEventListener('loaded', reportAframeReady, { once: true });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observeAframeScene, { once: true });
+    else observeAframeScene();
+  }
   // Issue #430: reports acknowledged runtime state (not just command
   // receipt) for sound/microphone, so the parent -- and this suite's own
   // E2E spec -- observe what the sandbox actually did, never a spoofed

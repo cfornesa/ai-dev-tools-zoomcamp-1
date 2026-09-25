@@ -1512,3 +1512,12 @@ tests, 148 art-piece tests, and the full backend gate (1670 passed / 39
 skipped). QA corrected preflight ordering and optional-version narrowing before
 acceptance. Preservation and frontend typeahead remain separate open issues;
 no production or browser evidence was required or performed.
+
+## 2026-09-24 — Generated art preservation (#820)
+
+#820 was routed as complex logic with Ollama Cloud / Kimi K3 / medium rostered;
+Codex / GPT-5 / medium substituted. Commit `1c615eb` passed 15 focused refine
+tests, 156 art-piece tests, and the full backend gate (1678 passed / 39
+skipped). QA corrected the final-region wrapper-span edge case and expanded
+coverage across six engine families. No production or browser evidence was
+required or performed.

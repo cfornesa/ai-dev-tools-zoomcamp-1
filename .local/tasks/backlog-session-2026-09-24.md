@@ -461,3 +461,31 @@ deferred.
 - Dependency/order rationale: #820 is next and #821 follows it; #815 remains
   independent. Production/browser work remains authorization-gated on
   #748/#788/#803/#806/#807.
+
+## #820 transaction — 2026-09-24 continuation
+
+- Groom: criterion-ready Stage 2b preservation contract; #819 is closed and
+  supplied mention resolution. Frontend and marker generation remain out of
+  scope; no duplicate or new follow-up was needed.
+- Engineering: Ollama Cloud / Kimi K3 / medium rostered; Codex / GPT-5 /
+  medium substituted. Commit `1c615eb` adds post-edit named-region/element
+  comparison, explicit deletion-intent handling, broad-edit support without
+  silent removals, and six-engine regression coverage.
+- QA self-review: Claude / Sonnet 5 / medium rostered; Codex / GPT-5 / medium
+  substituted. Stage 3 independent-family review not run. QA corrected final
+  region wrapper-span handling and expanded the engine-family matrix before
+  final verification. Focused refine tests passed 15; `pytest tests -k
+  art_piece` passed 156; `make backend-check` passed 1678 tests / 39 skips.
+- Reconciliation: QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/820#issuecomment-5824317795`;
+  issue #820 closed. Evidence is local automated only; no production action.
+
+## Distillation refresh 11 — 2026-09-24 continuation
+
+- #820 is terminal CLOSED/QA PASS. The authenticated open inventory is 14
+  issues: #748, #788, #798–#807, #815, and #821.
+- Duplicate/follow-up audit: no new issue emerged from #820; broad edits,
+  delete intent, and preservation are covered in the existing contract.
+- Dependency/order rationale: #821 is the next dependency-ready issue; #815
+  remains independent. Production/browser work remains authorization-gated on
+  #748/#788/#803/#806/#807.

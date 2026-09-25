@@ -564,11 +564,8 @@ function PieceStageControls({
       setLastNoteFrequency(noteFrequency(note));
     }
     window.addEventListener('keydown', onKeyDown);
-    const frameWindow = iframeRef.current?.contentWindow;
-    frameWindow?.addEventListener('keydown', onKeyDown);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
-      frameWindow?.removeEventListener('keydown', onKeyDown);
     };
   }, [
     capabilities.keyboard,
@@ -639,6 +636,14 @@ function PieceStageControls({
       if (data.status === 'note' && typeof data.key === 'string') {
         setLastNote(data.note || data.key);
         if (typeof data.frequency === 'number') setLastNoteFrequency(data.frequency);
+        if (
+          data.kind === 'keyboard' &&
+          typeof data.note === 'string' &&
+          soundOn &&
+          sonicEngineRef.current?.status === 'active'
+        ) {
+          sonicEngineRef.current.triggerMelodicNote(data.note);
+        }
       }
       // Issue #432: activation is gated (engine/camera/registration) --
       // each rejection reason is its own distinct, actionable state, not
@@ -654,7 +659,7 @@ function PieceStageControls({
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [authoredSoundSettings, iframeRef, pieceId]);
+  }, [authoredSoundSettings, iframeRef, pieceId, soundOn]);
 
   function command(type: string, extra?: Record<string, unknown>) {
     if (
@@ -681,6 +686,18 @@ function PieceStageControls({
       if (type === 'toggle-sound') {
         if (soundOn) disableParentSound();
         else void enableParentSound();
+      } else if (type === 'set-keyboard-enabled') {
+        setKeyboardEnabled(Boolean(extra?.enabled));
+        iframeRef.current?.contentWindow?.postMessage(
+          {
+            source: 'art-piece-parent',
+            version: ART_PIECE_BRIDGE_VERSION,
+            type,
+            filename: screenshotFilename(title || 'art-piece'),
+            ...extra,
+          },
+          '*',
+        );
       } else {
         applyParentSoundCommand(type, extra);
       }

@@ -815,17 +815,20 @@ function buildListenerScript(library: ArtPieceLibrary): string {
     }, ambientIntervalMs());
   }
   function restartAmbient() { if (soundOn) startAmbient(); }
-  // Keyboard notes: a real, audible tone per key, gated on Sound already
-  // being on -- distinct from any application logic the generated
-  // snippet may separately bind to its own keyboard handling.
+  // Keyboard notes: the opaque sandbox cannot share its AudioContext with the
+  // trusted parent. When the parent owns the sound graph, forward the
+  // resolved note telemetry across postMessage instead of making the parent
+  // reach into this frame (which would throw SecurityError for an opaque
+  // origin). The legacy in-sandbox graph remains available for runtimes that
+  // still own their own audio context.
   window.addEventListener('keydown', function (event) {
-    if (!soundOn || !keyboardEnabled || !audioCtx) return;
+    if (!keyboardEnabled) return;
     var keyIndex = KEYBOARD_KEYS.indexOf((event.key || '').toLowerCase());
     if (keyIndex < 0) return;
     var midi = keyboardNotes()[keyIndex] + (melodicOctave * 12);
     var frequency = noteFrequency(midi);
     var note = midiToNoteName(midi);
-    playVoiceTone(frequency, 0.2, 'melodic', melodicOscillator);
+    if (soundOn && audioCtx) playVoiceTone(frequency, 0.2, 'melodic', melodicOscillator);
     reportState('note', { kind: 'keyboard', key: event.key, note: note, frequency: frequency });
   });
   function isBenignResizeObserverNotification(event) {

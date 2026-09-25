@@ -3951,6 +3951,39 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   delivery contract; #788 remains the separately authorized production data
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Transaction #875 — 2026-09-26 — ENGINEERED / QA PASS LOCAL / DEPLOYMENT PENDING
+
+- Groom: new issue created during #853 because the current generated viewer
+  blanked in active Chrome; duplicate audit found no existing open owner for
+  the opaque-frame listener crash. #873 remains closed historical scope.
+- Engineer: removed the parent `contentWindow.addEventListener` access that
+  throws against an opaque sandbox. Generated keyboard events now report their
+  resolved note through the existing postMessage bridge; the trusted parent
+  triggers its own SonicEngine. The sandbox remains `allow-scripts` only.
+- QA self-review: PASS locally. Active Chrome reproduced the previous blank
+  route and captured the SecurityError, then after Compose rebuild rendered
+  the generated public viewer at 1280x720 and 375x667. Sound showed
+  `running`; an A key pressed with focus inside the iframe reported C4.
+  Focused 79 tests, typecheck, lint, format-check, build, and diff-check pass.
+- GitHub QA comment: #875 comment 5839000432. Production publish is not yet
+  claimed because this issue was discovered after the previously authorized
+  release and needs explicit release authorization before production mutation.
+
+## Transaction #853 — 2026-09-26 — QA PARTIAL / OPEN
+
+- Local fixture precondition was repaired safely with
+  `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache uv run --env-file .env python
+  manage.py e2e_fixtures create --json`; no production database was touched.
+- Anonymous active Chrome rendered the published local `Serene p5.js` fixture
+  at the exact 1280x720 and 375x667 viewports. Toolbar, non-blank serene
+  scene, authored defaults (major/90 BPM/C/0 transpose), sound `running`, and
+  iframe-focused A→C4 telemetry passed.
+- Motion pixel-delta measurement and the first eight ambient event trace are
+  not yet verified. The missing parent ambient telemetry is a distinct new
+  implementation gap recorded as #876; #875 owns the viewer crash only.
+- GitHub QA comment: #853 comment 5838996218. Workflow verdict: VALID WITH
+  GAPS; keep open until #876 and the objective motion measurement are resolved.
   Existing implementation-complex substitutions and missing independent-review
   slots remain explicitly recorded in their issue transactions.
 
@@ -4045,3 +4078,27 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   verification pass; preserve #788 as blocked until a supported production
   dry-run/import path exists; and keep #874 open until the production record
   mismatch is resolved without unauthorized data changes.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #853
+
+- Open inventory from GitHub: #874, #862, #861, #860, #859, #858, #857,
+  #856, #855, #854, #853, #847, and #788. #873 is closed and remains
+  immutable historical evidence for its scoped generated-sound contract.
+- Duplicate audit: the unavailable local `serene-threejs` route is fixture
+  absence/authentication context, not a new issue; #874 owns the production
+  private/public Three.js record mismatch; #847 owns ambient-sample playback;
+  #853–#861 own the distinct engine/surface verification contracts.
+- Dependency audit: #853–#858 dependencies #832–#852 are closed, so #853 is
+  the first independent verification transaction. #859–#861 depend on the
+  per-engine results; #862 depends on all source reports. #874, #847, and #788
+  are independent but require different external/data boundaries.
+- Blocker triage: the absent local fixture is a workflow/precondition gap,
+  not a product failure. Recreate it only in disposable Compose, record the
+  exact fixture and cleanup commands, and do not use localhost evidence for
+  any production criterion. No new issue is needed.
+- Routing: #853 is verification-only (Codex with active Chrome; no product
+  engineering stage unless a repeatable implementation defect is discovered).
+  Closure contract: one published local `Serene p5.js` fixture, 1280x720 and
+  375x667 screenshots, motion interval, sound activation/defaults/keyboard
+  trace, toolbar, and a criterion matrix with the local evidence boundary.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.

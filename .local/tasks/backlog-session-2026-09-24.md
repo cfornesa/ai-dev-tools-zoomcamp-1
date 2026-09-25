@@ -3803,3 +3803,57 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   regular canonical route remains covered; then post `## QA: PASS` with the
   production revision and close. backlog-session / Codex-GPT-5 / medium /
   substituted: no.
+
+## Transaction #872 — 2026-09-26 — RECONCILED / QA PASS / CLOSED
+
+- QA self-review/reconcile: PASS. Commit `4480d90` was safely pushed to
+  `origin/main`, the Replit workspace was aligned to that exact tip with a
+  recoverable backup branch, and the authorized republish completed. The live
+  canonical immersive and regular piece HTML both contain server-rendered
+  `og:title`, `og:url`, canonical, image, and Twitter image metadata.
+- Production evidence: `PUBLISHED_APP_URL=https://augmentrart.com
+  scripts/smoke-published.sh` passed health 200, root 200, anonymous whoami
+  401, login 200, and metadata diagnostic with middleware/backend healthy.
+  The live Chrome inspection before the final publish already showed direct
+  immersive toolbar buttons; the final Chrome debugger detached during the
+  post-publish viewport capture, so no new screenshot claim is made.
+- GitHub: `## QA: PASS` comment posted at
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/872#issuecomment-5836963138`
+  and #872 closed. No migration or production data action was involved.
+
+## Production-readiness reconciliation — 2026-09-26 — NOT READY
+
+- Release boundary: #872 is now production-verified and closed; the published
+  canonical metadata regression is corrected on the live site. The authorized
+  production publish used checkout commit `4480d90`; the exact Replit deploy
+  identifier was not exposed after the browser debugger detached, so the
+  commit and live HTML/smoke output are the authoritative evidence boundary.
+- Remaining blockers: #788 remains open because Replit exposes no interactive
+  production shell and its startup import gate has no dry-run argument; the
+  recorded snapshot and disposable PostgreSQL rehearsal remain valid, but no
+  production write was improvised. #847 remains dependency-blocked on an
+  owner-scoped published media-asset contract. #853–#861 remain open because
+  the final Chrome debugger detached and their required runtime/viewport
+  evidence is not reproducible through curl; #862 remains dependent on those
+  reports.
+- Readiness verdict: NOT READY. The canonical immersive toolbar itself is
+  correctly direct-button based; the hamburger observation refers to the
+  responsive global header/default legacy surface, not the canonical piece
+  toolbar.
+
+## Session-completion handoff — 2026-09-26 — INCOMPLETE / BLOCKED
+
+- Batch counts: #872 closed in this continuation with QA PASS. #788, #847,
+  #853–#862 remain open; no blocked issue was falsely closed.
+- Routing audit: #872 was a distinct implementation follow-up to immutable
+  #747, routed through complex implementation and local/full QA before live
+  verification. Verification-only issues remain verification issues; #847
+  remains implementation-blocked by its explicitly forbidden missing media
+  delivery contract.
+- Follow-up audit: obtain a supported Replit production dry-run/one-shot
+  execution path for #788; restore an attached Chrome debugger for #853–#861;
+  then synthesize #862. Do not reopen #747 or #748; use new corrective issues
+  for any regression.
+- Handoff: code, tests, safe push, publish, published smoke, and #872 QA
+  evidence are complete. The session cannot claim full production readiness
+  while the remaining external execution/evidence boundaries above persist.

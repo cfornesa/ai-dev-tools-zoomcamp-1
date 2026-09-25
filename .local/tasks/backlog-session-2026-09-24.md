@@ -1790,3 +1790,31 @@ deferred.
   still fails before test execution with the host Mach-port permission error,
   so browser runtime acknowledgements and both viewport screenshots remain
   outstanding.
+
+## Backlog transaction 43 — #843
+
+- State: `GROOMED → ENGINEERING → QA/OPEN-BLOCKED`.
+- Grooming/routing: per-piece visitor sound persistence is a frontend
+  mechanical change. The issue's `voiceInstruments` field is versioned and
+  validated in the persisted contract; this viewer surface currently exposes
+  the ambient and Keyboard synth controls implemented by #841, while the
+  existing generated runtime has no instrument-selection bridge command. That
+  limitation is recorded rather than claiming unsupported instrument behavior.
+  Service/model/effort: Codex/GPT-5 substitution, medium effort; rostered
+  implementation service unavailable.
+- Engineering commit: `883b7b1`; added the versioned defensive
+  `creatr.sound.<pieceId>` helper, safe read/write/reset behavior, per-piece
+  viewer wiring, acknowledged-Sound restoration, and Reset sound settings.
+  Initial runtime-off state is not written back over a saved snapshot.
+- Focused QA: `cd frontend && npm test -- --run
+  src/audio/soundSettings.test.ts` passed (1 file / 4 tests); `npm run
+  typecheck` passed; `npm run lint` passed with existing warnings only; `git
+  diff --check` passed. GitHub QA FAIL comment:
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/843#issuecomment-5829775267`.
+- Exact live-viewer E2E attempt:
+  `E2E_DOCKER_COMPOSE=true npx playwright test
+  e2e/artPieceSoundRuntime.spec.ts --project=chromium --grep "sound only
+  starts from activation"` failed before test execution because the macOS
+  Playwright Chromium process hit `bootstrap_check_in ... Permission denied
+  (1100)`. Local evidence does not close the live-viewer criterion; #843
+  remains OPEN pending the approved Docker/CI Chromium runner.

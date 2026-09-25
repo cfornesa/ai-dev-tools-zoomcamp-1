@@ -213,6 +213,17 @@ ${ANIMATION_MATH_SOURCE}
     var keyboardEnabled = false;
     var ambientTimer = null;
     var volumePercent = 50;
+    var ambientBpm = 90;
+    var ambientVolume = 0.5;
+    var ambientMuted = false;
+    var ambientScale = 'pentatonic';
+    var melodicVolume = 0.5;
+    var melodicMuted = false;
+    var melodicOscillator = 'sine';
+    var melodicOctave = 0;
+    var melodicEnvelope = { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 };
+    var masterFilter = null;
+    var voiceGains = { ambient: null, melodic: null };
     /* EXPORT_CAMERA_FEATURES_START */
     var micStream = null;
     var micSource = null;
@@ -246,9 +257,9 @@ ${ANIMATION_MATH_SOURCE}
       var ambientIndex = 0;
       ambientTimer = window.setInterval(function () {
         if (!soundEnabled) return;
-        playTone(ambientNotes[ambientIndex % ambientNotes.length], 0.45);
+        playTone(ambientNotes[ambientIndex % ambientNotes.length], 0.45, 'ambient', 'sine');
         ambientIndex += 1;
-      }, 1000);
+      }, 60000 / Math.max(40, Math.min(220, ambientBpm)));
     }
 
     function setSoundButton() {
@@ -259,19 +270,24 @@ ${ANIMATION_MATH_SOURCE}
       button.setAttribute('title', soundEnabled ? 'Mute sound' : 'Enable sound');
     }
 
-    function playTone(frequency, duration) {
+    function playTone(frequency, duration, voice, oscillatorType) {
       if (!soundEnabled || !audioContext || !masterGain) return;
+      if (voice === 'ambient' && ambientMuted) return;
+      if (voice === 'melodic' && melodicMuted) return;
       var oscillator = audioContext.createOscillator();
       var gain = audioContext.createGain();
-      oscillator.type = 'sine';
+      oscillator.type = oscillatorType || (voice === 'melodic' ? melodicOscillator : 'sine');
       oscillator.frequency.value = frequency;
-      gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.16, audioContext.currentTime + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
+      var envelope = voice === 'melodic' ? melodicEnvelope : { attack: 0.015, decay: 0.08, sustain: 0.7, release: 0.08 };
+      var start = audioContext.currentTime;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(0.16, start + Math.max(0.001, envelope.attack));
+      gain.gain.linearRampToValueAtTime(0.16 * envelope.sustain, start + Math.max(envelope.attack + envelope.decay, duration - envelope.release));
+      gain.gain.linearRampToValueAtTime(0.0001, start + duration);
       oscillator.connect(gain);
-      gain.connect(masterGain);
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + duration + 0.02);
+      gain.connect(voiceGains[voice] || masterGain);
+      oscillator.start(start);
+      oscillator.stop(start + duration + 0.02);
     }
 
     function toggleSound() {
@@ -294,8 +310,19 @@ ${ANIMATION_MATH_SOURCE}
       audioContext = audioContext || new AudioContextClass();
       if (audioContext.state === 'suspended') audioContext.resume();
       masterGain = masterGain || audioContext.createGain();
+      masterFilter = masterFilter || audioContext.createBiquadFilter();
+      masterFilter.type = 'lowpass';
+      masterFilter.frequency.value = 2000;
+      masterFilter.Q.value = 1;
+      voiceGains.ambient = voiceGains.ambient || audioContext.createGain();
+      voiceGains.melodic = voiceGains.melodic || audioContext.createGain();
+      voiceGains.ambient.gain.value = ambientVolume;
+      voiceGains.melodic.gain.value = melodicVolume;
+      voiceGains.ambient.connect(masterGain);
+      voiceGains.melodic.connect(masterGain);
       masterGain.gain.value = volumePercent / 100;
-      masterGain.connect(audioContext.destination);
+      masterGain.connect(masterFilter);
+      masterFilter.connect(audioContext.destination);
       soundEnabled = true;
       setSoundButton();
       setSoundStatus('Sound is on. Ambient sound is playing.');
@@ -309,6 +336,20 @@ ${ANIMATION_MATH_SOURCE}
       volumePercent = Number(event.target.value);
       if (masterGain) masterGain.gain.value = volumePercent / 100;
     });
+    function bindRange(id, callback) {
+      document.getElementById(id)?.addEventListener('input', function (event) { callback(Number(event.target.value)); });
+    }
+    bindRange('piece-ambient-bpm', function (value) { ambientBpm = Math.max(40, Math.min(220, value)); document.getElementById('piece-ambient-bpm-value').textContent = String(ambientBpm); if (soundEnabled) startAmbient(); });
+    bindRange('piece-ambient-volume', function (value) { ambientVolume = Math.max(0, Math.min(100, value)) / 100; document.getElementById('piece-ambient-volume-value').textContent = String(value) + '%'; if (voiceGains.ambient) voiceGains.ambient.gain.value = ambientVolume; });
+    document.getElementById('piece-ambient-muted')?.addEventListener('change', function (event) { ambientMuted = event.target.checked; });
+    document.getElementById('piece-ambient-scale')?.addEventListener('change', function (event) { ambientScale = event.target.value; });
+    bindRange('piece-keyboard-volume', function (value) { melodicVolume = Math.max(0, Math.min(100, value)) / 100; document.getElementById('piece-keyboard-volume-value').textContent = String(value) + '%'; if (voiceGains.melodic) voiceGains.melodic.gain.value = melodicVolume; });
+    document.getElementById('piece-keyboard-oscillator')?.addEventListener('change', function (event) { melodicOscillator = event.target.value; });
+    document.getElementById('piece-keyboard-filter-type')?.addEventListener('change', function (event) { if (masterFilter) masterFilter.type = event.target.value; });
+    bindRange('piece-keyboard-filter-cutoff', function (value) { if (masterFilter) masterFilter.frequency.value = Math.max(20, Math.min(20000, value)); });
+    bindRange('piece-keyboard-filter-resonance', function (value) { if (masterFilter) masterFilter.Q.value = Math.max(0.1, Math.min(20, value)); });
+    ['attack', 'decay', 'sustain', 'release'].forEach(function (field) { bindRange('piece-keyboard-' + field, function (value) { melodicEnvelope[field] = value; }); });
+    bindRange('piece-keyboard-octave', function (value) { melodicOctave = Math.max(-2, Math.min(2, Math.round(value))); document.getElementById('piece-keyboard-octave-value').textContent = String(melodicOctave); });
     document.getElementById('piece-keyboard')?.addEventListener('click', function () {
       keyboardEnabled = !keyboardEnabled;
       this.setAttribute('aria-pressed', String(keyboardEnabled));
@@ -388,7 +429,7 @@ ${ANIMATION_MATH_SOURCE}
       if (!soundEnabled || !keyboardEnabled || event.repeat || event.target instanceof HTMLInputElement) return;
       var frequency = notes[event.key.toLowerCase()];
       if (frequency) {
-        playTone(frequency, 0.3);
+        playTone(frequency * Math.pow(2, melodicOctave), 0.3, 'melodic', melodicOscillator);
         setKeyboardStatus('Keyboard note ' + event.key.toUpperCase() + ' is playing.');
       }
     });

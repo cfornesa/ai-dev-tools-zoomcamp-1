@@ -367,6 +367,23 @@ function buildExportControls(
     },
   });
   const panelRows = [
+    capabilities.sound === true
+      ? `<label for="art-piece-ambient-bpm">Ambient BPM: <output id="art-piece-ambient-bpm-value">90</output><input id="art-piece-ambient-bpm" type="range" min="40" max="220" value="90"></label>
+  <label for="art-piece-ambient-volume">Ambient volume: <output id="art-piece-ambient-volume-value">50%</output><input id="art-piece-ambient-volume" type="range" min="0" max="100" value="50"></label>
+  <label for="art-piece-ambient-muted"><input id="art-piece-ambient-muted" type="checkbox"> Mute ambient</label>
+  <label for="art-piece-ambient-scale">Scale <select id="art-piece-ambient-scale"><option>major</option><option>minor</option><option selected>pentatonic</option><option>chromatic</option><option>dorian</option><option>phrygian</option><option>lydian</option><option>mixolydian</option><option>wholetone</option></select></label>
+  <button type="button" id="art-piece-keyboard" aria-pressed="false">Keyboard notes</button>
+  <fieldset><legend>Keyboard synth</legend><label for="art-piece-keyboard-volume">Volume: <output id="art-piece-keyboard-volume-value">50%</output><input id="art-piece-keyboard-volume" type="range" min="0" max="100" value="50"></label>
+  <label for="art-piece-keyboard-oscillator">Oscillator <select id="art-piece-keyboard-oscillator"><option>sine</option><option>square</option><option>sawtooth</option><option>triangle</option></select></label>
+  <label for="art-piece-keyboard-filter-type">Filter type <select id="art-piece-keyboard-filter-type"><option>lowpass</option><option>highpass</option><option>bandpass</option></select></label>
+  <label for="art-piece-keyboard-filter-cutoff">Cutoff <input id="art-piece-keyboard-filter-cutoff" type="range" min="20" max="20000" step="20" value="2000"></label>
+  <label for="art-piece-keyboard-filter-resonance">Resonance <input id="art-piece-keyboard-filter-resonance" type="range" min="0.1" max="20" step="0.1" value="1"></label>
+  <label for="art-piece-keyboard-attack">Attack <input id="art-piece-keyboard-attack" type="range" min="0.001" max="10" step="0.001" value="0.01"></label>
+  <label for="art-piece-keyboard-decay">Decay <input id="art-piece-keyboard-decay" type="range" min="0.001" max="10" step="0.001" value="0.1"></label>
+  <label for="art-piece-keyboard-sustain">Sustain <input id="art-piece-keyboard-sustain" type="range" min="0" max="1" step="0.01" value="0.7"></label>
+  <label for="art-piece-keyboard-release">Release <input id="art-piece-keyboard-release" type="range" min="0.001" max="10" step="0.001" value="0.3"></label>
+  <label for="art-piece-keyboard-octave">Octave: <output id="art-piece-keyboard-octave-value">0</output><input id="art-piece-keyboard-octave" type="range" min="-2" max="2" step="1" value="0"></label></fieldset>`
+      : '',
     includeMicrophone
       ? '<button type="button" data-action="microphone" aria-pressed="false">Enable microphone</button>\n  <p id="art-piece-microphone-status" role="status">Microphone is off.</p>'
       : '',

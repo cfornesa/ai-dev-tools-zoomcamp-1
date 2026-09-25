@@ -417,6 +417,21 @@ export function buildStandaloneArtPieceRuntimeScript(
   // Sound: only ever starts from this explicit button, never on load.
   var audioCtx = null;
   var masterGain = null;
+  var masterFilter = null;
+  var ambientBpm = 90;
+  var ambientVolume = 0.5;
+  var ambientMuted = false;
+  var ambientScale = 'pentatonic';
+  var melodicVolume = 0.5;
+  var melodicMuted = false;
+  var keyboardEnabled = false;
+  var melodicOscillator = 'sine';
+  var melodicOctave = 0;
+  var melodicEnvelope = { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 };
+  var voiceGains = { ambient: null, melodic: null };
+  var ambientTimer = null;
+  var ambientIndex = 0;
+  var ambientNotes = [130.81, 146.83, 164.81, 196, 220, 261.63];
   var soundOn = false;
   var soundButton = byAction('sound');
   function ensureAudio() {
@@ -425,32 +440,88 @@ export function buildStandaloneArtPieceRuntimeScript(
       audioCtx = new Ctx();
       masterGain = audioCtx.createGain();
       masterGain.gain.value = 0.2;
-      masterGain.connect(audioCtx.destination);
+      masterFilter = audioCtx.createBiquadFilter();
+      masterFilter.type = 'lowpass';
+      masterFilter.frequency.value = 2000;
+      masterFilter.Q.value = 1;
+      voiceGains.ambient = audioCtx.createGain();
+      voiceGains.melodic = audioCtx.createGain();
+      voiceGains.ambient.gain.value = ambientVolume;
+      voiceGains.melodic.gain.value = melodicVolume;
+      voiceGains.ambient.connect(masterGain);
+      voiceGains.melodic.connect(masterGain);
+      masterGain.connect(masterFilter);
+      masterFilter.connect(audioCtx.destination);
     }
     return audioCtx;
+  }
+  function stopAmbient() {
+    if (ambientTimer !== null) { clearInterval(ambientTimer); ambientTimer = null; }
+  }
+  function startAmbient() {
+    stopAmbient();
+    ambientTimer = setInterval(function () {
+      if (!soundOn || ambientMuted || !audioCtx) return;
+      var oscillator = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = ambientNotes[ambientIndex % ambientNotes.length];
+      gain.gain.value = 0.08;
+      oscillator.connect(gain);
+      gain.connect(voiceGains.ambient || masterGain);
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.35);
+      ambientIndex += 1;
+    }, 60000 / ambientBpm);
   }
   if (soundButton) {
     soundButton.addEventListener('click', function () {
       ensureAudio();
       soundOn = !soundOn;
-      if (soundOn) { audioCtx.resume(); } else { audioCtx.suspend(); }
+      if (soundOn) { audioCtx.resume(); startAmbient(); } else { audioCtx.suspend(); stopAmbient(); keyboardEnabled = false; }
       soundButton.setAttribute('aria-pressed', String(soundOn));
       setLabel(soundButton, soundOn ? 'Mute sound' : 'Unmute sound');
       setStatus('art-piece-sound-status', soundOn ? 'Sound is on.' : 'Sound is off.');
     });
   }
+  function bindRange(id, callback) {
+    var element = document.getElementById(id);
+    if (element) element.addEventListener('input', function (event) { callback(Number(event.target.value)); });
+  }
+  bindRange('art-piece-ambient-bpm', function (value) { ambientBpm = Math.max(40, Math.min(220, value)); document.getElementById('art-piece-ambient-bpm-value').textContent = String(ambientBpm); if (soundOn) startAmbient(); });
+  bindRange('art-piece-ambient-volume', function (value) { ambientVolume = Math.max(0, Math.min(100, value)) / 100; document.getElementById('art-piece-ambient-volume-value').textContent = String(value) + '%'; if (voiceGains.ambient) voiceGains.ambient.gain.value = ambientVolume; });
+  document.getElementById('art-piece-ambient-muted')?.addEventListener('change', function (event) { ambientMuted = event.target.checked; });
+  document.getElementById('art-piece-ambient-scale')?.addEventListener('change', function (event) { ambientScale = event.target.value; });
+  bindRange('art-piece-keyboard-volume', function (value) { melodicVolume = Math.max(0, Math.min(100, value)) / 100; document.getElementById('art-piece-keyboard-volume-value').textContent = String(value) + '%'; if (voiceGains.melodic) voiceGains.melodic.gain.value = melodicVolume; });
+  document.getElementById('art-piece-keyboard-oscillator')?.addEventListener('change', function (event) { melodicOscillator = event.target.value; });
+  document.getElementById('art-piece-keyboard-filter-type')?.addEventListener('change', function (event) { if (masterFilter) masterFilter.type = event.target.value; });
+  bindRange('art-piece-keyboard-filter-cutoff', function (value) { if (masterFilter) masterFilter.frequency.value = Math.max(20, Math.min(20000, value)); });
+  bindRange('art-piece-keyboard-filter-resonance', function (value) { if (masterFilter) masterFilter.Q.value = Math.max(0.1, Math.min(20, value)); });
+  ['attack', 'decay', 'sustain', 'release'].forEach(function (field) { bindRange('art-piece-keyboard-' + field, function (value) { melodicEnvelope[field] = value; }); });
+  bindRange('art-piece-keyboard-octave', function (value) { melodicOctave = Math.max(-2, Math.min(2, Math.round(value))); document.getElementById('art-piece-keyboard-octave-value').textContent = String(melodicOctave); });
+  document.getElementById('art-piece-keyboard')?.addEventListener('click', function (event) {
+    keyboardEnabled = !keyboardEnabled;
+    event.currentTarget.setAttribute('aria-pressed', String(keyboardEnabled));
+    event.currentTarget.textContent = keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes';
+  });
   ${
     includeKeyboard
       ? `
   var NOTE_FREQUENCIES = { a: 220.0, s: 246.94, d: 261.63, f: 293.66, g: 329.63, h: 349.23, j: 392.0, k: 440.0 };
   window.addEventListener('keydown', function (event) {
-    if (!soundOn || !audioCtx) return;
+    if (!soundOn || !keyboardEnabled || melodicMuted || !audioCtx) return;
     var frequency = NOTE_FREQUENCIES[(event.key || '').toLowerCase()];
     if (!frequency) return;
     var oscillator = audioCtx.createOscillator();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = frequency;
-    oscillator.connect(masterGain);
+    oscillator.type = melodicOscillator;
+    oscillator.frequency.value = frequency * Math.pow(2, melodicOctave);
+    var gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.16, audioCtx.currentTime + melodicEnvelope.attack);
+    gain.gain.linearRampToValueAtTime(0.16 * melodicEnvelope.sustain, audioCtx.currentTime + 0.15);
+    gain.gain.linearRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+    oscillator.connect(gain);
+    gain.connect(voiceGains.melodic || masterGain);
     oscillator.start();
     oscillator.stop(audioCtx.currentTime + 0.2);
   });

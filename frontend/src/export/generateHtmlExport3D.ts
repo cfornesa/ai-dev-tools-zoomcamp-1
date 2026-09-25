@@ -182,7 +182,23 @@ ${renderExportStageToolbar({ buttons: ['screenshot', 'sound', 'controls', 'guide
 <div id="piece-audio-controls" role="group" aria-label="Piece controls" hidden>
     <button id="piece-reset-view" type="button">Reset view</button>
     <label for="piece-volume">Sound volume <input id="piece-volume" type="range" min="0" max="100" value="50"></label>
+    <label for="piece-ambient-bpm">Ambient BPM: <output id="piece-ambient-bpm-value">90</output><input id="piece-ambient-bpm" type="range" min="40" max="220" value="90"></label>
+    <label for="piece-ambient-volume">Ambient volume: <output id="piece-ambient-volume-value">50%</output><input id="piece-ambient-volume" type="range" min="0" max="100" value="50"></label>
+    <label for="piece-ambient-muted"><input id="piece-ambient-muted" type="checkbox"> Mute ambient</label>
+    <label for="piece-ambient-scale">Scale <select id="piece-ambient-scale"><option>major</option><option>minor</option><option selected>pentatonic</option><option>chromatic</option><option>dorian</option><option>phrygian</option><option>lydian</option><option>mixolydian</option><option>wholetone</option></select></label>
     <button id="piece-keyboard" type="button" aria-pressed="false">Keyboard notes</button>
+    <fieldset id="piece-keyboard-synth"><legend>Keyboard synth</legend>
+      <label for="piece-keyboard-volume">Volume: <output id="piece-keyboard-volume-value">50%</output><input id="piece-keyboard-volume" type="range" min="0" max="100" value="50"></label>
+      <label for="piece-keyboard-oscillator">Oscillator <select id="piece-keyboard-oscillator"><option>sine</option><option>square</option><option>sawtooth</option><option>triangle</option></select></label>
+      <label for="piece-keyboard-filter-type">Filter type <select id="piece-keyboard-filter-type"><option>lowpass</option><option>highpass</option><option>bandpass</option></select></label>
+      <label for="piece-keyboard-filter-cutoff">Cutoff <input id="piece-keyboard-filter-cutoff" type="range" min="20" max="20000" step="20" value="2000"></label>
+      <label for="piece-keyboard-filter-resonance">Resonance <input id="piece-keyboard-filter-resonance" type="range" min="0.1" max="20" step="0.1" value="1"></label>
+      <label for="piece-keyboard-attack">Attack <input id="piece-keyboard-attack" type="range" min="0.001" max="10" step="0.001" value="0.01"></label>
+      <label for="piece-keyboard-decay">Decay <input id="piece-keyboard-decay" type="range" min="0.001" max="10" step="0.001" value="0.1"></label>
+      <label for="piece-keyboard-sustain">Sustain <input id="piece-keyboard-sustain" type="range" min="0" max="1" step="0.01" value="0.7"></label>
+      <label for="piece-keyboard-release">Release <input id="piece-keyboard-release" type="range" min="0.001" max="10" step="0.001" value="0.3"></label>
+      <label for="piece-keyboard-octave">Octave: <output id="piece-keyboard-octave-value">0</output><input id="piece-keyboard-octave" type="range" min="-2" max="2" step="1" value="0"></label>
+    </fieldset>
     <p id="piece-sound-status" role="status">Sound is off.</p>
     <p id="piece-keyboard-status" role="status">Turn on Sound to play keyboard notes.</p>
     ${variant === 'full' ? '<button id="piece-mic" type="button" aria-pressed="false">Live mic</button>' : ''}

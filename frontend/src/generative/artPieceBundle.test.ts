@@ -149,6 +149,11 @@ describe('generateArtPieceBundle', () => {
       expect(html).toContain('data-action="microphone"');
       expect(html).toContain('data-action="camera"');
       expect(html).toContain('data-action="hand"');
+      expect(html).toContain('art-piece-ambient-bpm');
+      expect(html).toContain('art-piece-ambient-scale');
+      expect(html).toContain('art-piece-keyboard');
+      expect(html).toContain('art-piece-keyboard-oscillator');
+      expect(html).toContain('art-piece-keyboard-octave');
       expect(html).not.toContain('\u2630');
       const css = await zip.files['styles/piece.css'].async('string');
       expect(css).toContain('@media (hover: hover) and (pointer: fine)');

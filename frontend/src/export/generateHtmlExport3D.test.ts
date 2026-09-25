@@ -109,6 +109,10 @@ describe('generateScene3DBundle', () => {
     expect(html).toContain('piece-audio-controls');
     expect(html).toContain('piece-audio-settings');
     expect(html).toContain('piece-keyboard');
+    expect(html).toContain('piece-ambient-bpm');
+    expect(html).toContain('piece-ambient-scale');
+    expect(html).toContain('piece-keyboard-oscillator');
+    expect(html).toContain('piece-keyboard-octave');
     expect(html).toContain('piece-mic');
     expect(html).toContain('piece-theremin');
     expect(html).toContain('piece-fullscreen');
@@ -144,6 +148,9 @@ describe('generateScene3DBundle', () => {
     expect(script).toContain('piece-keyboard');
     expect(script).toContain('keyboardEnabled');
     expect(script).toContain('startAmbient');
+    expect(script).toContain('piece-keyboard-filter-cutoff');
+    expect(script).toContain("'piece-keyboard-' + field");
+    expect(script).toContain('melodicEnvelope');
     expect(script).toContain('piece-sound-status');
     expect(script).toContain('piece-keyboard-status');
     expect(script).toContain('getUserMedia({ audio: true, video: false })');
@@ -178,6 +185,8 @@ describe('generateScene3DBundle', () => {
     expect(html).not.toContain('camera-view-toggle');
     expect(html).not.toContain('piece-theremin');
     expect(html).toContain('piece-sound');
+    expect(html).toContain('piece-ambient-bpm');
+    expect(html).toContain('piece-keyboard-oscillator');
     const script = await zip.files['scripts/piece.js'].async('string');
     expect(script).not.toContain('getUserMedia');
     expect(script).not.toContain('recognizeForVideo');

@@ -3952,6 +3952,20 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Current-session continuation — 2026-09-26
+
+- #879 A-Frame implementation/QA PASS and closed; #880 Three.js
+  implementation/QA PASS and closed. Both fixes were safely pushed.
+- #856 SVG, #857 A-Frame, and #858 Three.js workflow transactions remain
+  OPEN with VALID WITH GAPS because exact decoded per-pixel motion evidence is
+  still missing; #857/#858 also retain their remaining surface trace work as
+  recorded in their GitHub QA comments.
+- Repository-wide `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed:
+  backend 1710 passed/39 skipped; frontend 281 files / 3024 tests passed.
+- Current open inventory: #875, #874, #862, #861, #860, #859, #858, #857,
+  #856, #847, and #788. Production-readiness remains NOT READY; do not run a
+  production publish/import from this local verification batch.
+
 ## Transaction #880 — 2026-09-26 — IMPLEMENTATION + QA PASS / CLOSED
 
 - Groom: distinct Three.js false-readiness timeout discovered in #858 after

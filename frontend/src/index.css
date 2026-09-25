@@ -5198,6 +5198,66 @@ select.ai-proposal-field-full-width {
   cursor: pointer;
 }
 
+/* Structured 2D sound controls share the public stage disclosure with the
+   camera/demo tools. Their long set of sliders and selects must use the same
+   single-column, scroll-safe layout as the generated-piece sound panel rather
+   than relying on inline label flow. */
+.piece-stage-sound-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.piece-stage-sound-controls > label,
+.piece-stage-sound-controls > input,
+.piece-stage-sound-controls > select,
+.piece-stage-sound-controls > button,
+.piece-stage-sound-controls > fieldset {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.piece-stage-sound-controls > label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.piece-stage-sound-controls > label:has(input[type='checkbox']) {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.piece-stage-sound-controls > label:has(input[type='checkbox']) input[type='checkbox'] {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.piece-stage-sound-controls > fieldset {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
+.piece-stage-sound-controls > fieldset > label,
+.piece-stage-sound-controls > fieldset > input,
+.piece-stage-sound-controls > fieldset > select,
+.piece-stage-sound-controls > fieldset > button {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.piece-stage-sound-controls > fieldset > label {
+  display: grid;
+  gap: 0.2rem;
+}
+
 /* #606: immersive art pieces own the viewport rather than rendering as a
    page-contained 640px preview. Header and stage controls remain overlays. */
 .immersive-art-piece-viewer {

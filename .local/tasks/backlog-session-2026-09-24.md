@@ -3241,3 +3241,28 @@ deferred.
 - Evidence boundary: disposable local Compose + active Chrome from the
   uncommitted implementation checkout; no production evidence or data write.
 - Reconcile: ready to post `## QA: PASS`, close #867, commit, and push.
+
+## Transaction #868 — 2026-09-25 — ENGINEERED / QA PASS / CLOSED PENDING PUSH
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+- Engineer: COMPLETED. implementation-mechanical / Codex-GPT-5 / medium /
+  substituted: yes; scoped CSS in `frontend/src/index.css` now gives the
+  structured 2D Sound controls a single-column, width-constrained layout,
+  including readable checkbox labels and fieldset contents. No sound contract,
+  route, schema, or dependency changed.
+- QA self-review: PASS locally. Active Chrome inspected the rebuilt disposable
+  Compose structured 2D fixture at 375x812 and 1280x900. Mobile geometry:
+  body/document scroll width 360 <= viewport 375; Sound panel x=71, width=203,
+  right=274. Desktop geometry: body/document scroll width 1265 <= viewport
+  1280; Sound panel x=276.09, width=319, right=595.09. Screenshots showed
+  stacked, readable controls with no `Mute ambientScale` collision or horizontal
+  overflow. Sound activation, BPM, scale, and keyboard controls remained
+  usable. Focused test passed: `npm test -- --run
+  src/components/Structured2DSoundControls.test.tsx` (1 file, 5 tests).
+- Exact full command: `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` —
+  PASS, backend 1710 passed / 39 skipped; frontend 280 files / 3014 tests
+  passed; lint, format, typecheck, and action-pin checks passed with existing
+  warnings.
+- Evidence boundary: disposable local Compose + active Chrome from the
+  implementation checkout; no production evidence or data write.
+- Reconcile: ready to post `## QA: PASS`, close #868, commit, and push.

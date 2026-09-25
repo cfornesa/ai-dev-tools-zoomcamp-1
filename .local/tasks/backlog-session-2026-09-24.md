@@ -2313,3 +2313,29 @@ deferred.
 - Reconcile: CLOSED. QA comment:
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/850#issuecomment-5832109531
   records the matrix, commands, provenance, and local-only evidence boundary.
+
+## Transaction #841 — 2026-09-25 — OPEN / QA FAIL
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. Dependencies #834–#840 were reconciled; no
+  duplicate issue was found. The acceptance contract explicitly requires both
+  generated and structured-2D runtimes, so generated-only evidence cannot
+  close this issue.
+- Engineer: PARTIAL. Stage owner implementation-complex; Codex/GPT-5
+  substitution; medium effort. Commit `e4ad8db` adds an executable shared
+  parent-side sound payload validator and Vitest coverage for valid,
+  malformed, and unknown commands. Existing generated sandbox validation and
+  controls were retained. The structured-2D public path remains unimplemented:
+  `PublicProjectViewer` uses the direct renderer and
+  `TWO_D_STAGE_CAPABILITIES.sound` is explicitly false.
+- QA self-review: FAIL. Stage owner qa-self-review; Codex/GPT-5 substitution;
+  medium effort. Focused Vitest/typecheck/format/lint passed (63 tests); the
+  generated runtime E2E ran under host-permission retry with 3/4 scenarios
+  passing, while its remaining failure is an existing mobile footer/checkbox
+  interaction. Structured-2D runtime, screenshots, and slider-to-engine
+  evidence are absent and therefore fail the issue contract.
+- Reconcile: OPEN. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/841#issuecomment-5832222514
+  records the criterion matrix, exact commands, provenance, and evidence
+  boundary. Do not close or publish this partial implementation until the
+  structured-2D sound target is implemented and verified.

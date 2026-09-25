@@ -2807,3 +2807,50 @@ deferred.
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5833447525
   Live public API still reports C2 version 5 sequence 1 and C2 Interactive
   version 6 sequence 1 with the snapshotted pre-import sources.
+
+## Production-readiness — 2026-09-25 — BLOCKED
+
+- Local deployment/checks: PASS. Final `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache
+  make check` passed: backend 1709 passed, 39 skipped, 10 warnings; frontend
+  280 files / 3011 tests; lint, format, typecheck, and action-pin checks passed
+  (existing lint warnings and jsdom media/navigation notices remain).
+- Published anonymous smoke: PASS for `https://augmentrart.com` via
+  `PUBLISHED_APP_URL=https://augmentrart.com scripts/smoke-published.sh`:
+  `/health/` 200/status=ok, root 200, anonymous whoami 401, login 200, and
+  share-metadata diagnostic middleware/backend reachable.
+- Approved-browser: BLOCKED/OPEN FOLLOW-UP. The canonical production
+  immersive route was observed with direct toolbar buttons and the requested
+  title/actions/version ordering, but the current published revision is not
+  the checkout containing `aa3d691`; the remaining sound/export/effects
+  issues require authored fixture and extracted-ZIP Chromium evidence at the
+  specified viewports.
+- Production data action: BLOCKED. #788 has a pre-write snapshot and a
+  disposable PostgreSQL rehearsal, but Replit exposes no supported production
+  interactive shell or dry-run deployment command. No production write was
+  performed.
+- Intended functionality: BLOCKED by #841/#842/#844/#846 browser evidence,
+  #847 missing published media contract, and dependent #851–#862.
+- Result: not production-ready. No issue was silently omitted or reopened.
+
+## Session-completion — 2026-09-25 — INCOMPLETE / HANDOFF
+
+- Manifest: `.local/tasks/backlog-session-2026-09-24.md`; GitHub open inventory
+  reconciled to 18 issues: #788, #841, #842, #844, #846, #847, #851–#862.
+- Batch rollup: discovered 18 active issues; completed 0 in this active batch;
+  blocked 4 (#841, #842, #844, #846); dependency-blocked 14 (#788, #847,
+  #851, #852, #853–#862); handed-off 0; missing terminal-status 0 in this
+  ledger classification. GitHub issues remain OPEN where evidence is pending.
+- Follow-up audit: every failed/missing criterion is linked to its current
+  issue and QA comment; no new duplicate issue was created. Next actions are
+  approved Chromium fixture/ZIP verification for #841/#842/#844/#846, then
+  unblock #851–#862; obtain a supported production dry-run/write path for
+  #788; define an owner-scoped published media contract for #847.
+- Routing audit: stage owners and substitutions are recorded per transaction;
+  implementation stages used the documented Codex/GPT-5 substitution, QA was
+  recorded as qa-self-review, and no second-opinion pass was credited. The
+  readiness/session-completion gate ran as the active Codex/GPT-5 substitution
+  because the rostered Claude tier was unavailable; this is flagged rather
+  than inferred as independent review.
+- Release boundary: commits `aa3d691`, `20fa07a`, `c27089a`, `30ed0c9`, and
+  `0548cbd` are pushed to `origin/main`; no current-checkout production
+  publish was performed in this continuation.

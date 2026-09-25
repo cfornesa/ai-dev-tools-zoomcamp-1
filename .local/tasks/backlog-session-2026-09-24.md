@@ -3079,3 +3079,22 @@ deferred.
   only, not production evidence.
 - Reconcile: KEEP OPEN until the full repository gate and formal `## QA: PASS`
   comment are posted; then close only if all #866 criteria pass.
+
+## Transaction #866 — 2026-09-25 — QA PASS / CLOSED
+
+- QA self-review: PASS. qa-self-review / Codex-GPT-5 / medium / substituted:
+  yes. Focused regression, repository-wide checks, and rebuilt disposable
+  Compose browser checks all passed. Chrome showed no visible ResizeObserver
+  alert on generated public at 375x812 or 1280x900, or generated embed at
+  375x812; the inspected local tab's error log was empty. The direct piece
+  toolbar remained available; the responsive site-header menu is separate.
+- Evidence boundary: this is local disposable Compose + active Chrome evidence
+  from checkout commit `84252a5`, not deployed production evidence. No
+  production data or secrets were changed.
+- Exact QA commands: focused Vitest (1 file / 33 tests), frontend typecheck,
+  lint, format-check, and `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`
+  (backend 1710 passed / 39 skipped; frontend 280 files / 3014 tests; all
+  repository checks green).
+- Reconcile: CLOSED after QA comment
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/866#issuecomment-5834717743
+  and issue close. No follow-up issue was required.

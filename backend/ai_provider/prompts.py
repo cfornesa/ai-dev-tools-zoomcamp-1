@@ -98,9 +98,22 @@ ART_PIECE_REFINE_SYSTEM_PROMPT = (
     "Do not return prose, markdown, or a complete replacement source."
 )
 
+# Shared sonic instructions. These are transport-neutral: every provider
+# adapter receives the same contract and mood vocabulary.
+SONIC_PROMPT_RULES = (
+    "\n- Optionally include a `sonic` object when the user's mood implies specific sound. "
+    "It may contain `tempo` (integer 40-220), `root`, `scale`, `keyboard_scale`, "
+    "`transpose`, `instrument`, `feel`, and `extras` with `default_volume`, `voices`, "
+    "and `synth` settings. Prefer deterministic mood mappings: slow/ambient/drone use "
+    "72 BPM, fast/urgent/energetic use 128 BPM, otherwise 90 BPM; theremin maps to "
+    "fmsynth, bells to metalsynth, and drums to membranesynth. Invalid or unsupported "
+    "sound details must be omitted rather than making the scene invalid.\n"
+)
+
 # Shared canonical 2D scene instructions. These are transport-neutral: every
 # provider must send the exact same text to its model.
-SCENE_2D_CREATE_PROMPT = """You generate a single canonical scene document for a gesture-reactive \
+SCENE_2D_CREATE_PROMPT = (
+    """You generate a single canonical scene document for a gesture-reactive \
 animation editor. Follow these rules exactly:
 
 - Respond with ONLY a single JSON object -- no prose, no markdown code \
@@ -156,6 +169,8 @@ even if you otherwise reuse a shared style or transform.
 implies naming that shape "Sun"), set that shape's optional "name" field \
 accordingly, so a later prompt in the same session can address it back by \
 that name. Leave "name" unset when no name is implied."""
+    + SONIC_PROMPT_RULES
+)
 
 SCENE_2D_EDIT_PROMPT = """You propose a minimal JSON Patch editing an existing gesture-reactive \
 animation scene document. Follow these rules exactly:
@@ -223,7 +238,7 @@ SCENE3D_CREATE_PROMPT = (
     '"color", and "intensity".'
     "\n- Every object's groupId is an existing group id or null. When the prompt implies a "
     "name for an object or light, preserve it in name. Keep the scene to a few dozen "
-    "objects, groups, and lights.\n" + SCENE3D_DRAWING_PLANE_RULES
+    "objects, groups, and lights.\n" + SCENE3D_DRAWING_PLANE_RULES + SONIC_PROMPT_RULES
 )
 
 SCENE3D_CONVERT_PROMPT = (
@@ -235,7 +250,7 @@ SCENE3D_CONVERT_PROMPT = (
     "them."
     "\n- Include a reasonable camera and at least one directional or ambient light. Objects are "
     "box, sphere, cylinder, or plane with all type-specific dimensions and the scene stays "
-    "within a few dozen objects.\n" + SCENE3D_DRAWING_PLANE_RULES
+    "within a few dozen objects.\n" + SCENE3D_DRAWING_PLANE_RULES + SONIC_PROMPT_RULES
 )
 
 SCENE3D_EDIT_PROMPT = (

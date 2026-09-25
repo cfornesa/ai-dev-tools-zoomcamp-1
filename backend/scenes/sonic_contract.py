@@ -7,6 +7,7 @@ old versions readable and makes the server the canonical persistence boundary.
 
 from __future__ import annotations
 
+import re
 from copy import deepcopy
 from math import isfinite
 from typing import Any
@@ -34,6 +35,51 @@ INSTRUMENTS = {
 }
 FILTERS = {"lowpass", "highpass", "bandpass"}
 OSCILLATORS = {"sine", "square", "sawtooth", "triangle"}
+
+_MOOD_TEMPOS = {
+    "slow": 72,
+    "ambient": 72,
+    "drone": 72,
+    "fast": 128,
+    "urgent": 128,
+    "energetic": 128,
+}
+_INSTRUMENT_SYNONYMS = {
+    "theremin": "fmsynth",
+    "bell": "metalsynth",
+    "bells": "metalsynth",
+    "drum": "membranesynth",
+    "drums": "membranesynth",
+}
+
+
+def sonic_from_feel(feel: str) -> dict[str, Any]:
+    """Derive a deterministic, bounded authored sonic block from a mood phrase."""
+    text = feel.strip() if isinstance(feel, str) else ""
+    lowered = text.casefold()
+    explicit = re.search(r"\b(?:tempo\s*|bpm\s*)?(\d{2,3})\s*bpm\b", lowered)
+    tempo = (
+        int(explicit.group(1))
+        if explicit
+        else next(
+            (value for mood, value in _MOOD_TEMPOS.items() if re.search(rf"\b{mood}\b", lowered)),
+            90,
+        )
+    )
+    scale = "major"
+    for candidate in sorted(SCALES, key=len, reverse=True):
+        display = candidate.replace("wholetone", "whole tone")
+        if re.search(rf"\b{re.escape(display)}\b", lowered):
+            scale = candidate
+            break
+    instrument = "synth"
+    for word, candidate in _INSTRUMENT_SYNONYMS.items():
+        if re.search(rf"\b{word}\b", lowered):
+            instrument = candidate
+            break
+    return normalize_sonic(
+        {"tempo": tempo, "scale": scale, "instrument": instrument, "feel": text}
+    ) or {"tempo": 90, "scale": "major", "instrument": "synth", "feel": ""}
 
 
 def _number(value: Any, *, integer: bool = False) -> int | float | None:

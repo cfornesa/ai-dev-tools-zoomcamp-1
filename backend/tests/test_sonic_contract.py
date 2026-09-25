@@ -1,4 +1,4 @@
-from scenes.sonic_contract import normalize_scene_sonic
+from scenes.sonic_contract import normalize_scene_sonic, normalize_sonic, sonic_from_feel
 from scenes.validation import validate_scene
 from scenes.validation3d import validate_scene3d
 
@@ -42,3 +42,27 @@ def test_both_authoritative_validators_accept_sonic_contract():
     scene3d = json.loads((root / "schema/fixtures3d/valid/minimal.json").read_text())
     scene3d["sonic"] = scene["sonic"]
     assert validate_scene3d(scene3d).valid
+
+
+def test_sonic_from_feel_matches_longest_scale_and_mood_tempo():
+    value = sonic_from_feel("slow whole tone theremin drone")
+    assert value["tempo"] == 72
+    assert value["scale"] == "wholetone"
+    assert value["instrument"] == "fmsynth"
+
+
+def test_sonic_from_feel_prefers_explicit_bpm_and_maps_synonyms():
+    value = sonic_from_feel("fast energetic 300 BPM bells and drums")
+    assert value["tempo"] == 220
+    assert value["instrument"] == "metalsynth"
+
+
+def test_sonic_from_feel_defaults_to_conservative_values():
+    value = sonic_from_feel("a calm texture")
+    assert value["tempo"] == 90
+    assert value["scale"] == "major"
+    assert value["instrument"] == "synth"
+
+
+def test_normalize_sonic_rejects_invalid_blocks():
+    assert normalize_sonic({"scale": "not-a-scale"}) is None

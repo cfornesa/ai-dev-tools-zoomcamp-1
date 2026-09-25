@@ -47,6 +47,7 @@ five documented categories.
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -59,7 +60,10 @@ from ai_provider.errors import (
     AIProviderRejectionError,
     AIProviderTimeoutError,
 )
+from scenes.sonic_contract import normalize_scene_sonic
 from scenes.validation import SUPPORTED_SCHEMA_VERSION, validate_scene
+
+logger = logging.getLogger(__name__)
 
 
 class AIOperation(StrEnum):
@@ -226,7 +230,10 @@ def execute(
     except AIProviderQuotaError as exc:
         return _error_result(operation, usage, AIErrorCategory.QUOTA_EXCEEDED, str(exc))
 
-    validation = validate_scene(raw_scene)
+    normalized_scene = normalize_scene_sonic(raw_scene)
+    if isinstance(raw_scene, dict) and "sonic" in raw_scene and "sonic" not in normalized_scene:
+        logger.warning("AI provider returned an unusable sonic block; omitted it from the scene.")
+    validation = validate_scene(normalized_scene)
     if not validation.valid:
         detail = "; ".join(f"{e.path}: {e.message}" for e in validation.errors[:5])
         return _error_result(
@@ -236,7 +243,7 @@ def execute(
             detail or "Provider output failed scene validation.",
         )
 
-    return AIOperationResult(operation=operation, usage=usage, scene=raw_scene)
+    return AIOperationResult(operation=operation, usage=usage, scene=normalized_scene)
 
 
 def _error_result(

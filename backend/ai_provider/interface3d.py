@@ -12,6 +12,7 @@ validate_scene`) are 3D-specific.
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -24,7 +25,10 @@ from ai_provider.errors import (
     AIProviderTimeoutError,
 )
 from ai_provider.interface import AIError, AIErrorCategory, AIOperation, AIUsageMetadata
+from scenes.sonic_contract import normalize_scene_sonic
 from scenes.validation3d import SUPPORTED_SCHEMA_VERSION, validate_scene3d
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -123,7 +127,10 @@ def execute3d(
     except AIProviderQuotaError as exc:
         return _error_result(operation, usage, AIErrorCategory.QUOTA_EXCEEDED, str(exc))
 
-    validation = validate_scene3d(raw_scene)
+    normalized_scene = normalize_scene_sonic(raw_scene)
+    if isinstance(raw_scene, dict) and "sonic" in raw_scene and "sonic" not in normalized_scene:
+        logger.warning("AI provider returned an unusable sonic block; omitted it from the scene.")
+    validation = validate_scene3d(normalized_scene)
     if not validation.valid:
         detail = "; ".join(f"{e.path}: {e.message}" for e in validation.errors[:5])
         return _error_result(
@@ -133,7 +140,7 @@ def execute3d(
             detail or "Provider output failed scene3d validation.",
         )
 
-    return AIOperationResult3D(operation=operation, usage=usage, scene=raw_scene)
+    return AIOperationResult3D(operation=operation, usage=usage, scene=normalized_scene)
 
 
 def _error_result(

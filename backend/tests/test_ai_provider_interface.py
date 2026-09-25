@@ -15,8 +15,27 @@ from ai_provider.interface import (
     AIOperation,
     AIOperationResult,
     AIUsageMetadata,
+    execute,
 )
 from scenes.validation import validate_scene
+
+
+def test_execute_returns_canonicalized_sonic_block():
+    import json
+    from pathlib import Path
+
+    scene = json.loads(
+        (Path(__file__).resolve().parents[1] / "../schema/fixtures/valid/blank.json").read_text()
+    )
+    scene["sonic"] = {"tempo": 999, "scale": "major", "unknown": True}
+    result = execute(
+        AIOperation.CREATE_SCENE,
+        AIUsageMetadata(0, 0, 0),
+        lambda: scene,
+    )
+    assert result.success
+    assert result.scene["sonic"]["tempo"] == 220
+    assert "unknown" not in result.scene["sonic"]
 
 
 def test_create_scene_success_returns_validated_scene_and_usage():

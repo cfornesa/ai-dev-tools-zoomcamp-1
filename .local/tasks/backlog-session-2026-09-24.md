@@ -780,3 +780,46 @@ deferred.
   the same criteria.
 - Next routing is #799. Production authorization remains limited to #748,
   #788, and the already-authorized #748 live verification sequence.
+
+## Production-readiness — 2026-09-25 continuation
+
+- Result: BLOCKED; this batch is not production-ready.
+- Local deployment: PASS. `make check` passed after the #802/#822 changes;
+  disposable Compose rebuilt successfully and served the browser matrix.
+- Approved-browser verification: PASS for completed local issues. The six-
+  engine 2D route matrix passed at 1280x900 and 375x812; screenshots were
+  inspected. CI was not separately invoked because `make check` is the local
+  CI-equivalent gate and no CI run URL was supplied.
+- Intended functionality: OPEN FOLLOW-UP for #799, #800, #801, #804, and
+  #805; their acceptance criteria remain unprocessed. #802/#822, #798/#803,
+  and #807/#815 are CLOSED with QA PASS evidence.
+- Replit/production: BLOCKED by owner-gated #748/#788; no unauthorized publish,
+  production shell, or live verification was performed. #806 remains the
+  linked published verification issue and depends on that release sequence.
+- Follow-up ownership: #799/#800/#801 are next local engineering routes;
+  #804/#805 are parity audits that must create linked criterion-ready issues
+  for every actionable gap; #748/#788 are owner-authorized production actions;
+  #806 is post-publish verification. No new readiness duplicate was created.
+- Readiness routing: rostered Claude / Sonnet 5 / medium; active Codex /
+  GPT-5 / medium substitution recorded for this gate. The gate is read-only.
+
+## Session-completion — 2026-09-25 continuation
+
+- Manifest rollup for this continuation: 14 tracked items; 6 completed and
+  terminal CLOSED/QA PASS (#798, #802, #803, #807, #815, #822); 8 remain
+  terminal OPEN and therefore not complete (#748, #788, #799, #800, #801,
+  #804, #805, #806). No missing GitHub status was silently treated as closed.
+- Evidence boundary: local unit/full checks and disposable Compose/browser
+  evidence cannot close deployed-URL criteria. Production evidence remains
+  absent by authorization boundary, not inferred from local results.
+- Routing audit: implementation/QA roster and Codex substitutions are recorded
+  for each processed transaction; no independent Stage 3 review was credited.
+  The readiness gate used the same explicitly flagged Codex/GPT-5/medium
+  substitution. Remaining open items have next routes above.
+- Follow-up audit: #822 is the only newly discovered actionable split and is
+  linked/closed; #802's missing named spec is a non-actionable coverage
+  boundary because equivalent suites assert its criteria. No orphaned defect,
+  duplicate, or unlinked failed criterion remains in this continuation.
+- Handoff: do not push/publish this checkout. Next action is process #799,
+  then #800/#801/#804/#805, and execute #748/#788 only under their existing
+  owner authorization before #806 verification.

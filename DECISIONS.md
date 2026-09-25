@@ -1591,3 +1591,13 @@ metadata private, and makes regular/immersive/embed stages use the same ratio.
 The six-engine Chromium matrix passed at 1280x900 and 375x812; full `make
 check` passed. #802 and #822 were QA PASS closed with local-only evidence; no
 production rollout was authorized.
+
+## 2026-09-25 — Batch readiness and handoff boundary
+
+Production-readiness and session-completion were rerun after #802/#822. Local
+checks and the disposable Compose/browser evidence pass, but the batch is not
+production-ready: #748/#788/#806 remain owner-gated production work and
+#799/#800/#801/#804/#805 remain unprocessed local backlog. No push, Replit
+Publish, production shell, or production data action was taken. The readiness
+gate ran as an explicitly flagged Codex/GPT-5/medium substitution for the
+Claude/Sonnet 5/medium roster; no Stage 3 independent review was credited.

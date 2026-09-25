@@ -19,14 +19,17 @@ test.describe('3D sound engine', () => {
     await page.goto('/');
     await page.getByRole('button', { name: 'More creation options' }).click();
     await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
+    // The canonical editor route is slug-based; keep the legacy route in the
+    // matcher for disposable stacks that still expose it during migration.
+    await page.waitForURL(/\/(?:projects3d\/[^/]+|users\/@[^/]+\/edit\/[^/]+)$/);
 
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
-    // Issue #444: every action in this toolbar (including "Enable sound")
-    // is nested behind "Open piece controls menu" -- matches
-    // immersive3dRouteParity.spec.ts's own working sequence.
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    // Older bundles nested actions behind a hamburger. The current parity
+    // contract renders stage actions directly; accept the legacy menu only
+    // for a migration-era disposable stack.
+    const legacyMenu = toolbar.getByRole('button', { name: 'Open piece controls menu' });
+    if (await legacyMenu.count()) await legacyMenu.click();
     const enable = toolbar.getByRole('button', { name: 'Enable sound' });
     await expect(enable).toHaveAttribute('aria-pressed', 'false');
     await enable.click();
@@ -48,7 +51,7 @@ test.describe('3D sound engine', () => {
     const ambientMute = toolbar.getByLabel('Mute ambient');
     await ambientMute.check();
     await expect(ambientMute).toBeChecked();
-    const scale = toolbar.getByLabel('Scale');
+    const scale = toolbar.getByRole('combobox', { name: 'Scale', exact: true });
     await scale.selectOption('major');
     await expect(scale).toHaveValue('major');
 

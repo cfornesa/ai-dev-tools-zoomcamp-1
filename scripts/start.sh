@@ -36,6 +36,12 @@ if [[ "$frontend_serve_mode" != "dev" && "$frontend_serve_mode" != "preview" ]];
 fi
 
 frontend_port="${PORT:-5000}"
+# Replit's autoscale deployment supplies PORT=8000, which is also the fixed
+# internal Django port below. Keep the frontend on its normal 5000 port in
+# that topology so vite preview cannot collide with the backend.
+if [[ "$frontend_port" == "8000" ]]; then
+  frontend_port=5000
+fi
 if [[ ! "$frontend_port" =~ ^[0-9]+$ ]] || (( frontend_port < 1 || frontend_port > 65535 )); then
   printf 'Invalid PORT: %s\n' "$frontend_port" >&2
   exit 2

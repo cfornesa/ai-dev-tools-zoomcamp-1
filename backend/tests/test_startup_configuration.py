@@ -179,7 +179,9 @@ def test_deployment_build_does_not_run_django_migrations():
 def test_launcher_has_publish_and_cleanup_contract():
     launcher = (ROOT / "scripts" / "start.sh").read_text()
 
-    assert "frontend_port=\"${PORT:-5000}\"" in launcher
+    assert 'frontend_port="${PORT:-5000}"' in launcher
+    assert 'if [[ "$frontend_port" == "8000" ]]' in launcher
+    assert "frontend_port=5000" in launcher
     assert "runserver 0.0.0.0:8000" in launcher
     assert "npm --prefix frontend run dev" in launcher
     assert "http://127.0.0.1:8000/health/" in launcher
@@ -190,6 +192,24 @@ def test_launcher_has_publish_and_cleanup_contract():
     assert 'wait "$django_pid"' in launcher
     assert 'wait "$frontend_pid"' in launcher
     assert "RUN_MIGRATIONS_ON_START" in launcher
+
+
+def test_launcher_avoids_replit_backend_port_collision(launcher_doubles):
+    bin_dir, state_file = launcher_doubles
+
+    run_launcher(
+        bin_dir,
+        state_file,
+        PORT="8000",
+        FRONTEND_SERVE_MODE="preview",
+        HEALTH_AFTER="1",
+        STARTUP_TIMEOUT_SECONDS="5",
+    )
+
+    npm_args = (state_file.parent / "startup-state.npm-args").read_text()
+    assert "run preview" in npm_args
+    assert "--port 5000" in npm_args
+    assert "--port 8000" not in npm_args
 
 
 def test_published_smoke_waits_for_health_before_browser_routes():

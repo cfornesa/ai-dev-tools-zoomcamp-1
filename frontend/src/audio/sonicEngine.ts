@@ -134,6 +134,10 @@ export interface SonicEngine {
   setTempo(bpm: number): void;
   /** Selects one of the nine authored scales; returns false for unknown names. */
   setScale(name: string): boolean;
+  /** Sets one voice's gain without changing the master bus. */
+  setVoiceVolume(voice: SonicVoice, percent: number): void;
+  /** Mutes one voice while preserving the other voice gains. */
+  setVoiceMuted(voice: SonicVoice, muted: boolean): void;
   /** Replaces one voice's instrument without changing the other voices. */
   setVoiceInstrument(voice: SonicVoice, instrument: SonicInstrument): boolean;
   /** Called every frame by the 3D preview's own render loop with the
@@ -178,6 +182,12 @@ export function createSonicEngine(
   let tone: ToneModule | null = null;
   let bus: InstanceType<ToneModule['Volume']> | null = null;
   let filter: InstanceType<ToneModule['Filter']> | null = null;
+  type VoiceBus = InstanceType<ToneModule['Volume']>;
+  const voiceBuses: Record<SonicVoice, VoiceBus | null> = {
+    ambient: null,
+    movement: null,
+    melodic: null,
+  };
   type VoiceSynth = {
     connect(destination: unknown): unknown;
     triggerAttackRelease(note: string, duration: string, time?: number): void;
@@ -201,6 +211,8 @@ export function createSonicEngine(
   let lastMovementTriggerAt = 0;
   let tempo = DEFAULT_TEMPO;
   let scale: SonicScale = DEFAULT_SCALE;
+  const voiceVolumes: Record<SonicVoice, number> = { ambient: 100, movement: 100, melodic: 100 };
+  const voiceMuted: Record<SonicVoice, boolean> = { ambient: false, movement: false, melodic: false };
 
   async function enable(): Promise<void> {
     if (status === 'active') return;
@@ -210,6 +222,12 @@ export function createSonicEngine(
 
       filter = new tone.Filter(2000, 'lowpass').toDestination();
       bus = new tone.Volume(0).connect(filter);
+      voiceBuses.ambient = new tone.Volume(0).connect(bus);
+      voiceBuses.movement = new tone.Volume(0).connect(bus);
+      voiceBuses.melodic = new tone.Volume(0).connect(bus);
+      setVoiceVolume('ambient', voiceVolumes.ambient);
+      setVoiceVolume('movement', voiceVolumes.movement);
+      setVoiceVolume('melodic', voiceVolumes.melodic);
       ambientSynth = createVoiceSynth('ambient');
       movementSynth = createVoiceSynth('movement');
       melodicSynth = createVoiceSynth('melodic');
@@ -243,6 +261,9 @@ export function createSonicEngine(
     melodicSynth?.dispose();
     bus?.dispose();
     filter?.dispose();
+    voiceBuses.ambient?.dispose();
+    voiceBuses.movement?.dispose();
+    voiceBuses.melodic?.dispose();
     if (status === 'active') tone?.Transport.stop();
     ambientLoop = null;
     ambientSynth = null;
@@ -250,6 +271,9 @@ export function createSonicEngine(
     melodicSynth = null;
     bus = null;
     filter = null;
+    voiceBuses.ambient = null;
+    voiceBuses.movement = null;
+    voiceBuses.melodic = null;
   }
 
   function disable() {
@@ -280,8 +304,25 @@ export function createSonicEngine(
     return true;
   }
 
+  function setVoiceVolume(voice: SonicVoice, percent: number) {
+    voiceVolumes[voice] = Math.min(100, Math.max(0, percent));
+    const voiceBus = voiceBuses[voice];
+    if (voiceBus) voiceBus.volume.value = voiceMuted[voice] ? -60 : volumeToDb(voiceVolumes[voice]);
+  }
+
+  function setVoiceMuted(voice: SonicVoice, muted: boolean) {
+    voiceMuted[voice] = muted;
+    const voiceBus = voiceBuses[voice];
+    if (voiceBus) voiceBus.volume.value = muted ? -60 : volumeToDb(voiceVolumes[voice]);
+  }
+
+  function volumeToDb(percent: number): number {
+    return percent === 0 ? -60 : (percent / 100) * 24 - 24;
+  }
+
   function createVoiceSynth(voice: SonicVoice): VoiceSynth {
-    if (!tone || !bus) throw new Error('Sound must be enabled before selecting an instrument.');
+    const voiceBus = voiceBuses[voice];
+    if (!tone || !voiceBus) throw new Error('Sound must be enabled before selecting an instrument.');
     const instrument = voiceInstruments[voice];
     const synth =
       instrument === 'amsynth'
@@ -297,7 +338,7 @@ export function createSonicEngine(
                 : instrument === 'duosynth'
                   ? new tone.DuoSynth()
                   : new tone.Synth();
-    return synth.connect(bus) as unknown as VoiceSynth;
+    return synth.connect(voiceBus) as unknown as VoiceSynth;
   }
 
   function setVoiceInstrument(voice: SonicVoice, instrument: SonicInstrument): boolean {
@@ -397,6 +438,8 @@ export function createSonicEngine(
     setVolume,
     setTempo,
     setScale,
+    setVoiceVolume,
+    setVoiceMuted,
     setVoiceInstrument,
     reportMovement,
     triggerMelodicNote,

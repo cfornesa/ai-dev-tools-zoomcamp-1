@@ -12,6 +12,7 @@ import { createSonicEngine, type ToneModule } from './sonicEngine';
 
 function createFakeToneModule() {
   const disposeCalls: string[] = [];
+  const volumeInstances: Array<{ volume: { value: number }; connections: unknown[] }> = [];
   const triggerCalls: Array<{ kind: string; note: string }> = [];
   const attackCalls: Array<{ kind: string; note: string }> = [];
   const releaseCalls: string[] = [];
@@ -45,7 +46,12 @@ function createFakeToneModule() {
 
   class FakeVolume {
     volume = { value: 0 };
+    connections: unknown[] = [];
+    constructor() {
+      volumeInstances.push(this);
+    }
     connect() {
+      this.connections.push(...arguments);
       return this;
     }
     dispose() {
@@ -150,6 +156,7 @@ function createFakeToneModule() {
     },
     fireAmbientLoopTick: (time = 0) => loopCallback?.(time),
     getLoopInterval: () => loopInterval,
+    volumeInstances,
     getTransportBpm: () => (fakeModule.Transport as unknown as { bpm: { value: number } }).bpm.value,
   };
 }
@@ -301,6 +308,23 @@ describe('createSonicEngine', () => {
     // is that out-of-range calls stay clamped.
     engine.setVolume(-10);
     engine.setVolume(500);
+  });
+
+  it('sets independent voice gain and mute without muting the other voice buses', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    engine.setVoiceVolume('ambient', 25);
+    engine.setVoiceMuted('movement', true);
+    expect(fake.volumeInstances[1].volume.value).toBe(-18);
+    expect(fake.volumeInstances[2].volume.value).toBe(-60);
+    expect(fake.volumeInstances[3].volume.value).toBe(0);
+
+    engine.setVoiceMuted('movement', false);
+    expect(fake.volumeInstances[2].volume.value).toBe(0);
+    engine.setVoiceVolume('ambient', 500);
+    expect(fake.volumeInstances[1].volume.value).toBe(0);
   });
 
   it('disable() releases every audio resource and returns to idle', async () => {

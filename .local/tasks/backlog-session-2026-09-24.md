@@ -522,3 +522,43 @@ deferred.
 - Dependency/order rationale: #815 is independent and next for local
   implementation; production/browser issues remain authorization-gated on
   #748/#788/#803/#806/#807, and #821 awaits a rebuilt disposable browser stack.
+
+## Production-readiness — 2026-09-24 continuation
+
+- Local deployment: PASS for the current checkout. `UV_CACHE_DIR=/tmp/codex-final-uv-cache NPM_CONFIG_CACHE=/tmp/codex-npm-cache make check` passed action pins, Ruff, format, mypy, backend `1678 passed / 39 skipped`, frontend lint, format, typecheck, and `277 files / 2975 tests`.
+- Approved-browser/CI: BLOCKED for the remaining production/browser criteria.
+  Playwright Chromium launched with host permission; the existing #821
+  viewport scenarios passed, but the new region scenario requires a rebuilt
+  Compose frontend. Chrome owner-route inspection remains anonymous locally,
+  so no owner-only editor evidence was claimed.
+- Intended functionality: OPEN FOLLOW-UP for #815 (not yet engineered),
+  #821 (verification boundary), and the remaining production/browser issues.
+- Replit publication/production: NO-GO. No unauthorized publish or production
+  data action was taken. #788 was already run once earlier and remains open
+  with unchanged sources; #748/#803/#806/#807 still require their authorized
+  live evidence or owner-authorized deployment path.
+- Readiness result: NOT PRODUCTION-READY. Every open item and exact next action
+  remains in the authenticated GitHub inventory; no issue was silently omitted
+  or duplicated.
+- Routing audit: implementation and QA service/model/effort substitutions are
+  recorded per transaction; Stage 3 independent review was not run for these
+  substitutions. This readiness gate ran as Codex/GPT-5/medium substitution;
+  it is flagged because the rostered Sonnet 5 tier was unavailable in this
+  session.
+
+## Session-completion — 2026-09-24 continuation
+
+- Manifest rollup: 14 open issues remain; zero missing-status records in the
+  ledger. Terminal completed issues include #816, #818, #819, and #820. #821
+  is handed back as verification-boundary/open; #815 is not yet engineered;
+  #748, #788, and #798–#807 remain open production/browser work.
+- Follow-up audit: #821's stale Compose revision is classified as an
+  environment/evidence boundary and linked to the existing issue; no new
+  actionable duplicate was created. #815 remains the next independent local
+  transaction.
+- Final verification boundary: production URLs, owner-only editor routes,
+  and any Replit publish/database action are not closed by local evidence.
+  Owner authorization remains limited to #747/#748/#788.
+- Handoff: next action is to implement #815 through its full loop, rebuild the
+  disposable Compose stack from `cd4ab57` for #821, then process the authorized
+  production/browser items without publishing unrelated commits.

@@ -148,7 +148,9 @@ test.describe('3D runtime template parity (#800)', () => {
         await zipPage.goto(`file://${path.join(root, 'index.html')}`);
         await expect(zipPage.locator('#piece-toolbar')).toBeVisible();
         await expect(zipPage.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
-        await expect(zipPage.getByRole('button', { name: 'Fullscreen', exact: true })).toBeVisible();
+        await expect(
+          zipPage.getByRole('button', { name: 'Fullscreen', exact: true }),
+        ).toBeVisible();
         await zipPage.screenshot({
           path: `test-results/template-3d-zip-${fixture.engine}-1280.png`,
           fullPage: true,

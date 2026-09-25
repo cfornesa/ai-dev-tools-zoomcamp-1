@@ -976,7 +976,7 @@ function ThreeScenePreview({
           <PieceStageToolbar
             ariaLabel="Preview actions"
             immersiveHref={immersiveHref}
-            toolbarMode={toolbarMode}
+            toolbarMode="menu"
             onDownload={onDownload}
             downloadFormat={downloadFormat}
             capabilities={THREE_D_STAGE_CAPABILITIES}

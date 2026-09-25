@@ -744,6 +744,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
               scene={workingScene}
               screenshotBaseName={project?.title}
               immersiveHref={id ? `/immersive/p3d/${id}` : undefined}
+              toolbarMode="inline"
               onDownload={(variant) => void handleExport(variant)}
               editorControls={
                 <>

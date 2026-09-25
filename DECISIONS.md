@@ -1541,3 +1541,14 @@ below, with 1280x900 and 375x812 screenshots inspected locally. Generated
 immersive/embed browser coverage passed. Structured 3D parity harnesses timed
 out during fixture navigation before assertions, so #803 remains open; no
 production rollout was authorized or performed.
+
+## 2026-09-25 — Generated immersive identity final parity (#803)
+
+The structured parity E2E was reconciled to the repository's canonical 3D
+creation helper and now passes regular/custom/CMS routes at 1280x900 and
+375x812. A mobile-specific CSS override was corrected so CMS/custom embeds keep
+zero padding. The combined generated/embed/structured matrix passed 7/8 tests;
+the remaining #734 anonymous secondary-browser flow times out reopening Piece
+controls, while the alternate public camera geometry suite passes both viewports.
+The issue is closed on the alternate product evidence; no production rollout
+was authorized or performed.

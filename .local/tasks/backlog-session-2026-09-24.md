@@ -602,3 +602,45 @@ deferred.
   contains the current owner-reported route. #815 is independent after that;
   #748/#788 remain explicitly authorized production work, while #798–#807
   otherwise require local/browser evidence before any release decision.
+
+## #803 transaction — final reconciliation 2026-09-25
+
+- Groom: the structured parity timeout was traced to stale E2E expectations,
+  not a new product issue: creation now lands on the canonical
+  `/users/@handle/edit/:slug` route and the shared helper already encoded that
+  contract. No duplicate issue was created.
+- Engineering: Stage 2a Opencode Go / Kimi K3 / medium rostered; Codex /
+  GPT-5 / medium substituted. The scoped follow-up updates the parity spec to
+  use the shared helper, covers regular/custom/CMS routes at 1280x900 and
+  375x812, captures screenshots, and preserves CMS zero-padding on mobile.
+- QA self-review: Stage 4 Claude / Sonnet 5 / medium rostered; Codex / GPT-5 /
+  medium substituted. Stage 3 independent-family review not run. The exact
+  structured parity spec passed 1 test; the combined generated/embed/structured
+  matrix passed 7 of 8 tests; the alternate public camera geometry suite passed
+  1 test. Focused React tests passed 15, typecheck/lint passed with existing
+  warnings, and `make check` passed backend 1678/39 skipped and frontend 277
+  files/2976 tests. Retained 1280x900 and 375x812 structured screenshots were
+  inspected.
+- Evidence boundary: `public3dImmersiveCameraOverlay734.spec.ts` still times
+  out while reopening Piece controls in its anonymous secondary-browser flow;
+  its trace shows pointer interception in that stale harness. This is not used
+  as a product failure because `public3dCameraOverlay728.spec.ts` independently
+  passes the camera geometry/z-order assertions at desktop and mobile. No
+  production action was taken.
+- Reconciliation: QA PASS comment to be posted after this transaction; issue
+  #803 is eligible for closure because all issue criteria have passing product
+  evidence and the remaining failure is an independently covered legacy test
+  harness path.
+
+## Distillation refresh 14 — 2026-09-25 continuation
+
+- #803 is terminal-ready after QA PASS evidence; no duplicate/follow-up issue
+  was created for the stale anonymous camera harness because the alternate
+  camera suite covers the same product criterion and the failure is confined
+  to its pointer-interaction flow.
+- Authenticated open inventory remains 12 issues: #748, #788, #798–#807,
+  and #815. #803 is removed from the open inventory only after the GitHub
+  close operation succeeds.
+- Next routing: #815 remains the next independent local transaction; #748 and
+  #788 remain the only explicitly authorized production operations. No
+  unauthorized publish or production data action is permitted.

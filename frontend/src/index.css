@@ -4859,6 +4859,12 @@ select.ai-proposal-field-full-width {
   padding: 0;
 }
 
+/* Keep CMS/custom embeds edge-to-edge on narrow screens too; the responsive
+   shell padding below must not override the embed contract. */
+.immersive-project3d-viewer.immersive-project3d-viewer--embed {
+  padding: 0;
+}
+
 .immersive-project3d-viewer--embed .scene3d-preview {
   min-height: 100vh;
 }

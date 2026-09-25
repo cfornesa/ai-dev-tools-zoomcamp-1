@@ -7,6 +7,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createBlank3DProjectViaUI } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -33,10 +34,9 @@ const CASES: Case[] = [
     name: 'regular (#333)',
     query: '',
     assertMode: async (page) => {
-      await expect(page.getByTestId('immersive-project3d-viewer')).not.toHaveAttribute(
-        'data-immersive-embed-mode',
-      );
-      await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
+      const viewer = page.getByTestId('immersive-project3d-viewer');
+      await expect(viewer).not.toHaveAttribute('data-immersive-embed-mode');
+      await expect(viewer.getByRole('heading').first()).toBeVisible();
       await expect(page.getByRole('button', { name: 'Embed (Custom)' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Embed (CMS)' })).toBeVisible();
     },
@@ -74,18 +74,12 @@ test.describe('immersive 3D route query-param parity (#333/#334/#335)', () => {
 
   test('regular, custom, and CMS immersive routes each keep the correct chrome', async ({
     page,
-  }) => {
+  }, testInfo) => {
     for (const [index, testCase] of CASES.entries()) {
       if (index === 0) {
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
       }
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-      await page.waitForURL(/\/projects3d\/[^/]+$/);
-      const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
-      expect(projectId).toBeTruthy();
-      if (!projectId) continue;
+      const projectId = await createBlank3DProjectViaUI(page);
 
       await page.setViewportSize({ width: 1280, height: 900 });
       await page
@@ -98,24 +92,35 @@ test.describe('immersive 3D route query-param parity (#333/#334/#335)', () => {
         .click();
       await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
 
-      await page.goto(`/immersive/p3d/${projectId}${testCase.query}`);
-      await testCase.assertMode(page);
+      for (const viewport of [
+        { name: 'desktop', width: 1280, height: 900 },
+        { name: 'mobile', width: 375, height: 812 },
+      ]) {
+        await page.setViewportSize(viewport);
+        await page.goto(`/immersive/p3d/${projectId}${testCase.query}`);
+        await testCase.assertMode(page);
 
-      const frame = page.getByTestId('scene3d-preview-canvas-frame');
-      await expect(frame).toBeVisible();
-      const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
-      await expect(toolbar).toBeVisible();
-      await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-      for (const label of TOOLBAR_BUTTONS) {
+        const frame = page.getByTestId('scene3d-preview-canvas-frame');
+        await expect(frame).toBeVisible();
+        const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
+        await expect(toolbar).toBeVisible();
+        await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+        await expect(toolbar.getByRole('button', { name: 'Hide piece controls' })).toBeVisible();
+        for (const label of TOOLBAR_BUTTONS.filter((item) => item !== 'Piece controls')) {
+          await expect(
+            toolbar.getByRole('button', { name: label, exact: label === 'Piece controls' }),
+          ).toBeVisible();
+        }
+        await toolbar.getByRole('button', { name: 'Open download menu' }).click();
+        await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();
         await expect(
-          toolbar.getByRole('button', { name: label, exact: label === 'Piece controls' }),
+          toolbar.getByRole('menuitem', { name: 'Download Non-Camera ZIP' }),
         ).toBeVisible();
+        await page.screenshot({
+          path: testInfo.outputPath(`immersive-3d-${testCase.name}-${viewport.name}.png`),
+          fullPage: true,
+        });
       }
-      await toolbar.getByRole('button', { name: 'Open download menu' }).click();
-      await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();
-      await expect(
-        toolbar.getByRole('menuitem', { name: 'Download Non-Camera ZIP' }),
-      ).toBeVisible();
     }
   });
 });

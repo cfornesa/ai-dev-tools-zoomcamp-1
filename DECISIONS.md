@@ -1658,3 +1658,7 @@ route rendered the identity card before the stage with the requested toolbar
 order and reference spacing. Focused component tests, full `make check`, and
 the exact regular/embed/immersive Playwright suite (7/7 after host permission)
 passed. #827 received QA PASS and was closed; #806, #788, and #748 remain.
+
+## 2026-09-25 — Sound controls distillation
+
+Added #833-#847 (new only). Implementation blocked on #832 (Codex audio refinement) to avoid concurrent edits to the sound engine/export runtime. Reference lacks BPM slider/oscillator/ADSR; these are owner additions recorded in #833.

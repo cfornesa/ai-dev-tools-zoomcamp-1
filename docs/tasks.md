@@ -24020,3 +24020,7 @@ Addendum 6 update: #814 closed; added #817-#821 (see distillation doc). Still di
 | #827 | Production immersive 3D surface moves identity above stage and restores reference spacing | 2a | CLOSED / QA PASS; published Chrome order/spacing and 7/7 regular/embed/immersive browser regression |
 | #828 | Production schema missing PublicProfile image-data columns after publish | 2b | CLOSED / QA PASS; authorized Replit Production Database additive repair and live API/browser verification |
 | #829 | Canonical immersive 3D separates Share/Embed actions from bordered version details and preserves structural headings | 2a | IN IMPLEMENTATION / local and Compose QA green; production publish not authorized in this transaction |
+
+## Addendum 7 — sound and synth controls (2026-09-25)
+
+See `docs/distillation-2026-09-25-sound-controls.md`. Issues #833-#847, all blocked on Codex's #832. Distillation only.

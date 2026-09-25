@@ -1601,3 +1601,12 @@ production-ready: #748/#788/#806 remain owner-gated production work and
 Publish, production shell, or production data action was taken. The readiness
 gate ran as an explicitly flagged Codex/GPT-5/medium substitution for the
 Claude/Sonnet 5/medium roster; no Stage 3 independent review was credited.
+
+## 2026-09-26 — Replit publish branch and launcher follow-up (#825)
+
+The Replit workspace's local-only commits were preserved by publishing from a
+new branch rooted at the exact pushed `origin/main` revision. The authorized
+retry from `f9461d1` still returned to Failed without a usable deployment
+revision, while the public asset remained the pre-fix bundle. #825 therefore
+remains open despite complete local implementation and checks; no production
+data action may proceed until a revision-matched deployment is healthy.

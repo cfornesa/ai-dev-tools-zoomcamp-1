@@ -261,6 +261,38 @@ describe('createSonicEngine', () => {
     expect(fake.triggerCalls.map(({ note }) => note)).toEqual(['C3', 'D3', 'E3', 'G3', 'A3', 'C4']);
   });
 
+  it('validates an independent melodic key and maps piano degrees through its scale', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+
+    expect(engine.setKey({ root: 'C', scale: 'major' })).toBe(true);
+    expect(engine.setKey({ root: 'H', scale: 'major' })).toBe(false);
+    expect(engine.setKey({ root: 'C', scale: 'unknown' })).toBe(false);
+    await engine.enable();
+    fake.triggerCalls.length = 0;
+
+    for (const note of ['C4', 'C#4', 'D4']) engine.triggerMelodicNote(note);
+    expect(fake.triggerCalls.map(({ note }) => note)).toEqual(['C4', 'D4', 'E4']);
+  });
+
+  it('preserves the chromatic keyboard mapping and applies global transpose to all voices', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    engine.setTranspose(24);
+    await engine.enable();
+    fake.triggerCalls.length = 0;
+
+    fake.fireAmbientLoopTick();
+    engine.reportMovement({ dx: 1, dy: 0.5, dz: 0 });
+    engine.triggerMelodicNote('C4');
+    engine.startCameraTheremin();
+    engine.updateCameraTheremin(440, -10);
+
+    expect(fake.triggerCalls.map(({ note }) => note)).toEqual(['C4', 'G5', 'C5']);
+    expect(fake.attackCalls.at(-1)?.note).toBe('C5');
+    expect(fake.rampToCalls.at(-1)?.value).toBeCloseTo(440 * 2);
+  });
+
   it('reportMovement triggers a note on real motion, ignores tiny jitter', async () => {
     const fake = createFakeToneModule();
     const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));

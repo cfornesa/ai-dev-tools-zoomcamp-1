@@ -25,7 +25,7 @@ export type PitchClass =
   | 'A#'
   | 'B';
 
-const PITCH_CLASSES: readonly PitchClass[] = [
+export const PITCH_CLASSES: readonly PitchClass[] = [
   'C',
   'C#',
   'D',

@@ -32,6 +32,14 @@
  * "Enable camera" button click is what's allowed to call `getUserMedia`.
  */
 
+import { PIANO_KEY_MAP } from './pianoKeyMap';
+import {
+  PITCH_CLASSES,
+  scaleNotes as theoryScaleNotes,
+  type PitchClass,
+  type ScaleName,
+} from './scaleTheory';
+
 export type ToneModule = typeof import('tone');
 
 export type SonicEngineStatus = 'idle' | 'active' | 'error';
@@ -94,6 +102,8 @@ export type SonicScale =
   | 'mixolydian'
   | 'wholetone';
 
+export type SonicKey = { root: PitchClass; scale: SonicScale };
+
 export const SONIC_SCALE_OPTIONS: ReadonlyArray<SonicScale> = [
   'major',
   'minor',
@@ -153,6 +163,12 @@ export interface SonicEngine {
   setTempo(bpm: number): void;
   /** Selects one of the nine authored scales; returns false for unknown names. */
   setScale(name: string): boolean;
+  /** Sets the melodic keyboard root and scale without changing ambient scale. */
+  setKey(key: { root: string; scale: string }): boolean;
+  /** Applies a global pitch transpose to all voices, clamped to ±12 semitones. */
+  setTranspose(semitones: number): void;
+  /** Links the ambient scale to the melodic keyboard scale when enabled. */
+  setFollowKey(follow: boolean): void;
   /** Sets one voice's gain without changing the master bus. */
   setVoiceVolume(voice: SonicVoice, percent: number): void;
   /** Mutes one voice while preserving the other voice gains. */
@@ -236,6 +252,9 @@ export function createSonicEngine(
   let lastMovementTriggerAt = 0;
   let tempo = DEFAULT_TEMPO;
   let scale: SonicScale = DEFAULT_SCALE;
+  let key: SonicKey = { root: 'C', scale: 'chromatic' };
+  let transpose = 0;
+  let followKey = false;
   let filterSettings: SonicFilterSettings = { type: 'lowpass', cutoff: 2000, resonance: 1 };
   let melodicSynthSettings: MelodicSynthSettings = {
     oscillator: 'sine',
@@ -278,7 +297,7 @@ export function createSonicEngine(
       ambientLoop = new tone.Loop((time) => {
         const ambientScale = scaleNotes(scale, 3);
         ambientSynth?.triggerAttackRelease(
-          ambientScale[ambientIndex % ambientScale.length],
+          transposeNote(ambientScale[ambientIndex % ambientScale.length], transpose),
           '8n',
           time,
         );
@@ -345,7 +364,26 @@ export function createSonicEngine(
   function setScale(name: string): boolean {
     if (!SONIC_SCALE_OPTIONS.includes(name as SonicScale)) return false;
     scale = name as SonicScale;
+    if (followKey) key = { ...key, scale };
     return true;
+  }
+
+  function setKey(next: { root: string; scale: string }): boolean {
+    if (!PITCH_CLASSES.includes(next.root as PitchClass)) return false;
+    if (!SONIC_SCALE_OPTIONS.includes(next.scale as SonicScale)) return false;
+    key = { root: next.root as PitchClass, scale: next.scale as SonicScale };
+    if (followKey) scale = key.scale;
+    return true;
+  }
+
+  function setTranspose(semitones: number): void {
+    if (!Number.isFinite(semitones)) return;
+    transpose = Math.min(12, Math.max(-12, Math.round(semitones)));
+  }
+
+  function setFollowKey(follow: boolean): void {
+    followKey = follow;
+    if (followKey) scale = key.scale;
   }
 
   function setVoiceVolume(voice: SonicVoice, percent: number) {
@@ -432,14 +470,35 @@ export function createSonicEngine(
       movementScale.length - 1,
       Math.floor(Math.abs(delta.dy) * movementScale.length),
     );
-    movementSynth.triggerAttackRelease(movementScale[scaleIndex], '16n');
+    movementSynth.triggerAttackRelease(
+      transposeNote(movementScale[scaleIndex], transpose),
+      '16n',
+    );
   }
 
   function triggerMelodicNote(note: string) {
     melodicSynth?.triggerAttackRelease(
-      shiftNoteOctave(note, melodicSynthSettings.octaveShift),
+      transposeNote(shiftNoteOctave(keyboardNote(note), melodicSynthSettings.octaveShift), transpose),
       '8n',
     );
+  }
+
+  function keyboardNote(note: string): string {
+    if (key.scale === 'chromatic') return note;
+    const index = Object.values(PIANO_KEY_MAP).indexOf(note);
+    if (index < 0) return note;
+    return theoryScaleNotes(key.root, key.scale as ScaleName, [4, 6])[index] ?? note;
+  }
+
+  function transposeNote(note: string, semitones: number): string {
+    const match = /^([A-G](?:#|b)?)(-?\d+)$/.exec(note);
+    if (!match) return note;
+    const pitchIndex = PITCH_CLASSES.indexOf(match[1] as PitchClass);
+    if (pitchIndex < 0) return note;
+    const midi = (Number(match[2]) + 1) * 12 + pitchIndex + semitones;
+    const rounded = Math.round(midi);
+    const octave = Math.floor(rounded / 12) - 1;
+    return `${PITCH_CLASSES[((rounded % 12) + 12) % 12]}${octave}`;
   }
 
   function shiftNoteOctave(note: string, shift: number): string {
@@ -519,7 +578,7 @@ export function createSonicEngine(
     if (!melodicSynth || thereminSounding) return;
     // An arbitrary starting pitch -- immediately overridden by the first
     // `updateCameraTheremin` call once a hand is tracked.
-    melodicSynth.triggerAttack('C4');
+    melodicSynth.triggerAttack(transposeNote('C4', transpose));
     thereminSounding = true;
   }
 
@@ -528,7 +587,7 @@ export function createSonicEngine(
     // A short ramp (not an instant jump) is what makes this read as a
     // continuous glide rather than a stutter of discrete pitch jumps,
     // matching the reference's own theremin feel.
-    melodicSynth.frequency.rampTo(pitchHz, 0.05);
+    melodicSynth.frequency.rampTo(pitchHz * 2 ** (transpose / 12), 0.05);
     melodicSynth.volume.value = volumeDb;
   }
 
@@ -551,6 +610,9 @@ export function createSonicEngine(
     setVolume,
     setTempo,
     setScale,
+    setKey,
+    setTranspose,
+    setFollowKey,
     setVoiceVolume,
     setVoiceMuted,
     setFilter,

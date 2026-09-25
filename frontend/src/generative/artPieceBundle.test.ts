@@ -160,6 +160,39 @@ describe('generateArtPieceBundle', () => {
     }
   });
 
+  it('keeps sound controls reachable in sound-only exports (#842)', async () => {
+    const blob = await generateArtPieceBundle('p5js', P5_CODE, {
+      presentation: 'regular',
+      mode: 'full',
+      capabilities: { screenshot: true, fullscreen: true, sound: true },
+    });
+    const zip = await JSZip.loadAsync(blob);
+    const html = await zip.files['index.html'].async('string');
+    const toolbar = html.slice(
+      html.indexOf('<div id="piece-toolbar"'),
+      html.indexOf('</div>', html.indexOf('<div id="piece-toolbar"')),
+    );
+
+    expect(toolbar).toContain('data-action="controls"');
+    expect(html).toContain('id="art-piece-controls-panel"');
+    expect(html).toContain('id="art-piece-ambient-bpm"');
+    expect(html).toContain('id="art-piece-keyboard"');
+  });
+
+  it('constrains exported sound controls for narrow viewports (#869)', async () => {
+    const blob = await generateArtPieceBundle('p5js', P5_CODE, {
+      presentation: 'regular',
+      mode: 'full',
+      capabilities: { screenshot: true, fullscreen: true, sound: true },
+    });
+    const zip = await JSZip.loadAsync(blob);
+    const css = await zip.files['styles/piece.css'].async('string');
+
+    expect(css).toContain('#art-piece-controls-panel > label {');
+    expect(css).toContain('#art-piece-controls-panel > fieldset {');
+    expect(css).toContain('grid-template-columns: minmax(0, 1fr);');
+  });
+
   it('exports a hidden ready status and visible alert target for runtime failures (#801)', async () => {
     const blob = await generateArtPieceBundle('svg', '<svg></svg>');
     const zip = await JSZip.loadAsync(blob);

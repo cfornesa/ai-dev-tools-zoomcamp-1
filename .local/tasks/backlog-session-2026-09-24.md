@@ -3310,3 +3310,37 @@ deferred.
   active-Chrome verification on the disposable local fixture → QA/reconcile.
   Preserve the evidence boundary and create a new linked issue only if the
   browser pass discovers a distinct implementation defect.
+
+## Distillation refresh 66 — 2026-09-25 — NEW FOLLOW-UP #869
+
+- During #842's current-checkout ZIP pass, the generated sound panel was
+  reachable after the #842 export-button fix but its inline labels collided at
+  375x812. Duplicate audit found no existing issue owning exported generated
+  sound-panel layout; #869 is linked to #842 and scoped only to that defect.
+- Routing: implementation-mechanical frontend/export. The fix must preserve
+  Full vs Non-Camera capabilities and use the same active-Chrome viewport
+  evidence contract.
+
+## Transaction #869 — 2026-09-25 — ENGINEERED / QA PASS / CLOSED PENDING PUSH
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes.
+- Engineer: COMPLETED. implementation-mechanical / Codex-GPT-5 / medium /
+  substituted: yes; `frontend/src/generative/artPieceBundle.ts` now stacks
+  exported Sound labels and Keyboard fieldsets, constrains controls to the
+  panel width, and preserves the existing Full/Non-Camera capability split.
+  Focused regression coverage was added in `artPieceBundle.test.ts`.
+- QA self-review: PASS locally. Fresh ZIPs downloaded from the rebuilt
+  disposable Compose app were extracted and served in active Chrome. Full ZIP
+  at 375x812 rendered readable stacked controls with body/document scroll width
+  375 <= viewport 375; at 1280x900 scroll width was 1280 <= viewport 1280.
+  Sound activation, BPM, scale, and Keyboard notes were exercised; screenshots
+  were inspected and console error logs were empty. Non-Camera ZIP exposed the
+  sound controls while camera/microphone text was absent and desktop scroll
+  width stayed within 1280.
+- Exact commands: `cd frontend && npm test -- --run
+  src/generative/artPieceBundle.test.ts` — 1 file, 26 tests passed;
+  `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` — PASS, backend 1710
+  passed / 39 skipped; frontend 280 files / 3016 tests passed.
+- Evidence boundary: disposable local Compose, freshly downloaded ZIPs, and
+  active Chrome only; no production publish or deployed-URL claim.
+- Reconcile: ready to post QA PASS, close #869, commit, and push.

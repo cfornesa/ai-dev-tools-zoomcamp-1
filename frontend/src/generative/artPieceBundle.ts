@@ -161,6 +161,42 @@ ${library === 'c2js-interactive' ? VISITOR_DRAWING_CSS : ''}
   border-radius: .75rem;
 }
 #art-piece-controls-panel[hidden] { display: none; }
+#art-piece-controls-panel > label,
+#art-piece-controls-panel > fieldset {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#art-piece-controls-panel > label {
+  display: grid;
+  gap: .2rem;
+}
+#art-piece-controls-panel > label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+#art-piece-controls-panel > label input[type="checkbox"] {
+  width: auto;
+}
+#art-piece-controls-panel > label input,
+#art-piece-controls-panel > label select,
+#art-piece-controls-panel > fieldset input,
+#art-piece-controls-panel > fieldset select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#art-piece-controls-panel > fieldset {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .35rem;
+}
+#art-piece-controls-panel > fieldset > label {
+  display: grid;
+  gap: .2rem;
+  min-width: 0;
+}
 #art-piece-controls-panel button, #art-piece-guide-dialog button {
   min-height: 2.75rem;
   padding: .4rem .75rem;
@@ -352,7 +388,12 @@ function buildExportControls(
   const buttons: ExportToolbarButtonId[] = [
     ...(capabilities.screenshot !== false ? (['screenshot'] as const) : []),
     ...(capabilities.sound === true ? (['sound'] as const) : []),
-    ...(includeMicrophone || includeCamera || includeSteering ? (['controls'] as const) : []),
+    // Sound controls also live in the Piece controls popover. Keep the
+    // disclosure reachable for sound-only exports; otherwise the panel is
+    // rendered hidden with no way for a visitor to open it.
+    ...(capabilities.sound === true || includeMicrophone || includeCamera || includeSteering
+      ? (['controls'] as const)
+      : []),
     ...(includeSteering ? (['guide'] as const) : []),
     // C2.js Interactive: the session-only visitor drawing toggle (#757/#758, matrix row 7).
     ...(library === 'c2js-interactive' ? (['draw'] as const) : []),

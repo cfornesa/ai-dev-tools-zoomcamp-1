@@ -2476,3 +2476,24 @@ deferred.
 - Next action is to implement #846 only with focused engine/UI work and its
   fake-Tone/browser coverage; do not conflate it with #844's missing ZIP
   artifact or the Chrome verification issues.
+
+## Transaction #846 — 2026-09-25 — OPEN / QA INCOMPLETE
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. #846 is a distinct shared Tone engine/UI
+  implementation item; #844's ZIP artifact and #847's ambient sample remain
+  separate. No duplicate was found.
+- Engineer: PARTIAL. Stage owner implementation-complex; Codex/GPT-5
+  substitution; medium effort. Commit `b80ba29` adds the lazy fixed-order
+  effects chain, clamped `setEffect` API, fake-Tone coverage, and an Effects
+  disclosure in the 3D sound controls. Generated/ZIP runtime surfaces are not
+  absorbed into this issue.
+- QA self-review: INCOMPLETE. Stage owner qa-self-review; Codex/GPT-5
+  substitution; medium effort. Focused Vitest (62), typecheck, format, and
+  lint passed, but rendered 1280x900/375x812 screenshots and browser runtime
+  interaction evidence for the new controls are missing.
+- Reconcile: OPEN. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/846#issuecomment-5832790323
+  records the matrix, commands, provenance, and no-production-publish
+  boundary. Next action is current-checkout browser inspection at both named
+  viewports, followed by any runtime fixes and re-QA.

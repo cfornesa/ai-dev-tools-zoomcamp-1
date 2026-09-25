@@ -1605,3 +1605,30 @@ deferred.
 - Current routing: continue with #837 onward in dependency order; #788 remains
   the only production-runtime blocker. #853–#862 remain verification/reporting
   work and are not implementation substitutions.
+
+## Task-distillation manifest 35 — 2026-09-25 continuation
+
+- Current authoritative open inventory is #788 and #837–#862. Closed history
+  (#832, #834–#836) remains immutable; no issue was reopened. Duplicate audit
+  found no new gap: the prior full-suite timeout cluster is the documented
+  workflow boundary, and the production importer boundary remains #788.
+- Dependency/order rationale: #837–#849 are shared sound-engine/theory
+  capabilities; #850–#852 consume those contracts in editor/runtime/persistence
+  surfaces; #853–#862 are browser verification/reporting children and follow
+  implementation. #788 is independent production data work and must be
+  processed when a supported production runtime is available.
+- Closure contracts are criterion-ready as written: each issue names its
+  engine/surface, acceptance criteria, out-of-scope boundary, and focused
+  checks. Routing: #837 is Stage 2b Tone-parameter/business-logic work;
+  #838–#843 are Stage 2a/2b frontend/runtime integrations; #844–#852 are
+  Stage 2b schema/business-logic or integration work; #853–#862 are Stage 4
+  browser QA/reporting, not implementation substitutes.
+- Blocker triage: #788 is `verification-boundary`/production-runtime blocked;
+  owner/context is Replit’s lack of published-deployment shell; exact next
+  action is obtain an approved production command path, then dry-run, snapshot,
+  import once, and verify. The full frontend timeout is
+  `workflow/infrastructure-defect` evidence but already covered by the
+  existing ledger boundary; no duplicate issue created.
+- Next groomed transaction: #837. Service/model/effort for this distillation:
+  Codex/GPT-5 substitution, medium effort. No production-readiness or final
+  session-completion claim is valid until the open manifest is terminal.

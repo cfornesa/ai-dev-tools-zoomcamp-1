@@ -1085,7 +1085,7 @@ function ThreeScenePreview({
         )}
         <PieceStageToolbar
           ariaLabel="Preview actions"
-          className="editor-tool-group scene3d-preview-actions"
+          className={`editor-tool-group scene3d-preview-actions${toolbarMode === 'inline' && editorControls ? ' editor-piece-stage-toolbar' : ''}`}
           onScreenshot={showScreenshotButton ? handleTakeScreenshot : undefined}
           onDownload={onDownload}
           downloadFormat={downloadFormat}

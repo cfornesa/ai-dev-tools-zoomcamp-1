@@ -38,6 +38,7 @@ import type { InkTool } from '../ink/inkModel';
 import Generated3DManualTools from '../components/Generated3DManualTools';
 import SonicDefaultsPanel from './SonicDefaultsPanel';
 import { normalizeSonic, type SonicDefaults } from '../audio/sonicContract';
+import { supportsGeneratedSourceEditing } from './artPieceSourceEditing';
 import {
   appendGenerated3DPrimitive,
   applyGenerated3DTransform,
@@ -616,33 +617,29 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           onTransform={transformManual3DObject}
         />
       )}
-      {(piece.engine === 'canvas2d' ||
-        piece.engine === 'svg' ||
-        piece.engine === 'threejs' ||
-        piece.engine === 'aframe') &&
-        reviseCode && (
-          <div className="behavior-card-field" data-testid="art-piece-editor-code-panel">
-            <label htmlFor="art-piece-editor-code">Editable source preview</label>
-            <textarea
-              id="art-piece-editor-code"
-              value={reviseCode}
-              onChange={(event) => handleSourceChange(event.target.value)}
-              rows={8}
-            />
-            <div>
-              <button type="button" onClick={undoManualEdit} disabled={manualHistoryIndex <= 0}>
-                Undo
-              </button>
-              <button
-                type="button"
-                onClick={redoManualEdit}
-                disabled={manualHistoryIndex >= manualHistory.length - 1}
-              >
-                Redo
-              </button>
-            </div>
+      {supportsGeneratedSourceEditing(piece.engine) && reviseCode && (
+        <div className="behavior-card-field" data-testid="art-piece-editor-code-panel">
+          <label htmlFor="art-piece-editor-code">Editable source preview</label>
+          <textarea
+            id="art-piece-editor-code"
+            value={reviseCode}
+            onChange={(event) => handleSourceChange(event.target.value)}
+            rows={8}
+          />
+          <div>
+            <button type="button" onClick={undoManualEdit} disabled={manualHistoryIndex <= 0}>
+              Undo
+            </button>
+            <button
+              type="button"
+              onClick={redoManualEdit}
+              disabled={manualHistoryIndex >= manualHistory.length - 1}
+            >
+              Redo
+            </button>
           </div>
-        )}
+        </div>
+      )}
       <p>
         <Link to="/art-pieces/manage">Back to your art pieces</Link>
       </p>

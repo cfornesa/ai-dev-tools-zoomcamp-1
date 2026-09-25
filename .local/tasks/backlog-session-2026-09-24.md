@@ -3460,3 +3460,40 @@ deferred.
   no production publish or deployed-URL claim.
 - Reconcile: QA PASS comment posted and issue closed after the scoped change was
   committed and safely pushed.
+
+## Transaction #853 — 2026-09-25 — QA PARTIAL / OPEN
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes;
+  dependencies were rechecked after #841, #842, #851, and #852 terminalized.
+- Engineer: initially NONE (verification issue); #870 was distilled from the
+  first browser run and routed to implementation-mechanical frontend.
+- QA self-review: PARTIAL/OPEN. Active Chrome created, published, edited, and
+  reloaded a disposable p5.js fixture. The authored source rendered a non-blank
+  serene composition with sky, moon, stars, three hill layers, misty water, and
+  24 particles. Sound defaults were visible as 90 BPM/major/synth and C/major/
+  0 transpose/sine; BPM/scale change and reset were exercised. Exact objective
+  one-second pixel delta and first-eight-note/audio-context traces were not
+  captured, so the issue remains open with workflow verdict VALID WITH GAPS.
+- Exact browser evidence: active Chrome on disposable Compose at 1280x720 and
+  375x667, public route `/users/@e2e_owner/pieces/serene-p5js`; no production
+  evidence and no Playwright execution claim.
+- Reconcile: QA FAIL/PARTIAL comment posted; keep open for the remaining
+  objective runtime evidence.
+
+## Transaction #870 — 2026-09-25 — ENGINEERED / QA PASS / CLOSED
+
+- Groom: ACCEPTED. task-distillation / Codex-GPT-5 / medium / substituted: yes;
+  the browser run found that the editor's source-preview condition omitted
+  p5.js, C2.js, and C2.js Interactive.
+- Engineer: COMPLETED. implementation-mechanical frontend / Codex-GPT-5 /
+  medium / substituted: yes. Added the shared
+  `supportsGeneratedSourceEditing` contract and included all registered engines
+  in the editable-source preview path. Focused regression coverage covers all
+  seven registered engines.
+- QA self-review: PASS. Focused test passed; full gate passed with backend 1749
+  collected and all executed tests passing, frontend 281 files / 3017 tests.
+  Active Chrome opened the p5 editor, displayed the Editable source preview,
+  saved an authored version, and retained the same public piece URL.
+- Evidence boundary: disposable local Compose and active Chrome only; no
+  production publish or deployed-URL claim.
+- Reconcile: QA PASS comment posted and issue closed.

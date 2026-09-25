@@ -4004,6 +4004,44 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   evidence is available, use this canonical local fixture to retry #855 and
   the dependent regular/immersive/embed/ZIP reports.
 
+## Production-readiness refresh — 2026-09-26 — NOT READY
+
+- Repository checks: backend passed 1710 tests with 39 skips; frontend quality
+  checks passed; the first combined `make check` frontend run had one existing
+  timing failure in `useDraftAutosave.test.ts`, then the isolated test passed
+  and a complete standalone `npm test` passed 281 files / 3021 tests. This is
+  sufficient code-quality evidence for the local #876 implementation, but the
+  combined target should be rerun once as a single clean command before a
+  release claim.
+- Deployment: NOT READY for the new #876 code. It is committed locally at
+  `7a71052` but not pushed or published because the earlier owner authorization
+  covered #747/#748/#788, not this newly discovered production mutation.
+- Data/browser readiness: #877 is locally corrected and partially verified,
+  but exact 1280x720 and 375x667 evidence is still absent. #874, #788, #847,
+  and #862 remain blocked by their recorded production/data/media/aggregate
+  boundaries; #853–#861 remain open verification transactions.
+
+## Session-completion refresh — 2026-09-26 — INCOMPLETE / OPEN FOLLOW-UPS
+
+- Counts: 1 issue (#875) is closed with local QA evidence; #876 is engineered
+  and local-QA-passed but deployment-pending; #877 is engineered and local-QA
+  partial; #874, #862, #861–#853, #847, and #788 remain open. No closed issue
+  was reopened, no production data was changed, and no new dependency was
+  added.
+- Routing audit: #876 was correctly routed to frontend/audio implementation;
+  #877 to local fixture/data workflow; #853–#861 remain verification reports;
+  #862 remains the aggregate workflow report; #874/#788/#847 retain separate
+  external/data/media blockers.
+- Follow-up audit: obtain release authorization for #876 before safe push and
+  publish; obtain exact mobile/desktop viewport control or approved browser
+  evidence for #877; then rerun #855 and the dependent surface/ZIP issues.
+  Preserve #788's snapshot/rehearsal guard and do not enable production import
+  on startup. The requested no-open-issues state is not reached.
+- Provenance: backlog-session / Codex-GPT-5 / medium / substituted: no;
+  qa-self-review / Codex-GPT-5 / medium / substituted: no;
+  production-readiness / Codex-GPT-5 / medium / substituted: no;
+  session-completion / Codex-GPT-5 / medium / substituted: no.
+
 ## Transaction #875 — 2026-09-26 — ENGINEERED / QA PASS LOCAL / DEPLOYMENT PENDING
 
 - Groom: new issue created during #853 because the current generated viewer

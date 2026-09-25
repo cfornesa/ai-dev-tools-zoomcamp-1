@@ -2036,3 +2036,72 @@ deferred.
   frontend failures because the failures are outside the three-file #863 diff
   and match existing editor/embed test surfaces; investigate only after a
   duplicate check in the next distillation pass.
+
+## Distillation refresh 30 — 2026-09-25 — Chrome recheck and follow-up triage
+
+- The active Chrome session remained available. A fresh production editor tab
+  was opened and verified at exactly 1280x900 and 375x812. Both screenshots
+  show the preview toolbar as direct controls; at mobile the visible hamburger
+  is the site-wide navigation control, not the preview action group. The DOM
+  confirms Screenshot, Download, Immersive, Sound, Piece controls, Guide,
+  separate 3D authoring, and Fullscreen last at both viewports.
+- #863's previously missing mobile evidence is resolved, but its full frontend
+  criterion remains failed: `make check` produced 275 files, 2993 passed / 7
+  failed of 3000. Duplicate search found no existing issue covering the exact
+  embed fixture and EditorWorkspace async/a11y failures. Created criterion-
+  ready #864 for the workflow/test-harness defect and linked it from #863's
+  recheck comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/864
+- #864 routing: Stage 2a workflow/test-harness mechanical investigation;
+  service/model/effort: task-distillation orchestrator, Codex/GPT-5
+  substitution, medium effort. It is the next exact independent issue;
+  #863 remains terminal QA FAIL/open pending #864 and must not be closed.
+- No closed issue was reopened, no dependency or production-data authorization
+  was inferred, and the viewport override must be reset before leaving Chrome.
+
+## Transaction #864 — 2026-09-25 — CLOSED
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. Duplicate check linked the closed #302
+  flakiness decision; #864 is the current follow-up because the prior 15s
+  ceiling no longer stabilized the expanded suite.
+- Engineer: COMPLETE. Stage owner implementation-mechanical; Codex/GPT-5
+  substitution; medium effort. Commit `4cf80c7` bounds Vitest to four workers
+  and raises test/hook ceilings to 30s, with no product/API/schema/dependency
+  changes.
+- Second opinion: NOT RUN; rostered service unavailable.
+- QA self-review: PASS. Stage owner qa-self-review; Codex/GPT-5 substitution;
+  medium effort. Affected six-file batch passed 115/115 tests; `make
+  frontend-check` passed 279 files / 3000 tests; exact root `UV_CACHE_DIR=/tmp/
+  ai-dev-tools-uv-cache make check` passed with backend checks green.
+- Reconcile: CLOSED. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/864#issuecomment-5831164546
+  records the criterion matrix and evidence boundary. #864 is a local
+  workflow/test-harness issue and has no production deployment requirement.
+
+## Reconciliation update — #863 CLOSED — 2026-09-25
+
+- After #864 turned the exact full check green, #863 was rechecked in the
+  active Chrome session at exactly 1280x900 and 375x812. Both production DOM
+  snapshots and screenshots show direct preview controls, separate 3D
+  authoring, and Fullscreen last; mobile wrapping is visible and the site
+  hamburger is only navigation. #863 received QA PASS and was closed:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/863#issuecomment-5831172853
+
+## Distillation refresh 31 — 2026-09-25 — next queue
+
+- Current open inventory after the two closures: #788, #838–#847, and
+  #850–#862. #863 and #864 are closed with QA PASS; no closed issue was
+  reopened.
+- The next independent implementation item remains #844 (authored sound
+  defaults across editor/schema/validation/viewer/ZIP), followed by its
+  dependent #845–#847 and #851–#852 work. #838–#843/#850 and #853–#862 are
+  verification transactions that must use their exact local/Compose/Chrome
+  evidence boundaries; #788 remains the separately authorized production data
+  action.
+- #844 routing: Stage 2b complex because it spans schema/validation and
+  persistence/business-logic translation, despite its frontend surfaces.
+  Service/model/effort: task-distillation orchestrator, Codex/GPT-5
+  substitution, medium effort. Next action: groom #844's current contract,
+  inspect existing #833 sonic contract and duplicates, then engineer only
+  #844 before any dependent issue.

@@ -1537,3 +1537,46 @@ deferred.
   #832. No new issue created. Service/model/effort: task-distillation and
   backlog-session by Codex/GPT-5 substitution, medium effort; active Chrome
   verification by Codex, medium effort.
+
+## Distillation refresh 33 — 2026-09-25 production source reconciliation
+
+- #832 transaction completed: groomed against the authored sonic/export
+  contract, engineered in commit `9280101`, QA-self-reviewed locally, then
+  reconciled against the production boundary. The first authorized publish
+  produced revision `51296740` from a stale Replit checkout and was rejected
+  as evidence; no production data changed. Replit was then reconciled safely
+  to GitHub `b49f2e8`, with backup branch
+  `backup/main-before-github-sync-20260925` and the ignored ledger copy
+  preserved under `.local/backups/main-sync-20260925/`.
+- The corrected publish is revision `5e1a0ef3`. Published smoke passed:
+  health 200, root 200, anonymous whoami 401, login 200, and
+  `backend_reachable=true` for the share-metadata diagnostic. Chrome showed
+  the exact immersive route with `Mute sound` active and the tab title
+  `AugmentrART - Audio playing`. The downloaded production Full ZIP contains
+  the authored sound controls and runtime (`piece-audio-controls`, `Keyboard
+  notes`, and `AudioContext`). #832 received QA PASS comment
+  `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/832#issuecomment-5828917007`
+  and was closed. Service/model/effort: Codex/GPT-5 substitution, medium
+  effort; Replit Free Agent, medium effort for recoverable workspace sync.
+- #788 remains OPEN/BLOCKED: the Replit Agent reconfirmed that the available
+  Shell is Development-only and Replit provides no supported published-
+  deployment shell. The required production-only importer dry-run and
+  one-time write were not attempted; no production data changed.
+- Dependency routing is now unblocked for #834–#852. Those issues must be
+  processed sequentially with the sound contract and #832 production evidence
+  as prerequisites. #853–#862 remain verification/reporting work and must be
+  redistilled after the implementation branch. Duplicate audit: the stale
+  publish source mismatch is covered by #832; the Replit schema warning maps
+  to closed #830; no new issue created.
+
+## Production-readiness / session-completion checkpoint — 2026-09-25
+
+- #832 is production-ready and terminal with the required deployed-revision,
+  browser, smoke, and downloaded-artifact evidence. #788 is the sole current
+  production blocker; it cannot be closed without the supported production
+  runtime required by its acceptance criteria.
+- The batch is not complete: #788 plus #834–#862 remain open. Routing audit:
+  continue backlog-session in dependency order, starting with #834; do not
+  claim complete or run final session-completion until all remaining issues
+  have terminal QA evidence and the #788 boundary is resolved or explicitly
+  escalated. Service/model/effort: Codex/GPT-5 substitution, medium effort.

@@ -23,6 +23,11 @@ import { getAvailableInteractionModes } from '../export/exportCompatibility';
 import PieceStageToolbar from '../components/PieceStageToolbar';
 import StageControlsPopover from '../components/StageControlsPopover';
 import { TWO_D_STAGE_CAPABILITIES } from '../components/pieceStageCapabilities';
+import Structured2DSoundControls, {
+  Structured2DSoundToggle,
+} from '../components/Structured2DSoundControls';
+import { deriveStructured2DCapabilities } from '../components/structured2dCapabilities';
+import { createSonicEngine } from '../audio/sonicEngine';
 import DemoControlsPanel from './DemoControlsPanel';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 import { useFullscreenToggle } from './useFullscreenToggle';
@@ -142,6 +147,11 @@ function PublicProjectViewer({
   const [showEmbedSnippet, setShowEmbedSnippet] = useState(false);
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [surfaceError, setSurfaceError] = useState<string | null>(null);
+  const sonicEngineRef = useRef(createSonicEngine());
+  const [soundOn, setSoundOn] = useState(false);
+  const structured2dCapabilities = deriveStructured2DCapabilities(
+    project?.current_version?.scene_json,
+  );
   const forkRequestIdRef = useRef<string | null>(null);
 
   // Task 119 (issue #152): mirrors `EditorWorkspace.tsx`'s identical
@@ -212,6 +222,8 @@ function PublicProjectViewer({
   const previewRef = useRef<ScenePreview | null>(null);
   const previewStageRef = useRef<HTMLDivElement | null>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreenToggle(previewStageRef);
+
+  useEffect(() => () => sonicEngineRef.current.dispose(), []);
   // Issue #206: "latest value" ref (same rationale as `EditorWorkspace.tsx`'s
   // `workingCopyRef`) so `previewMountCallbackRef` below -- memoized with
   // `[]` deps -- still reads whichever project is current at the moment the
@@ -625,12 +637,36 @@ function PublicProjectViewer({
               <PieceStageToolbar
                 onScreenshot={() => void handleTakeScreenshot()}
                 onDownload={(variant) => handleDownload(variant)}
-                capabilities={TWO_D_STAGE_CAPABILITIES}
+                capabilities={{
+                  ...TWO_D_STAGE_CAPABILITIES,
+                  sound: structured2dCapabilities.sound,
+                }}
                 toolbarMode={toolbarMode}
+                soundControl={
+                  <Structured2DSoundToggle
+                    active={soundOn}
+                    onToggle={() => {
+                      if (soundOn) {
+                        sonicEngineRef.current.disable();
+                        setSoundOn(false);
+                      } else {
+                        void sonicEngineRef.current.enable().then(() => {
+                          if (sonicEngineRef.current.status === 'active') setSoundOn(true);
+                        });
+                      }
+                    }}
+                  />
+                }
                 isFullscreen={isFullscreen}
                 onToggleFullscreen={() => void toggleFullscreen()}
                 controlsControl={
                   <StageControlsPopover>
+                    <Structured2DSoundControls
+                      capabilities={structured2dCapabilities}
+                      engine={sonicEngineRef.current}
+                      active={soundOn}
+                      onActiveChange={setSoundOn}
+                    />
                     <CameraControl
                       onStatusChange={setCameraStatus}
                       onStreamChange={setCameraStream}

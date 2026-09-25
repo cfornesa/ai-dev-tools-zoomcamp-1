@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -15,6 +15,13 @@ function makeEngine(status: 'idle' | 'active' | 'error' = 'idle') {
     disable: vi.fn(),
     setVolume: vi.fn(),
     connectMic: vi.fn(async () => undefined),
+    setTempo: vi.fn(),
+    setVoiceVolume: vi.fn(),
+    setVoiceMuted: vi.fn(),
+    setScale: vi.fn(() => true),
+    setFilter: vi.fn(() => true),
+    setMelodicSynth: vi.fn(),
+    triggerMelodicNote: vi.fn(),
   };
 }
 
@@ -56,5 +63,31 @@ describe('Structured2DSoundControls', () => {
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Sound could not start');
     expect(screen.getByRole('button', { name: 'Enable sound' })).toBeInTheDocument();
+  });
+
+  it('forwards ambient and keyboard controls to the shared engine', async () => {
+    const user = userEvent.setup();
+    const audio = makeEngine();
+    render(
+      <Structured2DSoundControls
+        capabilities={enabled}
+        engine={audio}
+        active
+        onActiveChange={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByRole('slider', { name: /Ambient BPM/ }), {
+      target: { value: '120' },
+    });
+    fireEvent.change(screen.getByRole('slider', { name: /Ambient volume/ }), {
+      target: { value: '60' },
+    });
+    await user.selectOptions(screen.getByRole('combobox', { name: /Scale/ }), 'major');
+    await user.click(screen.getByRole('button', { name: 'Keyboard notes' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Oscillator' }), 'square');
+    expect(audio.setTempo).toHaveBeenCalled();
+    expect(audio.setVoiceVolume).toHaveBeenCalledWith('ambient', expect.any(Number));
+    expect(audio.setScale).toHaveBeenCalledWith('major');
+    expect(audio.setMelodicSynth).toHaveBeenCalledWith({ oscillator: 'square' });
   });
 });

@@ -1984,3 +1984,29 @@ deferred.
   production evidence does not close #838–#843/#850 or #853–#862 because
   their exact local/fixture/Compose criteria are distinct from this published
   route.
+
+## Transaction #863 — 2026-09-25 — QA FAIL / remains OPEN
+
+- Groom: ACCEPTED. Stage owner task-distillation orchestrator; Codex/GPT-5
+  substitution; medium effort. Criterion-ready frontend/editor parity issue;
+  no schema, auth, migration, or production-data action.
+- Engineer: COMPLETE. Stage owner implementation-mechanical; Codex/GPT-5
+  substitution; medium effort. Commit `28183fbb9b12c2eecafd76725fc37f70ddcf7efe`
+  passes `git diff --check`; 3D editor preview callers now request the inline
+  toolbar while the WebGL-unavailable fallback retains its menu.
+- Second opinion: NOT RUN; rostered service unavailable, and no independent
+  review is credited.
+- QA self-review: FAIL / incomplete. Stage owner qa-self-review;
+  Codex/GPT-5 substitution; medium effort. Focused Vitest passed 8 files / 65
+  tests. Full `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` failed only
+  in frontend: 275 files, 2993 passed / 7 failed of 3000; backend passed.
+  Live Chrome production DOM at the authenticated editor showed direct
+  Screenshot, Download, Immersive, Sound, Piece controls, Guide, separate
+  `3D authoring`, and Fullscreen last, with no hamburger. Exact 1280x900 and
+  375x812 emulation screenshots could not both be captured after the Chrome
+  debugger detached; desktop visual evidence was inspected.
+- Reconcile: NOT CLOSED. GitHub QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/863#issuecomment-5830748443
+  records the criterion matrix, commands, provenance, and evidence boundary.
+  Issue remains OPEN because the full frontend gate and exact two-viewport
+  production evidence are outstanding.

@@ -64,8 +64,60 @@ const MOVEMENT_TRIGGER_THRESHOLD = 0.01;
  * motion doesn't retrigger every single animation frame. */
 const MOVEMENT_RETRIGGER_MS = 150;
 
-const AMBIENT_SCALE = ['C3', 'D3', 'E3', 'G3', 'A3', 'C4'];
-const MOVEMENT_SCALE = ['C4', 'D4', 'E4', 'G4', 'A4'];
+export type SonicScale =
+  | 'major'
+  | 'minor'
+  | 'pentatonic'
+  | 'chromatic'
+  | 'dorian'
+  | 'phrygian'
+  | 'lydian'
+  | 'mixolydian'
+  | 'wholetone';
+
+export const SONIC_SCALE_OPTIONS: ReadonlyArray<SonicScale> = [
+  'major',
+  'minor',
+  'pentatonic',
+  'chromatic',
+  'dorian',
+  'phrygian',
+  'lydian',
+  'mixolydian',
+  'wholetone',
+];
+
+const DEFAULT_TEMPO = 90;
+const DEFAULT_SCALE: SonicScale = 'pentatonic';
+const MIN_TEMPO = 40;
+const MAX_TEMPO = 220;
+
+const SCALE_INTERVALS: Record<SonicScale, number[]> = {
+  major: [0, 2, 4, 5, 7, 9, 11],
+  minor: [0, 2, 3, 5, 7, 8, 10],
+  pentatonic: [0, 2, 4, 7, 9],
+  chromatic: Array.from({ length: 12 }, (_, index) => index),
+  dorian: [0, 2, 3, 5, 7, 9, 10],
+  phrygian: [0, 1, 3, 5, 7, 8, 10],
+  lydian: [0, 2, 4, 6, 7, 9, 11],
+  mixolydian: [0, 2, 4, 5, 7, 9, 10],
+  wholetone: [0, 2, 4, 6, 8, 10],
+};
+
+const pitchClassNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+function scaleNotes(scale: SonicScale, octave: number): string[] {
+  const notes = SCALE_INTERVALS[scale].map((interval) => {
+    const pitch = interval % 12;
+    const noteOctave = octave + Math.floor(interval / 12);
+    return `${pitchClassNames[pitch]}${noteOctave}`;
+  });
+  return [...notes, `${pitchClassNames[0]}${octave + 1}`];
+}
+
+function eighthNoteInterval(bpm: number): number {
+  return 30 / bpm;
+}
 
 export interface SonicEngine {
   readonly status: SonicEngineStatus;
@@ -78,6 +130,10 @@ export interface SonicEngine {
    * melodic together -- the reference has no per-voice mute, only this
    * one shared control). */
   setVolume(percent: number): void;
+  /** Sets the ambient ticker tempo, clamped to the authored 40-220 BPM range. */
+  setTempo(bpm: number): void;
+  /** Selects one of the nine authored scales; returns false for unknown names. */
+  setScale(name: string): boolean;
   /** Replaces one voice's instrument without changing the other voices. */
   setVoiceInstrument(voice: SonicVoice, instrument: SonicInstrument): boolean;
   /** Called every frame by the 3D preview's own render loop with the
@@ -143,6 +199,8 @@ export function createSonicEngine(
   let userMedia: InstanceType<ToneModule['UserMedia']> | null = null;
   let thereminSounding = false;
   let lastMovementTriggerAt = 0;
+  let tempo = DEFAULT_TEMPO;
+  let scale: SonicScale = DEFAULT_SCALE;
 
   async function enable(): Promise<void> {
     if (status === 'active') return;
@@ -158,13 +216,15 @@ export function createSonicEngine(
 
       let ambientIndex = 0;
       ambientLoop = new tone.Loop((time) => {
+        const ambientScale = scaleNotes(scale, 3);
         ambientSynth?.triggerAttackRelease(
-          AMBIENT_SCALE[ambientIndex % AMBIENT_SCALE.length],
+          ambientScale[ambientIndex % ambientScale.length],
           '8n',
           time,
         );
         ambientIndex += 1;
-      }, '2n').start(0);
+      }, eighthNoteInterval(tempo)).start(0);
+      tone.Transport.bpm.value = tempo;
       tone.Transport.start();
 
       status = 'active';
@@ -205,6 +265,19 @@ export function createSonicEngine(
     // simple linear-to-dB mapping, matching the reference's own single
     // shared volume slider governing all three voices together.
     bus.volume.value = clamped === 0 ? -60 : (clamped / 100) * 24 - 24;
+  }
+
+  function setTempo(bpm: number) {
+    tempo = Math.min(MAX_TEMPO, Math.max(MIN_TEMPO, bpm));
+    if (!tone || !ambientLoop || status !== 'active') return;
+    tone.Transport.bpm.value = tempo;
+    ambientLoop.interval = eighthNoteInterval(tempo);
+  }
+
+  function setScale(name: string): boolean {
+    if (!SONIC_SCALE_OPTIONS.includes(name as SonicScale)) return false;
+    scale = name as SonicScale;
+    return true;
   }
 
   function createVoiceSynth(voice: SonicVoice): VoiceSynth {
@@ -252,11 +325,12 @@ export function createSonicEngine(
     lastMovementTriggerAt = now;
     // Octave/note chosen from vertical movement magnitude, matching the
     // reference's own `movementStep`.
+    const movementScale = scaleNotes(scale, 4);
     const scaleIndex = Math.min(
-      MOVEMENT_SCALE.length - 1,
-      Math.floor(Math.abs(delta.dy) * MOVEMENT_SCALE.length),
+      movementScale.length - 1,
+      Math.floor(Math.abs(delta.dy) * movementScale.length),
     );
-    movementSynth.triggerAttackRelease(MOVEMENT_SCALE[scaleIndex], '16n');
+    movementSynth.triggerAttackRelease(movementScale[scaleIndex], '16n');
   }
 
   function triggerMelodicNote(note: string) {
@@ -321,6 +395,8 @@ export function createSonicEngine(
     enable,
     disable,
     setVolume,
+    setTempo,
+    setScale,
     setVoiceInstrument,
     reportMovement,
     triggerMelodicNote,

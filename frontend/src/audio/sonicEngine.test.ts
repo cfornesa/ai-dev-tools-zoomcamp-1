@@ -70,11 +70,18 @@ function createFakeToneModule() {
 
   const loopStartCalls: number[] = [];
   let loopCallback: ((time: number) => void) | null = null;
+  let loopInterval: string | number | null = null;
   class FakeLoop {
-    interval: string;
-    constructor(callback: (time: number) => void, interval: string) {
+    get interval() {
+      return loopInterval;
+    }
+    set interval(value: string | number | null) {
+      loopInterval = value;
+    }
+    constructor(callback: (time: number) => void, interval: string | number) {
       loopCallback = callback;
       this.interval = interval;
+      loopInterval = interval;
     }
     start(time: number) {
       loopStartCalls.push(time);
@@ -117,7 +124,11 @@ function createFakeToneModule() {
     Filter: FakeFilter,
     Loop: FakeLoop,
     UserMedia: FakeUserMedia,
-    Transport: { start: transportStartCalls, stop: transportStopCalls },
+    Transport: {
+      start: transportStartCalls,
+      stop: transportStopCalls,
+      bpm: { value: 0 },
+    },
     start: startCalls,
   } as unknown as ToneModule;
 
@@ -138,6 +149,8 @@ function createFakeToneModule() {
       userMediaRejectError = error;
     },
     fireAmbientLoopTick: (time = 0) => loopCallback?.(time),
+    getLoopInterval: () => loopInterval,
+    getTransportBpm: () => (fakeModule.Transport as unknown as { bpm: { value: number } }).bpm.value,
   };
 }
 
@@ -170,6 +183,59 @@ describe('createSonicEngine', () => {
 
     fake.fireAmbientLoopTick(0);
     expect(fake.triggerCalls.some((c) => c.kind === 'synth-1')).toBe(true);
+  });
+
+  it('setTempo clamps BPM and updates the live transport and loop without restarting it', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+
+    engine.setTempo(10);
+    await engine.enable();
+    expect(fake.getTransportBpm()).toBe(40);
+    expect(fake.getLoopInterval()).toBe(30 / 40);
+    const startsBefore = fake.loopStartCalls.length;
+
+    engine.setTempo(220);
+    expect(fake.getTransportBpm()).toBe(220);
+    expect(fake.getLoopInterval()).toBe(30 / 220);
+    expect(fake.loopStartCalls).toHaveLength(startsBefore);
+  });
+
+  it('setScale rejects unknown names and uses each accepted scale for ambient and movement', async () => {
+    const fake = createFakeToneModule();
+    const unknownScaleEngine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    expect(unknownScaleEngine.setScale('unknown')).toBe(false);
+
+    const expectedNotes: Record<string, [string, string]> = {
+      major: ['C3', 'G4'],
+      minor: ['C3', 'G4'],
+      pentatonic: ['C3', 'G4'],
+      chromatic: ['C3', 'F#4'],
+      dorian: ['C3', 'G4'],
+      phrygian: ['C3', 'G4'],
+      lydian: ['C3', 'G4'],
+      mixolydian: ['C3', 'G4'],
+      wholetone: ['C3', 'F#4'],
+    };
+
+    for (const [name, expected] of Object.entries(expectedNotes)) {
+      const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+      expect(engine.setScale(name)).toBe(true);
+      await engine.enable();
+      fake.triggerCalls.length = 0;
+      fake.fireAmbientLoopTick();
+      engine.reportMovement({ dx: 1, dy: 0.5, dz: 0 });
+      expect(fake.triggerCalls.map(({ note }) => note)).toEqual(expected);
+    }
+  });
+
+  it('preserves the default ambient note sequence', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    for (let index = 0; index < 6; index += 1) fake.fireAmbientLoopTick();
+    expect(fake.triggerCalls.map(({ note }) => note)).toEqual(['C3', 'D3', 'E3', 'G3', 'A3', 'C4']);
   });
 
   it('reportMovement triggers a note on real motion, ignores tiny jitter', async () => {

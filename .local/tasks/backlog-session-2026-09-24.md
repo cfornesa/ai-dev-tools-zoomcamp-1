@@ -2497,3 +2497,18 @@ deferred.
   records the matrix, commands, provenance, and no-production-publish
   boundary. Next action is current-checkout browser inspection at both named
   viewports, followed by any runtime fixes and re-QA.
+
+## Distillation refresh 40 — 2026-09-25 — #846 browser recheck
+
+- Active Chrome is confirmed available in extension browser id `4`; the
+  canonical production immersive screenshot and AX tree show direct toolbar
+  buttons and no hamburger. This is production evidence for the route-order
+  concern, not evidence for unpublished #846.
+- #846's rebuilt disposable Compose frontend is reachable in Chrome, but its
+  database contains no authored 3D piece exposing the new controls. No
+  credentials were entered and no production publish was attempted. This is a
+  verification-fixture boundary, not permission to claim pass.
+- Current open set remains #788, #841, #842, #844, #846–#847, #851–#862, and
+  #865. No duplicate or closed issue was reopened. #846 remains the current
+  transaction's terminal OPEN/QA-INCOMPLETE item; next independent issue is
+  #847 after this refresh.

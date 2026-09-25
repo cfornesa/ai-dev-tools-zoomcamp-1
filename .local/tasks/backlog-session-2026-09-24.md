@@ -1096,3 +1096,12 @@ deferred.
   evidence cannot close this issue.
 - QA comment: pending on #827 after the production schema gap is authorized and
   reconciled through #828.
+
+## #825 reconciliation — 2026-09-25
+
+- Production deployment `da0ce0fb` logs show Vite preview on port 5000 with no
+  frontend/backend collision, while `/health/` and the published smoke pass.
+  Local focused coverage and `make check` were already green.
+- Posted `## QA: PASS` with the production/local evidence boundary and closed
+  #825. Its remaining dependent production work is tracked separately in
+  #827/#828/#748/#806.

@@ -1467,3 +1467,43 @@ deferred.
 - Service/model/effort: task-distillation and backlog-session orchestration by
   Codex/GPT-5 substitution, medium effort; project-wide check by Codex/GPT-5,
   medium effort.
+
+## Production-readiness / session-completion — 2026-09-26
+
+- Local deployment/readiness: BLOCKED for the complete batch. The latest
+  component evidence is healthy: backend 1698 passed/39 skipped, frontend
+  277/277 files and 2979/2979 tests passed on the standalone rerun, lint,
+  format-check, typecheck, and action-pin checks passed. The first aggregate
+  run's single timeout was reproduced as non-recurring by the focused test and
+  complete frontend rerun.
+- Approved-browser readiness: PASS for the closed #806 contract and prior
+  #748 contract; OPEN FOLLOW-UP for #832 and #853–#862 because production
+  authored-sound/live/download evidence is still absent. Existing six-engine
+  reference screenshots and ZIP listings do not satisfy the serene authored-
+  sound workflows.
+- Replit/production readiness: BLOCKED. #788 still lacks a supported
+  production-runtime shell for the one-time importer; #832 still lacks an
+  owner-authorized publish plus live audio evidence. No production data write,
+  secret access, or unauthorized publish was attempted.
+- Intended-functionality readiness: BLOCKED by #832 and the dependent
+  implementation branch #834–#852. Verification/reporting branch #853–#862
+  must be redistilled and then processed after those implementation contracts
+  are terminal; the prior QA comments remain classified evidence boundaries,
+  not a substitute for the newly clarified grooming step.
+- Batch rollup: 33 discovered in the current continuation manifest; 2
+  completed (#806, #833), 31 open with terminal blocker classifications (2
+  production-action/verification blockers: #788 and #832; 19 dependent
+  implementation issues #834–#852; 10 dependent verification/reporting issues
+  #853–#862). Missing-terminal-status count: 0. No issue was silently omitted,
+  duplicated, or reopened.
+- Routing audit: task-distillation/backlog-session and QA/readiness work used
+  Codex/GPT-5 substitution, medium effort, with substitution flagged in the
+  ledger. No independent-family second opinion was credited. The readiness
+  gate was run as the active Codex/GPT-5 substitution; this is recorded as a
+  blocked readiness assessment, not a production-ready verdict.
+- Follow-up audit: #788's supported-runtime boundary and #832's authorized
+  publish/live-audio boundary are covered by their existing issues; the
+  transient full-suite timeout is non-actionable after a complete passing
+  rerun; no new issue was required. Next action for every remaining item is
+  recorded by dependency order: resolve #788/#832, implement and QA #834–#852,
+  then re-distill and execute #853–#862.

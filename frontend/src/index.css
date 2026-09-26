@@ -2327,6 +2327,11 @@ code {
   gap: 4px;
 }
 
+.editor-tools-disclosure .editor-toolbar {
+  width: 100%;
+  max-width: none;
+}
+
 .editor-toolbar-button {
   position: relative;
   display: inline-flex;
@@ -2950,6 +2955,60 @@ code {
   grid-row: 5;
 }
 
+.editor-control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  margin: 12px 0;
+  padding: 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--code-bg) 94%, transparent);
+}
+
+.editor-panel-primary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.editor-panel-primary-actions > * {
+  min-height: 2.5rem;
+}
+
+.editor-panel-primary-actions > button,
+.editor-panel-primary-actions .editor-save-control,
+.editor-panel-primary-actions .editor-file-menu > button {
+  min-height: 2.5rem;
+  box-sizing: border-box;
+}
+
+.editor-tools-toggle {
+  display: none;
+  align-self: flex-start;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.editor-tools-toggle:focus-visible {
+  outline: 3px solid var(--focus, #2563eb);
+  outline-offset: 2px;
+}
+
+.editor-tools-disclosure {
+  min-width: 0;
+}
+
 .editor-canvas-settings {
   display: flex;
   flex-direction: column;
@@ -2957,16 +3016,52 @@ code {
   min-width: 0;
 }
 
+.editor-canvas-settings-title {
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.3;
+}
+
 .editor-canvas-settings label {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+  font-size: 1rem;
+  line-height: 1.4;
 }
 
 .editor-canvas-settings input {
   max-width: 100%;
   box-sizing: border-box;
+}
+
+.editor-canvas-color-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.editor-canvas-color-swatch {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  padding: 3px;
+  border: 2px solid var(--border, currentColor);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.editor-canvas-color-swatch:focus-visible {
+  outline: 3px solid var(--accent, currentColor);
+  outline-offset: 2px;
+}
+
+.editor-canvas-color-control output {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875rem;
 }
 
 .editor-panel[data-panel='details'] form {
@@ -6665,6 +6760,24 @@ select.ai-proposal-field-full-width {
     width: 32px;
     height: 32px;
     box-sizing: border-box;
+  }
+}
+
+@media (max-width: 1023px) {
+  .editor-tools-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .editor-tools-disclosure:not(.is-open) {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .editor-tools-disclosure {
+    display: block;
   }
 }
 

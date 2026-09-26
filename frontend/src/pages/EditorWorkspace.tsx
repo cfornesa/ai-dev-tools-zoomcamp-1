@@ -1636,6 +1636,20 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // of the very same scene document belongs alongside it, not behind a
   // separate top-level tab.
   const [previewView, setPreviewView] = useState<'visual' | 'code'>('visual');
+  const [editorToolsOpen, setEditorToolsOpen] = useState(false);
+  const editorToolsToggleRef = useRef<HTMLButtonElement>(null);
+  const editorToolsPanelId = 'editor-authoring-tools-panel';
+
+  useEffect(() => {
+    if (!editorToolsOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setEditorToolsOpen(false);
+      editorToolsToggleRef.current?.focus();
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [editorToolsOpen]);
 
   // Issue #159: "Ask AI to fix this" (rendered next to `previewError`
   // below) seeds a SECOND `AIProposalPanel` instance, mounted only while
@@ -3185,6 +3199,52 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
             square handle to resize it, or the top handle to rotate it. Press Esc to cancel a drag
             in progress.
           </p>
+          <div className="editor-control-panel" data-testid="editor-control-panel">
+            <div
+              className="editor-panel-primary-actions"
+              role="group"
+              aria-label="Primary editor actions"
+            >
+              {id && auth.status === 'signed-in' && (
+                <ProjectMediaLibraryPanel
+                  projectId={id}
+                  projectTitle={project?.title ?? 'Local project'}
+                  ownerId={auth.user.username}
+                  workingCopy={workingCopy}
+                  sceneEditor={sceneEditor}
+                />
+              )}
+              {id && (
+                <SaveControl
+                  projectId={id}
+                  workingCopy={workingCopy}
+                  isDirty={isDirty}
+                  onSaved={handleVersionSaved}
+                  compact
+                />
+              )}
+              <button type="button" onClick={handleAskAiImproveScene}>
+                Ask AI to improve this scene
+              </button>
+            </div>
+            <button
+              ref={editorToolsToggleRef}
+              type="button"
+              className="editor-tools-toggle"
+              aria-expanded={editorToolsOpen}
+              aria-controls={editorToolsPanelId}
+              onClick={() => setEditorToolsOpen((open) => !open)}
+            >
+              Editor tools
+            </button>
+            <div
+              id={editorToolsPanelId}
+              className={`editor-tools-disclosure${editorToolsOpen ? ' is-open' : ''}`}
+              aria-label="Editor tools"
+            >
+              {editorToolbar}
+            </div>
+          </div>
           {previewError &&
             (() => {
               const localized = localizePreviewError(previewError);
@@ -3932,45 +3992,12 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   }
                   editorControls={
                     <>
-                      <span
-                        role="group"
-                        aria-label="Editor actions"
-                        className="editor-stage-text-actions"
-                      >
-                        {id && (
-                          <SaveControl
-                            projectId={id}
-                            workingCopy={workingCopy}
-                            isDirty={isDirty}
-                            onSaved={handleVersionSaved}
-                            compact
-                          />
-                        )}
-                        <button type="button" onClick={handleAskAiImproveScene}>
-                          Ask AI to improve this scene
-                        </button>
-                      </span>
                       <InkModeButton
                         label={hasInkLayer(workingCopy ?? {}) ? 'Edit ink layer' : 'Draw ink layer'}
                         active={inkSession !== null}
                         disabled={!workingCopy}
                         onBegin={beginInk}
                       />
-                      {id && auth.status === 'signed-in' && (
-                        <ProjectMediaLibraryPanel
-                          projectId={id}
-                          projectTitle={project?.title ?? 'Local project'}
-                          ownerId={auth.user.username}
-                          workingCopy={workingCopy}
-                          sceneEditor={sceneEditor}
-                        />
-                      )}
-                      <StageControlsPopover
-                        label="Edit scene"
-                        panelClassName="editor-authoring-controls-panel"
-                      >
-                        {editorToolbar}
-                      </StageControlsPopover>
                       {id ? (
                         <PublishControl
                           id={id}

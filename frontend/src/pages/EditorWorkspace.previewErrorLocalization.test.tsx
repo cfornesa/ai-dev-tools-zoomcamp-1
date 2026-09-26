@@ -114,7 +114,7 @@ async function loadWorkspaceWithRenderFailure(message: string) {
   await screen.findByRole('region', { name: 'Tools' });
   expandAllCollapsibleSections();
   await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-  await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Editor tools' }));
   await screen.findByTestId('editor-preview-error');
 }
 

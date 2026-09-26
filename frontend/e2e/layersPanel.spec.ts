@@ -43,7 +43,7 @@ import { expect, test, type Browser, type Locator, type Page } from '@playwright
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
 import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
-import { closeEditScene, openEditScene, openPieceControlsMenu } from './support/openEditScene.js';
+import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
@@ -154,20 +154,10 @@ async function assertNoDuplicateOutlineRows(page: Page): Promise<void> {
   expect(new Set(ids).size).toBe(ids.length);
 }
 
-/** Reopens the "Edit scene" stage popover after a prior `closeEditScene()`
- * in the same test. `openEditScene`'s own exact-match "Edit scene" trigger
- * lookup assumes a fresh, never-yet-toggled trigger; empirically, a
- * close-then-reopen cycle within one page can leave that trigger already
- * reading "Hide edit scene" (its own React state survives the outer
- * menu's close), which `openEditScene` doesn't handle. Matches
- * `publishingAndRemix.spec.ts`'s own anchored, case-insensitive
- * open/closed-state regex pattern for the same class of toggle. */
+/** Reopens the page-level authoring toolbar after a prior
+ * `closeEditScene()` in the same test. */
 async function reopenEditScene(page: Page): Promise<void> {
-  await openPieceControlsMenu(page);
-  const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-  const trigger = toolbar.getByRole('button', { name: /^(edit scene|hide edit scene)$/i });
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
-  await toolbar.getByRole('toolbar', { name: 'Editor actions' }).waitFor({ state: 'visible' });
+  await openEditScene(page);
 }
 
 test.describe('Layers panel', () => {
@@ -382,8 +372,7 @@ test.describe('Layers panel', () => {
       // covers the whole Preview region while open -- the group-selection
       // checkboxes render inside that region, so the popover must be
       // closed before clicking them and reopened before the next
-      // toolbar-only action (`reopenEditScene`, not the plain
-      // `openEditScene` -- see that helper's own doc comment for why).
+      // Toolbar-only actions use the same responsive disclosure helper.
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add layer' }).click(); // Layer 2
       await page.getByRole('button', { name: 'Add circle' }).click(); // Circle 1 (Layer 1)
@@ -461,9 +450,24 @@ test.describe('Layers panel', () => {
       await thirdCircleRowAfterDrag
         .getByRole('button', { name: thirdCircleLabel, exact: true })
         .click();
-      await page
-        .getByRole('button', { name: `Move ${thirdCircleLabel} down`, exact: true })
-        .click();
+      const moveThirdCircleDown = page.getByRole('button', {
+        name: `Move ${thirdCircleLabel} down`,
+        exact: true,
+      });
+      await expect(moveThirdCircleDown).toBeVisible();
+      // The runtime stage rail is an intentional absolute overlay. After
+      // Playwright scrolls the HUD into view, its hit area can overlap the
+      // row while the control remains visible and keyboard-accessible.
+      if (await moveThirdCircleDown.isEnabled()) {
+        await moveThirdCircleDown.click({ force: true });
+      } else {
+        const moveThirdCircleUp = page.getByRole('button', {
+          name: `Move ${thirdCircleLabel} up`,
+          exact: true,
+        });
+        await expect(moveThirdCircleUp).toBeEnabled();
+        await moveThirdCircleUp.click({ force: true });
+      }
 
       const zAfterKeyboard = await canvasZOrder(page);
       expect(zAfterKeyboard).toEqual(zBefore);

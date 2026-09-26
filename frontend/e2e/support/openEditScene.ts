@@ -1,15 +1,10 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Issues #427/#444: shape authoring (Add circle/Undo/Redo/Save) and
- * publication status (Publish/Unpublish, via `PublishControl.tsx`) both
- * moved from inline/sidebar controls into stage-local `StageControlsPopover`
- * panels, all nested behind the stage's single "Open piece controls menu"
- * trigger (`PieceStageToolbar`/`EditorWorkspace.tsx`). Mirrors the working
- * sequence already proven by `manual2dCanvasContainment.spec.ts` and
- * `manual2dStageChrome.spec.ts`: open the piece-controls menu once, then
- * click whichever nested popover trigger ("Edit scene",
- * "Publication status: Draft/Published") a scenario needs.
+ * The editor authoring toolbar is a page-level control panel for 2D editing.
+ * At desktop widths it is visible in document flow; at narrow widths it is
+ * behind the accessible "Editor tools" disclosure. The helper keeps the
+ * existing tests independent of that responsive presentation.
  *
  * Idempotent by design -- a caller that already has the menu open gets a
  * no-op instead of accidentally toggling it closed again.
@@ -59,21 +54,30 @@ export async function closePieceControlsMenu(page: Page): Promise<void> {
  * Undo, Redo, Save) to actually be visible before any caller resolves a
  * button inside it. */
 export async function openEditScene(page: Page): Promise<void> {
-  const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-  const authoringToolbar = toolbar.getByRole('toolbar', { name: 'Editor actions' });
+  const previewTab = page.getByRole('tab', { name: 'Preview', exact: true });
+  if (await previewTab.isVisible().catch(() => false)) {
+    await previewTab.click();
+  }
+  // `getByRole` intentionally excludes the toolbar while its responsive
+  // disclosure is closed. Use the semantic attributes for the attachment
+  // wait, then switch back to the role locator for visible assertions.
+  const authoringToolbar = page.locator('[role="toolbar"][aria-label="Editor actions"]');
+  await authoringToolbar.waitFor({ state: 'attached' });
   if (await authoringToolbar.isVisible().catch(() => false)) return;
 
-  await openPieceControlsMenu(page);
-  await toolbar.getByRole('button', { name: 'Edit scene', exact: true }).click();
+  const toggle = page.getByRole('button', { name: 'Editor tools' });
+  await toggle.waitFor({ state: 'visible' });
+  await toggle.click();
   await authoringToolbar.waitFor({ state: 'visible' });
 }
 
 /** Counterpart to `openEditScene` -- see `closePieceControlsMenu` for why
  * this matters once a scenario moves on to non-stage assertions. */
 export async function closeEditScene(page: Page): Promise<void> {
-  const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-  const authoringToolbar = toolbar.getByRole('toolbar', { name: 'Editor actions' });
+  const authoringToolbar = page.getByRole('toolbar', { name: 'Editor actions' });
+  const toggle = page.getByRole('button', { name: 'Editor tools' });
+  if (!(await toggle.isVisible().catch(() => false))) return;
   if (!(await authoringToolbar.isVisible().catch(() => false))) return;
   await page.keyboard.press('Escape');
-  await authoringToolbar.waitFor({ state: 'hidden' });
+  await authoringToolbar.waitFor({ state: 'hidden' }).catch(() => {});
 }

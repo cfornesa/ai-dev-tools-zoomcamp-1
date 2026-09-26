@@ -390,12 +390,9 @@ describe('EditorWorkspace responsive layout', () => {
     },
   );
 
-  // Issue #157 (owner correction, 2026-08-24): below the 1024px breakpoint
-  // the authoring toolbar must be a true canvas overlay, not merely a
-  // page-level row somewhere inside the Preview panel. It is rendered once
-  // inside the actual scene canvas so it remains attached to the artwork
-  // when the surrounding editor layout changes.
-  it('places the toolbar inside the scene canvas below 1024px', async () => {
+  // Issue #951: below the 1024px breakpoint the authoring toolbar is a
+  // responsive page-level disclosure, not a canvas overlay.
+  it('places the toolbar in the editor control panel below 1024px', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     setViewportWidth(375);
@@ -403,21 +400,18 @@ describe('EditorWorkspace responsive layout', () => {
     renderWorkspace();
 
     await screen.findByRole('tablist', { name: /editor panels/i });
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Editor tools' }));
     const toolbars = screen.getAllByRole('toolbar', { name: 'Editor actions' });
     expect(toolbars).toHaveLength(1);
     const toolbar = toolbars[0];
-    expect(toolbar.closest('[data-panel]')).toHaveAttribute('data-panel', 'preview');
-
-    expect(toolbar.closest('[data-testid="editor-piece-stage-shell"]')).toBe(
-      screen.getByTestId('editor-piece-stage-shell'),
+    expect(toolbar.closest('[data-testid="editor-control-panel"]')).toBe(
+      screen.getByTestId('editor-control-panel'),
     );
   });
 
-  // Issue #157 parity follow-up: desktop uses the same true canvas placement
-  // as narrow layouts, so the toolbar never reverts to a bulky page-level row.
-  it('places the editor toolbar inside the scene canvas at >=1024px', async () => {
+  // Issue #951: desktop keeps the same authoring toolbar in document flow,
+  // with the disclosure toggle hidden because the tools are already visible.
+  it('places the editor toolbar in the editor control panel at >=1024px', async () => {
     mockedGetProject.mockResolvedValue(baseProject());
     mockedGetSceneVersion.mockResolvedValue(baseVersion());
     setViewportWidth(1024);
@@ -425,12 +419,10 @@ describe('EditorWorkspace responsive layout', () => {
     renderWorkspace();
 
     await screen.findByRole('region', { name: 'Preview' });
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
     const toolbars = screen.getAllByRole('toolbar', { name: 'Editor actions' });
     expect(toolbars).toHaveLength(1);
-    expect(toolbars[0].closest('[data-testid="editor-piece-stage-shell"]')).toBe(
-      screen.getByTestId('editor-piece-stage-shell'),
+    expect(toolbars[0].closest('[data-testid="editor-control-panel"]')).toBe(
+      screen.getByTestId('editor-control-panel'),
     );
   });
 
@@ -469,7 +461,7 @@ describe('EditorWorkspace responsive layout', () => {
     await screen.findByRole('tab', { name: 'Layers' });
     fireEvent.click(screen.getByRole('tab', { name: 'Layers' }));
     fireEvent.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Edit scene' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Editor tools' }));
     await screen.findByRole('button', { name: 'Add circle' });
     fireEvent.click(screen.getByRole('button', { name: 'Add circle' }));
 

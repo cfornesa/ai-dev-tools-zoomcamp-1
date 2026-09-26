@@ -1025,19 +1025,23 @@ export function CanvasSettingsPanel({ sceneEditor }: { sceneEditor: SceneEditor 
       <span className="editor-outline-kind-icon" aria-hidden="true">
         ▦
       </span>
-      <span>Canvas</span>
+      <h4 className="editor-canvas-settings-title">Canvas</h4>
 
-      <label>
-        Background color
-        <input
-          type="color"
-          aria-label="Canvas background color"
-          value={/^#([0-9a-fA-F]{6})$/.test(backgroundColor) ? backgroundColor : '#ffffff'}
-          onChange={(event) => {
-            const outcome = sceneEditor.updateCanvasBackgroundColor(event.target.value);
-            setColorError(outcome.ok ? null : outcome.error);
-          }}
-        />
+      <label className="editor-canvas-color-field">
+        <span>Background color</span>
+        <span className="editor-canvas-color-control">
+          <input
+            className="editor-canvas-color-swatch"
+            type="color"
+            aria-label="Canvas background color"
+            value={/^#([0-9a-fA-F]{6})$/.test(backgroundColor) ? backgroundColor : '#ffffff'}
+            onChange={(event) => {
+              const outcome = sceneEditor.updateCanvasBackgroundColor(event.target.value);
+              setColorError(outcome.ok ? null : outcome.error);
+            }}
+          />
+          <output aria-label="Canvas background color value">{backgroundColor}</output>
+        </span>
       </label>
       {colorError && (
         <p role="alert" aria-live="assertive">

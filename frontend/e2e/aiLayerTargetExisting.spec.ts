@@ -21,7 +21,8 @@ async function canvasPixel(page: Page, x: number, y: number): Promise<number[]> 
     .locator('canvas')
     .first()
     .evaluate(
-      (canvas, point) => {
+      (element, point) => {
+        const canvas = element as HTMLCanvasElement;
         const context = canvas.getContext('2d');
         if (!context) throw new Error('Scene canvas has no 2D context');
         return Array.from(context.getImageData(point.x, point.y, 1, 1).data.slice(0, 3));

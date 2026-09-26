@@ -94,7 +94,7 @@ async function loadReadyWorkspace() {
   // of it makes these interaction tests depend on unrelated panel work.
   await screen.findByRole('region', { name: 'Layers' });
   await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-  await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Editor tools' }));
 }
 
 function addShapeButton(label: string) {

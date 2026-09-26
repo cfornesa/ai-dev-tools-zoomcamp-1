@@ -98,7 +98,7 @@ async function loadReadyWorkspace() {
   await screen.findByRole('region', { name: 'Tools' });
   expandAllCollapsibleSections();
   await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-  await userEvent.setup().click(screen.getByRole('button', { name: 'Edit scene' }));
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Editor tools' }));
 }
 
 beforeEach(() => {
@@ -141,7 +141,7 @@ describe('behavior cards panel', () => {
     // (see BehaviorCardsPanel.tsx's own comment on why this now re-syncs).
     expandAllCollapsibleSections();
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
-    await user.click(screen.getByRole('button', { name: 'Edit scene' }));
+    await user.click(screen.getByRole('button', { name: 'Editor tools' }));
 
     expect(screen.getByRole('button', { name: 'Add card' })).toBeDisabled();
 

@@ -129,6 +129,15 @@ function contrastingVisitorColor(background: string): string {
   return luminance > 0.55 ? '#000000' : '#ffffff';
 }
 
+/**
+ * Keep the public UI unchanged while giving local Chrome verification a
+ * supported, inspectable audio trace. Consumers must opt in by listening for
+ * this event; no telemetry is rendered or persisted for visitors.
+ */
+function emitSonicTelemetry(event: SonicNoteEvent): void {
+  window.dispatchEvent(new CustomEvent('augmentrart:sonic-note', { detail: event }));
+}
+
 function PieceStageControls({
   stageRef,
   iframeRef,
@@ -486,6 +495,7 @@ function PieceStageControls({
   async function enableParentSound() {
     const engine = (sonicEngineRef.current ??= createSonicEngine(undefined, (event) => {
       if (event.kind === 'ambient') setLastAmbientNote(event);
+      emitSonicTelemetry(event);
     }));
     configureParentSound(engine);
     await engine.enable();
@@ -563,15 +573,27 @@ function PieceStageControls({
       const index = Object.values(PIANO_KEY_MAP).indexOf(baseNote);
       const resolved = scaleNotes(keyboardRoot, keyboardScale, [4, 6])[index] ?? baseNote;
       const note = transposeNote(resolved, keyboardTranspose + keyboardOctave * 12);
+      const frequency = noteFrequency(note) ?? 0;
       engine.triggerMelodicNote(baseNote);
       setLastNote(key);
-      setLastNoteFrequency(noteFrequency(note));
+      setLastNoteFrequency(frequency);
+      emitSonicTelemetry({
+        kind: 'melodic',
+        note,
+        frequency,
+        tempo: ambientBpm,
+        scale: ambientScale,
+        key: { root: keyboardRoot, scale: keyboardScale },
+        transpose: keyboardTranspose + keyboardOctave * 12,
+      });
     }
     window.addEventListener('keydown', onKeyDown);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [
+    ambientBpm,
+    ambientScale,
     capabilities.keyboard,
     iframeRef,
     keyboardEnabled,

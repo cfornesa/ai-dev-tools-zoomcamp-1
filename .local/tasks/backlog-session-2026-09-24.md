@@ -5488,6 +5488,32 @@ not broadened; the test contract was corrected and rerun.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required Chromium run: 5 tests passed; strengthened six-engine run: 1 test passed across 1280x900 and 375x812. `make check`: backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests; lint, format, typecheck passed. Mobile C2.js and A-Frame screenshots were inspected. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
 
+## Transaction refresh: #895 — 2026-09-26 — CLOSED / QA PASS
+
+Reconciliation-only parent. Children #903, #901, and #902 are terminal with
+their own extracted-ZIP QA evidence; no implementation or production claim is
+made at the parent level.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed all decomposed download-parity children were terminal. |
+| engineer | Codex / GPT-5 / medium | yes | No direct implementation; parent remained a tracking container. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Re-read child QA PASS comments `5847461712`, `5847477905`, and `5847703987`. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/895#issuecomment-5847735321`; issue closed. |
+
+## Transaction refresh: #892 — 2026-09-26 — CLOSED / QA PASS
+
+Reconciliation-only parity parent. All listed live-route, decision, audit, and
+download children are terminal; no direct implementation or production claim
+is made at the parent level.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed #900, #908, #899, #898, #907, #893, #895, and #891 are closed. |
+| engineer | Codex / GPT-5 / medium | yes | No direct implementation; parent remained a tracking container. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Reconciled each child’s own criterion-level evidence without reopening closed issues. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/892#issuecomment-5847735691`; issue closed. |
+
 ## Transaction refresh: #904 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation reconciled #904 with the now-closed flat-gallery contract in

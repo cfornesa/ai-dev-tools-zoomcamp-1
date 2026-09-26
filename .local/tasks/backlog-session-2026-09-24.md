@@ -5232,6 +5232,17 @@ covers the combined blank-display fallback and `By {display name}
 | #895 download surface parity | Codex/GPT-5/medium/substituted | pending; stage 2b | pending | pending | pending |
 | #896 adjacent system-default motion toggle | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; stage 2a | focused tests pass; full QA pending | pending | pending |
 | #897 public authorship identity | Codex/GPT-5/medium/substituted | pending; stage 2b | pending | pending | pending |
+| #898 generated embed parity | Codex/GPT-5/medium/substituted | pending; stage 2a | pending | pending | pending |
+| #899 generated immersive 3D parity | Codex/GPT-5/medium/substituted | pending; stage 2a | pending | pending | pending |
+
+### Distillation decomposition: #892 → #893/#898/#899
+
+The parent contract was found to span independent route evidence and was
+therefore not engineered as one unit. #891 owns regular generated placement;
+#893 owns immersive flat/gallery presentation; #898 owns generated embeds; and
+#899 owns generated Three.js/A-Frame immersive worlds. The parent remains an
+open parity container until its children are terminal. Duplicate audit linked
+closed #752/#753/#754/#765/#769 without reopening them.
 
 ### Transaction #894 QA reconciliation
 

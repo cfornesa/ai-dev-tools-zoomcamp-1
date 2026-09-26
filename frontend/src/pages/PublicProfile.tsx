@@ -93,6 +93,7 @@ export default function PublicProfile() {
                 title={piece.title}
                 description={piece.description}
                 owner={piece.owner ?? displayName}
+                ownerHandle={piece.owner_handle}
                 publishedAt={piece.published_at}
                 thumbnailUrl={piece.thumbnail_url}
                 thumbnailIsFallback={piece.thumbnail_is_fallback}

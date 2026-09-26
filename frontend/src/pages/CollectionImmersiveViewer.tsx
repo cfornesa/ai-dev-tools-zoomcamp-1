@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 
 import { fetchPublicCollection, type Collection, type CollectionItem } from '../api/collections';
 import { useReducedMotion } from '../a11y/reducedMotion';
+import { formatPublicAttribution } from '../presentation/publicAttribution';
 
 const LIVE_SLOT_BUDGET = 1;
 
@@ -170,7 +171,9 @@ function CollectionImmersiveViewer() {
             Use the arrow keys or controls to move through this collection. Home or Reset returns to
             the first item.
           </p>
-          <p className="public-project-attribution">By {collection.owner}</p>
+          <p className="public-project-attribution">
+            {formatPublicAttribution(collection.owner, collection.owner_handle)}
+          </p>
           {collection.description && (
             <p className="public-project-context">{collection.description}</p>
           )}

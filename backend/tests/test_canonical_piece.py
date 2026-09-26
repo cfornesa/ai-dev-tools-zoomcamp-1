@@ -175,6 +175,7 @@ def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client)
     card = next(item for item in profile.json()["pieces"] if item["id"] == str(piece.public_id))
     assert card["regular_url"] == "/users/@current-profile-handle/pieces/profile-study"
     assert card["owner"] == "Profile Display"
+    assert card["owner_handle"] == "current-profile-handle"
 
     gallery = client.get("/api/public/gallery/")
     assert gallery.status_code == 200
@@ -183,6 +184,7 @@ def test_profile_and_gallery_cards_use_the_generated_piece_canonical_url(client)
     )
     assert gallery_card["viewer_url"] == "/users/@current-profile-handle/pieces/profile-study"
     assert gallery_card["owner"] == "Profile Display"
+    assert gallery_card["owner_handle"] == "current-profile-handle"
 
 
 @pytest.mark.django_db

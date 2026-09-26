@@ -45,7 +45,7 @@ from scenes.ink_document import (
 )
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
 from scenes.permissions import Action, can
-from scenes.public_identity import public_author_name
+from scenes.public_identity import public_author_handle, public_author_name
 from scenes.sonic_contract import normalize_sonic
 from scenes.thumbnails import FALLBACK_PNG_BYTES
 
@@ -302,6 +302,7 @@ def _piece_data(piece: ArtPiece, *, public: bool):
     }
     if public:
         data["owner"] = public_author_name(piece.owner)
+        data["owner_handle"] = public_author_handle(piece.owner)
         from scenes.collections import public_collection_context
 
         data["collections"] = public_collection_context("art_piece", piece.public_id)

@@ -433,6 +433,7 @@ def test_3d_card_excludes_scene_and_owner_fields(anon_client, owner):
         "id",
         "title",
         "owner",
+        "owner_handle",
         "thumbnail_url",
         "viewer_url",
         "published_at",
@@ -483,6 +484,7 @@ def test_response_excludes_private_and_internal_fields(owner_client, anon_client
         "id",
         "title",
         "owner",
+        "owner_handle",
         "thumbnail_url",
         "viewer_url",
         "remix_provenance",
@@ -528,10 +530,12 @@ def test_public_attribution_prefers_display_name_and_falls_back_to_handle(
 
     item = anon_client.get(LIST_URL).json()["results"][0]
     assert item["owner"] == "Chosen Display Name"
+    assert item["owner_handle"] == "current-handle"
 
     profile.display_name = ""
     profile.save(update_fields=["display_name"])
     assert anon_client.get(LIST_URL).json()["results"][0]["owner"] == "current-handle"
+    assert anon_client.get(LIST_URL).json()["results"][0]["owner_handle"] == "current-handle"
 
 
 @pytest.mark.django_db
@@ -702,6 +706,7 @@ def test_unified_response_excludes_private_and_editing_fields(anon_client, fixed
             "kind",
             "title",
             "owner",
+            "owner_handle",
             "published_at",
             "thumbnail_url",
             "thumbnail_is_fallback",

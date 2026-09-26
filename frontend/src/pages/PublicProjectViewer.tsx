@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { forkProject, getPublicProject, type PublicProject } from '../api/projects';
+import { formatPublicAttribution } from '../presentation/publicAttribution';
 import { useAuth } from '../auth/useAuth';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
 import {
@@ -120,11 +121,13 @@ function PublicProjectViewer({
   initialProject,
   toolbarMode = 'menu',
   authorDisplayName,
+  authorHandle,
   canonicalRoute = false,
 }: {
   initialProject?: PublicProject;
   toolbarMode?: 'menu' | 'inline';
   authorDisplayName?: string;
+  authorHandle?: string | null;
   canonicalRoute?: boolean;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
@@ -514,7 +517,12 @@ function PublicProjectViewer({
               {project.description}
             </p>
           )}
-          <p className="public-project-attribution">By {authorDisplayName || project.owner}</p>
+          <p className="public-project-attribution">
+            {formatPublicAttribution(
+              authorDisplayName || project.owner,
+              authorHandle || project.owner_handle,
+            )}
+          </p>
 
           {provenance &&
             (provenance.source_public_id && provenance.source_viewer_url ? (

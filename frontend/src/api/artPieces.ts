@@ -179,6 +179,7 @@ export type ArtPiece = {
   public_id: string;
   public_slug?: string;
   owner?: string;
+  owner_handle?: string | null;
   title: string;
   description: string;
   prompt?: string;

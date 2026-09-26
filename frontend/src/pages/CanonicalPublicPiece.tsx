@@ -37,6 +37,7 @@ export default function CanonicalPublicPiece() {
         canonicalRoute
         editHref={resolved.edit_url}
         authorDisplayName={profile?.display_name}
+        authorHandle={profile?.handle}
       />
     );
   }
@@ -46,6 +47,7 @@ export default function CanonicalPublicPiece() {
         initialProject={resolved.piece as PublicProject}
         toolbarMode="inline"
         authorDisplayName={profile?.display_name}
+        authorHandle={profile?.handle}
         canonicalRoute
       />
     );
@@ -56,6 +58,7 @@ export default function CanonicalPublicPiece() {
         initialProject={resolved.piece as PublicProject3D}
         toolbarMode="inline"
         authorDisplayName={profile?.display_name}
+        authorHandle={profile?.handle}
         immersiveHref={`/users/@${handle.replace(/^@/, '')}/immersive/${pieceSlug}`}
       />
     );

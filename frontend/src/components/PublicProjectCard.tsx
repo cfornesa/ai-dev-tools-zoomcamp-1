@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { PublicGalleryProject } from '../api/projects';
+import { formatPublicAttribution } from '../presentation/publicAttribution';
 
 /**
  * Task 50: one public-gallery card. Two independent "no real thumbnail"
@@ -77,7 +78,9 @@ function PublicProjectCard({ project }: { project: PublicGalleryProject }) {
           </span>
         )}
       </Link>
-      <p className="public-project-attribution">By {project.owner}</p>
+      <p className="public-project-attribution">
+        {formatPublicAttribution(project.owner, project.owner_handle)}
+      </p>
 
       {provenance &&
         (provenance.source_public_id && provenance.source_viewer_url ? (

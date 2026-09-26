@@ -23,7 +23,7 @@ from scenes.models import (
     SiteSettings,
 )
 from scenes.piece_engine import resolve_scene2d_engine, resolve_scene3d_engine
-from scenes.public_identity import public_author_name
+from scenes.public_identity import public_author_handle, public_author_name
 from scenes.theme import (
     PALETTE_DEFINITIONS,
     available_palettes,
@@ -161,6 +161,7 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 "title": project.title,
                 "description": project.description,
                 "owner": public_author_name(owner),
+                "owner_handle": public_author_handle(owner),
                 "type": "2d",
                 "engine": resolve_scene2d_engine(
                     project.current_version.scene_json if project.current_version else None
@@ -182,6 +183,7 @@ def _piece_payload(profile: PublicProfile) -> dict:
                     else ""
                 ),
                 "owner": public_author_name(owner),
+                "owner_handle": public_author_handle(owner),
                 "type": "3d",
                 "engine": resolve_scene3d_engine(
                     project3d.current_version.scene_json if project3d.current_version else None
@@ -203,6 +205,7 @@ def _piece_payload(profile: PublicProfile) -> dict:
                 "title": piece.title,
                 "description": piece.description,
                 "owner": public_author_name(owner),
+                "owner_handle": public_author_handle(owner),
                 "type": "generated",
                 "engine": piece.engine,
                 "published_at": piece.published_at.isoformat() if piece.published_at else None,

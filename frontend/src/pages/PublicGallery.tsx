@@ -74,6 +74,7 @@ function GalleryCard({ item }: { item: PublicGalleryItem | PublicGalleryAccountI
           : undefined
       }
       owner={item.owner}
+      ownerHandle={item.owner_handle}
       testId={`gallery-card-${item.id}`}
     />
   );

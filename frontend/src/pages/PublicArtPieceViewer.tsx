@@ -17,6 +17,7 @@ import { applyContentMetadata } from '../metadata';
 import { captureArtPieceThumbnailFromSource } from '../generative/artPieceThumbnailCapture';
 import PieceStageControls from './PieceStageControls';
 import { aspectRatioFromMetadata } from './artPiecePresentation';
+import { formatPublicAttribution } from '../presentation/publicAttribution';
 
 function isEmbedPath(): boolean {
   return window.location.pathname.startsWith('/embed/art-pieces/');
@@ -54,12 +55,14 @@ export default function PublicArtPieceViewer({
   canonicalRoute = false,
   editHref,
   authorDisplayName,
+  authorHandle,
 }: {
   initialPiece?: ArtPiece;
   canonicalHref?: string;
   canonicalRoute?: boolean;
   editHref?: string;
   authorDisplayName?: string;
+  authorHandle?: string | null;
 } = {}) {
   const { id } = useParams<{ id: string }>();
   const [piece, setPiece] = useState<ArtPiece | null>(initialPiece ?? null);
@@ -171,7 +174,10 @@ export default function PublicArtPieceViewer({
           {editHref && !isCanonicalRoute && <Link to={editHref}>Edit piece</Link>}
           {!!piece.description && <p>{piece.description}</p>}
           <p className="public-project-attribution">
-            By {authorDisplayName || piece.owner || 'Public artist'}
+            {formatPublicAttribution(
+              authorDisplayName || piece.owner,
+              authorHandle || piece.owner_handle,
+            )}
           </p>
           {!isCanonicalRoute && (
             <>

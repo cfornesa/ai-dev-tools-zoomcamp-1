@@ -10,6 +10,7 @@ import {
 } from '../export/generateHtmlExport3D';
 import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
+import { formatPublicAttribution } from '../presentation/publicAttribution';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
 
@@ -45,10 +46,12 @@ type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
 function ImmersiveProject3DViewer({
   initialProject,
   authorDisplayName,
+  authorHandle,
   canonicalHref,
 }: {
   initialProject?: PublicProject3D;
   authorDisplayName?: string;
+  authorHandle?: string | null;
   canonicalHref?: string;
 } = {}) {
   const { id } = useParams<{ id: string }>();
@@ -186,7 +189,10 @@ function ImmersiveProject3DViewer({
             <p className="public-piece-kind">3D scene</p>
             <h1 className="public-piece-page-heading">{readyProject.title}</h1>
             <p className="public-project-attribution">
-              By {authorDisplayName || readyProject.owner}
+              {formatPublicAttribution(
+                authorDisplayName || readyProject.owner,
+                authorHandle || readyProject.owner_handle,
+              )}
             </p>
             <p className="public-piece-meta">
               3D scene · {versionCount} {versionCount === 1 ? 'version' : 'versions'}

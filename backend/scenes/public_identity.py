@@ -12,3 +12,12 @@ def public_author_name(user) -> str:
         if handle:
             return handle
     return user.get_username()
+
+
+def public_author_handle(user) -> str | None:
+    """Return the normalized public handle, without the service ``@`` prefix."""
+    profile = getattr(user, "public_profile", None)
+    if profile is None:
+        return None
+    handle = (profile.handle or "").strip().lstrip("@")
+    return handle or None

@@ -1,5 +1,16 @@
 # Public gallery API contract
 
+## Public authorship identity (#897)
+
+Public piece, gallery, collection, profile, search, and feed projections retain
+the existing `owner` display value and add an additive `owner_handle` field.
+`owner_handle` is the normalized public handle without a leading `@`, or
+`null` when the owner has no public handle. Clients render the handle with the
+service convention (`@{owner_handle}`); they must not infer a handle from a
+private account email or replace the existing `owner` value. This additive
+field is the stable machine-readable identity used by frontend attribution
+(`By {display name} (@{handle})`) and share/feed metadata.
+
 ## Authored per-piece sound contract (#833)
 
 Structured 2D and 3D scene documents may carry an optional `sonic` object

@@ -129,6 +129,7 @@ export function unpublishProject3D(id: string): Promise<Project3D> {
 export type PublicProject3D = {
   id: string;
   owner: string;
+  owner_handle?: string | null;
   title: string;
   description: string;
   seo_config?: SeoConfig;

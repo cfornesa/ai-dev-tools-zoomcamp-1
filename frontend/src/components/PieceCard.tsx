@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { formatPublishedDate, truncateExcerpt } from './pieceCardUtils';
+import { formatPublicAttribution } from '../presentation/publicAttribution';
 
 export type PieceCardProps = {
   href: string;
@@ -13,6 +14,7 @@ export type PieceCardProps = {
   kind?: string;
   engine?: string;
   owner?: string;
+  ownerHandle?: string | null;
   testId?: string;
 };
 
@@ -26,6 +28,7 @@ export default function PieceCard({
   kind,
   engine,
   owner,
+  ownerHandle,
   testId,
 }: PieceCardProps) {
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
@@ -93,7 +96,9 @@ export default function PieceCard({
           </p>
         )}
       </Link>
-      {owner && <p className="public-project-attribution">By {owner}</p>}
+      {owner && (
+        <p className="public-project-attribution">{formatPublicAttribution(owner, ownerHandle)}</p>
+      )}
     </article>
   );
 }

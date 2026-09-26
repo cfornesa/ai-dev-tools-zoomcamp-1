@@ -18,6 +18,7 @@ export type Collection = {
   slug: string;
   handle: string | null;
   owner: string;
+  owner_handle?: string | null;
   visibility: 'private' | 'public';
   published_at: string | null;
   created_at: string;

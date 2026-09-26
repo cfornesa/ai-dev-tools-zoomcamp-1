@@ -48,6 +48,7 @@ export default function CanonicalImmersiveStructuredPiece() {
       <ImmersiveArtPieceViewer
         initialPiece={resolved.piece as ArtPiece}
         authorDisplayName={profile?.display_name}
+        authorHandle={profile?.handle}
         canonicalHref={`/users/@${cleanHandle}/immersive/${pieceSlug}`}
         regularHref={`/users/@${cleanHandle}/pieces/${pieceSlug}`}
         editHref={resolved.edit_url}
@@ -59,6 +60,7 @@ export default function CanonicalImmersiveStructuredPiece() {
     <ImmersiveProject3DViewer
       initialProject={resolved.piece as PublicProject3D}
       authorDisplayName={profile?.display_name}
+      authorHandle={profile?.handle}
       canonicalHref={`/users/@${cleanHandle}/immersive/${pieceSlug}`}
     />
   );

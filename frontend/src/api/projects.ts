@@ -29,6 +29,7 @@ export type SceneSummary = {
 export type Project = {
   id: string;
   owner: string;
+  owner_handle?: string | null;
   title: string;
   description: string;
   seo_config?: SeoConfig;
@@ -234,6 +235,7 @@ export type PublicGalleryProject = {
   id: string;
   title: string;
   owner: string;
+  owner_handle?: string | null;
   thumbnail_url: string | null;
   viewer_url: string;
   remix_provenance: RemixProvenance | null;
@@ -275,6 +277,7 @@ export type PublicGallery2DItem = {
   kind: '2d';
   title: string;
   owner: string;
+  owner_handle?: string | null;
   published_at: string;
   thumbnail_url: string | null;
   viewer_url: string;
@@ -290,6 +293,7 @@ export type PublicGallery3DItem = {
   kind: '3d';
   title: string;
   owner: string;
+  owner_handle?: string | null;
   published_at: string;
   thumbnail_url: string | null;
   viewer_url: string;
@@ -305,6 +309,7 @@ export type PublicGalleryGeneratedItem = {
   kind: 'generated';
   title: string;
   owner: string;
+  owner_handle?: string | null;
   published_at: string;
   thumbnail_url: string | null;
   thumbnail_is_fallback: boolean;
@@ -317,6 +322,7 @@ export type PublicGalleryCollectionItem = {
   kind: 'collection';
   title: string;
   owner: string;
+  owner_handle?: string | null;
   published_at: string;
   thumbnail_url: null;
   viewer_url: string;
@@ -409,6 +415,7 @@ export type PublicSceneVersionSummary = {
 export type PublicProject = {
   id: string;
   owner: string;
+  owner_handle?: string | null;
   title: string;
   description: string;
   seo_config?: SeoConfig;

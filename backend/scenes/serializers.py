@@ -21,7 +21,7 @@ from scenes.models import (
     Thumbnail3D,
 )
 from scenes.piece_engine import resolve_scene2d_engine, resolve_scene3d_engine
-from scenes.public_identity import public_author_name
+from scenes.public_identity import public_author_handle, public_author_name
 from scenes.public_urls import canonical_piece_viewer_path, piece_viewer_path
 
 MAX_TAGS = 10
@@ -354,6 +354,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
 
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.SerializerMethodField()
+    owner_handle = serializers.SerializerMethodField()
     current_version = PublicSceneVersionSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
@@ -367,6 +368,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "owner",
+            "owner_handle",
             "title",
             "description",
             "seo_config",
@@ -395,6 +397,9 @@ class PublicProjectSerializer(serializers.ModelSerializer):
 
     def get_owner(self, project: Project) -> str:
         return public_author_name(project.owner)
+
+    def get_owner_handle(self, project: Project) -> str | None:
+        return public_author_handle(project.owner)
 
     def get_viewer_url(self, project: Project) -> str:
         return piece_viewer_path(project, "2d")
@@ -450,6 +455,7 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
 
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.SerializerMethodField()
+    owner_handle = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
     remix_provenance = serializers.SerializerMethodField()
@@ -460,6 +466,7 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "owner",
+            "owner_handle",
             "thumbnail_url",
             "viewer_url",
             "remix_provenance",
@@ -478,6 +485,9 @@ class PublicProjectListItemSerializer(serializers.ModelSerializer):
     def get_owner(self, project: Project) -> str:
         return public_author_name(project.owner)
 
+    def get_owner_handle(self, project: Project) -> str | None:
+        return public_author_handle(project.owner)
+
     def get_remix_provenance(self, project: Project) -> dict | None:
         return remix_provenance_data(project)
 
@@ -490,6 +500,7 @@ class PublicProject3DListItemSerializer(serializers.ModelSerializer):
 
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.SerializerMethodField()
+    owner_handle = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
     renderer = serializers.CharField(default="3d", read_only=True)
@@ -500,6 +511,7 @@ class PublicProject3DListItemSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "owner",
+            "owner_handle",
             "thumbnail_url",
             "viewer_url",
             "published_at",
@@ -514,6 +526,9 @@ class PublicProject3DListItemSerializer(serializers.ModelSerializer):
 
     def get_owner(self, project: Project3D) -> str:
         return public_author_name(project.owner)
+
+    def get_owner_handle(self, project: Project3D) -> str | None:
+        return public_author_handle(project.owner)
 
     def get_viewer_url(self, project: Project3D) -> str:
         return piece_viewer_path(project, "3d")
@@ -552,6 +567,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
     kind = serializers.SerializerMethodField()
     title = serializers.SerializerMethodField()
     owner = serializers.SerializerMethodField()
+    owner_handle = serializers.SerializerMethodField()
     published_at = serializers.SerializerMethodField()
     thumbnail_url = serializers.SerializerMethodField()
     thumbnail_is_fallback = serializers.SerializerMethodField()
@@ -565,6 +581,7 @@ class PublicGalleryItemSerializer(serializers.Serializer):
             "kind",
             "title",
             "owner",
+            "owner_handle",
             "published_at",
             "thumbnail_url",
             "thumbnail_is_fallback",
@@ -593,6 +610,10 @@ class PublicGalleryItemSerializer(serializers.Serializer):
     def get_owner(self, obj) -> str:
         _, record = self._entry(obj)
         return public_author_name(record.owner)
+
+    def get_owner_handle(self, obj) -> str | None:
+        _, record = self._entry(obj)
+        return public_author_handle(record.owner)
 
     def get_published_at(self, obj):
         _, record = self._entry(obj)
@@ -886,6 +907,7 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
 
     id = serializers.UUIDField(source="public_id", read_only=True)
     owner = serializers.SerializerMethodField()
+    owner_handle = serializers.SerializerMethodField()
     current_version = PublicSceneVersion3DSerializer(read_only=True)
     thumbnail_url = serializers.SerializerMethodField()
     viewer_url = serializers.SerializerMethodField()
@@ -899,6 +921,7 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "owner",
+            "owner_handle",
             "title",
             "description",
             "seo_config",
@@ -920,6 +943,9 @@ class PublicProject3DSerializer(serializers.ModelSerializer):
 
     def get_owner(self, project: Project3D) -> str:
         return public_author_name(project.owner)
+
+    def get_owner_handle(self, project: Project3D) -> str | None:
+        return public_author_handle(project.owner)
 
     def get_description(self, project: Project3D) -> str:
         seo_config = project.seo_config

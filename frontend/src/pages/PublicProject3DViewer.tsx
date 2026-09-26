@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { getPublicProject3D, type PublicProject3D } from '../api/projects3d';
+import { formatPublicAttribution } from '../presentation/publicAttribution';
 import {
   generateScene3DBundle,
   triggerScene3DBundleDownload,
@@ -30,11 +31,13 @@ function PublicProject3DViewer({
   initialProject,
   toolbarMode = 'menu',
   authorDisplayName,
+  authorHandle,
   immersiveHref,
 }: {
   initialProject?: PublicProject3D;
   toolbarMode?: 'menu' | 'inline';
   authorDisplayName?: string;
+  authorHandle?: string | null;
   immersiveHref?: string;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
@@ -201,7 +204,12 @@ function PublicProject3DViewer({
       <header>
         {isCanonicalRoute && <p className="public-piece-kind">3D scene</p>}
         <h1 className="public-piece-page-heading">{project.title}</h1>
-        <p className="public-project-attribution">By {authorDisplayName || project.owner}</p>
+        <p className="public-project-attribution">
+          {formatPublicAttribution(
+            authorDisplayName || project.owner,
+            authorHandle || project.owner_handle,
+          )}
+        </p>
         {isCanonicalRoute && (
           <p className="public-piece-meta">
             3D scene · {versionCount} {versionCount === 1 ? 'version' : 'versions'}

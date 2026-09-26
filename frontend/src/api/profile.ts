@@ -77,6 +77,7 @@ export type PublicProfilePage = {
     title: string;
     description?: string;
     owner?: string;
+    owner_handle?: string | null;
     type: string;
     engine?: string;
     published_at?: string;

@@ -10,6 +10,7 @@ import {
 } from '../generative/artPieceSandbox';
 import PieceStageControls from './PieceStageControls';
 import { aspectRatioFromMetadata } from './artPiecePresentation';
+import { formatPublicAttribution } from '../presentation/publicAttribution';
 
 /** Issue #434: honest per-engine support -- only Three.js/A-Frame pieces
  * have a registerable spatial camera at all (same boundary #432's
@@ -119,12 +120,14 @@ function ImmersiveArtPieceViewer({
   regularHref,
   editHref,
   authorDisplayName,
+  authorHandle,
 }: {
   initialPiece?: ArtPiece;
   canonicalHref?: string;
   regularHref?: string;
   editHref?: string;
   authorDisplayName?: string;
+  authorHandle?: string | null;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const routeNavigate = useNavigate();
@@ -316,7 +319,10 @@ function ImmersiveArtPieceViewer({
             </button>
           </div>
           <p className="public-project-attribution">
-            By {authorDisplayName || piece.owner || 'Public artist'}
+            {formatPublicAttribution(
+              authorDisplayName || piece.owner,
+              authorHandle || piece.owner_handle,
+            )}
           </p>
           {!!piece.description && (
             <p className="immersive-art-piece-description">{piece.description}</p>

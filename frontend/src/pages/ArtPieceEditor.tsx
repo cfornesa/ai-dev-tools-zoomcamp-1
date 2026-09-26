@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 
 import {
@@ -27,6 +27,7 @@ import {
   buildArtPieceSandboxDocument,
   parseArtPieceSandboxMessage,
   ART_PIECE_IFRAME_SANDBOX,
+  ART_PIECE_SANDBOX_MESSAGE_SOURCE,
 } from '../generative/artPieceSandbox';
 import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
 import MentionPromptField from './MentionPromptField';
@@ -36,6 +37,8 @@ import PieceSlugField from '../components/PieceSlugField';
 import GeneratedInkPanel, { type InkRequest } from '../components/GeneratedInkPanel';
 import type { InkTool } from '../ink/inkModel';
 import Generated3DManualTools from '../components/Generated3DManualTools';
+import PieceStageIcon from '../components/PieceStageIcon';
+import { screenshotFilename } from '../export/captureLiveScreenshot';
 import SonicDefaultsPanel from './SonicDefaultsPanel';
 import { normalizeSonic, type SonicDefaults } from '../audio/sonicContract';
 import { supportsGeneratedSourceEditing } from './artPieceSourceEditing';
@@ -57,6 +60,151 @@ const INK_TOOL_FOR: Partial<Record<string, InkTool>> = {
 type RevisionPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
 const LIVE_PREVIEW_DEBOUNCE_MS = 350;
+const GENERATED_PREVIEW_CAPTURE_TIMEOUT_MS = 8000;
+
+function GeneratedPreviewScreenshotButton({
+  frameRef,
+  filename,
+}: {
+  frameRef: RefObject<HTMLIFrameElement | null>;
+  filename: string;
+}) {
+  const [capturing, setCapturing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function capture() {
+    const target = frameRef.current?.contentWindow;
+    if (!target || capturing) return;
+    setCapturing(true);
+    setError(null);
+    let done = false;
+    const timeout = window.setTimeout(() => finish(null), GENERATED_PREVIEW_CAPTURE_TIMEOUT_MS);
+
+    async function finish(dataUrl: string | null) {
+      if (done) return;
+      done = true;
+      window.clearTimeout(timeout);
+      window.removeEventListener('message', onMessage);
+      setCapturing(false);
+      if (!dataUrl) {
+        setError('Could not capture the preview. Try again once it has rendered.');
+        return;
+      }
+      try {
+        const blob = await (await fetch(dataUrl)).blob();
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(link.href), 0);
+      } catch {
+        setError('Could not download the preview screenshot.');
+      }
+    }
+
+    function onMessage(event: MessageEvent) {
+      if (event.source !== target) return;
+      const data = event.data as { source?: string; status?: string; data?: unknown } | null;
+      if (data?.source !== ART_PIECE_SANDBOX_MESSAGE_SOURCE) return;
+      if (data.status === 'screenshot' && typeof data.data === 'string') void finish(data.data);
+      else if (data.status === 'error') void finish(null);
+    }
+
+    window.addEventListener('message', onMessage);
+    target.postMessage(
+      {
+        source: 'art-piece-parent',
+        version: 1,
+        type: 'screenshot',
+        filename: 'preview.png',
+        includeInk: false,
+      },
+      '*',
+    );
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        className="piece-stage-button generated-editor-screenshot-button"
+        aria-label="Take preview screenshot"
+        title="Take preview screenshot"
+        onClick={capture}
+        disabled={capturing}
+      >
+        <PieceStageIcon name="screenshot" />
+        <span>{capturing ? 'Capturing…' : 'Screenshot'}</span>
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
+}
+
+function Generated3DEditorPreview({
+  source,
+  engine,
+  title,
+  testId,
+  isFullscreen,
+  onCloseFullscreen,
+  children,
+}: {
+  source: string;
+  engine: ArtPiece['engine'];
+  title: string;
+  testId: string;
+  isFullscreen: boolean;
+  onCloseFullscreen: () => void;
+  children?: ReactNode;
+}) {
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
+  const sandboxDoc = buildArtPieceSandboxDocument(source, engine);
+  return (
+    <section className="generated-editor-preview" aria-label={title} data-testid={testId}>
+      <h3>{title}</h3>
+      <iframe
+        ref={frameRef}
+        title={title}
+        data-testid={`${testId}-frame`}
+        sandbox={ART_PIECE_IFRAME_SANDBOX}
+        srcDoc={sandboxDoc}
+        style={{ width: '100%', height: 480, border: '1px solid #ccc' }}
+      />
+      {isFullscreen && (
+        <div
+          className="generated-3d-preview-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${title} fullscreen`}
+        >
+          <button
+            type="button"
+            className="generated-3d-preview-overlay-close"
+            aria-label="Close fullscreen preview"
+            title="Close fullscreen preview"
+            onClick={onCloseFullscreen}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+          <iframe
+            title={`${title} fullscreen`}
+            sandbox={ART_PIECE_IFRAME_SANDBOX}
+            srcDoc={sandboxDoc}
+            className="generated-3d-preview-overlay-frame"
+          />
+        </div>
+      )}
+      <div className="generated-3d-canvas-actions">
+        <GeneratedPreviewScreenshotButton
+          frameRef={frameRef}
+          filename={screenshotFilename(title)}
+        />
+        {children}
+      </div>
+    </section>
+  );
+}
 
 function formatTimestamp(iso: string): string {
   const date = new Date(iso);
@@ -139,6 +287,10 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const [manualHistory, setManualHistory] = useState<string[]>([]);
   const [manualHistoryIndex, setManualHistoryIndex] = useState(-1);
   const [selected3DId, setSelected3DId] = useState<string | null>(null);
+  const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
+  const [activeEditorPanel, setActiveEditorPanel] = useState<
+    'transform' | 'thumbnail' | 'revise' | 'delete' | 'description' | null
+  >(null);
   const [reviseError, setReviseError] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [refineRun, setRefineRun] = useState<import('../api/artPieces').ArtPieceRefineRun | null>(
@@ -546,6 +698,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
 
   return (
     <section
+      className="art-piece-editor-page"
       aria-labelledby="art-piece-editor-heading"
       data-editor-family={engineCapability.family}
       data-editor-engine={piece.engine}
@@ -560,64 +713,215 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           scene layers in the AI editor.
         </p>
       )}
-      <ArtPieceEditorToolAvailability
-        engine={piece.engine}
-        onActivate={(tool) => {
-          if (engineCapability.family === '2d') {
-            // #776: every 2D drawing tool opens the ink layer (a separate validated document composited
-            // over the piece) instead of appending fixed snippets to the generated source.
-            const inkTool = INK_TOOL_FOR[tool];
-            if (inkTool) openInk(inkTool);
-          } else if (
-            tool === 'add-shape' &&
-            (piece.engine === 'threejs' || piece.engine === 'aframe')
-          ) {
-            addManual3DPrimitive('add-box');
-          }
-        }}
-      />
-      <details className="editor-sound-details">
-        <summary>Sound</summary>
-        <SonicDefaultsPanel value={sonic} onChange={setSonic} />
-        <button
-          type="button"
-          onClick={() => void handleSaveSoundDefaults()}
-          disabled={versionSaving}
+      <div className="generated-3d-tools-group">
+        <ArtPieceEditorToolAvailability
+          engine={piece.engine}
+          onActivate={(tool) => {
+            if (engineCapability.family === '2d') {
+              // #776: every 2D drawing tool opens the ink layer (a separate validated document composited
+              // over the piece) instead of appending fixed snippets to the generated source.
+              const inkTool = INK_TOOL_FOR[tool];
+              if (inkTool) openInk(inkTool);
+            } else if (
+              tool === 'add-shape' &&
+              (piece.engine === 'threejs' || piece.engine === 'aframe')
+            ) {
+              addManual3DPrimitive('add-box');
+            } else if (tool === 'transform') {
+              setActiveEditorPanel((current) => (current === 'transform' ? null : 'transform'));
+            }
+          }}
         >
-          {versionSaving ? 'Saving sound defaults…' : 'Save sound defaults'}
-        </button>
-      </details>
-      {canEditGeneratedSource && !reviseCode && (
-        <p>
+          {(piece.engine === 'threejs' || piece.engine === 'aframe') && (
+            <div
+              className="generated-3d-action-items"
+              role="toolbar"
+              aria-label="3D editor actions"
+            >
+              <button
+                type="button"
+                aria-label="Add box"
+                title="Add box"
+                onClick={() => addManual3DPrimitive('add-box')}
+              >
+                <span aria-hidden="true">＋□</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Add sphere"
+                title="Add sphere"
+                onClick={() => addManual3DPrimitive('add-sphere')}
+              >
+                <span aria-hidden="true">＋○</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Add plane"
+                title="Add plane"
+                onClick={() => addManual3DPrimitive('add-plane')}
+              >
+                <span aria-hidden="true">＋▱</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Toggle transform inspector"
+                title="Toggle transform inspector"
+                aria-pressed={activeEditorPanel === 'transform'}
+                onClick={() =>
+                  setActiveEditorPanel((current) => (current === 'transform' ? null : 'transform'))
+                }
+              >
+                <PieceStageIcon name="controls" />
+              </button>
+              <button
+                type="button"
+                aria-label={
+                  isPreviewFullscreen ? 'Close fullscreen preview' : 'Expand preview to fullscreen'
+                }
+                title={
+                  isPreviewFullscreen ? 'Close fullscreen preview' : 'Expand preview to fullscreen'
+                }
+                aria-pressed={isPreviewFullscreen}
+                onClick={() => setIsPreviewFullscreen((current) => !current)}
+              >
+                <PieceStageIcon name="fullscreen" />
+              </button>
+              <button
+                type="button"
+                aria-label="Toggle thumbnail panel"
+                title="Toggle thumbnail panel"
+                aria-pressed={activeEditorPanel === 'thumbnail'}
+                onClick={() =>
+                  setActiveEditorPanel((current) => (current === 'thumbnail' ? null : 'thumbnail'))
+                }
+              >
+                <span aria-hidden="true">▣</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Toggle revise piece panel"
+                title="Toggle revise piece panel"
+                aria-pressed={activeEditorPanel === 'revise'}
+                onClick={() =>
+                  setActiveEditorPanel((current) => (current === 'revise' ? null : 'revise'))
+                }
+              >
+                <span aria-hidden="true">✦</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Toggle description panel"
+                title="Toggle description panel"
+                aria-pressed={activeEditorPanel === 'description'}
+                onClick={() =>
+                  setActiveEditorPanel((current) =>
+                    current === 'description' ? null : 'description',
+                  )
+                }
+              >
+                <span aria-hidden="true">ⓘ</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Toggle delete piece panel"
+                title="Toggle delete piece panel"
+                aria-pressed={activeEditorPanel === 'delete'}
+                onClick={() =>
+                  setActiveEditorPanel((current) => (current === 'delete' ? null : 'delete'))
+                }
+              >
+                <span aria-hidden="true">⌫</span>
+              </button>
+            </div>
+          )}
+        </ArtPieceEditorToolAvailability>
+      </div>
+      {(piece.engine === 'threejs' || piece.engine === 'aframe') && currentVersion?.source && (
+        <Generated3DEditorPreview
+          source={currentVersion.source}
+          engine={piece.engine}
+          title="Current 3D preview"
+          testId="art-piece-editor-current-preview"
+          isFullscreen={isPreviewFullscreen}
+          onCloseFullscreen={() => setIsPreviewFullscreen(false)}
+        >
+          <details className="editor-sound-details">
+            <summary>Sound</summary>
+            <SonicDefaultsPanel value={sonic} onChange={setSonic} />
+            <button
+              type="button"
+              onClick={() => void handleSaveSoundDefaults()}
+              disabled={versionSaving}
+            >
+              {versionSaving ? 'Saving sound defaults…' : 'Save sound defaults'}
+            </button>
+          </details>
+          {canEditGeneratedSource && !reviseCode && (
+            <button
+              type="button"
+              data-testid="art-piece-editor-edit-source"
+              onClick={openSourceEditor}
+            >
+              Edit source
+            </button>
+          )}
           <button
             type="button"
-            data-testid="art-piece-editor-edit-source"
-            onClick={openSourceEditor}
+            onClick={handleSaveMetadata}
+            disabled={metadataSaving}
+            data-testid="art-piece-editor-save-metadata"
           >
-            Edit source
+            {metadataSaving ? 'Saving…' : 'Save changes'}
           </button>
-        </p>
+        </Generated3DEditorPreview>
       )}
+      {!(piece.engine === 'threejs' || piece.engine === 'aframe') && (
+        <details className="editor-sound-details">
+          <summary>Sound</summary>
+          <SonicDefaultsPanel value={sonic} onChange={setSonic} />
+          <button
+            type="button"
+            onClick={() => void handleSaveSoundDefaults()}
+            disabled={versionSaving}
+          >
+            {versionSaving ? 'Saving sound defaults…' : 'Save sound defaults'}
+          </button>
+        </details>
+      )}
+      {!(piece.engine === 'threejs' || piece.engine === 'aframe') &&
+        canEditGeneratedSource &&
+        !reviseCode && (
+          <p>
+            <button
+              type="button"
+              data-testid="art-piece-editor-edit-source"
+              onClick={openSourceEditor}
+            >
+              Edit source
+            </button>
+          </p>
+        )}
       {engineCapability.family === '2d' && (
         <GeneratedInkPanel
           piece={piece}
           request={inkRequest}
+          onRequestDraw={() => openInk('pen')}
           onSaved={(created) => {
             setVersions((current) => [...current, created]);
             setPiece((current) => (current ? { ...current, current_version: created } : current));
           }}
         />
       )}
-      {(piece.engine === 'threejs' || piece.engine === 'aframe') && (
-        <Generated3DManualTools
-          engine={piece.engine}
-          source={reviseCode ?? piece.current_version?.source ?? ''}
-          selectedId={selected3DId}
-          onSelect={setSelected3DId}
-          onAdd={addManual3DPrimitive}
-          onTransform={transformManual3DObject}
-        />
-      )}
+      {(piece.engine === 'threejs' || piece.engine === 'aframe') &&
+        activeEditorPanel === 'transform' && (
+          <Generated3DManualTools
+            engine={piece.engine}
+            source={reviseCode ?? piece.current_version?.source ?? ''}
+            selectedId={selected3DId}
+            onSelect={setSelected3DId}
+            onTransform={transformManual3DObject}
+          />
+        )}
       {canEditGeneratedSource && reviseCode && (
         <div className="behavior-card-field" data-testid="art-piece-editor-code-panel">
           <label htmlFor="art-piece-editor-code">Editable source preview</label>
@@ -641,49 +945,38 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           </div>
         </div>
       )}
-      <p>
-        <Link to="/art-pieces/manage">Back to your art pieces</Link>
-      </p>
-
-      <PieceSlugField
-        current={piece.public_slug}
-        save={(slug) => updateArtPiece(piece.public_id, { public_slug: slug })}
-        onSaved={(updated) => {
-          setPiece((current) => (current ? { ...current, ...updated } : current));
-          const path = window.location.pathname;
-          if (updated.public_slug && /^\/users\/@[^/]+\/edit\/[^/]+$/.test(path)) {
-            navigate(path.replace(/[^/]+$/, encodeURIComponent(updated.public_slug)), {
-              replace: true,
-            });
-          }
-        }}
-      />
-
-      <div className="behavior-card-field">
-        <label htmlFor="art-piece-editor-title">Piece title</label>
-        <input
-          id="art-piece-editor-title"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
+      <div hidden={activeEditorPanel !== 'description'}>
+        <PieceSlugField
+          current={piece.public_slug}
+          save={(slug) => updateArtPiece(piece.public_id, { public_slug: slug })}
+          onSaved={(updated) => {
+            setPiece((current) => (current ? { ...current, ...updated } : current));
+            const path = window.location.pathname;
+            if (updated.public_slug && /^\/users\/@[^/]+\/edit\/[^/]+$/.test(path)) {
+              navigate(path.replace(/[^/]+$/, encodeURIComponent(updated.public_slug)), {
+                replace: true,
+              });
+            }
+          }}
         />
-        <label htmlFor="art-piece-editor-description">Piece description</label>
-        <textarea
-          id="art-piece-editor-description"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-        <button
-          type="button"
-          onClick={handleSaveMetadata}
-          disabled={metadataSaving}
-          data-testid="art-piece-editor-save-metadata"
-        >
-          {metadataSaving ? 'Saving…' : 'Save changes'}
-        </button>
-        {metadataError && <p role="alert">{metadataError}</p>}
+        <div className="behavior-card-field">
+          <label htmlFor="art-piece-editor-title">Piece title</label>
+          <input
+            id="art-piece-editor-title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+          <label htmlFor="art-piece-editor-description">Piece description</label>
+          <textarea
+            id="art-piece-editor-description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+          {metadataError && <p role="alert">{metadataError}</p>}
+        </div>
       </div>
 
-      {currentVersion && (
+      {currentVersion && activeEditorPanel === 'thumbnail' && (
         <div>
           <h3>Current version</h3>
           <img
@@ -723,33 +1016,35 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         </ul>
       </div>
 
-      <form onSubmit={handleRegenerate}>
-        <h3>Revise this piece</h3>
-        <p>
-          The refinement plan runs with bounded retries before a new version is stored. Select
-          declared parts or assets to scope the change.
-        </p>
-        <div className="behavior-card-field">
-          <MentionPromptField
-            id="art-piece-editor-prompt"
-            label="Describe the revision you want to generate"
-            value={prompt}
-            onChange={setPrompt}
-            options={targetOptions}
-            selectedIds={selectedTargetIds}
-            onSelectedIdsChange={setSelectedTargetIds}
-            disabled={revisePhase === 'pending'}
-          />
-          {!targetOptions.some((option) => option.type === 'part') && (
-            <p className="ai-target-empty-hint">
-              No declared parts yet; marked media assets remain available as targets.
-            </p>
-          )}
-        </div>
-        <button type="submit" disabled={revisePhase === 'pending' || prompt.trim().length === 0}>
-          {revisePhase === 'pending' ? 'Refining…' : 'Refine piece'}
-        </button>
-      </form>
+      {activeEditorPanel === 'revise' && (
+        <form onSubmit={handleRegenerate}>
+          <h3>Revise this piece</h3>
+          <p>
+            The refinement plan runs with bounded retries before a new version is stored. Select
+            declared parts or assets to scope the change.
+          </p>
+          <div className="behavior-card-field">
+            <MentionPromptField
+              id="art-piece-editor-prompt"
+              label="Describe the revision you want to generate"
+              value={prompt}
+              onChange={setPrompt}
+              options={targetOptions}
+              selectedIds={selectedTargetIds}
+              onSelectedIdsChange={setSelectedTargetIds}
+              disabled={revisePhase === 'pending'}
+            />
+            {!targetOptions.some((option) => option.type === 'part') && (
+              <p className="ai-target-empty-hint">
+                No declared parts yet; marked media assets remain available as targets.
+              </p>
+            )}
+          </div>
+          <button type="submit" disabled={revisePhase === 'pending' || prompt.trim().length === 0}>
+            {revisePhase === 'pending' ? 'Refining…' : 'Refine piece'}
+          </button>
+        </form>
+      )}
 
       {refineRun && (
         <section aria-label="Refinement plan" data-testid="art-piece-refine-plan">
@@ -792,6 +1087,10 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
               sandbox={ART_PIECE_IFRAME_SANDBOX}
               srcDoc={sandboxDoc}
               style={{ width: '100%', height: 480, border: '1px solid #ccc' }}
+            />
+            <GeneratedPreviewScreenshotButton
+              frameRef={iframeRef}
+              filename={screenshotFilename(`${piece.title} revision`)}
             />
             {revisePhase === 'ready' && (
               <>
@@ -851,23 +1150,28 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           </div>
         )}
 
-      <div>
-        <h3>Delete this piece</h3>
-        {!confirmingDelete && (
-          <button type="button" onClick={() => setConfirmingDelete(true)}>
-            Delete piece
-          </button>
-        )}
-        {confirmingDelete && (
-          <ArtPieceDeleteConfirm
-            title={piece.title}
-            deleting={deleting}
-            onConfirm={handleConfirmDelete}
-            onCancel={() => setConfirmingDelete(false)}
-          />
-        )}
-        {deleteError && <p role="alert">{deleteError}</p>}
-      </div>
+      {activeEditorPanel === 'delete' && (
+        <div>
+          <h3>Delete this piece</h3>
+          {!confirmingDelete && (
+            <button type="button" onClick={() => setConfirmingDelete(true)}>
+              Delete piece
+            </button>
+          )}
+          {confirmingDelete && (
+            <ArtPieceDeleteConfirm
+              title={piece.title}
+              deleting={deleting}
+              onConfirm={handleConfirmDelete}
+              onCancel={() => setConfirmingDelete(false)}
+            />
+          )}
+          {deleteError && <p role="alert">{deleteError}</p>}
+        </div>
+      )}
+      <p className="art-piece-editor-back-link">
+        <Link to="/art-pieces/manage">Back to your art pieces</Link>
+      </p>
     </section>
   );
 }

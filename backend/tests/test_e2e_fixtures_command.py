@@ -21,7 +21,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import call_command
 
 from scenes.management.commands.e2e_fixtures import E2E_USERS
-from scenes.models import ForkProvenance, Project, SceneVersion
+from scenes.models import ForkProvenance, Project, PublicProfile, SceneVersion
 
 BLANK_SCENE = json.loads(
     (
@@ -104,3 +104,18 @@ def test_cleanup_removes_fork_provenance_sourced_from_a_fixture_project():
 def test_cleanup_is_idempotent_when_nothing_to_clean():
     result = call_command("e2e_fixtures", "cleanup", "--json")
     assert result is None  # call_command prints to stdout; no exception is the assertion
+
+
+@pytest.mark.django_db
+def test_create_provisions_public_profiles_for_canonical_fixture_routes():
+    call_command("e2e_fixtures", "create", "--json")
+
+    for key, (username, _email) in E2E_USERS.items():
+        profile = PublicProfile.objects.get(user__username=username)
+        assert profile.handle == f"e2e_{key}"
+        assert profile.is_public is True
+
+    # Re-running the command keeps the canonical handles and visibility
+    # stable, which is required for repeated disposable browser runs.
+    call_command("e2e_fixtures", "create", "--json")
+    assert PublicProfile.objects.filter(handle="e2e_owner", is_public=True).count() == 1

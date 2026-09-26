@@ -3,6 +3,7 @@ import {
   getArtPieceEditorCapabilities,
   type ArtPieceEditorToolKey,
 } from './artPieceEditorCapabilities';
+import type { ReactNode } from 'react';
 import type { ArtPieceLibrary } from '../api/artPieces';
 import './ArtPieceEditorToolAvailability.css';
 
@@ -91,9 +92,11 @@ function ToolIcon({ tool }: { tool: ArtPieceEditorToolKey }) {
 export default function ArtPieceEditorToolAvailability({
   engine,
   onActivate,
+  children,
 }: {
   engine: ArtPieceLibrary;
   onActivate?: (tool: ArtPieceEditorToolKey) => void;
+  children?: ReactNode;
 }) {
   const capabilities = getArtPieceEditorCapabilities(engine);
   return (
@@ -136,6 +139,7 @@ export default function ArtPieceEditorToolAvailability({
             </div>
           );
         })}
+        {children}
       </div>
     </fieldset>
   );

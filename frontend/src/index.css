@@ -3851,6 +3851,270 @@ textarea:disabled {
   box-sizing: border-box;
 }
 
+.generated-3d-tools-group {
+  width: 100%;
+  max-width: 960px;
+  box-sizing: border-box;
+  padding: clamp(12px, 2vw, 20px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.generated-3d-tools-group > .behavior-card-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.generated-3d-tools-group .editor-tool-availability-grid {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 12px;
+  max-width: none;
+}
+
+.generated-3d-tools-group .editor-tool-availability-button,
+.generated-3d-tools-group .generated-3d-action-items button {
+  width: 100%;
+  height: 3.25rem;
+  min-height: 3.25rem;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.generated-3d-manual-tools {
+  width: min(100%, 960px);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: clamp(16px, 3vw, 28px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  overflow: hidden;
+}
+
+.art-piece-editor-page {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: clamp(20px, 4vw, 52px) clamp(12px, 3vw, 32px) 32px;
+  overflow-x: clip;
+}
+
+.art-piece-editor-page > h2 {
+  margin-top: 0;
+}
+
+.generated-3d-action-items {
+  display: contents;
+}
+
+.generated-3d-action-items button {
+  display: inline-grid;
+  min-width: 44px;
+  min-height: 44px;
+  place-items: center;
+  padding: 8px 12px;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.generated-3d-canvas-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+}
+
+.generated-3d-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  background: #090b12;
+}
+
+.generated-3d-preview-overlay-frame {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: min(calc(100vw * 9 / 16), calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
+  border: 1px solid var(--border);
+  background: #000;
+}
+
+.generated-3d-preview-overlay-close {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 1;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-raised, #191b26);
+  color: var(--text-color, #f5f6fb);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.generated-3d-preview-overlay-close:hover,
+.generated-3d-preview-overlay-close:focus-visible {
+  border-color: var(--accent-color, #b88cff);
+}
+
+.generated-3d-canvas-actions .editor-sound-details {
+  margin: 0;
+  height: 44px;
+}
+
+.generated-3d-canvas-actions .editor-sound-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised, #191b26);
+  color: var(--text-color, #f5f6fb);
+  cursor: pointer;
+  list-style: none;
+}
+
+.generated-3d-canvas-actions .editor-sound-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.generated-3d-canvas-actions .editor-sound-details > summary::before {
+  content: '♪';
+  font-size: 1.15em;
+}
+
+.generated-3d-canvas-actions .editor-sound-details[open] > summary {
+  border-color: var(--accent-color, #b88cff);
+}
+
+.generated-3d-canvas-actions button,
+.generated-3d-canvas-actions summary {
+  min-height: 44px;
+}
+
+.generated-3d-manual-tools h3,
+.generated-3d-manual-tools p {
+  max-width: 70ch;
+}
+
+.generated-3d-primitive-actions,
+.generated-3d-transform-grid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.generated-3d-primitive-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 16px 0;
+}
+
+.generated-3d-manual-tools select {
+  width: min(100%, 420px);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.generated-3d-manual-tools fieldset {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 18px 0 0;
+  padding: clamp(12px, 2vw, 20px);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.generated-3d-transform-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.generated-3d-transform-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.generated-3d-transform-grid input {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.generated-3d-manual-tools fieldset > button {
+  margin-top: 16px;
+}
+
+@media (max-width: 767px) {
+  .generated-3d-tools-group {
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  .generated-3d-tools-group .editor-tool-availability-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .generated-3d-canvas-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .generated-3d-canvas-actions > *,
+  .generated-3d-canvas-actions button,
+  .generated-3d-canvas-actions summary {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .generated-3d-manual-tools {
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  .generated-3d-primitive-actions,
+  .generated-3d-transform-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .generated-3d-manual-tools button,
+  .generated-3d-manual-tools select,
+  .generated-3d-manual-tools input {
+    min-height: 44px;
+  }
+}
+
 /* Task 55: the export configuration dialog (`ExportConfigDialog.tsx`) had
    no CSS rule at all — it rendered as an unstyled block with no visual
    separation from the rest of the panel it's mounted in, and its
@@ -6464,6 +6728,38 @@ select.ai-proposal-field-full-width {
   flex-direction: column;
   gap: 8px;
   width: 100%;
+}
+
+.generated-ink-mode {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+}
+
+.generated-ink-mode button {
+  border: 1px solid currentColor;
+  border-radius: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  background: transparent;
+  color: inherit;
+}
+
+.generated-ink-mode button.is-active {
+  background: currentColor;
+  color: Canvas;
+}
+
+.generated-ink-mode button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.generated-ink-mode-reason,
+.generated-ink-mode-note {
+  font-size: 0.875rem;
+  opacity: 0.8;
 }
 .ink-editor-bar {
   display: flex;

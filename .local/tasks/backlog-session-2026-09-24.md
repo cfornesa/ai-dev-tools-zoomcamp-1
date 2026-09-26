@@ -3952,6 +3952,459 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Final reconciliation — 2026-09-26 — NOT READY / OPEN FOLLOW-UPS
+
+- Current GitHub open inventory: #887, #886, #874, #862, #861, #860, #859,
+  #858, #857, #856, #847, and #788. #883 and #885 are closed with PASS;
+  #853–#855 are closed.
+- #887 has a local implementation and green full checks, but Docker Buildx
+  permissions prevented rebuilding the browser image, so its active-Chrome
+  verification is incomplete. This blocks exact editor motion closure on
+  #856–#861.
+- Production readiness remains NOT READY. No production publish, production
+  database mutation, secret/auth change, or push was performed in this
+  continuation. #886/#847 and #788/#874 retain their documented data/external
+  blockers.
+- Session completion is INCOMPLETE. The next transaction is #857 after the
+  #887 browser proof; follow-up audit is recorded in the preceding readiness
+  and completion entries.
+
+## Production-readiness — 2026-09-26 — NOT READY
+
+- Local quality: PASS. `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`
+  completed with backend 1710 passed/39 skipped and frontend 282 files/3028
+  tests; lint, format, typecheck, and build completed. No migration-bearing
+  production publish was attempted.
+- Browser/release boundary: BLOCKED. #887's new editor screenshot action is
+  source-tested but not browser-verified because the disposable Compose
+  frontend image cannot rebuild: Docker Buildx activity-directory permission
+  failure. #856–#861 therefore remain open and their exact editor motion
+  criteria are not release evidence.
+- Production/data boundary: no production code publish, production database
+  mutation, or secret/auth change was performed in this continuation. #788,
+  #874, #847/#886 remain separately gated or dependency-blocked.
+- Decision: not production-ready; do not publish this batch.
+- Provenance: production-readiness / Codex-GPT-5 / medium / substituted: no.
+
+## Session-completion — 2026-09-26 — INCOMPLETE / OPEN FOLLOW-UPS
+
+- Counts: #883 and #885 closed with QA PASS; #856–#861 remain open with
+  `VALID WITH GAPS`; #887 is open with source/test PASS but browser verification
+  blocked; #886/#847 remain dependency-blocked; #788 and #874 remain
+  production/data-boundary work; #853–#855 and #862 remain open follow-ups.
+- Routing audit: verification-only issues were not forced through an
+  implementation stage; #887 was routed as mechanical QA infrastructure and
+  implemented locally; no new vendor dependency or production mutation was
+  introduced.
+- Evidence audit: local Compose/active Chrome evidence is explicitly separated
+  from production evidence. No closed issue was reopened. New gap #887 is
+  linked from the affected engine issues and recorded in `docs/tasks.md`.
+- Follow-up audit: rebuild or source-sync the disposable frontend, verify the
+  new editor screenshot download at 1280x720 and 375x667, run #885's decoder,
+  then rerun #856–#861. Only after those terminal results should #862 aggregate
+  the workflow verdicts; keep #788/#874/#847/#886 under their current gates.
+- Provenance: session-completion / Codex-GPT-5 / medium / substituted: no.
+
+## Backlog transaction — #887 — 2026-09-26 — OPEN / QA BLOCKED
+
+- Groom: criterion-ready QA infrastructure gap, deduplicated from #885.
+- Engineer: implemented the editor Preview-mode icon-first screenshot action
+  in `GeneratedInkPanel`; it reuses the trusted sandbox screenshot message,
+  downloads a PNG, and leaves Draw mode frozen and separate.
+- QA self-review: source/tests PASS, browser verification BLOCKED. Full
+  `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed (backend 1710
+  passed/39 skipped; frontend 282 files/3028 tests), but Docker Compose's
+  frontend image rebuild failed before execution because Buildx could not write
+  its activity directory. The active browser therefore still served the
+  pre-change image, so no browser pass was claimed.
+- Reconcile: GitHub QA comment #887 comment 5844355588 records the matrix and
+  keeps #887 open pending source-synced/browser verification. This blocks the
+  editor motion criterion on #856–#861; no production change occurred.
+- Provenance: groom/engineer/qa/reconcile Codex-GPT-5/medium; substituted: no.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #857
+
+- Open inventory remains #887 plus #874, #862, #861, #860, #859, #858, #857,
+  #856, #855, #854, #853, #847, #788, and #886. #883 and #885 are closed.
+- Duplicate/dependency audit: #887 is now the single editor-stage artifact
+  implementation/verification blocker; #885 remains the reusable decoder.
+  Engine and surface issues stay separate and are not closed by source tests.
+- Routing: #857 is verification-only, but its editor motion criterion must
+  wait for #887 browser proof. No production claims or production mutation.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Backlog transaction — #856 — 2026-09-26 — OPEN / QA GAP RECONCILED
+
+- Groom: verification-only criterion-ready issue; recreated a disposable local
+  SVG fixture because the prior named fixture was absent. No duplicate found
+  for the engine-specific workflow.
+- Engineer: N/A; no product implementation was authorized or required by the
+  issue. The local fixture source was authored through the UI and saved as
+  version 2.
+- QA self-review: FAIL / VALID WITH GAPS. Active Chrome rendered the authored
+  SVG and defaults at 1280x720 and 375x667, with clean console and prior sound
+  and keyboard evidence. The exact decoded editor-preview pixel delta remains
+  unverified because the iframe has no supported screenshot/file artifact path.
+- Reconcile: QA comment #856 comment 5844297668 records the criterion matrix;
+  #887 was created and linked as the criterion-ready capture-path gap. #856
+  remains open; no issue was closed and no production data changed.
+- Provenance: groom/qa/reconcile Codex-GPT-5/medium; engineer N/A;
+  substituted: no.
+
+## Backlog transaction — #887 — 2026-09-26 — OPEN / BLOCKED ON IMPLEMENTATION
+
+- Groom: new gap deduplicated against #885; #885 computes decoded diffs,
+  whereas #887 owns the missing editor-stage image artifact handoff.
+- Engineer/QA: not yet run; routing is mechanical if an existing local browser
+  capture path can be exposed, otherwise complex editor-runtime work.
+- Reconcile: linked from #856 and #857 and blocks #856–#861's editor motion
+  criterion. No production data or deployment changes.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #857
+
+- Open inventory includes #887 plus the pre-existing #874, #862, #861, #860,
+  #859, #858, #857, #856, #855, #854, #853, #847, #788, and #886.
+- Duplicate audit: #887 is the editor-stage artifact handoff; #885 is the
+  decoded comparison helper. #856–#861 remain engine/surface verification
+  issues and are not merged into one issue.
+- Routing: #857 is verification-only; continue using active Chrome and local
+  disposable fixtures. Do not claim closure while its editor motion artifact
+  criterion is blocked by #887.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Backlog transaction — #883 — 2026-09-26 — CLOSED
+
+- Groom: criterion-ready verification/fixture issue; duplicate audit found no
+  overlap with #853–#862, and the absent local fixture was recreated only in
+  disposable Compose.
+- Engineer: corrected the disposable published p5.js fixture source and
+  recorded the current named layer markers in version 5. No production code or
+  production data changed.
+- QA self-review: PASS. Active Chrome evidence at 1280x720 and 375x667 on
+  regular and immersive routes produced exact decoded deltas of 2.1308865%,
+  1.8840603%, 3.7560221%, and 3.4044596%, respectively; all are within the
+  0.1%–15% contract. API source/version and visual/console evidence were
+  recorded in GitHub comment #883 comment 5844274534. Temporary headless
+  Playwright was host-blocked by macOS Mach-port permissions and was not used
+  as product evidence.
+- Reconcile: GitHub QA comment #883 comment 5844274534 is criterion-complete;
+  #883 was closed. Evidence boundary is local disposable fixture only; #856–
+  #862 remain open for their own production/browser contracts.
+- Provenance: groom Codex-GPT-5/medium; engineer Codex-GPT-5/medium;
+  qa-self-review Codex-GPT-5/medium; reconcile Codex-GPT-5/medium;
+  substituted: no.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #856
+
+- Open inventory now excludes closed #883 and #885; remaining open work is
+  #874, #862, #861, #860, #859, #858, #857, #856, #855, #854, #853, #847,
+  #788, and dependency-blocked #886.
+- Duplicate/dependency audit: #853–#858 are distinct verification contracts;
+  #883's local fixture evidence does not close them. #886 remains the
+  owner-scoped media-delivery contract blocking #847. #874 and #788 remain
+  separate production/data-boundary items.
+- Routing: #856 is the next independent verification transaction using active
+  Chrome; no implementation is planned unless repeatable product behavior
+  fails. Production evidence remains separate from local evidence.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Production-readiness — 2026-09-26 — NOT READY
+
+- Local deployment/checks: PASS for the current checkout; full `make check`
+  passed after #885 and the Compose/browser stack was usable.
+- Approved-browser verification: OPEN FOLLOW-UP. #856, #857, and #858 still
+  lack one or more exact decoded motion/audio/mobile criteria; #885 is closed
+  and provides the next capture path. #883 remains open for its p5 fixture
+  motion contract.
+- Intended functionality: OPEN FOLLOW-UP. #859–#862 depend on the engine
+  verification matrix and cannot be treated as complete from regular-view
+  evidence alone.
+- Production/Replit: BLOCKED/OPEN. #874 is an unresolved production editor
+  record mismatch; #788 remains separately blocked on a safe production-shell
+  import/rollback path. No production mutation was performed in this batch.
+- Result: NOT READY. Exact next actions are to rerun #856–#858/#883 with saved
+  captures through #885, then process #859–#862; separately resolve the
+  authorized production boundaries for #874/#788.
+- Provenance: readiness gate run by Codex/GPT-5 medium as the owner-authorized
+  substitution for the rostered Claude tier; substitution is explicit.
+
+## Session-completion — 2026-09-26 — INCOMPLETE / OPEN FOLLOW-UPS
+
+- Manifest reconciliation: #885 completed/closed; #856–#858 and #883 are
+  open verification follow-ups; #859–#862 are open dependents; #874, #847,
+  and #788 remain open. Missing-terminal-status count for discovered work is
+  nonzero because this session has not yet exhausted the manifest.
+- Follow-up audit: #885 covers only decoded local screenshot evidence. No
+  actionable failure is unlinked: product/runtime issues remain on their
+  owning issues, and production/data boundaries remain on #874/#788.
+- Routing audit: verification issues used Codex/GPT-5 medium substitutions;
+  second-opinion review was not run. #885 mechanical implementation used a
+  Codex/GPT-5 medium substitution for Opencode Go/kimi-k3. Readiness used the
+  explicit owner-authorized Codex/GPT-5 substitution above.
+- Handoff: continue with #856–#858/#883 using `scripts/pixel-diff.py`; then
+  process #859–#862. Do not publish or mutate production from this batch.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #886
+
+- New open inventory addition: #886 is a criterion-ready prerequisite for
+  #847. #847 was re-audited and remains dependency-blocked because the stated
+  existing media system has no owner-scoped public retrieval or ZIP-bundling
+  contract.
+- Duplicate audit: no existing issue covers the missing public audio-asset
+  delivery/authorization/export contract; #556–#568 are the related media
+  history but do not provide this criterion-ready contract.
+- Routing: #886 is stage 2b complex data/authorization/export work; #847 must
+  remain deferred until #886 is reconciled. No production data action is
+  authorized.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Transaction #885 reconciliation — 2026-09-26 — QA PASS / CLOSED
+
+- Groom: new, criterion-ready QA-infrastructure gap after duplicate audit;
+  linked from #856, #857, #858, and #883.
+- Engineer: implemented `scripts/pixel-diff.py` using the already-declared
+  backend Pillow dependency; no new dependency, route, secret, or production
+  mutation. Codex/GPT-5 medium substitution for rostered Opencode Go/kimi-k3.
+- QA self-review: PASS. Ruff check, Ruff format-check, `git diff --check`,
+  and generated 4x4 fixture/crop examples passed. The helper outputs decoded
+  RGBA pixel counts and JSON evidence metadata.
+- Reconcile: QA comment
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/885#issuecomment-5844138391
+  records `## QA: PASS`; issue closed. Local implementation remains
+  uncommitted because the sandbox cannot update `.git/index`; no production
+  claim is made.
+- Evidence boundary: repository-local helper only; dependent browser issues
+  must rerun their own saved captures before closure.
+- Full relevant-suite verification after implementation: `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`
+  passed — backend 1710 passed/39 skipped; frontend 282 files/3028 tests;
+  lint, format-check, typecheck, and build-stage checks passed (pre-existing
+  lint warnings only).
+
+## Transaction #856 reconciliation — 2026-09-26 — QA FAIL / FOLLOW-UP #885
+
+- Groom: criterion-ready verification issue; dependency #882 is now closed and
+  the prior editor freeze conflict was re-tested against its dual-mode contract.
+  Duplicate audit found no existing generic decoded pixel-diff capture issue.
+- Engineer: verification-only; no product source change. The active editor
+  already exposes `Preview animation` and `Draw ink` with explicit state.
+- QA self-review: PASS for the authored SVG, both responsive editor surfaces,
+  authored sound-default values, public controls/audio workflow, and the dual
+  mode contract. The exact decoded editor pixel percentage remains
+  unverified because the CUA/CDP evaluator has no usable image decoder or file
+  handoff; byte differences are not a pixel metric.
+- New gap: #885 provides the criterion-ready local capture/decoder contract
+  and links back to #856 and #883. This was created only after the duplicate
+  audit.
+- Reconcile: QA comment
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/856#issuecomment-5844115559
+  records `VALID WITH GAPS`, local-only provenance, and the exact evidence
+  boundary. #856 remains open pending #885; no production claim or mutation.
+- Provenance: groom/task-distillation and QA self-review by Codex/GPT-5,
+  medium effort, substituted for rostered services; active Chrome plus local
+  disposable Compose.
+
+## Transaction #857 reconciliation — 2026-09-26 — QA FAIL / FOLLOW-UP #885
+
+- Groom: verification-only A-Frame transaction; prior #879 runtime fix and
+  all named sound dependencies are closed. No duplicate capture issue existed.
+- Engineer: N/A; no product change.
+- QA self-review: prior active-Chrome evidence passes scene, desktop/mobile
+  rendering, defaults, sound/ambient/keyboard/reset, toolbar, and console
+  criteria. The exact decoded pixel delta remains unverified.
+- Reconcile: QA comment
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/857#issuecomment-5844122765
+  records `VALID WITH GAPS`; #857 remains open pending #885. Local-only.
+
+## Transaction #858 reconciliation — 2026-09-26 — QA FAIL / FOLLOW-UP #885
+
+- Groom: verification-only Three.js transaction; prior #880 runtime fix is
+  closed. No duplicate capture issue existed.
+- Engineer: N/A; no product change.
+- QA self-review: desktop runtime/defaults/sound evidence passes, but the
+  complete mobile/audio matrix and exact decoded pixel delta were not captured
+  in this transaction.
+- Reconcile: QA comment
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/858#issuecomment-5844123598
+  records `VALID WITH GAPS`; #858 remains open. Local-only; no production
+  evidence or mutation.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #885
+
+- Open inventory: #885, #883, #874, #862, #861, #860, #859, #858, #857,
+  #856, #847, and #788. #856–#858 are now explicitly reconciled as
+  `VALID WITH GAPS`; none was closed because a required criterion remains
+  unverified.
+- Duplicate audit: #885 is new and narrowly owns the missing decoded
+  screenshot/pixel-diff evidence path; #883 owns the p5 fixture motion source
+  itself, while #874/#788 remain production/data boundaries.
+- Order rationale: implement or verify #885 first because it is a shared QA
+  blocker for #856–#858 and #883; do not mutate product or production data
+  while the evidence path is unresolved.
+- Routing: #885 is verification/QA infrastructure, mechanical only if a
+  repository script/test is needed. Next action: inspect existing Playwright
+  helpers and add a dependency-free capture/diff path if it can be done with
+  existing tooling.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Production-readiness — 2026-09-26 — NOT READY
+
+- #882 and #884 pass local Compose/Chrome criteria, but their current
+  implementation/docs changes are not committed or pushed because the local
+  Git index is unwritable and GitHub Desktop is unavailable while macOS is
+  locked. No deployed revision or production URL evidence is claimed.
+- The remaining open set still includes #883's unresolved motion/capture
+  contract, #874's production private/public record mismatch, #788's guarded
+  production import, and dependent Chrome verification issues #856–#862.
+- No migration-bearing publish, production data write, secret change, or
+  deployment was performed in this transaction.
+
+## Session-completion — 2026-09-26 — INCOMPLETE / OPEN FOLLOW-UPS
+
+- Counts: two additional local transactions (#882 and #884) were reconciled
+  with QA PASS comments and closed; 11 issues remain open. No closed issue was
+  reopened.
+- Routing audit: #882 was implementation-complex dual-mode editor work;
+  #884 was implementation-mechanical icon/tooltip work; #883 remains a
+  fixture/capture verification transaction; #874/#788 retain production/data
+  boundaries; #856–#862 remain dependent Chrome verification work.
+- Follow-up audit: commit the validated #882 implementation plus ledger/docs
+  through the safe Desktop path after unlock, then continue #883 before any
+  production-readiness claim. Preserve local-only evidence until a deployment
+  is explicitly authorized and verified.
+- Handoff: the requested end state of zero open issues is not reached.
+
+## Transaction #883 reconciliation — 2026-09-26 — BLOCKED / VERIFICATION BOUNDARY
+
+- Groom: criterion-ready fixture/capture issue; no duplicate or child issue
+  needed. The active Chrome session is available and the local fixture is
+  restored to snapshotted version 1545.
+- Engineer: no product or fixture source change authorized without a decoded
+  pixel result. The current source still has the original low-motion values.
+- QA self-review: FAIL for the motion criterion only. Active Chrome rendered a
+  nonblank stage at 1280x720 and CDP captured the stage twice one second apart,
+  but the bridge could not decode the PNG payload to the required percentage;
+  prior source-change attempts are already recorded as below-bound and restored.
+- Reconcile: GitHub QA comment `#883 comment 5844081464`; issue remains open.
+  Blocker class is verification/workflow boundary, owner is the next supported
+  image-decoder/CDP runner, and the exact next action is to measure the crop at
+  1280x720 and 375x667 on regular and immersive routes before altering the
+  disposable fixture.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #883
+
+- Open inventory: #883, #874, #862, #861, #860, #859, #858, #857, #856,
+  #847, and #788. #882 and #884 are closed with local QA PASS comments.
+- Duplicate audit: the direct Draw-mode accessibility and icon-first editor
+  discoverability gaps are resolved in #882 and #884; no new duplicate issue
+  is needed. #883 remains the fixture-motion/capture-contract transaction,
+  not a reason to reopen either closed issue.
+- Routing: #883 is verification/fixture correction. Its prior source-motion
+  attempts failed the pixel lower bound despite immutable-source changes, so
+  the next pass must validate the capture contract before changing fixture
+  data again. #874 and #788 retain their separate production/data boundaries.
+- Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Task-distillation refresh — 2026-09-26 — RECONCILED / NEXT TRANSACTION #884
+
+- User gap: the generated-piece editor's `Editor tools` panel exposes text
+  buttons instead of the icon-first controls expected from comparable drawing
+  and animation editors, and the drawing tools are consequently harder to
+  scan and discover.
+- Standard confirmation: Figma documents grouped toolbar shape/creation tools;
+  Adobe Animate documents selecting tools from icon-based Tools-panel entries;
+  Blender documents a toolbar whose expanded form exposes icon and text. The
+  common contract is icon-first controls with contextual labels, not
+  permanently visible prose on every compact tool button.
+- Duplicate audit: no open issue covers this panel. Closed #143/#172 cover the
+  structured `EditorWorkspace` toolbar, and #666 covers per-engine capability
+  enablement. New criterion-ready issue #884 was created:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/884
+- Closure contract: at the generated-piece editor `Editor tools` entry point,
+  every tool is an icon-first button; accessible names and hover/focus
+  tooltips expose the exact tool label; disabled reasons remain associated and
+  discoverable; existing test IDs/click routing/capability policy remain
+  unchanged; screenshots are inspected at 1280x900 and 375x812; focused tests,
+  typecheck, lint, format-check, and build pass.
+- Scope/routing: Stage 2a mechanical React/CSS, no dependency, API, schema,
+  migration, route, production-data, or deployment work. Stage 3 second
+  opinion is not requested. The latest uncommitted #882 implementation is
+  pre-existing session work and remains separate from #884; it must not be
+  absorbed into this transaction.
+- Dependency/order: #884 is independent and is the next closure-sized issue;
+  no new blocker or follow-up issue was discovered in distillation.
+- Provenance: task-distillation / Codex / GPT-5 / medium / substituted: no.
+
+### #884 transaction manifest
+
+| Issue | URL | Dependencies | Scope | Status | Routing | Blocker / next action |
+|---|---|---|---|---|---|---|
+| #884 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/884 | none | Generated-piece editor tool availability panel only | GROOMED | 2a mechanical | none; engineer icon-first controls, focused tests, then QA at named viewports |
+
+### #884 transaction — 2026-09-26
+
+- Groom: criterion-ready Stage 2a mechanical React/CSS issue; duplicate audit
+  found only closed #143/#172 (structured editor toolbar) and #666
+  (capability policy), so #884 remained the correct new issue. Stage 1 owner:
+  Codex / GPT-5 / medium / substituted: yes for rostered GPT-5.6 Luna.
+- Engineer: `ArtPieceEditorToolAvailability` now renders inline SVG icon
+  buttons, stable accessible names, CSS hover/focus tooltips, and preserved
+  disabled capability reasons. The CSS was isolated to the component so the
+  pre-existing #882 work in `index.css` stayed out of the issue commit.
+  Focused regression coverage asserts all eight icons/labels/tooltips and
+  disabled reason association. Commit `6485592`. Stage 2a owner: Codex /
+  GPT-5 / medium / substituted: yes for Opencode Go / kimi-k2.7-code.
+- Stage 3: not run; not requested and no independent-family review is credited.
+- QA self-review: `## QA: PASS`, GitHub comment
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/884#issuecomment-5843941535.
+  Focused test: 4 passed. `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`
+  passed backend 1710/39 skipped, frontend 282 files/3027 tests, lint,
+  format, and typecheck. `cd frontend && npm run build` and `git diff --check`
+  passed. Active Chrome local Compose inspected the committed bundle at exact
+  1280x900 and 375x812; desktop tooltip focus showed `Add line`, and the
+  mobile icon grid did not overflow. Stage 4 owner: Codex / GPT-5 / medium /
+  substituted: yes for Claude Sonnet 5.
+- Reconciliation: issue #884 was closed after every local criterion passed.
+  No production publish or production data action was in scope. Commit
+  `6485592` remains one commit ahead of `origin/main`; safe shell push failed
+  because `.git/FETCH_HEAD` is not writable, and GitHub Desktop is blocked by
+  the currently locked Mac. This is an explicit delivery handoff, not claimed
+  remote evidence.
+
+### Production-readiness refresh — 2026-09-26 — NOT READY
+
+- #884 local implementation readiness: PASS. The committed bundle and exact
+  Chrome viewport evidence match the acceptance contract; no deployment or
+  production criterion exists for this issue.
+- Repository readiness: PASS for the completed #884 checks; the required
+  project batch remains NOT READY because open #874, #883, #788, #847,
+  #853–#862, and #882 retain their previously recorded production, browser,
+  data, or implementation evidence boundaries.
+- Delivery boundary: #884 is closed in GitHub but its commit is local-only
+  until the authorized GitHub Desktop push can occur after macOS unlock. No
+  production publish was attempted.
+- Readiness owner: Codex / GPT-5 / medium / substituted: yes for rostered
+  Claude Opus 5/Sonnet 5; owner authorization for this GPT-5 substitution is
+  the standing session authorization in the task context.
+
+### Session-completion refresh — 2026-09-26 — INCOMPLETE / OPEN FOLLOW-UPS
+
+- #884 is terminal CLOSED/QA PASS; no issue was reopened and no production
+  data changed. The goal is not complete: remaining open inventory and exact
+  next actions are preserved in the prior refreshes above, with #882 now the
+  next independent implementation transaction after this UI issue.
+- Counts for this refresh: discovered 1 new issue, completed 1, blocked 0,
+  dependency-blocked 0, handed-off 0, missing-terminal-status 0. Newly
+  discovered actionable follow-ups: 1 created (#884), 0 reused, 0 pending
+  authorization.
+- Routing audit: #884 grooming/engineering/QA/readiness used Codex / GPT-5 /
+  medium substitutions as recorded; stage 3 was not run. No unrecorded stage
+  owner is being inferred.
+- Follow-up audit: the push blocker is a delivery/environment boundary, not a
+  product defect; exact next action is unlock macOS and push `6485592` through
+  signed-in GitHub Desktop, then verify `origin/main`. The separate #882
+  uncommitted work remains preserved and is not part of #884.
+
 ## Transaction #883 — 2026-09-26 — QA FAIL / BLOCKED
 
 - Groom: task-distillation found a real fixture-level motion gap in #859's
@@ -4572,6 +5025,25 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   because the remaining blockers require external browser capability,
   production data authorization, or production-shell access.
 
+## Transaction #882 reconciliation — 2026-09-26 — QA PASS / LOCAL ONLY
+
+- Groom: dual-mode editor contract confirmed by the owner; no separate testing
+  issue created. Draw mode freezes the generated source and isolates ink;
+  Preview mode restores authored animation and preserves unsaved ink.
+- Engineer: `GeneratedInkPanel` now completes the iframe freeze before hiding
+  the preview, and reuses an existing ink session when switching back from
+  Preview. Focused coverage includes direct Draw entry and session reuse.
+  Implementation remains uncommitted because the local Git index is not
+  writable and GitHub Desktop is unavailable while macOS is locked.
+- QA self-review: PASS on local Compose + active Chrome. Exact 1280x720 and
+  375x667 browser checks showed the frozen canvas, ink controls, explicit mode
+  state, nonblank Preview iframe, unsaved-ink status, and preserved Undo state
+  after returning to Draw. Focused test 3/3 passed; full
+  `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed with backend
+  1710 passed/39 skipped and frontend 282 files/3028 tests; build and
+  `git diff --check` passed.
+- Reconcile: no production publish, push, or deployed-URL evidence is claimed.
+
 ## Transaction #873 reconciliation — 2026-09-26 — QA PASS / DEPLOYED
 
 - Groom: unchanged criterion-ready complex issue; no duplicate created. The
@@ -4654,3 +5126,54 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   375x667 screenshots, motion interval, sound activation/defaults/keyboard
   trace, toolbar, and a criterion matrix with the local evidence boundary.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
+
+## Final reconciliation — 2026-09-26 — NOT READY / OPEN FOLLOW-UPS
+
+- Current GitHub open inventory: #887, #886, #874, #862, #861, #860, #859,
+  #858, #857, #856, #847, and #788. #883 and #885 are closed with PASS;
+  #853–#855 are closed.
+- #887 has a local implementation and green full checks, but Docker Buildx
+  permissions prevented rebuilding the browser image, so active-Chrome
+  verification is incomplete. This blocks exact editor-motion closure on
+  #856–#861.
+- Production readiness remains NOT READY. No production publish, production
+  database mutation, secret/auth change, or push was performed in this
+  continuation. #886/#847 and #788/#874 retain their documented blockers.
+- Session completion is INCOMPLETE. Next transaction is #857 after #887
+  browser proof; follow-up audit is recorded above.
+
+## Task-distillation / backlog-session continuation — 2026-09-26 — RECONCILED
+
+### Transaction: #889 — E2E fixture public profiles
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex-GPT-5 / medium | no | Criterion-ready; duplicate audit found no existing fixture-profile issue |
+| engineer | Codex-GPT-5 / medium; rostered complex Ollama Cloud kimi-k3 | yes | `e2e_fixtures create` now get-or-creates public profiles for all fixture users |
+| qa-self-review | Codex-GPT-5 / medium; rostered Claude Sonnet 5 medium | yes | Focused command tests 4 passed; canonical owner route loaded in active Chrome |
+| reconcile | Codex-GPT-5 / medium | no | QA PASS comment `#889 comment 5844535644`; issue closed |
+
+### Transaction: #888 — Generated 3D editor preview and screenshot
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex-GPT-5 / medium | no | Criterion-ready; scoped to generated 3D editor, no production or API changes |
+| engineer | Codex-GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | Current Three.js/A-Frame sandbox preview and icon-first capture added; SVG capture freezes live animation state |
+| qa-self-review | Codex-GPT-5 / medium; rostered Claude Sonnet 5 medium | yes | Active Chrome rendered A-Frame scene and downloaded inspected PNG; full check passed |
+| reconcile | Codex-GPT-5 / medium | no | QA PASS comment `#888 comment 5844535644`; issue closed |
+
+### Transaction: #890 — Generated 3D editor responsive information architecture
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex-GPT-5 / medium | no | New after duplicate audit; incorporates responsive controls, unified editor-tool grid, toggle panels, action-row order, and shell padding |
+| engineer | Codex-GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | Unified all editor actions into one direct-child responsive grid; added toggle panels, canvas action row, Sound styling, metadata separation, and mobile shell padding |
+| qa-self-review | Codex-GPT-5 / medium; rostered Claude Sonnet 5 medium | yes | Active Chrome verified 375x812 and 1280x900; no document overflow; canonical route renders scene; final full check pending at ledger update |
+| reconcile | Codex-GPT-5 / medium | no | OPEN until final full-check output and final QA comment; no production publish authorized |
+
+### Current inventory / routing audit
+
+- Closed in this continuation: #856, #857, #887, #888, #889.
+- Open implementation/verification follow-up: #890.
+- External/data-boundary work remains open: #886, #874, #862, #861, #860, #859, #858, #847, #788.
+- No production data, secrets, auth settings, or deployment were changed in these transactions.

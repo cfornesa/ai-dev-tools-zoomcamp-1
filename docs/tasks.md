@@ -24021,6 +24021,19 @@ Addendum 6 update: #814 closed; added #817-#821 (see distillation doc). Still di
 | #828 | Production schema missing PublicProfile image-data columns after publish | 2b | CLOSED / QA PASS; authorized Replit Production Database additive repair and live API/browser verification |
 | #829 | Canonical immersive 3D separates Share/Embed actions from bordered version details and preserves structural headings | 2a | IN IMPLEMENTATION / local and Compose QA green; production publish not authorized in this transaction |
 
+### 2026-09-26 generated-piece editor tool discoverability
+
+| Issue | Scope | Routing | Status |
+|---|---|---|---|
+| #884 | Generated-piece editor `Editor tools`: icon-first controls with hover/focus tooltips and preserved disabled reasons | 2a | CLOSED / QA PASS locally; no production publish authorized |
+| #882 | Generated-piece editor dual-mode ink/animation contract with frozen Draw mode, animated Preview mode, and preserved unsaved ink | 2b | QA PASS locally; no production publish authorized |
+
+The existing capability issue #666 remains the source of truth for which
+tools are enabled per engine. #143/#172 remain the source of truth for the
+separate structured-scene editor toolbar. #884 changes only the generated-
+piece availability panel's presentation and discoverability; it does not
+alter capability policy, action routing, or any viewer/download toolbar.
+
 ## Addendum 7 — sound and synth controls (2026-09-25)
 
 See `docs/distillation-2026-09-25-sound-controls.md`. Issues #833-#847, all blocked on Codex's #832. Distillation only.
@@ -24030,3 +24043,17 @@ Addendum 7 update: #848-#851 (scale, key, transposition), blocked on #832.
 ## Addendum 8 — Chrome workflow validity (2026-09-25)
 
 See `docs/distillation-2026-09-25-chrome-workflow-validity.md`. Issues #852-#862; blocked on #832 and sound issues #833-#851.
+
+### 2026-09-26 verification evidence follow-up
+
+| Issue | Scope | Routing | Status |
+|---|---|---|---|
+| #885 | Supported decoded pixel-diff capture path for Chrome verification | verification / QA infrastructure | CLOSED / QA PASS locally; dependent browser issues must rerun captures |
+| #887 | Editor-stage screenshot artifact handoff for decoded motion QA | 2a / QA infrastructure | CLOSED / QA PASS locally; SVG capture fix and exact Chrome artifact verified |
+| #856 | Serene SVG authored-sound workflow | verification-only | CLOSED / QA PASS locally; regular-view and editor motion evidence recorded |
+| #857 | Serene A-Frame regular view and editor workflow | verification-only | CLOSED / QA PASS locally after #888 preview/capture evidence |
+| #888 | Generated 3D editor current preview and screenshot capture | 2a | CLOSED / QA PASS locally; no production publish authorized |
+| #889 | E2E fixtures provision public profiles for canonical generated slugs | 2b | CLOSED / QA PASS locally; idempotent command and canonical owner route verified |
+| #890 | Generated 3D editor responsive controls and panel information architecture | 2a | OPEN / implementation and active Chrome 375x812 + 1280x900 verified; final QA/reconcile pending |
+| #847 | Owner-uploaded ambient sample playback | 2b | OPEN / dependency-blocked by missing media delivery contract |
+| #886 | Owner-scoped public audio asset delivery and ZIP bundling contract | 2b | OPEN / newly distilled prerequisite for #847 |

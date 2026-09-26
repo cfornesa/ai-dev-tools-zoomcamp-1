@@ -1731,3 +1731,54 @@ structured-3D ZIP evidence, #788 lacks an approved production-shell path for
 its required dry-run/import/snapshot transaction, and the remaining sound
 verification issues depend on those prerequisites. No production data write or
 new publish was performed in this continuation.
+
+## 2026-09-26 — generated-piece editor tools are icon-first (#884)
+
+The generated-piece editor's `Editor tools` panel uses compact inline SVG icon
+buttons rather than permanently visible prose. Each button keeps its exact
+accessible name and exposes a CSS tooltip on hover and keyboard focus; the
+disabled Transform/Media reasons remain in the accessible description and in
+the disabled tooltip. This follows the icon-first tool-panel convention
+documented by Figma, Adobe Animate, and Blender, and is scoped only to
+`ArtPieceEditorToolAvailability` (the structured editor toolbar and public
+piece toolbar retain their separate contracts). No icon dependency was added.
+
+## 2026-09-26 — generated-piece ink editor uses dual explicit modes (#882)
+
+The generated-piece ink editor uses dual mode: Preview keeps the authored
+source animated, while Draw freezes a captured frame and keeps ink in its
+separate drawing document. The preview iframe remains visible until the
+capture completes, and an existing session is reused when returning from
+Preview so unsaved marks are not replaced by the last saved layer.
+## 2026-09-26 — #885 decoded pixel-diff helper
+
+- Added a repository-local Pillow-backed screenshot diff helper for QA
+  evidence. It compares decoded RGBA pixels and reports JSON metadata; it
+  does not treat compressed image-byte differences as a pixel metric.
+- This is local verification infrastructure only. Dependent browser issues
+  must attach their own saved-capture measurements before closure.
+
+## 2026-09-26 — editor preview screenshot artifact for #887
+
+The generated-piece editor Preview mode now exposes an icon-first screenshot
+action that requests the already-supported sandbox screenshot message and
+downloads the rendered iframe as a PNG. This preserves the dual-mode contract:
+Preview is animated; Draw remains frozen. Browser verification is mandatory
+before closure, but the disposable Compose frontend image could not be rebuilt
+on this host because Docker Buildx activity-directory permissions failed. No
+production publish or data mutation is authorized by this decision.
+
+## 2026-09-26 — canonical fixture profiles and generated 3D editor IA (#888/#889/#890)
+
+- `e2e_fixtures create` now idempotently provisions public profiles and
+  canonical handles for every fixture user. This is local E2E setup only; it
+  does not mutate production data.
+- Generated Three.js/A-Frame editor pages now render a current-version
+  sandboxed preview with icon-first screenshot capture. SVG screenshot capture
+  freezes the live SVG state before rasterization so motion evidence is not
+  reset to time zero.
+- Generated 3D editor actions are one unified responsive, row-major tool grid;
+  transform, metadata, thumbnail, revision, and delete inspectors are
+  toggleable panels; Screenshot, Sound, Edit source, and Save changes sit in
+  the action row directly under the canvas; the back link is last in editor
+  content. This remains local-only until separately authorized for production.

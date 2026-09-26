@@ -4,7 +4,6 @@ import type { ArtPieceLibrary } from '../api/artPieces';
 import {
   defaultGenerated3DTransform,
   listGenerated3DObjects,
-  type Generated3DPrimitive,
   type Generated3DTransform,
 } from '../pages/generated3dManualTools';
 
@@ -25,14 +24,12 @@ export default function Generated3DManualTools({
   source,
   selectedId,
   onSelect,
-  onAdd,
   onTransform,
 }: {
   engine: Extract<ArtPieceLibrary, 'threejs' | 'aframe'>;
   source: string;
   selectedId: string | null;
   onSelect: (id: string) => void;
-  onAdd: (primitive: Generated3DPrimitive) => void;
   onTransform: (transform: Generated3DTransform) => void;
 }) {
   const objects = useMemo(() => listGenerated3DObjects(source, engine), [source, engine]);
@@ -51,32 +48,12 @@ export default function Generated3DManualTools({
   }
 
   return (
-    <section className="behavior-card-field" data-testid="art-piece-editor-3d-manual-tools">
+    <section
+      className="behavior-card-field generated-3d-manual-tools"
+      data-testid="art-piece-editor-3d-manual-tools"
+    >
       <h3>3D manual tools</h3>
       <p>Add a primitive, select it, then apply numeric translation, rotation, or scale.</p>
-      <div className="editor-tool-availability-grid">
-        <button
-          type="button"
-          onClick={() => onAdd('add-box')}
-          data-testid="art-piece-editor-add-box"
-        >
-          Add box
-        </button>
-        <button
-          type="button"
-          onClick={() => onAdd('add-sphere')}
-          data-testid="art-piece-editor-add-sphere"
-        >
-          Add sphere
-        </button>
-        <button
-          type="button"
-          onClick={() => onAdd('add-plane')}
-          data-testid="art-piece-editor-add-plane"
-        >
-          Add plane
-        </button>
-      </div>
       <label htmlFor="art-piece-editor-3d-selection">Selected object (outlined in preview)</label>
       <select
         id="art-piece-editor-3d-selection"
@@ -93,7 +70,7 @@ export default function Generated3DManualTools({
       </select>
       <fieldset>
         <legend>Transform selected object</legend>
-        <div className="editor-tool-availability-grid">
+        <div className="generated-3d-transform-grid">
           {FIELDS.map(({ key, label, step }) => (
             <label key={key} htmlFor={`art-piece-editor-3d-${key}`}>
               {label}

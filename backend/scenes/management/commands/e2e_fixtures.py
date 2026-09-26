@@ -160,8 +160,21 @@ class Command(BaseCommand):
                 user__in=[owner, other, empty, admin, deletable]
             )
             PublicProfileHandleRedirect.objects.filter(profile__in=fixture_profiles).delete()
-            PublicProfile.objects.filter(user=owner).update(handle="e2e_owner")
-            PublicProfile.objects.filter(user=other).update(handle="e2e_other")
+            for fixture_user, handle in (
+                (owner, "e2e_owner"),
+                (other, "e2e_other"),
+                (empty, "e2e_empty"),
+                (admin, "e2e_admin"),
+                (deletable, "e2e_deletable"),
+            ):
+                profile, _created = PublicProfile.objects.get_or_create(
+                    user=fixture_user,
+                    defaults={"handle": handle, "is_public": True},
+                )
+                if profile.handle != handle or not profile.is_public:
+                    profile.handle = handle
+                    profile.is_public = True
+                    profile.save(update_fields=["handle", "is_public", "updated_at"])
 
             # Issue #505: every e2e spec that logs a fixture user in via
             # the real /accounts/login/ form leaves a server-side Django

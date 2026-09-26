@@ -950,7 +950,26 @@ function buildListenerScript(library: ArtPieceLibrary): string {
         } else {
           var svg = document.querySelector('svg:not(#art-piece-ink-overlay)');
           if (!svg) throw new Error('The generated piece has no capturable artwork.');
-          var svgText = new XMLSerializer().serializeToString(svg);
+          // Preserve the frame currently visible in the live SVG before
+          // rasterizing it. Re-loading the raw serialized SVG into an Image
+          // restarts SMIL/CSS animations at t=0, which made two one-second
+          // editor captures identical even while the preview visibly moved.
+          var frozenSvg = svg.cloneNode(true);
+          var liveNodes = svg.querySelectorAll('*');
+          var frozenNodes = frozenSvg.querySelectorAll('*');
+          for (var nodeIndex = 0; nodeIndex < liveNodes.length; nodeIndex += 1) {
+            var liveNode = liveNodes[nodeIndex];
+            var frozenNode = frozenNodes[nodeIndex];
+            var computed = window.getComputedStyle(liveNode);
+            if (computed.opacity !== '1') frozenNode.setAttribute('opacity', computed.opacity);
+            if (computed.transform && computed.transform !== 'none') {
+              frozenNode.setAttribute('transform', computed.transform);
+            }
+          }
+          frozenSvg.querySelectorAll('animate, animateMotion, animateTransform, set').forEach(function (animation) {
+            animation.remove();
+          });
+          var svgText = new XMLSerializer().serializeToString(frozenSvg);
           var svgViewBox = svg.viewBox && svg.viewBox.baseVal;
           var svgWidth = (svgViewBox && svgViewBox.width) || (svg.width && svg.width.baseVal && svg.width.baseVal.value) || svg.getBoundingClientRect().width || 300;
           var svgHeight = (svgViewBox && svgViewBox.height) || (svg.height && svg.height.baseVal && svg.height.baseVal.value) || svg.getBoundingClientRect().height || 150;

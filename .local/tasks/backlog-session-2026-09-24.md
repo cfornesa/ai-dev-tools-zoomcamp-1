@@ -5887,3 +5887,38 @@ structured-2D editor divergence. Commit `7ac9a0c`.
 | #952 | engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Added semantic Canvas heading, readable labels, 48px bordered swatch, accessible color output, and focused component tests without behavior/schema changes. |
 | #952 | qa-self-review | Codex / GPT-5 / medium | yes | Focused Canvas Vitest 3 tests passed; typecheck and format checks passed; full `make check` passed. |
 | #952 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/952#issuecomment-5850708650`; issue closed. Local evidence only; no production claim. |
+
+## Production-readiness — 2026-09-26 — NOT READY
+
+| Dimension | Result | Evidence / next action |
+|---|---|---|
+| Local deployment and automated checks | PASS | `make check`: backend 1724 passed / 39 skipped; frontend 284 files / 3035 tests; lint, format, and typecheck passed. |
+| Approved-browser verification | PASS for #951/#952 criteria | Installed Chrome against disposable Compose passed the focused #951 editor-shell suite 2/2 and the narrow Layers helper scenario. The broader Layers suite retains an unrelated z-order boundary failure associated with existing closed #194 semantics; do not reopen silently. |
+| Intended functionality for this batch | PASS | #951 and #952 QA comments are posted and both issues are closed. |
+| Replit publication | OPEN FOLLOW-UP | No publish was authorized for this batch. #747/#748/#788 remain production-gated; next action is the owner-authorized production run with the required publish/health/schema/smoke/download safeguards. |
+| Complete project production readiness | OPEN FOLLOW-UP | Open backlog remains, including #788, #858–#861, #874, #886, #906, #911–#916, #921, #923–#926, and #928–#946. Each retains its own owner/verification scope; no issue was silently absorbed or closed. |
+
+### Routing audit
+
+For #951 and #952, groom, engineer, QA, reconcile/close, and this readiness
+gate were run by Codex / GPT-5 / medium as owner-authorized substitutions for
+the rostered services; the ledger flags each substitution. No second-opinion
+verdict is claimed. The readiness gate is likewise a flagged GPT-5
+substitution, not an unrecorded model downgrade.
+
+## Session-completion — 2026-09-26
+
+Processed in this refresh: #947, #948, #949, #950, #951, #952, and #953.
+Terminal statuses: 7 completed/closed with QA PASS; 0 blocked; 0
+dependency-blocked; 0 handed-off; 0 missing terminal status within this
+processed manifest. Project-level open follow-ups remain as listed above and
+are not represented as completed by this session.
+
+Follow-up audit: the local “unavailable” editor URL was confirmed to be a
+fixture-data/session boundary, not an intentional logout or production
+failure: the active Chrome tab showed Login and the disposable database had
+no non-deleted `e2e_owner/untitled-animation` record after E2E teardown. The
+broader Layers z-order assertion was checked against duplicate issue search;
+closed #194 is the closest existing contract, so no closed issue was
+reopened and no duplicate follow-up was created. Production work remains
+owned by #747/#748/#788 with the original authorization and safeguards.

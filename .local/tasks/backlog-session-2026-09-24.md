@@ -5678,6 +5678,22 @@ then closed as a false positive in #919; no product code changed.
 | qa-self-review | Codex / GPT-5 / medium; active Chrome | yes | Anonymous local Compose route emitted authored major telemetry after a localStorage/sessionStorage reset; controls and Version 3 metadata matched. Motion remains outstanding. |
 | reconcile / close | Codex / GPT-5 / medium | yes | #919 closed as false positive with correction comment; #858 updated with QA matrix and remains OPEN / VALID WITH GAPS. Evidence is local disposable Compose + active Chrome only. |
 
+## Transaction refresh: #927 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation found a real follow-up while completing #858: authored
+Three.js sound normalization derived the visitor keyboard octave from the
+authored synth range, shifting the documented A–K baseline from C4–C5 to
+C6–C7. Engineering kept the visitor baseline at octave 0 and left explicit
+visitor octave shifting intact. Rebuilt Compose Chrome verification decoded
+the complete C4, D4, E4, F4, G4, A4, B4, C5 sequence.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | No duplicate found in #833, #844, #858, or #918; scoped a frontend-only mapping fix. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Updated soundSettingsFromSonic so authored synth octave_min does not silently change the visitor keyboard baseline; added focused regression expectation. |
+| qa-self-review | Codex / GPT-5 / medium; active Chrome | yes | Focused test 6 passed, typecheck passed, rebuilt Compose frontend, and decoded C4–C5 for A–K in anonymous Chrome. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/927#issuecomment-5848777181`; issue closed. Local evidence only; no production publish. |
+
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #898 after #899 and #908 were terminal. Verify-first

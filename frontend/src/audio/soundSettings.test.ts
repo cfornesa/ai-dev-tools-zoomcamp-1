@@ -143,6 +143,7 @@ describe('soundSettings', () => {
       keyboardFilterCutoff: 900,
       keyboardAttack: 0.2,
       keyboardRelease: 0.8,
+      keyboardOctave: 0,
     });
   });
 });

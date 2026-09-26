@@ -142,7 +142,10 @@ export function soundSettingsFromSonic(sonic?: SonicDefaults): SoundSettings {
     keyboardDecay: synth.envelope.decay,
     keyboardSustain: synth.envelope.sustain,
     keyboardRelease: synth.envelope.release,
-    keyboardOctave: Math.max(-2, Math.min(2, synth.octave_min)),
+    // Authored synth tuning controls the instrument's available range, not
+    // the visitor keyboard's documented baseline. A–K starts at C4 and the
+    // visitor can apply an explicit octave shift through the Piece controls.
+    keyboardOctave: defaults.keyboardOctave,
     voiceInstruments: { ...sonic.extras.voices },
   };
 }

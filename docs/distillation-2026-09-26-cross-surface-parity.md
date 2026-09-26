@@ -83,3 +83,14 @@ was reconciled by #903; #901/#902 are existing children and are now terminal.
 The next closure-ready issue selected for the backlog loop is #858, with
 #859–#861 following its explicit engine-fixture dependency order. #858 has a
 fresh QA FAIL comment and remains open; do not claim the parent tree complete.
+
+## #858 transaction refresh — 2026-09-26
+
+The active Chrome workflow reached `VALID WITH GAPS`: editor/public/immersive
+Three.js views rendered at the required desktop/mobile sizes; authored
+major/C/90/Synth defaults persisted; Sound reached `running`; and 120/minor
+then Reset restored 90/major. The required first-eight ambient notes and
+`a s d f g h j k` pitch sequence could not be captured because the public
+runtime exposes no supported inspectable telemetry hook. Duplicate audit found
+no existing issue for that audio observability gap, so #918 was created and
+linked from the QA FAIL comment. #858 remains open; #859–#861 stay blocked.

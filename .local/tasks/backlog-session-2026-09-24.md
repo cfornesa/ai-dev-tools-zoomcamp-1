@@ -5574,6 +5574,23 @@ explicit flat hand steering remains independently opt-in.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Focused unit suite 58/58; flat/immersive/six-engine Chromium ZIP suite 5/5; screenshots inspected at 1280x900 and 375x812; `make check` passed: backend 1714 passed / 39 skipped, frontend 283 files / 3032 tests. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/902#issuecomment-5847703987`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
 
+## Transaction refresh: #858 — 2026-09-26 — OPEN / QA FAIL — VALID WITH GAPS
+
+Task-distillation selected #858 after the immersive ZIP children became
+terminal. Active Chrome and the disposable Compose stack verified the
+Three.js editor, authored sound defaults, public controls, sound activation,
+and BPM/scale reset behavior. The required first-eight ambient-note and
+keyboard-pitch evidence could not be captured because the public runtime does
+not expose the required inspectable telemetry hook. Duplicate search found no
+audio observability issue; new criterion-ready issue #918 owns that gap.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed verification-only scope and dependency order; no duplicate for runtime audio telemetry. |
+| engineer | Codex / GPT-5 / medium | yes | No product change in #858; generated a Three.js fixture through the UI, selected runtime capabilities, authored major/C/90/Synth defaults, and published only in disposable local Compose. |
+| qa-self-review | Codex / GPT-5 / medium | yes | Active Chrome verified exact editor/public/immersive viewports, nonblank scene, toolbar, running sound status, persisted defaults, 120/minor change, and reset. Required decoded motion and note-sequence evidence remain unverified. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA FAIL / VALID WITH GAPS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/858#issuecomment-5848040658`; #858 remains open pending #918 and the documented evidence boundary. |
+
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #898 after #899 and #908 were terminal. Verify-first

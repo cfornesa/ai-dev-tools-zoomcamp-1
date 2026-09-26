@@ -3,7 +3,7 @@
 ## 2026-09-26 — active follow-up batch
 
 - [#823](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/823) — **PROPOSED / next:** public collection detail item count and complete ZIP download. Entry point: `/users/@handle/collections/:slug`; fixture: three published ordered collection items; routing: Stage 2b because the complete download requires an additive public endpoint, then Stage 4 browser QA. Exact check: `E2E_DOCKER_COMPOSE=true npx playwright test e2e/publicCollectionDownload.spec.ts --project=chromium`. Production is out of scope.
-- [#954](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/954) — **PROPOSED / next independent workflow issue:** Replit production reference-import execution path. Current evidence for #788 shows that the visible Shell is development-only and the checked-in production startup gate cannot preview safely because it does not pass `--dry-run`. Route: deployment startup/management-command workflow; routing: Stage 2b complex because it changes production command/data safeguards. Closure requires a no-write production preview, an explicit one-shot write mode, command-construction tests, and deployment-like launcher evidence; no production data write belongs in this issue.
+- [#954](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/954) — **CLOSED / QA PASS:** Replit production reference-import execution path. Added the disabled-by-default startup helper with safe preview mode and explicit write mode; local command-capture tests and full `make check` passed. #788 remains the separate owner-authorized production data action.
 
 ## 2026-09-24 — active follow-up batch (#747, #748, #788, #798–#808)
 

@@ -5938,5 +5938,36 @@ state was changed.
 | groom / distill | Codex / GPT-5 / medium; rostered GPT-5.6 Luna | yes | Confirmed a distinct production-safety workflow gap; kept #788 as the owner-authorized data action and scoped #954 to command construction, tests, and documentation. |
 | issue-scoping | Codex / GPT-5 / medium; rostered GPT-5.6 Luna | yes | Created #954 with preview/write modes, no-write default, explicit production opt-in, focused tests, and no production data action. |
 | engineer | Codex / GPT-5 / medium; rostered Kimi K3 complex implementation | yes | Added `scripts/run-reference-import.sh`; production startup now delegates to it. Enabled runs default to `--dry-run`; writes require `REFERENCE_IMPORT_MODE=write`; owner/handle/email forwarding is preserved. Added command-construction tests. |
-| qa-self-review | pending | — | Run focused and full checks; verify the helper is executable and review the diff for default-write or deployment-scope regressions. |
-| reconcile / close | pending | — | Must preserve #788's production snapshot/dry-run/write/verification gate; no local evidence will be presented as production evidence. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | yes | QA PASS. `make check` passed: backend 1728 passed / 39 skipped; frontend 284 files / 3035 tests. `bash -n` passed; focused mocked command capture verified preview `--dry-run`, explicit write mode, owner selector forwarding, and invalid-mode rejection. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/954#issuecomment-5850870493`; #954 closed. #788 remains open for the separately authorized production snapshot/import/live verification; no production evidence is claimed. |
+
+## Transaction completion: #954 — 2026-09-26 — CLOSED / QA PASS
+
+The production startup reference-import path now delegates to an executable
+helper. The gate remains disabled by default; an explicitly enabled run
+defaults to a no-write `--dry-run` preview, while writes require the separate
+`REFERENCE_IMPORT_MODE=write` setting. Owner/handle/email forwarding is
+preserved. This code path was tested locally only and did not access the
+production database. #788 remains the production-data transaction.
+
+## Production-readiness refresh: 2026-09-26 — NOT READY
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Local implementation and automated checks | PASS | #954 QA PASS; `make check` backend 1728 passed / 39 skipped and frontend 284 files / 3035 tests. |
+| Safe production-import workflow | PASS | Disabled-by-default wrapper, preview mode, explicit write mode, and command-capture tests are committed. |
+| Production publication/data verification | OPEN | No production publish or database write was authorized for #954. #788 still requires its documented snapshot, single dry-run, single import, rollback readiness, and live viewport/version-history checks. |
+| Complete project readiness | OPEN | GitHub still has independent open work including #788, #858–#861, #874, #886, #906, #911–#916, #921, #923–#926, and #928–#946. |
+
+Routing audit: #954 groom, issue-scoping, engineering, QA, reconciliation,
+and readiness were completed by Codex / GPT-5 / medium as flagged substitutions
+for the rostered services. No production claim is substituted for local
+evidence.
+
+## Session-completion refresh: 2026-09-26
+
+Processed in this continuation: #954. Terminal status: 1 completed/closed
+with QA PASS; 0 blocked; 0 production data actions; 1 dependent production
+follow-up remains open (#788). The active Chrome session was not logged out by
+this work; its local tab was already unauthenticated and therefore showed the
+expected unavailable state for the disposable local fixture URL.

@@ -220,11 +220,6 @@ export default function PublicArtPieceViewer({
       )}
       <div className="public-art-piece-viewer-stage-shell">
         <div
-          ref={setToolbarHost}
-          className="public-art-piece-toolbar-row"
-          data-testid="regular-piece-toolbar-row"
-        />
-        <div
           ref={stageRef}
           className="art-piece-stage public-art-piece-stage"
           role="region"
@@ -239,6 +234,11 @@ export default function PublicArtPieceViewer({
             } as CSSProperties
           }
         >
+          <div
+            ref={setToolbarHost}
+            className="public-art-piece-toolbar-row"
+            data-testid="regular-piece-toolbar-row"
+          />
           <div
             ref={setFullscreenToolbarHost}
             className="public-art-piece-fullscreen-toolbar-host"

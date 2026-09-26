@@ -5177,3 +5177,49 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
 - Open implementation/verification follow-up: #890.
 - External/data-boundary work remains open: #886, #874, #862, #861, #860, #859, #858, #847, #788.
 - No production data, secrets, auth settings, or deployment were changed in these transactions.
+
+## Transaction refresh: #890 — 2026-09-26 — CLOSED / QA PASS
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| task-distillation / groom | Codex-GPT-5 / medium | no | Reused #890 after duplicate audit; added responsive Editor tools disclosure and in-app overlay fullscreen criteria. |
+| engineer | Codex-GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | Added controls icon for transform, Editor tools fullscreen entry, responsive in-app overlay with mobile width behavior and visible × close, and compact mobile/tablet disclosure. |
+| qa-self-review | Codex-GPT-5 / medium; rostered Claude Sonnet 5 medium | yes | Active Chrome verified 1280x900, 375x812, overlay geometry, disclosure states, and close interaction; full `make check` passed. |
+| reconcile / close | Codex-GPT-5 / medium | no | QA PASS comments `5844865867` and `5844981967`; closed #890; commits `4f9159f`, `7f30490`. |
+
+### Updated evidence boundary
+
+The fullscreen behavior is an editor-local in-app overlay and does not alter the Three.js/A-Frame runtime VR button or public viewer routes. Production remains unverified and unchanged. Next independent transaction is #858 (verification-only), with #859–#861 dependent on the per-engine results and #862 dependent on their terminal reports; #886/#847, #874, and #788 retain their separate data/production boundaries.
+## Transaction refresh: #891–#893 — OPEN / IN PROGRESS (2026-09-26)
+
+Task-distillation duplicate audit found no open issue for the newly observed
+regular generated-viewer toolbar regression, the cross-surface 3D-only
+navigation clarification, or the missing/stale 2D immersive reference data.
+New criterion-ready issues were created: #891, #892, and #893. The local
+reference import rehearsal for #788 was previewed and then run once against
+the disposable Compose PostgreSQL database; it updated only the two stale C2
+rows from sequence 2 to sequence 3. Chrome then rendered the repaired C2
+immersive route at desktop and 375px widths with the shared icon toolbar and
+without 3D directional controls. No production data was changed.
+
+| Issue | Groom | Engineer | QA self-review | Reconcile | Close |
+|---|---|---|---|---|---|
+| #891 regular toolbar overlay | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; in progress | pending | pending | pending |
+| #892 cross-surface parity and 3D-only navigation | Codex/GPT-5/medium/substituted | pending | pending | pending | pending |
+| #893 2D immersive gallery presentation | Codex/GPT-5/medium/substituted | local data repair only; code scope pending | partial local Chrome | pending | pending |
+
+## Transaction refresh: #895–#897 — OPEN / DISTILLED (2026-09-26)
+
+Task-distillation duplicate audits completed before capture. Closed #755/#756
+cover isolated ZIP toolbar QA, but the owner's clarified paired-download
+contract needed an explicit regular-versus-immersive artifact issue (#895).
+Closed #28/#644 cover the underlying motion store and prior theme selector,
+but not adjacent system-default icon controls (#896). No existing issue
+covers the combined blank-display fallback and `By {display name}
+(@{username handle})` public attribution contract (#897).
+
+| Issue | Groom | Engineer | QA self-review | Reconcile | Close |
+|---|---|---|---|---|---|
+| #895 download surface parity | Codex/GPT-5/medium/substituted | pending; stage 2b | pending | pending | pending |
+| #896 adjacent system-default motion toggle | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; stage 2a | focused tests pass; full QA pending | pending | pending |
+| #897 public authorship identity | Codex/GPT-5/medium/substituted | pending; stage 2b | pending | pending | pending |

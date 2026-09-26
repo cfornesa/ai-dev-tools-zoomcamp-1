@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import CosmicStarField from './CosmicStarField';
-import ReducedMotionControl from './ReducedMotionControl';
+import ReducedMotionToggle from './ReducedMotionToggle';
 import { useIsMobileHeader } from './useIsMobileHeader';
 import { useAuth } from '../auth/useAuth';
 import { fetchPublicPageNavigation, type PublicPageNavigation } from '../api/publicPages';
@@ -145,6 +145,20 @@ function Layout() {
     persistThemePreference(next);
   }
 
+  const resolvedTheme = resolveThemeMode(themePreference);
+  const themeToggle = (
+    <button
+      type="button"
+      className="shell-theme-toggle"
+      aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      onClick={() => updateThemePreference(resolvedTheme === 'dark' ? 'light' : 'dark')}
+    >
+      <span aria-hidden="true">{resolvedTheme === 'dark' ? '☀' : '☾'}</span>
+    </button>
+  );
+  const motionToggle = <ReducedMotionToggle />;
+
   // Issue #90: collapsing back to desktop width while the mobile menu is
   // open would otherwise leave menuOpen stuck true, showing the (now
   // hidden-by-layout) menu markup with stale aria-expanded state next time
@@ -234,22 +248,6 @@ function Layout() {
           )}
         </div>
         <div className="app-shell-toolbar">
-          {!isMobileHeader && (
-            <div className="app-shell-theme-controls">
-              <label>
-                <span className="visually-hidden">Color mode</span>
-                <select
-                  aria-label={`Color mode, currently ${themePreference}`}
-                  value={themePreference}
-                  onChange={(event) => updateThemePreference(event.target.value as ThemePreference)}
-                >
-                  <option value="system">System</option>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                </select>
-              </label>
-            </div>
-          )}
           {isMobileHeader ? (
             <>
               <nav
@@ -277,23 +275,6 @@ function Layout() {
                     {auth.logoutError}
                   </p>
                 )}
-                <div className="app-shell-mobile-settings" aria-label="Display settings">
-                  <label>
-                    <span className="visually-hidden">Color mode</span>
-                    <select
-                      aria-label={`Color mode, currently ${themePreference}`}
-                      value={themePreference}
-                      onChange={(event) =>
-                        updateThemePreference(event.target.value as ThemePreference)
-                      }
-                    >
-                      <option value="system">System</option>
-                      <option value="light">Light</option>
-                      <option value="dark">Dark</option>
-                    </select>
-                  </label>
-                  <ReducedMotionControl compact />
-                </div>
               </nav>
             </>
           ) : (
@@ -319,17 +300,16 @@ function Layout() {
               )}
             </nav>
           )}
-          {!isMobileHeader && (
-            <div className="app-shell-motion">
-              <ReducedMotionControl />
-            </div>
-          )}
         </div>
       </header>
       <main id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
       <footer className="app-shell-footer">Christopher Fornesa © {new Date().getFullYear()}</footer>
+      <aside className="shell-display-toggles" aria-label="Display settings">
+        {motionToggle}
+        {themeToggle}
+      </aside>
     </div>
   );
 }

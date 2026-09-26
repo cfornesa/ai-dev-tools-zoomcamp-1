@@ -99,19 +99,16 @@ describe('Layout: authentication control and attribution', () => {
 });
 
 describe('Layout: responsive header chrome (#674)', () => {
-  it('uses one accessible color-mode control and keeps motion in the toolbar', () => {
+  it('uses adjacent accessible theme and motion icon controls', () => {
     renderWithAuth({ status: 'signed-out', user: null });
 
     expect(
-      screen.getByRole('combobox', { name: 'Color mode, currently system' }),
+      screen.getByRole('button', { name: /switch to (light|dark) mode/i }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('combobox')).toHaveLength(1);
-    expect(
-      screen.queryByRole('button', { name: /switch to (light|dark) mode/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('radiogroup', { name: 'Reduce motion' }).closest('.app-shell-toolbar'),
-    ).not.toBeNull();
+    expect(screen.queryByRole('combobox', { name: /color mode/i })).not.toBeInTheDocument();
+    const motionButton = screen.getByRole('button', { name: /use (reduced|full) motion/i });
+    expect(motionButton).toBeInTheDocument();
+    expect(motionButton.parentElement).toHaveClass('shell-display-toggles');
   });
 });
 
@@ -295,9 +292,8 @@ describe('Layout: mobile hamburger menu', () => {
     expect(screen.queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Login' })).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Account settings' })).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Color mode, currently system' })).toBeVisible();
-    expect(screen.getByRole('radiogroup', { name: 'Reduce motion' })).toBeVisible();
-    expect(screen.getByRole('status')).toHaveClass('visually-hidden');
+    expect(screen.getByRole('button', { name: /switch to (light|dark) mode/i })).toBeVisible();
+    expect(screen.getByRole('button', { name: /use (reduced|full) motion/i })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'Close menu' }));
     expect(toggle).toHaveAttribute('aria-expanded', 'false');

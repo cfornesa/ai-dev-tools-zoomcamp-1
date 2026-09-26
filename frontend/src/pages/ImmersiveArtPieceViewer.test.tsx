@@ -86,6 +86,9 @@ describe('ImmersiveArtPieceViewer (#606)', () => {
         .getByRole('region', { name: 'Immersive stage' })
         .compareDocumentPosition(viewer?.querySelector('.immersive-art-piece-actions') as Node),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(screen.getByRole('link', { name: 'Back to regular viewer' })).toHaveClass(
+      'immersive-art-piece-back-link',
+    );
   });
 
   it('closes the route on Escape when native fullscreen is not active', () => {

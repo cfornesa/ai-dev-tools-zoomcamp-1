@@ -259,6 +259,44 @@ body {
   min-width: 108px;
 }
 
+.shell-display-toggles {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 120;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.shell-theme-toggle,
+.shell-motion-toggle {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--code-bg) 88%, transparent);
+  color: var(--text-h);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.shell-theme-toggle:hover,
+.shell-theme-toggle:focus-visible,
+.shell-motion-toggle:hover,
+.shell-motion-toggle:focus-visible {
+  border-color: var(--accent);
+  outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-offset: 2px;
+}
+
 .app-shell-toolbar {
   display: flex;
   align-items: center;
@@ -5357,16 +5395,18 @@ select.ai-proposal-field-full-width {
 
 .public-art-piece-toolbar-row {
   display: flex;
-  min-height: 3.5rem;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
   align-items: flex-start;
-  padding: 0.35rem 0;
+  padding: 0.75rem;
+  pointer-events: none;
 }
 
 .public-art-piece-toolbar-row .piece-stage-toolbar {
-  position: static;
-  width: 100%;
+  pointer-events: auto;
   flex-wrap: wrap;
-  max-width: 100%;
+  max-width: calc(100% - 1.5rem);
 }
 
 .public-art-piece-toolbar-row .piece-stage-toolbar-group {
@@ -5551,6 +5591,7 @@ select.ai-proposal-field-full-width {
   margin: 0 auto;
   padding: clamp(1.25rem, 4vw, 3rem) 0 3rem;
   box-sizing: border-box;
+  font-family: var(--site-font);
   background: #11131a;
   color: #f4f6fb;
 }
@@ -5566,6 +5607,10 @@ select.ai-proposal-field-full-width {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.immersive-art-piece-viewer .public-piece-page-heading {
+  font-family: var(--heading);
 }
 
 .immersive-art-piece-close {
@@ -5631,6 +5676,17 @@ select.ai-proposal-field-full-width {
   background: rgba(0, 0, 0, 0.62);
   color: inherit;
   text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+
+.immersive-art-piece-back-link:hover,
+.immersive-art-piece-back-link:focus-visible {
+  border-color: rgba(255, 255, 255, 0.72);
+  background: rgba(0, 0, 0, 0.78);
 }
 
 .public-collection-context {

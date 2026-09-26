@@ -24057,3 +24057,11 @@ See `docs/distillation-2026-09-25-chrome-workflow-validity.md`. Issues #852-#862
 | #890 | Generated 3D editor responsive controls and panel information architecture | 2a | OPEN / implementation and active Chrome 375x812 + 1280x900 verified; final QA/reconcile pending |
 | #847 | Owner-uploaded ambient sample playback | 2b | OPEN / dependency-blocked by missing media delivery contract |
 | #886 | Owner-scoped public audio asset delivery and ZIP bundling contract | 2b | OPEN / newly distilled prerequisite for #847 |
+
+### 2026-09-26 responsive editor disclosure reconciliation
+
+| Issue | Scope | Routing | Status |
+|---|---|---|---|
+| #890 | Generated 3D editor responsive controls, in-app overlay fullscreen, and mobile/tablet Editor tools disclosure | 2a | CLOSED / QA PASS locally; commits `4f9159f`, `7f30490`; production out of scope |
+| 2026-09-26 | #891, #892, #893 | OPEN / IN PROGRESS | Public generated-piece toolbar was reproduced outside the regular stage; cross-surface 3D-only navigation and 2D immersive reference presentation were recorded as new linked gaps. Local #788 dry-run identified two stale C2 reference rows; local rehearsal import repaired them and Chrome showed the C2 artwork without spatial arrows. Implementation and production verification remain outstanding. |
+| 2026-09-26 | #895, #896, #897 | OPEN / DISTILLED | Downloaded regular/immersive artifact parity, system-default adjacent motion toggle, and explicit public authorship identity were duplicate-audited and captured as criterion-ready follow-ups. |

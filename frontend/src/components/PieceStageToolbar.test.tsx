@@ -15,11 +15,13 @@ describe('PieceStageToolbar', () => {
     );
   });
 
-  it('keeps the regular public toolbar above the stage and relocatable for fullscreen', () => {
+  it('keeps the regular public toolbar overlaid inside the stage and relocatable for fullscreen', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
-    expect(css).toMatch(/\.public-art-piece-toolbar-row\s*\{[^}]*min-height:\s*3\.5rem/s);
     expect(css).toMatch(
-      /\.public-art-piece-toolbar-row \.piece-stage-toolbar\s*\{[^}]*position:\s*static/s,
+      /\.public-art-piece-toolbar-row\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*pointer-events:\s*none/s,
+    );
+    expect(css).toMatch(
+      /\.public-art-piece-toolbar-row \.piece-stage-toolbar\s*\{[^}]*pointer-events:\s*auto/s,
     );
     expect(css).toMatch(
       /\.public-art-piece-toolbar-row \.piece-stage-icon-button\s*\{[^}]*min-height:\s*44px;[^}]*height:\s*44px/s,

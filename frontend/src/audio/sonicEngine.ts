@@ -77,7 +77,11 @@ export type SonicEffectSettings = {
   depth?: number;
   semitones?: number;
   bits?: number;
+  frequency?: number;
+  feedback?: number;
 };
+export type MicEffectName =
+  'distortion' | 'chorus' | 'tremolo' | 'pitch_shift' | 'bitcrusher' | 'flanger' | 'ring_mod';
 
 export const SONIC_INSTRUMENT_OPTIONS: ReadonlyArray<{
   value: SonicInstrument;
@@ -211,6 +215,14 @@ export interface SonicEngine {
    * A supplied stream is used directly; without one, getUserMedia is
    * acquired before any lazy Tone work. Must be called after enable(). */
   connectMic(stream?: MediaStream): Promise<void>;
+  /** Enables one reference-faithful effect in the microphone chain. */
+  setMicEffect(
+    name: MicEffectName,
+    enabled: boolean,
+    params?: Partial<SonicEffectSettings>,
+  ): boolean;
+  /** Reports whether a microphone effect is enabled; false before mic connect. */
+  isMicEffectEnabled(name: MicEffectName): boolean;
   /** Closes and releases the microphone stream. Safe to call even if
    * never connected. */
   disconnectMic(): void;
@@ -285,6 +297,25 @@ export function createSonicEngine(
     flanger: { enabled: false, amount: 0, rate: 0.25, depth: 0.5 },
   };
   let effectNodes: EffectNode[] = [];
+  const micEffectOrder: MicEffectName[] = [
+    'distortion',
+    'chorus',
+    'tremolo',
+    'pitch_shift',
+    'bitcrusher',
+    'flanger',
+    'ring_mod',
+  ];
+  const micEffectSettings: Record<MicEffectName, SonicEffectSettings> = {
+    distortion: { enabled: false, amount: 0.4 },
+    chorus: { enabled: false, amount: 0.5, rate: 1.5, depth: 0.5 },
+    tremolo: { enabled: false, amount: 0.5, rate: 5, depth: 0.5 },
+    pitch_shift: { enabled: false, semitones: 0 },
+    bitcrusher: { enabled: false, bits: 4 },
+    flanger: { enabled: false, amount: 0.5, rate: 0.25, depth: 0.006, feedback: 0.5 },
+    ring_mod: { enabled: false, frequency: 440 },
+  };
+  let micEffectNodes: EffectNode[] = [];
   const voiceInstruments: Record<SonicVoice, SonicInstrument> = {
     ambient: 'synth',
     movement: 'synth',
@@ -518,6 +549,56 @@ export function createSonicEngine(
     last.toDestination?.();
   }
 
+  function createMicEffect(name: MicEffectName, settings: SonicEffectSettings): EffectNode {
+    if (!tone) throw new Error('Sound must be enabled before creating microphone effects.');
+    const toneAny = tone as unknown as Record<string, new (...args: any[]) => EffectNode>;
+    if (name === 'distortion') return new toneAny.Distortion(settings.amount ?? 0.4);
+    if (name === 'chorus')
+      return new toneAny.Chorus(settings.rate ?? 1.5, 2.5, settings.depth ?? 0.5);
+    if (name === 'tremolo') return new toneAny.Tremolo(settings.rate ?? 5, settings.depth ?? 0.5);
+    if (name === 'pitch_shift') return new toneAny.PitchShift(settings.semitones ?? 0);
+    if (name === 'bitcrusher') return new toneAny.BitCrusher(settings.bits ?? 4);
+    if (name === 'flanger') {
+      const node = new toneAny.Flanger(settings.rate ?? 0.25, settings.depth ?? 0.006);
+      if (node.feedback) node.feedback.value = settings.feedback ?? 0.5;
+      return node;
+    }
+    const node = new toneAny.FrequencyShifter(settings.frequency ?? 440);
+    return node;
+  }
+
+  function rebuildMicEffects() {
+    if (!micSource || !bus || !tone) return;
+    micSource.disconnect();
+    micEffectNodes.forEach((effect) => effect.dispose());
+    micEffectNodes = [];
+    for (const name of micEffectOrder) {
+      const settings = micEffectSettings[name];
+      if (settings.enabled) micEffectNodes.push(createMicEffect(name, settings));
+    }
+    const destination = micEffectNodes[0] ?? bus;
+    micSource.connect(destination);
+    for (let index = 0; index < micEffectNodes.length - 1; index += 1) {
+      micEffectNodes[index].connect(micEffectNodes[index + 1]);
+    }
+    micEffectNodes.at(-1)?.connect(bus);
+  }
+
+  function setMicEffect(
+    name: MicEffectName,
+    enabled: boolean,
+    params: Partial<SonicEffectSettings> = {},
+  ): boolean {
+    if (!micSource || !micEffectOrder.includes(name)) return false;
+    micEffectSettings[name] = { ...micEffectSettings[name], ...params, enabled };
+    rebuildMicEffects();
+    return true;
+  }
+
+  function isMicEffectEnabled(name: MicEffectName): boolean {
+    return Boolean(micSource && micEffectSettings[name]?.enabled);
+  }
+
   function setEffect(name: SonicEffectName, settings: SonicEffectSettings): boolean {
     if (!effectOrder.includes(name)) return false;
     const current = effectSettings[name];
@@ -724,6 +805,7 @@ export function createSonicEngine(
         }
       };
       rawContext.addEventListener('statechange', audioSessionListener);
+      rebuildMicEffects();
     } catch (error) {
       activeStream.getTracks().forEach((track) => track.stop());
       throw error;
@@ -744,6 +826,8 @@ export function createSonicEngine(
     audioSessionContext = null;
     micSource?.disconnect();
     micStream?.getTracks().forEach((track) => track.stop());
+    micEffectNodes.forEach((effect) => effect.dispose());
+    micEffectNodes = [];
     micSource = null;
     micStream = null;
   }
@@ -796,6 +880,8 @@ export function createSonicEngine(
     reportMovement,
     triggerMelodicNote,
     connectMic,
+    setMicEffect,
+    isMicEffectEnabled,
     disconnectMic,
     startCameraTheremin,
     updateCameraTheremin,

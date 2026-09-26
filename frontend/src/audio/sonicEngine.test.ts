@@ -616,11 +616,15 @@ describe('createSonicEngine mic input (issue #308)', () => {
     const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
     await engine.enable();
 
+    expect(engine.setMicEffect('distortion', true)).toBe(false);
     await engine.connectMic(stream);
 
     expect(getUserMedia).not.toHaveBeenCalled();
     expect(rawContext.createMediaStreamSource).toHaveBeenCalledWith(stream);
     expect(source.connect).toHaveBeenCalled();
+    expect(engine.setMicEffect('distortion', true, { amount: 0.4 })).toBe(true);
+    expect(engine.isMicEffectEnabled('distortion')).toBe(true);
+    expect(source.disconnect).toHaveBeenCalled();
     rawContext.state = 'suspended';
     const stateChange = rawContext.addEventListener.mock.calls[0][1] as () => void;
     stateChange();
@@ -628,6 +632,7 @@ describe('createSonicEngine mic input (issue #308)', () => {
     engine.disconnectMic();
     expect(source.disconnect).toHaveBeenCalled();
     expect(track.stop).toHaveBeenCalled();
+    expect(engine.isMicEffectEnabled('distortion')).toBe(false);
   });
 
   it('disconnectMic() releases the microphone and is a safe no-op if never connected', async () => {

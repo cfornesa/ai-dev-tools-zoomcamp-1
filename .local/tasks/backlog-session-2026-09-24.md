@@ -5415,3 +5415,16 @@ effects, surface wiring, ZIP, and hardware issues remain separate follow-ups.
 The implementation is local-only and does not claim real microphone hardware
 acceptance or deployment verification; those belong to #916 and the later
 surface-specific issues.
+
+## Transaction refresh: #910 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation advanced the microphone stream after #909 closed. #910 is
+the reusable engine-only effect contract; UI, ZIP, surface wiring, and real
+hardware remain separate children.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed fixed seven-effect order and reference defaults; no duplicate found. |
+| engineer | Codex / GPT-5 / medium; rostered complex implementation service substituted | yes | Added `setMicEffect`/`isMicEffectEnabled`, fixed-order mic chain rebuilds, reference defaults, disposal, and reset-on-disconnect behavior. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | `cd frontend && npx vitest run src/audio` -> 6 files / 55 tests; `npm run typecheck`; full `make check` -> backend 1714 passed / 39 skipped, frontend 283 files / 3032 tests; lint, format, and typecheck passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment pending after issue comment; hardware, UI, ZIP, and production evidence remain out of scope. |

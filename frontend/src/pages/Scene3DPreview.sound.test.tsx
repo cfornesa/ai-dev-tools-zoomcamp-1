@@ -110,6 +110,8 @@ vi.mock('../audio/sonicEngine', () => ({
     reportMovement: reportMovementSpy,
     triggerMelodicNote: triggerMelodicNoteSpy,
     connectMic: connectMicSpy,
+    setMicEffect: vi.fn(() => true),
+    isMicEffectEnabled: vi.fn(() => false),
     disconnectMic: disconnectMicSpy,
     startCameraTheremin: startCameraThereminSpy,
     updateCameraTheremin: updateCameraThereminSpy,

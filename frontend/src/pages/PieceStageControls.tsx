@@ -57,6 +57,7 @@ import {
 // values #455's own (now-removed) in-sandbox implementation used.
 const HAND_PAN_SENSITIVITY = 6;
 const HAND_ZOOM_SENSITIVITY = 20;
+const WHITE_PIANO_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k'] as const;
 
 const PARENT_SOUND_COMMANDS = new Set([
   'toggle-sound',
@@ -570,7 +571,11 @@ function PieceStageControls({
       const baseNote = PIANO_KEY_MAP[key];
       const engine = sonicEngineRef.current;
       if (!baseNote || !engine || engine.status !== 'active') return;
-      const index = Object.values(PIANO_KEY_MAP).indexOf(baseNote);
+      // The home-row keys are the diatonic white-key sequence. Indexing the
+      // complete chromatic map here would skip D/F/B and report C-E-G-A...
+      // for a major/C keyboard even though playback is driven by A-K's
+      // explicit C4-C5 mapping.
+      const index = WHITE_PIANO_KEYS.indexOf(key as (typeof WHITE_PIANO_KEYS)[number]);
       const resolved = scaleNotes(keyboardRoot, keyboardScale, [4, 6])[index] ?? baseNote;
       const note = transposeNote(resolved, keyboardTranspose + keyboardOctave * 12);
       const frequency = noteFrequency(note) ?? 0;

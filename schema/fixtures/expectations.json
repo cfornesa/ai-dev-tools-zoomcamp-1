@@ -8,6 +8,7 @@
   "valid/structured_2d_sound_enabled.json": { "valid": true },
   "valid/structured_2d_sound_disabled.json": { "valid": true },
   "valid/sonic_authored.json": { "valid": true },
+  "valid/ai_layer_target_existing.json": { "valid": true },
   "valid/image_shape_informative.json": { "valid": true },
   "valid/image_shape_decorative.json": { "valid": true },
   "invalid/unsupported_renderer.json": { "valid": false, "rule": "invalidValue" },

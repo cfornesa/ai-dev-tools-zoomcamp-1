@@ -6,6 +6,7 @@
  * real target-selection, patch-scope, accept, and version-history paths.
  */
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -15,42 +16,12 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
-const LAYER_TARGET_SCENE = {
-  schemaVersion: 1,
-  id: 'layer-target-existing-fixture',
-  canvas: { width: 800, height: 600, backgroundColor: '#ffffff' },
-  renderer: { preferred: 'p5' },
-  layers: [
-    { id: 'layer-sky', name: 'Sky', order: 0, visible: true, locked: false },
-    { id: 'layer-hills', name: 'Hills', order: 1, visible: true, locked: false },
-    { id: 'layer-sun', name: 'Sun', order: 2, visible: true, locked: false },
-    { id: 'layer-frame', name: 'Frame', order: 3, visible: true, locked: true },
-  ],
-  shapes: ['sky', 'hills', 'sun', 'frame'].map((name, layerIndex) => ({
-    id: `shape-${name}`,
-    type: 'rect',
-    layerId: `layer-${name}`,
-    groupId: null,
-    transform: {
-      x: layerIndex * 100,
-      y: layerIndex * 80,
-      scaleX: 1,
-      scaleY: 1,
-      rotation: 0,
-      opacity: 1,
-    },
-    style: { fill: '#99ccff', stroke: null, strokeWidth: 0 },
-    name,
-    width: 80,
-    height: 50,
-    cornerRadius: 0,
-  })),
-  groups: [],
-  bindings: [],
-  graph: { nodes: [], connections: [] },
-  accessibility: { reducedMotion: 'auto' },
-  randomness: { seed: 0, enabled: false },
-};
+const LAYER_TARGET_SCENE = JSON.parse(
+  readFileSync(
+    new URL('../../schema/fixtures/valid/ai_layer_target_existing.json', import.meta.url),
+    'utf8',
+  ),
+) as Record<string, unknown>;
 
 async function createExistingPiece(context: BrowserContext): Promise<{
   id: string;

@@ -199,3 +199,16 @@ Owner decisions: local-first default with opt-in sync (account-level toggle plus
 | 53 | #946 one-time script (owner-run) | #940 #942 #931, site sync on |
 
 Known gaps recorded rather than hidden: cloud backup covers only 2D today (3D and generated have no sync path until #932); public media has no server home until #941; the signup consent (#524) is inert until #940.
+
+## Stream H — #920 QA findings (refined 2026-09-26)
+
+Issues #947–#952 were defined by Codex during #920 QA and refined here. #947 and #948 must be terminal before #920 can close; #920's own body wording (multiple shapes per layer) conflicts with the Task 111 invariant and is corrected through #948.
+
+| H | Issue | Waits for |
+| --- | --- | --- |
+| 1 | #947 executed-test Playwright path on macOS (opt-in Chrome channel; attempt in working tree) | — |
+| 2 | #948 reconcile #920 fixture with one-shape-per-layer | — |
+| 3 | #949 separate target names from kind badges (a11y name bug) | — (independent) |
+| 4 | #950 background modeling decision + meaningful fixture | #948 |
+| 5 | #952 canvas panel color swatch and legibility | #950 |
+| 6 | #951 editor shell: File and Ask AI to control panel, Editor tools toggle (reverses #325/#348/#362 for 2D; order File · Save · Ask AI as the first controls of the panel, before Visual/Code, zoom and the rest; decided by the owner 2026-09-26) | #950 #952 |

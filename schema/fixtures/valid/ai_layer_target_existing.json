@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "layer-target-existing-fixture",
+  "canvas": { "width": 800, "height": 600, "backgroundColor": "#ffffff" },
+  "renderer": { "preferred": "p5" },
+  "layers": [
+    { "id": "layer-sky", "name": "Sky", "order": 0, "visible": true, "locked": false },
+    { "id": "layer-hills", "name": "Hills", "order": 1, "visible": true, "locked": false },
+    { "id": "layer-sun", "name": "Sun", "order": 2, "visible": true, "locked": false },
+    { "id": "layer-frame", "name": "Frame", "order": 3, "visible": true, "locked": true }
+  ],
+  "shapes": [
+    {
+      "id": "shape-sky",
+      "type": "rect",
+      "layerId": "layer-sky",
+      "groupId": null,
+      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#99ccff", "stroke": null, "strokeWidth": 0 },
+      "name": "sky",
+      "width": 80,
+      "height": 50,
+      "cornerRadius": 0
+    },
+    {
+      "id": "shape-hills",
+      "type": "rect",
+      "layerId": "layer-hills",
+      "groupId": null,
+      "transform": { "x": 100, "y": 80, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#99ccff", "stroke": null, "strokeWidth": 0 },
+      "name": "hills",
+      "width": 80,
+      "height": 50,
+      "cornerRadius": 0
+    },
+    {
+      "id": "shape-sun",
+      "type": "rect",
+      "layerId": "layer-sun",
+      "groupId": null,
+      "transform": { "x": 200, "y": 160, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#99ccff", "stroke": null, "strokeWidth": 0 },
+      "name": "sun",
+      "width": 80,
+      "height": 50,
+      "cornerRadius": 0
+    },
+    {
+      "id": "shape-frame",
+      "type": "rect",
+      "layerId": "layer-frame",
+      "groupId": null,
+      "transform": { "x": 300, "y": 240, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
+      "style": { "fill": "#99ccff", "stroke": null, "strokeWidth": 0 },
+      "name": "frame",
+      "width": 80,
+      "height": 50,
+      "cornerRadius": 0
+    }
+  ],
+  "groups": [],
+  "bindings": [],
+  "graph": { "nodes": [], "connections": [] },
+  "accessibility": { "reducedMotion": "auto" },
+  "randomness": { "seed": 0, "enabled": false }
+}

@@ -132,6 +132,23 @@ does not establish production readiness.
 | Regular ZIP | generated Full and Non-Camera archives | Extracted regular stage toolbar; no Download or Immersive/VR inside archive | Bundle/runtime sources exist; no closure-grade extracted-archive evidence recorded yet | #903 |
 | Immersive ZIP | generated flat and 3D archives | Extracted immersive toolbar; flat gallery vs. 3D world; no Download/VR inside archive | Bundle/runtime sources exist; no closure-grade extracted-archive evidence recorded yet | #902, #901 |
 
+## 3D-only navigation gate
+
+Immersive presentation uses the owner's selected **gallery-by-default** policy:
+
+- Flat engines (p5.js, C2.js, C2.js Interactive, SVG, and Canvas2D) render as
+  responsive, letterboxed 2D galleries and do not expose directional arrow-pad
+  or spatial-camera controls by default.
+- Three.js and A-Frame retain native keyboard, pointer/touch, and immersive
+  directional navigation because their authored content is a real 3D world.
+- The synthetic spatial shell remains available only when an author explicitly
+  enables the `hand_steering` capability through Piece controls. That opt-in is
+  separate from the default flat gallery presentation and must be preserved in
+  generated downloads.
+
+Decision: #900, owner direction recorded 2026-09-26. Re-check consumers in
+#893, #898, #899, #901, #902, and #907 against this gate before closure.
+
 ### Reference comparison and discrepancy classification
 
 The PHP reference exposes grouped immersive chrome from `augment-humankind/public/app/helpers/immersive-chrome.php` (`immersive_stage_toolbar_markup`, around L643) and the regular stage from `public/app/views/partials/piece-stage.php`. The React reference exposes the shared `PieceStageControls` in `augment-humankind-react-node/apps/web/src/main.tsx` (around L437-L732), with source assertions in `apps/web/src/piece-surface.test.ts` (toolbar order, immersive device controls, and narrow-stage hiding).

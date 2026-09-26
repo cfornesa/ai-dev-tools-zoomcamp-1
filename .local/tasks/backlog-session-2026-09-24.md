@@ -5456,3 +5456,18 @@ an existing follow-up; no duplicate issue was created.
 | engineer | Codex / GPT-5 / medium; rostered documentation service substituted | yes | Added `docs/workflow-validity-2026-engines.md`, updated `docs/tasks.md`, and recorded the synthesis decision in `DECISIONS.md`. |
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Docs-only review confirmed a complete 6x9 matrix with no blank cells, linked PASS/GAP evidence, explicit VALID WITH GAPS verdicts, ranked fixes, and `git diff --check` passed. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is a local documentation synthesis only; it makes no production, hardware, or ZIP-success claim. |
+
+## Transaction refresh: #900 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation resolved #900 from the owner's prior explicit product
+requirements: flat-engine immersive views must be galleries, while Three.js and
+A-Frame remain navigable 3D worlds. This is option B (gallery by default,
+explicit `hand_steering` opt-in for the synthetic shell); no new duplicate was
+needed.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed the issue is a docs-only owner decision and that the prior user requirements provide the decision evidence. |
+| engineer | Codex / GPT-5 / medium; rostered documentation service substituted | yes | Updated the toolbar parity matrix, flat-engine memory topic, and DECISIONS.md with the 3D-only navigation gate. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Re-read the six consumer contracts (#893, #898, #899, #901, #902, #907); each now has the decision as a stated dependency/gate. `git diff --check` passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. The decision does not claim consumer implementation or production evidence. |

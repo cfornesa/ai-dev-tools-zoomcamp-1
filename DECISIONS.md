@@ -1808,3 +1808,13 @@ production publish or data mutation is authorized by this decision.
 - Physical microphone acceptance remains owner-run across Chrome macOS,
   Safari iOS, and Chrome Android; no automated fake-device result is treated
   as hardware or production evidence.
+
+## 2026-09-26 — flat immersive presentation policy (#900)
+
+- The owner's prior requirements that every 2D immersive view be presented as
+  a gallery, while Three.js/A-Frame remain navigable 3D worlds, resolve #900
+  as option B: gallery by default, synthetic spatial shell only when the
+  author explicitly enables `hand_steering`.
+- Updated `docs/piece-toolbar-parity-matrix.md` and
+  `.agents/memory/immersive-flat-engine-presentation.md`; consumers #893,
+  #898, #899, #901, #902, and #907 must be rechecked against this gate.

@@ -372,8 +372,8 @@ def test_public_detail_excludes_owner_private_fields(
     body = response.json()
     assert set(body.keys()) == {
         "id",
-            "owner",
-            "owner_handle",
+        "owner",
+        "owner_handle",
         "title",
         "description",
         "seo_config",

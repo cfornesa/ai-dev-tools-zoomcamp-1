@@ -5503,22 +5503,50 @@ was corrected without changing product behavior.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Chromium contract passed 2/2 across desktop and mobile matrices; `git diff --check` passed. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/904#issuecomment-5847164646`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
 
-## Transaction refresh: #903 — 2026-09-26 — OPEN / QA PARTIAL
+## Transaction refresh: #903 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #903 after #893/#908. Verify-first found one real
 source-level responsive gap and one stale fixture request. The exported
 Piece-controls panel is now viewport-bounded and vertically scrollable, and
 the six-engine fixture omits nullable profile fields while preserving the
-required revision. The focused Full-ZIP browser run remains open because the
-active app served a stale generated bundle whose panel computed to 1181px with
-no max-height or overflow rules; fresh extracted mobile evidence is required.
+required revision. After rebuilding the local Compose frontend, fresh
+extracted mobile evidence passed.
 
 | Stage | Service / model / effort | Substituted | Result |
 |---|---|---:|---|
 | groom | Codex / GPT-5 / medium | yes | Confirmed regular Full/Non-Camera ZIP scope, extracted-archive evidence boundary, and #901 dependency. |
 | engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Committed `8dd1954`: bounded/scrollable exported controls panel, focused CSS assertions, and corrected six-engine profile fixture. |
-| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Unit bundle tests 58/58, Non-Camera ZIP 2/2, six-engine extracted ZIP 1/1. Full-ZIP responsive scenario remains FAIL against stale running bundle; no overclaim made. |
-| reconcile / close | Codex / GPT-5 / medium | yes | QA partial comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/903#issuecomment-5847271168`; issue remains open pending fresh app reload and Full-ZIP mobile evidence. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Unit bundle tests 58/58, Full/Non-Camera ZIP 2/2, six-engine extracted ZIP 1/1, with rebuilt Compose frontend. `make check` passed: backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/903#issuecomment-5847461712`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
+
+## Transaction refresh: #901 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation selected #901 after #900 became terminal. Verify-first
+confirmed the immersive generated ZIP contract and the existing camera/steering
+runtime; no duplicate was created.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed immersive generated ZIP scope, including camera/steering controls and native 3D navigation. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | No new product code was required; existing runtime and test contract were exercised. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Focused unit suite 58/58; immersive Full/Non-Camera ZIP scenarios 4/4; extracted authored-scene screenshot inspected. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/901#issuecomment-5847477905`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
+
+## Transaction refresh: #902 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation selected #902 after #901 became terminal. Engineering found a
+real generated-runtime gap: immersive ZIPs used the legacy all-engine spatial
+gate, so flat engines received a 3D navigation contract instead of gallery
+presentation. The implementation now limits default walkable navigation to
+native Three.js/A-Frame and labels flat immersive exports as `Gallery artwork`;
+explicit flat hand steering remains independently opt-in.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed flat immersive ZIPs must be galleries, while native 3D ZIPs remain walkable; no duplicate found. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Committed `bf6c50d`: native-only immersive navigation gate, accessible gallery stage labeling, engine-aware six-engine assertions, and desktop/mobile screenshot evidence. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Focused unit suite 58/58; flat/immersive/six-engine Chromium ZIP suite 5/5; screenshots inspected at 1280x900 and 375x812; `make check` passed: backend 1714 passed / 39 skipped, frontend 283 files / 3032 tests. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/902#issuecomment-5847703987`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
 
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 

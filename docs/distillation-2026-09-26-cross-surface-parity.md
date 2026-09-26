@@ -70,15 +70,16 @@ react-node counterparts: see the issues filed in `cfornesa/augment-humankind-rea
 | --- | --- | --- | --- |
 | #893 | Closed historical transaction | 2a / Codex substitution | QA PASS comment and local Compose/Chromium evidence; do not reopen. |
 | #904 | Closed historical transaction | 2a / Codex substitution | Public surface matrix passed 2/2 after making the flat-engine `Gallery artwork` expectation explicit; no production claim. |
-| #903 | Open, QA partial | 2a / Codex substitution | Source fix committed in `8dd1954`; unit 58/58, Non-Camera 2/2, six-engine extracted ZIP 1/1. Fresh Full-ZIP mobile evidence remains required after the running app reloads the generated bundle. |
-| #901/#902 | Dependency-blocked | 2a | Wait for #903 terminal evidence; no duplicate issues created. |
+| #903 | Closed, QA PASS | 2a / Codex substitution | Source fix `8dd1954`; rebuilt Compose evidence passed; QA comment `5847461712`; no production claim. |
+| #901 | Closed, QA PASS | 2a / Codex substitution | Immersive generated ZIP contract passed; QA comment `5847477905`; no production claim. |
+| #902 | Closed, QA PASS | 2a / Codex substitution | Flat immersive ZIPs now use gallery presentation; native 3D retains navigation; desktop/mobile screenshots inspected; QA comment `5847703987`; no production claim. |
 | #858–#861 | Independent verification queue | Chrome / Codex | Use active Chrome and local disposable fixtures; failures become new criterion-ready issues only after duplicate search. |
 | #906/#788 | Owner-authorized production data actions | Owner-gated | Execute only with the previously documented snapshot/dry-run/production-shell safeguards; no local evidence substitutes for production. |
 | #886/#847 | Owner decision / dependent | Owner | No implementation inferred; retain as pending decision. |
 | #916→#915/#914–#911 | Dependency chain | Mechanical/complex as scoped | #916 remains partial; do not start downstream microphone routing until its harness contract is terminal. |
 
 Duplicate audit: no new issue created. The stale generated-bundle observation
-is already covered by #903's open closure contract and the existing source-sync
-memory topics; #901/#902 are existing children rather than new work. The
-next closure-ready issue selected for the backlog loop is #858, with #859–#861
-following its explicit engine-fixture dependency order.
+was reconciled by #903; #901/#902 are existing children and are now terminal.
+The next closure-ready issue selected for the backlog loop is #858, with
+#859–#861 following its explicit engine-fixture dependency order. #858 has a
+fresh QA FAIL comment and remains open; do not claim the parent tree complete.

@@ -96,12 +96,16 @@ test.describe('Six-engine chrome-less embeds (#615)', () => {
         const embed = page.frameLocator('iframe[title="Art piece preview"]');
         await expect(embed.locator(fixture.selector)).toBeVisible({ timeout: 15_000 });
         // Toolbar contract (#752, docs/piece-toolbar-parity-matrix.md): icon-only, named buttons;
-        // these fixtures grant Screenshot and Fullscreen only, so no Piece controls button.
+        // this fixture grants Screenshot and Fullscreen only, so no exact Piece-controls
+        // action is expected; the regular embed test covers the capability-enabled popover.
         await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
         await expect(
           page.getByRole('button', { name: 'Expand piece to fullscreen' }),
         ).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Piece controls' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Piece controls', exact: true })).toHaveCount(
+          0,
+        );
+        await expect(page.getByRole('group', { name: 'Directional navigation' })).toHaveCount(0);
         await expect(page.getByRole('button', { name: 'Enable camera view' })).toHaveCount(0);
         if (fixture.engine === 'c2js-interactive') {
           await embed.locator('#c2-canvas').dispatchEvent('pointermove', {
@@ -114,6 +118,9 @@ test.describe('Six-engine chrome-less embeds (#615)', () => {
         const frameBox = await page.locator('iframe[title="Art piece preview"]').boundingBox();
         expect(frameBox).not.toBeNull();
         if (frameBox) expect(Math.abs(frameBox.width / frameBox.height - 4 / 3)).toBeLessThan(0.02);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+          viewport.width,
+        );
         await page.screenshot({
           path: testInfo.outputPath(
             `presentation-2d-embed-${fixture.engine}-${viewport.width}.png`,

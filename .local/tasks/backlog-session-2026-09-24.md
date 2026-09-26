@@ -5487,3 +5487,19 @@ not broadened; the test contract was corrected and rerun.
 | engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Corrected exact Piece-controls selection, null-safe profile fixture updates, and flat-gallery versus 3D-stage assertions in the existing browser tests. |
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required Chromium run: 5 tests passed; strengthened six-engine run: 1 test passed across 1280x900 and 375x812. `make check`: backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests; lint, format, typecheck passed. Mobile C2.js and A-Frame screenshots were inspected. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
+
+## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation selected #898 after #899 and #908 were terminal. Verify-first
+found a stale six-engine assertion: a broad accessible-name query treated the
+hidden compatibility trigger as a visible Piece-controls action. The exact
+capability-gated toolbar behavior was already correct; the test was narrowed
+to the exact action and the route contract was strengthened with overflow and
+directional-control assertions.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed regular chrome-less embeds are the sole scope; immersive embeds remain #907, flat policy is #900, and no product API change is needed. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Updated the six-engine embed E2E contract to use exact control names, assert no directional navigation on regular embeds, and assert no horizontal overflow. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required Chromium suite: 4 passed at 1280x900 and 375x812. Frontend format check, typecheck, and Vitest: 283 files / 3032 tests passed; `git diff --check` passed. Mobile embed screenshot inspected. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |

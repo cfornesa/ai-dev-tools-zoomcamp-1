@@ -24044,6 +24044,13 @@ Addendum 7 update: #848-#851 (scale, key, transposition), blocked on #832.
 
 See `docs/distillation-2026-09-25-chrome-workflow-validity.md`. Issues #852-#862; blocked on #832 and sound issues #833-#851.
 
+### 2026-09-26 workflow-validity synthesis
+
+Issue #862 produced `docs/workflow-validity-2026-engines.md`, synthesizing
+#853–#861 into the required 6 × 9 matrix. The regular creator workflow is
+locally valid for all six engines; cross-surface immersive/embed/ZIP and live
+microphone behavior remain `VALID WITH GAPS` and link to their open follow-ups.
+
 ### 2026-09-26 verification evidence follow-up
 
 | Issue | Scope | Routing | Status |

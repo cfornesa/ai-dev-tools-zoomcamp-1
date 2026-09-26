@@ -1795,3 +1795,16 @@ production publish or data mutation is authorized by this decision.
   substitution because the rostered external readiness model was unavailable;
   the gate classified the project as blocked by remaining browser,
   production-data, download, audio, and parity issues.
+
+## 2026-09-26 — workflow validity and microphone evidence (#862/#909/#910/#916)
+
+- Added `docs/workflow-validity-2026-engines.md`: all six creator-to-regular
+  workflows are locally valid, while immersive/embed/ZIP/microphone parity is
+  `VALID WITH GAPS` and linked to open follow-ups.
+- #909 now routes trusted microphone streams through a native media source;
+  #910 adds the fixed seven-effect mic chain. #916's reusable browser probe
+  correctly fails the current regular generated-piece route at zero source
+  connections, so #911–#915 remain blocked until wiring lands.
+- Physical microphone acceptance remains owner-run across Chrome macOS,
+  Safari iOS, and Chrome Android; no automated fake-device result is treated
+  as hardware or production evidence.

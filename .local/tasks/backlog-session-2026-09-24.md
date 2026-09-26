@@ -5442,3 +5442,17 @@ hardware remain separate children.
 | engineer | Codex / GPT-5 / medium; rostered complex implementation service substituted | yes | Added `setMicEffect`/`isMicEffectEnabled`, fixed-order mic chain rebuilds, reference defaults, disposal, and reset-on-disconnect behavior. |
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | `cd frontend && npx vitest run src/audio` -> 6 files / 55 tests; `npm run typecheck`; full `make check` -> backend 1714 passed / 39 skipped, frontend 283 files / 3032 tests; lint, format, and typecheck passed. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment pending after issue comment; hardware, UI, ZIP, and production evidence remain out of scope. |
+
+## Transaction refresh: #862 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation treated #862 as a documentation synthesis issue, not as a
+request to re-run or duplicate the six engine workflows. Its report links the
+terminal QA evidence for #853–#861 and routes every unresolved surface gap to
+an existing follow-up; no duplicate issue was created.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed the required six-engine by-nine-surface matrix and the local-only evidence boundary. |
+| engineer | Codex / GPT-5 / medium; rostered documentation service substituted | yes | Added `docs/workflow-validity-2026-engines.md`, updated `docs/tasks.md`, and recorded the synthesis decision in `DECISIONS.md`. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Docs-only review confirmed a complete 6x9 matrix with no blank cells, linked PASS/GAP evidence, explicit VALID WITH GAPS verdicts, ranked fixes, and `git diff --check` passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is a local documentation synthesis only; it makes no production, hardware, or ZIP-success claim. |

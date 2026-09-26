@@ -5865,3 +5865,25 @@ AI target.
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS. Evidence is local disposable Compose plus installed Chrome only; no production claim or production data action. |
 
 QA comment: pending. Follow-up implementation queue remains #952, then #951.
+
+## Transaction completion: #951 and #952 — 2026-09-26 — CLOSED / QA PASS
+
+The structured 2D editor shell now keeps File, Save scene, and Ask AI in a
+single page-level primary action group before Visual/Code, zoom, and the
+remaining controls. Authoring tools remain visible in document flow on
+desktop and use an accessible Editor tools disclosure at narrow widths;
+File/Save/Ask AI are absent from the canvas overlay. The Canvas settings
+panel now has a semantic heading, readable labels, and a bordered 48px color
+swatch with an adjacent value output. The parity matrix records the
+structured-2D editor divergence. Commit `7ac9a0c`.
+
+| Issue | Stage | Service / model / effort | Substituted | Result |
+|---|---|---|---:|---|
+| #951 | groom | Codex / GPT-5 / medium | yes | Confirmed the issue was a real frontend placement/accessibility gap; duplicate search found no owning issue. Routed to frontend mechanical implementation. |
+| #951 | engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Moved primary actions to the editor control panel, added responsive Editor tools disclosure with Escape/focus behavior, removed those actions from the stage overlay, and updated affected tests/helpers/docs. |
+| #951 | qa-self-review | Codex / GPT-5 / medium; installed Chrome | yes | Focused Vitest 6 files / 54 tests passed; installed-Chrome `manual2dStageChrome.spec.ts` passed 2/2 at desktop and 375x812; `make check` passed with frontend 284 files / 3035 tests. A broader Layers run retained an unrelated #194 z-order boundary failure; it is not used for #951 closure. |
+| #951 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/951#issuecomment-5850708508`; issue closed. Local disposable Compose/Chromium only; no production claim. |
+| #952 | groom | Codex / GPT-5 / medium | yes | Confirmed a distinct Canvas swatch/heading presentation gap; duplicate search found no owning issue. Routed to frontend mechanical implementation. |
+| #952 | engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Added semantic Canvas heading, readable labels, 48px bordered swatch, accessible color output, and focused component tests without behavior/schema changes. |
+| #952 | qa-self-review | Codex / GPT-5 / medium | yes | Focused Canvas Vitest 3 tests passed; typecheck and format checks passed; full `make check` passed. |
+| #952 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/952#issuecomment-5850708650`; issue closed. Local evidence only; no production claim. |

@@ -116,3 +116,12 @@ zero native source connections. Existing downstream #911 owns that routing
 implementation. Stale browser selectors were reconciled in `91d1779`; #916
 remains open with QA FAIL / VALID WITH GAPS until routing and the six-case
 matrix can be rerun. Comment: `5848259211`.
+
+## #918 transaction refresh — 2026-09-26
+
+#918 is terminal CLOSED / QA PASS. The same-world Playwright contract captured
+the first eight ambient events and the exact C4–C5 A–K sequence at major/C/90.
+Its first run exposed and corrected a real white-key indexing defect in the
+telemetry resolver. The issue is local-only and does not establish production
+sound evidence. #858 is now the next independent/dependency-unblocked
+verification transaction; #911 remains blocked by #916.

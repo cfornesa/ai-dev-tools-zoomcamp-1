@@ -5626,6 +5626,22 @@ silently to implement it.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Full Chromium spec: 2 passed / 3 failed; fake-device lifecycle passed, actual source-flow assertion failed with `sourceConnected = 0`; hardware checklist remains owner-boundary. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA FAIL / VALID WITH GAPS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/916#issuecomment-5848259211`; #916 remains open pending #911/#912 routing and a complete matrix run. |
 
+## Transaction refresh: #918 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation selected #918 as the next independent issue after #916 was
+terminal QA FAIL and #911 was dependency-blocked. Engineering added the
+same-world Playwright listener and found/fixed a real telemetry defect: the
+white-key sequence was indexed through the chromatic map, producing C-E-G-A
+instead of C4–C5. The corrected contract passed against a rebuilt disposable
+Compose frontend.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed #918 was the unique observability gap from #858; no duplicate found; local-only scope and no production UI/persistence preserved. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Commit `a446c5f`: focused `sonicTelemetry.spec.ts`, non-persistent event capture, and corrected A–K white-key resolver. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Rebuilt Compose frontend; focused Chromium 1/1; `npm run typecheck`; full `make check` backend 1714/39 skipped and frontend 283/3032; `git diff --check`. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/918#issuecomment-5848406880`; issue closed. Local evidence only; #858 is the next dependent verification transaction. |
+
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #898 after #899 and #908 were terminal. Verify-first

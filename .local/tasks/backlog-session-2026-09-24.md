@@ -5694,6 +5694,23 @@ the complete C4, D4, E4, F4, G4, A4, B4, C5 sequence.
 | qa-self-review | Codex / GPT-5 / medium; active Chrome | yes | Focused test 6 passed, typecheck passed, rebuilt Compose frontend, decoded C4–C5 for A–K in anonymous Chrome, and `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed: backend 1714/39 skipped and frontend 283/3032. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/927#issuecomment-5848777181`; issue closed. Local evidence only; no production publish. |
 
+## Distillation handoff: #920 — 2026-09-26 — NEXT / GROOMED
+
+Current task-distillation selected #920 as the next independent issue. It is
+a browser verification slice for an existing structured 2D piece, not a new
+production feature: the required work is a deterministic layer-recolor fake
+scenario, a seeded saved-piece fixture with Sky/Hills/Sun plus locked Frame,
+and the Playwright proof of mention scope, locked-layer refusal, untouched
+layer equality, undo/restore, and responsive screenshots. #921 is dependent
+on #920; #922 is independent but is a separate complex backend contract and
+must not be mixed into this transaction. Compose preflight passed for the
+current repository project; no production or live-provider action is needed.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| distill / groom | Codex / GPT-5 / medium | yes | No duplicate found; #920 is criterion-ready and next in dependency order. Routing is stage 2a test/fixture work unless scope enforcement fails, which must become a separate implementation-defect issue. |
+| engineer | pending | — | Next action: add the deterministic layer-recolor scenario and fixture/spec, then run the focused browser command. |
+
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #898 after #899 and #908 were terminal. Verify-first

@@ -5298,8 +5298,8 @@ clients can render the service convention consistently.
 
 | Issue | Groom | Engineer | QA self-review | Reconcile | Close |
 |---|---|---|---|---|---|
-| #897 public authorship identity | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; stage 2b | focused backend 91 passed; frontend focused 43 + viewer 60 passed; `make check` green (1711 backend passed / 39 skipped; 283 frontend files / 3031 tests); lint/type/format pass | QA PASS comment `5846009549`; local closure-ready, production remains outside issue scope | pending |
-| #904 frontend attribution formatter | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; stage 2a | formatter unit tests pass; public/immersive/viewer/profile/gallery/collection consumers typecheck; `make check` green | QA PASS comment `5846009648`; local closure-ready, responsive/deployed evidence is separate | pending |
+| #897 public authorship identity | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; stage 2b | focused backend 91 passed; frontend focused 43 + viewer 60 passed; `make check` green (1711 backend passed / 39 skipped; 283 frontend files / 3031 tests); lint/type/format pass | QA PASS comment `5846009549`; closed after additive-contract review; #904/#905 remain follow-ups | CLOSED |
+| #904 frontend attribution formatter | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; stage 2a | formatter unit tests pass; public/immersive/viewer/profile/gallery/collection consumers typecheck; `make check` green | QA PASS comment `5846009648`; OPEN pending supported-host 1280x900/375x812 visual/no-overflow evidence | pending |
 
 Implementation commit: `823b972`. Production deployment is not claimed;
 these additive fields require the normal release verification before closure.

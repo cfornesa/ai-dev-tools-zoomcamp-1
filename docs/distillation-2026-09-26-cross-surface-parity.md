@@ -105,3 +105,14 @@ Chrome/CDP bridge did not provide a same-world page evaluator. Keep #918 open
 until a real Playwright/Chrome harness captures the events, then unblock the
 #858 verification chain. This is local disposable Compose evidence only; no
 production claim or production data action is authorized by this transaction.
+
+## #916 transaction refresh — 2026-09-26
+
+#916 was verify-first: its reusable audio-flow helper, hardware checklist, and
+memory boundary were already present in `ef302dc`. A disposable Compose
+Chromium run exposed a real downstream gap rather than a false QA failure:
+the generated regular viewer reports microphone permission as active but makes
+zero native source connections. Existing downstream #911 owns that routing
+implementation. Stale browser selectors were reconciled in `91d1779`; #916
+remains open with QA FAIL / VALID WITH GAPS until routing and the six-case
+matrix can be rerun. Comment: `5848259211`.

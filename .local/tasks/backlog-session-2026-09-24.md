@@ -5608,6 +5608,24 @@ evaluates in an isolated world and cannot verify the React runtime listener.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | `npm run typecheck`, focused Vitest (2 files / 9 tests), lint, `git diff --check`, and full `make check` passed (backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests). Visible running sound and last ambient note passed in Chrome; same-world event capture and exact keyboard sequence remain unverified. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA FAIL / VALID WITH GAPS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/918#issuecomment-5848112010`; #918 remains open, and #858 remains blocked on its missing browser evidence. |
 
+## Transaction refresh: #916 — 2026-09-26 — OPEN / QA FAIL — VALID WITH GAPS
+
+Task-distillation selected #916 after confirming its helper, hardware checklist,
+and memory boundary already existed in commit `ef302dc`. QA then ran the
+prescribed disposable Compose Chromium contract. Selector drift was corrected
+in commit `91d1779`, but the decisive audio-flow probe observed zero native
+microphone source connections: the generated regular viewer still stores the
+permission stream without routing it through `SonicEngine.connectMic(stream)`.
+That product gap is already owned by downstream #911; #916 is not expanded
+silently to implement it.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed #909 is closed, existing helper/checklist are the intended scope, and #911 owns generated live-route routing; no duplicate created. |
+| engineer | Codex / GPT-5 / medium; rostered complex implementation service substituted historically | yes | Verify-first found existing `ef302dc`; mechanical selector reconciliation committed as `91d1779`. No product audio-routing change made under this verification issue. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Full Chromium spec: 2 passed / 3 failed; fake-device lifecycle passed, actual source-flow assertion failed with `sourceConnected = 0`; hardware checklist remains owner-boundary. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA FAIL / VALID WITH GAPS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/916#issuecomment-5848259211`; #916 remains open pending #911/#912 routing and a complete matrix run. |
+
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #898 after #899 and #908 were terminal. Verify-first

@@ -5270,3 +5270,12 @@ closed #752/#753/#754/#765/#769 without reopening them.
 | engineer | Codex / GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | No implementation change required: `PublicArtPieceViewer` already supplies the shared embed toolbar and engine-gated behavior. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | Active Chrome verified C2 and Three.js UUID embeds: authored artwork rendered; icon toolbar exposed Screenshot, Download ZIP, Immersive, Fullscreen; flat embed had no 3D controls. Focused Vitest 24 passed. |
 | reconcile | Codex / GPT-5 / medium | yes | Not closed: required supported-host 1280x900 and 375x812 Chromium screenshots/overflow evidence remain pending; local Compose evidence cannot satisfy that boundary. |
+
+### Transaction refresh: #907 — 2026-09-26 — QA PARTIAL / NO CODE CHANGE
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Revalidated as the separate immersive-embed entry point split from #898; flat-engine presentation follows #893/#900's 3D-only navigation decision. |
+| engineer | Codex / GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | No implementation change required: `ImmersiveArtPieceViewer` already serves the shared toolbar, responsive 2D gallery shell, and 3D stage through the embed route. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | Active Chrome verified authored Three.js immersive embed and C2 immersive gallery embed; focused Vitest 23 passed. C2 exposed no directional controls. |
+| reconcile | Codex / GPT-5 / medium | yes | Not closed: supported-host 1280x900/375x812 screenshots and touch-target evidence remain pending; local Compose evidence cannot satisfy that boundary. |

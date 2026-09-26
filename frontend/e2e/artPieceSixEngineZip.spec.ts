@@ -113,12 +113,13 @@ test.describe('Six-engine offline regular and immersive bundles (#609)', () => {
     await loginViaUI(page, e2eFixtures.owner.email, e2eFixtures.password);
     const profileResponse = await apiGet(context, '/api/account/profile/');
     expect(profileResponse.ok()).toBe(true);
-    const profile = (await profileResponse.json()) as Record<string, unknown>;
+    await expect(profileResponse).toBeOK();
+    const profile = (await profileResponse.json()) as { revision: number };
     const updatedProfile = await apiPatch(context, '/api/account/profile/', {
-      ...profile,
       handle,
       display_name: 'Six Engine ZIP Fixture',
       is_public: true,
+      revision: profile.revision,
     });
     expect(updatedProfile.ok()).toBe(true);
 

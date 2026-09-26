@@ -154,6 +154,9 @@ ${library === 'c2js-interactive' ? VISITOR_DRAWING_CSS : ''}
   gap: .5rem;
   width: min(22rem, calc(100vw - 1.5rem));
   box-sizing: border-box;
+  height: min(70vh, 32rem);
+  max-height: calc(100vh - 5.25rem);
+  overflow-y: auto;
   padding: .75rem;
   color: #fff;
   background: rgba(10,12,20,.97);

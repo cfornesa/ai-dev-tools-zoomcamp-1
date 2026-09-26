@@ -191,6 +191,9 @@ describe('generateArtPieceBundle', () => {
     expect(css).toContain('#art-piece-controls-panel > label {');
     expect(css).toContain('#art-piece-controls-panel > fieldset {');
     expect(css).toContain('grid-template-columns: minmax(0, 1fr);');
+    expect(css).toContain('height: min(70vh, 32rem);');
+    expect(css).toContain('max-height: calc(100vh - 5.25rem);');
+    expect(css).toContain('overflow-y: auto;');
   });
 
   it('exports a hidden ready status and visible alert target for runtime failures (#801)', async () => {

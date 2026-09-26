@@ -94,3 +94,14 @@ then Reset restored 90/major. The required first-eight ambient notes and
 runtime exposes no supported inspectable telemetry hook. Duplicate audit found
 no existing issue for that audio observability gap, so #918 was created and
 linked from the QA FAIL comment. #858 remains open; #859–#861 stay blocked.
+
+## #918 transaction refresh — 2026-09-26
+
+#918 is the distilled observability gap from #858. The implementation commit
+`a62313c` emits non-persistent `augmentrart:sonic-note` browser events for
+ambient and keyboard notes. Focused checks and the full repository check pass,
+but exact first-eight and A–K sequence capture remains open because the active
+Chrome/CDP bridge did not provide a same-world page evaluator. Keep #918 open
+until a real Playwright/Chrome harness captures the events, then unblock the
+#858 verification chain. This is local disposable Compose evidence only; no
+production claim or production data action is authorized by this transaction.

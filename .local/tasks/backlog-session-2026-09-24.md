@@ -5591,6 +5591,23 @@ audio observability issue; new criterion-ready issue #918 owns that gap.
 | qa-self-review | Codex / GPT-5 / medium | yes | Active Chrome verified exact editor/public/immersive viewports, nonblank scene, toolbar, running sound status, persisted defaults, 120/minor change, and reset. Required decoded motion and note-sequence evidence remain unverified. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA FAIL / VALID WITH GAPS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/858#issuecomment-5848040658`; #858 remains open pending #918 and the documented evidence boundary. |
 
+## Transaction refresh: #918 — 2026-09-26 — OPEN / QA FAIL — VALID WITH GAPS
+
+Task-distillation created #918 after #858's required sound-sequence evidence
+hit a browser-observability gap. The implementation adds a non-persistent
+`augmentrart:sonic-note` browser event for ambient and keyboard notes. It does
+not change product UI, persistence, or audio behavior. The event hook and
+focused frontend checks pass, but the required same-world Playwright capture
+was not completed in this transaction because the available Chrome/CDP bridge
+evaluates in an isolated world and cannot verify the React runtime listener.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed this is a new, narrowly scoped QA-observability gap; no duplicate found; production persistence and UI changes explicitly excluded. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Committed `a62313c`: emit non-persistent ambient and keyboard `SonicNoteEvent` browser events from the public sound runtime. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | `npm run typecheck`, focused Vitest (2 files / 9 tests), lint, `git diff --check`, and full `make check` passed (backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests). Visible running sound and last ambient note passed in Chrome; same-world event capture and exact keyboard sequence remain unverified. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA FAIL / VALID WITH GAPS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/918#issuecomment-5848112010`; #918 remains open, and #858 remains blocked on its missing browser evidence. |
+
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #898 after #899 and #908 were terminal. Verify-first

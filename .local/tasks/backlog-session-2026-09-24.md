@@ -5488,7 +5488,7 @@ not broadened; the test contract was corrected and rerun.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required Chromium run: 5 tests passed; strengthened six-engine run: 1 test passed across 1280x900 and 375x812. `make check`: backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests; lint, format, typecheck passed. Mobile C2.js and A-Frame screenshots were inspected. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
 
-## Transaction refresh: #922 — 2026-09-26 — ENGINEERING COMPLETE / QA NEXT
+## Transaction refresh: #922 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation rechecked the open Stream F queue against the GitHub issue
 list, the prior Stream F manifest, and the current worktree. #922 remains the
@@ -5503,8 +5503,8 @@ production database action is in scope.
 |---|---|---:|---|
 | distill / groom | Codex / GPT-5 / medium | yes | Duplicate audit found #922 already owns this contract; routing is stage 2b complex because it changes the persisted AI-run model, API contract, migration, and validation semantics. |
 | engineer | Codex / GPT-5 / medium; rostered Ollama Cloud / kimi-k3 | yes | Added the `assets` descriptor contract, `add_layer` scope, migration `0096`, prompt augmentation, provider fixture, and preservation/foreign-asset rejection tests. Fixed an initial false rejection of the root scene ID by limiting preservation checks to existing layers/shapes. |
-| qa-self-review | pending | — | Focused backend run currently passes 72 tests with 1 PostgreSQL-only skip; full backend, API-contract, frontend, and browser checks remain to be run. |
-| reconcile / close | pending | — | Issue remains OPEN until QA posts the criterion matrix and the full required checks are reconciled. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium substituted | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/922#issuecomment-5849465934`. `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make backend-check` passed: ruff, format, mypy, and 1723 passed / 39 skipped / 10 warnings. Focused AI tests passed 76 / 1 skipped; migrations check and diff check passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | Criterion matrix posted and #922 closed in GitHub. Commit `da31f06`. Local test-settings/SQLite and deterministic offline-provider evidence only; no production claim. |
 
 ## Transaction refresh: #895 — 2026-09-26 — CLOSED / QA PASS
 

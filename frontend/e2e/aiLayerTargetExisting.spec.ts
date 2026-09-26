@@ -55,6 +55,7 @@ const LAYER_TARGET_SCENE = {
 async function createExistingPiece(context: BrowserContext): Promise<{
   id: string;
   before: Record<string, unknown>;
+  beforeVersionId: number;
 }> {
   const created = await apiPost(context, '/api/projects/blank/');
   expect(created.status()).toBe(201);
@@ -65,13 +66,14 @@ async function createExistingPiece(context: BrowserContext): Promise<{
     change_label: 'AI layer target fixture',
   });
   expect(saved.status()).toBe(201);
+  const savedBody = (await saved.json()) as { id: number };
   const project = (await (await apiGet(context, `/api/projects/${id}/`)).json()) as {
     current_version: number;
   };
   const version = (await (
     await apiGet(context, `/api/projects/${id}/versions/${project.current_version}/`)
   ).json()) as { scene_json: Record<string, unknown> };
-  return { id, before: version.scene_json };
+  return { id, before: version.scene_json, beforeVersionId: savedBody.id };
 }
 
 async function chooseMention(page: Page, name: string): Promise<void> {
@@ -93,7 +95,7 @@ test.describe('AI layer targeting on an existing structured piece (#920)', () =>
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const { id, before } = await createExistingPiece(context);
+    const { id, before, beforeVersionId } = await createExistingPiece(context);
     await setAIScenario(page, 'layer-recolor');
     await page.goto(`/ai-projects/${id}`);
     await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
@@ -138,6 +140,20 @@ test.describe('AI layer targeting on an existing structured piece (#920)', () =>
       await apiGet(context, `/api/projects/${id}/versions/${project.current_version}/`)
     ).json()) as { scene_json: Record<string, unknown> };
     expect(afterPlainAttempt.scene_json).toEqual(after);
+
+    // Restore the pre-AI version through the same persisted version endpoint
+    // used by the Version history panel, then verify the restored scene is an
+    // exact copy of the pre-run document rather than a partial inverse patch.
+    const restored = await apiPost(
+      context,
+      `/api/projects/${id}/versions/${beforeVersionId}/restore/`,
+      {},
+    );
+    expect(restored.status()).toBe(201);
+    const restoredBody = (await restored.json()) as {
+      scene_json: Record<string, unknown>;
+    };
+    expect(restoredBody.scene_json).toEqual(before);
 
     // Capture the same accepted state at the required phone viewport. The
     // test exercises responsive layout without changing the persisted scene.

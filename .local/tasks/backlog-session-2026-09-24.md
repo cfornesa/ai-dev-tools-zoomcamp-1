@@ -5488,6 +5488,31 @@ not broadened; the test contract was corrected and rerun.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required Chromium run: 5 tests passed; strengthened six-engine run: 1 test passed across 1280x900 and 375x812. `make check`: backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests; lint, format, typecheck passed. Mobile C2.js and A-Frame screenshots were inspected. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
 
+## Distillation refresh: #920 follow-ups — 2026-09-26 — PROPOSED / OPEN
+
+Active Chrome verification confirmed the functional #920 target-selection path:
+the Hills chip was selected, the scoped edit advanced the saved version, plain
+Sun text returned an empty patch, and locked Frame suggestions were disabled.
+The issue remains OPEN / VALID WITH GAPS because the required Playwright
+Chromium process fails before test execution on this macOS host and the
+fixture's multiple-shapes-per-layer wording conflicts with the canonical
+one-shape-per-layer invariant. A duplicate audit found no existing owners for
+the following newly observed gaps, so task-distillation created them and linked
+their ownership here.
+
+| Issue | Stage | Service / model / effort | Substituted | Result |
+|---|---|---|---:|---|
+| #947 | groom / distill | Codex / GPT-5 / medium | yes | QA infrastructure issue for an approved Playwright-capable Chromium path; no product implementation in scope. |
+| #948 | groom / distill | Codex / GPT-5 / medium | yes | Contract-reconciliation issue for #920's impossible fixture wording; must not weaken canonical validation. |
+| #949 | groom / distill | Codex / GPT-5 / medium | yes | New frontend gap for visible spacing between target names and kind labels; no duplicate found. |
+| #950 | groom / distill | Codex / GPT-5 / medium | yes | New semantics/fixture issue for background modeling and meaningful Sky/Hills/Sun rendering; depends on #948. |
+
+No engineering or QA stage was started for these new issues during
+distillation. #920 remains the next unresolved transaction in strict queue
+order; #921 remains blocked on #920, while #923 is unblocked by the closed
+#922 but is not started out of queue order. Evidence is local active Chrome
+and repository inspection only; no production claim.
+
 ## Transaction refresh: #922 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation rechecked the open Stream F queue against the GitHub issue
@@ -5777,3 +5802,36 @@ and both default gallery and explicit steering behavior were rerun.
 | engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Corrected the exact Piece-controls selector in the flat spatial regression; no product code change was required. |
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Six-engine immersive Chromium run passed; flat spatial opt-in suite passed 4/4 at 1280x900 and 375x812. `make check` passed: backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests; lint, format, typecheck passed. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
+
+## Transaction refresh: #920 — 2026-09-26 — OPEN / QA FAIL — VALID WITH GAPS
+
+The active-Chrome verification confirmed the stable Hills target, accepted a
+scoped Hills-only recolor, produced an explicit empty patch for a plain Sun
+request, and exposed locked Frame targets as disabled. The restore assertion is
+now present in `52722e7`, but the required Playwright run cannot launch on this
+macOS host because bundled Chromium fails during MachPort rendezvous before
+test execution. The fixture also contains four rectangles, one per layer;
+the requested multiple-shapes-per-layer wording conflicts with the canonical
+scene contract and is tracked by #948. The latest editor screenshot exposed a
+separate toolbar/control-placement regression, #951, and the target-label and
+background-semantic follow-ups remain #949/#950.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom / distill | Codex / GPT-5 / medium | yes | Rechecked #920 against the canonical scene contract and active-Chrome evidence; created #947–#950 for distinct gaps and #951 for the newly observed editor-shell regression. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Added restore coverage in `52722e7`; no production code/data action. |
+| qa-self-review | Codex / GPT-5 / medium; active Chrome | yes | Active Chrome passed target selection, Hills-only accept, plain Sun no-op, and locked Frame refusal. Full `make check` passed: backend 1723 passed / 39 skipped; frontend 283 files / 3032 tests; lint, format, and typecheck passed. Required Playwright execution remains blocked by host-level Chromium MachPort permission denied. |
+| reconcile / close | Codex / GPT-5 / medium | yes | #920 remains OPEN / VALID WITH GAPS. Do not close until #947 provides an approved browser path, screenshots at 1280x900 and 375x812 are attached/inspected, and #948 resolves the fixture-contract conflict. Local Compose + active Chrome only; no production claim. |
+
+## Distillation refresh: #951 and #952 — 2026-09-26 — PROPOSED / OPEN
+
+User feedback during active-Chrome QA identified two new frontend gaps. #951
+covers File/Ask AI placement, the missing responsive authoring-toolbar access,
+and control-panel sizing. #952 covers the Canvas background-color affordance
+and heading legibility on mobile. Duplicate searches found no open or closed
+issue owning either exact gap; both were created before any implementation.
+
+| Issue | Stage / routing | Waits for | Result |
+|---|---|---|---|
+| #951 | Stage 2a frontend mechanical | #920 | Criterion-ready issue created; do not start until the strict queue reaches it. |
+| #952 | Stage 2a frontend mechanical | — | Criterion-ready issue created; retain as a separate accessibility/presentation transaction. |

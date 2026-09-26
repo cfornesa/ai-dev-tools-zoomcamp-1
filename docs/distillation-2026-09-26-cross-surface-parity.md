@@ -137,3 +137,65 @@ required hand-authored source-editor fixture, fixture-specific ambient/A–K
 trace, or decoded motion percentage. QA comment: `5848508644`; #858 remains
 open and #859–#861 remain blocked. Local Compose/Chrome only; no production
 claim.
+
+## Stream F — AI layer targeting and media-asset tests (added 2026-09-26)
+
+Finding: no open issue and no issue closed in the prior 24 hours covers either test. Older closed work (#661 #662 #663 #813 #815 #819 #821) built the typeahead, scope enforcement and an offline corpus; browser coverage is UI-only (`aiMention2d`) or fake-provider on an AI-created piece (`aiAgent2d`). The media-asset-as-layer feature does not exist: the AI backend has no awareness of `mediaAssetId`, and `aiTargeting.ts` offers only assets already placed in the scene.
+
+| Q | Issue | Waits for |
+| --- | --- | --- |
+| 28 | #920 existing structured 2D piece: layer-only AI edit test | — |
+| 29 | #921 existing generated piece: region/ink/element edit test | #920 |
+| 30 | #922 AI contract: media asset as new image layer | — |
+| 31 | #923 editor: full library in @ list + insert as layer | #922 |
+| 32 | #924 new-piece asset test | #923 |
+| 33 | #925 existing-piece asset test | #924 |
+| 34 | #926 live-model demonstration in Chrome (bounded runs) | #920 #924 #925 |
+
+### Follow-ups distilled during #920 active-Chrome QA (2026-09-26)
+
+The live Chrome check confirmed target selection, but did not erase two
+evidence/contract gaps: the required Playwright Chromium process cannot launch
+on this macOS host, and the fixture wording asks for multiple shapes per layer
+even though the canonical scene contract gives each shape its own layer. The
+user also reported a visible separator problem in target labels and a semantic
+mismatch between the Sky/Hills/Sun fixture names and its generic rectangles.
+Duplicate audits found no existing owners, so these gaps were captured as new
+issues rather than folded into #920.
+
+| Q | Issue | Waits for |
+| --- | --- | --- |
+| 54 | #947 approved Playwright-capable Chromium path for macOS E2E | #920 |
+| 55 | #948 reconcile #920 fixture with one-shape-per-layer contract | #920 |
+| 56 | #949 target suggestion/chip name-kind spacing | — |
+| 57 | #950 structured 2D background semantics and meaningful QA fixtures | #948 |
+| 58 | #951 editor shell toolbar/control placement and responsive tools access | #920 |
+| 59 | #952 Canvas color-picker affordance and mobile heading legibility | — |
+
+## Stream G — local-first storage, sync, and public transfer (added 2026-09-26)
+
+Owner decisions: local-first default with opt-in sync (account-level toggle plus per-piece choice); public pieces and their media must live in PostgreSQL; warnings and secure transfer for sync and publish; existing pieces stay synced and a Codex-written, owner-run script makes free accounts' pieces public and enables account sync for admin/paid; unpublish follows retention; no hard-coded size cap; existing local pieces offered for upload; per-piece ZIP export/import and account export stay functional.
+
+| Q | Issue | Waits for |
+| --- | --- | --- |
+| 35 | #928 contract (docs) | — |
+| 36 | #929 version-tagged visitor-local storage | — |
+| 37 | #930 portable piece package v1 | #928 |
+| 38 | #931 plan quotas, estimate, usage report | #928 |
+| 39 | #932 hardened server package intake | #930 #931 |
+| 40 | #933 local repository v5 (3D, generated) | #928 #930 |
+| 41 | #934 local-first create (2D) | #933 |
+| 42 | #935 per-piece export | #930 #934 |
+| 43 | #936 per-piece import | #935 #933 |
+| 44 | #937 local-first 3D | #933 #934 #936 |
+| 45 | #938 local-first generated | #937 |
+| 46 | #939 off-browser transfer disclosure | #938 |
+| 47 | #940 account-level sync setting | #939 #932 |
+| 48 | #941 public media delivery (resolves #886) | #932 |
+| 49 | #942 publish as transfer | #941 |
+| 50 | #943 upload offer for existing local pieces | #940 #932 #931 #934 |
+| 51 | #944 unpublish retention | #942 |
+| 52 | #945 account data export ZIP | #935 #936 |
+| 53 | #946 one-time script (owner-run) | #940 #942 #931, site sync on |
+
+Known gaps recorded rather than hidden: cloud backup covers only 2D today (3D and generated have no sync path until #932); public media has no server home until #941; the signup consent (#524) is inert until #940.

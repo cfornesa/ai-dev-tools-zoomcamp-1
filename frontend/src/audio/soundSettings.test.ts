@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   applySoundSettingsToEngine,
+  authoredSoundHash,
   DEFAULT_SOUND_SETTINGS,
   readSoundSettings,
   resetSoundSettings,
@@ -66,24 +67,58 @@ describe('soundSettings', () => {
     );
   });
 
-  it('uses the per-piece versioned key and round-trips valid settings', () => {
+  it('stores only authored-tagged visitor overrides and round-trips them', () => {
     const target = storage();
     const settings = { ...DEFAULT_SOUND_SETTINGS, ambientBpm: 120 };
     writeSoundSettings('piece-1', settings, target);
 
-    expect(target.setItem).toHaveBeenCalledWith(
-      soundSettingsKey('piece-1'),
-      JSON.stringify(settings),
-    );
+    expect(JSON.parse(target.getItem(soundSettingsKey('piece-1'))!)).toEqual({
+      v: 2,
+      authoredHash: authoredSoundHash(DEFAULT_SOUND_SETTINGS),
+      overrides: { ambientBpm: 120 },
+    });
     expect(readSoundSettings('piece-1', target)).toEqual(settings);
   });
 
-  it('returns defaults for invalid or old-version data', () => {
+  it('rejects a version-2 record tagged for an older authored version', () => {
+    const target = storage(
+      JSON.stringify({
+        v: 2,
+        authoredHash: 'stale',
+        overrides: { ambientScale: 'minor' },
+      }),
+    );
+
+    expect(readSoundSettings('piece-1', target)).toEqual(DEFAULT_SOUND_SETTINGS);
+    expect(target.removeItem).toHaveBeenCalledWith(soundSettingsKey('piece-1'));
+  });
+
+  it('migrates legacy snapshots while dropping old defaults that mask authored values', () => {
+    const authored = { ...DEFAULT_SOUND_SETTINGS, ambientScale: 'major' as const };
+    const target = storage(
+      JSON.stringify({
+        ...DEFAULT_SOUND_SETTINGS,
+        version: 1,
+        ambientScale: 'pentatonic',
+        ambientBpm: 120,
+      }),
+    );
+
+    expect(readSoundSettings('piece-1', target, authored)).toMatchObject({
+      ambientScale: 'major',
+      ambientBpm: 120,
+    });
+    expect(JSON.parse(target.getItem(soundSettingsKey('piece-1'))!)).toEqual({
+      v: 2,
+      authoredHash: authoredSoundHash(authored),
+      overrides: { ambientBpm: 120 },
+    });
+  });
+
+  it('returns defaults for invalid data', () => {
     const invalid = storage(JSON.stringify({ ...DEFAULT_SOUND_SETTINGS, ambientBpm: 999 }));
-    const old = storage(JSON.stringify({ ...DEFAULT_SOUND_SETTINGS, version: 0 }));
 
     expect(readSoundSettings('piece-1', invalid)).toEqual(DEFAULT_SOUND_SETTINGS);
-    expect(readSoundSettings('piece-1', old)).toEqual(DEFAULT_SOUND_SETTINGS);
   });
 
   it('survives malformed JSON and storage failures', () => {

@@ -78,3 +78,10 @@ action, is not a migration, and must produce a before/after manifest.
 Open owners: media/public delivery implementation (#941), per-piece package
 format/import/export (#930, #935, #936), local-first record implementation
 (#929, #933–#934, #937–#938), and account-level sync/transfer UX (#939–#943).
+
+## Browser storage boundary
+
+Browser-local preferences and operational pointers are not authored scene
+data. Any value derived from authored content must be version-tagged and
+invalidated when the authored content changes. See the [browser storage audit](local-storage-audit.md)
+for the key-by-key decisions and the #929 sound-settings implementation.

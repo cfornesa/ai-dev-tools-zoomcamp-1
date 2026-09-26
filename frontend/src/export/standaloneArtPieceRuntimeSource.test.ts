@@ -134,6 +134,8 @@ describe('standalone art-piece runtime source', () => {
     expect(source).toContain('var authoredSonic =');
     expect(source).toContain('authoredSonic.tempo');
     expect(source).toContain('authoredSonic.scale');
+    expect(source).toContain('"scale":"major"');
+    expect(source).not.toContain('localStorage');
     expect(source).toContain('authoredSynth.filter_type');
     expect(() => new Function(scriptBody(source))).not.toThrow();
   });

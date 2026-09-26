@@ -6012,3 +6012,12 @@ dependency-blocked on an authorized published production execution path, while
 #847/#886/#941 and the local-first implementation stream remain independent
 follow-ups. The active Chrome process/tab remains available, but its current
 local app state is unauthenticated and shows Login; no logout was performed.
+
+## Transaction: #929 — 2026-09-26 — IMPLEMENTED / QA PENDING
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| groom / distill | Codex / GPT-5 / medium | PASS | Confirmed #929 is the next independent frontend mechanical issue; #928 is closed and no duplicate was found. Missing `docs/testing-guidelines.md` was recorded as an environment/documentation gap rather than silently assumed. |
+| engineer | Codex / GPT-5 / medium; rostered mechanical service substituted | PASS | `soundSettings.ts` now stores authored-hash-tagged overrides, migrates v1 snapshots, invalidates stale records, and forwards authored defaults from `PieceStageControls`; added standalone ZIP regression assertion and `docs/local-storage-audit.md`. |
+| qa-self-review | pending | — | Focused tests (324 passed) and frontend typecheck pass; full `make check` and criterion matrix remain pending. |
+| reconcile / close | pending | — | Issue remains open until full checks and QA comment are recorded. |

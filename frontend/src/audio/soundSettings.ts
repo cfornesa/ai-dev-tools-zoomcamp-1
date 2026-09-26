@@ -1,7 +1,8 @@
 import type { SonicDefaults } from './sonicContract';
 import type { SonicEngine } from './sonicEngine';
 
-export const SOUND_SETTINGS_VERSION = 1;
+export const SOUND_SETTINGS_VERSION = 2;
+const LEGACY_SOUND_SETTINGS_VERSION = 1;
 
 export const SOUND_SCALES = [
   'major',
@@ -43,6 +44,18 @@ export type SoundSettings = {
   voiceInstruments: { ambient: string; movement: string; melodic: string };
 };
 
+export type SoundSettingsOverrides = Partial<
+  Omit<SoundSettings, 'version' | 'voiceInstruments'>
+> & {
+  voiceInstruments?: Partial<SoundSettings['voiceInstruments']>;
+};
+
+type StoredSoundSettings = {
+  v: typeof SOUND_SETTINGS_VERSION;
+  authoredHash: string;
+  overrides: SoundSettingsOverrides;
+};
+
 export const DEFAULT_SOUND_SETTINGS: SoundSettings = {
   version: SOUND_SETTINGS_VERSION,
   soundVolume: 0.2,
@@ -80,12 +93,12 @@ function inRange(value: unknown, min: number, max: number): value is number {
   return finite(value) && value >= min && value <= max;
 }
 
-function isSoundSettings(value: unknown): value is SoundSettings {
+function isSoundSettings(value: unknown, version = SOUND_SETTINGS_VERSION): value is SoundSettings {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<SoundSettings>;
   const instruments = candidate.voiceInstruments;
   return (
-    candidate.version === SOUND_SETTINGS_VERSION &&
+    candidate.version === version &&
     inRange(candidate.soundVolume, 0, 1) &&
     inRange(candidate.ambientBpm, 40, 220) &&
     inRange(candidate.ambientVolume, 0, 100) &&
@@ -114,6 +127,92 @@ function isSoundSettings(value: unknown): value is SoundSettings {
     typeof instruments.movement === 'string' &&
     typeof instruments.melodic === 'string'
   );
+}
+
+function cloneSettings(settings: SoundSettings): SoundSettings {
+  return { ...settings, voiceInstruments: { ...settings.voiceInstruments } };
+}
+
+function stableValue(value: unknown): string {
+  return JSON.stringify(value);
+}
+
+/** Stable, non-secret tag for the authored baseline of one piece version. */
+export function authoredSoundHash(settings: SoundSettings): string {
+  let hash = 2166136261;
+  for (const character of stableValue(settings)) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function overridesFromSettings(
+  settings: SoundSettings,
+  authored: SoundSettings,
+): SoundSettingsOverrides {
+  const overrides: SoundSettingsOverrides = {};
+  for (const key of Object.keys(authored) as Array<keyof Omit<SoundSettings, 'version'>>) {
+    if (key === 'voiceInstruments') {
+      const voiceOverrides: Partial<SoundSettings['voiceInstruments']> = {};
+      for (const voice of Object.keys(authored.voiceInstruments) as Array<
+        keyof SoundSettings['voiceInstruments']
+      >) {
+        if (settings.voiceInstruments[voice] !== authored.voiceInstruments[voice]) {
+          voiceOverrides[voice] = settings.voiceInstruments[voice];
+        }
+      }
+      if (Object.keys(voiceOverrides).length) overrides.voiceInstruments = voiceOverrides;
+    } else if (settings[key] !== authored[key]) {
+      (overrides as Record<string, unknown>)[key] = settings[key];
+    }
+  }
+  return overrides;
+}
+
+function mergeOverrides(
+  fallback: SoundSettings,
+  overrides: SoundSettingsOverrides,
+): SoundSettings | null {
+  const merged: SoundSettings = {
+    ...fallback,
+    ...overrides,
+    version: SOUND_SETTINGS_VERSION,
+    voiceInstruments: {
+      ...fallback.voiceInstruments,
+      ...(overrides.voiceInstruments ?? {}),
+    },
+  };
+  return isSoundSettings(merged) ? cloneSettings(merged) : null;
+}
+
+function migrateLegacySettings(
+  legacy: SoundSettings,
+  authored: SoundSettings,
+): SoundSettingsOverrides {
+  // Version 1 persisted the entire default-filled snapshot. Values that still
+  // equal the old application defaults were not visitor choices, so dropping
+  // them prevents the old pentatonic default from masking a new authored major
+  // default. Values explicitly changed by a visitor remain overrides.
+  const legacyOverrides = overridesFromSettings(legacy, DEFAULT_SOUND_SETTINGS);
+  const migrated: SoundSettingsOverrides = {};
+  for (const [key, value] of Object.entries(legacyOverrides)) {
+    if (key === 'voiceInstruments' && value && typeof value === 'object') {
+      const voices = Object.fromEntries(
+        Object.entries(value).filter(
+          ([voice, instrument]) =>
+            instrument !==
+            authored.voiceInstruments[voice as keyof SoundSettings['voiceInstruments']],
+        ),
+      );
+      if (Object.keys(voices).length) {
+        migrated.voiceInstruments = voices as Partial<SoundSettings['voiceInstruments']>;
+      }
+    } else if (value !== authored[key as keyof Omit<SoundSettings, 'version'>]) {
+      (migrated as Record<string, unknown>)[key] = value;
+    }
+  }
+  return migrated;
 }
 
 export function soundSettingsFromSonic(sonic?: SonicDefaults): SoundSettings {
@@ -161,11 +260,35 @@ export function readSoundSettings(
     const raw = target.getItem(soundSettingsKey(pieceId));
     if (!raw) return { ...fallback, voiceInstruments: { ...fallback.voiceInstruments } };
     const parsed: unknown = JSON.parse(raw);
-    if (!isSoundSettings(parsed))
-      return { ...fallback, voiceInstruments: { ...fallback.voiceInstruments } };
-    return { ...parsed, voiceInstruments: { ...parsed.voiceInstruments } };
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      'v' in parsed &&
+      parsed.v === SOUND_SETTINGS_VERSION &&
+      'authoredHash' in parsed &&
+      parsed.authoredHash === authoredSoundHash(fallback) &&
+      'overrides' in parsed &&
+      parsed.overrides &&
+      typeof parsed.overrides === 'object'
+    ) {
+      return (
+        mergeOverrides(fallback, parsed.overrides as SoundSettingsOverrides) ??
+        cloneSettings(fallback)
+      );
+    }
+    if (isSoundSettings(parsed, LEGACY_SOUND_SETTINGS_VERSION)) {
+      const migrated = migrateLegacySettings(parsed, fallback);
+      const migratedSettings = mergeOverrides(fallback, migrated) ?? cloneSettings(fallback);
+      writeSoundSettings(pieceId, migratedSettings, target, fallback);
+      return migratedSettings;
+    }
+    // A mismatched or malformed piece-derived record must never mask authored
+    // defaults. Remove it opportunistically so a later read cannot repeat the
+    // stale merge.
+    target.removeItem(soundSettingsKey(pieceId));
+    return cloneSettings(fallback);
   } catch {
-    return { ...fallback, voiceInstruments: { ...fallback.voiceInstruments } };
+    return cloneSettings(fallback);
   }
 }
 
@@ -173,11 +296,17 @@ export function writeSoundSettings(
   pieceId: string,
   settings: SoundSettings,
   storage?: Storage,
+  authored: SoundSettings = DEFAULT_SOUND_SETTINGS,
 ): void {
   const target = storage ?? (typeof window === 'undefined' ? undefined : window.localStorage);
   if (!target) return;
   try {
-    target.setItem(soundSettingsKey(pieceId), JSON.stringify(settings));
+    const record: StoredSoundSettings = {
+      v: SOUND_SETTINGS_VERSION,
+      authoredHash: authoredSoundHash(authored),
+      overrides: overridesFromSettings(settings, authored),
+    };
+    target.setItem(soundSettingsKey(pieceId), JSON.stringify(record));
   } catch {
     // Privacy mode, quota exhaustion, and blocked storage must never block rendering.
   }

@@ -26,6 +26,7 @@ from django.core.cache import cache
 from rest_framework.test import APIClient
 
 import scenes.ai_api as ai_api
+from ai_provider.e2e_provider import build_e2e_provider
 from ai_provider.interface import (
     AICreateSceneRequest,
     AIEditSceneRequest,
@@ -279,6 +280,138 @@ def test_selection_plan_rejects_unknown_scene_ids(owner, project):
             selected_target_ids=["missing-id"],
             prompt="make it blue",
         )
+
+
+@pytest.mark.django_db
+def test_add_asset_layer_run_uses_descriptor_and_preserves_existing_scene(
+    monkeypatch, owner, project
+):
+    base = SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=BLANK_SCENE,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project.current_version = base
+    project.save(update_fields=["current_version"])
+    monkeypatch.setattr(
+        ai_runs,
+        "_provider_for_user",
+        lambda *args, **kwargs: build_e2e_provider("add-asset-layer"),
+    )
+    asset = {
+        "id": "asset-local-1",
+        "name": "Reference",
+        "mime": "image/png",
+        "width": 320,
+        "height": 240,
+    }
+
+    run = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT,
+        target=project,
+        operation=AIRun.Operation.EDIT_PATCH,
+        scope=AIRun.Scope.ADD_LAYER,
+        selected_target_ids=[asset["id"]],
+        assets=[asset],
+        prompt="add this media asset as a new layer",
+    )
+    advanced = ai_runs.advance_run(run)
+
+    assert advanced.status == AIRun.Status.AWAITING_REVIEW, (
+        advanced.error_reason,
+        advanced.validation_summary,
+    )
+    assert advanced.plan["scope"] == "add-layer"
+    assert "only assets you may reference" in ai_runs._augmented_prompt(advanced)
+    candidate = advanced.candidate_scene_json
+    assert candidate is not None
+    assert candidate["layers"][:-1] == BLANK_SCENE["layers"]
+    added = [
+        shape
+        for shape in candidate["shapes"]
+        if shape["id"] not in {s["id"] for s in BLANK_SCENE["shapes"]}
+    ]
+    assert len(added) == 1
+    assert added[0]["type"] == "image"
+    assert added[0]["mediaAssetId"] == asset["id"]
+
+
+def _asset_layer_candidate(media_asset_id: str = "asset-local-1") -> dict:
+    candidate = copy.deepcopy(BLANK_SCENE)
+    candidate["layers"].append(
+        {
+            "id": "ai-asset-layer-1",
+            "name": "Reference",
+            "order": 1,
+            "visible": True,
+            "locked": False,
+        }
+    )
+    candidate["shapes"].append(
+        {
+            "id": "ai-asset-image-1",
+            "type": "image",
+            "layerId": "ai-asset-layer-1",
+            "groupId": None,
+            "transform": {
+                "x": 400,
+                "y": 300,
+                "scaleX": 1,
+                "scaleY": 1,
+                "rotation": 0,
+                "opacity": 1,
+            },
+            "style": {"fill": None, "stroke": None, "strokeWidth": 0},
+            "name": "Reference",
+            "mediaAssetId": media_asset_id,
+            "altText": "Reference",
+        }
+    )
+    return candidate
+
+
+def test_add_layer_scope_preserves_existing_layers_and_shapes_only():
+    candidate = _asset_layer_candidate()
+    candidate["layers"][0]["locked"] = True
+
+    error = ai_runs._validate_candidate_scope({"scope": "add-layer"}, BLANK_SCENE, candidate)
+
+    assert error == "add-layer scope cannot modify existing element IDs: ['layer-1']."
+
+
+def test_add_layer_scope_requires_exactly_one_new_layer():
+    candidate = _asset_layer_candidate()
+    candidate["layers"].append(
+        {
+            "id": "ai-asset-layer-2",
+            "name": "Unexpected second layer",
+            "order": 2,
+            "visible": True,
+            "locked": False,
+        }
+    )
+
+    error = ai_runs._validate_candidate_scope({"scope": "add-layer"}, BLANK_SCENE, candidate)
+
+    assert error == "add-layer scope must add exactly one new layer."
+
+
+def test_add_layer_scope_rejects_foreign_media_asset_id():
+    candidate = _asset_layer_candidate(media_asset_id="asset-foreign")
+    asset = {
+        "id": "asset-local-1",
+        "name": "Reference",
+        "mime": "image/png",
+        "width": 320,
+        "height": 240,
+    }
+
+    error = ai_runs._validate_add_layer_assets(BLANK_SCENE, candidate, [asset], [asset["id"]])
+
+    assert error == "image mediaAssetId 'asset-foreign' is not in the submitted assets."
 
 
 # --- Happy path: 2D and 3D create runs --------------------------------------
@@ -840,6 +973,57 @@ def test_full_api_lifecycle_start_advance_accept(monkeypatch, owner_client, proj
 
     project.refresh_from_db()
     assert project.current_version is not None
+
+
+@pytest.mark.django_db
+def test_add_asset_layer_api_persists_descriptors_and_returns_candidate(
+    monkeypatch, owner_client, owner, project
+):
+    base = SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=BLANK_SCENE,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project.current_version = base
+    project.save(update_fields=["current_version"])
+    monkeypatch.setattr(
+        ai_runs,
+        "_provider_for_user",
+        lambda *args, **kwargs: build_e2e_provider("add-asset-layer"),
+    )
+    asset = {
+        "id": "asset-api-1",
+        "name": "API reference",
+        "mime": "image/png",
+        "width": 640,
+        "height": 480,
+    }
+
+    start = owner_client.post(
+        "/api/ai/runs/",
+        {
+            "target_type": "project",
+            "project_id": str(project.public_id),
+            "operation": "edit_patch",
+            "scope": "add_layer",
+            "selected_target_ids": [asset["id"]],
+            "assets": [asset],
+            "prompt": "add this media asset as a new layer",
+        },
+        format="json",
+    )
+
+    assert start.status_code == 201
+    assert start.json()["assets"] == [asset]
+    assert start.json()["plan"]["scope"] == "add-layer"
+
+    advance = owner_client.post(f"/api/ai/runs/{start.json()['id']}/advance/")
+
+    assert advance.status_code == 200
+    assert advance.json()["status"] == AIRun.Status.AWAITING_REVIEW
+    assert advance.json()["candidate_scene"]["shapes"][-1]["mediaAssetId"] == asset["id"]
 
 
 @pytest.mark.django_db

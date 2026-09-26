@@ -277,3 +277,32 @@ def test_fake_layer_recolor_changes_only_selected_layer():
     assert outcome.result.success is True
     assert outcome.result.scene["shapes"][0]["style"]["fill"] == "#99ccff"
     assert outcome.result.scene["shapes"][1]["style"]["fill"] == "#3366ff"
+
+
+@pytest.mark.parametrize("vendor", ["mistral", "gemini", "deepseek"])
+def test_fake_asset_layer_replay_is_vendor_neutral(vendor):
+    fixture = Path(__file__).resolve().parents[2] / "schema/fixtures/valid/blank.json"
+    scene = json.loads(fixture.read_text())
+    asset = {
+        "id": "asset-matrix-1",
+        "name": "Matrix reference",
+        "mime": "image/png",
+        "width": 320,
+        "height": 240,
+    }
+    prompt = (
+        "add this media asset as a new layer\n"
+        f"Current scene (JSON):\n{json.dumps(scene)}\n\n"
+        "Requested edit:\nadd this media asset as a new layer\n"
+        "The following are the only assets you may reference (JSON): "
+        f"{json.dumps([asset], separators=(',', ':'))} "
+        "Create exactly one new layer with exactly one image shape. "
+        "Only modify the following existing element id(s): asset-matrix-1."
+    )
+
+    outcome = build_e2e_provider(
+        "add-asset-layer", vendor=vendor, model=f"{vendor}-matrix-model"
+    ).edit_scene_with_patch(AIEditSceneRequest(prompt, scene))
+
+    assert outcome.result.success is True
+    assert outcome.result.scene["shapes"][-1]["mediaAssetId"] == asset["id"]

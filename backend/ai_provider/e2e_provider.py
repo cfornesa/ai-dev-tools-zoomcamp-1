@@ -173,6 +173,68 @@ def _layer_recolor_patch(user_content: str) -> list[dict[str, Any]]:
         if isinstance(shape, dict) and shape.get("layerId") == layer_id
     ]
 
+
+def _asset_layer_patch(user_content: str) -> list[dict[str, Any]]:
+    """Return one deterministic image layer for #922's run fixture."""
+    marker = "Current scene (JSON):\n"
+    requested = "\n\nRequested edit:\n"
+    descriptor_marker = "The following are the only assets you may reference (JSON): "
+    if marker not in user_content or requested not in user_content:
+        return []
+    try:
+        scene = json.loads(user_content.split(marker, 1)[1].split(requested, 1)[0])
+        descriptor_text = user_content.split(descriptor_marker, 1)[1].split(
+            " Create exactly one new layer", 1
+        )[0]
+        descriptors = json.loads(descriptor_text)
+    except (IndexError, json.JSONDecodeError):
+        return []
+    if not isinstance(descriptors, list) or len(descriptors) != 1:
+        return []
+    asset = descriptors[0]
+    if not isinstance(asset, dict) or not isinstance(asset.get("id"), str):
+        return []
+    target_text = user_content.split("Only modify the following existing element id(s):", 1)
+    if len(target_text) != 2 or asset["id"] not in target_text[1]:
+        return []
+    layer_id = "ai-asset-layer-1"
+    return [
+        {
+            "op": "add",
+            "path": "/layers/-",
+            "value": {
+                "id": layer_id,
+                "name": asset.get("name", "Imported asset"),
+                "order": len(scene.get("layers", [])),
+                "visible": True,
+                "locked": False,
+            },
+        },
+        {
+            "op": "add",
+            "path": "/shapes/-",
+            "value": {
+                "id": "ai-asset-image-1",
+                "type": "image",
+                "layerId": layer_id,
+                "groupId": None,
+                "transform": {
+                    "x": 400,
+                    "y": 300,
+                    "scaleX": 1,
+                    "scaleY": 1,
+                    "rotation": 0,
+                    "opacity": 1,
+                },
+                "style": {"fill": None, "stroke": None, "strokeWidth": 0},
+                "name": asset.get("name", "Imported asset"),
+                "mediaAssetId": asset["id"],
+                "altText": asset.get("name", "Imported asset"),
+            },
+        },
+    ]
+
+
 _EDIT_PATCH_BY_SCENARIO: dict[str, list[dict[str, Any]]] = {
     "success": _EDIT_PATCH_SUCCESS,
     "invalid_structured_output": _EDIT_PATCH_INVALID_STRUCTURED_OUTPUT,
@@ -423,6 +485,8 @@ class _E2EFakeChat:
             patch = (
                 _layer_recolor_patch(user_content)
                 if self.scenario == "layer-recolor"
+                else _asset_layer_patch(user_content)
+                if self.scenario == "add-asset-layer"
                 else _EDIT_PATCH_BY_SCENARIO.get(self.scenario, _EDIT_PATCH_SUCCESS)
             )
             content = json.dumps(patch)

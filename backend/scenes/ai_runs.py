@@ -87,7 +87,7 @@ _REPAIRABLE_CATEGORIES = (
 PLAN_CRITERION_TYPES = frozenset(
     {"object_exists", "property_equals", "count_between", "renders_nonblank"}
 )
-PLAN_SCOPES = frozenset({"targets", "layer", "scene", "overhaul"})
+PLAN_SCOPES = frozenset({"targets", "layer", "add-layer", "scene", "overhaul"})
 
 
 def _stable_scene_ids(scene_json: dict[str, Any] | None) -> set[str]:
@@ -226,12 +226,14 @@ def _build_plan(
 ) -> dict[str, Any]:
     target_ids = (
         [str(target_id) for target_id in selected_target_ids]
-        if scope == AIRun.Scope.SELECTION
+        if scope in {AIRun.Scope.SELECTION, AIRun.Scope.ADD_LAYER}
         else []
     )
     action = "generate_scene" if operation == AIRun.Operation.CREATE else "edit_scene"
     plan_scope = (
-        "targets"
+        "add-layer"
+        if scope == AIRun.Scope.ADD_LAYER
+        else "targets"
         if scope == AIRun.Scope.SELECTION
         else "overhaul"
         if operation == AIRun.Operation.CREATE
@@ -240,9 +242,10 @@ def _build_plan(
     criteria: list[dict[str, Any]] = [
         {"type": "renders_nonblank", "parameters": {"target": "scene"}}
     ]
-    criteria.extend(
-        {"type": "object_exists", "parameters": {"id": target_id}} for target_id in target_ids
-    )
+    if scope != AIRun.Scope.ADD_LAYER:
+        criteria.extend(
+            {"type": "object_exists", "parameters": {"id": target_id}} for target_id in target_ids
+        )
     plan = {
         "revision": 1,
         "scope": plan_scope,
@@ -250,7 +253,12 @@ def _build_plan(
         "target_ids": target_ids,
         "success_criteria": criteria,
     }
-    validate_plan(plan, scene_json if operation == AIRun.Operation.EDIT_PATCH else None)
+    validate_plan(
+        plan,
+        scene_json
+        if operation == AIRun.Operation.EDIT_PATCH and scope != AIRun.Scope.ADD_LAYER
+        else None,
+    )
     return plan
 
 
@@ -322,6 +330,54 @@ def _validate_candidate_scope(
     before_elements = _scene_elements_by_id(before)
     after_elements = _scene_elements_by_id(after)
     scope = plan.get("scope")
+    if scope == "add-layer":
+        before_layers: dict[str, dict[str, Any]] = {
+            layer["id"]: layer
+            for layer in (before or {}).get("layers", [])
+            if isinstance(layer, dict) and isinstance(layer.get("id"), str)
+        }
+        after_layers: dict[str, dict[str, Any]] = {
+            layer["id"]: layer
+            for layer in (after or {}).get("layers", [])
+            if isinstance(layer, dict) and isinstance(layer.get("id"), str)
+        }
+        added_layers = [
+            layer for layer_id, layer in after_layers.items() if layer_id not in before_layers
+        ]
+        if len(added_layers) != 1:
+            return "add-layer scope must add exactly one new layer."
+        changed = {
+            layer_id
+            for layer_id in set(before_layers) & set(after_layers)
+            if before_layers[layer_id] != after_layers[layer_id]
+        }
+        before_shapes: dict[str, dict[str, Any]] = {
+            shape["id"]: shape
+            for shape in (before or {}).get("shapes", [])
+            if isinstance(shape, dict) and isinstance(shape.get("id"), str)
+        }
+        after_shapes: dict[str, dict[str, Any]] = {
+            shape["id"]: shape
+            for shape in (after or {}).get("shapes", [])
+            if isinstance(shape, dict) and isinstance(shape.get("id"), str)
+        }
+        changed.update(
+            shape_id
+            for shape_id in set(before_shapes) & set(after_shapes)
+            if before_shapes[shape_id] != after_shapes[shape_id]
+        )
+        if changed:
+            return f"add-layer scope cannot modify existing element IDs: {sorted(changed)!r}."
+        added_shapes = [
+            shape
+            for shape_id, shape in after_shapes.items()
+            if shape_id not in before_shapes
+            and isinstance(shape, dict)
+            and shape.get("type") == "image"
+        ]
+        if len(added_shapes) != 1:
+            return "add-layer scope must add exactly one image shape."
+        return None
     if scope in {"scene", "overhaul"}:
         missing = set(before_elements) - set(after_elements)
         if missing:
@@ -341,6 +397,35 @@ def _validate_candidate_scope(
             f"plan scope {scope!r} permits only declared target IDs and their children; "
             f"out-of-scope element IDs: {sorted(outside)!r}."
         )
+    return None
+
+
+def _validate_add_layer_assets(
+    before: dict[str, Any] | None,
+    after: dict[str, Any] | None,
+    assets: list[dict[str, Any]],
+    selected_target_ids: list[Any],
+) -> str | None:
+    """Enforce the metadata-only asset contract after provider patching."""
+    allowed_ids = {asset.get("id") for asset in assets}
+    selected_id = selected_target_ids[0] if len(selected_target_ids) == 1 else None
+    before_shapes = {
+        shape.get("id") for shape in (before or {}).get("shapes", []) if isinstance(shape, dict)
+    }
+    added_images = [
+        shape
+        for shape in (after or {}).get("shapes", [])
+        if isinstance(shape, dict)
+        and shape.get("id") not in before_shapes
+        and shape.get("type") == "image"
+    ]
+    if len(added_images) != 1:
+        return "add-layer scope must add exactly one image shape."
+    media_asset_id = added_images[0].get("mediaAssetId")
+    if media_asset_id not in allowed_ids:
+        return f"image mediaAssetId {media_asset_id!r} is not in the submitted assets."
+    if media_asset_id != selected_id:
+        return "image mediaAssetId must match the selected asset descriptor."
     return None
 
 
@@ -465,7 +550,13 @@ def _augmented_prompt(run: AIRun) -> str:
     needs, without any new provider-facing API surface.
     """
     parts = [run.prompt]
-    if run.scope == AIRun.Scope.SELECTION and run.selected_target_ids:
+    if run.scope == AIRun.Scope.ADD_LAYER:
+        parts.append(
+            "The following are the only assets you may reference (JSON): "
+            + json.dumps(run.assets, separators=(",", ":"))
+        )
+        parts.append("Create exactly one new layer with exactly one image shape.")
+    if run.scope in {AIRun.Scope.SELECTION, AIRun.Scope.ADD_LAYER} and run.selected_target_ids:
         ids = ", ".join(str(i) for i in run.selected_target_ids)
         parts.append(f"Only modify the following existing element id(s): {ids}.")
     if run.validation_summary:
@@ -533,6 +624,22 @@ def _run_one_attempt(run: AIRun) -> _AttemptOutcome:
                 completion_tokens=result.usage.completion_tokens,
                 cost_usd=result.usage.estimated_cost_usd,
             )
+        if run.plan and run.plan.get("scope") == "add-layer":
+            asset_error = _validate_add_layer_assets(
+                _target_scene_json(run), result.scene, run.assets, run.selected_target_ids
+            )
+            if asset_error is not None:
+                return _AttemptOutcome(
+                    success=False,
+                    scene_json=None,
+                    patch=None,
+                    change_summary="",
+                    error_category=AIErrorCategory.INVALID_STRUCTURED_OUTPUT,
+                    error_message=asset_error,
+                    prompt_tokens=result.usage.prompt_tokens,
+                    completion_tokens=result.usage.completion_tokens,
+                    cost_usd=result.usage.estimated_cost_usd,
+                )
         return _AttemptOutcome(
             success=True,
             scene_json=result.scene,
@@ -566,6 +673,7 @@ def start_run(
     operation: str,
     scope: str = AIRun.Scope.WHOLE_SCENE,
     selected_target_ids: list[Any] | None = None,
+    assets: list[dict[str, Any]] | None = None,
     prompt: str,
     vendor: str = "mistral",
     model_id: str = "",
@@ -604,6 +712,16 @@ def start_run(
         selected_target_ids=list(selected_target_ids or []),
         scene_json=scene_json,
     )
+    selected_ids = list(selected_target_ids or [])
+    asset_descriptors = list(assets or [])
+    if scope == AIRun.Scope.ADD_LAYER:
+        if len(asset_descriptors) > 10:
+            raise InvalidTarget("assets may contain at most 10 descriptors.")
+        ids = {asset.get("id") for asset in asset_descriptors}
+        if len(ids) != len(asset_descriptors) or len(selected_ids) != 1:
+            raise InvalidTarget("add-layer requires one unique selected asset descriptor.")
+        if selected_ids[0] not in ids:
+            raise InvalidTarget("selected asset id is not present in the asset descriptors.")
     retry_preference = AIRetryPreference.objects.filter(owner=owner).first()
     auto_retry_enabled = retry_preference.auto_retry_enabled if retry_preference else False
     max_retries = retry_preference.max_retries if retry_preference else 0
@@ -624,7 +742,8 @@ def start_run(
         project3d=project3d,
         operation=operation,
         scope=scope,
-        selected_target_ids=list(selected_target_ids or []),
+        selected_target_ids=selected_ids,
+        assets=asset_descriptors,
         prompt=prompt,
         vendor=vendor,
         model_id=model_id,

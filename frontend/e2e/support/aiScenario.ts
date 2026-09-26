@@ -26,6 +26,7 @@ export type AIScenario =
   | 'invalid_structured_output'
   | 'forbidden_patch'
   | 'layer-recolor'
+  | 'add-asset-layer'
   | 'quota_exceeded'
   | 'timeout';
 

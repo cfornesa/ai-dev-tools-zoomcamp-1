@@ -2211,6 +2211,7 @@ class AIRun(models.Model):
     class Scope(models.TextChoices):
         WHOLE_SCENE = "whole_scene", "Whole scene"
         SELECTION = "selection", "Selection"
+        ADD_LAYER = "add_layer", "Add asset layer"
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ai_runs"
@@ -2229,6 +2230,10 @@ class AIRun(models.Model):
     # ids into the same prompt-reference patch-scope check
     # `scenes/patch.py` already enforces for the one-shot edit flow.
     selected_target_ids = models.JSONField(default=list, blank=True)
+    # Metadata-only browser-local media descriptors for an add-layer run.
+    # Bytes never cross the API boundary; the stable id is copied into the
+    # candidate image shape's mediaAssetId field.
+    assets = models.JSONField(default=list, blank=True)
     prompt = models.TextField()
     vendor = models.CharField(max_length=32, default="mistral")
     model_id = models.CharField(max_length=100, blank=True, default="")

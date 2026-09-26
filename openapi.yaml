@@ -929,6 +929,62 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AIErrorBody" }
 
+  /api/ai/runs/:
+    post:
+      tags: [AI]
+      operationId: startAIRun
+      summary: Start an owner-scoped plan/validate/revise AI run
+      description: |
+        For `scope: add_layer`, `assets` contains metadata-only browser-local
+        media descriptors. At most ten descriptors are accepted and the one
+        selected target id must match one descriptor id. Bytes are never sent
+        to Django. The provider may create exactly one new layer containing
+        one image shape that references that descriptor.
+      x-access: owner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/AIRunStartInput"
+                - type: object
+                  properties:
+                    assets:
+                      type: array
+                      maxItems: 10
+                      items: { $ref: "#/components/schemas/MediaAssetDescriptor" }
+      responses:
+        "201":
+          description: Run created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIRun" }
+        "400":
+          description: Invalid scope, target, or asset descriptors.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Detail" }
+
+  /api/ai/runs/{runId}/:
+    get:
+      tags: [AI]
+      operationId: getAIRun
+      summary: Get an owner-scoped AI run
+      x-access: owner
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Run state and candidate.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AIRun" }
+        "404": { description: Run not found or not owned by the caller. }
+
   /api/ai/art-pieces/generate/:
     post:
       tags: [Art Pieces]
@@ -1311,6 +1367,48 @@ components:
       schema: { type: string }
 
   schemas:
+    MediaAssetDescriptor:
+      type: object
+      additionalProperties: false
+      required: [id, name, mime, width, height]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 64 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        mime: { type: string, minLength: 1, maxLength: 100 }
+        width: { type: integer, minimum: 1, maximum: 4096 }
+        height: { type: integer, minimum: 1, maximum: 4096 }
+
+    AIRunStartInput:
+      type: object
+      required: [target_type, operation, prompt]
+      properties:
+        target_type: { type: string, enum: [project, project3d] }
+        project_id: { type: string, format: uuid }
+        project3d_id: { type: string, format: uuid }
+        operation: { type: string, enum: [create, edit_patch] }
+        scope: { type: string, enum: [whole_scene, selection, add_layer] }
+        selected_target_ids:
+          type: array
+          items: { type: string }
+        prompt: { type: string, minLength: 1 }
+        vendor: { type: string }
+        model: { type: string }
+
+    AIRun:
+      type: object
+      additionalProperties: true
+      required: [id, status, scope, selected_target_ids, assets]
+      properties:
+        id: { type: integer }
+        status: { type: string }
+        scope: { type: string }
+        selected_target_ids:
+          type: array
+          items: { type: string }
+        assets:
+          type: array
+          items: { $ref: "#/components/schemas/MediaAssetDescriptor" }
+
     Detail:
       type: object
       properties:

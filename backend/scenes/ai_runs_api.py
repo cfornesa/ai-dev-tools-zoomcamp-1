@@ -53,6 +53,7 @@ def _serialize_run(run: AIRun) -> dict:
         "operation": run.operation,
         "scope": run.scope,
         "selected_target_ids": run.selected_target_ids,
+        "assets": run.assets,
         "attempts": run.attempts,
         "repairs": run.repairs,
         "candidate_scene": run.candidate_scene_json,
@@ -94,6 +95,7 @@ class AIRunStartRequestSerializer(serializers.Serializer):
     selected_target_ids = serializers.ListField(
         child=serializers.CharField(), required=False, default=list
     )
+    assets = serializers.ListField(child=serializers.DictField(), required=False, default=list)
     prompt = serializers.CharField(max_length=MAX_PROMPT_CHARS, allow_blank=False)
     vendor = serializers.CharField(required=False, default="mistral")
     model = serializers.CharField(
@@ -109,6 +111,42 @@ class AIRunStartRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "selected_target_ids is required when scope is 'selection'."
             )
+        if len(data.get("assets", [])) > 10:
+            raise serializers.ValidationError("assets may contain at most 10 descriptors.")
+        for asset in data.get("assets", []):
+            required = {"id", "name", "mime", "width", "height"}
+            if set(asset) != required:
+                raise serializers.ValidationError(
+                    "each asset descriptor requires exactly id, name, mime, width, and height."
+                )
+            if (
+                not isinstance(asset["id"], str)
+                or not 1 <= len(asset["id"]) <= 64
+                or not isinstance(asset["name"], str)
+                or not 1 <= len(asset["name"]) <= 200
+                or not isinstance(asset["mime"], str)
+                or not 1 <= len(asset["mime"]) <= 100
+                or not isinstance(asset["width"], int)
+                or not 1 <= asset["width"] <= 4096
+                or not isinstance(asset["height"], int)
+                or not 1 <= asset["height"] <= 4096
+            ):
+                raise serializers.ValidationError("asset descriptor fields are out of bounds.")
+        if len({asset["id"] for asset in data.get("assets", [])}) != len(data.get("assets", [])):
+            raise serializers.ValidationError("asset descriptor ids must be unique.")
+        if data["scope"] == AIRun.Scope.ADD_LAYER:
+            if data["operation"] != AIRun.Operation.EDIT_PATCH:
+                raise serializers.ValidationError(
+                    "add_layer scope requires an edit_patch operation."
+                )
+            if len(data.get("selected_target_ids", [])) != 1:
+                raise serializers.ValidationError(
+                    "add_layer scope requires exactly one selected asset id."
+                )
+            if data["selected_target_ids"][0] not in {asset["id"] for asset in data["assets"]}:
+                raise serializers.ValidationError(
+                    "selected asset id must be present in the assets descriptors."
+                )
         if data["target_type"] == AIRun.TargetType.PROJECT and not data.get("project_id"):
             raise serializers.ValidationError("project_id is required for target_type 'project'.")
         if data["target_type"] == AIRun.TargetType.PROJECT3D and not data.get("project3d_id"):
@@ -149,6 +187,7 @@ class AIRunListCreateView(APIView):
                 operation=data["operation"],
                 scope=data["scope"],
                 selected_target_ids=data["selected_target_ids"],
+                assets=data["assets"],
                 prompt=data["prompt"],
                 vendor=data["vendor"],
                 model_id=data["model"],

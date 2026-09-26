@@ -469,6 +469,21 @@ runs created before this field was added remain readable with `plan: null`.
 Plan revisions are additive and immutable once stored; a future revision is a
 new plan object rather than an in-place mutation.
 
+## AI-run media-library asset descriptors (#922)
+
+`POST /api/ai/runs/` accepts an optional `assets` array for the `add-layer`
+operation. Descriptors are metadata only — binary bytes never leave the
+authoring browser and Django never resolves the browser-local asset. Each
+descriptor is `{id, name, mime, width, height}`; at most 10 descriptors may
+be submitted, and a `media` mention must reference one of their stable ids.
+The run prompt is augmented with the descriptors as the only permitted assets.
+
+The deterministic `add-asset-layer` provider scenario may add exactly one
+new layer containing one `image` shape referencing the selected descriptor.
+Existing layers and shapes must remain deep-equal. Unknown asset ids,
+multiple new layers, existing-layer changes, and image shapes without a
+submitted descriptor are rejected before the run reaches review.
+
 ## AI-run plan evaluation and retries (#657)
 
 Each run snapshots the owner's `AIRetryPreference` at start as

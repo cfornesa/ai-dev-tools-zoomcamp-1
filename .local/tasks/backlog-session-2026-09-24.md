@@ -5208,6 +5208,15 @@ without 3D directional controls. No production data was changed.
 | #892 cross-surface parity and 3D-only navigation | Codex/GPT-5/medium/substituted | pending | pending | pending | pending |
 | #893 2D immersive gallery presentation | Codex/GPT-5/medium/substituted | local data repair only; code scope pending | partial local Chrome | pending | pending |
 
+### Transaction #891 reconciliation
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---|---|
+| groom | Codex / GPT-5 / medium | yes | Revalidated criterion-ready regular-view stage-overlay contract after duplicate audit. |
+| engineer | Codex / GPT-5 / medium | yes | Moved the generated regular toolbar portal into the stage overlay; commit `7588a6e`. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | QA PASS comment `5845390363`; active Chrome and full automated checks passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | Closed #891; cross-surface, immersive-gallery, and download concerns shifted to #892/#893/#895. |
+
 ## Transaction refresh: #895–#897 — OPEN / DISTILLED (2026-09-26)
 
 Task-distillation duplicate audits completed before capture. Closed #755/#756

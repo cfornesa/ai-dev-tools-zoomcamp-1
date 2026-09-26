@@ -5416,6 +5416,20 @@ The implementation is local-only and does not claim real microphone hardware
 acceptance or deployment verification; those belong to #916 and the later
 surface-specific issues.
 
+## Transaction refresh: #916 — 2026-09-26 — ENGINEERED / QA PARTIAL
+
+Task-distillation advanced the microphone stream after #909 closed; #916 is
+the shared evidence prerequisite for #911–#915. It was implemented as a
+test-infrastructure/documentation transaction, but remains open until #911
+routes the regular generated-piece stream through the engine.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed status-only microphone evidence was insufficient and that hardware acceptance must remain an owner boundary. |
+| engineer | Codex / GPT-5 / medium; rostered complex test-infrastructure service substituted | yes | Added reusable `audioFlow.ts` source-connection probe, regular-route integration, the Chrome/Safari iOS/Chrome Android owner checklist, and durable TCC/audio-flow memory guidance. |
+| qa-self-review | Codex / GPT-5 / medium | yes | `npx playwright test --list` passed; the supported Chromium fake-device scenario reached the existing active status but the new probe correctly failed with zero source connections, demonstrating the current routing gap. |
+| reconcile | Codex / GPT-5 / medium | yes | Not closed: #911 must wire the parent stream into the engine, then rerun the probe and six-case matrix. No hardware or production claim. |
+
 ## Transaction refresh: #910 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation advanced the microphone stream after #909 closed. #910 is

@@ -182,3 +182,13 @@ picking it up (or a fresh Chromium binary instance not yet reflecting a
 grant made against a prior one). Re-running once more after a reported
 grant, rather than treating one failure as final, resolved it without
 further investigation needed.
+
+**2026-09-26 microphone-flow extension:** a status string such as
+"Microphone is active" is not audio evidence. The reusable
+`frontend/e2e/support/audioFlow.ts` probe wraps `AudioContext` before route
+startup and counts a real `MediaStreamAudioSourceNode` connection. Use it in
+regular, immersive, embed, and ZIP microphone scenarios; a mutation that
+removes the source-to-bus connection must make the assertion fail. This still
+does not satisfy physical-device acceptance: macOS TCC, Safari iOS, and
+Chrome Android remain owner-run boundaries documented in
+`docs/microphone-hardware-acceptance.md`.

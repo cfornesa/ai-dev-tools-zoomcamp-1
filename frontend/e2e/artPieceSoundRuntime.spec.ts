@@ -3,6 +3,7 @@ import { chromium, expect, test, type BrowserContext } from '@playwright/test';
 import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
+import { expectMicrophoneAudioFlow, installAudioFlowProbe } from './support/audioFlow.js';
 
 /**
  * Issue #430: `artPieceSandbox.ts` used to only `dispatchEvent` an
@@ -333,15 +334,17 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
     try {
       const fakeContext = await fakeBrowser.newContext({ storageState });
       const fakePage = await fakeContext.newPage();
+      await installAudioFlowProbe(fakePage);
       await fakePage.goto(`/art-pieces/p/${piece.public_id}`);
       await expect(
         fakePage.getByRole('heading', { name: 'Microphone real-pipeline fixture' }),
       ).toBeVisible();
-      await fakePage.getByRole('button', { name: 'Piece controls' }).click();
+      await fakePage.getByRole('button', { name: 'Piece controls', exact: true }).click();
       await fakePage.getByRole('button', { name: 'Enable microphone' }).click();
       await expect(fakePage.getByTestId('microphone-status')).toContainText(
         'Microphone is active.',
       );
+      await expectMicrophoneAudioFlow(fakePage);
 
       const testInfo = test.info();
       const screenshotPath = testInfo.outputPath('microphone-real-pipeline.png');

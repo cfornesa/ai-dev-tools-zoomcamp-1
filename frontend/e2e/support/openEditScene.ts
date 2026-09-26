@@ -16,6 +16,10 @@ import type { Page } from '@playwright/test';
  */
 export async function openPieceControlsMenu(page: Page): Promise<void> {
   const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
+  // Inline editor surfaces expose the actionable controls directly. Their
+  // compatibility menu trigger is intentionally screen-reader-only and must
+  // not be clicked through the overlay (issue #917).
+  if ((await toolbar.getAttribute('data-toolbar-mode')) === 'inline') return;
   // `waitFor` (unlike a bare `isVisible()` check) actually retries, which
   // matters right after a fresh `page.goto()` -- the stage may not have
   // mounted yet when a caller checks immediately.

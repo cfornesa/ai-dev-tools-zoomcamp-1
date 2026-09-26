@@ -7378,7 +7378,7 @@ select.ai-proposal-field-full-width {
   pointer-events: none;
 }
 
-.app-shell > :not(.cosmic-starfield) {
+.app-shell > :not(.cosmic-starfield):not(.shell-display-toggles):not(.skip-link) {
   position: relative;
   z-index: 1;
 }

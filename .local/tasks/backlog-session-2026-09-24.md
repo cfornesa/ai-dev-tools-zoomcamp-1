@@ -5354,3 +5354,29 @@ repository was modified.
 Commit pending with this ledger update. Next stream-A transaction is the
 queue's owner decision #900 before the ZIP children that depend on it; #904
 still needs collection-fixture/browser evidence.
+
+## Transaction refresh: #894/#896/#917 — 2026-09-26 — CLOSED / QA PASS
+
+The approved Chromium path was available after the local Compose frontend was
+rebuilt. Its first run exposed two real shell positioning defects and one
+distinct editor test-flow defect. The shell defects were fixed in the open
+#894 scope; the editor interception was duplicate-audited and captured as new
+#917 rather than reopening closed #890.
+
+| Issue | Groom | Engineer | QA self-review | Reconcile / close |
+|---|---|---|---|---|
+| #894 theme icon | Codex / GPT-5 / medium | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | `responsiveShell.spec.ts`: 3 passed; focused 42 passed; full `make check` passed | QA PASS comment `5846311564896`; closed |
+| #896 motion toggle | Codex / GPT-5 / medium | Existing implementation; no new product change | Same responsive run and focused tests; OS-default/persistence assertions retained | QA PASS comment `5846311657917`; closed |
+| #917 inline editor trigger interception | Codex / GPT-5 / medium | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | Responsive populated-gallery publish flow passed after helper recognizes inline toolbar; no visible toolbar controls disabled | QA PASS comment `5846311757`; closed |
+
+Implementation changes: `.app-shell` now excludes both the fixed display
+settings cluster and absolute skip link from the generic direct-child positioning
+rule; responsive test setup starts tab-order checks from a focused body; the
+E2E helper no longer clicks the screen-reader-only compatibility trigger on
+inline editor toolbars.
+
+Verification: `E2E_DOCKER_COMPOSE=true npx playwright test
+e2e/responsiveShell.spec.ts --project=chromium` -> 3 passed;
+`make check` -> backend 1712 passed / 39 skipped, frontend 283 files / 3031
+tests, lint/format/typecheck passed. Local Compose/browser evidence only; no
+production claim.

@@ -222,6 +222,15 @@ test.describe('Responsive app shell', () => {
       await expect(motion).toBeFocused();
       await expectVisibleAndInViewport(motion);
 
+      // Start the tab-order assertion from the document rather than from the
+      // motion control focused immediately above; navigation can retain the
+      // focused node across same-origin reloads in Chromium.
+      await page.evaluate(() => {
+        const body = document.body;
+        body.tabIndex = -1;
+        body.focus();
+      });
+
       await expectTabOrder(
         page,
         [

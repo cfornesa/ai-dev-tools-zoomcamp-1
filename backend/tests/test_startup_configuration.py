@@ -123,12 +123,97 @@ def test_production_wrapper_gates_owner_scoped_reference_import():
     wrapper = (ROOT / "scripts" / "start-production.sh").read_text()
 
     assert 'RUN_REFERENCE_IMPORT_ON_START:-false' in wrapper
-    assert 'if [[ -n "${REFERENCE_IMPORT_USERNAME:-}" ]]' in wrapper
-    assert 'reference_import_args+=(--username "${REFERENCE_IMPORT_USERNAME}")' in wrapper
-    assert 'if [[ -n "${REFERENCE_IMPORT_EMAIL:-}" ]]' in wrapper
-    assert 'reference_import_args+=(--email "${REFERENCE_IMPORT_EMAIL}")' in wrapper
-    assert "import_reference_pieces import" in wrapper
-    assert "--allow-production --json" in wrapper
+    assert 'run-reference-import.sh' in wrapper
+
+
+def test_production_reference_import_helper_defaults_to_no_write_preview():
+    helper = (ROOT / "scripts" / "run-reference-import.sh").read_text()
+
+    assert 'REFERENCE_IMPORT_MODE:-preview' in helper
+    assert 'reference_import_mode" == "preview"' in helper
+    assert 'reference_import_args+=(--dry-run)' in helper
+    assert 'reference_import_args+=(--username "${REFERENCE_IMPORT_USERNAME}")' in helper
+    assert 'reference_import_args+=(--email "${REFERENCE_IMPORT_EMAIL}")' in helper
+    assert 'import_reference_pieces import' in helper
+    assert '--allow-production --json' in helper
+
+
+def test_production_reference_import_helper_has_explicit_write_mode_only():
+    helper = (ROOT / "scripts" / "run-reference-import.sh").read_text()
+
+    assert 'preview|write)' in helper
+    assert 'reference_import_mode" == "preview"' in helper
+    assert 'REFERENCE_IMPORT_MODE' in helper
+
+
+def test_production_reference_import_preview_passes_dry_run_without_writing(tmp_path):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    args_file = tmp_path / "args"
+    (bin_dir / "uv").write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" > \"$ARGS_FILE\"\n"
+    )
+    (bin_dir / "uv").chmod(0o755)
+
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "PATH": f"{bin_dir}:{environment['PATH']}",
+            "ARGS_FILE": str(args_file),
+            "REFERENCE_IMPORT_MODE": "preview",
+            "REFERENCE_IMPORT_HANDLE": "cfornesa",
+            "REFERENCE_IMPORT_USERNAME": "owner",
+            "REFERENCE_IMPORT_EMAIL": "owner@example.test",
+        }
+    )
+    result = subprocess.run(
+        ["bash", str(ROOT / "scripts" / "run-reference-import.sh")],
+        cwd=ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert args_file.read_text().strip() == (
+        "run python manage.py import_reference_pieces import "
+        "--handle cfornesa --allow-production --json --dry-run "
+        "--username owner --email owner@example.test"
+    )
+
+
+def test_production_reference_import_write_requires_explicit_mode(tmp_path):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    args_file = tmp_path / "args"
+    (bin_dir / "uv").write_text(
+        "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" > \"$ARGS_FILE\"\n"
+    )
+    (bin_dir / "uv").chmod(0o755)
+
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "PATH": f"{bin_dir}:{environment['PATH']}",
+            "ARGS_FILE": str(args_file),
+            "REFERENCE_IMPORT_MODE": "write",
+        }
+    )
+    result = subprocess.run(
+        ["bash", str(ROOT / "scripts" / "run-reference-import.sh")],
+        cwd=ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert args_file.read_text().strip() == (
+        "run python manage.py import_reference_pieces import "
+        "--handle cfornesa --allow-production --json"
+    )
 
 
 def test_production_launcher_uses_pinned_asgi_server():

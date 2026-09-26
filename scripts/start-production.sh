@@ -17,23 +17,13 @@ export BACKEND_SERVE_MODE=asgi
 # can create overlapping startup work during scale-out.
 export RUN_MIGRATIONS_ON_START=false
 
-# Issue #633: allow one explicitly enabled, owner-scoped reference fixture
+# Issue #633/#954: allow an explicitly enabled, owner-scoped reference fixture
 # import to run inside the published runtime, where DATABASE_URL is the
-# production database. This is disabled by default and is removed from the
-# production userenv immediately after the approved fixture import is verified.
+# production database. This is disabled by default. Enabled runs default to
+# no-write preview; an owner must explicitly set REFERENCE_IMPORT_MODE=write
+# for the separate one-shot write path and remove the gate after verification.
 if [[ "${RUN_REFERENCE_IMPORT_ON_START:-false}" == "true" ]]; then
-  reference_import_args=(
-    import_reference_pieces import
-    --handle "${REFERENCE_IMPORT_HANDLE:-cfornesa}"
-    --allow-production --json
-  )
-  if [[ -n "${REFERENCE_IMPORT_USERNAME:-}" ]]; then
-    reference_import_args+=(--username "${REFERENCE_IMPORT_USERNAME}")
-  fi
-  if [[ -n "${REFERENCE_IMPORT_EMAIL:-}" ]]; then
-    reference_import_args+=(--email "${REFERENCE_IMPORT_EMAIL}")
-  fi
-  (cd "$(dirname "${BASH_SOURCE[0]}")/../backend" && uv run python manage.py "${reference_import_args[@]}")
+  "$(dirname "${BASH_SOURCE[0]}")/run-reference-import.sh"
 fi
 
 exec "$(dirname "${BASH_SOURCE[0]}")/start.sh"

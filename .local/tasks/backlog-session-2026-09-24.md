@@ -5922,3 +5922,21 @@ broader Layers z-order assertion was checked against duplicate issue search;
 closed #194 is the closest existing contract, so no closed issue was
 reopened and no duplicate follow-up was created. Production work remains
 owned by #747/#748/#788 with the original authorization and safeguards.
+
+## Transaction: #954 — 2026-09-26 — ENGINEERED / QA PENDING
+
+Distillation refreshed the project backlog against GitHub and found #788's
+production-import path blocked by the checked-in startup gate: it supported an
+explicit write invocation but no safe preview invocation. Duplicate search
+found no existing issue for this deployment-workflow gap, so criterion-ready
+#954 was created and linked from #788. The visible Replit Shell remains
+development-only; no production shell, production database, secret, or auth
+state was changed.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom / distill | Codex / GPT-5 / medium; rostered GPT-5.6 Luna | yes | Confirmed a distinct production-safety workflow gap; kept #788 as the owner-authorized data action and scoped #954 to command construction, tests, and documentation. |
+| issue-scoping | Codex / GPT-5 / medium; rostered GPT-5.6 Luna | yes | Created #954 with preview/write modes, no-write default, explicit production opt-in, focused tests, and no production data action. |
+| engineer | Codex / GPT-5 / medium; rostered Kimi K3 complex implementation | yes | Added `scripts/run-reference-import.sh`; production startup now delegates to it. Enabled runs default to `--dry-run`; writes require `REFERENCE_IMPORT_MODE=write`; owner/handle/email forwarding is preserved. Added command-construction tests. |
+| qa-self-review | pending | — | Run focused and full checks; verify the helper is executable and review the diff for default-write or deployment-scope regressions. |
+| reconcile / close | pending | — | Must preserve #788's production snapshot/dry-run/write/verification gate; no local evidence will be presented as production evidence. |

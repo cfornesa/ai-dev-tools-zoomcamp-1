@@ -23,6 +23,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:5000';
+const browserChannel = process.env.PLAYWRIGHT_CHANNEL;
+const headed = process.env.PLAYWRIGHT_HEADED === '1';
 
 export default defineConfig({
   testDir: './e2e',
@@ -63,7 +65,15 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(headed ? { headless: false } : {}),
+        // macOS hosts can fail before test code in the bundled Chromium
+        // process. An explicit channel keeps that workaround opt-in and
+        // distinguishes Playwright's installed Chrome from a signed-in
+        // interactive Chrome session.
+        ...(browserChannel === 'chrome' ? { channel: 'chrome' } : {}),
+      },
     },
     // Owner decision (2026-09-09): firefox/webkit run only a curated
     // cross-browser subset -- files this repo's own memory documents as

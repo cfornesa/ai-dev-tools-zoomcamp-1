@@ -5502,7 +5502,7 @@ their ownership here.
 
 | Issue | Stage | Service / model / effort | Substituted | Result |
 |---|---|---|---:|---|
-| #947 | groom / distill | Codex / GPT-5 / medium | yes | QA infrastructure issue for an approved Playwright-capable Chromium path; no product implementation in scope. |
+| #947 | groom / distill | Codex / GPT-5 / medium | yes | Independent QA-infrastructure issue for an approved Playwright-capable Chromium path; it unblocks #920 and has no product implementation in scope. |
 | #948 | groom / distill | Codex / GPT-5 / medium | yes | Contract-reconciliation issue for #920's impossible fixture wording; must not weaken canonical validation. |
 | #949 | groom / distill | Codex / GPT-5 / medium | yes | New frontend gap for visible spacing between target names and kind labels; no duplicate found. |
 | #950 | groom / distill | Codex / GPT-5 / medium | yes | New semantics/fixture issue for background modeling and meaningful Sky/Hills/Sun rendering; depends on #948. |

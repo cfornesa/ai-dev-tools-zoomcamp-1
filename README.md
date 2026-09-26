@@ -209,6 +209,24 @@ health response, and anonymous auth response; it reports unrelated running
 Compose projects without stopping them. Native `make browser-qa` remains an
 independent disposable-stack path.
 
+On macOS, if the repository-managed Chromium binary fails before test
+execution with a MachPort rendezvous error, use the installed Chrome channel
+as an explicit Playwright runner after the same PostgreSQL/Django/Vite setup:
+
+```bash
+cd frontend
+PLAYWRIGHT_CHANNEL=chrome E2E_BASE_URL=http://localhost:5000 \
+  E2E_DOCKER_COMPOSE=true npx playwright test \
+  e2e/aiLayerTargetExisting.spec.ts --project=chromium
+```
+
+`PLAYWRIGHT_CHANNEL=chrome` launches a separate Playwright-controlled Chrome
+process; it is not the active signed-in Chrome session and does not reuse its
+cookies or storage. If headless Chrome aborts on the host, add
+`PLAYWRIGHT_HEADED=1` to run the same isolated Playwright context in the active
+desktop session. CI remains the approved fallback when the installed Chrome
+channel is unavailable.
+
 ## License
 
 MIT License — see [LICENSE](./LICENSE).

@@ -77,7 +77,7 @@ async function createExistingPiece(context: BrowserContext): Promise<{
 }
 
 async function chooseMention(page: Page, name: string): Promise<void> {
-  const prompt = page.getByLabel('Describe the change you want to make');
+  const prompt = page.locator('textarea#ai-proposal-prompt:visible');
   await prompt.fill(`@${name}`);
   await page.getByRole('option', { name: new RegExp(`^${name}\\s`) }).click();
 }
@@ -99,7 +99,9 @@ test.describe('AI layer targeting on an existing structured piece (#920)', () =>
     await setAIScenario(page, 'layer-recolor');
     await page.goto(`/ai-projects/${id}`);
     await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
-    await page.getByRole('tab', { name: 'Layers' }).click();
+    // At the desktop viewport the Layers panel is a visible region, not an
+    // EditorPanelSwitcher tab. The AI action is opened from the Preview
+    // toolbar, so target selection belongs to the AI panel's own prompt.
     await page.getByRole('radio', { name: 'One-shot' }).click();
     await page.getByRole('radio', { name: 'Edit' }).click();
     await chooseMention(page, 'Hills');
@@ -107,7 +109,14 @@ test.describe('AI layer targeting on an existing structured piece (#920)', () =>
     await page.getByRole('button', { name: 'Propose edit' }).click();
     await expect(page.getByTestId('ai-proposal-success')).toBeVisible({ timeout: 15000 });
     await page.screenshot({ path: 'test-results/ai-layer-target-before-1280.png', fullPage: true });
+    const acceptResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/ai/accept-proposal/') &&
+        response.request().method() === 'POST' &&
+        response.status() === 201,
+    );
     await page.getByRole('button', { name: 'Accept' }).click();
+    await acceptResponse;
 
     const project = (await (await apiGet(context, `/api/projects/${id}/`)).json()) as {
       current_version: number;
@@ -129,13 +138,13 @@ test.describe('AI layer targeting on an existing structured piece (#920)', () =>
     await page.screenshot({ path: 'test-results/ai-layer-target-after-1280.png', fullPage: true });
 
     // A plain-text mention is not a structured target selection. The fake
-    // provider therefore returns no patch, and the existing scene remains
-    // unchanged rather than allowing an unscoped edit.
+    // provider therefore returns an empty patch, and the existing scene
+    // remains unchanged rather than allowing an unscoped edit.
     await page.getByRole('button', { name: 'Remove Hills target' }).click();
     const plainPrompt = page.getByLabel('Describe the change you want to make');
     await plainPrompt.fill('make the Sun blue');
     await page.getByRole('button', { name: 'Propose edit' }).click();
-    await expect(page.getByTestId('ai-error-validation-error')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('ai-error-provider-error')).toBeVisible({ timeout: 15000 });
     const afterPlainAttempt = (await (
       await apiGet(context, `/api/projects/${id}/versions/${project.current_version}/`)
     ).json()) as { scene_json: Record<string, unknown> };
@@ -155,16 +164,18 @@ test.describe('AI layer targeting on an existing structured piece (#920)', () =>
     };
     expect(restoredBody.scene_json).toEqual(before);
 
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
+    await page.locator('textarea#ai-proposal-prompt:visible').fill('@Frame');
+    await expect(page.getByRole('option', { name: /^Frame\s/ })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+
     // Capture the same accepted state at the required phone viewport. The
     // test exercises responsive layout without changing the persisted scene.
     await page.setViewportSize({ width: 375, height: 812 });
     await page.screenshot({ path: 'test-results/ai-layer-target-after-375.png', fullPage: true });
-
-    await chooseMention(page, 'Frame');
-    await expect(page.getByRole('option', { name: /Frame/ })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
     await resetAIScenario(page);
   });
 });

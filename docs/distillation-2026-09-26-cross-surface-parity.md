@@ -165,7 +165,7 @@ issues rather than folded into #920.
 
 | Q | Issue | Waits for |
 | --- | --- | --- |
-| 54 | #947 approved Playwright-capable Chromium path for macOS E2E | #920 |
+| 54 | #947 approved Playwright-capable Chromium path for macOS E2E | —; unblocks #920 |
 | 55 | #948 reconcile #920 fixture with one-shape-per-layer contract | #920 |
 | 56 | #949 target suggestion/chip name-kind spacing | — |
 | 57 | #950 structured 2D background semantics and meaningful QA fixtures | #948 |

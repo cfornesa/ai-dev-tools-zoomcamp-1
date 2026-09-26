@@ -153,18 +153,32 @@ def test_site_profile_collection_and_home_metadata_are_public_and_canonical(publ
 @pytest.mark.django_db(transaction=True)
 def test_public_share_metadata_and_images_are_canonical_and_1200x630(public_records):
     project, project3d, piece = public_records
+    PublicProfile.objects.create(
+        user=project.owner,
+        handle="share-artist",
+        display_name="Share Artist",
+        is_public=True,
+    )
     client = APIClient()
 
     for kind, record in (("2d", project), ("3d", project3d), ("generated", piece)):
         metadata = client.get(f"/api/public/share-meta/{kind}/{record.public_id}/")
         assert metadata.status_code == 200
         assert metadata.data["title"] == record.title
+        assert metadata.data["author"] == "By Share Artist (@share-artist)"
         assert metadata.data["image_url"] is not None
         image = client.get(metadata.data["image_url"])
         assert image.status_code == 200
         with Image.open(BytesIO(image.content)) as decoded:
             assert decoded.size == (1200, 630)
             assert decoded.format == "PNG"
+
+    profile = PublicProfile.objects.get(user=project.owner)
+    profile.display_name = "   "
+    profile.handle = "@share-artist"
+    profile.save(update_fields=["display_name", "handle"])
+    metadata = client.get(f"/api/public/share-meta/2d/{project.public_id}/")
+    assert metadata.data["author"] == "By share-artist (@share-artist)"
 
 
 @pytest.mark.django_db(transaction=True)

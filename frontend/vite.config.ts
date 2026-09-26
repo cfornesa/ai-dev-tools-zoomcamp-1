@@ -35,6 +35,7 @@ const djangoProxy = {
 type ShareMetadata = {
   title: string;
   description: string;
+  author?: string;
   canonical_path: string;
   image_url: string | null;
 };
@@ -271,6 +272,11 @@ function metadataTags(metadata: ShareMetadata | null, requestPath: string): stri
   const tags = [
     `<meta property="og:title" content="${escapeHtml(title)}" data-server-metadata="true" />`,
     `<meta property="og:description" content="${escapeHtml(description)}" data-server-metadata="true" />`,
+    ...(metadata?.author
+      ? [
+          `<meta property="article:author" content="${escapeHtml(metadata.author)}" data-server-metadata="true" />`,
+        ]
+      : []),
     `<meta property="og:type" content="article" data-server-metadata="true" />`,
     `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" data-server-metadata="true" />`,
     `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" data-server-metadata="true" />`,

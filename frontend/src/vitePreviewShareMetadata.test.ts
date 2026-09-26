@@ -57,6 +57,7 @@ describe('vite preview share metadata (production run path)', () => {
           JSON.stringify({
             title: 'Artist <&> profile',
             description: 'Bio text',
+            author: 'By Artist (@artist)',
             canonical_path: '/users/@artist',
             image_url: null,
           }),
@@ -72,6 +73,7 @@ describe('vite preview share metadata (production run path)', () => {
           JSON.stringify({
             title: 'Canonical 3D piece',
             description: 'Canonical description',
+            author: 'By Artist (@artist)',
             canonical_path: '/users/@artist/pieces/canonical-piece',
             image_url: '/api/public/share-image/3d/canonical-piece-id.png',
           }),
@@ -114,6 +116,7 @@ describe('vite preview share metadata (production run path)', () => {
     expect(forwardedHosts).toContain('example.test');
     expect(html).toContain('data-server-metadata="true"');
     expect(html).toContain('content="Artist &lt;&amp;&gt; profile"');
+    expect(html).toContain('property="article:author" content="By Artist (@artist)"');
     expect(html).toContain('og:url" content="https://example.test/users/@artist"');
     expect(html).toContain(
       'type="application/atom+xml" href="https://example.test/users/@artist/feed.xml"',

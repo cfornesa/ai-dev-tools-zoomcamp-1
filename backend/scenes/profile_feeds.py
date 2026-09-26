@@ -19,6 +19,7 @@ from django.views import View
 from scenes.art_piece_persistence import eligible_art_pieces
 from scenes.gallery import eligible_projects, eligible_projects3d
 from scenes.models import PublicProfile
+from scenes.public_identity import public_author_attribution
 from scenes.public_urls import piece_viewer_path
 
 ATOM_NS = "http://www.w3.org/2005/Atom"
@@ -112,7 +113,7 @@ def _feed_context(
     profile_url = _absolute(request, profile_path)
     entries = [_entry_data(request, kind, record) for kind, record in _feed_records(profile)]
     feed_updated = max([_timestamp(profile.updated_at)] + [entry["updated"] for entry in entries])
-    feed_title = f"{profile.display_name or profile.handle or 'Public profile'} on AugmentrART"
+    feed_title = f"{public_author_attribution(profile.user)} on AugmentrART"
     return feed_url, profile_url, feed_title, feed_updated, entries
 
 
@@ -125,9 +126,7 @@ def _build_feed(request: HttpRequest, profile: PublicProfile) -> tuple[bytes, da
     ElementTree.SubElement(root, _atom("id")).text = feed_url
     ElementTree.SubElement(root, _atom("title")).text = feed_title
     author = ElementTree.SubElement(root, _atom("author"))
-    ElementTree.SubElement(author, _atom("name")).text = (
-        profile.display_name or profile.handle or "Public profile"
-    )
+    ElementTree.SubElement(author, _atom("name")).text = public_author_attribution(profile.user)
     ElementTree.SubElement(root, _atom("link"), {"rel": "self", "href": feed_url})
     ElementTree.SubElement(root, _atom("link"), {"rel": "alternate", "href": profile_url})
     ElementTree.SubElement(root, _atom("updated")).text = _format_timestamp(feed_updated)
@@ -220,7 +219,7 @@ def _build_json_feed(request: HttpRequest, profile: PublicProfile) -> tuple[byte
         "title": feed_title,
         "home_page_url": profile_url,
         "feed_url": feed_url,
-        "authors": [{"name": profile.display_name or profile.handle or "Public profile"}],
+        "authors": [{"name": public_author_attribution(profile.user)}],
         "items": [
             {
                 "id": entry["canonical_url"],

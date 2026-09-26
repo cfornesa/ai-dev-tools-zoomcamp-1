@@ -553,8 +553,10 @@ privacy-gated projection used by the SPA web server when it builds no-JS HTML
 for public piece routes. `<kind>` is one of `2d`, `3d`, or `generated`; a
 private, unpublished, deleted, missing, or versionless item returns `404`
 without confirming its existence. A successful response contains only the
-public title, description, canonical path, and `image_url`; `image_url` is
-`null` when the current thumbnail is explicitly marked fallback.
+public title, description, canonical path, public `author`, and `image_url`;
+`author` uses the exact public attribution format `By {display name}
+(@{handle})` with the documented username/display-name fallbacks, and
+`image_url` is `null` when the current thumbnail is explicitly marked fallback.
 
 `GET /api/public/share-image/<kind>/<public_id>.png` returns a public,
 opaque `1200x630` PNG share image made by fitting the stored current

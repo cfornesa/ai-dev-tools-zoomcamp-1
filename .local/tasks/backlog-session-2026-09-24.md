@@ -5380,3 +5380,21 @@ e2e/responsiveShell.spec.ts --project=chromium` -> 3 passed;
 `make check` -> backend 1712 passed / 39 skipped, frontend 283 files / 3031
 tests, lint/format/typecheck passed. Local Compose/browser evidence only; no
 production claim.
+
+## Transaction refresh: #905 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation retained #905 as the feed/share-metadata consumer of the
+closed #897 public identity contract; no duplicate was found. The exact
+public attribution contract is `By {display name} (@{handle})`, with a
+normalized handle and a display-name fallback to that handle.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed backend feed and share metadata surfaces, plus Vite server-rendered metadata, are in scope; #897 is the prerequisite and is closed. |
+| engineer | Codex / GPT-5 / medium; rostered Ollama Cloud kimi-k3 | yes | Added shared public attribution formatting, feed author/title values, share metadata `author`, `article:author`, API documentation, and blank-display/handle-normalization coverage. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Focused backend 5 passed; focused Vite metadata 7 passed; full `make check` passed with backend 1714 passed / 39 skipped and frontend 283 files / 3031 tests; lint, typecheck, format, and `git diff --check` passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `5846458636`; issue closed. Evidence is local only; no deployed production claim. |
+
+Implementation commit pending with this ledger update. The next dependency-ready
+queue item remains subject to the owner decision recorded on #900; production
+#788 remains separately authorized but not yet run.

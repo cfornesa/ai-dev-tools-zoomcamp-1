@@ -10,7 +10,7 @@ def public_author_name(user) -> str:
             return display_name
         handle = (profile.handle or "").strip()
         if handle:
-            return handle
+            return handle.lstrip("@")
     return user.get_username()
 
 
@@ -21,3 +21,10 @@ def public_author_handle(user) -> str | None:
         return None
     handle = (profile.handle or "").strip().lstrip("@")
     return handle or None
+
+
+def public_author_attribution(user) -> str:
+    """Return the public authorship label used by feeds and share metadata."""
+    name = public_author_name(user)
+    handle = public_author_handle(user)
+    return f"By {name} (@{handle})" if handle else f"By {name}"

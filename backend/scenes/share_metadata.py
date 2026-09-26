@@ -22,6 +22,7 @@ from scenes.models import (
     Thumbnail,
     Thumbnail3D,
 )
+from scenes.public_identity import public_author_attribution
 from scenes.public_urls import piece_viewer_path
 from scenes.thumbnail_generation import ensure_thumbnail_for_version
 from scenes.thumbnail_generation3d import ensure_thumbnail_for_version3d
@@ -72,6 +73,7 @@ def _metadata(record, kind: str) -> dict[str, str | None]:
         "kind": kind,
         "title": str(seo_config.get("og_title") or record.title),
         "description": str(seo_config.get("og_description") or getattr(record, "description", "")),
+        "author": public_author_attribution(record.owner),
         "canonical_path": _canonical_path(record, kind),
         "image_url": (
             f"/api/public/share-image/{kind}/{record.public_id}.png"
@@ -154,6 +156,7 @@ def _profile_metadata(handle: str) -> dict[str, str | None]:
         "kind": "profile",
         "title": f"{display_name} on AugmentrART",
         "description": description or "Public profile on AugmentrART.",
+        "author": public_author_attribution(profile.user),
         "canonical_path": f"/users/@{quote(profile.handle or handle, safe='@')}",
         "image_url": _profile_image(profile),
     }
@@ -174,6 +177,7 @@ def _collection_metadata(handle: str, slug: str) -> dict[str, str | None]:
         "kind": "collection",
         "title": str(seo_config.get("og_title") or collection.title),
         "description": str(seo_config.get("og_description") or collection.description),
+        "author": public_author_attribution(collection.owner),
         "canonical_path": (
             f"/users/@{quote(handle, safe='@')}/collections/{quote(collection.slug, safe='-')}"
         ),

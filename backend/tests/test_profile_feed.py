@@ -124,8 +124,13 @@ def test_profile_atom_feed_is_valid_public_and_escaped(client, feed_profile):
     assert b"Unpublished piece" not in response.content
 
     root = ElementTree.fromstring(response.content)
-    assert root.findtext("atom:title", namespaces=ATOM) == "Feed Artist on AugmentrART"
-    assert root.findtext("atom:author/atom:name", namespaces=ATOM) == "Feed Artist"
+    assert (
+        root.findtext("atom:title", namespaces=ATOM)
+        == "By Feed Artist (@feed-artist) on AugmentrART"
+    )
+    assert (
+        root.findtext("atom:author/atom:name", namespaces=ATOM) == "By Feed Artist (@feed-artist)"
+    )
     entries = root.findall("atom:entry", namespaces=ATOM)
     assert len(entries) == 3
     assert [entry.findtext("atom:title", namespaces=ATOM) for entry in entries] == [
@@ -177,7 +182,7 @@ def test_profile_rss_feed_reuses_public_entries_and_rss_metadata(client, feed_pr
     root = ElementTree.fromstring(response.content)
     channel = root.find("channel")
     assert channel is not None
-    assert channel.findtext("title") == "Feed Artist on AugmentrART"
+    assert channel.findtext("title") == "By Feed Artist (@feed-artist) on AugmentrART"
     assert channel.findtext("lastBuildDate")
     self_link = channel.find("atom:link", namespaces=ATOM)
     assert self_link is not None
@@ -207,6 +212,23 @@ def test_profile_rss_feed_reuses_public_entries_and_rss_metadata(client, feed_pr
 
 
 @pytest.mark.django_db
+def test_profile_feed_falls_back_to_normalized_handle_when_display_name_is_blank(
+    client, feed_profile
+):
+    profile, _ = feed_profile
+    profile.display_name = "   "
+    profile.handle = "@feed-artist"
+    profile.save(update_fields=["display_name", "handle"])
+
+    response = client.get(f"/users/@{profile.handle}/feed.json")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["title"] == "By feed-artist (@feed-artist) on AugmentrART"
+    assert payload["authors"] == [{"name": "By feed-artist (@feed-artist)"}]
+
+
+@pytest.mark.django_db
 def test_profile_json_feed_reuses_public_entries_and_json_feed_metadata(client, feed_profile):
     profile, _ = feed_profile
 
@@ -217,10 +239,10 @@ def test_profile_json_feed_reuses_public_entries_and_json_feed_metadata(client, 
     assert response["Cache-Control"] == "public, max-age=300, must-revalidate"
     document = response.json()
     assert document["version"] == "https://jsonfeed.org/version/1.1"
-    assert document["title"] == "Feed Artist on AugmentrART"
+    assert document["title"] == "By Feed Artist (@feed-artist) on AugmentrART"
     assert document["home_page_url"].endswith(f"/users/@{profile.handle}")
     assert document["feed_url"].endswith(f"/users/@{profile.handle}/feed.json")
-    assert document["authors"] == [{"name": "Feed Artist"}]
+    assert document["authors"] == [{"name": "By Feed Artist (@feed-artist)"}]
 
     items = document["items"]
     assert [item["title"] for item in items] == [

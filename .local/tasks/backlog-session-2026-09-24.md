@@ -5971,3 +5971,44 @@ with QA PASS; 0 blocked; 0 production data actions; 1 dependent production
 follow-up remains open (#788). The active Chrome session was not logged out by
 this work; its local tab was already unauthenticated and therefore showed the
 expected unavailable state for the disposable local fixture URL.
+
+## Transaction: #928 — 2026-09-26 — ENGINEERED / QA PENDING
+
+Distillation reconciled the open queue: #823 was already closed and its stale
+`docs/tasks.md` entry was corrected. #928 is the next independent,
+criterion-ready documentation transaction; it has no implementation or
+production-data dependency. The owner decisions in the issue are binding.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom / distill | Codex / GPT-5 / medium; rostered Claude Sonnet 5 | yes | Confirmed #928 is a docs-only authoritative contract, found no duplicate, and ordered it before dependent #847/#886/#941 work. |
+| issue-scoping | Codex / GPT-5 / medium | yes | Existing issue already carries a complete closure contract, owner decisions, exact files, and `make check`; no issue rewrite needed. |
+| engineer | Codex / GPT-5 / medium; documentation/PM substitution | yes | Added `docs/local-first-storage-contract.md`; linked normative state/transfer rules from `docs/plan.md` and `docs/api.md`; appended the durable memory reconciliation; linked #886/#847. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | yes | QA PASS. Every contract section was reviewed; `make check` passed with backend 1728 passed / 39 skipped and frontend 284 files / 3035 tests; `git diff --check` passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/928#issuecomment-5850974880`; #928 closed. #941/#847/#886 and the local-first implementation stream remain open. |
+
+## Transaction completion: #928 — 2026-09-26 — CLOSED / QA PASS
+
+The owner-decided local-first contract is now normative in the dedicated
+contract document, `docs/plan.md`, `docs/api.md`, and the durable memory topic.
+It records state transitions, per-kind server mappings, consent/warnings,
+secure transfer, retention, quotas, grandfathering, and the public media
+decision. This was documentation-only; no production action was performed.
+
+## Production-readiness refresh: 2026-09-26 — NOT READY
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Local contract and automated checks | PASS | #928 QA PASS; full `make check` passed with backend 1728/39 skipped and frontend 284/3035. |
+| Implementation completeness | OPEN | #928 intentionally unblocks, but does not implement, #941 public media, #929–#943 local-first behavior, or #847 ambient samples. |
+| Production evidence | OPEN | #788, #906, and other owner/production actions retain their explicit production evidence boundaries. No production state changed in this transaction. |
+| Complete project readiness | OPEN | GitHub still reports independent open issues including #788, #847, #858–#861, #874, #886, #906, #911–#916, #921, #923–#926, and #929–#946. |
+
+## Session-completion refresh: 2026-09-26
+
+Processed in this continuation: #954 and #928. Terminal statuses: 2 closed
+with QA PASS; 0 new blocked items; 0 production data actions. #788 remains
+dependency-blocked on an authorized published production execution path, while
+#847/#886/#941 and the local-first implementation stream remain independent
+follow-ups. The active Chrome process/tab remains available, but its current
+local app state is unauthenticated and shows Login; no logout was performed.

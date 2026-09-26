@@ -28,3 +28,13 @@ purges require explicit confirmation. This policy never deletes local
 IndexedDB content. A future external storage vendor or transport remains a
 separate decision requiring the normal dependency disclosure. The
 implementation queue is #510 → #512 → #508 → #513, then #509 and #511.
+
+## 2026-09-26 contract reconciliation (#928)
+
+The owner later confirmed a broader state model: pieces are local-only by
+default, sync is opt-in per piece or account, public pieces must be resident
+in PostgreSQL with their required media, publishing is an explicit transfer,
+and existing pieces are grandfathered. The normative state/transfer/security/
+retention/quota contract is now in `docs/local-first-storage-contract.md` and
+`docs/api.md` under #928. Public generated/3D media delivery is not assumed to
+exist; #941 owns that implementation and #847 remains dependent on it.

@@ -98,6 +98,17 @@ All graph bindings consume normalized signals, such as `primaryHand.indexTip.x`,
 
 ## Accounts, ownership, and gallery
 
+### Local-first storage and transfer contract (#928)
+
+The authoritative state, transfer, consent, security, retention, quota, and
+grandfathering rules are recorded in
+[`docs/local-first-storage-contract.md`](local-first-storage-contract.md).
+New projects and generated pieces are local-only by default; sync is explicit,
+publishing transfers the required data to PostgreSQL, and public rendering
+never depends on the author's browser storage. Later implementation issues
+must cite the contract section they implement and must not silently introduce
+an upload, telemetry, or external-storage dependency.
+
 ### Authentication
 
 - Require accounts for saving projects, publishing, forking, and using server-side AI generation.

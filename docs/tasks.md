@@ -2,7 +2,8 @@
 
 ## 2026-09-26 — active follow-up batch
 
-- [#823](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/823) — **PROPOSED / next:** public collection detail item count and complete ZIP download. Entry point: `/users/@handle/collections/:slug`; fixture: three published ordered collection items; routing: Stage 2b because the complete download requires an additive public endpoint, then Stage 4 browser QA. Exact check: `E2E_DOCKER_COMPOSE=true npx playwright test e2e/publicCollectionDownload.spec.ts --project=chromium`. Production is out of scope.
+- [#823](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/823) — **CLOSED / QA PASS:** public collection item count and complete ZIP download; local Compose/Chromium evidence and full checks are recorded in the issue comment.
+- [#928](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/928) — **CLOSED / QA PASS:** normative local-first storage contract documentation; full `make check` passed and dependent implementation issues remain linked.
 - [#954](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/954) — **CLOSED / QA PASS:** Replit production reference-import execution path. Added the disabled-by-default startup helper with safe preview mode and explicit write mode; local command-capture tests and full `make check` passed. #788 remains the separate owner-authorized production data action.
 
 ## 2026-09-24 — active follow-up batch (#747, #748, #788, #798–#808)

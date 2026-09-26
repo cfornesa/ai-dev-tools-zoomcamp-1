@@ -11,6 +11,24 @@ private account email or replace the existing `owner` value. This additive
 field is the stable machine-readable identity used by frontend attribution
 (`By {display name} (@{handle})`) and share/feed metadata.
 
+## Local-first storage and transfer contract (#928)
+
+The storage state model and transfer boundary are normative for API work:
+`local-only` data is browser-owned and has no implied server record; `synced`
+data has an owner-authorized PostgreSQL copy; and `public` data, including
+required media, must be server-resident before anonymous routes, embeds,
+immersive views, or downloads expose it. Sync and publish are explicit,
+consented transfers with versioned warning copy and timestamps. Server APIs
+must enforce session/CSRF, owner authorization, idempotent checksummed uploads,
+server-side MIME/size/archive limits, and the retention/quota rules in
+[`docs/local-first-storage-contract.md`](local-first-storage-contract.md).
+
+The contract is additive and does not change existing route signatures. The
+current cloud-backup API covers structured 2D projects only; public media for
+3D/generated pieces is planned under #941. Any endpoint that introduces a
+server copy or transfer must document its state transition and consent record
+before implementation.
+
 ## Authored per-piece sound contract (#833)
 
 Structured 2D and 3D scene documents may carry an optional `sonic` object

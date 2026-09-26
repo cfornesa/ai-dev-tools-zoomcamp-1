@@ -3952,6 +3952,64 @@ audio evidence, keyboard mapping, reset behavior, toolbar, and one QA comment.
   action with its snapshot/rehearsal safeguards.
 - Provenance: task-distillation / Codex-GPT-5 / medium / substituted: no.
 
+## Transaction #883 — 2026-09-26 — QA FAIL / BLOCKED
+
+- Groom: task-distillation found a real fixture-level motion gap in #859's
+  immersive matrix; duplicate audit found no existing issue owning the
+  p5.js lower-bound failure, so #883 was created and linked.
+- Engineer: local disposable Compose only. Snapshot recorded for published
+  ArtPiece id 1357, public id f33ec821-678d-409e-acd2-700264e245f1,
+  slug serene-p5js, current version 1545. Tried immutable local versions
+  1548-1552 with stronger star/water/atmosphere motion; no repository or
+  production data changed. The published pointer was restored to version
+  1545 after the measurement remained below the acceptance bound.
+- QA self-review: FAIL/BLOCKED. Exact Chrome CDP 1280x720 stage captures
+  reported 0.038-0.065% changed pixels over one second, below the required
+  0.1-15% range, despite source changes. This does not establish a pass;
+  it exposes an unresolved fixture/renderer/capture contract.
+- Evidence: GitHub QA comment #883 comment 5840679866. Local-only evidence
+  cannot close production criteria; no production data was touched.
+- Reconcile: keep #883 open and block #859's complete motion matrix on a
+  valid fixture/measurement contract. Next action is to make authored frame
+  motion observable to the browser capture path, then rerun desktop/mobile
+  evidence. Provenance: groom/task-distillation, engineer/QA/reconcile /
+  Codex-GPT-5 / medium / substituted: no.
+
+## QA refresh #859 — 2026-09-26 — FAIL / OPEN
+
+- Fresh local immersive Chrome evidence confirms the heading/title precedes
+  the stage, the toolbar is visible without a hamburger, and the p5.js stage
+  is visually nonblank at 1280x720 with no fresh application console errors.
+- The p5.js exact one-second motion capture remains below the 0.1% lower
+  bound and is linked to #883. #859 remains open; no production criterion is
+  inferred from localhost evidence. Provenance: qa-self-review / Codex-GPT-5
+  / medium / substituted: no.
+
+## Production-readiness refresh — 2026-09-26 — NOT READY
+
+- `make check` remains green: backend 1710 passed/39 skipped and frontend
+  281 files/3024 tests passed, with lint, format-check, typecheck, and build
+  passing in the current checkout.
+- Open blockers remain #883/#859, #882, #874, #862, #861, #860, #858,
+  #857, #856, #847, and #788. #875 and #881 are reconciled and closed.
+- Production boundary: no new publish or production data mutation was made
+  in this transaction. #874 still needs owner-authorized reconciliation of
+  the private/public production records; #788 still lacks a supported
+  production dry-run/import path.
+
+## Session-completion refresh — 2026-09-26 — INCOMPLETE / OPEN FOLLOW-UPS
+
+- Counts: #875 and #881 closed with QA PASS; #883 remains QA FAIL/BLOCKED;
+  #859 remains open and dependent on it; the remaining production/data and
+  browser verification issues remain open. No closed issue was reopened.
+- Routing audit: #883 is a local fixture/measurement contract gap, #859 is
+  the dependent immersive verification report, #882 is the editor frozen-ink
+  contract decision, #874 is the production record mismatch, and #788 is the
+  Replit production-shell blocker.
+- Follow-up audit: resolve #883 with a valid motion fixture/capture contract,
+  then rerun #859-#862; preserve #874/#788 until their authorized external
+  actions are available. The requested no-open-issues state is not reached.
+
 ## Transaction #881 — 2026-09-26 — QA PASS / CLOSED
 
 - Groom: the repeated screenshot-motion verification gap was distinct and

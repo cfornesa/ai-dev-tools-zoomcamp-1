@@ -591,6 +591,45 @@ describe('createSonicEngine mic input (issue #308)', () => {
     expect(fake.userMediaConnectCalls).toHaveLength(1);
   });
 
+  it('connectMic(stream) uses the supplied native stream without requesting a second one', async () => {
+    const fake = createFakeToneModule();
+    const source = {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    };
+    const rawContext = {
+      state: 'running',
+      createMediaStreamSource: vi.fn(() => source),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    Object.assign(fake.fakeModule, {
+      getContext: () => ({ rawContext, resume: vi.fn().mockResolvedValue(undefined) }),
+    });
+    const track = { readyState: 'live', stop: vi.fn() };
+    const stream = { getTracks: () => [track] } as unknown as MediaStream;
+    const getUserMedia = vi.fn();
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia },
+    });
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    await engine.connectMic(stream);
+
+    expect(getUserMedia).not.toHaveBeenCalled();
+    expect(rawContext.createMediaStreamSource).toHaveBeenCalledWith(stream);
+    expect(source.connect).toHaveBeenCalled();
+    rawContext.state = 'suspended';
+    const stateChange = rawContext.addEventListener.mock.calls[0][1] as () => void;
+    stateChange();
+    expect(fake.startCalls).toHaveBeenCalled();
+    engine.disconnectMic();
+    expect(source.disconnect).toHaveBeenCalled();
+    expect(track.stop).toHaveBeenCalled();
+  });
+
   it('disconnectMic() releases the microphone and is a safe no-op if never connected', async () => {
     const fake = createFakeToneModule();
     const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));

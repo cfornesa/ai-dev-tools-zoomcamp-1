@@ -5398,3 +5398,20 @@ normalized handle and a display-name fallback to that handle.
 Implementation commit pending with this ledger update. The next dependency-ready
 queue item remains subject to the owner decision recorded on #900; production
 #788 remains separately authorized but not yet run.
+
+## Transaction refresh: #909 — 2026-09-26 — ENGINEERED / QA PASS
+
+Task-distillation selected #909 as the first independent item in the
+microphone stream. It is the shared engine prerequisite for #910–#916; the
+effects, surface wiring, ZIP, and hardware issues remain separate follow-ups.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed the current generated-piece path was permission-only and never connected captured audio; no duplicate found. |
+| engineer | Codex / GPT-5 / medium; rostered complex implementation service substituted | yes | Added optional trusted `MediaStream` input, native `MediaStreamAudioSourceNode` routing to the shared bus, live-track idempotence, track/node cleanup, audio-session resume/transport recovery, and test seam compatibility. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Focused audio suite 8 files / 91 tests passed; native stream regression and statechange recovery tests passed; full `make check` passed with backend 1714 passed / 39 skipped and frontend 283 files / 3032 tests; lint, typecheck, format, and `git diff --check` passed. |
+| reconcile | Codex / GPT-5 / medium | yes | QA comment pending after issue comment is posted; production/hardware evidence is explicitly out of scope. |
+
+The implementation is local-only and does not claim real microphone hardware
+acceptance or deployment verification; those belong to #916 and the later
+surface-specific issues.

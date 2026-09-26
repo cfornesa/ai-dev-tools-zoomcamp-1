@@ -207,16 +207,10 @@ export interface SonicEngine {
   /** Triggers a discrete note on the melodic voice (issue #307's keyboard
    * input calls this). */
   triggerMelodicNote(note: string): void;
-  /** Issue #308: opens the microphone (`Tone.UserMedia` -- Tone.js's own
-   * `getUserMedia({audio:true})` wrapper, reused rather than wiring a raw
-   * `MediaStreamAudioSourceNode` by hand) and mixes it into the shared
-   * bus, exactly like the reference implementation's own raw-mic-in
-   * layer (not analyzed/used to modulate anything else -- that's the
-   * separate camera-theremin feature, issue #309). Must be called after
-   * `enable()` -- rejects otherwise. Rejects with the underlying
-   * `getUserMedia` failure (a `DOMException` in a real browser) for the
-   * caller to categorize via `micFailure.ts`. */
-  connectMic(): Promise<void>;
+  /** Connects a trusted parent-frame microphone stream to the shared bus.
+   * A supplied stream is used directly; without one, getUserMedia is
+   * acquired before any lazy Tone work. Must be called after enable(). */
+  connectMic(stream?: MediaStream): Promise<void>;
   /** Closes and releases the microphone stream. Safe to call even if
    * never connected. */
   disconnectMic(): void;
@@ -297,7 +291,20 @@ export function createSonicEngine(
     melodic: 'synth',
   };
   let ambientLoop: InstanceType<ToneModule['Loop']> | null = null;
-  let userMedia: InstanceType<ToneModule['UserMedia']> | null = null;
+  type NativeMicSource = {
+    connect(destination: unknown): unknown;
+    disconnect(): void;
+  };
+  let micSource: NativeMicSource | null = null;
+  let micStream: MediaStream | null = null;
+  let legacyUserMedia: InstanceType<ToneModule['UserMedia']> | null = null;
+  let audioSessionContext: {
+    rawContext?: {
+      removeEventListener(type: string, listener: () => void): void;
+    };
+    resume?: () => Promise<void>;
+  } | null = null;
+  let audioSessionListener: (() => void) | null = null;
   let thereminSounding = false;
   let lastMovementTriggerAt = 0;
   let tempo = DEFAULT_TEMPO;
@@ -676,28 +683,69 @@ export function createSonicEngine(
     return { applied, unsupported };
   }
 
-  async function connectMic(): Promise<void> {
+  async function connectMic(stream?: MediaStream): Promise<void> {
+    if (legacyUserMedia) return;
+    if (!stream && tone && bus && status === 'active' && typeof tone.getContext !== 'function') {
+      const mic = new tone.UserMedia();
+      try {
+        await mic.open();
+        mic.connect(bus);
+        legacyUserMedia = mic;
+      } catch (error) {
+        mic.dispose();
+        throw error;
+      }
+      return;
+    }
+    const activeStream = stream ?? (await navigator.mediaDevices.getUserMedia({ audio: true }));
     if (!tone || !bus || status !== 'active') {
+      activeStream.getTracks().forEach((track) => track.stop());
       throw new Error('Sound must be enabled before enabling the microphone.');
     }
-    if (userMedia) return; // already connected -- idempotent, like enable()
-    const mic = new tone.UserMedia();
+    if (
+      (micSource && micStream?.getTracks().some((track) => track.readyState === 'live')) ||
+      legacyUserMedia
+    ) {
+      activeStream.getTracks().forEach((track) => track.stop());
+      return;
+    }
     try {
-      await mic.open();
+      const context = tone.getContext();
+      const rawContext = context.rawContext as AudioContext;
+      const source = rawContext.createMediaStreamSource(activeStream) as unknown as NativeMicSource;
+      source.connect((bus as unknown as { input: unknown }).input);
+      micSource = source;
+      micStream = activeStream;
+      audioSessionContext = context;
+      audioSessionListener = () => {
+        if (rawContext.state === 'suspended' || rawContext.state === 'interrupted') {
+          void context.resume?.();
+          if (tone?.Transport) tone.Transport.start();
+        }
+      };
+      rawContext.addEventListener('statechange', audioSessionListener);
     } catch (error) {
-      mic.dispose();
+      activeStream.getTracks().forEach((track) => track.stop());
       throw error;
     }
-    mic.connect(bus);
-    userMedia = mic;
   }
 
   function disconnectMic() {
-    if (!userMedia) return;
-    userMedia.close();
-    userMedia.disconnect();
-    userMedia.dispose();
-    userMedia = null;
+    if (legacyUserMedia) {
+      legacyUserMedia.close();
+      legacyUserMedia.disconnect();
+      legacyUserMedia.dispose();
+      legacyUserMedia = null;
+    }
+    if (audioSessionContext?.rawContext && audioSessionListener) {
+      audioSessionContext.rawContext.removeEventListener('statechange', audioSessionListener);
+    }
+    audioSessionListener = null;
+    audioSessionContext = null;
+    micSource?.disconnect();
+    micStream?.getTracks().forEach((track) => track.stop());
+    micSource = null;
+    micStream = null;
   }
 
   function startCameraTheremin() {

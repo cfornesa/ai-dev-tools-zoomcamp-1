@@ -108,3 +108,46 @@ Piece controls popover; the hand guide appears only when steering is enabled.
 Structured 3D pieces on the A-Frame renderer (#772) show Screenshot, Download, Immersive, and
 Fullscreen. Sound, Piece controls (camera preview), and Steer are Three.js-only today, so they are
 absent rather than shown non-functional.
+
+## 2026-09-26 reference and current-app audit (#908)
+
+This dated audit is the change-controlled evidence layer for issue #908. It does not change the
+owner-approved end-state rows above. The reference repositories were inspected read-only at the
+working-tree revisions available on 2026-09-26; current-app observations were made in the rebuilt
+local Compose stack in Chrome at both 1280x900 and 375x812. The browser evidence is local only and
+does not establish production readiness.
+
+### Surface coverage
+
+| Surface | Current-app route(s) inspected or resolved in source | Reference contract | Current observation | Follow-up |
+| --- | --- | --- | --- | --- |
+| Public regular generated | `/users/:handle/pieces/:slug`, `/art-pieces/:id` | Shared regular toolbar; title/description precede stage | C2.js renders the shared icon toolbar, `By Christopher Fornesa (@cfornesa)`, and no directional pad | #892, #904 |
+| Public regular structured 2D/3D | `/p/:id`, `/p3d/:id`, canonical resolver | Same regular toolbar; engine capability gates navigation | Structured routes resolve through `PublicProjectViewer` / `PublicProject3DViewer` and use `PieceStageToolbar` | #892, #899 |
+| Owner/private outside edit | `/users/:handle/pieces/:slug` when owner; `/art-pieces/p/:id` | Public stage remains public-shaped; owner-only actions are outside the stage toolbar | No separate owner-only toolbar contract was found; edit-mode actions are in editor routes | #908 finding; #862 validity coverage |
+| Regular embed | `/embed/art-pieces/:id`, structured embed routes | Same regular stage controls, including Download and Immersive/VR; `static=1` is bare | `PieceStageToolbar` is reused by public project and art-piece viewers; extracted ZIP/embed parity remains separately unverified | #892, #898, #903 |
+| Public immersive generated | `/users/:handle/immersive/:slug`, `/art-pieces/immersive/:id` | Shared immersive toolbar; 2D is a gallery, 3D is a walkable world | C2.js immersive route renders a 2D gallery with Screenshot, Download ZIP, Piece controls, Fullscreen and no 3D directional controls | #893, #907 |
+| Immersive embed (Custom/CMS) | `/embed/art-pieces/immersive/:id`, `?cms=1` | Shared immersive renderer; page actions are below the stage; `static=1` bare | Separate embed snippet panels are implemented in `ImmersiveArtPieceViewer`; exact reference parity remains open | #898, #907 |
+| Immersive structured 3D | `/immersive/p3d/:id`, canonical structured immersive | Walkable freeform 3D world with native navigation and immersive controls | Route uses `ImmersiveProject3DViewer` and `Scene3DPreview`; browser proof and structured toolbar parity remain open | #899 |
+| Immersive collection | `/users/:handle/collections/:slug/immersive`, legacy collection route | Gallery/room navigation with shared stage actions | `CollectionImmersiveViewer` and `PublicCollection` provide the route and navigation shell; collection fixture/browser proof is still required | #904 |
+| Regular ZIP | generated Full and Non-Camera archives | Extracted regular stage toolbar; no Download or Immersive/VR inside archive | Bundle/runtime sources exist; no closure-grade extracted-archive evidence recorded yet | #903 |
+| Immersive ZIP | generated flat and 3D archives | Extracted immersive toolbar; flat gallery vs. 3D world; no Download/VR inside archive | Bundle/runtime sources exist; no closure-grade extracted-archive evidence recorded yet | #902, #901 |
+
+### Reference comparison and discrepancy classification
+
+The PHP reference exposes grouped immersive chrome from `augment-humankind/public/app/helpers/immersive-chrome.php` (`immersive_stage_toolbar_markup`, around L643) and the regular stage from `public/app/views/partials/piece-stage.php`. The React reference exposes the shared `PieceStageControls` in `augment-humankind-react-node/apps/web/src/main.tsx` (around L437-L732), with source assertions in `apps/web/src/piece-surface.test.ts` (toolbar order, immersive device controls, and narrow-stage hiding).
+
+| Discrepancy or decision | Classification |
+| --- | --- |
+| Reference immersive chrome includes exit, camera, microphone and device-orientation affordances that are not in the owner-approved compact matrix | Owner decision / #908 audit finding; implementation is routed through #900 and the generated immersive children, not silently folded into #892 |
+| Reference regular embed is a regular stage; Custom/CMS immersive embed is the immersive renderer; `static=1` is bare | Already represented by #898 and #907; no duplicate issue |
+| Flat immersive pieces must be galleries while Three.js/A-Frame pieces remain walkable worlds | Existing #893 and #899; local C2 evidence confirms gallery behavior |
+| Collection immersive route needs a real collection fixture and browser evidence | Existing #904; no new issue created |
+| Structured routes and private-owner viewing need route-level evidence | Existing #862/#908 scope; no duplicate issue created |
+| Downloaded ZIPs need extracted HTTP-served evidence, not live-route evidence | Existing #901/#902/#903 and memory topic `parity-closure-evidence-gap`; no duplicate issue created |
+| Public attribution must be `By {display name} (@{handle})`, with handle fallback and no duplicate `@` | Closed #897; #904 remains open for collection/browser evidence |
+
+### Evidence boundary
+
+The dated local browser observations above are intentionally separated from production evidence.
+They support implementation/QA routing only. No production URL, Replit database, published revision,
+or production download is claimed by this audit.

@@ -5336,3 +5336,21 @@ no new unlinked issue was found in this gate.
 This is a handoff, not a production-ready completion: next actions are the
 supported-host Chromium reruns, owner decision #900, the authorized #788
 production import, then stream-order processing of #895/#901–#916.
+
+## Transaction refresh: #908 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation refreshed the queue after the local Compose rebuild and
+confirmed #908 was the next dependency-ready item for stream A. It was a
+documentation/evidence transaction only; no product code or reference
+repository was modified.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| task-distillation / groom | Codex / GPT-5 / medium | yes | Duplicate audit retained #908 as the authoritative reference-versus-current-app matrix; children #893/#898/#899/#903 remain linked rather than duplicated. |
+| engineer | Codex / GPT-5 / medium; routing: issue-scoping / Claude Sonnet 5 medium | yes | Extended `docs/piece-toolbar-parity-matrix.md` with dated route/surface coverage, reference sources, current observations, discrepancy classification, and evidence boundary. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | `make check` passed: backend 1712 passed / 39 skipped; frontend 283 files / 3031 tests; lint, format, and typecheck passed. `git diff --check` clean. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `5846176917`; issue closed. Local Chrome evidence remains local-only and makes no production claim. |
+
+Commit pending with this ledger update. Next stream-A transaction is the
+queue's owner decision #900 before the ZIP children that depend on it; #904
+still needs collection-fixture/browser evidence.

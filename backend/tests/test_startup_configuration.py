@@ -150,9 +150,7 @@ def test_production_reference_import_preview_passes_dry_run_without_writing(tmp_
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     args_file = tmp_path / "args"
-    (bin_dir / "uv").write_text(
-        "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" > \"$ARGS_FILE\"\n"
-    )
+    (bin_dir / "uv").write_text("#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" > \"$ARGS_FILE\"\n")
     (bin_dir / "uv").chmod(0o755)
 
     environment = os.environ.copy()
@@ -187,9 +185,7 @@ def test_production_reference_import_write_requires_explicit_mode(tmp_path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     args_file = tmp_path / "args"
-    (bin_dir / "uv").write_text(
-        "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" > \"$ARGS_FILE\"\n"
-    )
+    (bin_dir / "uv").write_text("#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" > \"$ARGS_FILE\"\n")
     (bin_dir / "uv").chmod(0o755)
 
     environment = os.environ.copy()

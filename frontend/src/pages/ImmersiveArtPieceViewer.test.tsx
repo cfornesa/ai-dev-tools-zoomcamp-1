@@ -103,6 +103,8 @@ describe('ImmersiveArtPieceViewer (#606)', () => {
     expect(screen.getByRole('link', { name: 'Back to regular viewer' })).toHaveClass(
       'immersive-art-piece-back-link',
     );
+    expect(screen.getByTestId('immersive-directional-controls')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Move forward' })).toBeInTheDocument();
   });
 
   it('closes the route on Escape when native fullscreen is not active', () => {
@@ -123,5 +125,6 @@ describe('ImmersiveArtPieceViewer (#606)', () => {
     expect(screen.getByTestId('navigation-unsupported')).toHaveTextContent(
       "Walkable navigation isn't available for this piece type.",
     );
+    expect(screen.queryByTestId('immersive-directional-controls')).not.toBeInTheDocument();
   });
 });

@@ -67,6 +67,52 @@ function cmsEmbedSnippetFor(publicId: string): string {
   );
 }
 
+function ImmersiveDirectionControls({
+  onNavigate,
+}: {
+  onNavigate: (delta: { dx?: number; dz?: number }) => void;
+}) {
+  return (
+    <div
+      className="immersive-directional-controls"
+      data-testid="immersive-directional-controls"
+      role="group"
+      aria-label="Directional navigation"
+    >
+      <div className="immersive-directional-pad">
+        <button
+          type="button"
+          aria-label="Move forward"
+          onClick={() => onNavigate({ dz: -KEY_STEP })}
+        >
+          ↑
+        </button>
+        <button type="button" aria-label="Move left" onClick={() => onNavigate({ dx: -KEY_STEP })}>
+          ←
+        </button>
+        <button
+          type="button"
+          aria-label="Move backward"
+          onClick={() => onNavigate({ dz: KEY_STEP })}
+        >
+          ↓
+        </button>
+        <button type="button" aria-label="Move right" onClick={() => onNavigate({ dx: KEY_STEP })}>
+          →
+        </button>
+      </div>
+      <div className="immersive-zoom-pad" aria-label="Zoom navigation">
+        <button type="button" aria-label="Zoom in" onClick={() => onNavigate({ dz: -ZOOM_STEP })}>
+          +
+        </button>
+        <button type="button" aria-label="Zoom out" onClick={() => onNavigate({ dz: ZOOM_STEP })}>
+          −
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ImmersiveArtPieceViewer({
   initialPiece,
   canonicalHref,
@@ -343,6 +389,7 @@ function ImmersiveArtPieceViewer({
               pointerEvents: isSpatial ? 'none' : 'auto',
             }}
           />
+          {isSpatial && <ImmersiveDirectionControls onNavigate={navigate} />}
           <PieceStageControls
             stageRef={stageRef}
             iframeRef={iframeRef}

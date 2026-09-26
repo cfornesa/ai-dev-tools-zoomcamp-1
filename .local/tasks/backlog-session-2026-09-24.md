@@ -5279,3 +5279,12 @@ closed #752/#753/#754/#765/#769 without reopening them.
 | engineer | Codex / GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | No implementation change required: `ImmersiveArtPieceViewer` already serves the shared toolbar, responsive 2D gallery shell, and 3D stage through the embed route. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | Active Chrome verified authored Three.js immersive embed and C2 immersive gallery embed; focused Vitest 23 passed. C2 exposed no directional controls. |
 | reconcile | Codex / GPT-5 / medium | yes | Not closed: supported-host 1280x900/375x812 screenshots and touch-target evidence remain pending; local Compose evidence cannot satisfy that boundary. |
+
+### Transaction refresh: #899 — 2026-09-26 — ENGINEERED / QA PARTIAL
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Revalidated as the generated immersive 3D child of #892; disposable fixture precondition was absent, so local-only fixtures were created and recorded. |
+| engineer | Codex / GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | Added a shared on-canvas directional/zoom pad for Three.js/A-Frame immersive surfaces only; keyboard, drag, wheel, native VR/fullscreen, and flat-gallery gating remain intact. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | Active Chrome rendered registered-camera Three.js and A-Frame worlds; Move forward changed real camera poses (`4.70`, `-0.30`), A-Frame exposed native VR/fullscreen, and toolbar remained overlaid. Full frontend suite 282 files / 3029 tests passed. |
+| reconcile | Codex / GPT-5 / medium | yes | Not closed: required supported-host 1280x900 and 375x812 screenshots/touch-target evidence remain pending; local Compose evidence cannot satisfy that boundary. |

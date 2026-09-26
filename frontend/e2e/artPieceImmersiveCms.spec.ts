@@ -147,7 +147,7 @@ test.describe('Generated immersive CMS embed: explicit CMS wrapper variant (#447
     await expect(anonPage.getByTestId('navigation-pose')).toBeVisible();
     const poseBeforeResize = await anonPage.getByTestId('navigation-pose').textContent();
 
-    await anonPage.getByRole('button', { name: 'Piece controls' }).click();
+    await anonPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await anonPage.getByRole('button', { name: 'Unmute sound' }).click();
     await expect(anonPage.getByRole('button', { name: 'Mute sound' })).toHaveAttribute(
       'aria-pressed',
@@ -222,7 +222,7 @@ test.describe('Generated immersive CMS embed: explicit CMS wrapper variant (#447
       .frameLocator('iframe[title="Immersive art piece preview"]')
       .locator('#art-piece-container canvas')
       .waitFor({ state: 'attached' });
-    await anonPage.getByRole('button', { name: 'Piece controls' }).click();
+    await anonPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
     // Named states, same #434 contract: Screenshot, Sound, Camera view,
     // Steer, Guide, Reset, Fullscreen.
     await expect(anonPage.getByTestId('sound-status')).toContainText('Sound is off.');
@@ -231,7 +231,7 @@ test.describe('Generated immersive CMS embed: explicit CMS wrapper variant (#447
     await expect(anonPage.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
     await expect(anonPage.getByRole('button', { name: 'Reset view' })).toBeVisible();
     await expect(
-      anonPage.getByRole('button', { name: /expand fullscreen|exit fullscreen/i }),
+      anonPage.getByRole('button', { name: /expand .*fullscreen|exit .*fullscreen/i }),
     ).toBeVisible();
     const screenshotDownload = anonPage.waitForEvent('download');
     await anonPage.getByRole('button', { name: 'Take screenshot' }).click();

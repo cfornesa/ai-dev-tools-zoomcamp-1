@@ -5503,3 +5503,19 @@ directional-control assertions.
 | engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Updated the six-engine embed E2E contract to use exact control names, assert no directional navigation on regular embeds, and assert no horizontal overflow. |
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required Chromium suite: 4 passed at 1280x900 and 375x812. Frontend format check, typecheck, and Vitest: 283 files / 3032 tests passed; `git diff --check` passed. Mobile embed screenshot inspected. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
+
+## Transaction refresh: #907 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation selected #907 after the regular embed child #898 became
+terminal. Verify-first found four stale exact-name assumptions in the existing
+immersive Custom/CMS tests: the hidden compatibility trigger matched broad
+Piece-controls queries, and the current fullscreen accessible name includes
+the word `piece`. Product behavior was unchanged; tests were aligned with the
+shared route contract.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed immersive embed is a separate route/surface from regular embed, with 3D navigation and flat-gallery gating inherited from #900. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Corrected exact Piece-controls selectors and fullscreen accessible-name matchers in the existing Custom/CMS browser contracts. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required immersive-embed/framing run: 7 passed, then the corrected CMS test passed separately; frontend format/typecheck/Vitest passed with 283 files / 3032 tests; `git diff --check` passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |

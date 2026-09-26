@@ -156,7 +156,7 @@ test.describe('Generated immersive Custom embed: share the immersive runtime wit
       const screenshot = await screenshotDownload;
       expect(screenshot.suggestedFilename()).toMatch(/\.png$/);
       await expect(
-        anonPage.getByRole('button', { name: /expand fullscreen|exit fullscreen/i }),
+        anonPage.getByRole('button', { name: /expand .*fullscreen|exit .*fullscreen/i }),
       ).toBeVisible();
 
       // No horizontal overflow at either viewport -- the stage (and its
@@ -249,7 +249,7 @@ test.describe('Generated immersive Custom embed: share the immersive runtime wit
     // The same acknowledged-state steering contract as #432/#434's
     // full-chrome page -- steering is gated on camera being active
     // first.
-    await anonPage.getByRole('button', { name: 'Piece controls' }).click();
+    await anonPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await anonPage.getByRole('button', { name: 'Steer the piece' }).click();
     await expect(anonPage.getByTestId('steering-status')).toContainText(/camera/i);
 

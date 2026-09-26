@@ -317,6 +317,13 @@ V1 visual properties:
 - Approved physics force parameters
 - Scene background and palette
 
+The V1 scene background is a canvas-level property, not a synthetic layer.
+It is always rendered behind content, participates in scene undo/save/version
+history, and is included by exports. It is not hidden, locked, reordered, or
+offered as an `@Canvas` AI target. A dedicated background layer would require
+a separately scoped schema/migration decision because it would change those
+semantics.
+
 ## Accessibility and alternate controls
 
 Accessibility is a V1 requirement.
@@ -420,12 +427,12 @@ Use hysteresis for threshold events so values near a threshold do not flicker.
 
 Use a layered target scope:
 
-| Scope | V1 examples | Guardrails |
-|---|---|---|
-| Shape | position, scale, rotation, opacity, fill, stroke | One binding per target channel by default; capped transforms |
-| Group | shared movement, scale, color, trail behavior | Bounded group size and nesting |
-| Scene | background, palette, global emitter, global physics force | Small allowlist only |
-| Interaction | trigger preset, toggle layer, emit particles, reset scene | Cooldowns and events-per-second caps |
+| Scope       | V1 examples                                               | Guardrails                                                   |
+| ----------- | --------------------------------------------------------- | ------------------------------------------------------------ |
+| Shape       | position, scale, rotation, opacity, fill, stroke          | One binding per target channel by default; capped transforms |
+| Group       | shared movement, scale, color, trail behavior             | Bounded group size and nesting                               |
+| Scene       | background, palette, global emitter, global physics force | Small allowlist only                                         |
+| Interaction | trigger preset, toggle layer, emit particles, reset scene | Cooldowns and events-per-second caps                         |
 
 ### Binding collision rule
 

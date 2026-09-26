@@ -157,20 +157,40 @@ def _layer_recolor_patch(user_content: str) -> list[dict[str, Any]]:
         target_text = user_content.split("Only modify the selected element id(s):", 1)
     if len(target_text) != 2:
         return []
-    target_ids = {value.strip().rstrip(".") for value in target_text[1].split(",")}
+    target_line = target_text[1].splitlines()[0]
+    target_ids = {value.strip().rstrip(".") for value in target_line.split(",")}
     layers = scene.get("layers", []) if isinstance(scene, dict) else []
     target_layer_ids = {
         layer.get("id")
         for layer in layers
         if isinstance(layer, dict) and layer.get("id") in target_ids
     }
-    if len(target_layer_ids) != 1:
+    groups = scene.get("groups", []) if isinstance(scene, dict) else []
+    groups_by_id = {
+        group.get("id"): group
+        for group in groups
+        if isinstance(group, dict) and isinstance(group.get("id"), str)
+    }
+    target_shape_ids = set(target_ids)
+    pending_groups = [target_id for target_id in target_ids if target_id in groups_by_id]
+    while pending_groups:
+        group = groups_by_id[pending_groups.pop()]
+        for child_id in group.get("childIds", []):
+            if child_id in groups_by_id:
+                pending_groups.append(child_id)
+            else:
+                target_shape_ids.add(child_id)
+    if len(target_layer_ids) > 1:
         return []
-    layer_id = next(iter(target_layer_ids))
+    layer_id = next(iter(target_layer_ids), None)
     return [
         {"op": "replace", "path": f"/shapes/{index}/style/fill", "value": "#3366ff"}
         for index, shape in enumerate(scene.get("shapes", []))
-        if isinstance(shape, dict) and shape.get("layerId") == layer_id
+        if isinstance(shape, dict)
+        and (
+            (layer_id is not None and shape.get("layerId") == layer_id)
+            or shape.get("id") in target_shape_ids
+        )
     ]
 
 

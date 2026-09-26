@@ -52,6 +52,22 @@ design constraint, not a V1-only limitation.
   exceeds the limit of 200") in a way plain JSON Schema errors aren't,
   and keeps the numbers in one place. See Task 7.
 
+## Background modeling
+
+V1 keeps the scene background as the canvas-level `canvas.backgroundColor`
+property (Option A), rather than inventing a special background layer.
+
+| Concern                        | Canvas-level background behavior                                                                                                       |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Visibility, locking, and order | Always present behind the scene; it is not a layer, so it cannot be hidden, locked, reordered, or selected as a shape target.          |
+| AI targeting                   | `@Canvas` is not offered as a structured target. Background requests remain scene-level operations with their own explicit validation. |
+| Undo and save                  | Background edits are ordinary scene-document mutations and therefore participate in the editor's undo/save/version flow.               |
+| Render and export              | Every renderer and export path must include the canvas background before drawing scene content.                                        |
+
+A dedicated background layer would change ordering, targeting, and persistence
+semantics and is intentionally deferred until a separately scoped schema and
+migration decision exists.
+
 ## Fixtures
 
 - `fixtures/valid/` — documents every validator must accept.
@@ -146,7 +162,7 @@ contract boundary they implement.
 
 ## Referential integrity
 
-JSON Schema validates document *shape*, not cross-references within a
+JSON Schema validates document _shape_, not cross-references within a
 document (e.g. a binding's `targetId` pointing at a shape that doesn't
 exist, or a group listing a non-existent child id). Structural schema
 validation runs first; each validator then walks the document to confirm

@@ -54,6 +54,7 @@ const SCENE = {
 describe('AI target options', () => {
   it('offers typed scene targets and expands a group to stable descendant ids', () => {
     const options = buildAITargetOptions(SCENE);
+    expect(options.some((option) => option.id === 'canvas')).toBe(false);
     expect(options.find((option) => option.id === 'group-1')).toMatchObject({
       type: 'group',
       descendantIds: ['group-1', 'shape-1'],

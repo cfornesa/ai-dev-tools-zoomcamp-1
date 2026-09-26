@@ -5846,3 +5846,22 @@ issue owning either exact gap; both were created before any implementation.
 
 Evidence comments: #947 `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/947#issuecomment-5849901983`; #948 `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/948#issuecomment-5849939276`; #949 `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/949#issuecomment-5850052665`; #953 `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/953#issuecomment-5850052761`.
 | #952 | Stage 2a frontend mechanical | — | Criterion-ready issue created; retain as a separate accessibility/presentation transaction. |
+
+## Transaction completion: #950 — 2026-09-26 — CLOSED / QA PASS
+
+The background decision is Option A: `canvas.backgroundColor` remains a
+canvas-level property. The shared structured fixture now has a full-width Sky
+band, a Hills group containing two independently layered green rectangles, a
+yellow Sun circle, a white canvas background, and a locked stroke-only Frame.
+The fake provider expands a group target to descendant shapes without
+weakening the one-shape-per-layer invariant. `@Canvas` is explicitly not an
+AI target.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom / distill | Codex / GPT-5 / medium | yes | Confirmed #950 is the owner-requested background-modeling and fixture-semantic gap; no duplicate; retained Option A and kept dedicated background layers out of scope. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Documented Option A in `schema/README.md` and `docs/plan.md`; upgraded the shared fixture; added group-aware fake-provider expansion, no-`@Canvas` coverage, and semantic browser pixel assertions. |
+| qa-self-review | Codex / GPT-5 / medium; installed Chrome | yes | Backend focused validation/provider suite: 105 passed. Frontend focused targeting/render/export suite: 51 passed. Prettier and `git diff --check` passed. Installed-Chrome focused #920 browser run passed 1/1 at 1280x900 with Sky/Hills/Sun pixel samples, Hills-only mutation, locked Frame refusal, exact restore, and 375x812 screenshot. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS. Evidence is local disposable Compose plus installed Chrome only; no production claim or production data action. |
+
+QA comment: pending. Follow-up implementation queue remains #952, then #951.

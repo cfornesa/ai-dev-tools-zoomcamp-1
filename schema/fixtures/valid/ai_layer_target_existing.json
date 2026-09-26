@@ -4,10 +4,41 @@
   "canvas": { "width": 800, "height": 600, "backgroundColor": "#ffffff" },
   "renderer": { "preferred": "p5" },
   "layers": [
-    { "id": "layer-sky", "name": "Sky", "order": 0, "visible": true, "locked": false },
-    { "id": "layer-hills", "name": "Hills", "order": 1, "visible": true, "locked": false },
-    { "id": "layer-sun", "name": "Sun", "order": 2, "visible": true, "locked": false },
-    { "id": "layer-frame", "name": "Frame", "order": 3, "visible": true, "locked": true }
+    {
+      "id": "layer-sky",
+      "name": "Sky",
+      "order": 5,
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "layer-hills-left",
+      "name": "Hills left",
+      "order": 1,
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "layer-hills-right",
+      "name": "Hills right",
+      "order": 2,
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "layer-sun",
+      "name": "Sun",
+      "order": 3,
+      "visible": true,
+      "locked": false
+    },
+    {
+      "id": "layer-frame",
+      "name": "Frame",
+      "order": 4,
+      "visible": true,
+      "locked": true
+    }
   ],
   "shapes": [
     {
@@ -15,51 +46,113 @@
       "type": "rect",
       "layerId": "layer-sky",
       "groupId": null,
-      "transform": { "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": "#99ccff", "stroke": null, "strokeWidth": 0 },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": { "fill": "#87ceeb", "stroke": null, "strokeWidth": 0 },
       "name": "sky",
-      "width": 80,
-      "height": 50,
+      "width": 800,
+      "height": 350,
       "cornerRadius": 0
     },
     {
-      "id": "shape-hills",
+      "id": "shape-hills-left",
       "type": "rect",
-      "layerId": "layer-hills",
-      "groupId": null,
-      "transform": { "x": 100, "y": 80, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": "#99ccff", "stroke": null, "strokeWidth": 0 },
-      "name": "hills",
-      "width": 80,
-      "height": 50,
+      "layerId": "layer-hills-left",
+      "groupId": "group-hills",
+      "transform": {
+        "x": 0,
+        "y": 450,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": { "fill": "#2e7d32", "stroke": null, "strokeWidth": 0 },
+      "name": "hills left",
+      "width": 500,
+      "height": 150,
+      "cornerRadius": 0
+    },
+    {
+      "id": "shape-hills-right",
+      "type": "rect",
+      "layerId": "layer-hills-right",
+      "groupId": "group-hills",
+      "transform": {
+        "x": 400,
+        "y": 400,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": { "fill": "#66bb6a", "stroke": null, "strokeWidth": 0 },
+      "name": "hills right",
+      "width": 400,
+      "height": 200,
       "cornerRadius": 0
     },
     {
       "id": "shape-sun",
-      "type": "rect",
+      "type": "circle",
       "layerId": "layer-sun",
       "groupId": null,
-      "transform": { "x": 200, "y": 160, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": "#99ccff", "stroke": null, "strokeWidth": 0 },
+      "transform": {
+        "x": 650,
+        "y": 120,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": { "fill": "#ffd54f", "stroke": null, "strokeWidth": 0 },
       "name": "sun",
-      "width": 80,
-      "height": 50,
-      "cornerRadius": 0
+      "radius": 50
     },
     {
       "id": "shape-frame",
       "type": "rect",
       "layerId": "layer-frame",
       "groupId": null,
-      "transform": { "x": 300, "y": 240, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1 },
-      "style": { "fill": "#99ccff", "stroke": null, "strokeWidth": 0 },
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "style": { "fill": null, "stroke": "#333333", "strokeWidth": 6 },
       "name": "frame",
-      "width": 80,
-      "height": 50,
+      "width": 800,
+      "height": 600,
       "cornerRadius": 0
     }
   ],
-  "groups": [],
+  "groups": [
+    {
+      "id": "group-hills",
+      "name": "Hills",
+      "layerId": "layer-hills-left",
+      "childIds": ["shape-hills-left", "shape-hills-right"],
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "visible": true,
+      "locked": false
+    }
+  ],
   "bindings": [],
   "graph": { "nodes": [], "connections": [] },
   "accessibility": { "reducedMotion": "auto" },

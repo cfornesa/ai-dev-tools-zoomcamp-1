@@ -1,5 +1,5 @@
 /**
- * Issue #920: existing structured 2D layer targeting.
+ * Issue #920: existing structured 2D group targeting.
  *
  * The fake provider's layer-recolor scenario returns a patch derived from the
  * stable IDs appended by the mention chip. This keeps the browser test on the
@@ -15,6 +15,20 @@ import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
+
+async function canvasPixel(page: Page, x: number, y: number): Promise<number[]> {
+  return page
+    .locator('canvas')
+    .first()
+    .evaluate(
+      (canvas, point) => {
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('Scene canvas has no 2D context');
+        return Array.from(context.getImageData(point.x, point.y, 1, 1).data.slice(0, 3));
+      },
+      { x, y },
+    );
+}
 
 const LAYER_TARGET_SCENE = JSON.parse(
   readFileSync(
@@ -50,7 +64,8 @@ async function createExistingPiece(context: BrowserContext): Promise<{
 async function chooseMention(page: Page, name: string): Promise<void> {
   const prompt = page.locator('textarea#ai-proposal-prompt:visible');
   await prompt.fill(`@${name}`);
-  await page.getByRole('option', { name: new RegExp(`^${name}\\s`) }).click();
+  const optionName = name === 'Hills' ? /^Hills group$/ : new RegExp(`^${name}\\s`);
+  await page.getByRole('option', { name: optionName }).click();
 }
 
 test.describe('AI layer targeting on an existing structured piece (#920)', () => {
@@ -76,6 +91,11 @@ test.describe('AI layer targeting on an existing structured piece (#920)', () =>
     await page.getByRole('radio', { name: 'One-shot' }).click();
     await page.getByRole('radio', { name: 'Edit' }).click();
     await chooseMention(page, 'Hills');
+    await expect(page.locator('canvas').first()).toBeVisible();
+    expect(await canvasPixel(page, 200, 100)).toEqual([135, 206, 235]);
+    expect(await canvasPixel(page, 100, 500)).toEqual([46, 125, 50]);
+    expect(await canvasPixel(page, 700, 500)).toEqual([102, 187, 106]);
+    expect(await canvasPixel(page, 650, 120)).toEqual([255, 213, 79]);
     await page.getByLabel('Describe the change you want to make').fill('recolor it blue');
     await page.getByRole('button', { name: 'Propose edit' }).click();
     await expect(page.getByTestId('ai-proposal-success')).toBeVisible({ timeout: 15000 });
@@ -98,12 +118,13 @@ test.describe('AI layer targeting on an existing structured piece (#920)', () =>
     const after = version.scene_json;
     const beforeShapes = before.shapes as Array<Record<string, unknown>>;
     const afterShapes = after.shapes as Array<Record<string, unknown>>;
-    expect(afterShapes.filter((shape) => shape.layerId !== 'layer-hills')).toEqual(
-      beforeShapes.filter((shape) => shape.layerId !== 'layer-hills'),
+    const hillsShapeIds = new Set(['shape-hills-left', 'shape-hills-right']);
+    expect(afterShapes.filter((shape) => !hillsShapeIds.has(String(shape.id)))).toEqual(
+      beforeShapes.filter((shape) => !hillsShapeIds.has(String(shape.id))),
     );
     expect(
       afterShapes
-        .filter((shape) => shape.layerId === 'layer-hills')
+        .filter((shape) => ['shape-hills-left', 'shape-hills-right'].includes(String(shape.id)))
         .every((shape) => (shape.style as Record<string, unknown>).fill === '#3366ff'),
     ).toBe(true);
     await page.screenshot({ path: 'test-results/ai-layer-target-after-1280.png', fullPage: true });

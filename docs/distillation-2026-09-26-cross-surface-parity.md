@@ -171,6 +171,7 @@ issues rather than folded into #920.
 | 57 | #950 structured 2D background semantics and meaningful QA fixtures | #948 |
 | 58 | #951 editor shell toolbar/control placement and responsive tools access | #920 |
 | 59 | #952 Canvas color-picker affordance and mobile heading legibility | — |
+| 60 | #953 stale AI mention E2E creation entry point | #949 |
 
 ## Stream G — local-first storage, sync, and public transfer (added 2026-09-26)
 

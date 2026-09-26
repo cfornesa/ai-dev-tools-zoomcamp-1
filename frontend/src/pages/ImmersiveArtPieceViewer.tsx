@@ -242,13 +242,14 @@ function ImmersiveArtPieceViewer({
     );
 
   const isSpatial = SPATIAL_LIBRARIES.has(piece.engine);
+  const isGallery = !isSpatial;
   const aspectRatio = aspectRatioFromMetadata(piece.current_version.presentation);
   const immersiveHref = canonicalHref ?? `/art-pieces/immersive/${piece.public_id}`;
   const isEmbedRoute = window.location.pathname.startsWith('/embed/art-pieces/immersive/');
 
   return (
     <section
-      className="immersive-art-piece-viewer"
+      className={`immersive-art-piece-viewer ${isGallery ? 'immersive-art-piece-gallery' : 'immersive-art-piece-world'}`}
       aria-labelledby={isEmbedRoute ? undefined : 'immersive-art-piece-heading'}
       data-embed-route={isEmbedRoute || undefined}
     >
@@ -288,65 +289,75 @@ function ImmersiveArtPieceViewer({
         </header>
       )}
       <div
-        ref={stageRef}
-        className="art-piece-stage immersive-art-piece-stage"
-        tabIndex={0}
-        role="region"
-        aria-label="Immersive stage"
-        style={{ '--art-piece-aspect-ratio': aspectRatio } as CSSProperties}
+        className={isGallery ? 'immersive-art-gallery-room' : undefined}
+        data-testid={isGallery ? 'immersive-gallery' : undefined}
+        aria-label={isGallery ? '2D gallery' : undefined}
+        role={isGallery ? 'region' : undefined}
       >
-        <iframe
-          ref={iframeRef}
-          title="Immersive art piece preview"
-          sandbox={ART_PIECE_IFRAME_SANDBOX}
-          allow={ART_PIECE_IFRAME_ALLOW}
-          srcDoc={buildArtPieceSandboxDocument(
-            piece.current_version.source,
-            piece.engine,
-            'immersive',
-            {
-              background:
-                piece.current_version.camera_placement === 'background' ? 'transparent' : '#111827',
-              ink: piece.current_version.ink,
-            },
-          )}
-          // Issue #434: a cross-document iframe captures pointer/wheel
-          // input entirely within its own document -- it never bubbles
-          // to this stage div no matter what the stage listens for.
-          // Walkable navigation is stage-owned (keyboard/drag/wheel on
-          // this outer div, translated into navigate-signal commands),
-          // so a spatial piece's iframe must be pointer-transparent for
-          // that capture to actually receive anything. Flat renderers
-          // have no navigation to capture, so they keep normal
-          // interactivity in case a generated piece responds to hover.
-          // Issue #435: same default-iframe-border containment fix as
-          // PublicArtPieceViewer.tsx -- a browser's default iframe
-          // border adds to a content-box iframe's rendered size beyond
-          // its 100% width, overflowing the stage by the border's width.
-          style={{
-            display: 'block',
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            position: 'relative',
-            zIndex: 1,
-            pointerEvents: isSpatial ? 'none' : 'auto',
-          }}
-        />
-        <PieceStageControls
-          stageRef={stageRef}
-          iframeRef={iframeRef}
-          capabilities={piece.current_version.capabilities}
-          immersiveHref={immersiveHref}
-          library={piece.engine}
-          source={piece.current_version.source}
-          ink={piece.current_version.ink}
-          cameraPlacement={piece.current_version.camera_placement}
-          authoredSonic={piece.current_version.sonic}
-          pieceId={piece.public_id}
-          title={piece.title}
-          presentation="immersive"
-        />
+        {isGallery && <p className="immersive-art-gallery-label">2D gallery</p>}
+        <div
+          ref={stageRef}
+          className="art-piece-stage immersive-art-piece-stage"
+          tabIndex={0}
+          role="region"
+          aria-label={isGallery ? 'Gallery artwork' : 'Immersive stage'}
+          style={{ '--art-piece-aspect-ratio': aspectRatio } as CSSProperties}
+        >
+          <iframe
+            ref={iframeRef}
+            title="Immersive art piece preview"
+            sandbox={ART_PIECE_IFRAME_SANDBOX}
+            allow={ART_PIECE_IFRAME_ALLOW}
+            srcDoc={buildArtPieceSandboxDocument(
+              piece.current_version.source,
+              piece.engine,
+              'immersive',
+              {
+                background:
+                  piece.current_version.camera_placement === 'background'
+                    ? 'transparent'
+                    : '#111827',
+                ink: piece.current_version.ink,
+              },
+            )}
+            // Issue #434: a cross-document iframe captures pointer/wheel
+            // input entirely within its own document -- it never bubbles
+            // to this stage div no matter what the stage listens for.
+            // Walkable navigation is stage-owned (keyboard/drag/wheel on
+            // this outer div, translated into navigate-signal commands),
+            // so a spatial piece's iframe must be pointer-transparent for
+            // that capture to actually receive anything. Flat renderers
+            // have no navigation to capture, so they keep normal
+            // interactivity in case a generated piece responds to hover.
+            // Issue #435: same default-iframe-border containment fix as
+            // PublicArtPieceViewer.tsx -- a browser's default iframe
+            // border adds to a content-box iframe's rendered size beyond
+            // its 100% width, overflowing the stage by the border's width.
+            style={{
+              display: 'block',
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              position: 'relative',
+              zIndex: 1,
+              pointerEvents: isSpatial ? 'none' : 'auto',
+            }}
+          />
+          <PieceStageControls
+            stageRef={stageRef}
+            iframeRef={iframeRef}
+            capabilities={piece.current_version.capabilities}
+            immersiveHref={immersiveHref}
+            library={piece.engine}
+            source={piece.current_version.source}
+            ink={piece.current_version.ink}
+            cameraPlacement={piece.current_version.camera_placement}
+            authoredSonic={piece.current_version.sonic}
+            pieceId={piece.public_id}
+            title={piece.title}
+            presentation="immersive"
+          />
+        </div>
       </div>
       {!isEmbedRoute && (
         <div className="immersive-art-piece-actions" aria-label="Piece actions" role="group">

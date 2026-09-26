@@ -5631,7 +5631,7 @@ select.ai-proposal-field-full-width {
   background: rgba(0, 0, 0, 0.72);
 }
 
-.immersive-art-piece-viewer > .immersive-art-piece-stage {
+.immersive-art-piece-viewer .immersive-art-piece-stage {
   position: relative;
   flex: 0 1 auto;
   width: 100%;
@@ -5642,6 +5642,33 @@ select.ai-proposal-field-full-width {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1rem;
   background: #080b12;
+}
+
+.immersive-art-gallery-room {
+  display: grid;
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+  width: 100%;
+  padding: clamp(0.75rem, 2.5vw, 1.5rem);
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 42%), #171a24;
+  box-shadow: inset 0 0 0 0.5rem rgba(0, 0, 0, 0.12);
+}
+
+.immersive-art-gallery-label {
+  margin: 0;
+  color: rgba(244, 246, 251, 0.78);
+  font-family: var(--heading);
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.immersive-art-piece-gallery .immersive-art-piece-stage {
+  border-color: rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 0.5rem rgba(0, 0, 0, 0.18);
 }
 
 .immersive-art-piece-stage > iframe {
@@ -5687,6 +5714,24 @@ select.ai-proposal-field-full-width {
 .immersive-art-piece-back-link:focus-visible {
   border-color: rgba(255, 255, 255, 0.72);
   background: rgba(0, 0, 0, 0.78);
+}
+
+@media (max-width: 600px) {
+  .immersive-art-piece-viewer {
+    width: min(100% - 1rem, 80rem);
+    gap: 1rem;
+    padding-top: 1rem;
+  }
+
+  .immersive-art-gallery-room {
+    padding: 0.65rem;
+    border-radius: 0.9rem;
+    box-shadow: inset 0 0 0 0.25rem rgba(0, 0, 0, 0.12);
+  }
+
+  .immersive-art-piece-gallery .immersive-art-piece-stage {
+    box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.18);
+  }
 }
 
 .public-collection-context {

@@ -53,6 +53,20 @@ function renderViewer() {
   );
 }
 
+function renderGalleryViewer() {
+  const galleryPiece = { ...piece, engine: 'c2js' as const };
+  return render(
+    <MemoryRouter initialEntries={['/users/@artist/immersive/sunset-study']}>
+      <Routes>
+        <Route
+          path="/users/:handle/immersive/:pieceSlug"
+          element={<ImmersiveArtPieceViewer initialPiece={galleryPiece} />}
+        />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 describe('ImmersiveArtPieceViewer (#606)', () => {
   it('owns the viewport and exposes a close control that returns to the canonical regular view', () => {
     renderViewer();
@@ -70,7 +84,7 @@ describe('ImmersiveArtPieceViewer (#606)', () => {
   it('places identity above the stage and embed actions below it', () => {
     renderViewer();
 
-    const viewer = screen.getByRole('region', { name: 'Immersive stage' }).parentElement;
+    const viewer = screen.getByRole('region', { name: 'Immersive stage' }).closest('section');
     expect(viewer).not.toBeNull();
     expect(viewer?.querySelector('#immersive-art-piece-heading')).not.toBeNull();
     expect(viewer?.querySelector('.immersive-art-piece-description')).toHaveTextContent(
@@ -97,6 +111,17 @@ describe('ImmersiveArtPieceViewer (#606)', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.getByTestId('destination')).toHaveTextContent(
       '/users/@artist/pieces/sunset-study',
+    );
+  });
+
+  it('presents non-spatial pieces inside a responsive 2D gallery shell without spatial navigation', () => {
+    renderGalleryViewer();
+
+    expect(screen.getByTestId('immersive-gallery')).toHaveAttribute('aria-label', '2D gallery');
+    expect(screen.getByText('2D gallery')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Gallery artwork' })).toBeInTheDocument();
+    expect(screen.getByTestId('navigation-unsupported')).toHaveTextContent(
+      "Walkable navigation isn't available for this piece type.",
     );
   });
 });

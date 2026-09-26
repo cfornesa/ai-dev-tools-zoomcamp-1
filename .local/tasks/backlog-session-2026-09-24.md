@@ -5252,3 +5252,12 @@ closed #752/#753/#754/#765/#769 without reopening them.
 | engineer | Codex / GPT-5 / medium | yes | Replaced the System selector with the fixed icon control; commit `7588a6e`. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | QA FAIL comment `5845490660`: focused/local checks pass, required Chromium responsive spec cannot launch on macOS (`mach_port_rendezvous` permission error). |
 | reconcile | Codex / GPT-5 / medium | yes | OPEN / verification-boundary blocked; next action is CI or supported Playwright host rerun. |
+
+### Transaction refresh: #893 — 2026-09-26 — ENGINEERED / QA PARTIAL
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Revalidated as a closure-sized 2D immersive presentation issue after #892 decomposition; duplicate audit retained #893 as the flat/gallery child. |
+| engineer | Codex / GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | Added a labeled, framed responsive 2D gallery shell around the existing shared stage and toolbar; spatial Three.js/A-Frame route remains unchanged. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | Focused viewer tests 4 passed; frontend full suite 282 files / 3029 tests passed; active Chrome rendered the repaired local C2 gallery with artwork, shared icon toolbar, no spatial arrows, and a regular-view link. 375px Playwright evidence remains blocked by the previously recorded macOS browser launch error. |
+| reconcile | Codex / GPT-5 / medium | yes | Not closed: local implementation is ready, but the issue's responsive browser criterion requires a supported Chromium run at 375px and production parity is not authorized in this transaction. |

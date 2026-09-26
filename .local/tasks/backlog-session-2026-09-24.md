@@ -5519,3 +5519,18 @@ shared route contract.
 | engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Corrected exact Piece-controls selectors and fullscreen accessible-name matchers in the existing Custom/CMS browser contracts. |
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required immersive-embed/framing run: 7 passed, then the corrected CMS test passed separately; frontend format/typecheck/Vitest passed with 283 files / 3032 tests; `git diff --check` passed. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
+
+## Transaction refresh: #893 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation selected #893 after the #900 policy and #907 immersive-embed
+child became terminal. Verify-first found only a stale broad Piece-controls
+selector in the opt-in flat spatial-shell regression; the default immersive
+gallery behavior already matched the selected policy. The test was narrowed,
+and both default gallery and explicit steering behavior were rerun.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed five flat engines use gallery presentation by default, while explicit `hand_steering` remains a separate opt-in regression boundary; 3D routes are covered by #899. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Corrected the exact Piece-controls selector in the flat spatial regression; no product code change was required. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Six-engine immersive Chromium run passed; flat spatial opt-in suite passed 4/4 at 1280x900 and 375x812. `make check` passed: backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests; lint, format, typecheck passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |

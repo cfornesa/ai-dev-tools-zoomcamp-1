@@ -154,7 +154,7 @@ test.describe('Generated flat-piece runtime: reversible spatial steering for Can
         await expect(
           page.getByRole('heading', { name: `Flat spatial ${label} fixture ${viewport.width}` }),
         ).toBeVisible();
-        await page.getByRole('button', { name: 'Piece controls' }).click();
+        await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
         // Instrument getUserMedia to record whether *anything* calls it
         // merely from loading the page or opening/closing the Guide
         // dialog -- neither should ever request a device permission.

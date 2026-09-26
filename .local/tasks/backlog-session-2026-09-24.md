@@ -5232,3 +5232,12 @@ covers the combined blank-display fallback and `By {display name}
 | #895 download surface parity | Codex/GPT-5/medium/substituted | pending; stage 2b | pending | pending | pending |
 | #896 adjacent system-default motion toggle | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; stage 2a | focused tests pass; full QA pending | pending | pending |
 | #897 public authorship identity | Codex/GPT-5/medium/substituted | pending; stage 2b | pending | pending | pending |
+
+### Transaction #894 QA reconciliation
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---|---|
+| groom | Codex / GPT-5 / medium | yes | Existing closed theme issues audited; new shell regression contract retained. |
+| engineer | Codex / GPT-5 / medium | yes | Replaced the System selector with the fixed icon control; commit `7588a6e`. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | QA FAIL comment `5845490660`: focused/local checks pass, required Chromium responsive spec cannot launch on macOS (`mach_port_rendezvous` permission error). |
+| reconcile | Codex / GPT-5 / medium | yes | OPEN / verification-boundary blocked; next action is CI or supported Playwright host rerun. |

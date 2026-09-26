@@ -117,7 +117,7 @@ async function expectVisibleAndInViewport(locator: Locator): Promise<void> {
  * `Tab` jumps straight past every link in the header to the first
  * genuinely tabbable form control (confirmed by inspecting
  * `document.activeElement` after one `Tab` press in isolation: it lands
- * directly on the "Match system" radio, skipping all four header links).
+ * directly on the fixed display controls, skipping header links).
  * This is real Safari behavior for any visitor who hasn't opted into
  * that accessibility setting, not a defect in this app's own tab order
  * -- chromium/firefox (and Safari *with* that setting enabled) include
@@ -176,7 +176,9 @@ test.describe('Responsive app shell', () => {
       await expectVisibleAndInViewport(
         page.getByRole('navigation', { name: 'Primary navigation' }),
       );
-      await expectVisibleAndInViewport(page.getByRole('radiogroup', { name: 'Reduce motion' }));
+      await expectVisibleAndInViewport(
+        page.getByRole('button', { name: /Use (reduced|full) motion/i }),
+      );
       // Task #572: '/' now resolves anonymous visitors to the public
       // gallery instead of a standalone Home surface with its own
       // Google-specific sign-in CTA. The gallery's content panel is real,
@@ -198,51 +200,44 @@ test.describe('Responsive app shell', () => {
         [
           page.getByRole('link', { name: 'Skip to main content' }),
           page.getByRole('link', { name: 'AugmentrART', exact: true }),
-          page.getByRole('combobox', { name: /Color mode, currently/i }),
           page.getByRole('link', { name: 'Public gallery', exact: true }),
           page.getByRole('link', { name: 'Login', exact: true }),
-          page.getByRole('radio', { name: 'Match system' }),
         ],
         browserName,
       );
+      await expectVisibleAndInViewport(
+        page.getByRole('button', { name: /Switch to (light|dark) mode/i }),
+      );
+      await expectVisibleAndInViewport(
+        page.getByRole('button', { name: /Use (reduced|full) motion/i }),
+      );
     });
 
-    await test.step('keeps reduced-motion keyboard choices focused and visible at tablet width', async () => {
+    await test.step('keeps the motion toggle focused and usable at tablet width', async () => {
       await page.setViewportSize(TABLET_VIEWPORT);
       await page.goto('/');
 
-      const system = page.getByRole('radio', { name: 'Match system' });
-      const reduced = page.getByRole('radio', { name: 'Reduced' });
-      const full = page.getByRole('radio', { name: 'Full' });
+      const motion = page.getByRole('button', { name: /Use (reduced|full) motion/i });
+      await motion.focus();
+      await expect(motion).toBeFocused();
+      await expectVisibleAndInViewport(motion);
 
-      await expect(system).toHaveAttribute('aria-checked', 'true');
-      await expect(system).toHaveAttribute('tabindex', '0');
-
-      // The group is one tab stop, and focus enters on its checked choice.
       await expectTabOrder(
         page,
         [
           page.getByRole('link', { name: 'Skip to main content' }),
           page.getByRole('link', { name: 'AugmentrART', exact: true }),
-          page.getByRole('combobox', { name: /Color mode, currently/i }),
           page.getByRole('link', { name: 'Public gallery', exact: true }),
           page.getByRole('link', { name: 'Login', exact: true }),
-          system,
         ],
         browserName,
       );
 
-      await page.keyboard.press('ArrowRight');
-      await expect(reduced).toBeFocused();
-      await expect(reduced).toHaveAttribute('aria-checked', 'true');
-      await expect(system).toHaveAttribute('aria-checked', 'false');
-      await expectVisibleAndInViewport(reduced);
-
-      await page.keyboard.press('ArrowRight');
-      await expect(full).toBeFocused();
-      await expect(full).toHaveAttribute('aria-checked', 'true');
-      await expect(reduced).toHaveAttribute('aria-checked', 'false');
-      await expectVisibleAndInViewport(full);
+      await motion.focus();
+      const initialLabel = await motion.getAttribute('aria-label');
+      await page.keyboard.press('Enter');
+      await expect(motion).not.toHaveAttribute('aria-label', initialLabel ?? '');
+      await expectVisibleAndInViewport(motion);
     });
   });
 
@@ -308,7 +303,7 @@ test.describe('Responsive app shell', () => {
         const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
         const accountLink = page.getByRole('link', { name: 'Account settings' });
         const logoutButton = page.getByRole('button', { name: 'Logout' });
-        const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
+        const motion = page.getByRole('button', { name: /Use (reduced|full) motion/i });
 
         await page.setViewportSize({ width: 1280, height: 900 });
         await loginViaUI(page, fixtures.other.email, fixtures.password);
@@ -350,7 +345,7 @@ test.describe('Responsive app shell', () => {
 
         const title = page.getByRole('heading', { name: 'AugmentrART' });
         const galleryLink = page.getByRole('link', { name: 'Public gallery' });
-        const motion = page.getByRole('radiogroup', { name: 'Reduce motion' });
+        const motion = page.getByRole('button', { name: /Use (reduced|full) motion/i });
         const accountLink = page.getByRole('link', { name: 'Account settings' });
         const logoutButton = page.getByRole('button', { name: 'Logout' });
 
@@ -386,12 +381,10 @@ test.describe('Responsive app shell', () => {
           [
             page.getByRole('link', { name: 'Skip to main content' }),
             page.getByRole('link', { name: 'AugmentrART', exact: true }),
-            page.getByRole('combobox', { name: /Color mode, currently/i }),
             page.getByRole('link', { name: 'Studio', exact: true }),
             page.getByRole('link', { name: 'Public gallery', exact: true }),
             page.getByRole('link', { name: 'Account settings' }),
             page.getByRole('button', { name: 'Logout' }),
-            page.getByRole('radio', { name: 'Match system' }),
           ],
           browserName,
         );

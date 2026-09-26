@@ -5691,7 +5691,7 @@ the complete C4, D4, E4, F4, G4, A4, B4, C5 sequence.
 |---|---|---:|---|
 | groom | Codex / GPT-5 / medium | yes | No duplicate found in #833, #844, #858, or #918; scoped a frontend-only mapping fix. |
 | engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Updated soundSettingsFromSonic so authored synth octave_min does not silently change the visitor keyboard baseline; added focused regression expectation. |
-| qa-self-review | Codex / GPT-5 / medium; active Chrome | yes | Focused test 6 passed, typecheck passed, rebuilt Compose frontend, and decoded C4–C5 for A–K in anonymous Chrome. |
+| qa-self-review | Codex / GPT-5 / medium; active Chrome | yes | Focused test 6 passed, typecheck passed, rebuilt Compose frontend, decoded C4–C5 for A–K in anonymous Chrome, and `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed: backend 1714/39 skipped and frontend 283/3032. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/927#issuecomment-5848777181`; issue closed. Local evidence only; no production publish. |
 
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS

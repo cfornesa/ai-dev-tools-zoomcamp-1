@@ -3869,9 +3869,13 @@ textarea:disabled {
 }
 
 .generated-3d-tools-group .editor-tool-availability-grid {
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(9, minmax(0, 1fr));
   gap: 12px;
   max-width: none;
+}
+
+.generated-3d-tools-group .behavior-card-field > legend {
+  margin-bottom: 14px;
 }
 
 .generated-3d-tools-group .editor-tool-availability-button,
@@ -4082,6 +4086,10 @@ textarea:disabled {
     border-radius: 10px;
   }
 
+  .generated-3d-tools-group .behavior-card-field > legend {
+    display: none;
+  }
+
   .generated-3d-tools-group .editor-tool-availability-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -4112,6 +4120,16 @@ textarea:disabled {
   .generated-3d-manual-tools select,
   .generated-3d-manual-tools input {
     min-height: 44px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .generated-3d-tools-group .behavior-card-field > legend {
+    display: none;
+  }
+
+  .generated-3d-tools-group .editor-tool-availability-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 

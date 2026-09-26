@@ -3,7 +3,7 @@ import {
   getArtPieceEditorCapabilities,
   type ArtPieceEditorToolKey,
 } from './artPieceEditorCapabilities';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { ArtPieceLibrary } from '../api/artPieces';
 import './ArtPieceEditorToolAvailability.css';
 
@@ -99,6 +99,7 @@ export default function ArtPieceEditorToolAvailability({
   children?: ReactNode;
 }) {
   const capabilities = getArtPieceEditorCapabilities(engine);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   return (
     <fieldset
       className="behavior-card-field"
@@ -106,7 +107,21 @@ export default function ArtPieceEditorToolAvailability({
       aria-label="Editor tools"
     >
       <legend>Editor tools</legend>
-      <div className="editor-tool-availability-grid">
+      <button
+        type="button"
+        className="editor-tools-mobile-toggle"
+        aria-expanded={mobileToolsOpen}
+        aria-controls="art-piece-editor-tools-grid"
+        onClick={() => setMobileToolsOpen((current) => !current)}
+      >
+        <span>Editor tools</span>
+        <span aria-hidden="true">{mobileToolsOpen ? '−' : '+'}</span>
+      </button>
+      <div
+        id="art-piece-editor-tools-grid"
+        className="editor-tool-availability-grid"
+        data-collapsed={!mobileToolsOpen}
+      >
         {ART_PIECE_EDITOR_TOOL_KEYS.map((tool) => {
           const capability = capabilities[tool];
           const reasonId = `art-piece-editor-tool-${tool}-reason`;

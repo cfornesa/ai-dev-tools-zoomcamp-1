@@ -5261,3 +5261,12 @@ closed #752/#753/#754/#765/#769 without reopening them.
 | engineer | Codex / GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | Added a labeled, framed responsive 2D gallery shell around the existing shared stage and toolbar; spatial Three.js/A-Frame route remains unchanged. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | Focused viewer tests 4 passed; frontend full suite 282 files / 3029 tests passed; active Chrome rendered the repaired local C2 gallery with artwork, shared icon toolbar, no spatial arrows, and a regular-view link. 375px Playwright evidence remains blocked by the previously recorded macOS browser launch error. |
 | reconcile | Codex / GPT-5 / medium | yes | Not closed: local implementation is ready, but the issue's responsive browser criterion requires a supported Chromium run at 375px and production parity is not authorized in this transaction. |
+
+### Transaction refresh: #898 — 2026-09-26 — QA PARTIAL / NO CODE CHANGE
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Revalidated after #892 decomposition; immersive embeds are separately scoped to #907. Existing shared embed path remains the criterion target. |
+| engineer | Codex / GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | No implementation change required: `PublicArtPieceViewer` already supplies the shared embed toolbar and engine-gated behavior. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | Active Chrome verified C2 and Three.js UUID embeds: authored artwork rendered; icon toolbar exposed Screenshot, Download ZIP, Immersive, Fullscreen; flat embed had no 3D controls. Focused Vitest 24 passed. |
+| reconcile | Codex / GPT-5 / medium | yes | Not closed: required supported-host 1280x900 and 375x812 Chromium screenshots/overflow evidence remain pending; local Compose evidence cannot satisfy that boundary. |

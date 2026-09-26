@@ -131,7 +131,7 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
       await expect(page.getByRole('heading', { name: 'Sound runtime fixture' })).toBeVisible();
       // The volume slider and status text live in the "Piece controls"
       // disclosure, same as camera/hand-steering/reset -- open it once.
-      await page.getByRole('button', { name: 'Piece controls' }).click();
+      await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
 
       // Sound never auto-starts -- the piece just loaded and no command
       // has been sent yet.
@@ -142,13 +142,17 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
       await muteButton.click();
       const nowMuteButton = page.getByRole('button', { name: 'Mute sound' });
       await expect(nowMuteButton).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.getByTestId('sound-status')).toContainText('Sound is on at 20% volume.');
+      await expect(page.getByTestId('sound-status')).toContainText(
+        'Sound is on at 20% volume (running).',
+      );
 
       // Volume: a real slider change is acknowledged back with the new
       // value, not just echoed from the DOM input itself.
       const volumeSlider = page.getByLabel('Sound volume');
       await volumeSlider.fill('0.75');
-      await expect(page.getByTestId('sound-status')).toContainText('Sound is on at 75% volume.');
+      await expect(page.getByTestId('sound-status')).toContainText(
+        'Sound is on at 75% volume (running).',
+      );
 
       const ambientBpm = page.getByLabel(/Ambient BPM/);
       await ambientBpm.fill('120');
@@ -159,9 +163,9 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
       const ambientMute = page.getByLabel('Mute ambient');
       await ambientMute.check();
       await expect(ambientMute).toBeChecked();
-      await page.getByLabel('Scale').selectOption('major');
+      await page.getByLabel(/^Scale:/).selectOption('major');
 
-      const keyboard = page.getByRole('group', { name: 'Keyboard synth' });
+      const keyboard = page.getByRole('group', { name: 'Keyboard' });
       await expect(keyboard).toBeVisible();
       await keyboard.getByRole('button', { name: 'Keyboard notes' }).click();
       await expect(keyboard.getByRole('button', { name: 'Stop keyboard notes' })).toBeVisible();
@@ -179,12 +183,14 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
         .locator('canvas')
         .click({ position: { x: 10, y: 10 } });
       await page.keyboard.press('a');
-      await expect(page.getByTestId('keyboard-note-status')).toContainText('Last note played: a.');
+      await expect(page.getByTestId('keyboard-note-status')).toContainText(
+        'Last note played: C4 (261.63 Hz).',
+      );
 
       // Mute again: sound stops, and a subsequent keypress must not
       // report a new note (the sandbox only plays a tone while soundOn).
       await nowMuteButton.click();
-      await expect(page.getByTestId('sound-status')).toContainText('Sound is off.');
+      await expect(page.getByTestId('sound-status')).toContainText('Sound is off (idle).');
       await expect(page.getByTestId('keyboard-note-status')).toContainText(
         'Turn on Sound to play keyboard notes.',
       );
@@ -222,7 +228,7 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
     await mockMicrophone(context, 'denied');
     await page.goto(`/art-pieces/p/${piece.public_id}`);
     await expect(page.getByRole('heading', { name: 'Microphone runtime fixture' })).toBeVisible();
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(page.getByTestId('microphone-status')).toContainText('Microphone is off.');
     await page.getByRole('button', { name: 'Enable microphone' }).click();
     await expect(page.getByTestId('microphone-status')).toContainText(
@@ -232,7 +238,7 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
     // Unavailable: no navigator.mediaDevices.getUserMedia at all.
     await mockMicrophone(context, 'unavailable');
     await page.goto(`/art-pieces/p/${piece.public_id}`);
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await page.getByRole('button', { name: 'Enable microphone' }).click();
     await expect(page.getByTestId('microphone-status')).toContainText(
       'Microphone is unavailable in this browser.',
@@ -242,7 +248,7 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
     // full activate/deactivate lifecycle, not just the happy path.
     await mockMicrophone(context, 'granted');
     await page.goto(`/art-pieces/p/${piece.public_id}`);
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
     const enableButton = page.getByRole('button', { name: 'Enable microphone' });
     await enableButton.click();
     const disableButton = page.getByRole('button', { name: 'Disable microphone' });
@@ -387,11 +393,11 @@ test.describe('Generated regular viewer: per-piece sound settings (#843)', () =>
 
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`/art-pieces/p/${piece.public_id}`);
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await page.getByRole('button', { name: 'Unmute sound' }).click();
     await page.getByLabel(/Ambient BPM/).fill('120');
     await page.getByLabel(/Ambient volume/).fill('30');
-    await page.getByLabel('Scale').selectOption('dorian');
+    await page.getByLabel(/^Scale:/).selectOption('dorian');
     await page
       .getByRole('group', { name: 'Keyboard synth' })
       .getByLabel('Oscillator')
@@ -408,11 +414,11 @@ test.describe('Generated regular viewer: per-piece sound settings (#843)', () =>
     expect(storedBeforeReload).not.toBeNull();
 
     await page.reload();
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(page.getByLabel(/Ambient BPM/)).toHaveValue('120');
     await expect(page.getByLabel(/Ambient volume/)).toHaveValue('30');
-    await expect(page.getByLabel('Scale')).toHaveValue('dorian');
-    const keyboard = page.getByRole('group', { name: 'Keyboard synth' });
+    await expect(page.getByLabel(/^Scale:/)).toHaveValue('dorian');
+    const keyboard = page.getByRole('group', { name: 'Keyboard' });
     await expect(keyboard.getByLabel('Oscillator')).toHaveValue('square');
     await expect(keyboard.getByLabel(/Octave:/)).toHaveValue('1');
     await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveAttribute(
@@ -424,7 +430,7 @@ test.describe('Generated regular viewer: per-piece sound settings (#843)', () =>
     await page.getByRole('button', { name: 'Reset sound settings' }).click();
     await expect(page.getByLabel(/Ambient BPM/)).toHaveValue('90');
     await expect(page.getByLabel(/Ambient volume/)).toHaveValue('50');
-    await expect(page.getByLabel('Scale')).toHaveValue('pentatonic');
+    await expect(page.getByLabel(/^Scale:/)).toHaveValue('pentatonic');
     await expect(keyboard.getByLabel('Oscillator')).toHaveValue('sine');
     await expect(keyboard.getByLabel(/Octave:/)).toHaveValue('0');
     const storedSettings = await page.evaluate(

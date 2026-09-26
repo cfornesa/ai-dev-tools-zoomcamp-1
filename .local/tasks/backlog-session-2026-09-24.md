@@ -5660,6 +5660,24 @@ database, secrets, or publish action was used.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Chrome route exposed Screenshot, Download ZIP, Sound, Piece controls, Fullscreen, Share, and Embed; Sound toggled to pressed Mute; fullscreen exited; 375x667 rerun completed. Motion and authored-source/audio trace remain unverified. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA FAIL / VALID WITH GAPS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/858#issuecomment-5848508644`; #858 remains open and #859–#861 remain blocked. |
 
+## Transaction refresh: #858 — 2026-09-26 — OPEN / QA FAIL — authored sound and motion split
+
+Task-distillation rechecked the fresh hand-authored fixture in active Chrome
+after Version 3 saved the sonic defaults. Anonymous public Chrome initially
+reported pentatonic ambient telemetry because visitor sound settings persisted
+in localStorage. Clearing only local visitor storage restored the authored
+major scale: C3, D3, E3, F3, G3, A3, B3, C4 at 90 BPM with key C major.
+The requested two-way camera-motion artifact remains unverified, so #858 stays
+open. The apparent runtime-scale gap was deduplicated against #833/#834/#844,
+then closed as a false positive in #919; no product code changed.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Reconciled #919 against the sound contract and existing visitor-settings behavior; no implementation gap remained. |
+| engineer | Codex / GPT-5 / medium | yes | Verification-only; no repository code changed. |
+| qa-self-review | Codex / GPT-5 / medium; active Chrome | yes | Anonymous local Compose route emitted authored major telemetry after a localStorage/sessionStorage reset; controls and Version 3 metadata matched. Motion remains outstanding. |
+| reconcile / close | Codex / GPT-5 / medium | yes | #919 closed as false positive with correction comment; #858 updated with QA matrix and remains OPEN / VALID WITH GAPS. Evidence is local disposable Compose + active Chrome only. |
+
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #898 after #899 and #908 were terminal. Verify-first

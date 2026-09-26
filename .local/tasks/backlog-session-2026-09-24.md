@@ -5288,3 +5288,18 @@ closed #752/#753/#754/#765/#769 without reopening them.
 | engineer | Codex / GPT-5 / medium; rostered Opencode Go kimi-k3 | yes | Added a shared on-canvas directional/zoom pad for Three.js/A-Frame immersive surfaces only; keyboard, drag, wheel, native VR/fullscreen, and flat-gallery gating remain intact. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 / medium | yes | Active Chrome rendered registered-camera Three.js and A-Frame worlds; Move forward changed real camera poses (`4.70`, `-0.30`), A-Frame exposed native VR/fullscreen, and toolbar remained overlaid. Full frontend suite 282 files / 3029 tests passed. |
 | reconcile | Codex / GPT-5 / medium | yes | Not closed: required supported-host 1280x900 and 375x812 screenshots/touch-target evidence remain pending; local Compose evidence cannot satisfy that boundary. |
+
+### Transaction refresh: #897 and #904 — 2026-09-26 — ENGINEERED / QA PARTIAL
+
+Task-distillation confirmed #897 as the backend additive identity contract and
+#904 as its frontend consumer; no duplicate was found. The existing `owner`
+field remains unchanged, while `owner_handle` is normalized without `@` so
+clients can render the service convention consistently.
+
+| Issue | Groom | Engineer | QA self-review | Reconcile | Close |
+|---|---|---|---|---|---|
+| #897 public authorship identity | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; stage 2b | focused backend 90 passed; frontend focused 43 + viewer 60 passed; lint/type/format pass | pending API-wide/full-check review | pending |
+| #904 frontend attribution formatter | Codex/GPT-5/medium/substituted | Codex/GPT-5/medium/substituted; stage 2a | formatter unit tests pass; public/immersive/viewer/profile/gallery/collection consumers typecheck | pending API-wide/full-check review | pending |
+
+Implementation commit: `823b972`. Production deployment is not claimed;
+these additive fields require the normal release verification before closure.

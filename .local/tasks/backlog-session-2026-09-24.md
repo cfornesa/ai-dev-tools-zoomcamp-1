@@ -5488,6 +5488,38 @@ not broadened; the test contract was corrected and rerun.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required Chromium run: 5 tests passed; strengthened six-engine run: 1 test passed across 1280x900 and 375x812. `make check`: backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests; lint, format, typecheck passed. Mobile C2.js and A-Frame screenshots were inspected. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
 
+## Transaction refresh: #904 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation reconciled #904 with the now-closed flat-gallery contract in
+#893. Verify-first found one stale expectation in the public surface matrix:
+the canvas2d fixture correctly exposes `Gallery artwork`, not `Immersive
+stage`, on canonical immersive and immersive-embed routes. The test contract
+was corrected without changing product behavior.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed public authorship and cross-surface identity scope; flat immersive semantics are inherited from #900/#893. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Added an engine-aware gallery/stage assertion branch to the existing public surface contract. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Chromium contract passed 2/2 across desktop and mobile matrices; `git diff --check` passed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/904#issuecomment-5847164646`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |
+
+## Transaction refresh: #903 — 2026-09-26 — OPEN / QA PARTIAL
+
+Task-distillation selected #903 after #893/#908. Verify-first found one real
+source-level responsive gap and one stale fixture request. The exported
+Piece-controls panel is now viewport-bounded and vertically scrollable, and
+the six-engine fixture omits nullable profile fields while preserving the
+required revision. The focused Full-ZIP browser run remains open because the
+active app served a stale generated bundle whose panel computed to 1181px with
+no max-height or overflow rules; fresh extracted mobile evidence is required.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed regular Full/Non-Camera ZIP scope, extracted-archive evidence boundary, and #901 dependency. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Committed `8dd1954`: bounded/scrollable exported controls panel, focused CSS assertions, and corrected six-engine profile fixture. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Unit bundle tests 58/58, Non-Camera ZIP 2/2, six-engine extracted ZIP 1/1. Full-ZIP responsive scenario remains FAIL against stale running bundle; no overclaim made. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA partial comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/903#issuecomment-5847271168`; issue remains open pending fresh app reload and Full-ZIP mobile evidence. |
+
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #898 after #899 and #908 were terminal. Verify-first

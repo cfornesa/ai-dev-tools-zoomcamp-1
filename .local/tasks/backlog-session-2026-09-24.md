@@ -5642,6 +5642,24 @@ Compose frontend.
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Rebuilt Compose frontend; focused Chromium 1/1; `npm run typecheck`; full `make check` backend 1714/39 skipped and frontend 283/3032; `git diff --check`. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/918#issuecomment-5848406880`; issue closed. Local evidence only; #858 is the next dependent verification transaction. |
 
+## Transaction refresh: #858 — 2026-09-26 — OPEN / QA FAIL — VALID WITH GAPS
+
+Task-distillation resumed #858 after #918 became terminal. Active Chrome on
+disposable Compose completed a fresh standalone Three.js generation/save flow,
+verified the regular-view toolbar and real sound toggle, exercised the
+fullscreen overlay and exit, and reran the route at exactly 375x667 before
+resetting the viewport. The fresh fixture was generator-created rather than
+hand-authored in the source editor, and the exact decoded motion artifact and
+fixture-specific ambient/keyboard trace were not captured. No production URL,
+database, secrets, or publish action was used.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Rechecked #858 against #918; no duplicate created. Retained its hand-authored, exact-motion, and fixture-specific browser criteria. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service not needed | yes | Verification-only. No product code changed; disposable UI fixture was created through active Chrome. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Chrome route exposed Screenshot, Download ZIP, Sound, Piece controls, Fullscreen, Share, and Embed; Sound toggled to pressed Mute; fullscreen exited; 375x667 rerun completed. Motion and authored-source/audio trace remain unverified. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA FAIL / VALID WITH GAPS comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/858#issuecomment-5848508644`; #858 remains open and #859–#861 remain blocked. |
+
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 
 Task-distillation selected #898 after #899 and #908 were terminal. Verify-first

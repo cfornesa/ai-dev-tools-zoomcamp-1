@@ -125,3 +125,15 @@ Its first run exposed and corrected a real white-key indexing defect in the
 telemetry resolver. The issue is local-only and does not establish production
 sound evidence. #858 is now the next independent/dependency-unblocked
 verification transaction; #911 remains blocked by #916.
+
+## #858 transaction refresh — 2026-09-26
+
+Active Chrome resumed #858 after #918 closed. A new disposable generator flow
+saved a Three.js fixture with sound/keyboard/fullscreen capabilities. The
+regular route exposed the shared controls, a real sound gesture changed the
+control to pressed mute, fullscreen entered and exited on the same route, and
+the 375x667 viewport was exercised then reset. This does not replace the
+required hand-authored source-editor fixture, fixture-specific ambient/A–K
+trace, or decoded motion percentage. QA comment: `5848508644`; #858 remains
+open and #859–#861 remain blocked. Local Compose/Chrome only; no production
+claim.

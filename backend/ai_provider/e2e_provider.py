@@ -132,6 +132,47 @@ _EDIT_PATCH_FORBIDDEN: list[dict[str, Any]] = [
     {"op": "replace", "path": "/schemaVersion", "value": 2}
 ]
 
+
+def _layer_recolor_patch(user_content: str) -> list[dict[str, Any]]:
+    """Return a deterministic layer-only patch for #920's browser fixture.
+
+    The provider-facing prompt contains both the current scene and the stable
+    IDs selected by the mention chip. This fake scenario deliberately derives
+    its patch from those IDs so the real target/preservation validation remains
+    in the request path; it never trusts the display name alone.
+    """
+    marker = "Current scene (JSON):\n"
+    requested = "\n\nRequested edit:\n"
+    if marker not in user_content or requested not in user_content:
+        return []
+    raw_scene = user_content.split(marker, 1)[1].split(requested, 1)[0]
+    try:
+        scene = json.loads(raw_scene)
+    except json.JSONDecodeError:
+        return []
+    target_text = user_content.split("Only modify the following existing element id(s):", 1)
+    if len(target_text) == 1:
+        # Keep the fixture helper compatible with the shorter wording used by
+        # direct provider tests and future callers.
+        target_text = user_content.split("Only modify the selected element id(s):", 1)
+    if len(target_text) != 2:
+        return []
+    target_ids = {value.strip().rstrip(".") for value in target_text[1].split(",")}
+    layers = scene.get("layers", []) if isinstance(scene, dict) else []
+    target_layer_ids = {
+        layer.get("id")
+        for layer in layers
+        if isinstance(layer, dict) and layer.get("id") in target_ids
+    }
+    if len(target_layer_ids) != 1:
+        return []
+    layer_id = next(iter(target_layer_ids))
+    return [
+        {"op": "replace", "path": f"/shapes/{index}/style/fill", "value": "#3366ff"}
+        for index, shape in enumerate(scene.get("shapes", []))
+        if isinstance(shape, dict) and shape.get("layerId") == layer_id
+    ]
+
 _EDIT_PATCH_BY_SCENARIO: dict[str, list[dict[str, Any]]] = {
     "success": _EDIT_PATCH_SUCCESS,
     "invalid_structured_output": _EDIT_PATCH_INVALID_STRUCTURED_OUTPUT,
@@ -371,7 +412,20 @@ class _E2EFakeChat:
 
         schema_name = kwargs.get("response_format", {}).get("json_schema", {}).get("name")
         if schema_name == "scene_json_patch":
-            content = json.dumps(_EDIT_PATCH_BY_SCENARIO.get(self.scenario, _EDIT_PATCH_SUCCESS))
+            user_content = next(
+                (
+                    message.get("content", "")
+                    for message in kwargs.get("messages", [])
+                    if message.get("role") == "user"
+                ),
+                "",
+            )
+            patch = (
+                _layer_recolor_patch(user_content)
+                if self.scenario == "layer-recolor"
+                else _EDIT_PATCH_BY_SCENARIO.get(self.scenario, _EDIT_PATCH_SUCCESS)
+            )
+            content = json.dumps(patch)
         else:
             # create-scene requests never reach this fake client (routed
             # through FakeAISceneProvider instead -- see E2ETestProvider),

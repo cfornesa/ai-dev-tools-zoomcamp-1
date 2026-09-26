@@ -209,3 +209,71 @@ def test_fake_edit_matrix_is_vendor_neutral(vendor, scenario, succeeds, category
     if category is not None:
         assert outcome.result.error is not None
         assert outcome.result.error.category is category
+
+
+def test_fake_layer_recolor_changes_only_selected_layer():
+    scene = {
+        "schemaVersion": 1,
+        "id": "layer-target-fixture",
+        "canvas": {"width": 320, "height": 240, "backgroundColor": "#ffffff"},
+        "renderer": {"preferred": "p5"},
+        "layers": [
+            {"id": "layer-sky", "name": "Sky", "order": 0, "visible": True, "locked": False},
+            {"id": "layer-hills", "name": "Hills", "order": 1, "visible": True, "locked": False},
+        ],
+        "shapes": [
+            {
+                "id": "shape-sky",
+                "type": "rect",
+                "layerId": "layer-sky",
+                "groupId": None,
+                "transform": {
+                    "x": 0,
+                    "y": 0,
+                    "scaleX": 1,
+                    "scaleY": 1,
+                    "rotation": 0,
+                    "opacity": 1,
+                },
+                "style": {"fill": "#99ccff", "stroke": None, "strokeWidth": 0},
+                "name": "Sky shape",
+                "width": 320,
+                "height": 120,
+                "cornerRadius": 0,
+            },
+            {
+                "id": "shape-hills",
+                "type": "rect",
+                "layerId": "layer-hills",
+                "groupId": None,
+                "transform": {
+                    "x": 0,
+                    "y": 120,
+                    "scaleX": 1,
+                    "scaleY": 1,
+                    "rotation": 0,
+                    "opacity": 1,
+                },
+                "style": {"fill": "#669966", "stroke": None, "strokeWidth": 0},
+                "name": "Hills shape",
+                "width": 320,
+                "height": 120,
+                "cornerRadius": 0,
+            },
+        ],
+        "groups": [],
+        "bindings": [],
+        "graph": {"nodes": [], "connections": []},
+        "accessibility": {"reducedMotion": "auto"},
+        "randomness": {"seed": 0, "enabled": False},
+    }
+    outcome = build_e2e_provider("layer-recolor").edit_scene_with_patch(
+        AIEditSceneRequest(
+            "recolor Hills\nOnly modify the selected element id(s): layer-hills, shape-hills.",
+            scene,
+        )
+    )
+
+    assert outcome.result.success is True
+    assert outcome.result.scene["shapes"][0]["style"]["fill"] == "#99ccff"
+    assert outcome.result.scene["shapes"][1]["style"]["fill"] == "#3366ff"

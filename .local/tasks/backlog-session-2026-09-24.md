@@ -5709,7 +5709,9 @@ current repository project; no production or live-provider action is needed.
 | Stage | Service / model / effort | Substituted | Result |
 |---|---|---:|---|
 | distill / groom | Codex / GPT-5 / medium | yes | No duplicate found; #920 is criterion-ready and next in dependency order. Routing is stage 2a test/fixture work unless scope enforcement fails, which must become a separate implementation-defect issue. |
-| engineer | pending | — | Next action: add the deterministic layer-recolor scenario and fixture/spec, then run the focused browser command. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Added the deterministic layer-recolor fake-provider scenario, stable-ID patch derivation, backend regression coverage, and `frontend/e2e/aiLayerTargetExisting.spec.ts`; no production code/data action. |
+| qa-self-review | Codex / GPT-5 / medium | yes | Backend matrix 39 passed, frontend typecheck passed, Prettier passed, and Playwright list discovered 1 test. Required Chromium run was blocked before test execution by macOS MachPort permission denied; no browser PASS claimed. |
+| reconcile / close | Codex / GPT-5 / medium | yes | #920 remains OPEN / VALID WITH GAPS pending an approved Playwright-capable browser run and screenshots at both required viewports. Next action: run the focused spec in CI/approved browser, then post the criterion matrix. |
 
 ## Transaction refresh: #898 — 2026-09-26 — CLOSED / QA PASS
 

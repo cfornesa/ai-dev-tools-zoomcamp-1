@@ -22,7 +22,12 @@
 import type { Page } from '@playwright/test';
 
 export type AIScenario =
-  'success' | 'invalid_structured_output' | 'forbidden_patch' | 'quota_exceeded' | 'timeout';
+  | 'success'
+  | 'invalid_structured_output'
+  | 'forbidden_patch'
+  | 'layer-recolor'
+  | 'quota_exceeded'
+  | 'timeout';
 
 export async function setAIScenario(page: Page, scenario: AIScenario): Promise<void> {
   await page.setExtraHTTPHeaders({ 'X-E2E-AI-Scenario': scenario });

@@ -219,7 +219,9 @@ test.describe('public generated-piece surface contract matrix (#744)', () => {
         await test.step(`${viewport.name}: canonical immersive`, async () => {
           await publicPage.goto(canonicalImmersivePath);
           await expect(publicPage.getByRole('heading', { name: piece.title })).toBeVisible();
-          await expect(publicPage.getByRole('region', { name: 'Immersive stage' })).toBeVisible();
+          const immersiveStageLabel =
+            piece.engine === 'canvas2d' ? 'Gallery artwork' : 'Immersive stage';
+          await expect(publicPage.getByRole('region', { name: immersiveStageLabel })).toBeVisible();
           await expect(publicPage.getByTestId('toggle-immersive-embed-snippet')).toBeVisible();
           await expect(publicPage.getByRole('button', { name: 'CMS embed' })).toBeVisible();
           await expect(
@@ -235,7 +237,10 @@ test.describe('public generated-piece surface contract matrix (#744)', () => {
         await test.step(`${viewport.name}: chrome-less regular and immersive embeds`, async () => {
           for (const [path, stageLabel] of [
             [embedPath, 'Art piece stage'],
-            [immersiveEmbedPath, 'Immersive stage'],
+            [
+              immersiveEmbedPath,
+              piece.engine === 'canvas2d' ? 'Gallery artwork' : 'Immersive stage',
+            ],
           ] as const) {
             await publicPage.goto(path);
             await expect(publicPage.getByRole('heading', { name: piece.title })).toHaveCount(0);

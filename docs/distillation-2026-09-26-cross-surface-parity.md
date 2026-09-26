@@ -46,3 +46,20 @@ Provenance: task-distillation, Claude Sonnet 5 Medium. Scope: issues created in 
 
 Reference audit finding (2026-09-26): the parity issues were first scoped from the repo's own matrix; direct reading of `../augment-humankind` and `../augment-humankind-react-node` shows gaps not covered by #892-#907 (immersive toolbar contents, page-level embed actions, structured-piece routes, private/owner views) and a conflict on arrow pad / 3D-only gating. #900 and #908 own these.
 Duplicates: none found between new issues; #891 (closed) already covers #892's regular-placement criterion.
+
+## Stream E — microphone parity with `augment-humankind` (added 2026-09-26)
+
+Reference for this stream is the PHP repo only. Findings: generated-piece live mic (regular, immersive, embed, ZIP) is a permission-only stub with no audio routing; no seven-effect chain anywhere; capture path differs from the reference (second `Tone.UserMedia` capture, no iOS recovery); tests prove status text, not audio.
+
+| Q | Issue | Waits for |
+| --- | --- | --- |
+| 20 | #909 engine capture contract | — |
+| 21 | #916 audio-flow harness + matrix + hardware checklist | #909 |
+| 22 | #910 effects chain (engine) | #909 |
+| 23 | #911 regular/embed generated pieces | #909 #910 #916 |
+| 24 | #912 immersive/embed generated pieces | #911 |
+| 25 | #913 structured 2D/3D live | #909 #910 |
+| 26 | #914 generated-piece ZIPs | #910 |
+| 27 | #915 structured 3D ZIP effects | #910 |
+
+react-node counterparts: see the issues filed in `cfornesa/augment-humankind-react-node` (listed in the session summary).

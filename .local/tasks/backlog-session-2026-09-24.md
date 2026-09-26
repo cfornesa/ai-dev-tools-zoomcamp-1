@@ -5471,3 +5471,19 @@ needed.
 | engineer | Codex / GPT-5 / medium; rostered documentation service substituted | yes | Updated the toolbar parity matrix, flat-engine memory topic, and DECISIONS.md with the 3D-only navigation gate. |
 | qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Re-read the six consumer contracts (#893, #898, #899, #901, #902, #907); each now has the decision as a stated dependency/gate. `git diff --check` passed. |
 | reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. The decision does not claim consumer implementation or production evidence. |
+
+## Transaction refresh: #899 — 2026-09-26 — CLOSED / QA PASS
+
+Task-distillation selected #899 after #900 and #908 were terminal. Verify-first
+found stale test assumptions rather than a product regression: a hidden
+screen-reader compatibility trigger made one selector ambiguous, and the
+six-engine test expected flat immersive pieces to expose the 3D stage label and
+arrow navigation despite the selected #900 gallery gate. The product code was
+not broadened; the test contract was corrected and rerun.
+
+| Stage | Service / model / effort | Substituted | Result |
+|---|---|---:|---|
+| groom | Codex / GPT-5 / medium | yes | Confirmed the issue is the generated Three.js/A-Frame immersive route, with flat engines covered only by the explicit no-navigation regression gate. |
+| engineer | Codex / GPT-5 / medium; rostered frontend mechanical service substituted | yes | Corrected exact Piece-controls selection, null-safe profile fixture updates, and flat-gallery versus 3D-stage assertions in the existing browser tests. |
+| qa-self-review | Codex / GPT-5 / medium; rostered independent QA substitution | yes | Required Chromium run: 5 tests passed; strengthened six-engine run: 1 test passed across 1280x900 and 375x812. `make check`: backend 1714 passed / 39 skipped; frontend 283 files / 3032 tests; lint, format, typecheck passed. Mobile C2.js and A-Frame screenshots were inspected. |
+| reconcile / close | Codex / GPT-5 / medium | yes | QA PASS comment `pending`; issue closed. Evidence is local disposable Compose + Chromium only; no production claim. |

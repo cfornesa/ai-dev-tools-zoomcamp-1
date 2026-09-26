@@ -182,7 +182,7 @@ test.describe('Generated immersive viewer: walkable navigation and stage control
       await expect(page.getByTestId('navigation-pose')).not.toHaveText(poseBeforeZoom ?? '');
 
       // Reset returns the camera to its registered starting pose.
-      await page.getByRole('button', { name: 'Piece controls' }).click();
+      await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
       await page.getByRole('button', { name: 'Reset view' }).click();
       await expect(page.getByTestId('navigation-pose')).toContainText('0.00,0.00,5.00');
 

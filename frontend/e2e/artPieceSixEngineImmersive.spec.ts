@@ -56,13 +56,16 @@ test.describe('Six-engine immersive canonical viewer (#608)', () => {
     const profileResponse = await apiGet(context, '/api/account/profile/');
     expect(profileResponse.ok()).toBe(true);
     const profile = (await profileResponse.json()) as Record<string, unknown>;
+    const editableProfile = Object.fromEntries(
+      Object.entries(profile).filter(([, value]) => value !== null),
+    );
     const updatedProfile = await apiPatch(context, '/api/account/profile/', {
-      ...profile,
+      ...editableProfile,
       handle,
       display_name: 'Immersive Six Engine Fixture',
       is_public: true,
     });
-    expect(updatedProfile.ok()).toBe(true);
+    expect(updatedProfile.ok(), await updatedProfile.text()).toBe(true);
 
     for (const fixture of fixtures) {
       const slug = `${runId}-${fixture.engine}`;
@@ -103,9 +106,21 @@ test.describe('Six-engine immersive canonical viewer (#608)', () => {
           .boundingBox();
         expect(frameBox).not.toBeNull();
         if (frameBox) expect(Math.abs(frameBox.width / frameBox.height - 4 / 3)).toBeLessThan(0.02);
-        await page.locator('[aria-label="Immersive stage"]').focus();
-        await page.keyboard.press('ArrowRight');
-        await expect(page.locator('[aria-label="Immersive stage"]')).toBeVisible();
+        const stageLabel =
+          fixture.engine === 'threejs' || fixture.engine === 'aframe'
+            ? 'Immersive stage'
+            : 'Gallery artwork';
+        await expect(page.locator(`[aria-label="${stageLabel}"]`)).toBeVisible();
+        if (stageLabel === 'Immersive stage') {
+          await expect(page.getByRole('group', { name: 'Directional navigation' })).toBeVisible();
+          await page.locator('[aria-label="Immersive stage"]').focus();
+          await page.keyboard.press('ArrowRight');
+        } else {
+          await expect(page.getByRole('group', { name: 'Directional navigation' })).toHaveCount(0);
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+          viewport.width,
+        );
         await page.screenshot({
           path: testInfo.outputPath(
             `presentation-2d-immersive-${fixture.engine}-${viewport.width}.png`,

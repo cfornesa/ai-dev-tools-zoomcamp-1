@@ -5834,4 +5834,15 @@ issue owning either exact gap; both were created before any implementation.
 | Issue | Stage / routing | Waits for | Result |
 |---|---|---|---|
 | #951 | Stage 2a frontend mechanical | #920 | Criterion-ready issue created; do not start until the strict queue reaches it. |
+
+## Transaction completion: #947, #948, #949, #953 — 2026-09-26
+
+| Issue | Stage | Service / model / effort | Substituted | Result |
+|---|---|---|---:|---|
+| #947 | groom / engineer / QA / reconcile / close | Codex / GPT-5 / medium | yes | PASS. Added opt-in installed-Chrome Playwright channel and documentation; focused #920 run passed; closed. Commit `7adb390`. |
+| #948 | groom / engineer / QA / reconcile / close | Codex / GPT-5 / medium | yes | PASS. Kept canonical one-shape-per-layer invariant, added shared valid fixture and expectations coverage, revised #920 contract; closed. Commit `8c8b047`. |
+| #953 | groom / engineer / QA / reconcile / close | Codex / GPT-5 / medium | yes | PASS. Updated stale AI mention E2E entry point to current authenticated fixture/editor flow; 2 responsive browser tests passed; closed. |
+| #949 | groom / engineer / QA / reconcile / close | Codex / GPT-5 / medium | yes | PASS. Added visible name-kind separators, accessible spacing, wrapping, and layer/shape/disabled tests; browser evidence passed at 1280x900 and 375x812; closed. |
+
+Evidence comments: #947 `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/947#issuecomment-5849901983`; #948 `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/948#issuecomment-5849939276`; #949 `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/949#issuecomment-5850052665`; #953 `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/953#issuecomment-5850052761`.
 | #952 | Stage 2a frontend mechanical | — | Criterion-ready issue created; retain as a separate accessibility/presentation transaction. |

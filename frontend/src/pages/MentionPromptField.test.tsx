@@ -20,6 +20,12 @@ const OPTIONS = [
     disabledReason: 'Locked',
     descendantIds: ['locked-1'],
   },
+  {
+    id: 'shape-1',
+    label: 'Circle',
+    type: 'shape' as const,
+    descendantIds: ['shape-1'],
+  },
 ];
 
 function ControlledField() {
@@ -50,7 +56,9 @@ describe('MentionPromptField', () => {
     await user.type(field, '@art');
     expect(screen.getByRole('listbox')).toBeInTheDocument();
     await user.keyboard('{ArrowDown}{Enter}');
-    expect(screen.getByTestId('ai-target-chip-layer-1')).toHaveTextContent('Artwork');
+    const chip = screen.getByTestId('ai-target-chip-layer-1');
+    expect(chip).toHaveTextContent('Artwork · layer');
+    expect(chip.textContent).toContain('Artwork · layer');
     expect(screen.getByRole('button', { name: /remove artwork target/i })).toBeInTheDocument();
   });
 
@@ -60,7 +68,14 @@ describe('MentionPromptField', () => {
     await user.type(screen.getByRole('textbox'), '@locked');
     const option = screen.getByRole('option');
     expect(option).toHaveAttribute('aria-disabled', 'true');
-    expect(option).toHaveTextContent('Locked');
+    expect(option).toHaveAccessibleName(/Locked group.*group.*Locked/);
+  });
+
+  it('separates a shape name from its kind in the suggestion name', async () => {
+    const user = userEvent.setup();
+    renderField();
+    await user.type(screen.getByRole('textbox'), '@circle');
+    expect(screen.getByRole('option')).toHaveAccessibleName(/Circle.*shape/);
   });
 
   it('does not turn ordinary prose into a target chip', async () => {

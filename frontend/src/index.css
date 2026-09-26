@@ -4271,6 +4271,21 @@ textarea:disabled {
   padding: 0.2rem 0.35rem 0.2rem 0.6rem;
 }
 
+.ai-target-chip-label,
+.ai-target-option-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ai-target-chip-label {
+  max-width: 32ch;
+}
+
+.ai-target-kind-separator {
+  flex: 0 0 auto;
+  color: var(--muted-text, #a7a9b8);
+}
+
 .ai-target-chip small,
 .ai-target-listbox small {
   color: var(--muted-text, #a7a9b8);
@@ -4329,6 +4344,7 @@ textarea:disabled {
   cursor: pointer;
   padding: 0.55rem 0.7rem;
   text-align: left;
+  overflow-wrap: anywhere;
 }
 
 .ai-target-listbox button.is-active,

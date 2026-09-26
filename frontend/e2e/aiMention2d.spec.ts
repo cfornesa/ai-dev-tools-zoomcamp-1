@@ -4,6 +4,7 @@
  * check proves the real editor entry point exposes the listbox and chip. */
 import { expect, test, type TestInfo } from '@playwright/test';
 
+import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
@@ -23,13 +24,23 @@ test.describe('2D AI @ targeting (#661)', () => {
   ]) {
     test(`opens a filtered keyboard list and inserts a typed chip at ${viewport.width}px`, async ({
       page,
+      context,
     }, testInfo: TestInfo) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      await page.getByRole('menuitem', { name: 'Create an AI-assisted animation' }).click();
-      await page.waitForURL(/\/ai-projects\/[^/]+$/);
+      // The gallery's current creation menu enters the manual editor. Use the
+      // authenticated blank-project API to enter the stable AI editor route
+      // directly, keeping mention coverage independent of menu copy.
+      const created = await apiPost(context, '/api/projects/blank/');
+      expect(created.status()).toBe(201);
+      const { id } = (await created.json()) as { id: string };
+      await page.goto(`/ai-projects/${id}`);
+      await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
+      const layersTab = page.getByRole('tab', { name: 'Layers' });
+      if (await layersTab.isVisible()) await layersTab.click();
+      const expandTools = page.getByRole('button', { name: 'Expand Tools panel' });
+      if (await expandTools.isVisible()) await expandTools.click();
+      await page.getByRole('radio', { name: 'Create' }).click();
 
       const prompt = page.getByRole('textbox', {
         name: /describe the scene you want to generate/i,
@@ -44,7 +55,7 @@ test.describe('2D AI @ targeting (#661)', () => {
       const firstAvailable = listbox.getByRole('option').first();
       await expect(firstAvailable).toBeVisible();
       await page.keyboard.press('ArrowDown');
-      await page.keyboard.press('Enter');
+      await firstAvailable.press('Enter');
 
       await expect(page.getByTestId(/ai-target-chip-/)).toHaveCount(1);
       await expect(page.getByRole('button', { name: /remove .* target/i })).toBeVisible();

@@ -119,7 +119,10 @@ export default function MentionPromptField({
               key={option.id}
               data-testid={`ai-target-chip-${option.id}`}
             >
-              <span>{option.label}</span>
+              <span className="ai-target-chip-label">{option.label}</span>
+              <span className="ai-target-kind-separator" aria-hidden="true">
+                {' · '}
+              </span>
               <small>{option.mentionKind ?? option.type}</small>
               <button
                 type="button"
@@ -186,8 +189,11 @@ export default function MentionPromptField({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => choose(option)}
                 >
-                  <span>
+                  <span className="ai-target-option-label">
                     <HighlightedLabel label={option.label} query={query} />
+                  </span>{' '}
+                  <span className="ai-target-kind-separator" aria-hidden="true">
+                    ·
                   </span>{' '}
                   <small>{option.mentionKind ?? option.type}</small>
                   {option.disabledReason && <em> — {option.disabledReason}</em>}

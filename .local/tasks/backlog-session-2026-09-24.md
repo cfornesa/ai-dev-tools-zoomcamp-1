@@ -5303,3 +5303,36 @@ clients can render the service convention consistently.
 
 Implementation commit: `823b972`. Production deployment is not claimed;
 these additive fields require the normal release verification before closure.
+
+## Production-readiness gate — 2026-09-26
+
+Gate owner: Codex / GPT-5 / medium, owner-authorized session substitution;
+substitution is flagged because the rostered external readiness model was not
+available in this runtime. The gate was read-only.
+
+| Dimension | Result | Evidence / next action |
+|---|---|---|
+| Local deployment | PASS | Compose stack healthy; `make check` green: backend 1711 passed / 39 skipped, frontend 283 files / 3031 tests. |
+| Approved-browser / CI | BLOCKED | Active Chrome local evidence exists for #893/#898/#899/#907, but macOS Playwright launch fails with `mach_port_rendezvous`; rerun responsive Chromium on supported CI host. |
+| Intended functionality | OPEN FOLLOW-UP | #904, #905, #908–#916 and download/audio issues remain open; process them in stream order. |
+| Replit publication | OPEN FOLLOW-UP | #788 remains open; perform only the owner-authorized production import safeguards and live verification. |
+| Production readiness | BLOCKED | No production-ready claim while required browser, data-action, download, audio, parity, and reference-audit issues remain open. |
+
+## Session-completion gate — 2026-09-26
+
+Manifest reconciliation found 33 open issues (the original #747/#748 are now
+closed; #788 remains open). This session processed and reconciled #893, #898,
+#899, #907, #897, and #904; #897 is closed, while the other five remain open
+for explicit verification or dependency evidence. No actionable gap was
+dropped: audio parity is captured in #909–#916, download parity in #895 and
+#901–#903, production data in #788/#906, and reference parity in #908.
+
+Routing audit: processed transactions record groom, engineer, QA, and
+reconcile owners as Codex/GPT-5/medium substitutions with rostered external
+service/model noted where applicable. The readiness gate substitution is
+recorded above. Follow-up audit: all blocked criteria map to existing issues;
+no new unlinked issue was found in this gate.
+
+This is a handoff, not a production-ready completion: next actions are the
+supported-host Chromium reruns, owner decision #900, the authorized #788
+production import, then stream-order processing of #895/#901–#916.

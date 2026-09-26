@@ -1782,3 +1782,16 @@ production publish or data mutation is authorized by this decision.
   toggleable panels; Screenshot, Sound, Edit source, and Save changes sit in
   the action row directly under the canvas; the back link is last in editor
   content. This remains local-only until separately authorized for production.
+
+## 2026-09-26 — authorship identity and readiness boundary (#897/#904)
+
+- Public authorship keeps the existing display `owner` field and adds
+  normalized `owner_handle` without a leading `@`; frontend surfaces render
+  the service convention as `By {display name} (@{handle})` through one helper.
+- #897 was closed after local API and full-check evidence. #904 remains open
+  for supported-host responsive visual evidence; local Chrome and automated
+  checks do not substitute for that boundary.
+- Production-readiness ran as an explicitly flagged Codex/GPT-5/medium
+  substitution because the rostered external readiness model was unavailable;
+  the gate classified the project as blocked by remaining browser,
+  production-data, download, audio, and parity issues.

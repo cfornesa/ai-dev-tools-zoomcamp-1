@@ -71,15 +71,10 @@ export type ArtPieceExportMode = 'full' | 'non-camera';
  * Sound/Camera/Steer/Fullscreen contract every export already has. */
 export type ArtPieceExportPresentation = 'regular' | 'immersive';
 
-const SPATIAL_ART_PIECE_LIBRARIES: ArtPieceLibrary[] = [
-  'canvas2d',
-  'svg',
-  'p5js',
-  'c2js',
-  'c2js-interactive',
-  'threejs',
-  'aframe',
-];
+// Immersive ZIPs use a gallery presentation for flat engines. Only engines
+// with a native camera are walkable by default; flat hand-steering remains an
+// explicit capability and is handled independently by the runtime.
+const NATIVE_SPATIAL_ART_PIECE_LIBRARIES: ArtPieceLibrary[] = ['threejs', 'aframe'];
 
 export type ArtPieceExportOptions = {
   capabilities?: ArtPieceCapabilitySet;
@@ -383,7 +378,7 @@ function buildExportControls(
   const includeSteering = mode === 'full' && capabilities.hand_steering === true;
   const includeMicrophone = capabilities.microphone === true;
   const includeNavigation =
-    presentation === 'immersive' && SPATIAL_ART_PIECE_LIBRARIES.includes(library);
+    presentation === 'immersive' && NATIVE_SPATIAL_ART_PIECE_LIBRARIES.includes(library);
   // Issue #755: the same icon-only toolbar as the live stage, in the parity-matrix order
   // (docs/piece-toolbar-parity-matrix.md) minus Download/Immersive, Fullscreen last. Reset view
   // is the spatial engines' tool (row 7). Steer, camera, and microphone live in the single

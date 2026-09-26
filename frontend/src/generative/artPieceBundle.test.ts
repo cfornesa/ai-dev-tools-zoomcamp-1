@@ -97,7 +97,8 @@ describe('generateArtPieceBundle', () => {
         "var c2Runtime = window.c2 && typeof window.c2.Renderer === 'function' ? window.c2 : c2Fallback;",
       );
       expect(html).toContain('window.sketch({ c2: c2Runtime, canvas: canvas');
-      expect(html).toContain('art-piece-navigation-pose');
+      expect(html).not.toContain('art-piece-navigation-pose');
+      expect(html).toContain("setAttribute('aria-label', 'Gallery artwork')");
       expect(css).toContain('height: 100dvh');
     }
     expect(global.fetch).toHaveBeenCalledWith(

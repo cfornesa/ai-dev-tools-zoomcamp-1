@@ -105,7 +105,7 @@ test.describe('Six-engine offline regular and immersive bundles (#609)', () => {
   test('extracts and renders every engine in regular and immersive presentations offline', async ({
     page,
     context,
-  }) => {
+  }, testInfo) => {
     // Twelve downloads (six engines x regular/immersive), each extracted and served.
     test.setTimeout(300_000);
     const runId = Date.now().toString(36);
@@ -174,9 +174,26 @@ test.describe('Six-engine offline regular and immersive bundles (#609)', () => {
           await page.goto(served.url);
           await expect(page.locator(fixture.selector)).toBeVisible({ timeout: 15_000 });
           if (presentation === 'immersive') {
-            await expect(page.locator('#art-piece-navigation-pose')).toBeVisible();
-            await page.locator('[aria-label="Immersive stage"]').focus();
-            await page.keyboard.press('ArrowRight');
+            if (fixture.engine === 'threejs' || fixture.engine === 'aframe') {
+              await expect(page.locator('#art-piece-navigation-pose')).toBeVisible();
+              await page.locator('[aria-label="Immersive stage"]').focus();
+              await page.keyboard.press('ArrowRight');
+            } else {
+              await expect(page.locator('#art-piece-navigation-pose')).toHaveCount(0);
+              await expect(page.locator('[aria-label="Gallery artwork"]')).toBeVisible();
+              await expect(page.locator('[aria-label="Immersive stage"]')).toHaveCount(0);
+              if (fixture.engine === 'svg') {
+                await page.setViewportSize({ width: 1280, height: 900 });
+                await page.screenshot({
+                  path: testInfo.outputPath('immersive-flat-gallery-desktop.png'),
+                });
+                await page.setViewportSize({ width: 375, height: 812 });
+                await page.screenshot({
+                  path: testInfo.outputPath('immersive-flat-gallery-mobile.png'),
+                });
+                await page.setViewportSize({ width: 1280, height: 900 });
+              }
+            }
           }
         } finally {
           await served.close();

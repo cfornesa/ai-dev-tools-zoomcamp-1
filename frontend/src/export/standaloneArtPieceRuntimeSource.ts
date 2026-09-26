@@ -23,15 +23,6 @@ import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '..
 import type { SonicDefaults } from '../audio/sonicContract';
 import type { ArtPieceExportMode, ArtPieceExportPresentation } from '../generative/artPieceBundle';
 
-const SPATIAL_LIBRARIES: ArtPieceLibrary[] = [
-  'canvas2d',
-  'svg',
-  'p5js',
-  'c2js',
-  'c2js-interactive',
-  'threejs',
-  'aframe',
-];
 const NATIVE_SPATIAL_LIBRARIES: ArtPieceLibrary[] = ['threejs', 'aframe'];
 
 /** Small, discrete per-keypress/per-drag-step deltas -- kept identical to
@@ -72,9 +63,11 @@ export function buildStandaloneArtPieceRuntimeScript(
   // unconditional, matching `PieceStageControls.tsx`'s own always-present
   // "Show hand gesture guide" button.
   const includeGuide = true;
-  // Walkable navigation uses native cameras for Three.js/A-Frame and the
-  // lazy synthetic room shell for flat engines.
-  const includeNavigation = presentation === 'immersive' && SPATIAL_LIBRARIES.includes(library);
+  // Immersive flat exports are galleries. Walkable navigation is reserved for
+  // native Three.js/A-Frame cameras; explicit flat hand steering remains a
+  // separate opt-in capability below.
+  const includeNavigation =
+    presentation === 'immersive' && NATIVE_SPATIAL_LIBRARIES.includes(library);
 
   return `<script>
 (function () {
@@ -343,6 +336,24 @@ export function buildStandaloneArtPieceRuntimeScript(
   }, { passive: false });
   if (typeof ensureFlatSpatialShell === 'function') ensureFlatSpatialShell();
   reportNavPose();
+  `
+      : ''
+  }
+
+  ${
+    presentation === 'immersive' && !includeNavigation
+      ? `
+  // Flat immersive exports are galleries, not walkable worlds. Give the
+  // artwork an accessible stage label without adding spatial key/pointer
+  // navigation or a synthetic camera.
+  function labelGalleryStage() {
+    var galleryStage = document.getElementById('art-piece-container') ||
+      document.querySelector('a-scene') || document.querySelector('canvas') ||
+      document.querySelector('svg:not(.piece-stage-icon)');
+    if (galleryStage) galleryStage.setAttribute('aria-label', 'Gallery artwork');
+  }
+  document.addEventListener('DOMContentLoaded', labelGalleryStage);
+  window.addEventListener('load', labelGalleryStage);
   `
       : ''
   }

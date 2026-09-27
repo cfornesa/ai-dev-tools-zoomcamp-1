@@ -6195,3 +6195,24 @@ the local-first base contract is closed.
 | engineer | Codex / GPT-5 / medium; rostered implementation-mechanical service substituted | PASS | Commit `c7b44b0f`: local 2D package preparation/download, missing-media reporting, canonical new-scene initialization, focused unit/browser coverage. No new dependency, migration, route, or cloud mutation. |
 | qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | PASS | QA comment posted on #956; focused tests 15/15, exact Chrome Playwright 2/2 at 1280x900 and 375x812, and final `make check` passed (1743 backend passed/39 skipped; 286 frontend files/3053 tests). |
 | reconcile / close | Codex / GPT-5 / medium | PASS | #956 closed after scope clarification: authenticated local-owner workspace is in scope; anonymous visitor export remains out of scope unless separately requested. #935 remains the tracking parent. |
+
+## Distillation refresh: 2026-09-27 — after #955 reconciliation and #847 audit
+
+The Chrome process and tab remain active, but the local app tab is
+unauthenticated and shows Login plus “This art piece isn’t available.” No
+logout action was performed. Duplicate audit found that #847 assumes an
+owner-uploaded audio asset path while the current local media repository
+allowlist accepts image MIME types only. New prerequisite #957 was created:
+[Local media assets: owner-scoped audio ingestion for authored samples](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/957).
+It is linked from #847; ambient playback remains out of scope for #957.
+
+## Transaction: #957 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERING PENDING
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | New gap discovered while grooming #847: existing local media accepts images only, so #847 cannot consume an owner-uploaded audio asset. Duplicate audit found no existing audio-ingestion issue. |
+| groom | Codex / GPT-5 / medium | PASS | `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/957` is closure-sized: bounded audio MIME allowlist, owner/project isolation, checksum/quota/reference behavior, minimal media-library selection, reload/export metadata, and existing-image regression coverage. Playback, sonic fields, ZIP runtime behavior, production data, and #847 are explicitly out of scope. |
+| routing | Codex / GPT-5 / medium | PASS | Stage 2b complex: storage validation, quota/reference behavior, and media UI integration. Rostered implementation-complex service is unavailable; Codex substitution will be recorded if engineering proceeds. |
+| engineer | pending | — | — |
+| qa-self-review | pending | — | — |
+| reconcile / close | pending | — | — |

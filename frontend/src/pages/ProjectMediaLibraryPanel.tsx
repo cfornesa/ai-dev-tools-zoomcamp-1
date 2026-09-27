@@ -22,6 +22,7 @@ import {
   type LocalMediaAssetRecord,
 } from '../storage/localProjectRepository';
 import { exportLocalProject } from '../storage/localProjectExport';
+import { setActiveMediaAssetResolver } from '../render/mediaAssetResolver';
 import type { SceneEditor } from './useSceneEditor';
 
 type Props = {
@@ -30,6 +31,7 @@ type Props = {
   ownerId: string;
   workingCopy: SceneDocument | null;
   sceneEditor: SceneEditor;
+  onAssetsChange?: (assets: LocalMediaAssetRecord[]) => void;
 };
 
 type PendingImport = { file: File; altText: string; decorative: boolean };
@@ -48,6 +50,7 @@ export default function ProjectMediaLibraryPanel({
   ownerId,
   workingCopy,
   sceneEditor,
+  onAssetsChange,
 }: Props) {
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -68,7 +71,9 @@ export default function ProjectMediaLibraryPanel({
 
   async function refresh(nextDb = db) {
     if (!nextDb) return;
-    setAssets(await listMediaAssetsForProject(nextDb, projectId));
+    const nextAssets = await listMediaAssetsForProject(nextDb, projectId);
+    setAssets(nextAssets);
+    onAssetsChange?.(nextAssets);
   }
 
   async function openLibrary() {
@@ -79,6 +84,7 @@ export default function ProjectMediaLibraryPanel({
       const nextDb = db ?? (await openLocalProjectDatabase());
       await ensureProject(nextDb, { id: projectId, ownerId, title: projectTitle });
       setDb(nextDb);
+      setActiveMediaAssetResolver((assetId) => getMediaBlob(nextDb, assetId));
       await refresh(nextDb);
       const persistence = await requestPersistentStorage();
       setStorageText(
@@ -92,6 +98,10 @@ export default function ProjectMediaLibraryPanel({
       setError(errorMessage(cause));
     }
   }
+
+  useEffect(() => {
+    return () => setActiveMediaAssetResolver(null);
+  }, []);
 
   function closeFileMenu() {
     setFileMenuOpen(false);

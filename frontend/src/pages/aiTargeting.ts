@@ -23,6 +23,19 @@ export type AITargetOption = {
   descendantIds: string[];
 };
 
+/** Metadata only: asset bytes stay in the authoring browser and never enter
+ * an AI request. The optional dimensions are filled by callers when known;
+ * the agent contract still requires bounded dimensions, so unknown media is
+ * represented as a one-pixel descriptor rather than read or uploaded. */
+export type AITargetMediaAsset = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  altText?: string;
+  width?: number;
+  height?: number;
+};
+
 function descendantsOf(id: string, groups: Group[], shapes: Shape[]): string[] {
   const groupsById = new Map(groups.map((group) => [group.id, group]));
   const shapesById = new Map(shapes.map((shape) => [shape.id, shape]));
@@ -44,7 +57,10 @@ function lockedReason(locked: boolean, kind: AITargetOption['type']): string | u
   return kind === 'drawio-node' ? 'Draw.io graph nodes are not editable here.' : 'Locked';
 }
 
-export function buildAITargetOptions(scene: SceneDocument): AITargetOption[] {
+export function buildAITargetOptions(
+  scene: SceneDocument,
+  mediaAssets: AITargetMediaAsset[] = [],
+): AITargetOption[] {
   const rows = buildOutline(scene);
   const groups = getGroups(scene);
   const shapes = getEditableShapes(Array.isArray(scene.shapes) ? scene.shapes : []);
@@ -84,6 +100,22 @@ export function buildAITargetOptions(scene: SceneDocument): AITargetOption[] {
       disabled: locked,
       disabledReason: lockedReason(locked, 'media'),
       descendantIds: [shape.mediaAssetId],
+    });
+  }
+
+  for (const asset of mediaAssets) {
+    if (seenMedia.has(asset.id)) continue;
+    seenMedia.add(asset.id);
+    const image = asset.mimeType.startsWith('image/');
+    options.push({
+      id: asset.id,
+      label: asset.filename,
+      type: 'media',
+      category: 'Media assets',
+      mentionKind: 'asset',
+      disabled: !image,
+      disabledReason: image ? undefined : 'Only image assets can become scene layers.',
+      descendantIds: [asset.id],
     });
   }
 

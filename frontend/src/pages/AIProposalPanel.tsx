@@ -6,7 +6,7 @@ import { createScenePreview, resolveSceneRendererId } from '../render/createScen
 import type { ScenePreview, SceneRendererId } from '../render/scenePreview';
 import AIRunPanel, { type AIRunSelectableObject } from './AIRunPanel';
 import MentionPromptField from './MentionPromptField';
-import { buildAITargetOptions, targetIdsFor } from './aiTargeting';
+import { buildAITargetOptions, targetIdsFor, type AITargetMediaAsset } from './aiTargeting';
 import { buildOutline } from './sceneOutline';
 import { useAIProposal, type ProposalMode } from './useAIProposal';
 import { useAIRun } from './useAIRun';
@@ -78,6 +78,8 @@ type AIProposalPanelProps = {
    * identical `prompt` text), which is why `nonce` exists: two clicks
    * describing the same error must each re-seed, not just the first. */
   seed?: { prompt: string; nonce: number } | null;
+  /** Metadata-only local media records; blobs never enter an AI request. */
+  mediaAssets?: AITargetMediaAsset[];
 };
 
 const MODE_LABELS: Record<ProposalMode, string> = {
@@ -103,6 +105,7 @@ function AIProposalPanel({
   currentVersionId,
   onAccepted,
   seed,
+  mediaAssets = [],
 }: AIProposalPanelProps) {
   const {
     mode,
@@ -133,10 +136,10 @@ function AIProposalPanel({
   // mounted (an in-progress agent run must keep polling even while this
   // panel happens to render the one-shot form), and only one is visible
   // at a time via `workflowMode`.
-  const aiRun = useAIRun<SceneVersion>('project', projectId, getSceneVersion);
+  const aiRun = useAIRun<SceneVersion>('project', projectId, getSceneVersion, mediaAssets);
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>('one-shot');
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
-  const targetOptions = workingCopy ? buildAITargetOptions(workingCopy) : [];
+  const targetOptions = workingCopy ? buildAITargetOptions(workingCopy, mediaAssets) : [];
 
   // Issue #462's own acceptance criterion: "Resolve selection to stable
   // IDs rather than trusting text mentions" -- reuses the same outline
@@ -284,6 +287,7 @@ function AIProposalPanel({
           workingCopy={workingCopy}
           onAccepted={onAccepted}
           selectableObjects={aiRunSelectableObjects}
+          mediaAssets={mediaAssets}
           renderCandidatePreview={(scene) => (
             <AIRunCandidatePreview2D scene={scene as SceneDocument} />
           )}

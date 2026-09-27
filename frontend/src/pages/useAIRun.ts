@@ -13,8 +13,9 @@ import {
   type AIRunTargetType,
 } from '../api/aiRuns';
 import { ApiError } from '../api/client';
+import type { AITargetMediaAsset } from './aiTargeting';
 
-export type AIRunTargetMode = 'create' | 'edit-selection' | 'edit-whole';
+export type AIRunTargetMode = 'create' | 'edit-selection' | 'edit-whole' | 'add-asset';
 
 /** A scene document, 2D or 3D -- `SceneDocument`/`SceneDocument3D` are both
  * literally `Record<string, unknown>` aliases (see `api/projects.ts`/
@@ -144,9 +145,11 @@ export function useAIRun<TVersion>(
   targetType: AIRunTargetType,
   projectId: string | undefined,
   fetchAcceptedVersion: FetchAcceptedVersion<TVersion>,
+  mediaAssets: AITargetMediaAsset[] = [],
 ) {
   const [targetMode, setTargetMode] = useState<AIRunTargetMode>('create');
   const [selectedShapeId, setSelectedShapeId] = useState<string | null>(null);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
   const [vendor, setVendor] = useState<'mistral' | 'gemini' | 'deepseek'>('mistral');
   const [model, setModel] = useState('');
@@ -271,19 +274,52 @@ export function useAIRun<TVersion>(
         });
         return;
       }
+      if (targetMode === 'add-asset' && !selectedAssetId) {
+        setStartError({
+          code: 'request_invalid',
+          message: 'Choose a media asset before starting an add-layer run.',
+        });
+        return;
+      }
 
       setStarting(true);
       setStartError(null);
       setAdvanceError(null);
       setAcceptError(null);
-      const scope: AIRunScope = targetMode === 'edit-selection' ? 'selection' : 'whole_scene';
+      const scope: AIRunScope =
+        targetMode === 'add-asset'
+          ? 'add_layer'
+          : targetMode === 'edit-selection'
+            ? 'selection'
+            : 'whole_scene';
+      const selectedAsset = mediaAssets.find((asset) => asset.id === selectedAssetId);
       try {
         const started = await startAIRun({
           target_type: targetType,
           ...(targetType === 'project' ? { project_id: projectId } : { project3d_id: projectId }),
           operation: targetMode === 'create' ? 'create' : 'edit_patch',
           scope,
-          selected_target_ids: scope === 'selection' && selectedShapeId ? [selectedShapeId] : [],
+          selected_target_ids:
+            scope === 'add_layer'
+              ? selectedAsset
+                ? [selectedAsset.id]
+                : []
+              : scope === 'selection' && selectedShapeId
+                ? [selectedShapeId]
+                : [],
+          ...(scope === 'add_layer' && selectedAsset
+            ? {
+                assets: [
+                  {
+                    id: selectedAsset.id,
+                    name: selectedAsset.filename,
+                    mime: selectedAsset.mimeType,
+                    width: selectedAsset.width ?? 1,
+                    height: selectedAsset.height ?? 1,
+                  },
+                ],
+              }
+            : {}),
           prompt: trimmed,
           vendor,
           model: model.trim() || undefined,
@@ -307,6 +343,8 @@ export function useAIRun<TVersion>(
       prompt,
       targetMode,
       selectedShapeId,
+      selectedAssetId,
+      mediaAssets,
       vendor,
       model,
       personaId,
@@ -382,6 +420,8 @@ export function useAIRun<TVersion>(
     setTargetMode,
     selectedShapeId,
     setSelectedShapeId,
+    selectedAssetId,
+    setSelectedAssetId,
     prompt,
     setPrompt,
     vendor,

@@ -145,6 +145,7 @@ import ProjectMediaLibraryPanel from './ProjectMediaLibraryPanel';
 import CloudSyncControl from './CloudSyncControl';
 import SceneConversionPanel from './SceneConversionPanel';
 import { useSceneConversion } from './useSceneConversion';
+import type { LocalMediaAssetRecord } from '../storage/localProjectRepository';
 
 /**
  * Task 64 (issue #64): the "Exit without saving" confirmation, as its own
@@ -1100,6 +1101,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // experience stays "composing an animation recipe."
   const [showLogic, setShowLogic] = useState(false);
   const sceneEditor = useSceneEditor(workingCopy, setWorkingCopy);
+  const [mediaAssets, setMediaAssets] = useState<LocalMediaAssetRecord[]>([]);
   // Issue #177: called unconditionally here (not inside `CodeTab`, which
   // stays conditionally mounted -- see its doc comment) so each Code
   // sub-tab's unsaved-edit/dirty-tracking state survives a Visual<->Code
@@ -3212,6 +3214,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   ownerId={auth.user.username}
                   workingCopy={workingCopy}
                   sceneEditor={sceneEditor}
+                  onAssetsChange={setMediaAssets}
                 />
               )}
               {id && (
@@ -3304,6 +3307,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                 projectId={id}
                 workingCopy={workingCopy}
                 currentVersionId={project?.current_version ?? null}
+                mediaAssets={mediaAssets}
                 seed={aiFixSeed}
                 onAccepted={handleAIProposalAccepted}
               />
@@ -4161,6 +4165,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   projectId={id}
                   workingCopy={workingCopy}
                   currentVersionId={project?.current_version ?? null}
+                  mediaAssets={mediaAssets}
                   seed={aiLayerSeed}
                   onAccepted={handleAIProposalAccepted}
                 />
@@ -4286,6 +4291,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   projectId={id}
                   workingCopy={workingCopy}
                   currentVersionId={project?.current_version ?? null}
+                  mediaAssets={mediaAssets}
                   onAccepted={handleAIProposalAccepted}
                 />
               )}

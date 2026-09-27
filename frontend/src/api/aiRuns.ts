@@ -14,7 +14,7 @@ import type { SceneDocument } from './projects';
 
 export type AIRunTargetType = 'project' | 'project3d';
 export type AIRunOperation = 'create' | 'edit_patch';
-export type AIRunScope = 'whole_scene' | 'selection';
+export type AIRunScope = 'whole_scene' | 'selection' | 'add_layer';
 export type AIRunStatus =
   'running' | 'awaiting_review' | 'accepted' | 'cancelled' | 'failed' | 'expired';
 
@@ -96,6 +96,7 @@ export type StartAIRunInput = {
   operation: AIRunOperation;
   scope?: AIRunScope;
   selected_target_ids?: string[];
+  assets?: Array<{ id: string; name: string; mime: string; width: number; height: number }>;
   prompt: string;
   vendor?: 'mistral' | 'gemini' | 'deepseek';
   model?: string;

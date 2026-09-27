@@ -82,4 +82,22 @@ describe('AI target options', () => {
       disabled: true,
     });
   });
+
+  it('offers unplaced library media with a kind badge and keeps non-images explicit', () => {
+    const options = buildAITargetOptions(SCENE, [
+      { id: 'asset-new', filename: 'sunset.png', mimeType: 'image/png' },
+      { id: 'audio-1', filename: 'ambient.mp3', mimeType: 'audio/mpeg' },
+    ]);
+    expect(options.find((option) => option.id === 'asset-new')).toMatchObject({
+      label: 'sunset.png',
+      category: 'Media assets',
+      mentionKind: 'asset',
+      disabled: false,
+    });
+    expect(options.find((option) => option.id === 'audio-1')).toMatchObject({
+      label: 'ambient.mp3',
+      disabled: true,
+      disabledReason: 'Only image assets can become scene layers.',
+    });
+  });
 });

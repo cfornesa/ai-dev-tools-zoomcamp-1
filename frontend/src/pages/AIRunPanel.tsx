@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
-import type { UseAIRunResult } from './useAIRun';
+import type { AIRunTargetMode, UseAIRunResult } from './useAIRun';
+import type { AITargetMediaAsset } from './aiTargeting';
 import { useSavedAIPreferences } from './useSavedAIPreferences';
 
 /** One selectable object/shape for "Edit selected ..." mode -- built by the
@@ -35,6 +36,8 @@ type AIRunPanelProps<TVersion> = {
    * empty -- 2D says "objects"; 3D can be more specific ("no objects" vs
    * lights/camera not being offered at all). */
   noSelectableObjectsMessage?: string;
+  /** Metadata-only local assets offered by the 2D editor's library. */
+  mediaAssets?: AITargetMediaAsset[];
 };
 
 // Issue #461's own server-side defaults, mirrored here purely for display
@@ -66,12 +69,15 @@ function AIRunPanel<TVersion>({
   renderCandidatePreview,
   editSelectionLabel = 'Edit selected layer/object',
   noSelectableObjectsMessage = 'No editable objects in this scene yet.',
+  mediaAssets = [],
 }: AIRunPanelProps<TVersion>) {
   const {
     targetMode,
     setTargetMode,
     selectedShapeId,
     setSelectedShapeId,
+    selectedAssetId,
+    setSelectedAssetId,
     prompt,
     setPrompt,
     vendor,
@@ -101,6 +107,9 @@ function AIRunPanel<TVersion>({
       { value: 'create' as const, disabled: starting || run !== null },
       { value: 'edit-selection' as const, disabled: starting || run !== null || !workingCopy },
       { value: 'edit-whole' as const, disabled: starting || run !== null || !workingCopy },
+      ...(mediaAssets.length > 0
+        ? [{ value: 'add-asset' as const, disabled: starting || run !== null }]
+        : []),
     ],
     targetMode,
     setTargetMode,
@@ -110,7 +119,11 @@ function AIRunPanel<TVersion>({
     create: 'Create piece',
     'edit-selection': editSelectionLabel,
     'edit-whole': 'Edit whole scene',
+    'add-asset': 'Add media asset',
   };
+  const targetModeValues: AIRunTargetMode[] = mediaAssets.length
+    ? ['create', 'edit-selection', 'edit-whole', 'add-asset']
+    : ['create', 'edit-selection', 'edit-whole'];
 
   async function handleAccept() {
     const version = await accept();
@@ -129,7 +142,7 @@ function AIRunPanel<TVersion>({
     return (
       <div className="ai-run-panel" data-testid="ai-run-form">
         <div role="radiogroup" aria-label="Agent action" className="editor-tool-group">
-          {(['create', 'edit-selection', 'edit-whole'] as const).map((value) => (
+          {targetModeValues.map((value) => (
             <button
               key={value}
               type="button"
@@ -165,6 +178,34 @@ function AIRunPanel<TVersion>({
             {selectableObjects.length === 0 && (
               <p className="ai-proposal-empty-preference">{noSelectableObjectsMessage}</p>
             )}
+          </div>
+        )}
+
+        {targetMode === 'add-asset' && (
+          <div className="behavior-card-field ai-proposal-field-full-width">
+            <label htmlFor="ai-run-media-asset">Media asset</label>
+            <select
+              id="ai-run-media-asset"
+              className="ai-proposal-field-full-width"
+              value={selectedAssetId ?? ''}
+              disabled={starting}
+              onChange={(event) => setSelectedAssetId(event.target.value || null)}
+            >
+              <option value="">Select an image asset…</option>
+              {mediaAssets.map((asset) => (
+                <option
+                  key={asset.id}
+                  value={asset.id}
+                  disabled={!asset.mimeType.startsWith('image/')}
+                >
+                  {asset.filename}
+                  {!asset.mimeType.startsWith('image/') ? ' (not an image)' : ''}
+                </option>
+              ))}
+            </select>
+            <p className="ai-proposal-empty-preference">
+              Only metadata is sent to the AI provider; the local media bytes stay in this browser.
+            </p>
           </div>
         )}
 

@@ -127,6 +127,35 @@ describe('useAIRun', () => {
     expect(window.localStorage.getItem('gesture-studio:ai-run:p1')).toBe('1');
   });
 
+  it('sends only the selected media descriptor for an add-layer run', async () => {
+    mockedStart.mockResolvedValue(
+      makeRun({ scope: 'add_layer', selected_target_ids: ['asset-1'] }),
+    );
+    const { result } = renderHook(() =>
+      useAIRun<SceneVersion>('project', 'p1', getSceneVersion, [
+        { id: 'asset-1', filename: 'sunset.png', mimeType: 'image/png', width: 640, height: 480 },
+      ]),
+    );
+    await waitFor(() => expect(result.current.reconnecting).toBe(false));
+    act(() => {
+      result.current.setPrompt('add this image as a new layer');
+      result.current.setTargetMode('add-asset');
+      result.current.setSelectedAssetId('asset-1');
+    });
+
+    await act(async () => {
+      await result.current.start(VALID_SCENE, 1);
+    });
+
+    expect(mockedStart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'add_layer',
+        selected_target_ids: ['asset-1'],
+        assets: [{ id: 'asset-1', name: 'sunset.png', mime: 'image/png', width: 640, height: 480 }],
+      }),
+    );
+  });
+
   it('reconnects to a stored running run on mount without starting a new one', async () => {
     window.localStorage.setItem('gesture-studio:ai-run:p1', '42');
     mockedGet.mockResolvedValue(makeRun({ id: 42, status: 'running', attempts: 1 }));

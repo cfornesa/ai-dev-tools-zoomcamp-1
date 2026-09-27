@@ -32,6 +32,8 @@ import { createSonicEngine } from '../audio/sonicEngine';
 import DemoControlsPanel from './DemoControlsPanel';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 import { useFullscreenToggle } from './useFullscreenToggle';
+import { fetchPublicPieceAsset } from '../api/publicPieceAssets';
+import { setActiveMediaAssetResolver } from '../render/mediaAssetResolver';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
 
@@ -316,6 +318,21 @@ function PublicProjectViewer({
         window.location.href,
       );
     }
+  }, [project]);
+
+  // #941: published package media lives in the server-side intake store, not
+  // the author's browser IndexedDB. Register the resolver only while this
+  // public 2D surface is mounted so image shapes work in regular, embed, and
+  // canonical viewers without leaking a resolver into another route.
+  useEffect(() => {
+    if (!project) {
+      setActiveMediaAssetResolver(null);
+      return;
+    }
+    setActiveMediaAssetResolver((assetId) =>
+      fetchPublicPieceAsset('2d', project.id, assetId),
+    );
+    return () => setActiveMediaAssetResolver(null);
   }, [project]);
 
   // Issue #192 follow-up: a plain useCallback, not inlined into the effect

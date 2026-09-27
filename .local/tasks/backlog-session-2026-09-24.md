@@ -7055,4 +7055,14 @@ wrapper publication once the secure push credential is available through the
 | groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Scope is schema/package/intake identity preservation only; public delivery remains #941-owned. |
 | engineer | Deferred | NOT STARTED | #971 was created and linked before continuing; no code changed in this discovery step. |
 | qa-self-review | Pending | NOT STARTED | No diff exists. |
-| reconcile / close | Codex / GPT-5 / medium | PROPOSED / OPEN | Issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/971. #941 is blocked on this prerequisite. |
+| reconcile / close | Codex / GPT-5 / medium | CLOSED | QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/971#issuecomment-5860722175. Commit `d9f168bc`; #941 is unblocked. |
+
+## Transaction: #971 implementation — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Stable media identity loss was confirmed as a non-duplicate prerequisite for #941. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Optional sourceAssetId preserves legacy package compatibility and remains limited to schema/package/intake persistence. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution for Ollama Cloud kimi-k3 | PASS | Commit `d9f168bc`; schema, frontend package builder/parser, PieceIntakeAsset field/index, migration 0101, API docs, and regression coverage. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude substitution; independent stage-3 unavailable and not credited | PASS | Backend focused tests 15 passed; frontend package tests 11 passed; migration dry-run clean; full `make check` backend 1758 passed/39 skipped and frontend 292 files/3071 tests. |
+| reconcile / close | Codex / GPT-5 / medium | CLOSED | QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/971#issuecomment-5860722175. No production/shared database write. |

@@ -11,6 +11,8 @@ import {
 import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
 import { formatPublicAttribution } from '../presentation/publicAttribution';
+import { fetchPublicPieceAsset } from '../api/publicPieceAssets';
+import { setActiveMediaAssetResolver } from '../render/mediaAssetResolver';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
 
@@ -93,6 +95,19 @@ function ImmersiveProject3DViewer({
       cancelled = true;
     };
   }, [id, initialProject]);
+
+  // #941: immersive 3D uses the same published asset contract as the regular
+  // viewer; this keeps the two public surfaces byte-for-byte consistent.
+  useEffect(() => {
+    if (!project) {
+      setActiveMediaAssetResolver(null);
+      return;
+    }
+    setActiveMediaAssetResolver((assetId) =>
+      fetchPublicPieceAsset('3d', project.id, assetId),
+    );
+    return () => setActiveMediaAssetResolver(null);
+  }, [project]);
 
   if (loadState === 'loading') {
     return (

@@ -123,6 +123,32 @@ paths:
         "401": { description: No authenticated session. }
         "404": { description: Unknown or foreign piece id. }
         "429": { description: Intake rate limit exceeded. }
+  /api/pieces/{kind}/{publicId}/assets/{sourceAssetId}/:
+    get:
+      tags: [Public]
+      operationId: getPublishedPieceAsset
+      summary: Read one asset retained for a published piece
+      description: Anonymous immutable media delivery. The piece must be public
+        (or a generated piece must be published); private, deleted, foreign,
+        unknown, and unsupported-kind lookups return 404.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema: { type: string, enum: [2d, 3d, generated] }
+        - name: publicId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: sourceAssetId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Asset bytes with retained MIME and immutable public cache headers. }
+        "404": { description: Piece is not published or asset is unavailable. }
   /health/:
     get:
       tags: [Health]

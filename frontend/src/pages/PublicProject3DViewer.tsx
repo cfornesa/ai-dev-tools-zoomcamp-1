@@ -11,6 +11,8 @@ import {
 import Scene3DPreview from './Scene3DPreview';
 import type { Scene3DDocument } from './scene3dTypes';
 import { applyContentMetadata } from '../metadata';
+import { fetchPublicPieceAsset } from '../api/publicPieceAssets';
+import { setActiveMediaAssetResolver } from '../render/mediaAssetResolver';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
 
@@ -106,6 +108,19 @@ function PublicProject3DViewer({
         window.location.href,
       );
     }
+  }, [project]);
+
+  // #941: resolve published 3D package media through the anonymous public
+  // asset boundary while the viewer (including embeds) is mounted.
+  useEffect(() => {
+    if (!project) {
+      setActiveMediaAssetResolver(null);
+      return;
+    }
+    setActiveMediaAssetResolver((assetId) =>
+      fetchPublicPieceAsset('3d', project.id, assetId),
+    );
+    return () => setActiveMediaAssetResolver(null);
   }, [project]);
 
   function embedSnippetFor(projectId: string): string {

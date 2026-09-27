@@ -32,12 +32,17 @@ test.describe('Local-first 2D creation (#934)', () => {
       await page.getByRole('button', { name: 'Create a new 2D project', exact: true }).click();
       await page.waitForURL(/\/local-projects\/[^/]+$/);
       await expect(page.getByRole('heading', { name: 'Untitled animation' })).toBeVisible();
-      await expect(page.getByText('Scene 1')).toBeVisible();
+      await expect(page.getByLabel('Scene', { exact: true })).toHaveValue(/.+/);
+      await expect(page.getByLabel('Scene', { exact: true }).locator('option:checked')).toHaveText(
+        'Scene 1',
+      );
       expect(serverCreateRequests).toEqual([]);
 
       await page.reload();
       await expect(page.getByRole('heading', { name: 'Untitled animation' })).toBeVisible();
-      await expect(page.getByText('Scene 1')).toBeVisible();
+      await expect(page.getByLabel('Scene', { exact: true }).locator('option:checked')).toHaveText(
+        'Scene 1',
+      );
       await page.screenshot({ path: testInfo.outputPath('local-first-2d.png'), fullPage: true });
     });
   }

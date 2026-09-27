@@ -6665,3 +6665,13 @@ open and must not be run against the stale route assumption.
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Parent implementation `175a8eb0`, resolver fix `51105db8`, and delegated browser coverage `79842414`/`cfbeab2e`; no API, schema, dependency, migration, or production-data change. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | Focused Vitest: 6 files / 124 tests passed. #924 and #925 exact Chromium scenarios each passed 2/2 at 1280px and 375px, with inspected candidate/accepted/restored screenshots and explicit local-vs-browser evidence boundaries. |
 | reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/923#issuecomment-5855081680. Parent closed after child browser evidence reconciled the delegated criteria; no deployed URL or production evidence was inferred. |
+
+## Transaction: #926 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED-N/A / QA BLOCKED / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Classified as a verification-only live-model demonstration; fake-provider implementation and browser contracts are already reconciled by #923/#924/#925. Duplicate audit found no implementation gap to open. |
+| groom | Codex / GPT-5 / medium | PASS | Retained the six-run maximum, three cases, scope-diff evidence, provider/run metadata, and no-secret boundary. |
+| engineer | N/A — verification issue | N/A | No code change is authorized or required. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution | BLOCKED | Owner has not supplied a provider credential through the app's supported settings flow; no live run was started and no quota was spent. QA record: `.local/tasks/qa-926-comment.md`. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / VERIFICATION BOUNDARY | QA comment will record the blocked criteria and preserve the issue for a future owner-authorized live-model session; no production or live-model evidence is claimed. |

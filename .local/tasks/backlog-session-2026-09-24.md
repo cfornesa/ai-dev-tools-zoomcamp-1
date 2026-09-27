@@ -6045,3 +6045,22 @@ production execution path; unrelated open issues remain routed separately.
 | groom | Codex / GPT-5 / medium | PASS | Closure contract names the shared schema, mirrored frontend/backend validators, one valid and four invalid fixture classes, 2D/3D/generated round trips, compatibility readers, exact focused commands, and no UI/endpoints/production scope. |
 | routing | Codex / GPT-5 / medium | PASS | Stage 2b complex/schema contract; implementation must keep frontend/backend validators and shared fixtures in parity. |
 | next action | — | READY | Engineer #930 as one pure package-format contract before dependent #932, #933, #935, and #936. |
+
+## Production-readiness refresh: 2026-09-26 — NOT READY
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Browser/session state | VERIFIED | Chrome process and tab are active; the local tab is unauthenticated and exposes Login, so the fixture route is unavailable without a signed-in local fixture session. No logout action was performed. |
+| #929 implementation | PASS | Closed QA PASS; full local `make check` passed. |
+| #930 readiness | OPEN | Distilled and groomed only; engineering, QA, and closure remain. |
+| Production actions | UNCHANGED | No publish, production database, secret, auth-setting, or external data action was taken in this continuation. |
+| Complete backlog readiness | OPEN | Independent open issues remain, beginning with #930 and including the authorized-but-production-blocked #788. |
+
+## Session-completion refresh: 2026-09-26
+
+This continuation completed task-distillation, reconciled the active Chrome
+evidence, closed #929 with QA PASS, and groomed #930 as the next engineering
+item. Counts for this continuation: 1 issue closed, 1 issue ready, 0 new
+issues, 0 production data actions, and 0 unresolved duplicate decisions.
+The overall goal remains active because open backlog work and #788's external
+production boundary remain.

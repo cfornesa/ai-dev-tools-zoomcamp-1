@@ -6691,10 +6691,10 @@ open and must not be run against the stale route assumption.
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
 | distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Duplicate audit found no existing child for server-backed 2D/3D/generated portable package export; created as the missing parent #935 slice. |
-| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Contract isolates existing #930 builder integration, browser-held media warnings, kind-specific server data, responsive/accessibility evidence, and no runnable-ZIP or production scope. |
-| engineer | Pending — frontend implementation | NOT STARTED | Requires a dedicated implementation pass; no code has been changed for this issue. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | SPLIT | Broad 2D/3D/generated scope violated closure atomicity. Created #966 (2D), #967 (generated), and #968 (3D); #968 is routed to complex logic because the 3D history API is absent. |
+| engineer | Pending — parent tracker | NOT STARTED | No code changed under the broad parent; children are the implementation units. |
 | qa-self-review | Pending | NOT STARTED | No diff exists. |
-| reconcile / close | Pending | OPEN | Child issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/965. |
+| reconcile / close | Pending | OPEN / PARENT TRACKER | Children: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/966, https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/967, https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/968. |
 
 ## Dependency audit: #937–#940, #945–#946 — 2026-09-27 — DISTILLED / BLOCKED / OPEN
 

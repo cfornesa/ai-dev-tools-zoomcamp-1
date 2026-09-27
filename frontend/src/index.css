@@ -7145,9 +7145,9 @@ select.ai-proposal-field-full-width {
 }
 
 .generated-ink-preview-controls {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  align-items: stretch;
   gap: 0.75rem;
   width: 100%;
   box-sizing: border-box;
@@ -7160,6 +7160,8 @@ select.ai-proposal-field-full-width {
 .generated-ink-preview-controls .generated-ink-mode,
 .generated-ink-preview-controls .editor-sound-details {
   margin: 0;
+  min-width: 0;
+  width: 100%;
 }
 
 .generated-ink-preview-controls .editor-sound-details {
@@ -7169,6 +7171,8 @@ select.ai-proposal-field-full-width {
 .generated-ink-preview-controls .editor-sound-details > summary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   min-height: 2.75rem;
   box-sizing: border-box;
   padding: 0.35rem 0.65rem;
@@ -7182,10 +7186,12 @@ select.ai-proposal-field-full-width {
 }
 
 .generated-ink-color-control {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   min-height: 2.75rem;
+  width: 100%;
 }
 
 .generated-ink-color-control input[type='color'] {
@@ -7195,6 +7201,7 @@ select.ai-proposal-field-full-width {
 }
 
 .generated-ink-mode button {
+  flex: 1 1 0;
   border: 1px solid currentColor;
   border-radius: 0.35rem;
   padding: 0.35rem 0.65rem;
@@ -7778,15 +7785,17 @@ select.ai-proposal-field-full-width {
 
 @media (max-width: 767px) {
   .generated-ink-preview-controls {
-    align-items: stretch;
+    grid-template-columns: 1fr;
   }
 
   .generated-ink-preview-controls > * {
+    width: 100%;
     max-width: 100%;
   }
 
   .generated-ink-preview-controls .generated-ink-mode {
     width: 100%;
+    display: flex;
   }
 
   .generated-ink-preview-controls .generated-ink-mode button {

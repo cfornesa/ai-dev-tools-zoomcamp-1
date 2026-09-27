@@ -198,11 +198,14 @@ class ArtPieceResult:
 class ArtPieceRefineResult:
     usage: AIUsageMetadata
     edits: list[dict[str, str]] | None = None
+    ink: dict[str, Any] | None = None
     error: str | None = None
 
     def __post_init__(self) -> None:
-        if (self.edits is None) == (self.error is None):
-            raise ValueError("ArtPieceRefineResult must carry exactly one of `edits` or `error`.")
+        if sum(value is not None for value in (self.edits, self.ink, self.error)) != 1:
+            raise ValueError(
+                "ArtPieceRefineResult must carry exactly one of `edits`, `ink`, or `error`."
+            )
 
 
 class ArtPieceProvider:
@@ -431,7 +434,13 @@ class ArtPieceProvider:
         return ArtPieceResult(usage=usage, code=snippet, regions=regions, warnings=warnings)
 
     def refine(
-        self, instruction: str, source: str, library: str, target_references: list[str]
+        self,
+        instruction: str,
+        source: str,
+        library: str,
+        target_references: list[str],
+        *,
+        ink_document: dict[str, Any] | None = None,
     ) -> ArtPieceRefineResult:
         """Return bounded find/replace edits for an existing source."""
         zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
@@ -444,6 +453,7 @@ class ArtPieceProvider:
                 "engine": library,
                 "target_references": target_references,
                 "current_source": source,
+                "current_ink": ink_document,
             },
             ensure_ascii=False,
         )
@@ -481,12 +491,21 @@ class ArtPieceProvider:
         try:
             content = self._response_content(response)
             payload = json.loads(content if isinstance(content, str) else str(content))
+            if "ink" in payload:
+                ink = payload["ink"]
+                if not isinstance(ink, dict):
+                    raise ValueError
+                return ArtPieceRefineResult(usage=usage, ink=ink)
             edits = payload["edits"]
-            if not isinstance(edits, list) or not all(
-                isinstance(edit, dict)
-                and isinstance(edit.get("search"), str)
-                and isinstance(edit.get("replace"), str)
-                for edit in edits
+            if (
+                not isinstance(edits, list)
+                or not edits
+                or not all(
+                    isinstance(edit, dict)
+                    and isinstance(edit.get("search"), str)
+                    and isinstance(edit.get("replace"), str)
+                    for edit in edits
+                )
             ):
                 raise ValueError
         except (AttributeError, IndexError, TypeError, KeyError, ValueError, json.JSONDecodeError):

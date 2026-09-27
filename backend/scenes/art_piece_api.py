@@ -272,13 +272,22 @@ def get_art_piece_provider() -> ArtPieceProvider:
                     code=code,
                 )
 
-            def refine(self, instruction, source, library, target_references):
+            def refine(self, instruction, source, library, target_references, *, ink_document=None):
                 # Keep the fake refinement deterministic but observable.  These
                 # tokens are present in the fake generator's fixture for each
                 # engine, and each replacement remains valid source for that
                 # engine.  Returning the old source unchanged made it
                 # impossible for browser evidence to prove that an accepted
                 # AI refinement reached the stored version.
+                if ink_document is not None:
+                    updated_ink = dict(ink_document)
+                    updated_ink["background"] = "#e76f51"
+                    return ArtPieceRefineResult(
+                        usage=AIUsageMetadata(
+                            prompt_tokens=10, completion_tokens=20, estimated_cost_usd=0.0001
+                        ),
+                        ink=updated_ink,
+                    )
                 fake_refinement = {
                     "canvas2d": ("teal", "#e76f51"),
                     "svg": ("teal", "#e76f51"),

@@ -23,7 +23,7 @@ class _Provider:
         self.calls = 0
         self.instructions = []
 
-    def refine(self, instruction, source, library, target_references):
+    def refine(self, instruction, source, library, target_references, *, ink_document=None):
         self.calls += 1
         self.instructions.append(instruction)
         return self.results.pop(0)
@@ -58,6 +58,10 @@ def piece(owner):
 
 def _result(search, replace):
     return ArtPieceRefineResult(usage=USAGE, edits=[{"search": search, "replace": replace}])
+
+
+def _ink_result(document):
+    return ArtPieceRefineResult(usage=USAGE, ink=document)
 
 
 @pytest.mark.django_db
@@ -114,6 +118,79 @@ def test_refine_resolves_region_and_ink_mentions_before_provider_call(monkeypatc
     assert provider.calls == 1
     assert '"kind": "region"' in provider.instructions[0]
     assert '"kind": "ink"' in provider.instructions[0]
+
+
+@pytest.mark.django_db
+def test_ink_refine_preserves_source_and_updates_only_ink(monkeypatch, owner):
+    source = '<svg><rect id="background" width="100" height="100" fill="teal"/></svg>'
+    previous_ink = {"width": 16, "height": 16, "shapes": []}
+    next_ink = {
+        "width": 16,
+        "height": 16,
+        "shapes": [{"id": "ink-1", "type": "rect", "x": 1, "y": 1, "width": 4, "height": 4}],
+    }
+    piece = ArtPiece.objects.create(owner=owner, prompt="svg", engine=ArtPiece.Engine.SVG)
+    version = ArtPieceVersion.objects.create(
+        piece=piece,
+        sequence=1,
+        source=source,
+        generation_metadata={"ink": previous_ink},
+    )
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+    provider = _Provider([_ink_result(next_ink)])
+    monkeypatch.setattr(art_piece_refine, "_provider_for_user", lambda *args: provider)
+
+    client = APIClient()
+    client.force_authenticate(owner)
+    response = client.post(
+        f"/api/art-pieces/{piece.public_id}/refine/",
+        {
+            "instruction": "change the ink layer",
+            "mentions": [{"kind": "ink", "id": "ink"}],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "accepted"
+    piece.refresh_from_db()
+    assert piece.current_version.source == source
+    assert piece.current_version.generation_metadata["ink"] == next_ink
+    assert piece.versions.count() == 2
+
+
+@pytest.mark.django_db
+def test_ink_refine_rejects_source_edits_without_creating_version(monkeypatch, owner):
+    source = '<svg><rect id="background" width="100" height="100" fill="teal"/></svg>'
+    piece = ArtPiece.objects.create(owner=owner, prompt="svg", engine=ArtPiece.Engine.SVG)
+    version = ArtPieceVersion.objects.create(
+        piece=piece,
+        sequence=1,
+        source=source,
+        generation_metadata={"ink": {"width": 16, "height": 16, "shapes": []}},
+    )
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+    provider = _Provider([_result("teal", "#e76f51")])
+    monkeypatch.setattr(art_piece_refine, "_provider_for_user", lambda *args: provider)
+
+    client = APIClient()
+    client.force_authenticate(owner)
+    response = client.post(
+        f"/api/art-pieces/{piece.public_id}/refine/",
+        {
+            "instruction": "change the ink color",
+            "mentions": [{"kind": "ink", "id": "ink"}],
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "failed"
+    piece.refresh_from_db()
+    assert piece.current_version.source == source
+    assert piece.versions.count() == 1
 
 
 def test_same_line_svg_elements_preserve_unmentioned_sibling():

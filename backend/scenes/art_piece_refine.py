@@ -29,7 +29,7 @@ from scenes.art_piece_api import (
 from scenes.art_piece_persistence import _piece_or_404, regenerate_thumbnail
 from scenes.art_piece_validation import validate_art_piece_source
 from scenes.entitlements import get_effective_cap, is_unlimited
-from scenes.ink_document import metadata_with_inherited_ink
+from scenes.ink_document import metadata_with_inherited_ink, validate_ink_document
 from scenes.models import AIRetryPreference, ArtPiece, ArtPieceRefineRun, ArtPieceVersion
 from scenes.permissions import Action, can
 
@@ -327,7 +327,16 @@ def refine_art_piece(
         vendor_token = _current_ai_vendor.set(vendor)
         try:
             provider = _provider_for_user(owner, model or None)
-            result = provider.refine(prompt, source, piece.engine, target_references)
+            ink_target = next(
+                (mention for mention in resolved_mentions if mention["kind"] == "ink"), None
+            )
+            result = provider.refine(
+                prompt,
+                source,
+                piece.engine,
+                target_references,
+                ink_document=ink_target["document"] if ink_target else None,
+            )
         except Exception as exc:
             result = None
             feedback = str(exc)
@@ -340,15 +349,35 @@ def refine_art_piece(
             if result.error is None:
                 run.edits = result.edits or []
                 try:
-                    candidate = _apply_edits(source, result.edits)
-                    enforce_preservation(
-                        engine=piece.engine,
-                        before=source,
-                        after=candidate,
-                        instruction=instruction,
-                        mentions=mentions or [],
-                    )
-                    candidate = validate_art_piece_source(piece.engine, candidate)
+                    if ink_target:
+                        if result.ink is None or result.edits is not None:
+                            raise ValueError(
+                                "Ink-targeted refinements must return an ink document."
+                            )
+                        ink_problems = validate_ink_document(result.ink)
+                        if ink_problems:
+                            raise ValueError(f"Invalid ink document: {'; '.join(ink_problems)}")
+                        candidate = source
+                        candidate_metadata = metadata_with_inherited_ink(
+                            source_version.generation_metadata,
+                            {"ink": result.ink, "refine_run_id": run.pk},
+                        )
+                    else:
+                        if result.edits is None or result.ink is not None:
+                            raise ValueError("Source refinements must return source edits.")
+                        candidate = _apply_edits(source, result.edits)
+                        enforce_preservation(
+                            engine=piece.engine,
+                            before=source,
+                            after=candidate,
+                            instruction=instruction,
+                            mentions=mentions or [],
+                        )
+                        candidate = validate_art_piece_source(piece.engine, candidate)
+                        candidate_metadata = metadata_with_inherited_ink(
+                            source_version.generation_metadata,
+                            {"refine_run_id": run.pk},
+                        )
                 except (ValueError, serializers.ValidationError) as exc:
                     feedback = str(exc)
                 else:
@@ -370,10 +399,7 @@ def refine_art_piece(
                                 sequence=next_sequence,
                                 source=candidate,
                                 capabilities=source_version.capabilities,
-                                generation_metadata=metadata_with_inherited_ink(
-                                    source_version.generation_metadata,
-                                    {"refine_run_id": run.pk},
-                                ),
+                                generation_metadata=candidate_metadata,
                             )
                             locked_piece.current_version = version
                             locked_piece.save(update_fields=["current_version", "updated_at"])

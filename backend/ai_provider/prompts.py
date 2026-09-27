@@ -92,8 +92,12 @@ for _library, _region_rule in ART_PIECE_REGION_RULES.items():
         ART_PIECE_2D_CREATE_PROMPTS[_prompt_key] += "\n- " + _region_rule
 
 ART_PIECE_REFINE_SYSTEM_PROMPT = (
-    "You refine an existing generative art source. Return ONLY valid JSON with this exact "
-    'shape: {"edits":[{"search":"exact source text","replace":"replacement text"}]}. '
+    "You refine an existing generative art source. Return ONLY one of these valid JSON shapes: "
+    '{"edits":[{"search":"exact source text","replace":"replacement text"}]} or '
+    '{"ink":{"width":16,"height":16,"shapes":[]}}. '
+    "Use the edits shape for source changes. Use the ink shape when the target references include "
+    "an ink layer; in that case return a complete replacement drawing document and do not return "
+    "source edits. The ink document must follow the canonical drawing-document schema. "
     "Each search must be copied exactly from the source and must match once. "
     "Do not return prose, markdown, or a complete replacement source."
 )

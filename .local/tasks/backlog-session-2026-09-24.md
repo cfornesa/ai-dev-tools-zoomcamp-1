@@ -6544,3 +6544,19 @@ evidence for #921's ink criterion, not a logout failure and not a Playwright
 result. The next action is to reconcile the fixture/scenario's expected source
 color before closure; the exact Playwright command remains blocked separately
 by the macOS MachPort launch permission failure.
+
+## Transaction: #961 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #921's live Chrome reproduction showed that an `@ink` target incorrectly changed SVG source. Duplicate audit separated the data contract from #921's browser-verification scope; new issue #961 created and linked. |
+| groom | Codex / GPT-5 / medium | PASS | Contract requires ink-targeted results to return a complete schema-validated drawing document, preserve source bytes, reject source edits for ink targets, preserve source-only behavior, and avoid migrations/dependencies. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution for rostered Ollama Cloud kimi-k3 | PASS | Extended `ArtPieceRefineResult`/provider JSON contract, passed current ink to the provider, validated ink documents, and stored immutable versions with unchanged source plus updated ink metadata. Added focused regression coverage and updated the deterministic local fake. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with active Chrome | PASS | Focused 82-test run, full `make check`, normal-click Chrome verification at 1280x900 and 375x812, and direct disposable-DB source-equality/ink-difference check. Exact Playwright remains host-blocked before setup by macOS Chrome MachPort EPERM. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/961#issuecomment-5854146403. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #961 closed after the criterion matrix. No production or deployed-URL evidence was inferred. #921 remains open for its parent verification boundary; #962 and #963 are queued UI follow-ups. |
+
+### Distillation refresh after #961 — 2026-09-27
+
+#962 owns the full-width editable-source textarea and right-aligned Undo/Redo
+row. #963 owns the broader refine-card and preview-control grouping reported by
+the latest screenshots. #962 is the next issue; #963 remains queued behind it.

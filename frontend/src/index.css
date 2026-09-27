@@ -6346,6 +6346,10 @@ select.ai-proposal-field-full-width {
   min-height: 2.75rem;
 }
 
+.editor-piece-stage-toolbar .editor-stage-text-actions button:disabled {
+  pointer-events: none;
+}
+
 .editor-save-control {
   display: inline-flex;
   align-items: center;

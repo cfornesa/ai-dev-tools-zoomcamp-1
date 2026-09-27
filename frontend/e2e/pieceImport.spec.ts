@@ -18,7 +18,7 @@ async function readLocalSnapshot(page: import('@playwright/test').Page, projectI
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
-    const read = <T>(store: string, key?: IDBValidKey) =>
+    const read = <T>(store: string, key: IDBValidKey) =>
       new Promise<T>((resolve, reject) => {
         const request = db.transaction(store, 'readonly').objectStore(store).get(key);
         request.onsuccess = () => resolve(request.result as T);

@@ -100,6 +100,22 @@ criteria remain incomplete.
 No production command, publish, restart, secret, environment setting,
 migration, or production data mutation was performed during this refresh.
 
+## Reassessment after #937 implementation QA — 2026-09-27
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Local deployment and repository quality | PASS | `make check` passed: backend 1752 passed/39 skipped; frontend 289 files/3065 tests; lint reported only existing warnings. |
+| Approved browser verification | PASS for #937 local-first flow | Rebuilt repository Compose stack; `E2E_DOCKER_COMPOSE=true npx playwright test e2e/localFirstCreate3d.spec.ts --project=chromium` passed 2/2 at 1280x900 and 375x812. |
+| Intended functionality | OPEN FOLLOW-UP | #937’s local-first create/save/reload contract is QA-passed; broader 3D parity and dependent #938–#940 work remain open and are not silently closed by this run. |
+| Replit publication | BLOCKED | The reviewed mode-aware wrapper is present locally, but the required `GIT_URL` credential is absent from this environment. Safe push and Replit Publish were not attempted. |
+| Production data action | BLOCKED | #788 still requires wrapper publication, then preview → snapshot → one write → live verification. No production command or row mutation occurred. |
+
+Readiness remains `BLOCKED`. The exact next action is for the owner to make
+the authorized safe-push credential available to the repository execution
+environment without pasting it into chat; then run `GIT_URL=... make
+git-safe-push`, publish through Replit, run the published smoke check, and
+resume #788’s guarded production workflow.
+
 ## Reassessment after #788 QA transaction — 2026-09-27
 
 The latest per-issue QA record is

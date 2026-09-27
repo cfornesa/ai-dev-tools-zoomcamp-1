@@ -108,3 +108,27 @@ project remains open because the 24 issue inventory contains unresolved
 owner, dependency, live-provider, hardware, architecture, and production
 boundaries. The live GitHub inventory was re-counted at 25 open issues; the
 earlier count of 24 was stale and is corrected here.
+
+## Session continuation after #937 QA — 2026-09-27
+
+| Rollup | Result |
+|---|---|
+| #937 | QA PASS for the implemented local-first create/save/reload flow; OPEN for its broader dependency chain and production boundary. Issue comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/937#issuecomment-5858720482 |
+| Repository checks | PASS — `make check`; backend 1752 passed/39 skipped, frontend 289 files/3065 tests. |
+| Browser checks | PASS — rebuilt Compose Chromium, 2/2 at 1280x900 and 375x812. |
+| #788 | OPEN / BLOCKED — reviewed production wrapper awaits safe push and Replit publication; no data action attempted. |
+| Production readiness | BLOCKED — local/Compose evidence is separated from production evidence; no deployment claim made. |
+
+Routing audit: distill, groom, engineering, QA, readiness, and completion are
+Codex/GPT-5/medium substitutions where the rostered external service was not
+available; independent stage-3 review was not run or credited. The exact
+service/model/effort records for #937 are in the backlog ledger. No actionable
+new gap was discovered outside existing #937/#788 ownership, so no duplicate
+issue was created.
+
+Final blocker and handoff: `GIT_URL` is not present in the execution
+environment. The owner must provide it through the approved secure runtime
+channel (not chat) before the authorized safe push and Replit Publish can be
+performed. After publish, run the wrapper preview, snapshot affected C2
+sources, perform the one guarded write, and complete live 1280x900/375x812
+verification before any #788 closure.

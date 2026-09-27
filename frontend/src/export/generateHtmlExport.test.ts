@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import JSZip from 'jszip';
 
 import type { SceneDocument } from '../api/projects';
 import { MEDIAPIPE_TASKS_VISION_VERSION as PROVIDER_MEDIAPIPE_VERSION } from '../tracking/mediapipeProvider';
@@ -8,6 +9,7 @@ import {
   EXPORT_TOOL_VERSION,
   checkExportBlockingReasons,
   generateHtmlExport,
+  generateHtmlExportZip,
   P5_CDN_URL,
   P5_VERSION,
   type GenerateHtmlExportInput,
@@ -830,5 +832,29 @@ describe('generateHtmlExport: inline icon-only stage toolbar (#761)', () => {
     expect(result.html).toContain('@media (hover: hover) and (pointer: fine)');
     // The screenshot lookup must never pick a toolbar icon over the artwork.
     expect(result.html).toContain("host.querySelector('canvas, svg:not(.piece-stage-icon)')");
+  });
+});
+
+describe('generateHtmlExportZip: public media bundle (#941)', () => {
+  it('includes the runnable HTML and fetched media bytes', async () => {
+    const assetBytes = new Uint8Array([1, 2, 3]);
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(assetBytes, { status: 200 }),
+    );
+    const result = await generateHtmlExportZip({
+      ...baseInput(),
+      mediaAssets: { 'asset-1': 'data:image/png;base64,AQID' },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const zip = await JSZip.loadAsync(result.zipBlob);
+    expect(Object.keys(zip.files).filter((name) => !zip.files[name].dir).sort()).toEqual([
+      'assets/asset-1',
+      'index.html',
+    ]);
+    expect(await zip.file('assets/asset-1')!.async('uint8array')).toEqual(assetBytes);
+    expect((await zip.file('index.html')!.async('string'))).toContain('media-assets');
+    expect(fetchMock).toHaveBeenCalledWith('data:image/png;base64,AQID');
+    fetchMock.mockRestore();
   });
 });

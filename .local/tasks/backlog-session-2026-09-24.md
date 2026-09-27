@@ -6533,3 +6533,14 @@ Chromium MachPort failure is a verification boundary; it does not authorize
 rewriting the already-covered implementation or closing browser criteria on
 synthetic events. Production issues #788/#906 and owner-choice #886 remain
 separately blocked and are not pulled into this local implementation pass.
+
+### Live Chrome refresh after #923 — 2026-09-27
+
+The active Chrome extension tab is available and authenticated (`Logout` is
+visible). A normal click on the `@ink` refine flow reached the refinement
+plan, but the disposable SVG fixture failed with `Edit search must match
+exactly once: 'teal'.` and remained at version 1. This is concrete open
+evidence for #921's ink criterion, not a logout failure and not a Playwright
+result. The next action is to reconcile the fixture/scenario's expected source
+color before closure; the exact Playwright command remains blocked separately
+by the macOS MachPort launch permission failure.

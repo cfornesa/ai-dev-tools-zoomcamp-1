@@ -6141,14 +6141,25 @@ closed, 0 issues ready, 0 new issues, 0 production data actions, and 0
 unresolved duplicate decisions. The overall goal remains active because open
 backlog work remains, beginning with #934, and #788 is still production-blocked.
 
-## Transaction: #934 — 2026-09-26 — DISTILLED / GROOMED / ENGINEERING PENDING
+## Transaction: #934 — 2026-09-26 — DISTILLED / GROOMED / QA FAIL / OPEN
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
 | distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #934 is the next dependency-ready issue after #933. Duplicate search found no separate local-first 2D creation issue; #935/#936/#942/#943 remain distinct dependent transfer/artifact contracts. Current Chrome evidence is browser-available but app-session unauthenticated; this is not a product blocker for local implementation, and no logout was performed. |
 | groom | Codex / GPT-5 / medium | PASS | Existing issue is criterion-ready: `/create` and gallery creation entry points, local IndexedDB persistence, `/local-projects/:id` reload, local gallery badge, server-route compatibility, signed-out policy, exact Vitest/Playwright/full-check commands, and explicit 3D/generated/sync exclusions. Routing: Stage 2a unless repository changes require Stage 2b. |
-| routing | pending | — | Engineering handoff next. |
-| engineer | pending | — | — |
-| qa-self-review | pending | — | — |
+| routing | Codex / GPT-5 / medium | PASS | Frontend/local IndexedDB implementation; browser coverage was added. Rostered implementation-mechanical service was unavailable, so Codex substitution was used. |
+| engineer | Codex / GPT-5 / medium; rostered implementation-mechanical service substituted | PASS | Commits `219718c7`, `582fcef5`: 2D creation now writes an IndexedDB project/scene and opens `/local-projects/:id`; gallery lists local-only projects; focused browser coverage added for 1280x900 and 375x812. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | FAIL | QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/934#issuecomment-5852155855`; local checks and `make check` pass, but Playwright against the reachable stack served stale pre-implementation Vite code, and bundled Chromium first hit a macOS sandbox launch failure. |
 | production-readiness | pending | — | — |
+| reconcile / close | Codex / GPT-5 / medium | OPEN | Keep #934 open. Restart/repoint the stack to commit `582fcef5`, rerun the exact browser scenario, and resolve dependent template-local criterion via #955. |
+
+## Transaction: #955 — 2026-09-26 — DISTILLED / GROOMED / DEPENDENCY-BLOCKED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | New gap discovered during #934: template creation still calls server clone and the template listing lacks a validated scene transfer payload. Duplicate search found no existing issue covering local-only template transfer; linked dependency #934. |
+| groom | Codex / GPT-5 / medium | PASS | Issue `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/955` is criterion-ready with authenticated template detail/transfer, IndexedDB atomic creation, unauthorized-template rejection, backward compatibility, focused tests, and 1280x900/375x812 browser coverage. Routing: Stage 2b complex. |
+| routing | Codex / GPT-5 / medium | PASS | Authenticated API authorization, validated scene payload transfer, and local persistence require complex routing. |
+| engineer | pending | BLOCKED | Wait for #934 reconciliation; do not engineer the dependent template transfer before the local-first base route is browser-verified. |
+| qa-self-review | pending | — | — |
 | reconcile / close | pending | — | — |

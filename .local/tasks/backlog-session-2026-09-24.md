@@ -6249,3 +6249,25 @@ cannot be engineered until the owner selects its delivery option.
 | engineer | pending | — | — |
 | qa-self-review | pending | — | — |
 | reconcile / close | pending | — | — |
+
+## Distillation refresh: 2026-09-27 — next independent microphone transaction
+
+The active Chrome session is confirmed running with the local editor tab still
+open. Its current accessibility state shows `Login` and “This art piece isn’t
+available.”; this is an unauthenticated app state, not evidence that Chrome
+was logged out by this session. #941 remains next in local-first stream G, but
+microphone stream E has an independent dependency-ready verification slice:
+#916. Its prerequisite #909 is closed; #911 remains correctly blocked until
+#916's audio-flow harness is terminal. Duplicate audit found no replacement
+for #916.
+
+## Transaction: #916 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERING PENDING
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #916 is a closure-sized hardware-independent audio-flow harness and acceptance-boundary documentation issue; it does not implement microphone routing or UI. |
+| groom | Codex / GPT-5 / medium | PASS | Existing issue is criterion-ready: six named mic×camera×steer cases, mutation-sensitive analyser evidence, real-hardware checklist, memory update, exact Vitest/Playwright/full-check commands, and owner-run hardware explicitly out of scope. |
+| routing | Codex / GPT-5 / medium | PASS | Stage 2b test infrastructure because it adds a shared browser audio analyser harness and matrix semantics; rostered implementation-complex service substitution will be recorded if engineering proceeds. |
+| engineer | pending | — | — |
+| qa-self-review | pending | — | — |
+| reconcile / close | pending | — | — |

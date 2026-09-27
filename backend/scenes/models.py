@@ -1148,6 +1148,7 @@ class CloudBackupProject(models.Model):
 
     project = models.OneToOneField(Project, on_delete=models.CASCADE, related_name="cloud_backup")
     enabled = models.BooleanField(default=False)
+    account_inherited = models.BooleanField(default=False)
     paused = models.BooleanField(default=False)
     read_only = models.BooleanField(default=False)
     retention_state = models.CharField(

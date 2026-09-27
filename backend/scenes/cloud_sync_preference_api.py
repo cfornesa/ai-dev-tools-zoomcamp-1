@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.admin_settings import get_site_settings
+from scenes.cloud_backup import pause_inherited_backups
 from scenes.entitlements import resolve_effective_capabilities
 from scenes.models import CloudSyncPreference, CloudSyncSignupConsent
 
@@ -85,6 +86,7 @@ class AccountCloudSyncView(APIView):
             preference.consent_text = CONSENT_TEXT
             preference.consented_at = timezone.now()
         preference.save()
+        paused_inherited = pause_inherited_backups(request.user) if not enabled else 0
         return Response(
             {
                 **eligibility,
@@ -94,5 +96,6 @@ class AccountCloudSyncView(APIView):
                 "consent_text": CONSENT_TEXT,
                 "existing_local_pieces_offered_by": "#943",
                 "retention_days_after_disable": 30,
+                "paused_inherited_backups": paused_inherited,
             }
         )

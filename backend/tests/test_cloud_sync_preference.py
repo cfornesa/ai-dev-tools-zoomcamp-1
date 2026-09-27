@@ -5,10 +5,12 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from scenes.models import (
+    CloudBackupProject,
     CloudSyncPreference,
     CloudSyncSignupConsent,
     GlobalCapabilitySetting,
     Plan,
+    Project,
     SiteSettings,
 )
 
@@ -85,3 +87,29 @@ def test_site_gate_explains_disabled_reason(client, user):
         ).status_code
         == 403
     )
+
+
+@pytest.mark.django_db
+def test_disabling_pauses_only_account_inherited_backups(client, user):
+    inherited_project = Project.objects.create(owner=user, title="Inherited")
+    explicit_project = Project.objects.create(owner=user, title="Explicit")
+    CloudBackupProject.objects.create(
+        project=inherited_project, enabled=True, account_inherited=True
+    )
+    CloudBackupProject.objects.create(
+        project=explicit_project, enabled=True, account_inherited=False
+    )
+    CloudSyncPreference.objects.create(owner=user, enabled=True)
+    client.force_login(user)
+
+    response = client.put(
+        reverse("account-cloud-sync"), {"enabled": False}, content_type="application/json"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["paused_inherited_backups"] == 1
+    inherited = CloudBackupProject.objects.get(project=inherited_project)
+    explicit = CloudBackupProject.objects.get(project=explicit_project)
+    assert inherited.paused is True
+    assert inherited.retention_state == CloudBackupProject.RetentionState.SYNC_DISABLED
+    assert explicit.paused is False

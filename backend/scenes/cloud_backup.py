@@ -204,6 +204,23 @@ def pause_backup(user, project: Project) -> CloudBackupProject:
     return backup
 
 
+@transaction.atomic
+def pause_inherited_backups(user) -> int:
+    """Pause only backups enabled through the account-level preference (#940)."""
+    if not get_site_settings().cloud_sync_enabled:
+        return 0
+    policy = CloudRetentionPolicy.objects.select_for_update().get(pk=1)
+    retain_until = timezone.now() + timedelta(days=policy.disabled_sync_grace_days)
+    return CloudBackupProject.objects.filter(
+        project__owner=user, account_inherited=True, enabled=True, paused=False
+    ).update(
+        paused=True,
+        retention_state=CloudBackupProject.RetentionState.SYNC_DISABLED,
+        retain_until=retain_until,
+        updated_at=timezone.now(),
+    )
+
+
 def get_backup(user, project: Project) -> CloudBackupProject:
     _enabled()
     _owned(user, project, Action.CLOUD_BACKUP_READ)

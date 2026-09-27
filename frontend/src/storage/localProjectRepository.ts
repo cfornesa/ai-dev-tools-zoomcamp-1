@@ -201,6 +201,10 @@ export type LocalProjectRecord = {
   kind?: LocalPieceKind;
   versionOrder?: string[];
   currentVersionId?: string | null;
+  /** Set only after the explicit account-sync intake is server-verified. */
+  cloudSyncState?: 'local' | 'syncing' | 'synced' | 'failed';
+  remotePublicId?: string | null;
+  remoteVersion?: number | null;
 };
 
 export type LocalPieceKind = '2d' | '3d' | 'generated';
@@ -674,7 +678,17 @@ export async function updateProject(
   db: IDBDatabase,
   ownerId: string,
   projectId: string,
-  patch: Partial<Pick<LocalProjectRecord, 'title' | 'sceneOrder' | 'activeSceneId'>>,
+  patch: Partial<
+    Pick<
+      LocalProjectRecord,
+      | 'title'
+      | 'sceneOrder'
+      | 'activeSceneId'
+      | 'cloudSyncState'
+      | 'remotePublicId'
+      | 'remoteVersion'
+    >
+  >,
 ): Promise<LocalProjectRecord> {
   const existing = await getProject(db, ownerId, projectId);
   if (!existing) {

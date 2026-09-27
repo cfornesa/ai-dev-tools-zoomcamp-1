@@ -43,6 +43,7 @@ import {
 } from '../storage/mediaTransferRepository';
 import { resumeMediaTransfer, type MediaTransferRecord } from '../storage/mediaTransfer';
 import LocalProject3DWorkspace from './LocalProject3DWorkspace';
+import LocalCloudSyncControl from './LocalCloudSyncControl';
 
 type LocalEditorState = 'loading' | 'ready' | 'missing' | 'error';
 
@@ -540,6 +541,7 @@ function LocalEditorWorkspace() {
 
   return (
     <section className="content-panel" aria-label="Local project editor">
+      <LocalCloudSyncControl project={project} />
       <p>
         <Link to="/account/settings/storage" onClick={handleBack}>
           ← Local storage

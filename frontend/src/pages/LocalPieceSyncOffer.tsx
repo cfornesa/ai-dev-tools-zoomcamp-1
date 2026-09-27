@@ -9,6 +9,7 @@ import {
   getProjectStorageUsage,
   listProjectsForOwner,
   openLocalProjectDatabase,
+  updateProject,
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
 
@@ -107,51 +108,78 @@ export default function LocalPieceSyncOffer() {
 
   if (auth.status !== 'signed-in' || !eligible) return null;
 
+  async function uploadOne(db: IDBDatabase, row: PieceRow) {
+    try {
+      const built = await buildLocalPiecePackage(db, ownerId!, row.project.id);
+      if (built.missingAssets.length > 0)
+        throw new Error('Missing local media; export or repair it before uploading.');
+      const estimate = await fetchStorageEstimate({
+        pieceBytes: built.bytes.byteLength,
+        mediaBytes: row.mediaBytes,
+        pieceFiles: 1,
+        mediaFiles: row.files,
+      });
+      if (!estimate.fits.private) {
+        setResults((current) => ({
+          ...current,
+          [row.project.id]: {
+            state: 'over-quota',
+            detail: `Over quota; ${formatBytes(Math.max(estimate.remaining_after.private.bytes, 0))} remains.`,
+          },
+        }));
+        return;
+      }
+      const intake = await intakePiecePackage(
+        built.bytes,
+        `local-sync-${row.project.id}-${row.project.updatedAt}`,
+      );
+      const syncedProject = await updateProject(db, ownerId!, row.project.id, {
+        cloudSyncState: 'synced',
+        remotePublicId: intake.public_id,
+        remoteVersion: intake.version,
+      });
+      setRows((current) =>
+        current.map((item) =>
+          item.project.id === row.project.id ? { ...item, project: syncedProject } : item,
+        ),
+      );
+      setResults((current) => ({
+        ...current,
+        [row.project.id]: {
+          state: 'uploaded',
+          detail: `Uploaded and verified (version ${intake.version}).`,
+        },
+      }));
+    } catch (error) {
+      setResults((current) => ({
+        ...current,
+        [row.project.id]: {
+          state: 'failed',
+          detail: error instanceof Error ? error.message : 'Upload failed.',
+        },
+      }));
+    }
+  }
+
   async function uploadSelected() {
     if (!enabled || selectedRows.length === 0) return;
     setBusy(true);
     setMessage(null);
     const db = await openLocalProjectDatabase();
     try {
-      for (const row of selectedRows) {
-        try {
-          const built = await buildLocalPiecePackage(db, ownerId!, row.project.id);
-          if (built.missingAssets.length > 0)
-            throw new Error('Missing local media; export or repair it before uploading.');
-          const estimate = await fetchStorageEstimate({
-            pieceBytes: built.bytes.byteLength,
-            mediaBytes: row.mediaBytes,
-            pieceFiles: 1,
-            mediaFiles: row.files,
-          });
-          if (!estimate.fits.private) {
-            setResults((current) => ({
-              ...current,
-              [row.project.id]: {
-                state: 'over-quota',
-                detail: `Over quota; ${formatBytes(Math.max(estimate.remaining_after.private.bytes, 0))} remains.`,
-              },
-            }));
-            continue;
-          }
-          await intakePiecePackage(
-            built.bytes,
-            `local-sync-${row.project.id}-${row.project.updatedAt}`,
-          );
-          setResults((current) => ({
-            ...current,
-            [row.project.id]: { state: 'uploaded', detail: 'Uploaded and verified.' },
-          }));
-        } catch (error) {
-          setResults((current) => ({
-            ...current,
-            [row.project.id]: {
-              state: 'failed',
-              detail: error instanceof Error ? error.message : 'Upload failed.',
-            },
-          }));
-        }
-      }
+      for (const row of selectedRows) await uploadOne(db, row);
+    } finally {
+      db.close();
+      setBusy(false);
+    }
+  }
+
+  async function retryOne(row: PieceRow) {
+    if (!enabled) return;
+    setBusy(true);
+    const db = await openLocalProjectDatabase();
+    try {
+      await uploadOne(db, row);
     } finally {
       db.close();
       setBusy(false);
@@ -201,6 +229,12 @@ export default function LocalPieceSyncOffer() {
                 </label>
                 {results[row.project.id] && (
                   <span role="status"> — {results[row.project.id].detail}</span>
+                )}
+                {(results[row.project.id]?.state === 'failed' ||
+                  results[row.project.id]?.state === 'over-quota') && (
+                  <button type="button" onClick={() => void retryOne(row)} disabled={busy}>
+                    Retry
+                  </button>
                 )}
               </li>
             ))}

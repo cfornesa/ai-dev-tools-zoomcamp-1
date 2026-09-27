@@ -6795,3 +6795,23 @@ The next backlog-session transaction remains **#788**, but it cannot enter a
 write stage until a supported production preview path exists. No production
 command, publish, secret, migration, environment setting, or data mutation was
 performed in this refresh.
+
+## Transaction: #935 — 2026-09-27 — DISTILLED / GROOMED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Parent export contract re-read after #930/#934 and children #956/#966/#967/#968 closed; no duplicate or scope expansion. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Parent criterion matrix narrowed to child coverage: local 2D, server 2D, generated, and 3D ZIP exports; #936 import and #945 account export remain separate. |
+| engineer | N/A | N/A | Parent had no additional implementation after all export children landed. |
+| qa-self-review | Codex / GPT-5 / medium; parent reconciliation substitution | PASS | Re-read closed child QA evidence, including #968 QA comment https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/968#issuecomment-5855756083; no production evidence inferred. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Parent QA comment https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/935#issuecomment-5856306372; `gh issue close 935 --reason completed`. |
+
+## Transaction: #936 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA FAIL / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Dependencies #935 and #933 confirmed CLOSED. Scope retained local-only per-piece ZIP import, with 2D implementation now and explicit 3D/generated rejection until #937/#938; no server import or production action. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Grooming comment https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/936#issuecomment-5856344707; entry points are gallery/create menu and AccountLocalStorage; parser #930 and repository #933 are reused. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution for rostered external implementation service | PASS | `f94ef99f` adds atomic 2D ZIP import with fresh IDs, validation/quota gating, gallery and storage entry points, and focused storage tests. No dependency/API/migration/production changes. |
+| qa-self-review | Codex / GPT-5 / medium; QA substitution; independent second-opinion service unavailable | FAIL / BLOCKED | `npx vitest run src/storage` passed 20 files/153 tests; typecheck/lint passed with existing warnings. E2E spec lists, but exact Chromium run reached a stale local Vite menu without the new import item and timed out; QA comment https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/936#issuecomment-5856446139. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / RUNTIME VERIFICATION BLOCKED | `674ace86` adds `frontend/e2e/pieceImport.spec.ts`; keep open until refreshed app process passes `E2E_DOCKER_COMPOSE=true npx playwright test e2e/pieceImport.spec.ts --project=chromium`. No production evidence claimed. |

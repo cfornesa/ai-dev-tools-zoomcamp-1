@@ -110,6 +110,11 @@ export function saveSceneVersion3D(
   });
 }
 
+/** #968: owner-scoped immutable 3D version history for portable export. */
+export function listSceneVersions3D(projectId: string): Promise<SceneVersion3D[]> {
+  return apiFetch<SceneVersion3D[]>(`/api/projects3d/${projectId}/versions/`);
+}
+
 /** Issue #296: switch a project from private to public -- owner-only;
  * mirrors the 2D `publishProject`. Rejects with an `ApiError` (`status`
  * 400, `body.errors` field-level) if the title is still the untouched

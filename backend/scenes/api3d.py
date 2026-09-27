@@ -240,10 +240,14 @@ class PublicProject3DDetailView(APIView):
 
 
 class SceneVersion3DListCreateView(APIView):
-    """#228: save a new SceneVersion3D. Mirrors SceneVersionListCreateView's
-    transaction pattern at this issue's smaller scope -- no listing/restore
-    yet (explicitly out of scope; a later follow-on once #227/#232 reveal
-    what's actually needed)."""
+    """#228/#968: owner-scoped SceneVersion3D history and saves."""
+
+    def get(self, request, public_id):
+        project = _get_project3d_or_404(public_id)
+        if not can(request.user, Action.PROJECT3D_READ, project):
+            raise Http404
+        versions = project.versions.order_by("sequence", "id")
+        return Response(SceneVersion3DSerializer(versions, many=True).data)
 
     def post(self, request, public_id):
         project = _get_project3d_or_404(public_id)

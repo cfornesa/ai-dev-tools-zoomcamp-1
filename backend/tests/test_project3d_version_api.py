@@ -50,6 +50,37 @@ def test_owner_can_save_a_new_version(owner_client):
 
 
 @pytest.mark.django_db
+def test_owner_can_list_complete_3d_version_history(owner_client):
+    public_id = _create_project(owner_client)
+    scene = copy.deepcopy(_MINIMAL_SCENE_3D_FIXTURE)
+    scene["id"] = "scene3d-history-2"
+    assert (
+        owner_client.post(
+            f"/api/projects3d/{public_id}/versions/", {"scene_json": scene}, format="json"
+        ).status_code
+        == 201
+    )
+
+    response = owner_client.get(f"/api/projects3d/{public_id}/versions/")
+
+    assert response.status_code == 200
+    assert [version["sequence"] for version in response.json()] == [1, 2]
+    assert response.json()[1]["scene_json"]["id"] == "scene3d-history-2"
+
+
+@pytest.mark.django_db
+def test_non_owner_cannot_list_3d_version_history(owner_client):
+    public_id = _create_project(owner_client)
+    other = get_user_model().objects.create_user(username="carol3d-version-history")
+    other_client = APIClient()
+    other_client.force_authenticate(other)
+
+    response = other_client.get(f"/api/projects3d/{public_id}/versions/")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
 def test_saving_a_version_advances_current_version(owner_client):
     public_id = _create_project(owner_client)
     scene = copy.deepcopy(_MINIMAL_SCENE_3D_FIXTURE)

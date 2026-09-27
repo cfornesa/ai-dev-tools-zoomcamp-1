@@ -156,6 +156,16 @@ slug); a violation is a 400 ("This slug is already in use."). **Old slugs are no
 after a change the previous `/users/@handle/pieces|edit/<old-slug>` URLs stop resolving (404). Existing pieces
 keep their current slug; no migration.
 
+## Owner-scoped 3D version history (#968)
+
+`GET /api/projects3d/<public_id>/versions/` returns the authenticated owner's
+complete immutable `SceneVersion3D` history in ascending sequence order. The
+existing POST save contract on the same path is unchanged. Anonymous users,
+non-owners, deleted projects, and unknown ids receive the existing 404-style
+authorization boundary; the response uses the existing
+`SceneVersion3DSerializer` shape and does not expose this owner history to
+public viewers.
+
 ## Art-piece ink layer (#776)
 
 `ArtPieceVersion` responses (owner, public, and canonical projections) include the additive

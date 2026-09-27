@@ -11,6 +11,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import {
   getProject3D,
+  listSceneVersions3D,
   saveSceneVersion3D,
   updateProjectMetadata3D,
   type Project3D,
@@ -24,6 +25,11 @@ import {
   generateScene3DBundle,
   triggerScene3DBundleDownload,
 } from '../export/generateHtmlExport3D';
+import { downloadBlob } from '../export/downloadBlob';
+import {
+  buildServer3dPiecePackage,
+  server3dPackageFilename,
+} from '../storage/server3dPiecePackage';
 import AIProposalPanel3D from './AIProposalPanel3D';
 import Outline3DInspector from './Outline3DInspector';
 import PlaneSelectionOverlay from './PlaneSelectionOverlay';
@@ -161,6 +167,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
   const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<Project3D | null>(null);
+  const [versionHistory, setVersionHistory] = useState<SceneVersion3D[]>([]);
   const [workingScene, setWorkingScene] = useState<Scene3DDocument | null>(null);
   // Issue #234: the last-saved scene, tracked separately from
   // `workingScene` so a dirty check (`workingScene !== persistedScene`,
@@ -191,6 +198,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
   // downloaded bundle always reflects unsaved edits too -- matching the
   // acceptance criterion that export never uses cached output.
   const [exportState, setExportState] = useState<ExportState>(IDLE_EXPORT_STATE);
+  const [packageExportState, setPackageExportState] = useState<ExportState>(IDLE_EXPORT_STATE);
   async function handleExport(
     variant: import('../export/generateHtmlExport3D').Scene3DExportVariant = 'full',
   ) {
@@ -210,6 +218,29 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
       setExportState({
         pending: false,
         error: 'Something went wrong generating the export. Please try again.',
+      });
+    }
+  }
+
+  async function handleExportPiecePackage() {
+    if (!project || packageExportState.pending) return;
+    setPackageExportState({ pending: true, error: null });
+    try {
+      const versions = versionHistory.length
+        ? versionHistory
+        : project.current_version
+          ? [project.current_version]
+          : [];
+      const result = await buildServer3dPiecePackage(project, versions);
+      downloadBlob(
+        new Blob([result.bytes.slice().buffer as ArrayBuffer], { type: 'application/zip' }),
+        server3dPackageFilename(project.title),
+      );
+      setPackageExportState(IDLE_EXPORT_STATE);
+    } catch (error) {
+      setPackageExportState({
+        pending: false,
+        error: error instanceof Error ? error.message : 'Could not prepare the 3D package.',
       });
     }
   }
@@ -237,10 +268,13 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
     let cancelled = false;
     setLoadState('loading');
 
-    getProject3D(id)
-      .then((loadedProject) => {
+    Promise.all([getProject3D(id), listSceneVersions3D(id)])
+      .then(([loadedProject, loadedVersions]) => {
         if (cancelled) return;
         setProject(loadedProject);
+        setVersionHistory(
+          loadedVersions ?? (loadedProject.current_version ? [loadedProject.current_version] : []),
+        );
         if (loadedProject.current_version) {
           const scene = loadedProject.current_version.scene_json as unknown as Scene3DDocument;
           setWorkingScene(scene);
@@ -320,6 +354,12 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
   // exact response, matching the 2D editor's handleVersionSaved pattern.
   function handleVersionSaved(version: SceneVersion3D) {
     const scene = version.scene_json as unknown as Scene3DDocument;
+    setVersionHistory((current) => {
+      const withoutSavedVersion = (current ?? []).filter(
+        (candidate) => candidate.id !== version.id,
+      );
+      return [...withoutSavedVersion, version].sort((a, b) => a.sequence - b.sequence);
+    });
     setWorkingScene(scene);
     setPersistedScene(scene);
     setProject((current) => (current ? { ...current, current_version: version } : current));
@@ -664,6 +704,11 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
             {exportState.error}
           </p>
         )}
+        {packageExportState.error && (
+          <p role="alert" aria-live="assertive" data-testid="project3d-package-export-error">
+            {packageExportState.error}
+          </p>
+        )}
       </header>
       <div className="project3d-workspace editor-workspace">
         {/* Task 246 (issue #304): a real `.editor-panel` region, scoped
@@ -760,6 +805,16 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
               editorControls={
                 <>
                   <span role="group" aria-label="Editor actions" className="editor-tool-group">
+                    <button
+                      type="button"
+                      className="piece-stage-icon-button"
+                      onClick={() => void handleExportPiecePackage()}
+                      disabled={packageExportState.pending}
+                      aria-label="Export piece package"
+                      title="Export piece package"
+                    >
+                      <span aria-hidden="true">⇩</span>
+                    </button>
                     <StageControlsPopover
                       label="3D authoring"
                       panelClassName="editor-authoring-controls-panel"

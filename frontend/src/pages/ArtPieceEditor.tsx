@@ -39,9 +39,14 @@ import type { InkTool } from '../ink/inkModel';
 import Generated3DManualTools from '../components/Generated3DManualTools';
 import PieceStageIcon from '../components/PieceStageIcon';
 import { screenshotFilename } from '../export/captureLiveScreenshot';
+import { downloadBlob } from '../export/downloadBlob';
 import SonicDefaultsPanel from './SonicDefaultsPanel';
 import { normalizeSonic, type SonicDefaults } from '../audio/sonicContract';
 import { supportsGeneratedSourceEditing } from './artPieceSourceEditing';
+import {
+  buildServerGeneratedPiecePackage,
+  serverGeneratedPackageFilename,
+} from '../storage/serverGeneratedPiecePackage';
 import {
   appendGenerated3DPrimitive,
   applyGenerated3DTransform,
@@ -302,6 +307,8 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const [sonic, setSonic] = useState<SonicDefaults | undefined>();
   const [versionSaving, setVersionSaving] = useState(false);
   const [versionSaveError, setVersionSaveError] = useState<string | null>(null);
+  const [packageExporting, setPackageExporting] = useState(false);
+  const [packageExportError, setPackageExportError] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const previewTimerRef = useRef<number | null>(null);
@@ -413,6 +420,25 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       setMetadataError('Could not save these changes. Please try again.');
     } finally {
       setMetadataSaving(false);
+    }
+  }
+
+  async function handleExportPiecePackage() {
+    if (!piece || packageExporting) return;
+    setPackageExporting(true);
+    setPackageExportError(null);
+    try {
+      const exported = await buildServerGeneratedPiecePackage(piece, versions);
+      downloadBlob(
+        new Blob([exported.bytes.slice().buffer as ArrayBuffer], { type: 'application/zip' }),
+        serverGeneratedPackageFilename(piece.title),
+      );
+    } catch (error) {
+      setPackageExportError(
+        error instanceof Error ? error.message : 'Could not prepare the piece package.',
+      );
+    } finally {
+      setPackageExporting(false);
     }
   }
 
@@ -714,6 +740,18 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         </p>
       )}
       <div className="generated-3d-tools-group">
+        <button
+          type="button"
+          className="generated-piece-export-button"
+          onClick={() => void handleExportPiecePackage()}
+          disabled={packageExporting}
+          aria-label="Export piece package"
+          title="Export piece package"
+        >
+          <PieceStageIcon name="download" />
+          <span>{packageExporting ? 'Preparing package…' : 'Export package'}</span>
+        </button>
+        {packageExportError && <p role="alert">{packageExportError}</p>}
         <ArtPieceEditorToolAvailability
           engine={piece.engine}
           onActivate={(tool) => {

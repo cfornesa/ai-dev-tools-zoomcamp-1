@@ -6730,3 +6730,13 @@ changes.
 | engineer | Pending | NOT STARTED | Deferred until the next per-issue transaction; no product code changed for #969. |
 | qa-self-review | Pending | NOT STARTED | No #969 diff exists. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN / QUEUED | GitHub issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/969. |
+
+## Transaction: #967 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Split from #965 after duplicate audit; generated-art export is distinct from server-backed 2D #966, 3D #968, local #956, and runnable generated ZIP behavior. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Existing generated-art API exposes ordered version source, ink, sonic, capability, and generation metadata; no new backend contract required. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Added `serverGeneratedPiecePackage`, validated/reparsed ZIP export, sanitized filename, editor toolbar action, focused unit test, and responsive browser scenario. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | Focused package tests 2 files/10 tests; Chromium 2/2 at 1280x900 and 375x812 with ZIP, ordered-history, metadata, no-mutation, and inspected screenshot assertions; `make check` exit 0 with frontend 287 files/3060 tests. QA record: `.local/tasks/qa-967-comment.md`; GitHub: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/967#issuecomment-5855523108. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Generated piece export is closed within the current media model; no production evidence inferred. |

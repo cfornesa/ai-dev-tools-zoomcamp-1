@@ -162,3 +162,14 @@ The readiness result remains `BLOCKED`. Chrome is available; the unresolved
 boundary is secure publication/runtime access plus the open dependency and
 production evidence set. Local and Compose results do not close deployed URL
 or production-database criteria.
+
+## Reassessment after #938/#939 and #940 increment — 2026-09-27
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Repository quality | PASS | Latest `make check`: backend 1756 passed / 39 skipped; frontend 292 files / 3071 tests; typecheck and format pass; lint only existing warnings. Migration check reports no changes pending. |
+| Local-first generated transfer boundary | PASS / CLOSED | #938 and #939 have criterion-level local/Compose QA; #939’s 375x812 consent audit proves no request before consent and no source field after consent. |
+| Account cloud-sync preference | PARTIAL / OPEN | #940’s gated API, versioned consent, signup preselection, and settings UI pass focused tests. Selective disable-time pause is not implemented because current backups lack inherited-vs-explicit ownership. QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/940#issuecomment-5860065184 |
+| Production publication | BLOCKED | `GIT_URL` remains unavailable; no safe push or Replit Publish was attempted. |
+| #788 production import | BLOCKED | Wrapper publication and supported production preview/shell remain prerequisites; no production snapshot/write/live verification occurred. |
+| Overall readiness | BLOCKED | Open production, provider, hardware, parity, dependency, and #940 follow-up issues remain. Local evidence is not promoted to deployed evidence. |

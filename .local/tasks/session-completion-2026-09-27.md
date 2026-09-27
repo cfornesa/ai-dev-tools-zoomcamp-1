@@ -183,3 +183,21 @@ external services were unavailable; independent stage-3 review remains
 uncredited. The project is not session-complete or production-ready. Next
 action is #938 follow-up engineering, or owner-authorized safe publication
 through a secure runtime credential followed by the guarded #788 workflow.
+
+## Session completion continuation — 2026-09-27
+
+| Rollup | Result |
+|---|---|
+| #938 | CLOSED — capability persistence and local generated QA reconciled; AI transfer was explicitly separated into #939. |
+| #939 | CLOSED — consent disclosure, fail-closed local record, network inventory, and 375x812 browser audit passed. QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/939#issuecomment-5859901143 |
+| #940 | OPEN / PARTIAL — gated account cloud-sync preference implemented and tested; inherited-backup ownership mode is required before selective disable pause can be completed. QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/940#issuecomment-5860065184 |
+| Repository checks | PASS — backend 1756 passed / 39 skipped; frontend 292 files / 3071 tests; typecheck and format pass. |
+| Production readiness | BLOCKED — no safe push credential, Replit publish, production shell, production import, provider, hardware, or deployed URL evidence. |
+| Open issue count | 23 — all remaining records have explicit production, dependency, owner, provider, hardware, or #940 follow-up boundaries. |
+| Missing terminal status | 0 for processed issues; #940 is explicitly OPEN/PARTIAL. |
+
+Routing audit: task-distillation, grooming, engineering, QA, production-readiness,
+and session-completion were Codex/GPT-5/medium substitutions where rostered
+external services were unavailable; independent stage-3 review was not run or
+credited. The unrelated parity document remains unstaged. No production data,
+secrets, settings, publish, or external repository was touched.

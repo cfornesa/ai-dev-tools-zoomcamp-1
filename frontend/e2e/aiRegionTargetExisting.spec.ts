@@ -33,9 +33,9 @@ test.describe('existing generated-piece targeting (#921)', () => {
       const source = [
         '<canvas id="art-piece-canvas" width="320" height="180"></canvas><script>',
         '// @layer Sky',
-        "const sky = 'teal';",
+        "const sky = 'blue';",
         '// @layer Hills',
-        "const hills = 'blue';",
+        "const hills = 'teal';",
         "const canvas = document.getElementById('art-piece-canvas');",
         "const ctx = canvas.getContext('2d'); ctx.fillStyle = sky; ctx.fillRect(0, 0, 320, 90);",
         '</script>',
@@ -52,6 +52,16 @@ test.describe('existing generated-piece targeting (#921)', () => {
       const piece = (await created.json()) as { public_id: string };
 
       await page.goto(`/users/@${handle}/edit/${slug}`);
+      const editorToolsToggle = page.getByRole('button', { name: 'Editor tools' });
+      if (await editorToolsToggle.count()) {
+        await editorToolsToggle.click();
+        await expect(editorToolsToggle).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.locator('#art-piece-editor-tools-grid')).toHaveAttribute(
+          'data-collapsed',
+          'false',
+        );
+      }
+      await page.locator('button[aria-label="AI edit"]').click();
       const prompt = page.getByRole('textbox', {
         name: 'Describe the revision you want to generate',
       });
@@ -80,7 +90,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
       expect(versions).toHaveLength(2);
       const refined = versions.find((version) => version.sequence === 2)?.source;
       expect(refined).toContain("const hills = '#e76f51';");
-      expect(refined).toContain("const sky = 'teal';");
+      expect(refined).toContain("const sky = 'blue';");
       await context.close();
     });
   }
@@ -91,11 +101,12 @@ test.describe('existing generated-piece targeting (#921)', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const handle = await profileHandle(context);
     const slug = `e2e-existing-element-${Date.now().toString(36)}`;
-    const source =
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">' +
-      '<rect id="target" width="100" height="100" fill="teal"/>' +
-      '<circle id="other" cx="220" cy="80" r="40" fill="blue"/>' +
-      '</svg>';
+    const source = [
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">',
+      '<rect id="target" width="100" height="100" fill="teal"/>',
+      '<circle id="other" cx="220" cy="80" r="40" fill="blue"/>',
+      '</svg>',
+    ].join('\n');
     const created = await apiPost(context, '/api/art-pieces/', {
       title: 'Existing element fixture',
       description: 'A browser fixture for SVG element targeting.',
@@ -108,6 +119,16 @@ test.describe('existing generated-piece targeting (#921)', () => {
     const piece = (await created.json()) as { public_id: string };
 
     await page.goto(`/users/@${handle}/edit/${slug}`);
+    const editorToolsToggle = page.getByRole('button', { name: 'Editor tools' });
+    if (await editorToolsToggle.count()) {
+      await editorToolsToggle.click();
+      await expect(editorToolsToggle).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator('#art-piece-editor-tools-grid')).toHaveAttribute(
+        'data-collapsed',
+        'false',
+      );
+    }
+    await page.locator('button[aria-label="AI edit"]').click();
     const prompt = page.getByRole('textbox', {
       name: 'Describe the revision you want to generate',
     });
@@ -155,6 +176,16 @@ test.describe('existing generated-piece targeting (#921)', () => {
     expect(created.status()).toBe(201);
     const piece = (await created.json()) as { public_id: string };
     await page.goto(`/users/@${handle}/edit/${slug}`);
+    const editorToolsToggle = page.getByRole('button', { name: 'Editor tools' });
+    if (await editorToolsToggle.count()) {
+      await editorToolsToggle.click();
+      await expect(editorToolsToggle).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.locator('#art-piece-editor-tools-grid')).toHaveAttribute(
+        'data-collapsed',
+        'false',
+      );
+    }
+    await page.locator('button[aria-label="AI edit"]').click();
     const prompt = page.getByRole('textbox', {
       name: 'Describe the revision you want to generate',
     });

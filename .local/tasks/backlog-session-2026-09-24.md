@@ -6258,6 +6258,18 @@ silently folded into the test.
 | qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | BLOCKED | Elevated installed-Chrome run reached the app but all 4 tests timed out waiting for `Describe the revision you want to generate`; first sandbox run aborted Chrome before test execution. |
 | reconcile / close | pending | BLOCKED BY #958 | Keep #921 open until #958 exposes the panel, then rerun the exact browser matrix. |
 
+## Transaction: #958 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERING PENDING
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | New gap is the missing 2D activation path discovered while running #921; no duplicate owner found. |
+| groom | Codex / GPT-5 / medium | PASS | `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/958`; criterion-ready for a responsive, keyboard-accessible 2D AI-revise toggle with no public/API changes. |
+| routing | Codex / GPT-5 / medium | PASS | Stage 2a frontend mechanical work; rostered implementation-mechanical service substitution recorded. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical service substituted | PASS | Working tree implements the 2D `ai-edit` toggle before the drawing-tool branch and makes the expanded responsive grid display explicit. Commit pending. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | PARTIAL / BLOCKED | Desktop handler path passes; normal mobile click still cannot reach the hidden icon after disclosure. Synthetic dispatch passes but is not closure evidence for mobile accessibility. |
+| production-readiness | pending | — | — |
+| reconcile / close | pending | BLOCKED | Keep #958 open until the expanded 375px toolbar exposes a normally clickable AI-edit control. |
+
 ## Transaction: #941 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERING PENDING
 
 | Stage | Service / model / effort | Result | Evidence |

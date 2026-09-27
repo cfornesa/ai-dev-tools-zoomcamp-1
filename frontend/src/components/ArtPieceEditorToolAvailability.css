@@ -122,4 +122,8 @@
   .editor-tool-availability-grid[data-collapsed='true'] {
     display: none;
   }
+
+  .editor-tool-availability-grid[data-collapsed='false'] {
+    display: grid;
+  }
 }

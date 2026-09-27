@@ -717,7 +717,9 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         <ArtPieceEditorToolAvailability
           engine={piece.engine}
           onActivate={(tool) => {
-            if (engineCapability.family === '2d') {
+            if (tool === 'ai-edit') {
+              setActiveEditorPanel((current) => (current === 'revise' ? null : 'revise'));
+            } else if (engineCapability.family === '2d') {
               // #776: every 2D drawing tool opens the ink layer (a separate validated document composited
               // over the piece) instead of appending fixed snippets to the generated source.
               const inkTool = INK_TOOL_FOR[tool];

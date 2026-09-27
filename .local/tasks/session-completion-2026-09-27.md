@@ -132,3 +132,21 @@ channel (not chat) before the authorized safe push and Replit Publish can be
 performed. After publish, run the wrapper preview, snapshot affected C2
 sources, perform the one guarded write, and complete live 1280x900/375x812
 verification before any #788 closure.
+
+## Final continuation after #937 closure — 2026-09-27
+
+| Rollup | Result |
+|---|---|
+| #937 | CLOSED with QA PASS: local-only 3D create/edit/save/reload, restore, responsive parity, and validated local 3D package import. QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/937#issuecomment-5859235174 |
+| Repository checks | PASS — `make check`; backend 1752 passed/39 skipped, frontend 289 files/3067 tests. |
+| Browser checks | PASS — rebuilt Compose Chromium, 2/2 at 1280x900 and 375x812. |
+| #938 | OPEN / NEXT — local generated-piece persistence and sandbox preview; #939 remains dependent. |
+| #788 | OPEN / BLOCKED — reviewed wrapper awaits safe push and Replit publication; no production write attempted. |
+| Production readiness | BLOCKED — production/dependency/provider/hardware evidence remains separate from local QA. |
+
+Routing audit: task-distillation, grooming, engineering, QA, readiness, and
+completion were run as Codex/GPT-5/medium substitutions where rostered services
+were unavailable; independent stage-3 review was not run or credited. Open
+inventory after closing #937 is 24 issues. No duplicate issue was created for
+the mobile hit-target defect or 3D import gap because both were within #937’s
+reconciled contract.

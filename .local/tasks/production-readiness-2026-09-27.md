@@ -116,6 +116,18 @@ environment without pasting it into chat; then run `GIT_URL=... make
 git-safe-push`, publish through Replit, run the published smoke check, and
 resume #788’s guarded production workflow.
 
+## Reassessment after final #937 reconciliation — 2026-09-27
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Local repository quality | PASS | `make check`: backend 1752 passed/39 skipped; frontend 289 files / 3067 tests; existing lint warnings only. |
+| #937 local-first 3D contract | PASS / CLOSED | Rebuilt Compose Chromium 2/2 at 1280x900 and 375x812; focused 3D importer 4/4; GitHub QA matrix records boundaries. |
+| Intended functionality | OPEN FOLLOW-UP | #938 is next for local generated pieces; #939 remains dependent; other open issues remain gated. |
+| Replit publication | BLOCKED | Wrapper is local at `cad0f924`; `GIT_URL` is absent, so safe push and Publish were not attempted. |
+| #788 production data action | BLOCKED | Wrapper publication and deployed-shell/preview verification remain prerequisites; no production rows changed. |
+
+Readiness remains `BLOCKED` for the batch; #937’s local closure does not imply production publication or #788 readiness.
+
 ## Reassessment after #788 QA transaction — 2026-09-27
 
 The latest per-issue QA record is

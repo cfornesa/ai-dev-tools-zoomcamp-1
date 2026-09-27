@@ -6911,3 +6911,23 @@ The reviewed mode-aware production preview wrapper remains in the checkout
 (`cad0f924`) for the owner-authorized #788 publication attempt. The current
 environment has no `GIT_URL` credential available, so the safe push has not
 been attempted and no production publish or data action has occurred.
+
+## Transaction: #937 final reconciliation — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Fresh issue/dependency audit retained #937 as the local-first 3D owner; mobile overlay and 3D package-import gaps were folded into this owner rather than duplicated. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Owner-approved architecture extends the existing IndexedDB repository and local 3D lifecycle; server routes/API remain unchanged; generated packages remain deferred to #938. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution | PASS | Commits `bf38b7f6`, `12191cc3`, `b08cad0a`, `d3aba33c`, `4e9a5540`, `d1bd05b5`, `ff90132b`, `26ba1754`, `da60392e`. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; stage-3 unavailable | PASS | Focused importer 4/4; rebuilt-Compose Chromium `localFirstCreate3d.spec.ts` 2/2 at 1280x900 and 375x812; `make check` PASS with backend 1752 passed/39 skipped and frontend 289 files/3067 tests. |
+| reconcile / close | Codex / GPT-5 / medium | CLOSED | QA matrix: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/937#issuecomment-5859235174. No production evidence inferred. |
+
+## Transaction: #938 — 2026-09-27 — DISTILLED / GROOMED / OPEN FOR ENGINEERING
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #937 is closed; duplicate audit retained #938 as the generated-piece local-first owner. Generated import remains gated by this issue; #939 owns off-browser consent. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Scope is generated records/media/ink/sonic/capabilities/version history, sandbox-only owner preview, local capture, and package import/export; AI transfer must use #939’s consent contract. |
+| engineer | Pending | NOT STARTED | Next transaction: implement local generated records and owner preview with the existing IndexedDB seam and `artPieceSandbox.ts`; no server/public/sync/production writes. |
+| qa-self-review | Pending | NOT STARTED | No #938 diff yet. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / QUEUED | #939 remains dependent on #938. |

@@ -6958,4 +6958,24 @@ has been deduplicated and every remaining item is classified as open-follow-up,
 dependency-blocked, owner/provider/hardware gated, or production-bound. The
 next safe transaction is #938 follow-up engineering, or the owner-authorized
 wrapper publication once the secure push credential is available through the
-runtime (never pasted into chat).
+ runtime (never pasted into chat).
+
+## Transaction: #938 capability reconciliation — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Capability persistence was confirmed as part of the generated local-first contract; AI disclosure/consent remained separately owned by #939. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Capability controls were treated as the remaining #938 implementation gap; no duplicate issue created. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS | Normalized engine-gated capability controls, local version persistence, screenshot/ZIP coverage, and focused unit coverage added. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 unavailable and not credited | PASS | Rebuilt-Compose Chromium 2/2 at 1280x900 and 375x812; full check backend 1752 passed/39 skipped and frontend 291 files/3070 tests. |
+| reconcile / close | Codex / GPT-5 / medium | CLOSED | QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/938#issuecomment-5859774707; closure: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/938#issuecomment-5859780098. AI disclosure/consent was explicitly transferred to #939, now closed separately. |
+
+## Transaction: #939 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #939 retained the off-browser boundary; no duplicate found. Its #938 prerequisite was closed before engineering began. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Contract was limited to local-generated AI disclosure/consent, no silent draft sync, inventory, and responsive accessibility. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS | Added fail-closed per-piece/version consent storage, accessible alertdialog, local AI revision flow, network inventory, and Chromium audit. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 unavailable and not credited | PASS | QA matrix: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/939#issuecomment-5859901143. Focused tests 2/2; rebuilt-Compose Chromium 3/3 including 375x812; full check backend 1752 passed/39 skipped and frontend 292 files/3071 tests. |
+| reconcile / close | Codex / GPT-5 / medium | CLOSED | Closure comment posted on #939; no production or live vendor evidence inferred. |

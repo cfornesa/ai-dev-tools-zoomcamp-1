@@ -882,6 +882,46 @@ button:disabled {
     monospace;
 }
 
+.local-generated-capabilities,
+.local-generated-ai-transfer {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle, #394052);
+  border-radius: 0.75rem;
+}
+
+.local-generated-capabilities label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.local-generated-ai-transfer textarea {
+  width: 100%;
+  min-height: 5rem;
+  box-sizing: border-box;
+}
+
+.local-transfer-consent-dialog {
+  display: grid;
+  gap: 1rem;
+  width: min(100% - 2rem, 34rem);
+  margin: 1.5rem auto;
+  padding: 1.25rem;
+  border: 1px solid var(--border-subtle, #394052);
+  border-radius: 1rem;
+  background: var(--surface-raised, #111827);
+}
+
+.local-transfer-consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
 @media (max-width: 600px) {
   .local-generated-editor {
     width: min(100% - 1rem, 1100px);

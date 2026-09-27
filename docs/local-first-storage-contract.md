@@ -6,11 +6,11 @@ generated art pieces, and their required media.
 
 ## Record states and transitions
 
-| State | Authoritative copy | Allowed actions |
-| --- | --- | --- |
-| `local-only` | The author's browser IndexedDB/local archive | Edit, preview, version locally, export/import a package, or opt in to sync. No server copy is implied. |
-| `synced` | The local copy plus an owner-authorized PostgreSQL copy | Edit locally, upload an explicitly consented sync mutation, resolve conflicts, or disable sync under retention. Losing sync eligibility never removes the local copy. |
-| `public` | PostgreSQL, including every media asset required to render the published version | Publish is a warned transfer from local storage when needed. Anonymous routes, embeds, immersive views, and downloads use the server copy. |
+| State        | Authoritative copy                                                               | Allowed actions                                                                                                                                                       |
+| ------------ | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `local-only` | The author's browser IndexedDB/local archive                                     | Edit, preview, version locally, export/import a package, or opt in to sync. No server copy is implied.                                                                |
+| `synced`     | The local copy plus an owner-authorized PostgreSQL copy                          | Edit locally, upload an explicitly consented sync mutation, resolve conflicts, or disable sync under retention. Losing sync eligibility never removes the local copy. |
+| `public`     | PostgreSQL, including every media asset required to render the published version | Publish is a warned transfer from local storage when needed. Anonymous routes, embeds, immersive views, and downloads use the server copy.                            |
 
 `local-only ⇄ synced` is opt-in per piece or through the account-level “sync
 all” setting. Account-level sync offers existing local pieces for upload; it
@@ -85,3 +85,22 @@ Browser-local preferences and operational pointers are not authored scene
 data. Any value derived from authored content must be version-tagged and
 invalidated when the authored content changes. See the [browser storage audit](local-storage-audit.md)
 for the key-by-key decisions and the #929 sound-settings implementation.
+
+## Local editor network inventory (#939)
+
+The local-generated editor is intentionally separate from the server-backed
+editor. Its authored source, versions, capabilities, and package exports stay
+in IndexedDB unless the owner approves a specific transfer.
+
+| Call or store                       | When it occurs                                          | Consent                                                      | Data boundary                                                                                                                                                            |
+| ----------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /api/whoami/`                  | Auth provider establishes the signed-in identity        | Not required for identity/session setup                      | Identity only; no authored piece data                                                                                                                                    |
+| `GET /api/profile/`                 | Local creation obtains the owner handle                 | Not required for identity/session setup                      | Profile identity only; no authored source                                                                                                                                |
+| IndexedDB local project database    | Create, edit, version, restore, import/export           | No network consent; remains in the browser                   | Authored source, capabilities, ink, sonic data, and versions remain local                                                                                                |
+| `POST /api/ai/art-pieces/generate/` | Only after the per-piece/version disclosure is accepted | Required and recorded as `local-transfer-v1` in localStorage | Prompt and selected engine go to this app's endpoint, then its configured AI vendor; current source and media are not sent by this action and no server piece is created |
+
+There are no `/api/drafts/` calls from the local-generated editor: it does not
+mount the server draft-sync hook. Any future source upload, media upload,
+refinement transfer, telemetry, or account-level sync call must add a new
+inventory row and consent decision before implementation. The server-backed
+editor remains governed by its existing draft and publish contracts.

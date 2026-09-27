@@ -2,8 +2,24 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
+import { generateArtPiece } from '../api/artPieces';
 import { buildArtPieceSandboxDocument } from '../generative/artPieceSandbox';
+import {
+  ART_PIECE_ENGINE_CAPABILITIES,
+  type ArtPieceCapabilitySet,
+  type ArtPieceLibrary,
+} from '../api/artPieces';
+import {
+  CAPABILITY_OPTIONS,
+  normalizeCapabilities,
+  SPATIAL_LIBRARIES,
+} from '../generative/artPieceCapabilities';
 import { captureSandboxScreenshot } from '../generative/artPieceThumbnailCapture';
+import LocalTransferConsentDialog from './LocalTransferConsentDialog';
+import {
+  hasLocalTransferConsent,
+  recordLocalTransferConsent,
+} from '../storage/localTransferConsent';
 import {
   buildLocalGeneratedPiecePackage,
   localGeneratedPackageFilename,
@@ -25,7 +41,14 @@ function payloadOf(version: LocalPieceVersionRecord | null) {
     engine?: string;
     description?: string;
     ink?: unknown;
+    capabilities?: unknown;
   };
+}
+
+function localEngine(value: unknown): ArtPieceLibrary {
+  return typeof value === 'string' && value in ART_PIECE_ENGINE_CAPABILITIES
+    ? (value as ArtPieceLibrary)
+    : 'svg';
 }
 
 /** Local-only generated editor. It deliberately has no server API imports:
@@ -39,6 +62,10 @@ export default function LocalGeneratedPieceWorkspace() {
   const [versions, setVersions] = useState<LocalPieceVersionRecord[]>([]);
   const [current, setCurrent] = useState<LocalPieceVersionRecord | null>(null);
   const [source, setSource] = useState('');
+  const [capabilities, setCapabilities] = useState<ArtPieceCapabilitySet>({});
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiPending, setAiPending] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const previewRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -55,6 +82,12 @@ export default function LocalGeneratedPieceWorkspace() {
       setVersions(rows);
       setCurrent(active);
       setSource(String(payloadOf(active).source ?? ''));
+      setCapabilities(
+        normalizeCapabilities(
+          payloadOf(active).capabilities,
+          localEngine(payloadOf(active).engine),
+        ),
+      );
     } finally {
       db.close();
     }
@@ -70,8 +103,7 @@ export default function LocalGeneratedPieceWorkspace() {
   if (!id || !owner) return <p role="status">Opening local generated editor…</p>;
   if (!project || !current) return <p role="status">Loading local generated piece…</p>;
   const payload = payloadOf(current);
-  const engine = (payload.engine ?? 'svg') as
-    'canvas2d' | 'svg' | 'p5js' | 'c2js' | 'c2js-interactive' | 'threejs' | 'aframe';
+  const engine = localEngine(payload.engine);
 
   async function save() {
     const db = await openLocalProjectDatabase();
@@ -79,6 +111,7 @@ export default function LocalGeneratedPieceWorkspace() {
       const version = await saveLocalGeneratedVersion(db, owner!, id!, {
         ...current!.payload,
         source,
+        capabilities: normalizeCapabilities(capabilities, engine),
       });
       const updated = await updateProject(db, owner!, id!, { title: project!.title });
       setProject(updated);
@@ -95,6 +128,7 @@ export default function LocalGeneratedPieceWorkspace() {
     try {
       const version = await restoreLocalGeneratedVersion(db, owner!, id!, versionId);
       setCurrent(version);
+      setCapabilities(normalizeCapabilities(payloadOf(version).capabilities, engine));
       setSource(String(payloadOf(version).source ?? ''));
       setMessage(`Restored local version ${version.sequence}.`);
     } finally {
@@ -129,6 +163,60 @@ export default function LocalGeneratedPieceWorkspace() {
     }
   }
 
+  function toggleCapability(key: keyof ArtPieceCapabilitySet) {
+    setCapabilities((currentCapabilities) =>
+      normalizeCapabilities({ ...currentCapabilities, [key]: !currentCapabilities[key] }, engine),
+    );
+  }
+
+  async function runAiTransfer() {
+    if (!aiPrompt.trim() || aiPending) return;
+    setAiPending(true);
+    setMessage(null);
+    try {
+      const result = await generateArtPiece(engine, aiPrompt.trim());
+      const db = await openLocalProjectDatabase();
+      try {
+        const version = await saveLocalGeneratedVersion(db, owner!, id!, {
+          ...current!.payload,
+          source: result.code,
+          engine,
+          capabilities: normalizeCapabilities(capabilities, engine),
+        });
+        setVersions((items) => [...items, version]);
+        setCurrent(version);
+        setSource(result.code);
+        setCapabilities(normalizeCapabilities(version.payload.capabilities, engine));
+        setAiPrompt('');
+        setMessage('AI result saved as a new local version. Nothing was published.');
+      } finally {
+        db.close();
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'The AI request failed.');
+    } finally {
+      setAiPending(false);
+    }
+  }
+
+  function requestAiTransfer() {
+    if (!aiPrompt.trim() || aiPending) return;
+    if (hasLocalTransferConsent(owner!, id!, current!.id)) {
+      void runAiTransfer();
+    } else {
+      setConsentOpen(true);
+    }
+  }
+
+  function confirmAiTransfer() {
+    if (!recordLocalTransferConsent(owner!, id!, current!.id)) {
+      setMessage('Consent could not be stored; no AI request was sent.');
+      return;
+    }
+    setConsentOpen(false);
+    void runAiTransfer();
+  }
+
   return (
     <main className="local-generated-editor" aria-labelledby="local-generated-title">
       <p className="eyebrow">LOCAL-ONLY GENERATED PIECE</p>
@@ -160,7 +248,45 @@ export default function LocalGeneratedPieceWorkspace() {
         <button type="button" onClick={() => void exportPackage()}>
           Export local package
         </button>
+        <div className="local-generated-ai-transfer">
+          <h2>AI revision</h2>
+          <label htmlFor="local-generated-ai-prompt">Describe the local revision</label>
+          <textarea
+            id="local-generated-ai-prompt"
+            value={aiPrompt}
+            onChange={(event) => setAiPrompt(event.target.value)}
+            placeholder="Describe what you want AI to generate…"
+          />
+          <button
+            type="button"
+            onClick={requestAiTransfer}
+            disabled={!aiPrompt.trim() || aiPending}
+          >
+            {aiPending ? 'Waiting for AI…' : 'Ask AI for a local revision'}
+          </button>
+        </div>
       </section>
+      <fieldset className="local-generated-capabilities" aria-labelledby="capabilities-heading">
+        <legend id="capabilities-heading">Capabilities</legend>
+        {CAPABILITY_OPTIONS.map(({ key, label, spatialOnly }) => {
+          const unsupported =
+            (spatialOnly && !SPATIAL_LIBRARIES.has(engine)) ||
+            (key === 'download' && !ART_PIECE_ENGINE_CAPABILITIES[engine].download);
+          return (
+            <label key={key} data-testid={`local-generated-capability-${key}`}>
+              <input
+                type="checkbox"
+                checked={!unsupported && Boolean(capabilities[key])}
+                disabled={unsupported}
+                onChange={() => toggleCapability(key)}
+              />
+              {label}
+              {unsupported && ' (unavailable for this engine)'}
+            </label>
+          );
+        })}
+        <p>Capability changes are local until an explicit transfer is approved.</p>
+      </fieldset>
       <section aria-labelledby="versions-heading">
         <h2 id="versions-heading">Local versions</h2>
         <ol>
@@ -175,6 +301,13 @@ export default function LocalGeneratedPieceWorkspace() {
         </ol>
       </section>
       {message && <p role="status">{message}</p>}
+      {consentOpen && (
+        <LocalTransferConsentDialog
+          pieceTitle={project.title}
+          onCancel={() => setConsentOpen(false)}
+          onConfirm={confirmAiTransfer}
+        />
+      )}
       <Link to="/gallery">Back to gallery</Link>
     </main>
   );

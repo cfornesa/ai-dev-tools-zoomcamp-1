@@ -33,6 +33,10 @@ test.describe('Local-first generated creation (#938)', () => {
       await expect(page.getByTitle('Local generated SVG preview')).toBeVisible();
       expect(serverMutations).toEqual([]);
 
+      const sound = page.getByTestId('local-generated-capability-sound').locator('input');
+      await sound.check();
+      await expect(sound).toBeChecked();
+
       const screenshot = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Screenshot', exact: true }).click();
       expect((await screenshot).suggestedFilename()).toMatch(/\.png$/);
@@ -44,15 +48,24 @@ test.describe('Local-first generated creation (#938)', () => {
       await page.getByRole('button', { name: 'Save local version' }).click();
       await expect(page.getByRole('status')).toContainText('Saved locally');
       await expect(page.getByRole('button', { name: 'Restore version 2' })).toBeVisible();
+      await expect(
+        page.getByTestId('local-generated-capability-sound').locator('input'),
+      ).toBeChecked();
+
+      await page.reload();
+      await expect(page.getByRole('heading', { name: 'Local generated SVG' })).toBeVisible();
+      await expect(
+        page.getByTestId('local-generated-capability-sound').locator('input'),
+      ).toBeChecked();
 
       const download = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Export local package' }).click();
       expect((await download).suggestedFilename()).toMatch(/\.zip$/);
       await page.getByRole('button', { name: 'Restore version 1' }).click();
       await expect(source).toHaveValue(/<svg xmlns/);
-      await page.reload();
-      await expect(page.getByRole('heading', { name: 'Local generated SVG' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Restore version 2' })).toBeVisible();
+      await expect(
+        page.getByTestId('local-generated-capability-sound').locator('input'),
+      ).not.toBeChecked();
     });
   }
 });

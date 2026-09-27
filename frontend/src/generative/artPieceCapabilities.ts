@@ -59,3 +59,22 @@ export function sanitizeCapabilities(
   if (!engine.download) delete sanitized.download;
   return sanitized;
 }
+
+/**
+ * Normalize a persisted/local capability payload using the same allowlist and
+ * boolean contract as the server serializer. Unknown keys and non-boolean
+ * values are discarded; supported keys are materialized as false so local
+ * records have the same shape as server-backed versions.
+ */
+export function normalizeCapabilities(
+  value: unknown,
+  library: ArtPieceLibrary,
+): ArtPieceCapabilitySet {
+  const input = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  const normalized: ArtPieceCapabilitySet = {};
+  for (const { key } of CAPABILITY_OPTIONS) {
+    if (typeof input[key] === 'boolean') normalized[key] = input[key];
+    else normalized[key] = false;
+  }
+  return sanitizeCapabilities(normalized, library);
+}

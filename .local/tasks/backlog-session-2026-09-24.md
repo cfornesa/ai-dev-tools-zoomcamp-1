@@ -6815,3 +6815,12 @@ performed in this refresh.
 | engineer | Codex / GPT-5 / medium; implementation-complex substitution for rostered external implementation service | PASS | `f94ef99f` adds atomic 2D ZIP import with fresh IDs, validation/quota gating, gallery and storage entry points, and focused storage tests. No dependency/API/migration/production changes. |
 | qa-self-review | Codex / GPT-5 / medium; QA substitution; independent second-opinion service unavailable | FAIL / BLOCKED | `npx vitest run src/storage` passed 20 files/153 tests; typecheck/lint passed with existing warnings. E2E spec lists, but exact Chromium run reached a stale local Vite menu without the new import item and timed out; QA comment https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/936#issuecomment-5856446139. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN / RUNTIME VERIFICATION BLOCKED | `674ace86` adds `frontend/e2e/pieceImport.spec.ts`; keep open until refreshed app process passes `E2E_DOCKER_COMPOSE=true npx playwright test e2e/pieceImport.spec.ts --project=chromium`. No production evidence claimed. |
+
+### #936 reconciliation follow-up — 2026-09-27
+
+The Compose frontend/backend services were rebuilt from the current checkout;
+the exact Chromium command then passed 1/1 in 10.1s. The QA PASS comment is
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/936#issuecomment-5856477977.
+The issue was closed with `gh issue close 936 --reason completed`. The earlier
+stale-runtime failure remains recorded as an evidence boundary, not as a
+product failure.

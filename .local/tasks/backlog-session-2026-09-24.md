@@ -6290,7 +6290,7 @@ media-library target picker.
 | distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #923 is closure-sized after narrowing to the #922 agent-run contract: library-derived target options, metadata-only descriptor submission, candidate preview, accept/reject, resolver registration, keyboard/mobile coverage. Public/export delivery remains out of scope. |
 | groom | Codex / GPT-5 / medium | PASS | `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/923`; fixed unified editor entry point, unplaced PNG fixture, 1280x900 and 375x812, exact focused Vitest and `make check` commands. |
 | routing | Codex / GPT-5 / medium | PASS | Stage 2a frontend integration; rostered implementation-mechanical service/model substitution will be recorded before engineering. Reroute to complex if the existing #922 contract requires backend/schema changes. |
-| engineer | pending | — | — |
-| qa-self-review | pending | — | — |
-| production-readiness | pending | — | — |
+| engineer | Codex / GPT-5 / medium; rostered implementation-mechanical service substituted | PASS | Commit `175a8eb0`: library metadata flows into AI target options, the agent run supports `add_layer` with descriptor-only assets, and the local resolver is registered when the media library opens. No backend migration, dependency, public delivery, or production action. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | FAIL / PARTIAL | QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/923#issuecomment-5852825700`; focused 23 tests, typecheck, format, lint, and build pass. Authenticated browser candidate/accept/reject, undo/version, and broken-asset evidence remain unverified; full `make check` has the known unrelated timestamp-granularity failure in `localProjectRepository.test.ts`. |
+| production-readiness | pending | BLOCKED | No deployed-URL criterion; closure waits for #924/#925 browser scenarios and authenticated QA evidence. |
 | reconcile / close | pending | — | — |

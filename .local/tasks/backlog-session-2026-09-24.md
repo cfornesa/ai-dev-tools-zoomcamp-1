@@ -6655,3 +6655,13 @@ open and must not be run against the stale route assumption.
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Added `frontend/e2e/aiMediaAssetExistingPiece.spec.ts` in `cfbeab2e`; it reuses the canonical structured-layer fixture and the fixed import/resolver path from #924. No API, schema, dependency, migration, or production-data change. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | `make check`, Prettier, oxlint, and TypeScript checks passed. Exact Chromium scenario passed 2/2 at 1280px and 375px with programmatic layer/pixel/restore assertions and inspected screenshots. QA record: `.local/tasks/qa-925-comment.md`. |
 | reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Existing layers and untouched pixels remained unchanged, the mixed `@Hills` request did not silently mutate Hills, the new asset rendered, and restore returned the exact prior scene. No production evidence was inferred. |
+
+## Transaction: #923 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Reconciled the parent contract against closed #922, #924, and #925; no duplicate implementation owner remains. |
+| groom | Codex / GPT-5 / medium | PASS | Retained library-derived targeting, metadata-only requests, candidate accept/reject, resolver-backed rendering, undo/version behavior, keyboard/mobile usability, and broken-asset fallback. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Parent implementation `175a8eb0`, resolver fix `51105db8`, and delegated browser coverage `79842414`/`cfbeab2e`; no API, schema, dependency, migration, or production-data change. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | Focused Vitest: 6 files / 124 tests passed. #924 and #925 exact Chromium scenarios each passed 2/2 at 1280px and 375px, with inspected candidate/accepted/restored screenshots and explicit local-vs-browser evidence boundaries. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/923#issuecomment-5855081680. Parent closed after child browser evidence reconciled the delegated criteria; no deployed URL or production evidence was inferred. |

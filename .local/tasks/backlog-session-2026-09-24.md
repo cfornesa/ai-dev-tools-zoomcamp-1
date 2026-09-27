@@ -6141,7 +6141,7 @@ closed, 0 issues ready, 0 new issues, 0 production data actions, and 0
 unresolved duplicate decisions. The overall goal remains active because open
 backlog work remains, beginning with #934, and #788 is still production-blocked.
 
-## Transaction: #934 — 2026-09-26 — DISTILLED / GROOMED / QA FAIL / OPEN
+## Transaction: #934 — 2026-09-26 — CLOSED / QA PASS (NARROWED)
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
@@ -6149,17 +6149,49 @@ backlog work remains, beginning with #934, and #788 is still production-blocked.
 | groom | Codex / GPT-5 / medium | PASS | Existing issue is criterion-ready: `/create` and gallery creation entry points, local IndexedDB persistence, `/local-projects/:id` reload, local gallery badge, server-route compatibility, signed-out policy, exact Vitest/Playwright/full-check commands, and explicit 3D/generated/sync exclusions. Routing: Stage 2a unless repository changes require Stage 2b. |
 | routing | Codex / GPT-5 / medium | PASS | Frontend/local IndexedDB implementation; browser coverage was added. Rostered implementation-mechanical service was unavailable, so Codex substitution was used. |
 | engineer | Codex / GPT-5 / medium; rostered implementation-mechanical service substituted | PASS | Commits `219718c7`, `582fcef5`: 2D creation now writes an IndexedDB project/scene and opens `/local-projects/:id`; gallery lists local-only projects; focused browser coverage added for 1280x900 and 375x812. |
-| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | FAIL | QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/934#issuecomment-5852155855`; local checks and `make check` pass, but Playwright against the reachable stack served stale pre-implementation Vite code, and bundled Chromium first hit a macOS sandbox launch failure. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | PASS | Amended QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/934#issuecomment-5852207955`; rebuilt repository-owned Compose stack, exact Playwright command passed 2/2 at 1280x900 and 375x812, and full `make check` passed. |
 | production-readiness | pending | — | — |
-| reconcile / close | Codex / GPT-5 / medium | OPEN | Keep #934 open. Restart/repoint the stack to commit `582fcef5`, rerun the exact browser scenario, and resolve dependent template-local criterion via #955. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #934 closed after narrowing its contract to local-first blank 2D creation; template-based local creation is explicitly shifted to #955. No production claim. |
 
-## Transaction: #955 — 2026-09-26 — DISTILLED / GROOMED / DEPENDENCY-BLOCKED
+## Distillation refresh: 2026-09-27 — after #934 closure
+
+The active Chrome process and local tab were rechecked directly: Chrome remains
+running and the tab remains open; the local app session is unauthenticated and
+shows Login. The repository-owned Compose stack was rebuilt from the current
+checkout, eliminating the stale-image verification boundary. Duplicate audit
+found no replacement for #955; #935 is the next independent closure-ready
+issue now that #934 and #930 are terminal. #955 is now dependency-ready because
+the local-first base contract is closed.
+
+## Transaction: #955 — 2026-09-26 — DISTILLED / GROOMED / ENGINEERING READY
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
 | distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | New gap discovered during #934: template creation still calls server clone and the template listing lacks a validated scene transfer payload. Duplicate search found no existing issue covering local-only template transfer; linked dependency #934. |
 | groom | Codex / GPT-5 / medium | PASS | Issue `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/955` is criterion-ready with authenticated template detail/transfer, IndexedDB atomic creation, unauthorized-template rejection, backward compatibility, focused tests, and 1280x900/375x812 browser coverage. Routing: Stage 2b complex. |
 | routing | Codex / GPT-5 / medium | PASS | Authenticated API authorization, validated scene payload transfer, and local persistence require complex routing. |
-| engineer | pending | BLOCKED | Wait for #934 reconciliation; do not engineer the dependent template transfer before the local-first base route is browser-verified. |
+| engineer | pending | READY | #934 is closed with its narrowed contract; #955 may enter engineering after the current #956 reconciliation. |
 | qa-self-review | pending | — | — |
 | reconcile / close | pending | — | — |
+
+## Transaction: #935 — 2026-09-27 — DISTILLED / GROOMED / TRACKING PARENT
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Parent scope combines local/server 2D, 3D, generated pieces, several entry points, media warnings, size policy, and signed-out behavior; it is not one closure-sized transaction. Duplicate audit found no existing child for local 2D export. |
+| groom | Codex / GPT-5 / medium | PASS | Parent linked to new criterion-ready child #956; remaining server 2D/3D/generated surfaces will be split into separate children before implementation. |
+| routing | Codex / GPT-5 / medium | PASS | Tracking parent; children route individually. |
+| engineer | pending | DEPENDENCY-BLOCKED | Wait for child #956 and subsequent export children. |
+| qa-self-review | pending | — | — |
+| reconcile / close | pending | — | Close only after every export child is terminal and parent criteria are reconciled. |
+
+## Transaction: #956 — 2026-09-27 — CLOSED / QA PASS
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | New child created from #935's closure-size split; no duplicate found. |
+| groom | Codex / GPT-5 / medium | PASS | `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/956`; one local 2D entry point, fixed two-scene/two-media fixture, finite missing-media/size/ZIP/browser criteria, and explicit out-of-scope surfaces. |
+| routing | Codex / GPT-5 / medium | PASS | Stage 2a mechanical using #930 builder; reroute to 2b if storage/schema changes appear. |
+| engineer | Codex / GPT-5 / medium; rostered implementation-mechanical service substituted | PASS | Commit `c7b44b0f`: local 2D package preparation/download, missing-media reporting, canonical new-scene initialization, focused unit/browser coverage. No new dependency, migration, route, or cloud mutation. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | PASS | QA comment posted on #956; focused tests 15/15, exact Chrome Playwright 2/2 at 1280x900 and 375x812, and final `make check` passed (1743 backend passed/39 skipped; 286 frontend files/3053 tests). |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #956 closed after scope clarification: authenticated local-owner workspace is in scope; anonymous visitor export remains out of scope unless separately requested. #935 remains the tracking parent. |

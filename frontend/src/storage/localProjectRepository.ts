@@ -52,18 +52,20 @@ export const MAX_PROJECT_BYTES = 52_428_800;
 export const MAX_PROJECT_FILES = 100;
 
 /** #512's deliberately small, explicit allowlist of importable media MIME
- * types. Not specified in the issue's schema section itself, but required
- * by its "unsupported file type" acceptance criterion; scoped to the raster/
- * vector image types the renderer already knows how to draw (see e.g.
- * `artPieceSandbox.ts`'s and `generateHtmlExport.ts`'s existing `image/png`/
- * `image/svg+xml` handling) rather than inventing a broader media policy
- * this issue was never asked to define. */
+ * types. Images remain the only renderable scene media today; the bounded
+ * audio entries support owner-authored media-library assets without claiming
+ * that the scene renderer or export runtime can play them yet. */
 export const SUPPORTED_MEDIA_MIME_TYPES: ReadonlySet<string> = new Set([
   'image/png',
   'image/jpeg',
   'image/gif',
   'image/webp',
   'image/svg+xml',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/ogg',
+  'audio/webm',
+  'audio/mp4',
 ]);
 
 // --- Classified errors ---------------------------------------------------

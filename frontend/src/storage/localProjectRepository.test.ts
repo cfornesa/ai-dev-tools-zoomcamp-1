@@ -356,6 +356,29 @@ describe('localProjectRepository', () => {
     expect(storedBlob?.size).toBe(32);
   });
 
+  it('imports an owner-scoped audio asset with the same checksum and quota guarantees', async () => {
+    const db = await openLocalProjectDatabase();
+    const ownerId = 'alice';
+    const project = await createProject(db, { ownerId, title: 'Audio project' });
+    const blob = new Blob(['audio bytes'], { type: 'audio/mpeg' });
+    const asset = await importMediaAsset(db, {
+      projectId: project.id,
+      blob,
+      mimeType: 'audio/mpeg',
+      filename: 'ambient.mp3',
+      altText: 'Ambient sample',
+    });
+
+    expect(asset.mimeType).toBe('audio/mpeg');
+    expect(asset.filename).toBe('ambient.mp3');
+    expect(asset.altText).toBe('Ambient sample');
+    expect(await getMediaBlob(db, asset.id)).not.toBeNull();
+    expect(await getProjectUsage(db, project.id)).toEqual({
+      bytesUsed: blob.size,
+      fileCount: 1,
+    });
+  });
+
   it('rejects an unsupported file type without touching existing project state', async () => {
     const db = await openLocalProjectDatabase();
     const ownerId = 'alice';

@@ -15,7 +15,7 @@ const repo = vi.hoisted(() => ({
   removeMediaReference: vi.fn(),
   requestPersistentStorage: vi.fn().mockResolvedValue({ supported: true, persisted: false }),
   updateMediaAssetMetadata: vi.fn(),
-  SUPPORTED_MEDIA_MIME_TYPES: new Set(['image/png', 'image/jpeg']),
+  SUPPORTED_MEDIA_MIME_TYPES: new Set(['image/png', 'image/jpeg', 'audio/mpeg']),
 }));
 
 vi.mock('../storage/localProjectRepository', () => repo);
@@ -57,8 +57,20 @@ describe('ProjectMediaLibraryPanel', () => {
     fireEvent.change(input, {
       target: { files: [new File(['pixels'], 'sunset.png', { type: 'image/png' })] },
     });
-    expect(screen.getByRole('dialog', { name: 'Describe this image' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Import image' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Describe this media' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Import media' })).toBeInTheDocument();
+  });
+
+  it('accepts an audio asset through the same owner media-library import path', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    const input = screen.getByLabelText('Import media file') as HTMLInputElement;
+    fireEvent.change(input, {
+      target: { files: [new File(['audio'], 'ambient.mp3', { type: 'audio/mpeg' })] },
+    });
+    expect(screen.getByRole('dialog', { name: 'Describe this media' })).toBeInTheDocument();
+    expect(screen.getByText('ambient.mp3')).toBeInTheDocument();
   });
 
   it('moves through File menu items with the keyboard and restores focus on Escape', async () => {
@@ -85,7 +97,7 @@ describe('ProjectMediaLibraryPanel', () => {
       target: { files: [new File(['script'], 'payload.txt', { type: 'text/plain' })] },
     });
     expect(screen.getByRole('alert')).toHaveTextContent('is not a supported media file type');
-    expect(screen.queryByRole('dialog', { name: 'Describe this image' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Describe this media' })).not.toBeInTheDocument();
   });
 
   it('lists a library asset and inserts it as an independently selectable image layer', async () => {
@@ -143,9 +155,9 @@ describe('ProjectMediaLibraryPanel', () => {
     await user.click(within(asset).getByRole('button', { name: 'Rename metadata' }));
     await user.clear(screen.getByLabelText('Asset name'));
     await user.type(screen.getByLabelText('Asset name'), 'new.jpg');
-    await user.clear(screen.getByLabelText('Alt text (leave blank for decorative)'));
+    await user.clear(screen.getByLabelText('Descriptive label (leave blank for decorative)'));
     await user.type(
-      screen.getByLabelText('Alt text (leave blank for decorative)'),
+      screen.getByLabelText('Descriptive label (leave blank for decorative)'),
       'New description',
     );
     await user.click(screen.getByRole('button', { name: 'Save metadata' }));

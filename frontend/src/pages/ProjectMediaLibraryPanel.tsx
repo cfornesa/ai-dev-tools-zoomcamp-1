@@ -173,7 +173,7 @@ export default function ProjectMediaLibraryPanel({
     if (!pendingImport) return;
     const altText = pendingImport.altText.trim();
     if (!pendingImport.decorative && !altText) {
-      setError('Add meaningful alt text or choose Decorative image before importing.');
+      setError('Add a descriptive label or choose Decorative media before importing.');
       return;
     }
     try {
@@ -320,9 +320,9 @@ export default function ProjectMediaLibraryPanel({
           aria-labelledby="media-import-title"
           className="media-import-dialog"
         >
-          <h3 id="media-import-title">Describe this image</h3>
+          <h3 id="media-import-title">Describe this media</h3>
           <p>{pendingImport.file.name}</p>
-          <label htmlFor="media-import-alt-text">Meaningful alt text</label>
+          <label htmlFor="media-import-alt-text">Descriptive label</label>
           <input
             id="media-import-alt-text"
             value={pendingImport.altText}
@@ -339,10 +339,10 @@ export default function ProjectMediaLibraryPanel({
                 setPendingImport({ ...pendingImport, decorative: event.target.checked })
               }
             />
-            Decorative image
+            Decorative media
           </label>
           <button type="button" onClick={() => void confirmImport()}>
-            Import image
+            Import media
           </button>
           <button type="button" onClick={() => setPendingImport(null)}>
             Cancel
@@ -439,7 +439,7 @@ function MediaAssetRow({
       {thumbnail ? (
         <img src={thumbnail} alt={asset.altText || ''} />
       ) : (
-        <span aria-label="No image preview">No preview</span>
+        <span aria-label="No media preview">No preview</span>
       )}
       <div>
         {renaming ? (
@@ -451,7 +451,7 @@ function MediaAssetRow({
               onChange={(event) => onRenameChange(event.target.value)}
             />
             <label htmlFor={`rename-media-alt-${asset.id}`}>
-              Alt text (leave blank for decorative)
+              Descriptive label (leave blank for decorative)
             </label>
             <input
               id={`rename-media-alt-${asset.id}`}
@@ -467,11 +467,18 @@ function MediaAssetRow({
         )}
         <p>
           {asset.mimeType} · {asset.byteSize} bytes ·{' '}
-          {asset.altText ? 'Alt text set' : 'Decorative'} · Used in {imageUseCount(asset)} scene(s)
+          {asset.altText ? 'Descriptive label set' : 'Decorative'} · Used in {imageUseCount(asset)}{' '}
+          scene(s)
         </p>
-        <button type="button" onClick={onInsert}>
-          Insert into active scene
-        </button>
+        {asset.mimeType.startsWith('image/') ? (
+          <button type="button" onClick={onInsert}>
+            Insert into active scene
+          </button>
+        ) : (
+          <span className="editor-media-asset-note">
+            Audio asset saved in the library; scene playback is configured separately.
+          </span>
+        )}
         <button type="button" onClick={onRenameStart}>
           Rename metadata
         </button>

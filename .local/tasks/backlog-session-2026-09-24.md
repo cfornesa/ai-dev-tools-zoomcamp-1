@@ -6514,3 +6514,22 @@ Playwright command cannot launch Chromium on this macOS host because of the
 MachPort permission failure. The remaining action is an approved browser
 runner or equivalent closure-grade screenshot/API evidence, not another
 implementation rewrite. No production or deployed-URL criterion is inferred.
+
+## Transaction: #923 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PARTIAL / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #922 is closed and #923 owns the implementation contract for unplaced/placed media-library targeting. Duplicate audit found no newer owner for the UI/request wiring; browser acceptance is intentionally separated into #924/#925. |
+| groom | Codex / GPT-5 / medium | PASS | Existing criterion-ready issue retained: media metadata only, add-layer request, preview/accept/reject, undo/history, keyboard/375px, and broken-asset fallback. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS / PRE-EXISTING | Implementation commit `175a8eb0` already adds library-derived options, add-layer mode, metadata-only request descriptors, and resolver registration. No additional code change was necessary in this pass. |
+| qa-self-review | Codex / GPT-5 / medium; local tests | PARTIAL | Focused Vitest 4 files/23 tests passed and full `make check` passed after #960. Candidate acceptance, undo/history, 375px asset interaction, and broken-asset browser rendering remain open; no synthetic or unauthenticated browser evidence promoted. QA refresh: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/923#issuecomment-5853872629. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN | Keep #923 open while #924/#925 execute the explicitly separate authenticated browser acceptance scenarios; #923 is not closed on unit evidence alone. |
+
+### Distillation refresh after #923 — 2026-09-27
+
+#923 is implementation-green but not terminal. #924 and #925 remain the
+correct next browser-verification dependents. The active host's Playwright
+Chromium MachPort failure is a verification boundary; it does not authorize
+rewriting the already-covered implementation or closing browser criteria on
+synthetic events. Production issues #788/#906 and owner-choice #886 remain
+separately blocked and are not pulled into this local implementation pass.

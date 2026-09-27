@@ -100,7 +100,9 @@ export default function ProjectMediaLibraryPanel({
   }
 
   useEffect(() => {
-    return () => setActiveMediaAssetResolver(null);
+    return () => {
+      setActiveMediaAssetResolver(null);
+    };
   }, []);
 
   function closeFileMenu() {
@@ -197,6 +199,9 @@ export default function ProjectMediaLibraryPanel({
         altText: pendingImport.decorative ? '' : altText,
       });
       setDb(nextDb);
+      // Importing opens the library, so bind the renderer to this project's
+      // local media store here as well as in the explicit library-open path.
+      setActiveMediaAssetResolver((assetId) => getMediaBlob(nextDb, assetId));
       await refresh(nextDb);
       setPendingImport(null);
       setError(null);

@@ -6217,3 +6217,35 @@ It is linked from #847; ambient playback remains out of scope for #957.
 | qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | PASS | QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/957#issuecomment-5852627438`; focused UI/storage 29/29, clean full `make check` backend 1746 passed/39 skipped and frontend 286 files/3055 tests. The first full run had one unrelated timestamp-granularity flake; focused rerun and clean full rerun passed. |
 | production-readiness | Codex / GPT-5 / medium; owner-authorized session substitution | PASS for #957 / NOT READY overall | Local-only media-library work has no production action or deployed-URL criterion. #847 remains open for playback and #788 remains production-blocked. |
 | reconcile / close | Codex / GPT-5 / medium | PASS | #957 closed after the QA PASS comment; the audio-ingestion prerequisite is complete and #847 remains explicitly open for playback/runtime behavior. |
+
+## Distillation refresh: 2026-09-27 — after #957 closure
+
+The #847 prerequisite is complete, but #847 remains dependency-blocked: its
+public-viewer and ZIP delivery criteria depend on #941, while #886 is still
+an owner-decision architecture issue. #941 is the next dependency-ready,
+criterion-ready implementation issue because #932 is closed; duplicate audit
+found no separate public-media delivery implementation issue. #937/#938/#939
+and #940 remain ordered behind #936/#937/#938/#939 respectively, and #886
+cannot be engineered until the owner selects its delivery option.
+
+## Transaction: #847 — 2026-09-27 — DISTILLED / GROOMED / DEPENDENCY-BLOCKED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #957 now supplies the local audio-ingestion prerequisite, but #847 still requires public/ZIP delivery and sonic-contract/runtime work owned by #941 and the #886 architecture decision. |
+| groom | Codex / GPT-5 / medium | PASS | Existing criteria remain coherent for a later transaction; no scope merge performed. #847 is not closure-ready until #941 and #886 are reconciled. |
+| routing | Codex / GPT-5 / medium | BLOCKED | Stage 2b complex, dependency-blocked by #941 and owner decision #886. |
+| engineer | pending | — | — |
+| qa-self-review | pending | — | — |
+| reconcile / close | pending | — | — |
+
+## Transaction: #941 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERING PENDING
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Public server-hosted media delivery is the next independent dependency-ready surface after #932; duplicate audit found no replacement implementation issue. |
+| groom | Codex / GPT-5 / medium | PASS | `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/941` is criterion-ready with one public-media delivery boundary, anonymous/private authorization, headers, viewer/ZIP integration, browser fixtures, exact commands, and explicit out-of-scope publish/playback/production boundaries. |
+| routing | Codex / GPT-5 / medium | PASS | Stage 2b complex: public authorization, response headers, viewer integration, and cross-surface asset transfer. Rostered implementation-complex service substitution will be recorded if engineering proceeds. |
+| engineer | pending | — | — |
+| qa-self-review | pending | — | — |
+| reconcile / close | pending | — | — |

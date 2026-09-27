@@ -1615,3 +1615,13 @@ route. A failed collision or invalid value is atomic and leaves the current
 slug and membership unchanged. No slug migration rewrites existing rows
 destructively; removing a redirect is a rollback-safe administrative cleanup,
 not part of the owner mutation.
+# Portable piece packages
+
+Portable piece ZIPs use the shared V1 manifest in
+`schema/piece-package.schema.json`. Payload paths are integer-indexed
+(`files/<index>.json` or `files/<index>.bin`), every payload has a SHA-256
+entry, and imports validate the complete archive before returning any data.
+Visibility intent is metadata only during import; importing never publishes a
+piece. The frontend implementation is
+`frontend/src/storage/piecePackage.ts`, and the independent server validator is
+`backend/scenes/piece_package.py`.

@@ -70,6 +70,12 @@ migration decision exists.
 
 ## Fixtures
 
+`piece-package.schema.json` is the shared V1 manifest contract for portable
+piece ZIPs. Its payload files use integer-indexed `files/<index>.json` and
+`files/<index>.bin` paths; user-controlled names remain metadata only. The
+frontend and backend package validators load this schema independently and
+must agree on the fixtures under `fixtures/piece-package/`.
+
 - `fixtures/valid/` — documents every validator must accept.
 - `fixtures/invalid/` — documents every validator must reject (unknown
   field, missing required field, wrong type, dangling reference,

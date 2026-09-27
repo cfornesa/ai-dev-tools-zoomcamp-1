@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://augmentrart.com/schema/piece-package.schema.json",
+  "title": "AugmentrART portable piece package manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formatVersion", "kind", "metadata", "records", "mediaAssets", "files"],
+  "properties": {
+    "formatVersion": { "const": 1 },
+    "kind": { "enum": ["2d", "3d", "generated"] },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "description", "tags", "visibilityIntent", "origin"],
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "visibilityIntent": { "enum": ["private", "public", "unpublished"] },
+        "origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["appVersion", "exportedAt"],
+          "properties": {
+            "appVersion": { "type": "string" },
+            "exportedAt": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["index", "schemaVersion", "fileIndex"],
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "schemaVersion": { "type": "integer", "minimum": 1 },
+          "fileIndex": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "source": { "type": ["object", "null"] },
+    "ink": { "type": ["object", "null"] },
+    "sonic": { "type": ["object", "null"] },
+    "capabilities": { "type": ["object", "null"] },
+    "mediaAssets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["index", "fileIndex", "filename", "altText", "mimeType", "byteSize", "sha256"],
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "fileIndex": { "type": "integer", "minimum": 0 },
+          "filename": { "type": "string" },
+          "altText": { "type": "string" },
+          "mimeType": { "type": "string" },
+          "byteSize": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["index", "path", "byteSize", "sha256"],
+        "properties": {
+          "index": { "type": "integer", "minimum": 0 },
+          "path": { "type": "string", "pattern": "^files/[0-9]+\\.(json|bin)$" },
+          "byteSize": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    }
+  }
+}

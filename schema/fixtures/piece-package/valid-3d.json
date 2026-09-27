@@ -1,0 +1,14 @@
+{
+  "formatVersion": 1,
+  "kind": "3d",
+  "metadata": {
+    "title": "3D fixture",
+    "description": "Portable package fixture.",
+    "tags": [],
+    "visibilityIntent": "private",
+    "origin": { "appVersion": "fixture", "exportedAt": "2026-09-26T00:00:00Z" }
+  },
+  "records": [],
+  "mediaAssets": [],
+  "files": []
+}

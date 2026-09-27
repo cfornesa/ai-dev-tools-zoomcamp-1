@@ -6037,14 +6037,16 @@ available, but the local fixture tab is unauthenticated and shows Login; no
 logout was performed. #788 remains blocked on a supported authorized
 production execution path; unrelated open issues remain routed separately.
 
-## Distillation / grooming: #930 — 2026-09-26 — READY FOR ENGINEERING
+## Transaction: #930 — 2026-09-26 — ENGINEERED / QA PENDING
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
 | distill | Codex / GPT-5 / medium | PASS | #930 is the next dependency-ready open issue after #929; #928 is closed and the existing #512/#526 formats are explicitly compatibility inputs, not duplicates. |
 | groom | Codex / GPT-5 / medium | PASS | Closure contract names the shared schema, mirrored frontend/backend validators, one valid and four invalid fixture classes, 2D/3D/generated round trips, compatibility readers, exact focused commands, and no UI/endpoints/production scope. |
 | routing | Codex / GPT-5 / medium | PASS | Stage 2b complex/schema contract; implementation must keep frontend/backend validators and shared fixtures in parity. |
-| next action | — | READY | Engineer #930 as one pure package-format contract before dependent #932, #933, #935, and #936. |
+| engineer | Codex / GPT-5 / medium; rostered complex service substituted | PASS | Added shared manifest schema, frontend/backend ZIP builders/parsers, SHA-256 and atomic validation, scene/source validation, legacy #512/#526 converters, shared fixtures, and focused tests. |
+| qa-self-review | pending | — | Focused checks pass; final full gate after the completed implementation and criterion matrix remain pending. |
+| reconcile / close | pending | — | Keep #930 open until QA reviews every acceptance criterion and records the issue comment. |
 
 ## Production-readiness refresh: 2026-09-26 — NOT READY
 

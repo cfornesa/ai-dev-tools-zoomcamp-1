@@ -497,6 +497,12 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function nextUpdatedAt(previous: string): string {
+  const previousMs = Date.parse(previous);
+  const nextMs = Math.max(Date.now(), Number.isFinite(previousMs) ? previousMs + 1 : 0);
+  return new Date(nextMs).toISOString();
+}
+
 // --- Projects ----------------------------------------------------------------
 
 export async function createProject(
@@ -674,7 +680,11 @@ export async function updateProject(
   if (!existing) {
     throw corruptData(`Local project "${projectId}" was not found for this owner.`);
   }
-  const updated: LocalProjectRecord = { ...existing, ...patch, updatedAt: nowIso() };
+  const updated: LocalProjectRecord = {
+    ...existing,
+    ...patch,
+    updatedAt: nextUpdatedAt(existing.updatedAt),
+  };
   try {
     const tx = db.transaction(STORE_PROJECTS, 'readwrite');
     tx.objectStore(STORE_PROJECTS).put(updated);

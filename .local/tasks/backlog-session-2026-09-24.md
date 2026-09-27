@@ -6473,3 +6473,23 @@ boundary for #958, not evidence that the owner session was logged out.
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS | Existing product fix `ebc7e2aa` exposes the `ai-edit` panel before the 2D tool branch and makes the expanded responsive grid explicit. `frontend/e2e/aiRegionTargetExisting.spec.ts` was corrected to use normal Playwright `.click()` for all AI-edit activation paths. |
 | qa-self-review | Codex / GPT-5 / medium; active Chrome substitution | PASS | Real authenticated Chrome normal clicks passed at 375x812 and 1280x900 on disposable local Compose/PostgreSQL fixture `e2e-ai-2d-mobile`: disclosure expanded, AI edit was reachable, and `Revise this piece` plus its named textbox appeared. `npx playwright test ... --list` discovered all 4 tests. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/958#issuecomment-5853585262. |
 | reconcile / close | Codex / GPT-5 / medium | PASS | #958 closed after the criterion matrix. No production or deployed-URL criterion was inferred; #921 remains the next independent browser verification transaction. |
+
+## Transaction: #960 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Reproducible focused failure was found during the #959 required check: two immediate local-project updates could share the same ISO millisecond. Duplicate audit found no open issue owning this invariant; #536 is a separate durable-save concern. |
+| groom | Codex / GPT-5 / medium | PASS | Contract constrained the change to strictly advancing `updatedAt`, preserving `createdAt`, with no sleep, API/schema/migration/dependency/route change. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS | Added a small timestamp helper in `frontend/src/storage/localProjectRepository.ts`; no external dependency or public contract changed. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution | PASS | Focused repository test passed; full frontend lint, format-check, typecheck, and Vitest suite passed. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/960#issuecomment-5853793583. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #960 closed after the criterion matrix. The issue-spec comment is retained as the grooming record; the QA comment is the authoritative closure evidence. |
+
+### Distillation refresh after #960 — 2026-09-27
+
+#960 is closed and removes the full-check blocker discovered while processing
+#959. #959 may now complete its required repository-wide check. #921 remains
+partially verified: region targeting passed at desktop and mobile in active
+Chrome, same-line SVG targeting passed after #959's fix, and the `@ink`
+option was reachable, but exact Playwright execution remains blocked by the
+macOS Chrome MachPort permission failure; synthetic dispatch is not closure
+evidence. No production issue is closed by these local results.

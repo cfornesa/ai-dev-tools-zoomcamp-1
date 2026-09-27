@@ -147,3 +147,18 @@ production-write criterion was treated as passed or silently deferred.
 | #788 production data action | BLOCKED | The reviewed wrapper is not published, so preview → snapshot → one write → live verification cannot begin. |
 
 Readiness remains `BLOCKED`. Local/Compose evidence is not production evidence, and no production database, secret, publish, or data action was performed.
+
+## Reassessment after current distillation refresh — 2026-09-27
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Repository quality | PASS | `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed: backend 1752 passed / 39 skipped; frontend 290 files / 3069 tests; typecheck and format passed; existing lint warnings only. |
+| Active Chrome | PASS | `cua.getState()` confirmed the signed-in Chrome, local application, GitHub, and Replit tabs. |
+| Issue graph | OPEN / GATED | #938 remains OPEN/FOLLOW-UP; #939 is dependency-blocked; the remaining open inventory is reconciled to production-data, provider, owner-decision, hardware, or dependent parity work. No closed issue was reopened. |
+| Reviewed mode-aware wrapper | BLOCKED FOR PUBLICATION | `scripts/start-production.sh` is present locally and provides preview mode plus a disabled-by-default importer gate. `GIT_URL` is absent, so the authorized safe push and Replit Publish were not attempted. |
+| #788 production import | BLOCKED | The required sequence remains publish wrapper → preview → affected-row snapshot → one write → live 1280x900 / 375x812 verification. No production shell, command, or row mutation was performed. |
+
+The readiness result remains `BLOCKED`. Chrome is available; the unresolved
+boundary is secure publication/runtime access plus the open dependency and
+production evidence set. Local and Compose results do not close deployed URL
+or production-database criteria.

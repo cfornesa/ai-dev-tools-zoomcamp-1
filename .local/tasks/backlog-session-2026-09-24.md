@@ -6941,3 +6941,21 @@ been attempted and no production publish or data action has occurred.
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS | Commit `28ee2cee` adds local generated creation/editor route, IndexedDB version save/restore, sandbox preview, package import/export, chooser actions, and 1280x900/375x812 E2E coverage. |
 | qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 service unavailable and not credited | FAIL / PARTIAL | QA matrix: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/938#issuecomment-5859468717; screenshot follow-up: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/938#issuecomment-5859496393. Focused package tests 6/6 and rebuilt-Compose Chromium 2/2 pass; full frontend 290 files/3069 tests pass; screenshot capture is now PASS, while AI consent and generated capability controls remain incomplete. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN / FOLLOW-UP | Not closed: #939 must complete AI transfer disclosure/consent, and the local generated route still needs explicit screenshot/thumbnail capture before every criterion can pass. No production evidence inferred. |
+
+## Distillation refresh — 2026-09-27 — active Chrome / current issue graph
+
+| Check | Result | Evidence / next action |
+|---|---|---|
+| Browser availability | PASS | `cua.getState()` confirmed the signed-in Chrome session, local app, GitHub, and Replit tabs. Browser availability is not the production blocker. |
+| Current repository quality | PASS | `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed: backend 1752 passed / 39 skipped; frontend 290 files / 3069 tests; typecheck and format passed; lint has existing warnings only. |
+| #938 reconciliation | OPEN / FOLLOW-UP | Current QA follow-up passes local screenshot/thumbnail capture and package/browser criteria. AI transfer disclosure/consent remains #939-owned; generated capability-control/parity is not silently claimed. Comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/938#issuecomment-5859622691. |
+| #939 eligibility | DEPENDENCY-BLOCKED | #939 explicitly depends on #938's local foundation; no duplicate or premature implementation transaction was created. |
+| Other open issue audit | NO INDEPENDENT READY ISSUE | #788/#906/#946 are production-data bounded; #926 is provider-credential gated; #859–#861 depend on underlying parity/fixture work; #874/#886 and #911–#916 are owner/data/hardware or dependency gated; #940–#945 form the local-first transfer chain. Closed issues were not reopened. |
+| Reviewed #937 wrapper publication | BLOCKED | The mode-aware wrapper is present locally, but `GIT_URL` is absent. Safe push and Replit Publish were not attempted; no production command or data mutation occurred. |
+
+Distillation exit criteria are satisfied for this refresh: the live issue graph
+has been deduplicated and every remaining item is classified as open-follow-up,
+dependency-blocked, owner/provider/hardware gated, or production-bound. The
+next safe transaction is #938 follow-up engineering, or the owner-authorized
+wrapper publication once the secure push credential is available through the
+runtime (never pasted into chat).

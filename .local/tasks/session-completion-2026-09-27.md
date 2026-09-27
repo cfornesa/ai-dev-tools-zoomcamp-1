@@ -166,3 +166,20 @@ unavailable; independent stage-3 review was not run or credited. The processed
 #938 transaction has terminal reconciliation as OPEN/FOLLOW-UP, not a missing
 status. The project remains open because #938/#939 and the existing gated or
 production-bound issues are unresolved.
+
+## Current continuation audit — 2026-09-27
+
+| Rollup | Result |
+|---|---|
+| Distillation | PASS | Active Chrome was confirmed; duplicate and closed-issue audits found no new independent criterion-ready issue. #938 remains OPEN/FOLLOW-UP and #939 remains dependency-blocked. |
+| Repository checks | PASS | `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`: backend 1752 passed / 39 skipped; frontend 290 files / 3069 tests. |
+| Production wrapper publication | BLOCKED | The reviewed mode-aware wrapper exists locally, but no `GIT_URL` credential is available in the secure runtime. No push, Replit Publish, restart, secret change, or production mutation was attempted. |
+| #788 | OPEN / BLOCKED | Guarded production workflow cannot begin until the wrapper is published and a supported production preview/shell is available. |
+| Missing terminal status | 0 | The processed #938 transaction is explicitly OPEN/FOLLOW-UP, not omitted. |
+
+Routing audit: the current distillation, reconciliation, readiness, and
+completion records are Codex/GPT-5/medium substitutions where the rostered
+external services were unavailable; independent stage-3 review remains
+uncredited. The project is not session-complete or production-ready. Next
+action is #938 follow-up engineering, or owner-authorized safe publication
+through a secure runtime credential followed by the guarded #788 workflow.

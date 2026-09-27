@@ -6685,3 +6685,13 @@ open and must not be run against the stale route assumption.
 | engineer | N/A | N/A | No implementation started against an incomplete package producer contract. |
 | qa-self-review | N/A | BLOCKED | No import browser or storage test is valid until all required #935 package fixtures exist. QA record: `.local/tasks/qa-936-comment.md`. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN / DEPENDENCY BLOCKER | Missing child #965 created after duplicate audit: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/965. |
+
+## Transaction: #965 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERING PENDING / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Duplicate audit found no existing child for server-backed 2D/3D/generated portable package export; created as the missing parent #935 slice. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Contract isolates existing #930 builder integration, browser-held media warnings, kind-specific server data, responsive/accessibility evidence, and no runnable-ZIP or production scope. |
+| engineer | Pending — frontend implementation | NOT STARTED | Requires a dedicated implementation pass; no code has been changed for this issue. |
+| qa-self-review | Pending | NOT STARTED | No diff exists. |
+| reconcile / close | Pending | OPEN | Child issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/965. |

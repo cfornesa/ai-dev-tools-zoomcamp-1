@@ -35,6 +35,7 @@ import {
   type DatabaseSummary,
   type LocalStorageDashboardSnapshot,
 } from '../storage/localStorageDashboard';
+import LocalPieceSyncOffer from './LocalPieceSyncOffer';
 
 function formatBytes(bytes: number | undefined): string {
   if (bytes === undefined) return 'unknown';
@@ -1017,6 +1018,7 @@ function AccountLocalStorage() {
           </section>
 
           <LocalProjectsManager ownerId={auth.user.username} />
+          <LocalPieceSyncOffer />
         </>
       )}
     </section>

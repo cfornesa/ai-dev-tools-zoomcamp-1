@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { listProjects, type Project } from '../api/projects';
 import { listProjects3D, type Project3D } from '../api/projects3d';
@@ -12,12 +12,14 @@ import {
   openLocalProjectDatabase,
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
+import { importLocalPiecePackage } from '../storage/localPiecePackageImport';
 
 type LoadState = 'loading' | 'error' | 'ready';
 type ProjectRendererFilter = 'all' | '2d' | '3d';
 
 function Gallery() {
   const auth = useAuth();
+  const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [projects, setProjects] = useState<Project[]>([]);
   // Gap found live in production while verifying #238's fix: 3D projects
@@ -30,6 +32,28 @@ function Gallery() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [projectRenderer, setProjectRenderer] = useState<ProjectRendererFilter>('all');
+
+  async function importPiecePackage(file: File) {
+    if (auth.status !== 'signed-in') {
+      setCreateError('Sign in before importing a local piece package.');
+      return;
+    }
+    try {
+      const db = await openLocalProjectDatabase();
+      const result = await importLocalPiecePackage(
+        db,
+        auth.user.username,
+        new Uint8Array(await file.arrayBuffer()),
+      );
+      db.close();
+      setLocalProjects((current) => [...current, result.project]);
+      navigate(`/local-projects/${result.project.id}`);
+    } catch (error) {
+      setCreateError(
+        `Could not import that piece package. ${error instanceof Error ? error.message : 'The selected package is invalid.'}`,
+      );
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +138,7 @@ function Gallery() {
           creating={creating}
           onCreatingChange={setCreating}
           onError={setCreateError}
+          onImport={importPiecePackage}
         />
       </div>
 

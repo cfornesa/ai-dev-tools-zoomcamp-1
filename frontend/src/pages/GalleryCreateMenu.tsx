@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useMenuButton } from '../a11y/useMenuButton';
@@ -7,6 +8,7 @@ type GalleryCreateMenuProps = {
   creating: boolean;
   onCreatingChange: (creating: boolean) => void;
   onError: (message: string | null) => void;
+  onImport: (file: File) => Promise<void>;
 };
 
 type MenuAction = { id: string; label: string; run: () => Promise<string> };
@@ -21,8 +23,14 @@ type MenuAction = { id: string; label: string; run: () => Promise<string> };
  * (`galleryCreateActions.ts`) `CreateChooser.tsx` calls, so both paths
  * stay behaviorally identical to each other and to the pre-#268 buttons.
  */
-function GalleryCreateMenu({ creating, onCreatingChange, onError }: GalleryCreateMenuProps) {
+function GalleryCreateMenu({
+  creating,
+  onCreatingChange,
+  onError,
+  onImport,
+}: GalleryCreateMenuProps) {
   const navigate = useNavigate();
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const actions: MenuAction[] = [
     {
@@ -44,7 +52,7 @@ function GalleryCreateMenu({ creating, onCreatingChange, onError }: GalleryCreat
   ];
 
   const { isOpen, toggle, close, triggerRef, onTriggerKeyDown, onMenuKeyDown, getItemRef } =
-    useMenuButton(actions.length + 1);
+    useMenuButton(actions.length + 2);
 
   async function handleSelect(action: MenuAction) {
     close();
@@ -112,8 +120,35 @@ function GalleryCreateMenu({ creating, onCreatingChange, onError }: GalleryCreat
               Browse templates
             </button>
           </li>
+          <li role="none">
+            <button
+              type="button"
+              role="menuitem"
+              ref={getItemRef(actions.length + 1)}
+              onKeyDown={(event) => onMenuKeyDown(event, actions.length + 1)}
+              onClick={() => importInputRef.current?.click()}
+              disabled={creating}
+            >
+              Import a piece package
+            </button>
+          </li>
         </ul>
       )}
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".zip,application/zip"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          close();
+          onCreatingChange(true);
+          onError(null);
+          void onImport(file).finally(() => onCreatingChange(false));
+          event.target.value = '';
+        }}
+      />
     </div>
   );
 }

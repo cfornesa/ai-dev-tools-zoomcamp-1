@@ -28,6 +28,7 @@ import {
   requestPersistentStorage,
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
+import { importLocalPiecePackage } from '../storage/localPiecePackageImport';
 import {
   getLocalStorageDashboardSnapshot,
   isNearQuota,
@@ -199,6 +200,7 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
   const [folderArchives, setFolderArchives] = useState<string[]>([]);
   const [folderBusy, setFolderBusy] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const pieceInputRef = useRef<HTMLInputElement | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -433,6 +435,30 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
     }
   }
 
+  async function importPiecePackage(file: File) {
+    setBusyId('__piece-import__');
+    setMessage(null);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const db = await openLocalProjectDatabase();
+      const result = await importLocalPiecePackage(db, ownerId, bytes);
+      db.close();
+      setMessage(
+        `Imported "${result.project.title}" as a new local piece with ${result.scenes.length} version(s) and ${result.mediaAssets.length} media file(s).`,
+      );
+      setRefreshKey((key) => key + 1);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'The selected piece package is invalid.';
+      setMessage(
+        `Could not import that piece package. ${message} No existing local data was changed.`,
+      );
+    } finally {
+      setBusyId(null);
+      if (pieceInputRef.current) pieceInputRef.current.value = '';
+    }
+  }
+
   async function inspectFolderArchive(filename: string) {
     if (!folderHandle || folderStatus !== 'granted') return;
     setFolderBusy(true);
@@ -579,6 +605,18 @@ function LocalProjectsManager({ ownerId }: { ownerId: string }) {
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) void inspectArchive(file);
+          }}
+        />
+        <label htmlFor="piece-package-input">Import a piece package</label>
+        <input
+          ref={pieceInputRef}
+          id="piece-package-input"
+          type="file"
+          accept=".zip,application/zip"
+          disabled={busyId !== null}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void importPiecePackage(file);
           }}
         />
       </div>

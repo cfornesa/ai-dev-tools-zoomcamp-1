@@ -38,6 +38,7 @@ test.describe('Local-first 3D creation (#937)', () => {
       await page.getByRole('button', { name: 'Add sphere' }).click();
       await page.getByRole('button', { name: 'Add plane' }).click();
       await page.getByRole('button', { name: 'Add drawing plane' }).click();
+      await page.getByRole('button', { name: 'Hide 3d authoring' }).click();
       await expect(page.getByText('Sphere 1')).toBeVisible();
 
       await page.getByRole('button', { name: 'Sphere 1', exact: true }).click();
@@ -46,9 +47,11 @@ test.describe('Local-first 3D creation (#937)', () => {
       await page.getByLabel('Animation kind').selectOption('rotate');
       await expect(page.getByLabel('Animation axis')).toHaveValue('y');
 
+      await page.getByRole('button', { name: '3D authoring' }).click();
       await page.getByRole('button', { name: 'Undo', exact: true }).click();
       await expect(page.getByRole('button', { name: 'Redo', exact: true })).toBeEnabled();
       await page.getByRole('button', { name: 'Redo', exact: true }).click();
+      await page.getByRole('button', { name: 'Hide 3d authoring' }).click();
 
       await page.getByRole('button', { name: 'Drawing plane 1', exact: true }).click();
       await page.getByTestId('draw-plane-button').click();

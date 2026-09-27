@@ -6331,6 +6331,11 @@ select.ai-proposal-field-full-width {
   z-index: 3;
 }
 
+.editor-piece-stage-toolbar [aria-label='Editor actions'] > .piece-stage-controls {
+  position: relative;
+  z-index: 4;
+}
+
 .editor-piece-stage-toolbar .editor-stage-text-actions {
   position: absolute;
   left: 0.75rem;

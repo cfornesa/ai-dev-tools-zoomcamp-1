@@ -6886,3 +6886,13 @@ that can safely enter engineering before its stated prerequisite.
 | engineer | N/A — production data action | N/A | No product diff; production action was not attempted. |
 | qa-self-review | Codex / GPT-5 / medium; Replit Free Agent read-only substitution | FAIL / BLOCKED | Active Chrome was confirmed, but the published launcher has no safe dry-run mode, no deployed SHA is exposed, and no interactive production shell exists. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5856656886. |
 | reconcile / close | Codex / GPT-5 / medium | BLOCKED / OPEN | No production command, publish, restart, setting, secret, migration, or data mutation. Next action is owner-authorized publication of the reviewed mode-aware preview wrapper, followed by the guarded one-shot sequence. |
+
+## Transaction: #937 architecture re-groom — 2026-09-27 — GROOMED → BLOCKED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #933, #934, and #936 are closed; duplicate audit found no other local-first 3D owner. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | BLOCKED / OWNER DECISION | Source audit confirms the local repository is 2D-only while `Project3DWorkspace` is server/API-owned. Two viable architectures were recorded in the issue comment: extend the existing local repository (recommended) or create a separate local 3D repository/route. |
+| engineer | Pending | NOT STARTED | No product code changed before the local data-layer architecture is selected. |
+| qa-self-review | Pending | NOT STARTED | No diff exists. |
+| reconcile / close | Codex / GPT-5 / medium | BLOCKED / OPEN | Owner must select the local 3D persistence architecture before implementation. Comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/937#issuecomment-5856703332. |

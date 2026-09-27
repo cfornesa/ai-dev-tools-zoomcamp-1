@@ -6760,3 +6760,13 @@ changes.
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Commit `044abce5` adds the control-panel stacking context and converts the existing browser assertion to a real pointer click. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | Focused component tests 2 files/17 tests; exact Chromium 2/2 at 1280x900 and 375x812; final `make check` exit 0 with backend 1752 passed/39 skipped and frontend 288 files/3061 tests. QA record: `.local/tasks/qa-969-comment.md`. |
 | reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Pointer and keyboard evidence are both recorded; no production evidence inferred. |
+
+## Transaction: #788 follow-up — 2026-09-27 — DISTILLED / GROOMED / QA FAIL / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Existing #788 remains the single owner-scoped C2 production data-action contract; #954 is its already-closed safe-wrapper prerequisite. No duplicate issue was created. |
+| groom | Codex / GPT-5 / medium | PASS | Re-read importer, wrapper, tests, production snapshot, and owner authorization. Required sequence remains preview → snapshot → one write → live 1440x900/375x812 verification. |
+| engineer | N/A — existing implementation | N/A | No product code change. The local checkout contains the mode-aware preview wrapper (`cad0f924`), but the published Replit revision is older and does not expose that safe path. |
+| qa-self-review | Codex / GPT-5 / medium; Replit Free Agent read-only substitution | FAIL / BLOCKED | Local disposable PostgreSQL rehearsal passed and recorded exactly one deliberate stale-C2 update (version 1→2). Replit read-only inspection confirmed no production dry-run was available on the published revision; enabling its current startup gate could write immediately, so it was not enabled. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5855972863. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / PRODUCTION BOUNDARY | No production command, publish, secret, migration, or production row changed. Snapshot and rollback source strings remain recorded at https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5855923667. |

@@ -6605,3 +6605,23 @@ MachPort boundary and active Chrome is the approved evidence path.
 | engineer | N/A — verification issue | N/A | No code change required in this transaction; implementation belongs to the already-closed linked issues. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with active Chrome | PASS | Focused backend refine tests passed 19/19; active Chrome normal-click evidence covered the target flows and 1280x900/375x812 views; Playwright scenario list discovered all 4 tests. QA record: `.local/tasks/qa-921-comment.md`. |
 | reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/921#issuecomment-5854437465. Issue closed after reconciling the linked implementation fixes; exact Playwright remains explicitly host-blocked, not silently passed. |
+
+### Distillation refresh after #921 — 2026-09-27
+
+#923 remains implementation-green but open because its browser acceptance is
+owned by #924/#925. While preparing #924, active Chrome showed that the current
+`/create` route enters the local IndexedDB editor and has no AI proposal panel,
+contradicting #924's fixed entry point. Duplicate audit found no existing owner
+for this route/fixture mismatch, so proposed issue #964 was created and linked:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/964. #924 remains
+open and must not be run against the stale route assumption.
+
+## Transaction: #964 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED-N/A / QA-N/A / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Current Chrome inspection disproved #924's `/create` → AI-editor assumption; route and local-first boundaries were checked against #923, #924, #925, and #938. |
+| groom | Codex / GPT-5 / medium | PASS | Scope is limited to selecting the current AI-capable route/fixture and updating #924; no product behavior or local-media privacy boundary is silently changed. |
+| engineer | N/A | N/A | Discovery/fixture reconciliation only; no implementation started. |
+| qa-self-review | N/A | N/A | Not applicable before the route contract is chosen. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN | PROPOSED issue created as #964 and linked from #924; owner decision/route reconciliation is required before browser implementation can proceed. |

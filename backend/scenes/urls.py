@@ -111,6 +111,7 @@ from scenes.collections_api import (
     PublicCollectionDownloadView,
 )
 from scenes.pages_api import PublicPageDetailView, PublicPageNavigationView
+from scenes.piece_intake_api import PiecePackageIntakeView
 from scenes.profile_api import (
     AccountProfileImageView,
     AccountProfileView,
@@ -136,6 +137,7 @@ from scenes.storage_usage_api import AccountStorageEstimateView
 from scenes.sync_mutation_api import SyncMutationReceiptView
 
 urlpatterns = [
+    path("pieces/intake/", PiecePackageIntakeView.as_view(), name="piece-package-intake"),
     path("pages/", PublicPageNavigationView.as_view(), name="public-page-navigation"),
     path("pages/<slug:slug>/", PublicPageDetailView.as_view(), name="public-page-detail"),
     path("admin/pages/", AdminPageListCreateView.as_view(), name="admin-page-list-create"),

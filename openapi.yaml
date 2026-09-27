@@ -104,6 +104,25 @@ security:
   - sessionCookie: []
 
 paths:
+  /api/pieces/intake/:
+    post:
+      tags: [Storage]
+      operationId: intakePiecePackage
+      summary: Import one validated portable piece package
+      description: Authenticated owner-only local-first sync. Uploads a #930 package as multipart form data. Intake is always private and never honors a public visibility intent; publishing is separate. piece_id appends a version; omission creates a new piece. Replaying idempotency_key is safe.
+      x-access: session-owner
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/PiecePackageIntakeInput" }
+      responses:
+        "201": { description: A new private piece was imported. }
+        "200": { description: An idempotent replay returned the original import. }
+        "400": { description: Invalid, unsafe, oversized, or over-quota package. }
+        "401": { description: No authenticated session. }
+        "404": { description: Unknown or foreign piece id. }
+        "429": { description: Intake rate limit exceeded. }
   /health/:
     get:
       tags: [Health]
@@ -1949,3 +1968,22 @@ components:
       properties:
         error: { $ref: "#/components/schemas/ArtPieceErrorCode" }
         detail: {}
+
+    PiecePackageIntakeInput:
+      type: object
+      required: [package]
+      properties:
+        package: { type: string, format: binary }
+        idempotency_key: { type: string, maxLength: 128 }
+        piece_id: { type: string, format: uuid }
+        expected_revision: { type: integer, minimum: 1 }
+
+    PiecePackageIntakeResponse:
+      type: object
+      required: [kind, public_id, version, visibility, media_count]
+      properties:
+        kind: { type: string, enum: [2d, 3d, generated] }
+        public_id: { type: string, format: uuid }
+        version: { type: integer, minimum: 1 }
+        visibility: { type: string, enum: [private] }
+        media_count: { type: integer, minimum: 0 }

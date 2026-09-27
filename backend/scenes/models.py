@@ -1191,6 +1191,53 @@ class CloudBackupBlob(models.Model):
         return f"Cloud asset {self.asset_id} for backup {self.backup_id}"
 
 
+class PieceIntakeReceipt(models.Model):
+    """Durable owner-scoped idempotency anchor for portable package intake."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="piece_intake_receipts"
+    )
+    idempotency_key = models.CharField(max_length=128)
+    kind = models.CharField(max_length=16)
+    public_id = models.UUIDField()
+    version = models.PositiveIntegerField()
+    response = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "idempotency_key"], name="unique_piece_intake_idempotency"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Piece intake {self.idempotency_key} for {self.public_id}"
+
+
+class PieceIntakeAsset(models.Model):
+    """Private, normalized media retained with an imported piece package."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="piece_intake_assets"
+    )
+    piece_kind = models.CharField(max_length=16)
+    piece_public_id = models.UUIDField()
+    filename = models.CharField(max_length=255)
+    alt_text = models.TextField(blank=True, default="")
+    mime_type = models.CharField(max_length=128)
+    byte_size = models.PositiveBigIntegerField()
+    checksum = models.CharField(max_length=64)
+    data = models.BinaryField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["owner", "piece_kind", "piece_public_id"])]
+
+    def __str__(self) -> str:
+        return f"Piece asset {self.filename} for {self.piece_public_id}"
+
+
 class CloudBackupBlobTransfer(models.Model):
     """Resumable partial object for one opted-in cloud-backup asset."""
 

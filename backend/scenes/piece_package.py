@@ -114,6 +114,12 @@ def parse_piece_package_archive(archive: bytes) -> dict[str, Any]:
             if names.count("manifest.json") != 1:
                 raise PiecePackageError("Package must contain exactly one manifest.")
             manifest = json.loads(zip_file.read("manifest.json").decode("utf-8"))
+            infos = {info.filename: info for info in zip_file.infolist()}
+            declared_uncompressed = sum(
+                info.file_size for name, info in infos.items() if name != "manifest.json"
+            )
+            if declared_uncompressed > PIECE_PACKAGE_MAX_BYTES:
+                raise PiecePackageError("Package exceeds the decompressed byte limit.")
             files = {name: zip_file.read(name) for name in names if name != "manifest.json"}
             if sum(len(payload) for payload in files.values()) > PIECE_PACKAGE_MAX_BYTES:
                 raise PiecePackageError("Package exceeds the byte limit.")

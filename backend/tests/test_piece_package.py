@@ -99,6 +99,47 @@ def test_rejects_path_traversal() -> None:
         parse_piece_package_archive(archive(manifest, files))
 
 
+def test_rejects_declared_decompressed_bomb_before_extracting() -> None:
+    payload = b"0" * 52_428_801
+    manifest = {
+        "formatVersion": 1,
+        "kind": "2d",
+        "metadata": {
+            "title": "Bomb",
+            "description": "",
+            "tags": [],
+            "visibilityIntent": "private",
+            "origin": {"appVersion": "test", "exportedAt": "2026-09-26T00:00:00Z"},
+        },
+        "records": [],
+        "mediaAssets": [
+            {
+                "index": 0,
+                "fileIndex": 0,
+                "filename": "blob.bin",
+                "altText": "",
+                "mimeType": "application/octet-stream",
+                "byteSize": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        ],
+        "files": [
+            {
+                "index": 0,
+                "path": "files/0.bin",
+                "byteSize": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        ],
+    }
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_STORED) as zip_file:
+        zip_file.writestr("manifest.json", json.dumps(manifest))
+        zip_file.writestr("files/0.bin", payload, compress_type=zipfile.ZIP_DEFLATED)
+    with pytest.raises(PiecePackageError, match="decompressed byte limit"):
+        parse_piece_package_archive(output.getvalue())
+
+
 def test_converts_legacy_json_package() -> None:
     package = convert_legacy_json_package(
         {

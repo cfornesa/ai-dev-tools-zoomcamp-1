@@ -6239,6 +6239,25 @@ cannot be engineered until the owner selects its delivery option.
 | qa-self-review | pending | — | — |
 | reconcile / close | pending | — | — |
 
+## Discovery: #958 — 2026-09-27 — PROPOSED / LINKED
+
+While engineering #921, the authenticated browser reached the generated
+art-piece editor but could not find the revise prompt for 2D engines: the
+`revise` panel has no activating control outside the 3D-only toolbar children.
+Duplicate audit found no open issue owning this access gap. Created linked
+issue `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/958` for the
+responsive 2D AI-revise control and its browser coverage. #921 is retained as
+the verification issue and is blocked on #958; no product workaround was
+silently folded into the test.
+
+## Transaction update: #921 — 2026-09-27 — ENGINEERING / QA BLOCKED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| engineer | Codex / GPT-5 / medium; implementation-mechanical test substitution | PARTIAL | Added `frontend/e2e/aiRegionTargetExisting.spec.ts`; TypeScript/prettier pass. Browser execution is blocked at the application boundary because 2D editors expose no control to activate the revise panel. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | BLOCKED | Elevated installed-Chrome run reached the app but all 4 tests timed out waiting for `Describe the revision you want to generate`; first sandbox run aborted Chrome before test execution. |
+| reconcile / close | pending | BLOCKED BY #958 | Keep #921 open until #958 exposes the panel, then rerun the exact browser matrix. |
+
 ## Transaction: #941 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERING PENDING
 
 | Stage | Service / model / effort | Result | Evidence |

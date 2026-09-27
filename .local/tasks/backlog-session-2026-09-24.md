@@ -6013,11 +6013,26 @@ dependency-blocked on an authorized published production execution path, while
 follow-ups. The active Chrome process/tab remains available, but its current
 local app state is unauthenticated and shows Login; no logout was performed.
 
-## Transaction: #929 — 2026-09-26 — IMPLEMENTED / QA PENDING
+## Transaction: #929 — 2026-09-26 — CLOSED / QA PASS
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
 | groom / distill | Codex / GPT-5 / medium | PASS | Confirmed #929 is the next independent frontend mechanical issue; #928 is closed and no duplicate was found. Missing `docs/testing-guidelines.md` was recorded as an environment/documentation gap rather than silently assumed. |
 | engineer | Codex / GPT-5 / medium; rostered mechanical service substituted | PASS | `soundSettings.ts` now stores authored-hash-tagged overrides, migrates v1 snapshots, invalidates stale records, and forwards authored defaults from `PieceStageControls`; added standalone ZIP regression assertion and `docs/local-storage-audit.md`. |
-| qa-self-review | pending | — | Focused tests (324 passed) and frontend typecheck pass; full `make check` and criterion matrix remain pending. |
-| reconcile / close | pending | — | Issue remains open until full checks and QA comment are recorded. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | PASS | QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/929#issuecomment-5851090455`; focused suite 324 passed, full `make check` passed, and `git diff --check` passed. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #929 closed after all acceptance criteria passed; commit `ef8e3f6e`. No production data action. |
+
+## Production-readiness refresh: 2026-09-26 — NOT READY
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| #929 local implementation and checks | PASS | Full `make check`: backend 1728 passed / 39 skipped; frontend 284 files / 3037 tests. |
+| Production evidence | NOT REQUIRED | #929 is client-side behavior; no production storage was changed. |
+| Complete project readiness | OPEN | Independent backlog remains open, including #788 and the remaining local-first/public-media streams. |
+
+## Session-completion refresh: 2026-09-26
+
+#929 is terminalized CLOSED / QA PASS. The active Chrome process remains
+available, but the local fixture tab is unauthenticated and shows Login; no
+logout was performed. #788 remains blocked on a supported authorized
+production execution path; unrelated open issues remain routed separately.

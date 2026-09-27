@@ -30,7 +30,7 @@ const CAPTURE_TIMEOUT_MS = 8000;
  * back (see `artPieceSandbox.ts`'s `reportScreenshot`), or rejects on a
  * reported error or timeout -- a crashed/hung generation must not hang
  * the caller indefinitely. */
-function requestSandboxScreenshot(iframe: HTMLIFrameElement): Promise<string> {
+export function captureSandboxScreenshot(iframe: HTMLIFrameElement): Promise<string> {
   return new Promise((resolve, reject) => {
     const contentWindow = iframe.contentWindow;
     if (!contentWindow) {
@@ -115,7 +115,7 @@ export async function captureAndUploadArtPieceThumbnail(
   versionId: number,
 ): Promise<boolean> {
   try {
-    const dataUrl = await requestSandboxScreenshot(iframe);
+    const dataUrl = await captureSandboxScreenshot(iframe);
     const blob = await cropToThumbnail(dataUrl);
     await uploadArtPieceThumbnail(publicId, versionId, blob);
     return true;

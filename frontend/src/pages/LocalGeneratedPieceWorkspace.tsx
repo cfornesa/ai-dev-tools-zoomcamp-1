@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
 import { buildArtPieceSandboxDocument } from '../generative/artPieceSandbox';
+import { captureSandboxScreenshot } from '../generative/artPieceThumbnailCapture';
 import {
   buildLocalGeneratedPiecePackage,
   localGeneratedPackageFilename,
@@ -39,6 +40,7 @@ export default function LocalGeneratedPieceWorkspace() {
   const [current, setCurrent] = useState<LocalPieceVersionRecord | null>(null);
   const [source, setSource] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const previewRef = useRef<HTMLIFrameElement | null>(null);
 
   const load = useCallback(async () => {
     if (!id || !owner) return;
@@ -113,6 +115,20 @@ export default function LocalGeneratedPieceWorkspace() {
     setMessage('Exported a local-only generated package.');
   }
 
+  async function screenshot() {
+    if (!previewRef.current) return;
+    try {
+      const dataUrl = await captureSandboxScreenshot(previewRef.current);
+      const anchor = document.createElement('a');
+      anchor.href = dataUrl;
+      anchor.download = `${project!.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
+      anchor.click();
+      setMessage('Captured the local preview screenshot.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'The preview could not be captured.');
+    }
+  }
+
   return (
     <main className="local-generated-editor" aria-labelledby="local-generated-title">
       <p className="eyebrow">LOCAL-ONLY GENERATED PIECE</p>
@@ -120,11 +136,17 @@ export default function LocalGeneratedPieceWorkspace() {
       <p>{payload.description ?? 'Edit and preview this generated piece locally.'}</p>
       <section className="local-generated-preview" aria-label="Generated piece preview">
         <iframe
+          ref={previewRef}
           title={`${project.title} preview`}
           sandbox="allow-scripts"
           srcDoc={buildArtPieceSandboxDocument(source, engine, 'regular', { ink: payload.ink })}
         />
       </section>
+      <div className="local-generated-actions">
+        <button type="button" onClick={() => void screenshot()}>
+          Screenshot
+        </button>
+      </div>
       <section className="local-generated-source" aria-labelledby="source-heading">
         <h2 id="source-heading">Source</h2>
         <textarea

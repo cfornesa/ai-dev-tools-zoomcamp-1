@@ -25,14 +25,22 @@ test.describe('Local-first generated creation (#938)', () => {
         }
       });
 
-      await page.getByRole('button', { name: 'Create a local generated piece', exact: true }).click();
+      await page
+        .getByRole('button', { name: 'Create a local generated piece', exact: true })
+        .click();
       await page.waitForURL(/\/local-generated\/[^/]+$/);
       await expect(page.getByRole('heading', { name: 'Local generated SVG' })).toBeVisible();
       await expect(page.getByTitle('Local generated SVG preview')).toBeVisible();
       expect(serverMutations).toEqual([]);
 
+      const screenshot = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Screenshot', exact: true }).click();
+      expect((await screenshot).suggestedFilename()).toMatch(/\.png$/);
+
       const source = page.getByLabel('Generated source');
-      await source.fill('<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="red"/></svg>');
+      await source.fill(
+        '<svg xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="red"/></svg>',
+      );
       await page.getByRole('button', { name: 'Save local version' }).click();
       await expect(page.getByRole('status')).toContainText('Saved locally');
       await expect(page.getByRole('button', { name: 'Restore version 2' })).toBeVisible();

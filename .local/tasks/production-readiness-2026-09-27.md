@@ -173,3 +173,13 @@ or production-database criteria.
 | Production publication | BLOCKED | `GIT_URL` remains unavailable; no safe push or Replit Publish was attempted. |
 | #788 production import | BLOCKED | Wrapper publication and supported production preview/shell remain prerequisites; no production snapshot/write/live verification occurred. |
 | Overall readiness | BLOCKED | Open production, provider, hardware, parity, dependency, and #940 follow-up issues remain. Local evidence is not promoted to deployed evidence. |
+
+## Reassessment after #940 closure and #943 partial implementation — 2026-09-27
+
+| Area | Result | Evidence boundary |
+|---|---|---|
+| Local quality | PASS | `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`: backend 1757 passed / 39 skipped; frontend 292 files / 3071 tests; typecheck, formatting, and lint completed with existing warnings only. |
+| #940 account sync preference | PASS / CLOSED | Selective inherited-backup pause is covered by migration 0100, focused tests, and responsive Chromium 2/2. Local/Compose only. |
+| #943 local upload offer | PARTIAL / OPEN | Inventory, consent gate, quota summary, sequential intake, and result states are locally implemented. Per-row retry and persisted local-to-server synced identity remain missing; no production evidence inferred. |
+| Production wrapper and #788 | BLOCKED | `GIT_URL` is unavailable. No safe push, Replit Publish, production shell, snapshot mutation, or live production verification occurred. |
+| Overall readiness | NOT READY | GitHub currently reports 21 open issues. Local evidence cannot close deployed-URL, production-data, provider, hardware, or remaining parity criteria. |

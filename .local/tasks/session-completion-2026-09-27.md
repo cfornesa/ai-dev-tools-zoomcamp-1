@@ -198,6 +198,27 @@ through a secure runtime credential followed by the guarded #788 workflow.
 
 Routing audit: task-distillation, grooming, engineering, QA, production-readiness,
 and session-completion were Codex/GPT-5/medium substitutions where rostered
+
+## Session-completion refresh — 2026-09-27
+
+- #940 was reconciled and closed after its ownership-mode follow-up: inherited
+  backups now pause selectively, while explicit per-piece opt-ins remain active.
+- #943 was engineered as a partial, criterion-scoped vertical slice and remains
+  OPEN because local server identity/synced-state persistence and dedicated
+  per-row retry controls are not complete.
+- The live GitHub inventory is 21 open issues: #788, #847, #859–#861, #874,
+  #886, #906, #911–#916, #926, and #941–#946.
+- Routing audit: task-distillation, grooming, engineering, and QA were run as
+  Codex/GPT-5/medium substitutions where the rostered service was unavailable;
+  independent stage-3 review was not run or credited. Production-readiness and
+  session-completion remain open because production access is not established.
+- Production boundary: Chrome and Replit are available in the active desktop
+  session, but `GIT_URL` is absent. The reviewed wrapper was not pushed or
+  published, and #788's guarded production import was not run.
+- Proposed durable-memory updates (not silently applied): record the explicit
+  inherited-vs-explicit backup ownership rule, and record that a published
+  wrapper plus safe push credential is a prerequisite for production data
+  actions.
 external services were unavailable; independent stage-3 review was not run or
 credited. The unrelated parity document remains unstaged. No production data,
 secrets, settings, publish, or external repository was touched.

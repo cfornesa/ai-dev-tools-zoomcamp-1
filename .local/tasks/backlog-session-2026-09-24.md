@@ -6989,3 +6989,32 @@ wrapper publication once the secure push credential is available through the
 | engineer | Codex / GPT-5 / medium; implementation-complex substitution | PASS / PARTIAL | Added `CloudSyncPreference`, migration 0099, gated GET/PUT API, versioned consent copy/timestamp, account settings UI, and backend/frontend tests. |
 | qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 unavailable and not credited | PARTIAL | QA matrix: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/940#issuecomment-5860065184. Focused backend 4/4, AccountSettings/EntitlementsSummary 18/18, migration check clean, full check backend 1756 passed/39 skipped and frontend 292 files/3071 tests. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN / FOLLOW-UP | The existing backup schema cannot distinguish account-inherited rows from explicit per-piece opt-ins, so disable-time selective pause is intentionally not implemented. Requires a follow-up ownership-mode/data-model decision; no production account mutation. |
+
+## Transaction: #940 final reconciliation — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | The selective inherited-backup pause gap was confirmed as #940-owned; no duplicate was created. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Ownership mode is explicit: account-inherited rows pause on account disable; explicit per-piece opt-ins remain unchanged. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution | PASS | Commit `d35cdc2b`; added `account_inherited`, migration 0100, transactional selective pause, and regression coverage. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 unavailable and not credited | PASS | Focused backend 5/5; AccountSettings/EntitlementsSummary 18/18; migration check clean; browser `accountCloudSyncToggle.spec.ts` 2/2 at desktop/mobile; full check backend 1757 passed/39 skipped and frontend 292 files/3071 tests. |
+| reconcile / close | Codex / GPT-5 / medium | CLOSED | QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/940#issuecomment-5860198608. No production evidence inferred. |
+
+## Transaction: #943 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PARTIAL / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #940, #932, #931, and #934 were closed; duplicate search found none. #943 is the next eligible local-first transfer issue and unblocks #946. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Reused #932 intake, #931 estimate, and the shared package contract; no automatic upload, explicit selection, sequential intake, and local-data preservation are binding. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution | PASS / PARTIAL | Commit `1d9507cb`; added all-kind local package builder, intake/estimate clients, Account → Local storage offer, unchecked/select-all inventory, visible quota summary, sequential idempotent upload, and per-piece result states. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 unavailable and not credited | PARTIAL | QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/943#issuecomment-5860351103. Typecheck and focused AccountLocalStorage 24/24 pass; full check backend 1757 passed/39 skipped and frontend 292 files/3071 tests. Dedicated per-row retry and persisted local server identity/synced-state wiring remain incomplete. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / FOLLOW-UP | #943 remains open; no production or deployed evidence inferred. |
+
+## Distillation refresh — 2026-09-27 — post-#940/#943
+
+| Check | Result | Evidence / next action |
+|---|---|---|
+| Live issue graph | PASS | GitHub reports 21 open issues: #788, #847, #859–#861, #874, #886, #906, #911–#916, #926, #941–#946. Closed issues were not reopened. |
+| #943 implementation | OPEN / FOLLOW-UP | The offer path is implemented locally, but the explicit per-row retry and local-to-server identity/status criterion remains. Continue #943 before #946. |
+| Production wrapper / #788 | BLOCKED | Reviewed wrapper is local-only; `GIT_URL` is unavailable, so safe push, Replit publish, and production import were not attempted. |
+| Overall session state | OPEN | Local quality checks pass, but 21 open issues and the authorized production workflow remain unresolved. |

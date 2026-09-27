@@ -16,6 +16,10 @@ import valid3d from '../../../schema/fixtures/piece-package/valid-3d.json';
 import validGenerated from '../../../schema/fixtures/piece-package/valid-generated.json';
 import blank2d from '../../../schema/fixtures/valid/blank.json';
 import blank3d from '../../../schema/fixtures3d/valid/renderer_threejs.json';
+import invalidExecutable from '../../../schema/fixtures/piece-package/invalid-executable-extra-file.json';
+import invalidOversize from '../../../schema/fixtures/piece-package/invalid-oversize.json';
+import invalidPath from '../../../schema/fixtures/piece-package/invalid-path-traversal.json';
+import invalidVersion from '../../../schema/fixtures/piece-package/invalid-unknown-version.json';
 
 const input = (kind: PiecePackageInput['kind']): PiecePackageInput => ({
   kind,
@@ -45,6 +49,12 @@ describe('piece package', () => {
     expect(() => validatePiecePackageManifest(valid2d)).not.toThrow();
     expect(() => validatePiecePackageManifest(valid3d)).not.toThrow();
     expect(() => validatePiecePackageManifest(validGenerated)).not.toThrow();
+  });
+
+  it('rejects the shared invalid manifest fixtures', () => {
+    for (const fixture of [invalidExecutable, invalidOversize, invalidPath, invalidVersion]) {
+      expect(() => validatePiecePackageManifest(fixture)).toThrow(PiecePackageError);
+    }
   });
 
   it.each(['2d', '3d', 'generated'] as const)('round-trips %s packages', async (kind) => {

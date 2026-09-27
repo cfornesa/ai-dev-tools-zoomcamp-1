@@ -1,0 +1,8 @@
+{
+  "formatVersion": 1,
+  "kind": "3d",
+  "metadata": { "title": "oversize", "description": "bad", "tags": [], "visibilityIntent": "private", "origin": { "appVersion": "fixture", "exportedAt": "2026-09-26T00:00:00Z" } },
+  "records": [],
+  "mediaAssets": [],
+  "files": [{ "index": 0, "path": "files/0.bin", "byteSize": 52428801, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }]
+}

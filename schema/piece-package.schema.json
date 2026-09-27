@@ -57,7 +57,7 @@
           "filename": { "type": "string" },
           "altText": { "type": "string" },
           "mimeType": { "type": "string" },
-          "byteSize": { "type": "integer", "minimum": 0 },
+          "byteSize": { "type": "integer", "minimum": 0, "maximum": 52428800 },
           "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
         }
       }

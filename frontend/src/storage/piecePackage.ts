@@ -129,6 +129,7 @@ export function validatePiecePackageManifest(value: unknown): asserts value is P
       typeof file.index === 'number' && typeof file.byteSize === 'number',
       'Invalid package file entry.',
     );
+    assert(file.byteSize <= PIECE_PACKAGE_MAX_BYTES, 'Package file exceeds the byte limit.');
     assert(
       typeof file.sha256 === 'string' && /^[a-f0-9]{64}$/.test(file.sha256),
       'Invalid package checksum.',

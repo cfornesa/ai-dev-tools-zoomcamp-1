@@ -72,12 +72,12 @@ def validate_piece_package(manifest: Any, files: dict[str, bytes]) -> None:
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise PiecePackageError("A record payload is not valid JSON.") from exc
         if manifest["kind"] == "2d":
-            result = validate_scene(data)
-            if not result.valid:
+            scene_result = validate_scene(data)
+            if not scene_result.valid:
                 raise PiecePackageError("A 2D record does not satisfy the scene schema.")
         elif manifest["kind"] == "3d":
-            result = validate_scene3d(data)
-            if not result.valid:
+            scene3d_result = validate_scene3d(data)
+            if not scene3d_result.valid:
                 raise PiecePackageError("A 3D record does not satisfy the scene schema.")
     for asset in manifest["mediaAssets"]:
         file = file_by_index.get(asset["fileIndex"])

@@ -78,6 +78,13 @@ def test_shared_valid_manifest_fixtures_match_the_backend_schema() -> None:
         validate_piece_package(manifest, {})
 
 
+def test_shared_invalid_manifest_fixtures_are_rejected() -> None:
+    for path in sorted(PIECE_FIXTURES.glob("invalid-*.json")):
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        with pytest.raises(PiecePackageError):
+            validate_piece_package(manifest, {})
+
+
 def test_rejects_checksum_mismatch() -> None:
     manifest, files = manifest_and_files()
     files["files/0.json"] = b"tampered"

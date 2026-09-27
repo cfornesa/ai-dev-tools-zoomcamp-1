@@ -1847,3 +1847,12 @@ production publish or data mutation is authorized by this decision.
   path and no supported production shell was available. Do not enable the
   current write-capable gate or infer production success from development
   Shell access.
+
+## 2026-09-27 — active Chrome is not the #788 blocker
+
+- A fresh CUA inventory confirmed the signed-in Chrome session is active and a
+  production C2 route can be opened. The unresolved #788 condition is instead
+  the absence of a supported production Replit shell and the stale published
+  revision lacking the safe preview wrapper. Keep the issue open and do not
+  enable the write-capable startup gate or publish without the separately
+  authorized production path.

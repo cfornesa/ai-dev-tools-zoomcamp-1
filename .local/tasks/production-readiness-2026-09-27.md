@@ -69,3 +69,18 @@ No production-ready claim is made. Local and Compose evidence closes only the
 scoped code criteria for #965–#969; it does not close published URLs, Replit
 production data actions, live-model runs, hardware microphone acceptance, or
 the remaining parity issues.
+
+## Reassessment after active-Chrome confirmation — 2026-09-27
+
+| Dimension | Result | Current evidence / boundary |
+|---|---|---|
+| Local deployment and repository quality | PASS | Re-ran `make check` on the current checkout: backend 1752 passed/39 skipped; frontend 288 files/3061 tests; lint emitted only existing warnings. |
+| Approved browser verification | PASS for #970 | Active Chrome session is present. #970's Compose Chromium evidence remains valid at 1280x900, 768x1024, and 375x812. No new browser defect was found in this read-only refresh. |
+| CI | OPEN FOLLOW-UP | No remote CI run was initiated; local checks are not CI evidence. Normal push/PR CI remains the next CI action. |
+| Intended functionality | BLOCKED | 27 GitHub issues remain open. No new implementation issue was discovered; remaining work is already represented by the open issue set and dependency graph. |
+| Replit publication | BLOCKED | Active Replit UI was inspected. Published metadata exposes no Git SHA; the visible workspace/published revision is older than the local mode-aware wrapper. No publish was authorized or performed in this refresh. |
+| Production data action | BLOCKED | #788 remains blocked only at the production execution boundary. Chrome availability is confirmed; Replit lacks a supported production shell/preview path. No production row changed. |
+
+The readiness gate therefore remains `BLOCKED`, not because of browser
+availability, but because required production/dependency/live-verification
+criteria remain incomplete.

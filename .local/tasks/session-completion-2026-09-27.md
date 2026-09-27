@@ -68,3 +68,18 @@ the scoped commits are `b7d5151d`, `ab8cfd38`, `044abce5`, `f8af9e0f`,
 Next work should start with the highest-priority blocked production/live
 boundary chosen by the owner, without treating this session as production
 ready.
+
+## Reassessment after active-Chrome confirmation — 2026-09-27
+
+Task-distillation was rerun before this backlog continuation. The live Chrome
+session was confirmed through CUA; the remaining #788 blocker is the Replit
+production-runtime boundary, not browser availability. No duplicate issue or
+new actionable follow-up was created because #788 and #954 already cover the
+production import and safe wrapper respectively.
+
+The final `make check` rerun passed: backend 1752 passed/39 skipped and
+frontend 288 files/3061 tests. The batch remains incomplete: 6 issues are
+closed in this continuation and 27 remain open with recorded blocker,
+dependency, owner, or verification-boundary statuses. Missing terminal status
+for the processed records is zero; the open inventory itself is not silently
+claimed complete.

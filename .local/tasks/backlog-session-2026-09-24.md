@@ -6780,3 +6780,18 @@ changes.
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Changed only the shared generated-ink preview layout CSS and added `frontend/e2e/generatedInkControlsLayout.spec.ts`; no API, data, dependency, migration, or production change. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium; independent-family stage 3 not run | PASS | Focused Vitest 3/3; Compose Chromium `E2E_DOCKER_COMPOSE=true npx playwright test e2e/generatedInkControlsLayout.spec.ts --project=chromium` passed 1/1 and inspected screenshots at 1280x900, 768x1024, and 375x812; existing `inkLayerGenerated2d.spec.ts` passed 6/6; `make check` passed (backend 1752 passed/39 skipped; frontend 288 files/3061 tests). |
 | reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | QA PASS is local/Compose only, which satisfies this local responsive-layout contract. Production evidence is not claimed and no production publish was performed. #970 was closed without reopening #963. |
+
+## Distillation refresh — 2026-09-27 — post-#970 continuation
+
+| Check | Result | Evidence / next action |
+|---|---|---|
+| Current GitHub inventory | PASS | Re-read the authenticated open-issue list: 27 issues remain open (`#788`, `#847`, `#859–#861`, `#874`, `#886`, `#906`, `#911–#916`, `#926`, `#935–#946`). |
+| Duplicate audit | PASS | No new issue created. #970 remains the owner-reported authored-preview regression owner; closed #963 was not reopened. #788 remains the single owner-scoped C2 production action; #954 is its safe-wrapper prerequisite. |
+| Dependency/order audit | PASS | #788 is the only currently authorized production-data action but remains blocked by the missing production-runtime preview path. #874/#906, #886/#847, #935–#946, #911–#916, and #926 retain their recorded owner/dependency gates. No independent criterion-ready implementation issue is available ahead of those gates. |
+| Browser/repository state | PASS | Active Chrome was verified through CUA. Local checkout is `723f5494` with the mode-aware wrapper; Replit reports an older workspace/published revision and no deployed Git SHA. This is a deployment/runtime boundary, not a Chrome-launch blocker. |
+| Follow-up issue decision | NONE | The current gap is already covered by #788 and its #954 prerequisite. The exact current boundary was added to #788: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5856210225. |
+
+The next backlog-session transaction remains **#788**, but it cannot enter a
+write stage until a supported production preview path exists. No production
+command, publish, secret, migration, environment setting, or data mutation was
+performed in this refresh.

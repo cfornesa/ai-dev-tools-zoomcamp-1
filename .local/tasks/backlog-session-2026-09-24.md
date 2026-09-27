@@ -6268,6 +6268,7 @@ for #916.
 | distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #916 is a closure-sized hardware-independent audio-flow harness and acceptance-boundary documentation issue; it does not implement microphone routing or UI. |
 | groom | Codex / GPT-5 / medium | PASS | Existing issue is criterion-ready: six named mic×camera×steer cases, mutation-sensitive analyser evidence, real-hardware checklist, memory update, exact Vitest/Playwright/full-check commands, and owner-run hardware explicitly out of scope. |
 | routing | Codex / GPT-5 / medium | PASS | Stage 2b test infrastructure because it adds a shared browser audio analyser harness and matrix semantics; rostered implementation-complex service substitution will be recorded if engineering proceeds. |
-| engineer | pending | — | — |
-| qa-self-review | pending | — | — |
-| reconcile / close | pending | — | — |
+| engineer | Codex / GPT-5 / medium; prior rostered implementation-complex service substituted | PASS | Existing commit `ef302dc4`: reusable `audioFlow.ts` probe, regular-route integration, hardware checklist, and durable memory update. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | FAIL / DEPENDENCY-BLOCKED | Existing QA FAIL comments document that the fake-device route reports active but `sourceConnected = 0`; current exact run `PLAYWRIGHT_CHANNEL=chrome E2E_DOCKER_COMPOSE=true npx playwright test e2e/artPieceSoundRuntime.spec.ts --project=chromium` produced 2 passed/3 failed. The routing gap belongs to #911; the six-case matrix cannot pass before #911–#915 wiring. |
+| production-readiness | not applicable while QA is blocked | — | — |
+| reconcile / close | pending | BLOCKED | Keep #916 open; next action is #911 generated-route mic routing, then rerun the harness and matrix. No new duplicate issue created because #911 owns the defect. |

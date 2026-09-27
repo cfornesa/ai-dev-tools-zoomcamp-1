@@ -3984,6 +3984,47 @@ textarea:disabled {
   box-sizing: border-box;
 }
 
+.art-piece-editor-revise-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.art-piece-editor-revise-panel > p,
+.art-piece-editor-revise-field {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.art-piece-editor-revise-field {
+  align-items: stretch;
+  margin: 0;
+}
+
+.art-piece-editor-revise-field .mention-prompt-field,
+.art-piece-editor-revise-field [role='combobox'],
+.art-piece-editor-revise-field textarea {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.art-piece-editor-revise-field textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.art-piece-editor-revise-panel > button[type='submit'] {
+  align-self: flex-end;
+}
+
 /* Issue #962: generated-source editing is a full-width preview field. Keep
    history actions in their own right-aligned row so they do not compete with
    the source textarea or overflow narrow editor cards. */
@@ -7086,6 +7127,67 @@ select.ai-proposal-field-full-width {
   margin: 0.75rem 0;
 }
 
+.generated-ink-panel {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.generated-ink-hint {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 0.75rem;
+}
+
+.generated-ink-preview-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+
+.generated-ink-preview-controls .generated-ink-mode,
+.generated-ink-preview-controls .editor-sound-details {
+  margin: 0;
+}
+
+.generated-ink-preview-controls .editor-sound-details {
+  max-width: none;
+}
+
+.generated-ink-preview-controls .editor-sound-details > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid currentColor;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+
+.generated-ink-preview-controls .editor-sound-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.generated-ink-color-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+}
+
+.generated-ink-color-control input[type='color'] {
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0.2rem;
+}
+
 .generated-ink-mode button {
   border: 1px solid currentColor;
   border-radius: 0.35rem;
@@ -7095,8 +7197,8 @@ select.ai-proposal-field-full-width {
 }
 
 .generated-ink-mode button.is-active {
-  background: currentColor;
-  color: Canvas;
+  background: var(--accent, #7c3aed);
+  color: #fff;
 }
 
 .generated-ink-mode button:disabled {
@@ -7666,6 +7768,28 @@ select.ai-proposal-field-full-width {
 .editor-sound-details {
   margin: 0.75rem 0;
   max-width: 42rem;
+}
+
+@media (max-width: 767px) {
+  .generated-ink-preview-controls {
+    align-items: stretch;
+  }
+
+  .generated-ink-preview-controls > * {
+    max-width: 100%;
+  }
+
+  .generated-ink-preview-controls .generated-ink-mode {
+    width: 100%;
+  }
+
+  .generated-ink-preview-controls .generated-ink-mode button {
+    flex: 1 1 8rem;
+  }
+
+  .art-piece-editor-revise-panel > button[type='submit'] {
+    align-self: stretch;
+  }
 }
 
 .editor-sound-defaults-panel {

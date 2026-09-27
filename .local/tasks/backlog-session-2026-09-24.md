@@ -6577,3 +6577,13 @@ the latest screenshots. #962 is the next issue; #963 remains queued behind it.
 instruction/ink target area and the SVG preview controls beneath the authored
 preview text. It remains implementation-mechanical unless a contract change is
 discovered.
+
+## Transaction: #963 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / RECONCILED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Latest SVG editor screenshot was checked against #962, #961, #882, #890, and #921; #963 remains the distinct refine-card and preview-control grouping issue. |
+| groom | Codex / GPT-5 / medium | PASS | Contract retained: full-width refine field/target presentation, one responsive SVG/2D preview control group directly below authored-preview guidance, unchanged behavior/accessibility, and desktop/tablet/mobile evidence. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Moved 2D Sound into the GeneratedInkPanel control group, added ink color propagation into frozen InkEditor sessions, added responsive control/refine-card styling, and corrected active preview contrast. No API, schema, migration, dependency, route, or production-data change. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with active Chrome | PASS | Focused frontend checks, full `make check`, rebuilt local Compose frontend, and active Chrome normal inspection at 1280x900 and 375x812. Geometry showed no horizontal overflow; accessibility tree exposed the grouped controls and refine textbox. QA record: `.local/tasks/qa-963-comment.md`. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Local acceptance is complete. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/963#issuecomment-5854406108. Issue closed after the criterion matrix; no production evidence is inferred. |

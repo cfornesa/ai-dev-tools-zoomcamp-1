@@ -7,7 +7,7 @@
  * generated code is never edited and nothing untrusted runs in this frame. The sandbox stays an opaque
  * origin (`allow-scripts` only).
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { createArtPieceVersion, type ArtPiece, type ArtPieceVersion } from '../api/artPieces';
 import {
@@ -27,7 +27,7 @@ const SNAPSHOT_TIMEOUT_MS = 8000;
 
 export type InkRequest = { tool: InkTool; nonce: number };
 
-type Session = { snapshotUrl: string; width: number; height: number; tool: InkTool };
+type Session = { snapshotUrl: string; width: number; height: number; tool: InkTool; color: string };
 type InkPreviewMode = 'preview' | 'draw';
 
 export function InkPreviewModeToggle({
@@ -92,11 +92,13 @@ export default function GeneratedInkPanel({
   request,
   onSaved,
   onRequestDraw,
+  soundControls,
 }: {
   piece: ArtPiece;
   request: InkRequest | null;
   onSaved: (version: ArtPieceVersion) => void;
   onRequestDraw?: () => void;
+  soundControls?: ReactNode;
 }) {
   const version = piece.current_version;
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -105,7 +107,10 @@ export default function GeneratedInkPanel({
   const [saving, setSaving] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [mode, setMode] = useState<InkPreviewMode>('preview');
+  const [inkColor, setInkColor] = useState('#1d4ed8');
   const handledNonce = useRef<number | null>(null);
+  const inkColorRef = useRef(inkColor);
+  inkColorRef.current = inkColor;
   const ink = version?.ink ?? null;
 
   // Start a session whenever the parent asks for a tool (each request has a fresh nonce).
@@ -134,7 +139,12 @@ export default function GeneratedInkPanel({
       image.onload = () => {
         const space = fitInkSpace(image.naturalWidth || 1280, image.naturalHeight || 720);
         setMode('draw');
-        setSession({ snapshotUrl: dataUrl, ...space, tool: request!.tool });
+        setSession({
+          snapshotUrl: dataUrl,
+          ...space,
+          tool: request!.tool,
+          color: inkColorRef.current,
+        });
       };
       image.onerror = () => setMessage('Could not read the frozen frame of this piece.');
       image.src = dataUrl;
@@ -254,31 +264,43 @@ export default function GeneratedInkPanel({
       data-testid="generated-ink-panel"
     >
       <h3>Ink layer</h3>
-      <InkPreviewModeToggle
-        mode={mode}
-        drawDisabled={false}
-        hasSession={Boolean(session)}
-        onRequestDraw={onRequestDraw}
-        onModeChange={setMode}
-      />
       <p className="generated-ink-hint">
         {mode === 'draw'
           ? 'The piece is frozen while you draw. Your ink is kept separate from the generated source.'
           : 'Preview the authored animation here. Choose an ink tool above to enter the frozen drawing mode.'}
       </p>
-      {mode === 'preview' && (
-        <button
-          type="button"
-          className="piece-stage-button generated-ink-screenshot-button"
-          aria-label="Take preview screenshot"
-          title="Take preview screenshot"
-          onClick={capturePreviewScreenshot}
-          disabled={capturing}
-        >
-          <PieceStageIcon name="screenshot" />
-          <span>{capturing ? 'Capturing…' : 'Screenshot'}</span>
-        </button>
-      )}
+      <div className="generated-ink-preview-controls">
+        {mode === 'preview' && (
+          <button
+            type="button"
+            className="piece-stage-button generated-ink-screenshot-button"
+            aria-label="Take preview screenshot"
+            title="Take preview screenshot"
+            onClick={capturePreviewScreenshot}
+            disabled={capturing}
+          >
+            <PieceStageIcon name="screenshot" />
+            <span>{capturing ? 'Capturing…' : 'Screenshot'}</span>
+          </button>
+        )}
+        {soundControls}
+        <label className="generated-ink-color-control">
+          <span>Ink color</span>
+          <input
+            type="color"
+            aria-label="Ink color"
+            value={inkColor}
+            onChange={(event) => setInkColor(event.target.value)}
+          />
+        </label>
+        <InkPreviewModeToggle
+          mode={mode}
+          drawDisabled={false}
+          hasSession={Boolean(session)}
+          onRequestDraw={onRequestDraw}
+          onModeChange={setMode}
+        />
+      </div>
       {mode === 'preview' && session && (
         <p className="generated-ink-mode-note" role="status">
           Preview shows the last saved ink layer; your unsaved drawing remains available in Draw
@@ -298,6 +320,7 @@ export default function GeneratedInkPanel({
             initialShapes={ink?.shapes ?? []}
             snapshotUrl={session.snapshotUrl}
             initialTool={session.tool}
+            initialColor={session.color}
             strokeIdPrefix="ink"
             onCancel={() => {
               setSession(null);

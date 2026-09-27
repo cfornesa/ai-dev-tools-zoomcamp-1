@@ -45,6 +45,8 @@ export type InkEditorProps = {
   strokeIdPrefix?: string;
   /** The tool that is active when the editor opens (defaults to the pen). */
   initialTool?: InkTool;
+  /** The brush colour selected before entering the frozen drawing session. */
+  initialColor?: string;
   /** Per-stroke point cap and per-layer stroke cap, from the owning document's limits. */
   maxPointsPerStroke?: number;
   maxStrokes?: number;
@@ -71,6 +73,7 @@ export function InkEditor({
   snapshotUrl = null,
   strokeIdPrefix = 'ink',
   initialTool = 'pen',
+  initialColor = '#1d4ed8',
   maxPointsPerStroke,
   maxStrokes,
   onConfirm,
@@ -78,7 +81,7 @@ export function InkEditor({
 }: InkEditorProps) {
   const [state, setState] = useState<InkState>(() => createInkState(initialShapes));
   const [tool, setTool] = useState<InkTool>(initialTool);
-  const [color, setColor] = useState('#1d4ed8');
+  const [color, setColor] = useState(initialColor);
   const [size, setSize] = useState(6);
   const [filled, setFilled] = useState(false);
   const [message, setMessage] = useState<string | null>(null);

@@ -877,19 +877,6 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           </button>
         </Generated3DEditorPreview>
       )}
-      {!(piece.engine === 'threejs' || piece.engine === 'aframe') && (
-        <details className="editor-sound-details">
-          <summary>Sound</summary>
-          <SonicDefaultsPanel value={sonic} onChange={setSonic} />
-          <button
-            type="button"
-            onClick={() => void handleSaveSoundDefaults()}
-            disabled={versionSaving}
-          >
-            {versionSaving ? 'Saving sound defaults…' : 'Save sound defaults'}
-          </button>
-        </details>
-      )}
       {!(piece.engine === 'threejs' || piece.engine === 'aframe') &&
         canEditGeneratedSource &&
         !reviseCode && (
@@ -908,6 +895,19 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           piece={piece}
           request={inkRequest}
           onRequestDraw={() => openInk('pen')}
+          soundControls={
+            <details className="editor-sound-details">
+              <summary>Sound</summary>
+              <SonicDefaultsPanel value={sonic} onChange={setSonic} />
+              <button
+                type="button"
+                onClick={() => void handleSaveSoundDefaults()}
+                disabled={versionSaving}
+              >
+                {versionSaving ? 'Saving sound defaults…' : 'Save sound defaults'}
+              </button>
+            </details>
+          }
           onSaved={(created) => {
             setVersions((current) => [...current, created]);
             setPiece((current) => (current ? { ...current, current_version: created } : current));
@@ -1022,13 +1022,13 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       </div>
 
       {activeEditorPanel === 'revise' && (
-        <form onSubmit={handleRegenerate}>
+        <form className="art-piece-editor-revise-panel" onSubmit={handleRegenerate}>
           <h3>Revise this piece</h3>
           <p>
             The refinement plan runs with bounded retries before a new version is stored. Select
             declared parts or assets to scope the change.
           </p>
-          <div className="behavior-card-field">
+          <div className="behavior-card-field art-piece-editor-revise-field">
             <MentionPromptField
               id="art-piece-editor-prompt"
               label="Describe the revision you want to generate"

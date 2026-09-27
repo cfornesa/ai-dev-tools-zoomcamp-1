@@ -6710,3 +6710,23 @@ open and must not be run against the stale route assumption.
 Each issue received an explicit GitHub blocker comment. These are not QA
 passes and remain open until their dependencies or authorization boundary
 changes.
+
+## Transaction: #966 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Split from broad #965 after duplicate audit; server-backed 2D package export is an atomic child distinct from local #956, generated #967, and 3D #968. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Acceptance retained ZIP validation, ordered server version records, browser-held media, missing-media warning/cancel, keyboard export, responsive browser evidence, and no cloud mutation. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | `2bef17f7` adds server-backed 2D package building, File-menu export/warning flow, focused tests, and the responsive Chromium scenario. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | Focused Vitest 2 files/17 tests; `make check` exit 0 (backend 1750 passed/39 skipped; frontend 286 files/3059 tests); rebuilt repository Compose Chromium passed 2/2 at 1280x900 and 375x812; screenshots inspected. QA record: `.local/tasks/qa-966-comment.md`. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/966#issuecomment-5855410922. The desktop pointer-layering finding is separately tracked as #969; no production evidence inferred. |
+
+## Transaction: #969 — 2026-09-27 — DISTILLED / GROOMED / OPEN / DEFERRED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | New gap created during #966 browser verification after duplicate audit found no existing owner: desktop File-menu pointer/touch activation is intercepted by the canvas action overlay. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Scoped to responsive UI layering and pointer/touch accessibility; keyboard menu activation remains covered by #966 and is not duplicated. |
+| engineer | Pending | NOT STARTED | Deferred until the next per-issue transaction; no product code changed for #969. |
+| qa-self-review | Pending | NOT STARTED | No #969 diff exists. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / QUEUED | GitHub issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/969. |

@@ -6383,3 +6383,37 @@ The next closure-sized transaction remains #958: finish the responsive 2D
 AI-edit activation path, rerun normal-click Chrome at 375px and 1280px, then
 reconcile #921. Production-readiness and session-completion remain deferred
 until the open manifest is terminal.
+
+### #958 recheck — 2026-09-27
+
+Task-distillation revalidated the same next action. The live Chrome extension
+tab is available, but it is unauthenticated locally (`Login` plus “This art
+piece isn’t available”); no logout was performed by this session. Two fresh
+opt-in Playwright reruns failed before setup with Chrome `SIGABRT`/`EPERM`
+launch teardown (`browserType.launch: Target page, context or browser has been
+closed`). This is a `workflow/infrastructure-defect` verification boundary,
+not a pass for #958. The existing product evidence remains: desktop handler
+works, while 375px normal actionability is unproven and synthetic DOM dispatch
+is excluded from closure evidence. GitHub update:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/958#issuecomment-5853237442.
+
+## Transaction: #788 — 2026-09-27 — DISTILLED / GROOMED / QA / BLOCKED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Reconciled against #954, the importer source, prior disposable-PostgreSQL rehearsal, production snapshot, and the owner-authorized safeguard contract. No duplicate; production action remains distinct from code and local QA. |
+| groom | Codex / GPT-5 / medium | PASS | Exact two-piece update contract, one-shot execution, rollback snapshot, 1440x900 + 375x812 live evidence, version-history and untouched-piece checks, and explicit no-write-before-preview boundary are complete. |
+| engineer | not applicable | — | This is an owner-authorized production data action; no product code engineering is in scope. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution | BLOCKED / VERIFICATION-BOUNDARY | Prior local rehearsal and snapshot passed. Active Replit workspace and free-agent investigation confirm the visible Shell is development-only and Deployments has no interactive production shell; enabling the current startup gate would execute a write without the required preview. No production command was run. GitHub update: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5853249014. |
+| reconcile / close | Codex / GPT-5 / medium | BLOCKED | Keep #788 open. Owner/Replit must supply a supported production preview/write path; then execute the exact safeguard sequence once and verify both live pieces plus history/untouched rows. |
+
+### Distillation refresh after #788 — 2026-09-27
+
+Duplicate and dependency audit: #954 is closed and its committed preview
+helper remains available, but it does not create the missing interactive
+production shell. #788 therefore stays verification-boundary blocked, not
+closed and not silently retried through the development Shell. Independent
+open work remains in the local/editor and browser-verification streams; the
+next selectable item is #858, subject to its documented disposable local
+Compose and real-Chrome prerequisites. No production mutation is authorized
+by this blocker evidence.

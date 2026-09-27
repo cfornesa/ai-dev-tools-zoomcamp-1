@@ -6345,3 +6345,41 @@ no production or public-delivery action is in scope.
 | qa-self-review | pending | — | — |
 | production-readiness | pending | — | — |
 | reconcile / close | pending | — | — |
+
+## Task-distillation refresh: 2026-09-27 — current open manifest and blocker triage
+
+The live GitHub enumeration returned the following open work. Duplicate audit
+against `docs/tasks.md`, this ledger, and issue search found no unlinked
+replacement for the listed items. Closed issues remain immutable.
+
+| Order / stream | Issues | Status and next action |
+|---|---|---|
+| Current generated-editor slice | #958 → #921 | #958 implements the missing 2D AI-edit handler but its 375px normal-click visibility evidence remains blocked; #921 has desktop/SVG/ink/unresolved coverage, with mobile currently synthetic-only. Fix/verify #958 before closing either. |
+| Media-library AI | #923 → #924/#925 → #926 | #923 implementation is partial; authenticated candidate/accept/reject browser evidence remains pending. Do not start dependents until #923 is terminal. |
+| Public media architecture | #886 → #941 → #847 | #886 requires the owner’s Narrow/Cloud/Public delivery choice; #941 and #847 are dependency-blocked. No architecture is selected silently. |
+| Microphone stream | #911 → #912/#913/#914/#915 → #916 | #916 remains blocked by the repeatable generated-route sourceConnected failure owned by #911. |
+| Local-first stream | #936–#946 | Dependency chain remains open; process only after prerequisites and with no production mutation inferred. |
+| Authorized production action | #788 | Owner-authorized, but requires the command preview/local disposable-PostgreSQL rehearsal, source snapshot, one production run, and live Chrome verification before closure. |
+| Existing production/browser verification | #858–#861, #874, #906 | Separate production/data/browser boundaries; no local evidence closes deployed criteria. |
+
+### Distillation completeness and evidence boundaries
+
+- Every actionable current item has an existing GitHub issue or the newly
+  linked #958; no issue-creation-pending-authorization item remains.
+- #958 is classified `implementation-defect` plus a responsive browser
+  verification boundary, owned by this repository; its exact next action is
+  to make the expanded 375px toolbar control normally clickable.
+- #921 is classified `dependency-blocked` by #958, not closed on synthetic
+  dispatch evidence.
+- #886 is classified `owner-decision dependency-blocked`; the next action is
+  the owner’s architecture selection, not an implementation guess.
+- The local Chrome process/tab is live, but the current app route is
+  unauthenticated (`Login` and “This art piece isn’t available”), so it is not
+  authenticated evidence for protected piece routes.
+
+### Next issue
+
+The next closure-sized transaction remains #958: finish the responsive 2D
+AI-edit activation path, rerun normal-click Chrome at 375px and 1280px, then
+reconcile #921. Production-readiness and session-completion remain deferred
+until the open manifest is terminal.

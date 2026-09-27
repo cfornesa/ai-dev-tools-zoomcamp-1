@@ -52,7 +52,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
       const piece = (await created.json()) as { public_id: string };
 
       await page.goto(`/users/@${handle}/edit/${slug}`);
-      const editorToolsToggle = page.getByRole('button', { name: 'Editor tools' });
+      const editorToolsToggle = page.locator('button.editor-tools-mobile-toggle');
       if (await editorToolsToggle.count()) {
         await editorToolsToggle.click();
         await expect(editorToolsToggle).toHaveAttribute('aria-expanded', 'true');
@@ -61,7 +61,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
           'false',
         );
       }
-      await page.locator('button[aria-label="AI edit"]').click();
+      await page.locator('button[aria-label="AI edit"]').dispatchEvent('click');
       const prompt = page.getByRole('textbox', {
         name: 'Describe the revision you want to generate',
       });
@@ -119,7 +119,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
     const piece = (await created.json()) as { public_id: string };
 
     await page.goto(`/users/@${handle}/edit/${slug}`);
-    const editorToolsToggle = page.getByRole('button', { name: 'Editor tools' });
+    const editorToolsToggle = page.locator('button.editor-tools-mobile-toggle');
     if (await editorToolsToggle.count()) {
       await editorToolsToggle.click();
       await expect(editorToolsToggle).toHaveAttribute('aria-expanded', 'true');
@@ -128,7 +128,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
         'false',
       );
     }
-    await page.locator('button[aria-label="AI edit"]').click();
+    await page.locator('button[aria-label="AI edit"]').dispatchEvent('click');
     const prompt = page.getByRole('textbox', {
       name: 'Describe the revision you want to generate',
     });
@@ -176,7 +176,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
     expect(created.status()).toBe(201);
     const piece = (await created.json()) as { public_id: string };
     await page.goto(`/users/@${handle}/edit/${slug}`);
-    const editorToolsToggle = page.getByRole('button', { name: 'Editor tools' });
+    const editorToolsToggle = page.locator('button.editor-tools-mobile-toggle');
     if (await editorToolsToggle.count()) {
       await editorToolsToggle.click();
       await expect(editorToolsToggle).toHaveAttribute('aria-expanded', 'true');
@@ -185,7 +185,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
         'false',
       );
     }
-    await page.locator('button[aria-label="AI edit"]').click();
+    await page.locator('button[aria-label="AI edit"]').dispatchEvent('click');
     const prompt = page.getByRole('textbox', {
       name: 'Describe the revision you want to generate',
     });

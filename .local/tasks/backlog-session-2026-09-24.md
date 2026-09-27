@@ -6560,3 +6560,20 @@ by the macOS MachPort launch permission failure.
 #962 owns the full-width editable-source textarea and right-aligned Undo/Redo
 row. #963 owns the broader refine-card and preview-control grouping reported by
 the latest screenshots. #962 is the next issue; #963 remains queued behind it.
+
+## Transaction: #962 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Latest source-preview screenshot was checked for duplicates; #962 was kept narrow to the editable source field and history actions, while #963 owns the separate refine/preview control grouping. |
+| groom | Codex / GPT-5 / medium | PASS | Contract requires a full available-width textarea, a separate right-aligned Undo/Redo row, no overflow at 1280x900/768x1024/375x812, and unchanged editing behavior. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Added scoped `.art-piece-editor-code-panel` and `.art-piece-editor-history-actions` layout rules plus the corresponding wrapper class; no route, API, dependency, or data changes. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with active Chrome | PASS | Focused frontend checks and full `make check` passed. Rebuilt local frontend, then Chrome geometry verified exact width/right-edge equality at 1280x900 and 375x812 with no horizontal overflow. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/962#issuecomment-5854243469. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #962 closed after the criterion matrix. #963 is the next queued issue; no production evidence was inferred. |
+
+### Distillation refresh after #962 — 2026-09-27
+
+#963 is now the next issue: full-width responsive grouping for the refine
+instruction/ink target area and the SVG preview controls beneath the authored
+preview text. It remains implementation-mechanical unless a contract change is
+discovered.

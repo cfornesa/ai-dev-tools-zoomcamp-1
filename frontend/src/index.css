@@ -3984,6 +3984,30 @@ textarea:disabled {
   box-sizing: border-box;
 }
 
+/* Issue #962: generated-source editing is a full-width preview field. Keep
+   history actions in their own right-aligned row so they do not compete with
+   the source textarea or overflow narrow editor cards. */
+.art-piece-editor-code-panel {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.art-piece-editor-code-panel > textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.art-piece-editor-history-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+
 .generated-3d-tools-group {
   width: 100%;
   max-width: 960px;

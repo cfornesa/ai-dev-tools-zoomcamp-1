@@ -925,7 +925,10 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           />
         )}
       {canEditGeneratedSource && reviseCode && (
-        <div className="behavior-card-field" data-testid="art-piece-editor-code-panel">
+        <div
+          className="behavior-card-field art-piece-editor-code-panel"
+          data-testid="art-piece-editor-code-panel"
+        >
           <label htmlFor="art-piece-editor-code">Editable source preview</label>
           <textarea
             id="art-piece-editor-code"
@@ -933,7 +936,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
             onChange={(event) => handleSourceChange(event.target.value)}
             rows={8}
           />
-          <div>
+          <div className="art-piece-editor-history-actions">
             <button type="button" onClick={undoManualEdit} disabled={manualHistoryIndex <= 0}>
               Undo
             </button>

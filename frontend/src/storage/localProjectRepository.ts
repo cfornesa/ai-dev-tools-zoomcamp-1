@@ -9,7 +9,7 @@
  * and classifies every failure into one of five caller-actionable kinds so a
  * failed write never corrupts or discards the last known-good project.
  *
- * Database: `creatrart-local-projects`, version 4. Eight object stores --
+ * Database: `creatrart-local-projects`, version 5. Nine object stores --
  * `projects`, `scenes`, `mediaAssets`, `mediaBlobs`, `meta`, recovery drafts,
  * and the authenticated mutation outbox -- exactly as
  * specified in issue #512. Every future schema change ships as a new,
@@ -21,7 +21,7 @@
  */
 
 export const DB_NAME = 'creatrart-local-projects';
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export const STORE_PROJECTS = 'projects';
 export const STORE_SCENES = 'scenes';
@@ -31,6 +31,7 @@ export const STORE_META = 'meta';
 export const STORE_RECOVERY_DRAFTS = 'recoveryDrafts';
 export const STORE_MUTATION_OUTBOX = 'mutationOutbox';
 export const STORE_MEDIA_TRANSFERS = 'mediaTransfers';
+export const STORE_VERSIONS = 'versions';
 
 const OBJECT_STORE_NAMES = [
   STORE_PROJECTS,
@@ -41,6 +42,7 @@ const OBJECT_STORE_NAMES = [
   STORE_RECOVERY_DRAFTS,
   STORE_MUTATION_OUTBOX,
   STORE_MEDIA_TRANSFERS,
+  STORE_VERSIONS,
 ] as const;
 
 /** #512's recorded quota: exactly 50MB of blob bytes and 100 media assets,
@@ -192,6 +194,22 @@ export type LocalProjectRecord = {
   activeSceneId: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Optional in the TypeScript shape for compatibility with pre-v5 test
+   * fixtures; persisted v5 records are normalized by the upgrade step. */
+  kind?: LocalPieceKind;
+  versionOrder?: string[];
+  currentVersionId?: string | null;
+};
+
+export type LocalPieceKind = '2d' | '3d' | 'generated';
+
+export type LocalPieceVersionRecord = {
+  id: string;
+  projectId: string;
+  sequence: number;
+  payload: Record<string, unknown>;
+  byteSize: number;
+  createdAt: string;
 };
 
 export type LocalSceneRecord = {
@@ -238,6 +256,7 @@ type MetaProjectUsageRecord = {
   projectId: string;
   bytesUsed: number;
   fileCount: number;
+  versionBytesUsed?: number;
 };
 
 function usageMetaKey(projectId: string): string {
@@ -298,7 +317,41 @@ const UPGRADE_STEPS: Array<(db: IDBDatabase, tx: IDBTransaction) => void> = [
       transfers.createIndex('by_owner_asset', ['ownerId', 'assetId'], { unique: false });
     }
   },
+  // Step 5: kind-tagged pieces and append-only version history for local
+  // 3D/generated pieces. Existing v4 projects are losslessly 2D records.
+  (db, tx) => {
+    if (!db.objectStoreNames.contains(STORE_VERSIONS)) {
+      const versions = db.createObjectStore(STORE_VERSIONS, { keyPath: 'id' });
+      versions.createIndex('by_project', 'projectId', { unique: false });
+      versions.createIndex('by_project_sequence', ['projectId', 'sequence'], { unique: false });
+    }
+    const projects = tx.objectStore(STORE_PROJECTS);
+    const request = projects.openCursor();
+    request.onerror = () => {
+      throw request.error ?? new DOMException('Project migration failed.', 'AbortError');
+    };
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
+      const project = cursor.value as Partial<LocalProjectRecord>;
+      if (project.kind !== undefined && !isPieceKind(project.kind)) {
+        throw new DOMException('A project has an invalid piece kind.', 'DataError');
+      }
+      cursor.update({
+        ...project,
+        kind: project.kind ?? '2d',
+        versionOrder: Array.isArray(project.versionOrder) ? project.versionOrder : [],
+        currentVersionId:
+          typeof project.currentVersionId === 'string' ? project.currentVersionId : null,
+      });
+      cursor.continue();
+    };
+  },
 ];
+
+function isPieceKind(value: unknown): value is LocalPieceKind {
+  return value === '2d' || value === '3d' || value === 'generated';
+}
 
 function runUpgrade(db: IDBDatabase, tx: IDBTransaction, oldVersion: number): void {
   for (let version = oldVersion + 1; version <= DB_VERSION; version += 1) {
@@ -446,7 +499,7 @@ function nowIso(): string {
 
 export async function createProject(
   db: IDBDatabase,
-  input: { ownerId: string; title: string },
+  input: { ownerId: string; title: string; kind?: LocalPieceKind },
 ): Promise<LocalProjectRecord> {
   const record: LocalProjectRecord = {
     id: crypto.randomUUID(),
@@ -456,6 +509,9 @@ export async function createProject(
     activeSceneId: null,
     createdAt: nowIso(),
     updatedAt: nowIso(),
+    kind: input.kind ?? '2d',
+    versionOrder: [],
+    currentVersionId: null,
   };
   try {
     const tx = db.transaction(STORE_PROJECTS, 'readwrite');
@@ -485,6 +541,9 @@ export async function ensureProject(
     activeSceneId: null,
     createdAt: nowIso(),
     updatedAt: nowIso(),
+    kind: '2d',
+    versionOrder: [],
+    currentVersionId: null,
   };
   try {
     const tx = db.transaction(STORE_PROJECTS, 'readwrite');
@@ -506,7 +565,10 @@ function isWellFormedProject(value: unknown): value is LocalProjectRecord {
     Array.isArray(r.sceneOrder) &&
     (r.activeSceneId === null || typeof r.activeSceneId === 'string') &&
     typeof r.createdAt === 'string' &&
-    typeof r.updatedAt === 'string'
+    typeof r.updatedAt === 'string' &&
+    isPieceKind(r.kind) &&
+    Array.isArray(r.versionOrder) &&
+    (r.currentVersionId === null || typeof r.currentVersionId === 'string')
   );
 }
 
@@ -624,6 +686,7 @@ export async function deleteProject(
         STORE_MEDIA_BLOBS,
         STORE_META,
         STORE_MUTATION_OUTBOX,
+        STORE_VERSIONS,
       ],
       'readwrite',
     );
@@ -632,11 +695,112 @@ export async function deleteProject(
     for (const id of assetIds) tx.objectStore(STORE_MEDIA_ASSETS).delete(id);
     for (const id of assetIds) tx.objectStore(STORE_MEDIA_BLOBS).delete(id);
     for (const id of operationIds) tx.objectStore(STORE_MUTATION_OUTBOX).delete(id);
+    for (const id of existing.versionOrder ?? []) tx.objectStore(STORE_VERSIONS).delete(id);
     tx.objectStore(STORE_META).delete(usageMetaKey(projectId));
     await txDone(tx);
   } catch (err) {
     throw classifyDbFailure(err);
   }
+}
+
+function versionPayloadBytes(payload: Record<string, unknown>): number {
+  return new TextEncoder().encode(JSON.stringify(payload)).byteLength;
+}
+
+export async function listPieceVersions(
+  db: IDBDatabase,
+  ownerId: string,
+  projectId: string,
+): Promise<LocalPieceVersionRecord[]> {
+  const project = await getProject(db, ownerId, projectId);
+  if (!project) return [];
+  try {
+    const tx = db.transaction(STORE_VERSIONS, 'readonly');
+    const rows = (await reqPromise(
+      tx.objectStore(STORE_VERSIONS).index('by_project').getAll(projectId),
+    )) as LocalPieceVersionRecord[];
+    return rows.sort((a, b) => a.sequence - b.sequence);
+  } catch (err) {
+    throw classifyDbFailure(err);
+  }
+}
+
+export async function appendPieceVersion(
+  db: IDBDatabase,
+  ownerId: string,
+  projectId: string,
+  payload: Record<string, unknown>,
+): Promise<LocalPieceVersionRecord> {
+  const project = await getProject(db, ownerId, projectId);
+  if (!project) throw corruptData(`Local project "${projectId}" was not found for this owner.`);
+  if ((project.kind ?? '2d') === '2d') {
+    throw corruptData('Version history is only available for 3D and generated pieces.');
+  }
+  const byteSize = versionPayloadBytes(payload);
+  try {
+    const tx = db.transaction([STORE_PROJECTS, STORE_VERSIONS, STORE_META], 'readwrite');
+    const versionStore = tx.objectStore(STORE_VERSIONS);
+    const versions = (await reqPromise(
+      versionStore.index('by_project').getAll(projectId),
+    )) as LocalPieceVersionRecord[];
+    const metaStore = tx.objectStore(STORE_META);
+    const usage = (await reqPromise(metaStore.get(usageMetaKey(projectId)))) as
+      MetaProjectUsageRecord | undefined;
+    const mediaBytes = usage && typeof usage.bytesUsed === 'number' ? usage.bytesUsed : 0;
+    const versionBytes =
+      usage && typeof usage.versionBytesUsed === 'number'
+        ? usage.versionBytesUsed
+        : versions.reduce((sum, version) => sum + version.byteSize, 0);
+    if (mediaBytes + versionBytes + byteSize > MAX_PROJECT_BYTES) {
+      tx.abort();
+      throw quotaExceeded('bytes', mediaBytes + versionBytes);
+    }
+    const record: LocalPieceVersionRecord = {
+      id: crypto.randomUUID(),
+      projectId,
+      sequence: versions.reduce((max, version) => Math.max(max, version.sequence), 0) + 1,
+      payload,
+      byteSize,
+      createdAt: nowIso(),
+    };
+    versionStore.put(record);
+    tx.objectStore(STORE_PROJECTS).put({
+      ...project,
+      versionOrder: [...(project.versionOrder ?? []), record.id],
+      currentVersionId: record.id,
+      updatedAt: nowIso(),
+    } satisfies LocalProjectRecord);
+    metaStore.put({
+      key: usageMetaKey(projectId),
+      projectId,
+      bytesUsed: mediaBytes,
+      fileCount: usage?.fileCount ?? 0,
+      versionBytesUsed: versionBytes + byteSize,
+    } satisfies MetaProjectUsageRecord);
+    await txDone(tx);
+    return record;
+  } catch (err) {
+    if (err instanceof LocalRepositoryException) throw err;
+    throw classifyDbFailure(err);
+  }
+}
+
+export async function getProjectStorageUsage(
+  db: IDBDatabase,
+  projectId: string,
+): Promise<{ bytesUsed: number; fileCount: number; versionBytesUsed: number }> {
+  const media = await getProjectUsage(db, projectId);
+  let versions: LocalPieceVersionRecord[];
+  try {
+    const tx = db.transaction(STORE_VERSIONS, 'readonly');
+    versions = (await reqPromise(
+      tx.objectStore(STORE_VERSIONS).index('by_project').getAll(projectId),
+    )) as LocalPieceVersionRecord[];
+  } catch (err) {
+    throw classifyDbFailure(err);
+  }
+  const versionBytesUsed = versions.reduce((sum, version) => sum + version.byteSize, 0);
+  return { ...media, versionBytesUsed };
 }
 
 // --- Scenes --------------------------------------------------------------

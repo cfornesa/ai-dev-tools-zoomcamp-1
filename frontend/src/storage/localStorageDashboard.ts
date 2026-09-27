@@ -30,6 +30,7 @@ import {
   DB_VERSION as PROJECTS_DB_VERSION,
   STORE_META,
   getProjectUsage,
+  getProjectStorageUsage,
   getStorageEstimate,
   listProjectsForOwner,
   listScenesForProject,
@@ -147,6 +148,7 @@ export type DatabaseSummary = AppDatabaseCatalogEntry & {
   sceneCount?: number;
   mediaFileCount?: number;
   byteTotal?: number;
+  pieces?: Array<{ id: string; title: string; kind: '2d' | '3d' | 'generated'; byteTotal: number }>;
   lastActivity?: string | null;
 };
 
@@ -171,6 +173,7 @@ async function summarizeActiveDatabase(
     let sceneCount = 0;
     let byteTotal = 0;
     let mediaFileCount = 0;
+    const pieces: NonNullable<DatabaseSummary['pieces']> = [];
     let lastActivity: string | null = null;
     for (const project of projects) {
       lastActivity = maxIso(lastActivity, project.updatedAt);
@@ -180,6 +183,14 @@ async function summarizeActiveDatabase(
       const usage = await getProjectUsage(db, project.id);
       byteTotal += usage.bytesUsed;
       mediaFileCount += usage.fileCount;
+      const storage = await getProjectStorageUsage(db, project.id);
+      byteTotal += storage.versionBytesUsed;
+      pieces.push({
+        id: project.id,
+        title: project.title,
+        kind: project.kind ?? '2d',
+        byteTotal: storage.bytesUsed + storage.versionBytesUsed,
+      });
     }
     return {
       ...entry,
@@ -189,6 +200,7 @@ async function summarizeActiveDatabase(
       sceneCount,
       mediaFileCount,
       byteTotal,
+      pieces,
       lastActivity,
     };
   } catch (err) {

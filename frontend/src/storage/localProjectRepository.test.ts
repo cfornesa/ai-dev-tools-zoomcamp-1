@@ -17,6 +17,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   DB_NAME,
+  DB_VERSION,
   LocalRepositoryException,
   MAX_PROJECT_BYTES,
   MAX_PROJECT_FILES,
@@ -29,16 +30,20 @@ import {
   deleteScene,
   getMediaBlob,
   getProject,
+  getProjectStorageUsage,
   getProjectUsage,
   getStorageEstimate,
   importMediaAsset,
   listMediaAssetsForProject,
+  listPieceVersions,
   listProjectsForOwner,
   listScenesForProject,
   openLocalProjectDatabase,
+  appendPieceVersion,
   recomputeProjectUsage,
   removeMediaReference,
   requestPersistentStorage,
+  STORE_PROJECTS,
   updateProject,
   updateScene,
 } from './localProjectRepository';
@@ -59,7 +64,7 @@ describe('localProjectRepository', () => {
     // no-op: each test gets a fresh factory in beforeEach.
   });
 
-  it('opens the database, creating all eight object stores with the right schema version', async () => {
+  it('opens the database, creating all nine object stores with the right schema version', async () => {
     const db = await openLocalProjectDatabase();
     expect(db.name).toBe(DB_NAME);
     expect(Array.from(db.objectStoreNames).sort()).toEqual(
@@ -72,6 +77,7 @@ describe('localProjectRepository', () => {
         'projects',
         'recoveryDrafts',
         'scenes',
+        'versions',
       ].sort(),
     );
     const tx = db.transaction(STORE_META, 'readonly');
@@ -80,8 +86,99 @@ describe('localProjectRepository', () => {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
-    expect(value).toEqual({ key: 'schemaVersion', value: 4 });
+    expect(value).toEqual({ key: 'schemaVersion', value: DB_VERSION });
     db.close();
+  });
+
+  it('upgrades a v4 database losslessly and idempotently with 2d defaults', async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, 4);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        const projects = db.createObjectStore(STORE_PROJECTS, { keyPath: 'id' });
+        projects.createIndex('by_owner', 'ownerId');
+        const scenes = db.createObjectStore('scenes', { keyPath: 'id' });
+        scenes.createIndex('by_project', 'projectId');
+        const assets = db.createObjectStore('mediaAssets', { keyPath: 'id' });
+        assets.createIndex('by_project', 'projectId');
+        db.createObjectStore('mediaBlobs', { keyPath: 'assetId' });
+        db.createObjectStore(STORE_META, { keyPath: 'key' });
+        db.createObjectStore('recoveryDrafts', { keyPath: 'id' });
+        db.createObjectStore('mutationOutbox', { keyPath: 'operationId' });
+        db.createObjectStore('mediaTransfers', { keyPath: 'transferId' });
+        projects.put({
+          id: 'legacy',
+          ownerId: 'owner',
+          title: 'Legacy',
+          sceneOrder: [],
+          activeSceneId: null,
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+        });
+      };
+      request.onsuccess = () => {
+        request.result.close();
+        resolve();
+      };
+      request.onerror = () => reject(request.error);
+    });
+    const db = await openLocalProjectDatabase();
+    expect(await getProject(db, 'owner', 'legacy')).toMatchObject({
+      kind: '2d',
+      versionOrder: [],
+      currentVersionId: null,
+    });
+    db.close();
+    const reopened = await openLocalProjectDatabase();
+    expect((await getProject(reopened, 'owner', 'legacy'))?.kind).toBe('2d');
+    reopened.close();
+  });
+
+  it('aborts an invalid v4 migration without replacing the legacy database', async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, 4);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        const projects = db.createObjectStore(STORE_PROJECTS, { keyPath: 'id' });
+        projects.createIndex('by_owner', 'ownerId');
+        const scenes = db.createObjectStore('scenes', { keyPath: 'id' });
+        scenes.createIndex('by_project', 'projectId');
+        const assets = db.createObjectStore('mediaAssets', { keyPath: 'id' });
+        assets.createIndex('by_project', 'projectId');
+        for (const [name, keyPath] of [
+          ['mediaBlobs', 'assetId'],
+          [STORE_META, 'key'],
+          ['recoveryDrafts', 'id'],
+          ['mutationOutbox', 'operationId'],
+          ['mediaTransfers', 'transferId'],
+        ] as const)
+          db.createObjectStore(name, { keyPath });
+        projects.put({
+          id: 'bad',
+          ownerId: 'owner',
+          title: 'Bad',
+          sceneOrder: [],
+          activeSceneId: null,
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          kind: 'invalid',
+        });
+      };
+      request.onsuccess = () => {
+        request.result.close();
+        resolve();
+      };
+      request.onerror = () => reject(request.error);
+    });
+    await expect(openLocalProjectDatabase()).rejects.toBeTruthy();
+    const probe = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    expect(probe.version).toBe(4);
+    expect(probe.objectStoreNames.contains('versions')).toBe(false);
+    probe.close();
   });
 
   it('rejects with an "unavailable" error when indexedDB is missing', async () => {
@@ -100,7 +197,7 @@ describe('localProjectRepository', () => {
     // to simulate corruption/partial-schema without going through this
     // module's own upgrade path.
     await new Promise<void>((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, 4);
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onupgradeneeded = () => {
         req.result.createObjectStore('projects', { keyPath: 'id' });
         // Deliberately omit scenes/mediaAssets/mediaBlobs/meta.
@@ -176,6 +273,36 @@ describe('localProjectRepository', () => {
 
     const updatedScene = await updateScene(db, sceneOne.id, { name: 'Renamed scene' });
     expect(updatedScene.name).toBe('Renamed scene');
+  });
+
+  it('creates 3d/generated pieces and appends atomic version history with a current pointer', async () => {
+    const db = await openLocalProjectDatabase();
+    const project = await createProject(db, { ownerId: 'alice', title: 'World', kind: '3d' });
+    const first = await appendPieceVersion(db, 'alice', project.id, { scene: 'one' });
+    const second = await appendPieceVersion(db, 'alice', project.id, { scene: 'two' });
+    expect((await listPieceVersions(db, 'alice', project.id)).map((v) => v.id)).toEqual([
+      first.id,
+      second.id,
+    ]);
+    const current = await getProject(db, 'alice', project.id);
+    expect(current?.currentVersionId).toBe(second.id);
+    expect(current?.versionOrder).toEqual([first.id, second.id]);
+    expect((await getProjectStorageUsage(db, project.id)).versionBytesUsed).toBe(
+      first.byteSize + second.byteSize,
+    );
+    db.close();
+  });
+
+  it('rejects 2d version history without changing the project', async () => {
+    const db = await openLocalProjectDatabase();
+    const project = await createProject(db, { ownerId: 'alice', title: 'Flat' });
+    await expect(
+      appendPieceVersion(db, 'alice', project.id, { scene: 'one' }),
+    ).rejects.toMatchObject({
+      kind: 'corrupt-data',
+    });
+    expect(await listPieceVersions(db, 'alice', project.id)).toEqual([]);
+    db.close();
   });
 
   it('deletes a project along with its scenes, media assets, and blobs', async () => {

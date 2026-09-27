@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   createProject,
   createScene,
+  appendPieceVersion,
   importMediaAsset,
   openLocalProjectDatabase,
 } from './localProjectRepository';
@@ -115,6 +116,24 @@ describe('getLocalStorageDashboardSnapshot', () => {
         expect(active?.lastActivity).not.toBeNull();
       },
     );
+  });
+
+  it('lists 3d and generated pieces with their per-piece version storage', async () => {
+    const db = await openLocalProjectDatabase();
+    const project = await createProject(db, { ownerId: 'owner-1', title: 'World', kind: '3d' });
+    const version = await appendPieceVersion(db, 'owner-1', project.id, { scene: 'world' });
+    db.close();
+    const snapshot = await getLocalStorageDashboardSnapshot('owner-1');
+    const active = snapshot.databases.find((entry) => entry.kind === 'active');
+    expect(active?.pieces).toEqual([
+      expect.objectContaining({
+        id: project.id,
+        title: 'World',
+        kind: '3d',
+        byteTotal: version.byteSize,
+      }),
+    ]);
+    expect(active?.byteTotal).toBe(version.byteSize);
   });
 
   it('reports draft-database counts distinct from the active database', async () => {

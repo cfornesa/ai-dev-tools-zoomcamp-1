@@ -286,6 +286,9 @@ export async function importLocalProject(
     activeSceneId: sceneRecords[0]?.id ?? null,
     createdAt: now,
     updatedAt: now,
+    kind: '2d',
+    versionOrder: [],
+    currentVersionId: null,
   };
 
   // Single atomic transaction across every affected store: either the

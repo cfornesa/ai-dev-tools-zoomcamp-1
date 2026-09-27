@@ -1818,3 +1818,18 @@ production publish or data mutation is authorized by this decision.
 - Updated `docs/piece-toolbar-parity-matrix.md` and
   `.agents/memory/immersive-flat-engine-presentation.md`; consumers #893,
   #898, #899, #901, #902, and #907 must be rechecked against this gate.
+
+## 2026-09-27 — server-backed package batch and readiness boundary (#965–#969)
+
+- Closed the reconciled export children #966 (2D), #967 (generated), and #968
+  (3D), plus the pointer-layering regression #969; #965 is closed as their
+  parent tracker. Local and Compose Chromium evidence is recorded separately
+  from production evidence.
+- The #968 3D history GET is owner-authorized through the canonical
+  `PROJECT3D_READ` path. Server-backed 3D currently has no browser media store,
+  so exports contain no fabricated media and the QA record names that boundary.
+- Production-readiness ran as an explicitly flagged Codex/GPT-5/medium
+  substitution because the rostered external readiness model was unavailable.
+  The project remains blocked by open production, live-model, audio, parity,
+  and deployment-verification issues; no production write or publish was
+  inferred from local/browser evidence.

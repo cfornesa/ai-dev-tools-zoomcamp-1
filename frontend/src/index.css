@@ -2956,6 +2956,12 @@ code {
 }
 
 .editor-control-panel {
+  position: relative;
+  /* Keep the File/media popover above the stage's absolute action rail. The
+     control panel is a preceding sibling in the Preview panel, but without
+     its own stacking context the rail can win pointer hit-testing when the
+     popover extends toward the canvas. */
+  z-index: 30;
   display: flex;
   flex-direction: column;
   gap: 12px;

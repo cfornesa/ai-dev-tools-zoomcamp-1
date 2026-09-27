@@ -33,7 +33,7 @@ test.describe('Server-backed 2D piece package export (#966)', () => {
 
       await page.getByRole('button', { name: 'File', exact: true }).click();
       const downloadPromise = page.waitForEvent('download');
-      await page.getByRole('menuitem', { name: 'Export piece package' }).press('Enter');
+      await page.getByRole('menuitem', { name: 'Export piece package' }).click();
       const download = await downloadPromise;
       const path = await download.path();
       expect(path).not.toBeNull();

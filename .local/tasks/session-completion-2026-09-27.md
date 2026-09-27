@@ -8,7 +8,7 @@ distilled #969 regression.
 | Category | Count | Issues |
 |---|---:|---|
 | Completed and closed this continuation | 5 | #965 parent tracker, #966, #967, #968, #969 |
-| Blocked / dependency-blocked and still open | 26 | GitHub open-issue audit after #965/#969 close; see readiness report and exact issue pages |
+| Blocked / dependency-blocked and still open | 27 | GitHub open-issue audit after #965/#969 close; see readiness report and exact issue pages |
 | Handed off | 0 | None |
 | Missing terminal status in this processed batch | 0 | #965–#969 reconciled; #965 is explicitly a parent-tracker exception |
 

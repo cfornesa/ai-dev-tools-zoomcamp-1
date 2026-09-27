@@ -6646,12 +6646,12 @@ open and must not be run against the stale route assumption.
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | `make check` passed (backend 1789 collected; frontend checks passed); focused `E2E_DOCKER_COMPOSE=true npx playwright test e2e/aiMediaAssetNewPiece.spec.ts --project=chromium` passed 2/2 at 1280px and 375px. The library thumbnail decoded and the accepted canvas contained visible imported SVG pixels; screenshots were inspected from the test artifacts. The initial sandbox MachPort restriction was resolved by the approved host-level browser runner. |
 | reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | #924's route, import, candidate, accept, persistence, resolver, desktop, and mobile criteria now pass. #923 remains open only for its separate existing-media browser boundary (#925). No production evidence was inferred. |
 
-## Transaction: #925 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / OPEN
+## Transaction: #925 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
 | distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #925 remains the existing-piece counterpart to closed #924; duplicate audit found no other issue covering preservation of pre-existing layers, pixel regions, restore, and the mixed-target boundary. |
 | groom | Codex / GPT-5 / medium | PASS | Contract retains a seeded multi-layer existing piece, local asset import, AI add-layer, exact pre-existing layer/version preservation, visible canvas pixels, restore, responsive screenshots, and explicit mixed-target behavior. |
-| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | IN PROGRESS | Add `frontend/e2e/aiMediaAssetExistingPiece.spec.ts`; reuse the canonical structured-layer fixture and the fixed import/resolver path from #924. No API, schema, dependency, migration, or production-data change. |
-| qa-self-review | Pending | PENDING | Requires the exact Chromium command in #925 against refreshed local Compose services. |
-| reconcile / close | Pending | OPEN | Close only after programmatic preservation/restore, canvas-pixel, mixed-target, and desktop/mobile criteria all pass. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Added `frontend/e2e/aiMediaAssetExistingPiece.spec.ts` in `cfbeab2e`; it reuses the canonical structured-layer fixture and the fixed import/resolver path from #924. No API, schema, dependency, migration, or production-data change. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | `make check`, Prettier, oxlint, and TypeScript checks passed. Exact Chromium scenario passed 2/2 at 1280px and 375px with programmatic layer/pixel/restore assertions and inspected screenshots. QA record: `.local/tasks/qa-925-comment.md`. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Existing layers and untouched pixels remained unchanged, the mixed `@Hills` request did not silently mutate Hills, the new asset rendered, and restore returned the exact prior scene. No production evidence was inferred. |

@@ -1625,3 +1625,19 @@ Visibility intent is metadata only during import; importing never publishes a
 piece. The frontend implementation is
 `frontend/src/storage/piecePackage.ts`, and the independent server validator is
 `backend/scenes/piece_package.py`.
+
+## Storage quota and estimate API (#931)
+
+Application administrators can read and update separate per-plan storage caps
+through `GET/PATCH /api/admin/plans/?plan_key=<key>`. The quota fields are
+`cloud_storage_bytes`/`cloud_storage_files` for synced-private copies and
+`public_storage_bytes`/`public_storage_files` for published copies. Plan
+updates are optimistic-concurrency checked with `revision` and are audited.
+
+Authenticated users can call `GET /api/account/storage/estimate/` with optional
+`piece_bytes`, `media_bytes`, `piece_files`, and `media_files` query parameters
+to preflight a package transfer. The response includes current private/public
+usage, resolved plan caps, the requested estimate, remaining capacity, and
+whether the estimate fits. This endpoint is read-only and does not reserve,
+upload, or mutate a piece. A future transfer/intake endpoint must enforce the
+same values before accepting data; #931 intentionally does not add enforcement.

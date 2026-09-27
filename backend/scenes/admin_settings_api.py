@@ -23,7 +23,7 @@ from scenes.admin_settings import (
     update_plan,
     update_site_settings,
 )
-from scenes.models import ProfileStyle, SiteSettings, ThemeGenerationAttempt
+from scenes.models import Plan, ProfileStyle, SiteSettings, ThemeGenerationAttempt
 from scenes.theme import (
     available_palettes,
     effective_design_palettes,
@@ -301,6 +301,8 @@ class PlanUpdateSerializer(serializers.Serializer):
     daily_ai_requests = serializers.IntegerField(min_value=0)
     cloud_storage_bytes = serializers.IntegerField(min_value=0, required=False, default=52_428_800)
     cloud_storage_files = serializers.IntegerField(min_value=0, required=False, default=100)
+    public_storage_bytes = serializers.IntegerField(min_value=0, required=False)
+    public_storage_files = serializers.IntegerField(min_value=0, required=False)
     cloud_snapshot_cadence_days = serializers.IntegerField(min_value=1, required=False, default=7)
     cloud_snapshot_archive_enabled = serializers.BooleanField(required=False, default=False)
     feature_keys = serializers.ListField(child=serializers.CharField(), allow_empty=True)
@@ -331,6 +333,8 @@ class AdminPlansView(APIView):
                     "daily_ai_requests": plan.daily_ai_requests,
                     "cloud_storage_bytes": plan.cloud_storage_bytes,
                     "cloud_storage_files": plan.cloud_storage_files,
+                    "public_storage_bytes": plan.public_storage_bytes,
+                    "public_storage_files": plan.public_storage_files,
                     "cloud_snapshot_cadence_days": plan.cloud_snapshot_cadence_days,
                     "cloud_snapshot_archive_enabled": plan.cloud_snapshot_archive_enabled,
                     "feature_keys": plan.feature_keys,
@@ -358,10 +362,19 @@ class AdminPlansView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        existing_plan = Plan.objects.filter(plan_key=plan_key).first()
+        if existing_plan is None:
+            return Response(
+                {"error": "unknown_plan", "detail": f"Unknown plan key: {plan_key!r}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         allowed_fields = {
             "daily_ai_requests",
             "cloud_storage_bytes",
             "cloud_storage_files",
+            "public_storage_bytes",
+            "public_storage_files",
             "cloud_snapshot_cadence_days",
             "cloud_snapshot_archive_enabled",
             "feature_keys",
@@ -394,6 +407,12 @@ class AdminPlansView(APIView):
                 daily_ai_requests=serializer.validated_data["daily_ai_requests"],
                 cloud_storage_bytes=serializer.validated_data["cloud_storage_bytes"],
                 cloud_storage_files=serializer.validated_data["cloud_storage_files"],
+                public_storage_bytes=serializer.validated_data.get(
+                    "public_storage_bytes", existing_plan.public_storage_bytes
+                ),
+                public_storage_files=serializer.validated_data.get(
+                    "public_storage_files", existing_plan.public_storage_files
+                ),
                 cloud_snapshot_cadence_days=serializer.validated_data[
                     "cloud_snapshot_cadence_days"
                 ],
@@ -425,6 +444,8 @@ class AdminPlansView(APIView):
                 "daily_ai_requests": updated.daily_ai_requests,
                 "cloud_storage_bytes": updated.cloud_storage_bytes,
                 "cloud_storage_files": updated.cloud_storage_files,
+                "public_storage_bytes": updated.public_storage_bytes,
+                "public_storage_files": updated.public_storage_files,
                 "cloud_snapshot_cadence_days": updated.cloud_snapshot_cadence_days,
                 "cloud_snapshot_archive_enabled": updated.cloud_snapshot_archive_enabled,
                 "feature_keys": updated.feature_keys,

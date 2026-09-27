@@ -435,6 +435,29 @@ def test_admin_can_update_plan_daily_requests_and_features(client, admin_a):
 
 
 @pytest.mark.django_db
+def test_legacy_plan_update_preserves_public_quota_fields(client, admin_a):
+    plan = Plan.objects.get(plan_key="free")
+    plan.public_storage_bytes = 777
+    plan.public_storage_files = 8
+    plan.save(update_fields=["public_storage_bytes", "public_storage_files"])
+    client.force_login(admin_a)
+    response = client.patch(
+        f"{reverse('admin-plans')}?plan_key=free",
+        {
+            "daily_ai_requests": 10,
+            "feature_keys": [],
+            "active": True,
+            "paypal_plan_id": "",
+            "revision": plan.revision,
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.json()["public_storage_bytes"] == 777
+    assert response.json()["public_storage_files"] == 8
+
+
+@pytest.mark.django_db
 def test_plan_update_rejects_negative_cap_leaving_previous_value_intact(client, admin_a):
     client.force_login(admin_a)
     response = client.patch(
@@ -558,6 +581,8 @@ def test_get_site_settings_and_list_plans_expose_only_named_fields():
             "daily_ai_requests",
             "cloud_storage_bytes",
             "cloud_storage_files",
+            "public_storage_bytes",
+            "public_storage_files",
             "cloud_snapshot_cadence_days",
             "cloud_snapshot_archive_enabled",
             "feature_keys",

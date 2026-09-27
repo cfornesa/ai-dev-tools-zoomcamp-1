@@ -49,6 +49,10 @@ export type Plan = {
   interval: string;
   revision: number;
   role_key: string | null;
+  cloud_storage_bytes: number;
+  cloud_storage_files: number;
+  public_storage_bytes: number;
+  public_storage_files: number;
 };
 
 export type EntitlementRole = {
@@ -323,6 +327,10 @@ export async function updatePlan(
     interval: string;
     revision: number;
     role_key?: string | null;
+    cloud_storage_bytes: number;
+    cloud_storage_files: number;
+    public_storage_bytes: number;
+    public_storage_files: number;
   },
 ): Promise<Plan> {
   return apiFetch<Plan>(`/api/admin/plans/?plan_key=${encodeURIComponent(planKey)}`, {

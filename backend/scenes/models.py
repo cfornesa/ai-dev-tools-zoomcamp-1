@@ -559,6 +559,11 @@ class Plan(models.Model):
     # Issue #509: independently editable cloud-backup tier quotas.
     cloud_storage_bytes = models.PositiveBigIntegerField(default=52_428_800)
     cloud_storage_files = models.PositiveIntegerField(default=100)
+    # Issue #931: published copies have a separate administrator-editable
+    # budget; these caps are measured and enforced by the public-transfer
+    # stream, not by the private cloud-backup path.
+    public_storage_bytes = models.PositiveBigIntegerField(default=524_288_000)
+    public_storage_files = models.PositiveIntegerField(default=1_000)
     # Issue #530: how often (in days) a silent scheduled cloud-backup
     # snapshot is due for a project on this plan, and whether prior
     # snapshot revisions/orphaned assets are kept (`True`, subject to the

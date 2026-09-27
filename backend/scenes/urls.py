@@ -132,6 +132,7 @@ from scenes.share_metadata import (
     PublicShareMetadataView,
     PublicSiteShareMetadataView,
 )
+from scenes.storage_usage_api import AccountStorageEstimateView
 from scenes.sync_mutation_api import SyncMutationReceiptView
 
 urlpatterns = [
@@ -213,6 +214,11 @@ urlpatterns = [
     path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
     path("account/billing/", AccountBillingView.as_view(), name="account-billing"),
     path("account/entitlements/", AccountEntitlementsView.as_view(), name="account-entitlements"),
+    path(
+        "account/storage/estimate/",
+        AccountStorageEstimateView.as_view(),
+        name="account-storage-estimate",
+    ),
     path("account/export/", AccountDataExportView.as_view(), name="account-data-export"),
     path("account/delete/", AccountDeletionView.as_view(), name="account-delete"),
     path("account/sessions/", AccountSessionsView.as_view(), name="account-sessions"),

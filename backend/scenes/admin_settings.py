@@ -18,7 +18,7 @@ from typing import cast
 from django.db import transaction
 
 from scenes.entitlements import FEATURE_KEYS
-from scenes.models import EntitlementRole, Plan, ProfileStyle, SiteSettings
+from scenes.models import AdminContentAuditEvent, EntitlementRole, Plan, ProfileStyle, SiteSettings
 from scenes.theme import (
     effective_design_palettes,
     effective_presentation,
@@ -84,6 +84,8 @@ class PlanView:
     daily_ai_requests: int
     cloud_storage_bytes: int
     cloud_storage_files: int
+    public_storage_bytes: int
+    public_storage_files: int
     cloud_snapshot_cadence_days: int
     cloud_snapshot_archive_enabled: bool
     feature_keys: list[str]
@@ -245,6 +247,8 @@ def _plan_view(plan: Plan) -> PlanView:
         daily_ai_requests=plan.daily_ai_requests,
         cloud_storage_bytes=plan.cloud_storage_bytes,
         cloud_storage_files=plan.cloud_storage_files,
+        public_storage_bytes=plan.public_storage_bytes,
+        public_storage_files=plan.public_storage_files,
         cloud_snapshot_cadence_days=plan.cloud_snapshot_cadence_days,
         cloud_snapshot_archive_enabled=plan.cloud_snapshot_archive_enabled,
         feature_keys=sorted(plan.feature_keys),
@@ -278,6 +282,8 @@ def update_plan(
     role_key: str | None = None,
     cloud_storage_bytes: int = 52_428_800,
     cloud_storage_files: int = 100,
+    public_storage_bytes: int = 524_288_000,
+    public_storage_files: int = 1_000,
     cloud_snapshot_cadence_days: int = 7,
     cloud_snapshot_archive_enabled: bool = False,
 ) -> PlanView:
@@ -303,6 +309,18 @@ def update_plan(
         or cloud_storage_files < 0
     ):
         raise ValidationFailed("cloud_storage_files must be a non-negative integer.")
+    if (
+        not isinstance(public_storage_bytes, int)
+        or isinstance(public_storage_bytes, bool)
+        or public_storage_bytes < 0
+    ):
+        raise ValidationFailed("public_storage_bytes must be a non-negative integer.")
+    if (
+        not isinstance(public_storage_files, int)
+        or isinstance(public_storage_files, bool)
+        or public_storage_files < 0
+    ):
+        raise ValidationFailed("public_storage_files must be a non-negative integer.")
     if (
         not isinstance(cloud_snapshot_cadence_days, int)
         or isinstance(cloud_snapshot_cadence_days, bool)
@@ -356,6 +374,8 @@ def update_plan(
     plan.daily_ai_requests = daily_ai_requests
     plan.cloud_storage_bytes = cloud_storage_bytes
     plan.cloud_storage_files = cloud_storage_files
+    plan.public_storage_bytes = public_storage_bytes
+    plan.public_storage_files = public_storage_files
     plan.cloud_snapshot_cadence_days = cloud_snapshot_cadence_days
     plan.cloud_snapshot_archive_enabled = cloud_snapshot_archive_enabled
     plan.feature_keys = sorted(set(feature_keys))
@@ -372,4 +392,14 @@ def update_plan(
     plan.revision += 1
     plan.updated_by = actor
     plan.save()
+    AdminContentAuditEvent.objects.create(
+        resource_type="plan",
+        resource_id=plan.plan_key,
+        actor=actor,
+        action="update_quota",
+        detail=(
+            f"private={cloud_storage_bytes}B/{cloud_storage_files} files; "
+            f"public={public_storage_bytes}B/{public_storage_files} files"
+        ),
+    )
     return _plan_view(plan)

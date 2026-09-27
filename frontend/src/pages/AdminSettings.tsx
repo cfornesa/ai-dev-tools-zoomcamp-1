@@ -567,6 +567,10 @@ function PlanForm({
   const [currency, setCurrency] = useState(plan.currency);
   const [interval, setInterval] = useState(plan.interval);
   const [roleKey, setRoleKey] = useState(plan.role_key ?? '');
+  const [cloudBytes, setCloudBytes] = useState(String(plan.cloud_storage_bytes));
+  const [cloudFiles, setCloudFiles] = useState(String(plan.cloud_storage_files));
+  const [publicBytes, setPublicBytes] = useState(String(plan.public_storage_bytes));
+  const [publicFiles, setPublicFiles] = useState(String(plan.public_storage_files));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -580,6 +584,10 @@ function PlanForm({
     setCurrency(plan.currency);
     setInterval(plan.interval);
     setRoleKey(plan.role_key ?? '');
+    setCloudBytes(String(plan.cloud_storage_bytes));
+    setCloudFiles(String(plan.cloud_storage_files));
+    setPublicBytes(String(plan.public_storage_bytes));
+    setPublicFiles(String(plan.public_storage_files));
   }, [plan]);
 
   function toggleFeature(feature: string) {
@@ -597,6 +605,11 @@ function PlanForm({
       setError('Daily AI requests must be a whole number, zero or greater.');
       return;
     }
+    const quotaValues = [cloudBytes, cloudFiles, publicBytes, publicFiles].map(Number);
+    if (quotaValues.some((value) => !Number.isInteger(value) || value < 0)) {
+      setError('Storage quotas must be whole numbers, zero or greater.');
+      return;
+    }
     setBusy(true);
     setError(null);
     setMessage(null);
@@ -610,6 +623,10 @@ function PlanForm({
         currency,
         interval,
         role_key: roleKey || null,
+        cloud_storage_bytes: quotaValues[0],
+        cloud_storage_files: quotaValues[1],
+        public_storage_bytes: quotaValues[2],
+        public_storage_files: quotaValues[3],
         revision: plan.revision,
       });
       onSaved(next);
@@ -669,6 +686,54 @@ function PlanForm({
           onChange={(event) => setActive(event.target.checked)}
         />
         Active
+      </label>
+      <label>
+        Synced-private storage bytes
+        <input
+          id={`plan-${plan.plan_key}-cloud-bytes`}
+          type="number"
+          min={0}
+          step={1}
+          value={cloudBytes}
+          onChange={(event) => setCloudBytes(event.target.value)}
+          required
+        />
+      </label>
+      <label>
+        Synced-private storage files
+        <input
+          id={`plan-${plan.plan_key}-cloud-files`}
+          type="number"
+          min={0}
+          step={1}
+          value={cloudFiles}
+          onChange={(event) => setCloudFiles(event.target.value)}
+          required
+        />
+      </label>
+      <label>
+        Public storage bytes
+        <input
+          id={`plan-${plan.plan_key}-public-bytes`}
+          type="number"
+          min={0}
+          step={1}
+          value={publicBytes}
+          onChange={(event) => setPublicBytes(event.target.value)}
+          required
+        />
+      </label>
+      <label>
+        Public storage files
+        <input
+          id={`plan-${plan.plan_key}-public-files`}
+          type="number"
+          min={0}
+          step={1}
+          value={publicFiles}
+          onChange={(event) => setPublicFiles(event.target.value)}
+          required
+        />
       </label>
       <label>
         PayPal plan id

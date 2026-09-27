@@ -103,6 +103,14 @@ def _plan_quota(user) -> tuple[int, int]:
     return plan.cloud_storage_bytes, plan.cloud_storage_files
 
 
+def _public_plan_quota(user) -> tuple[int, int]:
+    """Return the independent published-copy cap for a user's active plan."""
+    plan = _user_plan(user)
+    if plan is None:
+        return 0, 0
+    return plan.public_storage_bytes, plan.public_storage_files
+
+
 def _snapshot_policy(user) -> tuple[int, bool]:
     """`(cadence_days, archive_enabled)` for the owner's current plan
     (issue #529/#530). Fails closed to a conservative 7-day, no-archive

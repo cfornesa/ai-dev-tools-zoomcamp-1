@@ -29,6 +29,8 @@
  * module never concatenates a raw title/description/scene string directly
  * into an HTML tag.
  */
+import JSZip from 'jszip';
+
 import { EXPORT_STAGE_TOOLBAR_CSS, renderExportStageToolbar } from './exportStageToolbar';
 import { buildScenePlan, SceneRenderError } from '../render/sceneDrawPlan';
 import { resolveSceneRendererId } from '../render/createScenePreview';
@@ -46,6 +48,7 @@ import { buildStandaloneRuntimeScript } from './standaloneRuntimeSource';
 import { buildStandaloneCanvas2DRuntimeScript } from './standaloneCanvas2DRuntimeSource';
 import { buildStandaloneSvgRuntimeScript } from './standaloneSvgRuntimeSource';
 import { buildStandaloneDrawioRuntimeScript } from './standaloneDrawioRuntimeSource';
+import { downloadBlob } from './downloadBlob';
 
 /** Exact p5.js version pinned for the export's CDN `<script>` tag --
  * matches `frontend/package.json`'s own pinned `p5` dependency
@@ -455,4 +458,29 @@ export function triggerHtmlDownload(html: string, filename: string): void {
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** Packages the standalone HTML and the same fetched media into a portable
+ * ZIP. The HTML keeps data URLs so it remains runnable after extraction;
+ * separate asset files make the bundle inspectable and preserve the source
+ * bytes for future runtime revisions. */
+export async function generateHtmlExportZip(
+  input: GenerateHtmlExportInput,
+): Promise<
+  { ok: true; zipBlob: Blob; filename: string } | { ok: false; reasons: string[] }
+> {
+  const result = generateHtmlExport(input);
+  if (!result.ok) return result;
+  const zip = new JSZip();
+  zip.file('index.html', result.html);
+  for (const [assetId, dataUrl] of Object.entries(input.mediaAssets ?? {})) {
+    const response = await fetch(dataUrl);
+    zip.file(`assets/${assetId}`, await response.arrayBuffer());
+  }
+  const zipBlob = await zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
+  return { ok: true, zipBlob, filename: result.filename.replace(/\.html$/, '.zip') };
+}
+
+export function triggerHtmlZipDownload(zipBlob: Blob, filename: string): void {
+  downloadBlob(zipBlob, filename);
 }

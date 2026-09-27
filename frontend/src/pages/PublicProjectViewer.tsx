@@ -19,7 +19,10 @@ import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePrevi
 import { normalizeSceneLayers } from '../validation/scene';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
-import { generateHtmlExport, triggerHtmlDownload } from '../export/generateHtmlExport';
+import {
+  generateHtmlExportZip,
+  triggerHtmlZipDownload,
+} from '../export/generateHtmlExport';
 import { getAvailableInteractionModes } from '../export/exportCompatibility';
 import PieceStageToolbar from '../components/PieceStageToolbar';
 import StageControlsPopover from '../components/StageControlsPopover';
@@ -428,7 +431,7 @@ function PublicProjectViewer({
       project.id,
       project.current_version.scene_json,
     );
-    const result = generateHtmlExport({
+    const result = await generateHtmlExportZip({
       scene: project.current_version.scene_json,
       title: project.title,
       description: project.description ?? '',
@@ -441,7 +444,7 @@ function PublicProjectViewer({
       return;
     }
     setSurfaceError(null);
-    triggerHtmlDownload(result.html, result.filename);
+    triggerHtmlZipDownload(result.zipBlob, result.filename);
   }
 
   async function handleFork() {
@@ -672,6 +675,7 @@ function PublicProjectViewer({
                   ...TWO_D_STAGE_CAPABILITIES,
                   sound: structured2dCapabilities.sound,
                 }}
+                downloadFormat="zip"
                 toolbarMode={toolbarMode}
                 soundControl={
                   <Structured2DSoundToggle

@@ -7066,3 +7066,13 @@ wrapper publication once the secure push credential is available through the
 | engineer | Codex / GPT-5 / medium; implementation-complex substitution for Ollama Cloud kimi-k3 | PASS | Commit `d9f168bc`; schema, frontend package builder/parser, PieceIntakeAsset field/index, migration 0101, API docs, and regression coverage. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude substitution; independent stage-3 unavailable and not credited | PASS | Backend focused tests 15 passed; frontend package tests 11 passed; migration dry-run clean; full `make check` backend 1758 passed/39 skipped and frontend 292 files/3071 tests. |
 | reconcile / close | Codex / GPT-5 / medium | CLOSED | QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/971#issuecomment-5860722175. No production/shared database write. |
+
+## Transaction: #941 public media delivery slice — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA FAIL / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #932 is closed and stable sourceAssetId preservation was confirmed as the prerequisite; no duplicate for the public asset contract. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Scope held to published-piece authorization, immutable media delivery, public resolver wiring, and offline export parity. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution for Ollama Cloud kimi-k3 | PARTIAL | Commit `13134abd`: guarded public endpoint, headers, API docs/OpenAPI, 2D/3D regular/embed/immersive resolver wiring, and tests. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude substitution; independent stage-3 unavailable and not credited | FAIL | QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/941#issuecomment-5860824399. Backend 6 passed; frontend 51 passed; typecheck passed. ZIP/offline render and real-browser production evidence remain missing. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN | Keep #941 open. No production/shared database write. Continue with the missing export asset bundling/render contract before any production action. |

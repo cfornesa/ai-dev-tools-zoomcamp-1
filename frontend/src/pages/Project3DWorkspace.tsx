@@ -60,6 +60,7 @@ type ExportState = { pending: boolean; error: string | null };
 export type Project3DWorkspaceStorage = {
   loadProject: (id: string) => Promise<{ project: Project3D; versions: SceneVersion3D[] }>;
   saveVersion: (id: string, scene: Scene3DDocument) => Promise<SceneVersion3D>;
+  restoreVersion?: (id: string, versionId: number) => Promise<SceneVersion3D>;
   updateMetadata: (id: string, data: { title?: string }) => Promise<Project3D>;
   local?: boolean;
 };
@@ -660,6 +661,19 @@ function Project3DWorkspace({
     }
   }
 
+  async function handleRestoreVersion(version: SceneVersion3D) {
+    if (!id || !projectStorage.restoreVersion || version.id === project?.current_version?.id)
+      return;
+    setSaveState({ pending: true, error: null });
+    try {
+      const restored = await projectStorage.restoreVersion(id, version.id);
+      setSaveState(IDLE_SAVE_STATE);
+      handleVersionSaved(restored);
+    } catch {
+      setSaveState({ pending: false, error: 'Something went wrong restoring this version.' });
+    }
+  }
+
   const isDirty = workingScene !== persistedScene;
 
   return (
@@ -731,6 +745,33 @@ function Project3DWorkspace({
           <p role="alert" aria-live="assertive" data-testid="project3d-save-error">
             {saveState.error}
           </p>
+        )}
+        {projectStorage.local && versionHistory.length > 1 && (
+          <section className="project3d-local-version-history" aria-label="Version history">
+            <h3>Version history</h3>
+            <ol>
+              {[...versionHistory].reverse().map((version) => {
+                const current = version.id === project?.current_version?.id;
+                return (
+                  <li key={version.id}>
+                    <span>
+                      Version {version.sequence} · {new Date(version.created_at).toLocaleString()}
+                      {current ? ' (current)' : ''}
+                    </span>
+                    {!current && projectStorage.restoreVersion && (
+                      <button
+                        type="button"
+                        onClick={() => void handleRestoreVersion(version)}
+                        disabled={saveState.pending}
+                      >
+                        Restore version {version.sequence}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
         )}
         {exportState.error && (
           <p role="alert" aria-live="assertive" data-testid="project3d-export-error">

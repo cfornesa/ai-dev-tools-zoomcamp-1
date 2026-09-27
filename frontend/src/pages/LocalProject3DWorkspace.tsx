@@ -6,6 +6,7 @@ import {
   getProject,
   listPieceVersions,
   openLocalProjectDatabase,
+  restoreLocal3DVersion,
   saveLocal3DVersion,
   updateProject,
   type LocalPieceVersionRecord,
@@ -59,7 +60,10 @@ export default function LocalProject3DWorkspace() {
           const project = await getProject(db, owner, projectId);
           if (!project || project.kind !== '3d') throw new Error('Local 3D project unavailable');
           const versions = await listPieceVersions(db, owner, projectId);
-          const current = versions.at(-1) ?? null;
+          const current =
+            versions.find((version) => version.id === project.currentVersionId) ??
+            versions.at(-1) ??
+            null;
           return {
             project: projectToApi(project, current ? versionToApi(current, owner) : null),
             versions: versions.map((version) => versionToApi(version, owner)),
@@ -82,12 +86,27 @@ export default function LocalProject3DWorkspace() {
           db.close();
         }
       },
+      async restoreVersion(projectId, versionSequence) {
+        const db = await openLocalProjectDatabase();
+        try {
+          const versions = await listPieceVersions(db, owner, projectId);
+          const selected = versions.find((version) => version.sequence === versionSequence);
+          if (!selected) throw new Error(`Local version ${versionSequence} was not found.`);
+          const version = await restoreLocal3DVersion(db, owner, projectId, selected.id);
+          return versionToApi(version, owner);
+        } finally {
+          db.close();
+        }
+      },
       async updateMetadata(projectId, data) {
         const db = await openLocalProjectDatabase();
         try {
           const project = await updateProject(db, owner, projectId, { title: data.title });
           const versions = await listPieceVersions(db, owner, projectId);
-          const current = versions.at(-1) ?? null;
+          const current =
+            versions.find((version) => version.id === project.currentVersionId) ??
+            versions.at(-1) ??
+            null;
           return projectToApi(project, current ? versionToApi(current, owner) : null);
         } finally {
           db.close();

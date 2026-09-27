@@ -877,6 +877,47 @@ export async function saveLocal3DVersion(
   return version;
 }
 
+/** Restores an existing local 3D checkpoint without creating a new version.
+ * The active scene and the project's current-version pointer change together,
+ * so a reload opens the same restored checkpoint. */
+export async function restoreLocal3DVersion(
+  db: IDBDatabase,
+  ownerId: string,
+  projectId: string,
+  versionId: string,
+): Promise<LocalPieceVersionRecord> {
+  const project = await getProject(db, ownerId, projectId);
+  if (!project || project.kind !== '3d' || !project.activeSceneId) {
+    throw corruptData(`Local 3D project "${projectId}" was not found for this owner.`);
+  }
+  try {
+    const tx = db.transaction([STORE_PROJECTS, STORE_SCENES, STORE_VERSIONS], 'readwrite');
+    const version = (await reqPromise(tx.objectStore(STORE_VERSIONS).get(versionId))) as
+      LocalPieceVersionRecord | undefined;
+    if (!version || version.projectId !== projectId) {
+      tx.abort();
+      throw corruptData(`Local 3D version "${versionId}" was not found for this project.`);
+    }
+    const scene = (await reqPromise(tx.objectStore(STORE_SCENES).get(project.activeSceneId))) as
+      LocalSceneRecord | undefined;
+    if (!scene || scene.projectId !== projectId) {
+      tx.abort();
+      throw corruptData(`Local 3D scene for project "${projectId}" was not found.`);
+    }
+    tx.objectStore(STORE_SCENES).put({ ...scene, sceneJson: version.payload, updatedAt: nowIso() });
+    tx.objectStore(STORE_PROJECTS).put({
+      ...project,
+      currentVersionId: version.id,
+      updatedAt: nowIso(),
+    } satisfies LocalProjectRecord);
+    await txDone(tx);
+    return version;
+  } catch (err) {
+    if (err instanceof LocalRepositoryException) throw err;
+    throw classifyDbFailure(err);
+  }
+}
+
 export async function getProjectStorageUsage(
   db: IDBDatabase,
   projectId: string,

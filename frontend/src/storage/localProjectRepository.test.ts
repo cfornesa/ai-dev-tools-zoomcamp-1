@@ -41,6 +41,7 @@ import {
   openLocalProjectDatabase,
   appendPieceVersion,
   createLocal3DProject,
+  restoreLocal3DVersion,
   saveLocal3DVersion,
   recomputeProjectUsage,
   removeMediaReference,
@@ -89,6 +90,32 @@ describe('localProjectRepository', () => {
       req.onerror = () => reject(req.error);
     });
     expect(value).toEqual({ key: 'schemaVersion', value: DB_VERSION });
+    db.close();
+  });
+
+  it('restores a prior local 3D checkpoint without creating a new version', async () => {
+    const db = await openLocalProjectDatabase();
+    const firstScene = { documentType: 'scene3d', schemaVersion: 1, objects: [] };
+    const created = await createLocal3DProject(db, {
+      ownerId: 'owner',
+      title: 'Restorable 3D',
+      sceneJson: firstScene,
+    });
+    const secondScene = { ...firstScene, objects: [{ id: 'sphere-1', type: 'sphere' }] };
+    await saveLocal3DVersion(db, 'owner', created.project.id, secondScene);
+
+    const restored = await restoreLocal3DVersion(
+      db,
+      'owner',
+      created.project.id,
+      created.version.id,
+    );
+    expect(restored.id).toBe(created.version.id);
+    expect(await listPieceVersions(db, 'owner', created.project.id)).toHaveLength(2);
+    expect((await listScenesForProject(db, created.project.id))[0].sceneJson).toEqual(firstScene);
+    expect((await getProject(db, 'owner', created.project.id))?.currentVersionId).toBe(
+      created.version.id,
+    );
     db.close();
   });
 

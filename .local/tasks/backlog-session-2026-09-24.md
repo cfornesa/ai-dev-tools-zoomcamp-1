@@ -6427,3 +6427,16 @@ by this blocker evidence.
 | engineer | not applicable | — | Verification-only issue. No repository implementation was required; local disposable fixture content was created and edited through the authenticated editor for evidence. |
 | qa-self-review | Codex / GPT-5 / medium; active Chrome + fresh anonymous browser | PASS | Version 4 current; authored sky/moon/three hills/water/36 stars rendered at exact 1280x720 and 375x667; fresh anonymous sound activation reported running, 90 BPM, major scale, and live ambient note telemetry; no error-level logs. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/858#issuecomment-5853446337. |
 | reconcile / close | Codex / GPT-5 / medium | PASS | GitHub issue #858 closed after the criterion matrix. Evidence is local disposable Compose/PostgreSQL plus real Chrome only; no production criterion was inferred or closed. |
+
+### Distillation refresh after #858 — 2026-09-27
+
+Duplicate/dependency audit: #858 is closed with local Chrome evidence. The
+next item remains #958 → #921. The active Compose fixture database currently
+contains only `serene-threejs` for `e2e_owner`; the user-mentioned
+`untitled-animation` slug is not a fixture in this database and its route
+falls back to the studio create surface, so it cannot supply #958's existing
+2D-piece browser evidence. This is not evidence of logout or production
+availability. #958 also remains blocked by the repeatable Playwright Chrome
+SIGABRT/EPERM launch failure for the exact normal-click 375px run; no new
+duplicate issue is created. Do not start #921 or dependents until #958 has
+normal actionability evidence or a reconciled infrastructure blocker.

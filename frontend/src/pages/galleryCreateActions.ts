@@ -31,7 +31,19 @@ export async function createNewAnimation(renderer: NewProjectRenderer): Promise<
     await createScene(db, profile.handle, {
       projectId: project.id,
       name: 'Scene 1',
-      sceneJson: { version: 1, renderer, shapes: [], layers: [] },
+      sceneJson: {
+        schemaVersion: 1,
+        id: crypto.randomUUID(),
+        canvas: { width: 800, height: 600, backgroundColor: '#ffffff' },
+        renderer: { preferred: renderer },
+        layers: [{ id: 'layer-1', name: 'Layer 1', order: 0, visible: true, locked: false }],
+        shapes: [],
+        groups: [],
+        bindings: [],
+        graph: { nodes: [], connections: [] },
+        accessibility: { reducedMotion: 'auto' },
+        randomness: { seed: 0, enabled: false },
+      },
     });
     return `/local-projects/${project.id}`;
   } finally {

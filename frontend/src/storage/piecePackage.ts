@@ -1,6 +1,8 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 
+// @ts-ignore Vite/Vitest resolve these browser-side validator modules.
 import { validateScene } from '../validation/scene';
+// @ts-ignore Vite/Vitest resolve these browser-side validator modules.
 import { validateScene3D } from '../validation/scene3d';
 
 export const PIECE_PACKAGE_FORMAT_VERSION = 1;

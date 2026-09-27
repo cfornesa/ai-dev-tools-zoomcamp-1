@@ -379,7 +379,9 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
         expect(mockedCreateScene).toHaveBeenCalledWith(
           localDb,
           'alice',
-          expect.objectContaining({ sceneJson: expect.objectContaining({ renderer }) }),
+          expect.objectContaining({
+            sceneJson: expect.objectContaining({ renderer: { preferred: renderer } }),
+          }),
         ),
       );
     },

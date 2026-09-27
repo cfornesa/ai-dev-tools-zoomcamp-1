@@ -6,6 +6,10 @@ import { ConflictResolutionPanel } from '../components/ConflictResolutionPanel';
 import { MutationRecoveryPanel } from '../components/MutationRecoveryPanel';
 import { MediaTransferRecoveryPanel } from '../components/MediaTransferRecoveryPanel';
 import { exportDatabaseArchive } from '../storage/localDatabaseArchive';
+import {
+  buildLocal2dPiecePackage,
+  type LocalPiecePackageResult,
+} from '../storage/localPiecePackage';
 import { getFolderBridgeStatus, writeArchiveFile } from '../storage/folderArchiveBridge';
 import { appendRecoveryDraft, getLatestRecoveryDraft } from '../storage/localRecovery';
 import {
@@ -65,6 +69,8 @@ function LocalEditorWorkspace() {
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [checkpointBusy, setCheckpointBusy] = useState(false);
+  const [packageBusy, setPackageBusy] = useState(false);
+  const [preparedPackage, setPreparedPackage] = useState<LocalPiecePackageResult | null>(null);
   const [recoveryDraftId, setRecoveryDraftId] = useState<string | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [syncConflict, setSyncConflict] = useState<{
@@ -442,6 +448,37 @@ function LocalEditorWorkspace() {
     }
   }
 
+  async function preparePiecePackage() {
+    const ownerId = auth.user?.username;
+    if (!project || !id || !ownerId || dirty) {
+      setMessage('Save or cancel the current local scene changes before preparing an export.');
+      return;
+    }
+    setPackageBusy(true);
+    setMessage(null);
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      setPreparedPackage(await buildLocal2dPiecePackage(db, ownerId, id));
+    } catch {
+      setPreparedPackage(null);
+      setMessage('Could not prepare the piece package. Local data was not changed.');
+    } finally {
+      db?.close();
+      setPackageBusy(false);
+    }
+  }
+
+  function downloadPreparedPackage() {
+    if (!preparedPackage || !project) return;
+    downloadBlob(
+      new Blob([preparedPackage.bytes.slice().buffer as ArrayBuffer], { type: 'application/zip' }),
+      `${project.title.replace(/[^\w.-]+/g, '_') || 'piece'}-package.zip`,
+    );
+    setMessage(`Piece package ready (${preparedPackage.bytes.byteLength} bytes).`);
+    setPreparedPackage(null);
+  }
+
   async function exportUnsavedChanges() {
     if (!selectedScene || !id || auth.status !== 'signed-in') return;
     let db: IDBDatabase | undefined;
@@ -610,6 +647,33 @@ function LocalEditorWorkspace() {
           >
             {checkpointBusy ? 'Writing checkpoint…' : 'Save durable checkpoint'}
           </button>
+          <button
+            type="button"
+            onClick={() => void preparePiecePackage()}
+            disabled={dirty || packageBusy}
+          >
+            {packageBusy ? 'Preparing piece package…' : 'Prepare piece package'}
+          </button>
+          {preparedPackage && (
+            <section aria-label="Piece package export">
+              <p>Package size: {preparedPackage.bytes.byteLength.toLocaleString()} bytes.</p>
+              {preparedPackage.missingAssets.length > 0 && (
+                <p role="alert">
+                  Missing media:{' '}
+                  {preparedPackage.missingAssets.map((asset) => asset.filename).join(', ')}. The
+                  package will omit these files.
+                </p>
+              )}
+              <button type="button" onClick={downloadPreparedPackage}>
+                {preparedPackage.missingAssets.length > 0
+                  ? 'Export without missing media'
+                  : 'Download piece package'}
+              </button>
+              <button type="button" onClick={() => setPreparedPackage(null)}>
+                Cancel export
+              </button>
+            </section>
+          )}
           <p>Scene JSON is available locally and remains scoped to this project.</p>
         </>
       ) : (

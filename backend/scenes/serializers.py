@@ -733,6 +733,15 @@ class TemplateSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class TemplateTransferSerializer(TemplateSerializer):
+    """Authorized template payload used by local-first creation."""
+
+    scene_json = serializers.JSONField(read_only=True)
+
+    class Meta(TemplateSerializer.Meta):
+        fields = [*TemplateSerializer.Meta.fields, "scene_json"]
+
+
 class TemplateCreateSerializer(serializers.Serializer):
     """Task 21: name/category/description for a save-as-private-template request."""
 

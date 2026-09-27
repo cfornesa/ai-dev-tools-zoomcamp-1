@@ -67,6 +67,7 @@ from scenes.serializers import (
     SceneVersionListSerializer,
     TemplateCreateSerializer,
     TemplateSerializer,
+    TemplateTransferSerializer,
 )
 from scenes.sonic_contract import normalize_scene_sonic
 from scenes.thumbnail_generation import (
@@ -1454,6 +1455,17 @@ class TemplateListView(APIView):
         if request.user.is_authenticated:
             templates = templates | Template.objects.private_for(request.user)
         return Response(TemplateSerializer(templates.select_related("owner"), many=True).data)
+
+
+class TemplateDetailView(APIView):
+    """Return an authorized template document for local-first creation."""
+
+    def get(self, request, public_id):
+        if not request.user.is_authenticated:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        template = _get_template_or_404(public_id)
+        _require_or_404(request.user, Action.TEMPLATE_READ, template)
+        return Response(TemplateTransferSerializer(template).data)
 
 
 class TemplateCloneView(APIView):

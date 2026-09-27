@@ -8,10 +8,12 @@
  * `handleCreate3DAiAssisted` navigated to -- a pure extraction, not a
  * behavior change.
  */
+import { getTemplate } from '../api/templates';
 import { createProject3D } from '../api/projects3d';
 import { fetchProfile } from '../api/profile';
 import {
   createProject,
+  createProjectWithScene,
   createScene,
   openLocalProjectDatabase,
 } from '../storage/localProjectRepository';
@@ -53,6 +55,27 @@ export async function createNewAnimation(renderer: NewProjectRenderer): Promise<
 
 export async function createAiAssistedAnimation(renderer: NewProjectRenderer): Promise<string> {
   return createNewAnimation(renderer);
+}
+
+export async function createLocalTemplate(templateId: string): Promise<string> {
+  const profile = await fetchProfile();
+  if (!profile.handle) throw new Error('A signed-in profile is required for local projects.');
+  const template = await getTemplate(templateId);
+  const db = await openLocalProjectDatabase();
+  try {
+    const sceneJson = structuredClone(template.scene_json);
+    sceneJson.id = crypto.randomUUID();
+    const { project } = await createProjectWithScene(db, {
+      ownerId: profile.handle,
+      title: template.name,
+      kind: '2d',
+      sceneName: 'Scene 1',
+      sceneJson,
+    });
+    return `/local-projects/${project.id}`;
+  } finally {
+    db.close();
+  }
 }
 
 export async function createNew3DProject(): Promise<string> {

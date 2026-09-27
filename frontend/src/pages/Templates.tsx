@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { cloneTemplate, listTemplates, type Template } from '../api/templates';
+import { listTemplates, type Template } from '../api/templates';
+import { useAuth } from '../auth/useAuth';
+import { createLocalTemplate } from './galleryCreateActions';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -23,9 +25,10 @@ function groupByCategory(templates: Template[]): Array<[string, Template[]]> {
 
 function Templates() {
   const navigate = useNavigate();
+  const auth = useAuth();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [cloningId, setCloningId] = useState<string | null>(null);
+  const [creatingId, setCreatingId] = useState<string | null>(null);
   const [cloneError, setCloneError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,14 +52,18 @@ function Templates() {
   const grouped = useMemo(() => groupByCategory(templates), [templates]);
 
   async function handleUseTemplate(template: Template) {
-    setCloningId(template.id);
+    if (auth.status !== 'signed-in') {
+      setCloneError('Sign in to create a local project from a template.');
+      return;
+    }
+    setCreatingId(template.id);
     setCloneError(null);
     try {
-      const project = await cloneTemplate(template.id);
-      navigate(`/projects/${project.id}`);
+      const destination = await createLocalTemplate(template.id);
+      navigate(destination);
     } catch {
       setCloneError(`Could not create a project from "${template.name}". Please try again.`);
-      setCloningId(null);
+      setCreatingId(null);
     }
   }
 
@@ -109,9 +116,9 @@ function Templates() {
                         type="button"
                         aria-label={`Use the "${template.name}" template to create a new project`}
                         onClick={() => handleUseTemplate(template)}
-                        disabled={cloningId === template.id}
+                        disabled={creatingId === template.id}
                       >
-                        {cloningId === template.id ? 'Creating…' : 'Use this template'}
+                        {creatingId === template.id ? 'Creating locally…' : 'Use this template'}
                       </button>
                     </article>
                   </li>

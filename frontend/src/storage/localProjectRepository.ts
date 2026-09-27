@@ -523,6 +523,48 @@ export async function createProject(
   return record;
 }
 
+export async function createProjectWithScene(
+  db: IDBDatabase,
+  input: {
+    ownerId: string;
+    title: string;
+    kind?: LocalPieceKind;
+    sceneName: string;
+    sceneJson: Record<string, unknown>;
+  },
+): Promise<{ project: LocalProjectRecord; scene: LocalSceneRecord }> {
+  const project: LocalProjectRecord = {
+    id: crypto.randomUUID(),
+    ownerId: input.ownerId,
+    title: input.title,
+    sceneOrder: [],
+    activeSceneId: null,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+    kind: input.kind ?? '2d',
+    versionOrder: [],
+    currentVersionId: null,
+  };
+  const scene: LocalSceneRecord = {
+    id: crypto.randomUUID(),
+    projectId: project.id,
+    name: input.sceneName,
+    position: 0,
+    sceneJson: input.sceneJson,
+    updatedAt: nowIso(),
+  };
+  const transaction = db.transaction([STORE_PROJECTS, STORE_SCENES], 'readwrite');
+  transaction.objectStore(STORE_PROJECTS).put({
+    ...project,
+    sceneOrder: [scene.id],
+    activeSceneId: scene.id,
+    updatedAt: nowIso(),
+  });
+  transaction.objectStore(STORE_SCENES).put(scene);
+  await txDone(transaction);
+  return { project: { ...project, sceneOrder: [scene.id], activeSceneId: scene.id }, scene };
+}
+
 /** Returns the stable local mirror for an editor project, creating it with
  * the caller's supplied id when this is the first local-media interaction.
  * Server-backed editor projects use this bridge until the full local-first

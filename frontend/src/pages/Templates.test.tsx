@@ -4,12 +4,20 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as templatesApi from '../api/templates';
+import { AuthContext } from '../auth/context';
+import * as createActions from './galleryCreateActions';
 import Templates from './Templates';
 
 vi.mock('../api/templates');
+vi.mock('./galleryCreateActions');
 
 const mockedListTemplates = vi.mocked(templatesApi.listTemplates);
-const mockedCloneTemplate = vi.mocked(templatesApi.cloneTemplate);
+const mockedCreateLocalTemplate = vi.mocked(createActions.createLocalTemplate);
+
+const SIGNED_IN_USER = {
+  status: 'signed-in' as const,
+  user: { username: 'alice', email: 'alice@example.com', is_application_admin: false },
+};
 
 function baseTemplate(overrides: Partial<templatesApi.Template> = {}): templatesApi.Template {
   return {
@@ -26,12 +34,14 @@ function baseTemplate(overrides: Partial<templatesApi.Template> = {}): templates
 
 function renderTemplates() {
   return render(
-    <MemoryRouter initialEntries={['/templates']}>
-      <Routes>
-        <Route path="/templates" element={<Templates />} />
-        <Route path="/projects/:id" element={<p>Editor placeholder</p>} />
-      </Routes>
-    </MemoryRouter>,
+    <AuthContext.Provider value={SIGNED_IN_USER}>
+      <MemoryRouter initialEntries={['/templates']}>
+        <Routes>
+          <Route path="/templates" element={<Templates />} />
+          <Route path="/local-projects/:id" element={<p>Local editor placeholder</p>} />
+        </Routes>
+      </MemoryRouter>
+    </AuthContext.Provider>,
   );
 }
 
@@ -110,23 +120,10 @@ describe('Templates catalog rendering', () => {
   });
 });
 
-describe('Templates clone action', () => {
-  it('navigates to the new project editor on successful clone', async () => {
+describe('Templates local creation action', () => {
+  it('navigates to the local project editor after transfer', async () => {
     mockedListTemplates.mockResolvedValue([baseTemplate({ id: 't1', name: 'Blank canvas' })]);
-    mockedCloneTemplate.mockResolvedValue({
-      id: 'new-project',
-      owner: 'alice',
-      title: 'Blank canvas',
-      description: '',
-      tags: [],
-      visibility: 'private',
-      allow_public_remix: false,
-      export_attribution: false,
-      thumbnail_url: null,
-      current_version: 1,
-      created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
-    });
+    mockedCreateLocalTemplate.mockResolvedValue('/local-projects/new-project');
     const user = userEvent.setup();
 
     renderTemplates();
@@ -134,13 +131,13 @@ describe('Templates clone action', () => {
 
     await user.click(useButton);
 
-    await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
-    expect(mockedCloneTemplate).toHaveBeenCalledWith('t1');
+    await waitFor(() => expect(screen.getByText('Local editor placeholder')).toBeInTheDocument());
+    expect(mockedCreateLocalTemplate).toHaveBeenCalledWith('t1');
   });
 
   it('shows an accessible error and re-enables the button on failure', async () => {
     mockedListTemplates.mockResolvedValue([baseTemplate({ id: 't1', name: 'Blank canvas' })]);
-    mockedCloneTemplate.mockRejectedValue(new Error('boom'));
+    mockedCreateLocalTemplate.mockRejectedValue(new Error('boom'));
     const user = userEvent.setup();
 
     renderTemplates();

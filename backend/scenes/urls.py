@@ -67,6 +67,7 @@ from scenes.api import (
     SceneVersionListCreateView,
     SceneVersionRestoreView,
     TemplateCloneView,
+    TemplateDetailView,
     TemplateListView,
 )
 from scenes.api3d import (
@@ -339,6 +340,11 @@ urlpatterns = [
     path("projects/", ProjectListCreateView.as_view(), name="project-list-create"),
     path("projects/blank/", BlankProjectCreateView.as_view(), name="project-create-blank"),
     path("templates/", TemplateListView.as_view(), name="template-list"),
+    path(
+        "templates/<uuid:public_id>/",
+        TemplateDetailView.as_view(),
+        name="template-detail",
+    ),
     path(
         "templates/<uuid:public_id>/clone/",
         TemplateCloneView.as_view(),

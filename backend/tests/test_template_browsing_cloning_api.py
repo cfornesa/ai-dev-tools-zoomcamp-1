@@ -94,6 +94,33 @@ def test_other_user_does_not_see_someone_elses_private_template(other_client, pr
 
 
 @pytest.mark.django_db
+def test_authorized_template_detail_returns_scene_without_creating_project(owner_client):
+    blank_canvas = Template.objects.built_in().get(name="Blank canvas")
+
+    response = owner_client.get(f"/api/templates/{blank_canvas.public_id}/")
+
+    assert response.status_code == 200
+    assert response.json()["scene_json"] == blank_canvas.scene_json
+    assert Project.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_private_template_detail_requires_ownership(other_client, private_template):
+    response = other_client.get(f"/api/templates/{private_template.public_id}/")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_template_detail_requires_authentication(anon_client):
+    blank_canvas = Template.objects.built_in().get(name="Blank canvas")
+
+    response = anon_client.get(f"/api/templates/{blank_canvas.public_id}/")
+
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
 def test_clone_built_in_template_creates_project_with_one_version(owner_client):
     blank_canvas = Template.objects.built_in().get(name="Blank canvas")
 

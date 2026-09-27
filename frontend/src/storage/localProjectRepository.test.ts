@@ -40,6 +40,8 @@ import {
   listScenesForProject,
   openLocalProjectDatabase,
   appendPieceVersion,
+  createLocal3DProject,
+  saveLocal3DVersion,
   recomputeProjectUsage,
   removeMediaReference,
   requestPersistentStorage,
@@ -87,6 +89,26 @@ describe('localProjectRepository', () => {
       req.onerror = () => reject(req.error);
     });
     expect(value).toEqual({ key: 'schemaVersion', value: DB_VERSION });
+    db.close();
+  });
+
+  it('persists local 3D scenes and immutable checkpoints without a server record', async () => {
+    const db = await openLocalProjectDatabase();
+    const scene = { documentType: 'scene3d', schemaVersion: 1, objects: [] };
+    const created = await createLocal3DProject(db, {
+      ownerId: 'owner',
+      title: 'Local 3D',
+      sceneJson: scene,
+    });
+
+    expect(created.project.kind).toBe('3d');
+    expect(created.version.sequence).toBe(1);
+    const nextScene = { ...scene, objects: [{ id: 'box-1', type: 'box' }] };
+    const saved = await saveLocal3DVersion(db, 'owner', created.project.id, nextScene);
+    expect(saved.sequence).toBe(2);
+    expect(await listPieceVersions(db, 'owner', created.project.id)).toHaveLength(2);
+    expect((await listScenesForProject(db, created.project.id))[0].sceneJson).toEqual(nextScene);
+    expect((await getProject(db, 'owner', created.project.id))?.currentVersionId).toBe(saved.id);
     db.close();
   });
 

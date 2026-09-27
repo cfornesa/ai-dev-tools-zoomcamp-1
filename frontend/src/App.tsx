@@ -18,6 +18,7 @@ const PublicArtPieceGallery = lazy(() => import('./pages/PublicArtPieceGallery')
 const PublicArtPieceViewer = lazy(() => import('./pages/PublicArtPieceViewer'));
 const ArtPieceManagement = lazy(() => import('./pages/ArtPieceManagement'));
 const LocalEditorWorkspace = lazy(() => import('./pages/LocalEditorWorkspace'));
+const LocalProject3DWorkspace = lazy(() => import('./pages/LocalProject3DWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
 const PublicProject3DViewer = lazy(() => import('./pages/PublicProject3DViewer'));
@@ -141,6 +142,7 @@ function App() {
               <Route path="admin/content" element={<AdminContent />} />
               <Route path="projects/:id" element={<LegacyStructuredEditorRedirect kind="2d" />} />
               <Route path="local-projects/:id" element={<LocalEditorWorkspace />} />
+              <Route path="local-projects-3d/:id" element={<LocalProject3DWorkspace />} />
               {/* Issue #223: the 2D AI-assisted editor -- a distinct route
                   over the same Project/SceneVersion document family as
                   the manual editor above, not a separate document family

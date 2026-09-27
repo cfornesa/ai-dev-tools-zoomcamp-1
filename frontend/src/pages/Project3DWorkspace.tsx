@@ -5,6 +5,7 @@ import {
   type Dispatch,
   type FormEvent,
   type SetStateAction,
+  useMemo,
 } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
@@ -56,6 +57,13 @@ type PreviewView = 'visual' | 'code';
 type SaveState = { pending: boolean; error: string | null };
 type ExportState = { pending: boolean; error: string | null };
 
+export type Project3DWorkspaceStorage = {
+  loadProject: (id: string) => Promise<{ project: Project3D; versions: SceneVersion3D[] }>;
+  saveVersion: (id: string, scene: Scene3DDocument) => Promise<SceneVersion3D>;
+  updateMetadata: (id: string, data: { title?: string }) => Promise<Project3D>;
+  local?: boolean;
+};
+
 const IDLE_SAVE_STATE: SaveState = { pending: false, error: null };
 const IDLE_EXPORT_STATE: ExportState = { pending: false, error: null };
 
@@ -69,10 +77,12 @@ function EditableProject3DTitle({
   id,
   project,
   setProject,
+  updateMetadata = (projectId, data) => updateProjectMetadata3D(projectId, data),
 }: {
   id: string | undefined;
   project: Project3D | null;
   setProject: Dispatch<SetStateAction<Project3D | null>>;
+  updateMetadata?: Project3DWorkspaceStorage['updateMetadata'];
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -101,7 +111,7 @@ function EditableProject3DTitle({
     setSaving(true);
     setError(null);
     try {
-      const updated = await updateProjectMetadata3D(id, { title: draft });
+      const updated = await updateMetadata(id, { title: draft });
       setProject(updated);
       setIsEditing(false);
     } catch {
@@ -160,9 +170,24 @@ function EditableProject3DTitle({
  * inspector's own explicit Save action -- until now its edits were only
  * ever held in memory. No real Three.js/A-Frame rendering yet.
  */
-function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } = {}) {
+function Project3DWorkspace({
+  initialProjectId,
+  storage,
+}: { initialProjectId?: string; storage?: Project3DWorkspaceStorage } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = initialProjectId ?? routeId;
+  const projectStorage = useMemo<Project3DWorkspaceStorage>(
+    () =>
+      storage ?? {
+        loadProject: async (projectId: string) => ({
+          project: await getProject3D(projectId),
+          versions: await listSceneVersions3D(projectId),
+        }),
+        saveVersion: saveSceneVersion3D,
+        updateMetadata: updateProjectMetadata3D,
+      },
+    [storage],
+  );
   const auth = useAuth();
   const navigate = useNavigate();
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -268,8 +293,9 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
     let cancelled = false;
     setLoadState('loading');
 
-    Promise.all([getProject3D(id), listSceneVersions3D(id)])
-      .then(([loadedProject, loadedVersions]) => {
+    projectStorage
+      .loadProject(id)
+      .then(({ project: loadedProject, versions: loadedVersions }) => {
         if (cancelled) return;
         setProject(loadedProject);
         setVersionHistory(
@@ -296,7 +322,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, projectStorage]);
 
   if (loadState === 'loading') {
     return (
@@ -626,7 +652,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
     }
     setSaveState({ pending: true, error: null });
     try {
-      const version = await saveSceneVersion3D(id, workingScene);
+      const version = await projectStorage.saveVersion(id, workingScene);
       setSaveState(IDLE_SAVE_STATE);
       handleVersionSaved(version);
     } catch {
@@ -639,9 +665,16 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
   return (
     <div>
       <header className="editor-workspace-header">
-        <EditableProject3DTitle id={id} project={project} setProject={setProject} />
-        {id && <PublishControl3D id={id} project={project} setProject={setProject} />}
-        {id && (
+        <EditableProject3DTitle
+          id={id}
+          project={project}
+          setProject={setProject}
+          updateMetadata={projectStorage.updateMetadata}
+        />
+        {id && !projectStorage.local && (
+          <PublishControl3D id={id} project={project} setProject={setProject} />
+        )}
+        {id && !projectStorage.local && (
           <details className="piece-slug-details">
             <summary>Web address</summary>
             <PieceSlugField
@@ -740,7 +773,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
               Code
             </button>
           </div>
-          {previewView === 'code' && (
+          {previewView === 'code' && !projectStorage.local && (
             <section aria-label="Code" role="region" data-panel="code">
               <Scene3DCodeEditor projectId={id} scene={workingScene} onSaved={handleVersionSaved} />
             </section>
@@ -938,7 +971,7 @@ function Project3DWorkspace({ initialProjectId }: { initialProjectId?: string } 
           onAskAiChange={handleAskAiChangeItem}
         />
         <section aria-label="Tools" role="region" data-panel="tools" className="editor-panel">
-          {showAiPanel && (
+          {showAiPanel && !projectStorage.local && (
             <section
               aria-label="Ask AI to improve this scene"
               role="region"

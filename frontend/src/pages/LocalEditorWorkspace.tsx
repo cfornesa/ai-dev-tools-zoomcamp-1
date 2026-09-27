@@ -42,6 +42,7 @@ import {
   saveMediaTransfer,
 } from '../storage/mediaTransferRepository';
 import { resumeMediaTransfer, type MediaTransferRecord } from '../storage/mediaTransfer';
+import LocalProject3DWorkspace from './LocalProject3DWorkspace';
 
 type LocalEditorState = 'loading' | 'ready' | 'missing' | 'error';
 
@@ -326,6 +327,8 @@ function LocalEditorWorkspace() {
       </section>
     );
   }
+
+  if (project.kind === '3d') return <LocalProject3DWorkspace />;
 
   async function saveScene() {
     if (!selectedScene || !id) return;

@@ -19,13 +19,13 @@ vi.mock('../storage/localProjectRepository');
 
 const mockedListProjects = vi.mocked(projectsApi.listProjects);
 const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
-const mockedCreateProject3D = vi.mocked(projects3dApi.createProject3D);
 const mockedDeleteProject3D = vi.mocked(projects3dApi.deleteProject3D);
 const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
 const mockedOpenLocal = vi.mocked(repository.openLocalProjectDatabase);
 const mockedCreateLocal = vi.mocked(repository.createProject);
 const mockedCreateScene = vi.mocked(repository.createScene);
+const mockedCreateLocal3D = vi.mocked(repository.createLocal3DProject);
 const mockedListLocal = vi.mocked(repository.listProjectsForOwner);
 const localDb = { close: vi.fn() } as unknown as IDBDatabase;
 
@@ -110,6 +110,22 @@ beforeEach(() => {
     currentVersionId: null,
   });
   mockedCreateScene.mockResolvedValue({} as never);
+  mockedCreateLocal3D.mockResolvedValue({
+    project: {
+      id: 'local-3d',
+      ownerId: 'alice',
+      title: 'Untitled 3D scene',
+      sceneOrder: ['scene-3d'],
+      activeSceneId: 'scene-3d',
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+      kind: '3d',
+      versionOrder: ['version-1'],
+      currentVersionId: 'version-1',
+    },
+    scene: {} as never,
+    version: {} as never,
+  });
 });
 
 describe('Gallery loading/error/empty/populated states', () => {
@@ -407,17 +423,6 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
   // editor, backed by the genuinely separate Project3D document family.
   it('navigates to the 3D editor on success', async () => {
     mockedListProjects.mockResolvedValue([]);
-    mockedCreateProject3D.mockResolvedValue({
-      id: 'new-3d-id',
-      owner: 'alice',
-      visibility: 'private',
-      title: 'Untitled 3D scene',
-      thumbnail_url: null,
-      editor_url: '/users/@alice/edit/untitled-3d-scene',
-      current_version: null,
-      created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
-    });
     const user = userEvent.setup();
 
     renderGallery();
@@ -426,8 +431,8 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
 
     await user.click(screen.getByRole('menuitem', { name: /^create a new 3d project$/i }));
 
-    await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
-    expect(mockedCreateProject3D).toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByText('Local editor placeholder')).toBeInTheDocument());
+    expect(mockedCreateLocal3D).toHaveBeenCalled();
   });
 
   it('navigates to the templates route from the dropdown', async () => {

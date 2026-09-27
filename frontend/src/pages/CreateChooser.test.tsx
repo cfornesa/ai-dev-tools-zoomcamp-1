@@ -3,20 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import * as projects3dApi from '../api/projects3d';
 import * as profileApi from '../api/profile';
 import * as repository from '../storage/localProjectRepository';
 import CreateChooser from './CreateChooser';
 
-vi.mock('../api/projects3d');
 vi.mock('../api/profile');
 vi.mock('../storage/localProjectRepository');
 
-const mockedCreateProject3D = vi.mocked(projects3dApi.createProject3D);
 const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
 const mockedOpen = vi.mocked(repository.openLocalProjectDatabase);
 const mockedCreateProject = vi.mocked(repository.createProject);
 const mockedCreateScene = vi.mocked(repository.createScene);
+const mockedCreateLocal3D = vi.mocked(repository.createLocal3DProject);
 const db = { close: vi.fn() } as unknown as IDBDatabase;
 
 function renderChooser() {
@@ -49,6 +47,22 @@ beforeEach(() => {
     currentVersionId: null,
   });
   mockedCreateScene.mockResolvedValue({} as never);
+  mockedCreateLocal3D.mockResolvedValue({
+    project: {
+      id: 'new-3d-id',
+      ownerId: 'alice',
+      title: 'Untitled 3D scene',
+      sceneOrder: ['scene-3d'],
+      activeSceneId: 'scene-3d',
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+      kind: '3d',
+      versionOrder: ['version-1'],
+      currentVersionId: 'version-1',
+    },
+    scene: {} as never,
+    version: {} as never,
+  });
 });
 
 describe('CreateChooser (issue #268)', () => {
@@ -88,24 +102,13 @@ describe('CreateChooser (issue #268)', () => {
   });
 
   it('creates a 3D project and navigates to the unified editor', async () => {
-    mockedCreateProject3D.mockResolvedValue({
-      id: 'new-3d-id',
-      owner: 'alice',
-      visibility: 'private',
-      title: 'Untitled 3D scene',
-      thumbnail_url: null,
-      current_version: null,
-      editor_url: '/users/@alice/edit/untitled-3d-scene',
-      created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
-    });
     const user = userEvent.setup();
 
     renderChooser();
     await user.click(screen.getAllByRole('button', { name: /^create a new 3d project$/i })[0]);
 
-    await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
-    expect(mockedCreateProject3D).toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByText('Local editor placeholder')).toBeInTheDocument());
+    expect(mockedCreateLocal3D).toHaveBeenCalled();
   });
 
   it('navigates to /templates from the "Browse templates" card', async () => {

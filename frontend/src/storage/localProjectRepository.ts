@@ -839,6 +839,44 @@ export async function appendPieceVersion(
   }
 }
 
+/** Creates the first local version for a 3D project. The scene remains in the
+ * normal `scenes` store while immutable checkpoints use the shared versions
+ * store, so local 2D and 3D projects keep one quota/export/import seam. */
+export async function createLocal3DProject(
+  db: IDBDatabase,
+  input: { ownerId: string; title: string; sceneJson: Record<string, unknown> },
+): Promise<{
+  project: LocalProjectRecord;
+  scene: LocalSceneRecord;
+  version: LocalPieceVersionRecord;
+}> {
+  const created = await createProjectWithScene(db, {
+    ownerId: input.ownerId,
+    title: input.title,
+    kind: '3d',
+    sceneName: 'Scene 1',
+    sceneJson: input.sceneJson,
+  });
+  const version = await appendPieceVersion(db, input.ownerId, created.project.id, input.sceneJson);
+  return { ...created, version };
+}
+
+/** Saves a local 3D checkpoint and keeps the active scene document in sync. */
+export async function saveLocal3DVersion(
+  db: IDBDatabase,
+  ownerId: string,
+  projectId: string,
+  sceneJson: Record<string, unknown>,
+): Promise<LocalPieceVersionRecord> {
+  const project = await getProject(db, ownerId, projectId);
+  if (!project || project.kind !== '3d' || !project.activeSceneId) {
+    throw corruptData(`Local 3D project "${projectId}" was not found for this owner.`);
+  }
+  const version = await appendPieceVersion(db, ownerId, projectId, sceneJson);
+  await updateScene(db, project.activeSceneId, { sceneJson });
+  return version;
+}
+
 export async function getProjectStorageUsage(
   db: IDBDatabase,
   projectId: string,

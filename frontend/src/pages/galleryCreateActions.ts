@@ -9,12 +9,12 @@
  * behavior change.
  */
 import { getTemplate } from '../api/templates';
-import { createProject3D } from '../api/projects3d';
 import { fetchProfile } from '../api/profile';
 import {
   createProject,
   createProjectWithScene,
   createScene,
+  createLocal3DProject,
   openLocalProjectDatabase,
 } from '../storage/localProjectRepository';
 
@@ -80,11 +80,36 @@ export async function createLocalTemplate(templateId: string): Promise<string> {
 
 export async function createNew3DProject(): Promise<string> {
   const profile = await fetchProfile();
-  const project = await createProject3D();
-  if (!project.editor_url || !profile.handle) {
-    throw new Error('The canonical editor URL was not returned for the new project.');
+  if (!profile.handle) throw new Error('A signed-in profile is required for local projects.');
+  const db = await openLocalProjectDatabase();
+  try {
+    const scene = {
+      schemaVersion: 1,
+      documentType: 'scene3d',
+      id: `scene3d-${crypto.randomUUID()}`,
+      scene: { backgroundColor: '#808080' },
+      camera: {
+        position: { x: 0, y: 5, z: 10 },
+        target: { x: 0, y: 0, z: 0 },
+        fov: 50,
+        near: 0.1,
+        far: 1000,
+      },
+      lights: [],
+      groups: [],
+      objects: [],
+      randomness: { seed: 0, enabled: false },
+      renderer: { preferred: 'threejs' },
+    } satisfies Record<string, unknown>;
+    const { project } = await createLocal3DProject(db, {
+      ownerId: profile.handle,
+      title: 'Untitled 3D scene',
+      sceneJson: scene,
+    });
+    return `/local-projects/${project.id}`;
+  } finally {
+    db.close();
   }
-  return project.editor_url;
 }
 
 export async function createAiAssisted3DProject(): Promise<string> {

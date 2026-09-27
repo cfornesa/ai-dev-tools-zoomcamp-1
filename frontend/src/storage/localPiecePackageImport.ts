@@ -6,11 +6,13 @@ import {
   STORE_MEDIA_BLOBS,
   STORE_PROJECTS,
   STORE_SCENES,
+  STORE_VERSIONS,
   SUPPORTED_MEDIA_MIME_TYPES,
   computeChecksum,
   type LocalMediaAssetRecord,
   type LocalProjectRecord,
   type LocalSceneRecord,
+  type LocalPieceVersionRecord,
 } from './localProjectRepository';
 import { parsePiecePackage, type PiecePackage, type PiecePackageMedia } from './piecePackage';
 
@@ -18,6 +20,7 @@ export type LocalPiecePackageImportResult = {
   project: LocalProjectRecord;
   scenes: LocalSceneRecord[];
   mediaAssets: LocalMediaAssetRecord[];
+  versions: LocalPieceVersionRecord[];
 };
 
 function corruptData(message: string): LocalRepositoryException {
@@ -49,10 +52,10 @@ function classifyWriteFailure(error: unknown): LocalRepositoryException {
   });
 }
 
-function assert2dPackage(pkg: PiecePackage): void {
-  if (pkg.kind !== '2d') {
+function assertSupportedPackage(pkg: PiecePackage): void {
+  if (pkg.kind === 'generated') {
     throw unsupported(
-      `${pkg.kind === '3d' ? '3D' : 'Generated'} piece packages are not supported yet. Importing them will be available in a later release.`,
+      'Generated piece packages are not supported yet. Importing them will be available in a later release.',
     );
   }
 }
@@ -92,7 +95,7 @@ async function verifyMediaAssets(mediaAssets: PiecePackageMedia[]): Promise<Piec
 }
 
 /**
- * Imports one validated 2D piece package into the browser-local repository.
+ * Imports one validated 2D or 3D piece package into the browser-local repository.
  * Parsing, schema validation, kind gating, media checks, and quota checks all
  * happen before the single IndexedDB transaction. Every persisted id is minted
  * locally, so importing the same package twice never reuses source ids.
@@ -111,18 +114,38 @@ export async function importLocalPiecePackage(
       error instanceof Error ? error.message : 'The selected piece package is invalid.',
     );
   }
-  assert2dPackage(pkg);
+  assertSupportedPackage(pkg);
   const mediaAssets = await verifyMediaAssets(pkg.mediaAssets);
   const now = new Date().toISOString();
   const projectId = crypto.randomUUID();
-  const scenes: LocalSceneRecord[] = pkg.records.map((record, index) => ({
+  const importedVersions: LocalPieceVersionRecord[] = pkg.records.map((record, index) => ({
     id: crypto.randomUUID(),
     projectId,
-    name: `Version ${index + 1}`,
-    position: index,
-    sceneJson: record.data,
-    updatedAt: now,
+    sequence: index + 1,
+    payload: record.data,
+    byteSize: JSON.stringify(record.data).length,
+    createdAt: now,
   }));
+  const scenes: LocalSceneRecord[] =
+    pkg.kind === '3d'
+      ? [
+          {
+            id: crypto.randomUUID(),
+            projectId,
+            name: 'Scene 1',
+            position: 0,
+            sceneJson: pkg.records.at(-1)?.data ?? {},
+            updatedAt: now,
+          },
+        ]
+      : pkg.records.map((record, index) => ({
+          id: crypto.randomUUID(),
+          projectId,
+          name: `Version ${index + 1}`,
+          position: index,
+          sceneJson: record.data,
+          updatedAt: now,
+        }));
   const assets: LocalMediaAssetRecord[] = mediaAssets.map((asset) => ({
     id: crypto.randomUUID(),
     projectId,
@@ -145,18 +168,25 @@ export async function importLocalPiecePackage(
     activeSceneId: scenes[0]?.id ?? null,
     createdAt: now,
     updatedAt: now,
-    kind: '2d',
+    kind: pkg.kind,
     versionOrder: [],
     currentVersionId: null,
   };
+  if (pkg.kind === '3d') {
+    project.versionOrder = importedVersions.map((version) => version.id);
+    project.currentVersionId = importedVersions.at(-1)?.id ?? null;
+  }
 
   try {
     const tx = db.transaction(
-      [STORE_PROJECTS, STORE_SCENES, STORE_MEDIA_ASSETS, STORE_MEDIA_BLOBS],
+      [STORE_PROJECTS, STORE_SCENES, STORE_MEDIA_ASSETS, STORE_MEDIA_BLOBS, STORE_VERSIONS],
       'readwrite',
     );
     tx.objectStore(STORE_PROJECTS).put(project);
     scenes.forEach((scene) => tx.objectStore(STORE_SCENES).put(scene));
+    if (pkg.kind === '3d') {
+      importedVersions.forEach((version) => tx.objectStore(STORE_VERSIONS).put(version));
+    }
     assets.forEach((asset, index) => {
       tx.objectStore(STORE_MEDIA_ASSETS).put(asset);
       tx.objectStore(STORE_MEDIA_BLOBS).put({
@@ -173,5 +203,5 @@ export async function importLocalPiecePackage(
   } catch (error) {
     throw classifyWriteFailure(error);
   }
-  return { project, scenes, mediaAssets: assets };
+  return { project, scenes, mediaAssets: assets, versions: importedVersions };
 }

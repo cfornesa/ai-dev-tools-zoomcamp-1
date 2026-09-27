@@ -6364,6 +6364,21 @@ select.ai-proposal-field-full-width {
   pointer-events: none;
 }
 
+/* On phone-width stages the compact action group and the labelled save rail
+   share the same overlay. Keep the labelled actions on the opposite edge so
+   their hit areas cannot overlap after the page scrolls to an inspector
+   field. This preserves both controls without relying on stacking order to
+   decide which button receives a tap. */
+@media (max-width: 600px) {
+  .editor-piece-stage-toolbar .editor-stage-text-actions {
+    position: static;
+    margin-left: auto;
+    width: auto;
+    max-width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 .editor-save-control {
   display: inline-flex;
   align-items: center;

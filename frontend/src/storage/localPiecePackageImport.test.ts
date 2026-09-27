@@ -63,26 +63,48 @@ describe('importLocalPiecePackage', () => {
     expect(await listMediaAssetsForProject(db, result.project.id)).toHaveLength(1);
   });
 
-  it('rejects 3D and generated packages before writing anything', async () => {
+  it('imports 3D packages with a current scene and fresh version history', async () => {
     const db = await openLocalProjectDatabase();
-    for (const kind of ['3d', 'generated'] as const) {
-      const bytes = await buildPiecePackage({
-        kind,
-        title: `${kind} package`,
-        description: '',
-        appVersion: 'test',
-        records: [
-          {
-            schemaVersion: 1,
-            data: kind === '3d' ? blank3d : { schemaVersion: 1, kind },
-          },
-        ],
-      });
-      await expect(importLocalPiecePackage(db, 'alice', bytes)).rejects.toMatchObject({
-        kind: 'unsupported-file-type',
-        message: expect.stringContaining('not supported yet'),
-      });
-    }
+    const bytes = await buildPiecePackage({
+      kind: '3d',
+      title: 'Portable 3D package',
+      description: '',
+      appVersion: 'test',
+      records: [
+        { schemaVersion: 1, data: blank3d },
+        {
+          schemaVersion: 1,
+          data: { ...blank3d, scene: { ...blank3d.scene, backgroundColor: '#112233' } },
+        },
+      ],
+    });
+    const result = await importLocalPiecePackage(db, 'alice', bytes);
+    expect(result.project.kind).toBe('3d');
+    expect(result.scenes).toHaveLength(1);
+    expect(result.scenes[0].sceneJson).toEqual({
+      ...blank3d,
+      scene: { ...blank3d.scene, backgroundColor: '#112233' },
+    });
+    expect(result.versions.map((version) => version.sequence)).toEqual([1, 2]);
+    expect(result.project.currentVersionId).toBe(result.versions[1].id);
+    expect((await listProjectsForOwner(db, 'alice')).map((project) => project.kind)).toEqual([
+      '3d',
+    ]);
+  });
+
+  it('rejects generated packages before writing anything', async () => {
+    const db = await openLocalProjectDatabase();
+    const bytes = await buildPiecePackage({
+      kind: 'generated',
+      title: 'generated package',
+      description: '',
+      appVersion: 'test',
+      records: [{ schemaVersion: 1, data: { schemaVersion: 1, kind: 'generated' } }],
+    });
+    await expect(importLocalPiecePackage(db, 'alice', bytes)).rejects.toMatchObject({
+      kind: 'unsupported-file-type',
+      message: expect.stringContaining('not supported yet'),
+    });
     expect(await listProjectsForOwner(db, 'alice')).toEqual([]);
   });
 

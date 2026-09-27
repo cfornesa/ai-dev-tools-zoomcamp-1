@@ -3,24 +3,28 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import * as projectsApi from '../api/projects';
 import * as projects3dApi from '../api/projects3d';
 import * as profileApi from '../api/profile';
+import * as repository from '../storage/localProjectRepository';
 import CreateChooser from './CreateChooser';
 
-vi.mock('../api/projects');
 vi.mock('../api/projects3d');
 vi.mock('../api/profile');
+vi.mock('../storage/localProjectRepository');
 
-const mockedCreateBlankProject = vi.mocked(projectsApi.createBlankProject);
 const mockedCreateProject3D = vi.mocked(projects3dApi.createProject3D);
 const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
+const mockedOpen = vi.mocked(repository.openLocalProjectDatabase);
+const mockedCreateProject = vi.mocked(repository.createProject);
+const mockedCreateScene = vi.mocked(repository.createScene);
+const db = { close: vi.fn() } as unknown as IDBDatabase;
 
 function renderChooser() {
   return render(
     <MemoryRouter initialEntries={['/create']}>
       <Routes>
         <Route path="/create" element={<CreateChooser />} />
+        <Route path="/local-projects/:id" element={<p>Local editor placeholder</p>} />
         <Route path="/users/@alice/edit/:slug" element={<p>Editor placeholder</p>} />
         <Route path="/templates" element={<p>Templates placeholder</p>} />
       </Routes>
@@ -31,6 +35,20 @@ function renderChooser() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedFetchProfile.mockResolvedValue({ handle: 'alice' } as never);
+  mockedOpen.mockResolvedValue(db);
+  mockedCreateProject.mockResolvedValue({
+    id: 'local-id',
+    ownerId: 'alice',
+    title: 'Untitled animation',
+    sceneOrder: [],
+    activeSceneId: null,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+    kind: '2d',
+    versionOrder: [],
+    currentVersionId: null,
+  });
+  mockedCreateScene.mockResolvedValue({} as never);
 });
 
 describe('CreateChooser (issue #268)', () => {
@@ -48,28 +66,25 @@ describe('CreateChooser (issue #268)', () => {
   });
 
   it('creates a blank 2D project with the default renderer and navigates to the manual editor', async () => {
-    mockedCreateBlankProject.mockResolvedValue({
-      id: 'new-id',
-      owner: 'alice',
-      title: 'Untitled animation',
-      description: '',
-      tags: [],
-      visibility: 'private',
-      allow_public_remix: false,
-      export_attribution: false,
-      thumbnail_url: null,
-      editor_url: '/users/@alice/edit/untitled-animation',
-      current_version: 1,
-      created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
-    });
     const user = userEvent.setup();
 
     renderChooser();
     await user.click(screen.getAllByRole('button', { name: /^create a new 2d project$/i })[0]);
 
-    await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
-    expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'p5');
+    await waitFor(() => expect(screen.getByText('Local editor placeholder')).toBeInTheDocument());
+    expect(mockedCreateProject).toHaveBeenCalledWith(db, {
+      ownerId: 'alice',
+      title: 'Untitled animation',
+      kind: '2d',
+    });
+    expect(mockedCreateScene).toHaveBeenCalledWith(
+      db,
+      'alice',
+      expect.objectContaining({
+        projectId: 'local-id',
+        name: 'Scene 1',
+      }),
+    );
   });
 
   it('creates a 3D project and navigates to the unified editor', async () => {
@@ -103,7 +118,7 @@ describe('CreateChooser (issue #268)', () => {
   });
 
   it('shows an accessible error and re-enables the cards on failure', async () => {
-    mockedCreateBlankProject.mockRejectedValue(new Error('boom'));
+    mockedOpen.mockRejectedValue(new Error('boom'));
     const user = userEvent.setup();
 
     renderChooser();

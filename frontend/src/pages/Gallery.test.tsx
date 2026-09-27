@@ -8,20 +8,26 @@ import * as projectsApi from '../api/projects';
 import * as projects3dApi from '../api/projects3d';
 import * as profileApi from '../api/profile';
 import * as authModule from '../auth/useAuth';
+import * as repository from '../storage/localProjectRepository';
 import Gallery from './Gallery';
 
 vi.mock('../api/projects');
 vi.mock('../api/projects3d');
 vi.mock('../api/profile');
 vi.mock('../auth/useAuth');
+vi.mock('../storage/localProjectRepository');
 
 const mockedListProjects = vi.mocked(projectsApi.listProjects);
-const mockedCreateBlankProject = vi.mocked(projectsApi.createBlankProject);
 const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
 const mockedCreateProject3D = vi.mocked(projects3dApi.createProject3D);
 const mockedDeleteProject3D = vi.mocked(projects3dApi.deleteProject3D);
 const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
+const mockedOpenLocal = vi.mocked(repository.openLocalProjectDatabase);
+const mockedCreateLocal = vi.mocked(repository.createProject);
+const mockedCreateScene = vi.mocked(repository.createScene);
+const mockedListLocal = vi.mocked(repository.listProjectsForOwner);
+const localDb = { close: vi.fn() } as unknown as IDBDatabase;
 
 function baseProject3D(overrides: Partial<projects3dApi.Project3D> = {}): projects3dApi.Project3D {
   return {
@@ -63,6 +69,7 @@ function renderGallery() {
       <Routes>
         <Route path="/" element={<Gallery />} />
         <Route path="/users/@alice/edit/:slug" element={<p>Editor placeholder</p>} />
+        <Route path="/local-projects/:id" element={<p>Local editor placeholder</p>} />
         <Route path="/templates" element={<p>Templates placeholder</p>} />
         <Route path="/create" element={<p>Create chooser placeholder</p>} />
       </Routes>
@@ -88,6 +95,21 @@ beforeEach(() => {
   // Default to no 3D projects; individual tests override when they need
   // to assert 3D-specific rendering.
   mockedListProjects3D.mockResolvedValue([]);
+  mockedOpenLocal.mockResolvedValue(localDb);
+  mockedListLocal.mockResolvedValue([]);
+  mockedCreateLocal.mockResolvedValue({
+    id: 'local-new',
+    ownerId: 'alice',
+    title: 'Untitled animation',
+    sceneOrder: [],
+    activeSceneId: null,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+    kind: '2d',
+    versionOrder: [],
+    currentVersionId: null,
+  });
+  mockedCreateScene.mockResolvedValue({} as never);
 });
 
 describe('Gallery loading/error/empty/populated states', () => {
@@ -316,7 +338,6 @@ describe('Gallery keyboard accessibility', () => {
 describe('Gallery create action (dropdown menu, issue #268)', () => {
   it('navigates to the new project editor on success', async () => {
     mockedListProjects.mockResolvedValue([]);
-    mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-id' }));
     const user = userEvent.setup();
 
     renderGallery();
@@ -327,9 +348,13 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
       screen.getByRole('menuitem', { name: /^create a new 2d project with p5\.js$/i }),
     );
 
-    await waitFor(() => expect(screen.getByText('Editor placeholder')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Local editor placeholder')).toBeInTheDocument());
     // Issue #206: the p5 creation option remains available in the dropdown.
-    expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), 'p5');
+    expect(mockedCreateLocal).toHaveBeenCalledWith(localDb, {
+      ownerId: 'alice',
+      title: 'Untitled animation',
+      kind: '2d',
+    });
   });
 
   it.each([
@@ -339,7 +364,6 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
     'keeps the %s creation renderer available in the dropdown',
     async (renderer, label) => {
       mockedListProjects.mockResolvedValue([]);
-      mockedCreateBlankProject.mockResolvedValue(baseProject({ id: 'new-id' }));
       const user = userEvent.setup();
 
       renderGallery();
@@ -352,14 +376,18 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
       await user.click(createAction);
 
       await waitFor(() =>
-        expect(mockedCreateBlankProject).toHaveBeenCalledWith(expect.any(String), renderer),
+        expect(mockedCreateScene).toHaveBeenCalledWith(
+          localDb,
+          'alice',
+          expect.objectContaining({ sceneJson: expect.objectContaining({ renderer }) }),
+        ),
       );
     },
   );
 
   it('shows an accessible error and re-enables the arrow trigger on failure', async () => {
     mockedListProjects.mockResolvedValue([]);
-    mockedCreateBlankProject.mockRejectedValue(new Error('boom'));
+    mockedOpenLocal.mockRejectedValue(new Error('boom'));
     const user = userEvent.setup();
 
     renderGallery();

@@ -6,6 +6,11 @@ import { useAuth } from '../auth/useAuth';
 import Project3DCard from '../components/Project3DCard';
 import ProjectCard from '../components/ProjectCard';
 import GalleryCreateMenu from './GalleryCreateMenu';
+import {
+  listProjectsForOwner,
+  openLocalProjectDatabase,
+  type LocalProjectRecord,
+} from '../storage/localProjectRepository';
 
 type LoadState = 'loading' | 'error' | 'ready';
 type ProjectRendererFilter = 'all' | '2d' | '3d';
@@ -20,6 +25,7 @@ function Gallery() {
   // already existed in `api/projects3d.ts` -- it was just never called
   // here.
   const [projects3D, setProjects3D] = useState<Project3D[]>([]);
+  const [localProjects, setLocalProjects] = useState<LocalProjectRecord[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [projectRenderer, setProjectRenderer] = useState<ProjectRendererFilter>('all');
@@ -28,10 +34,21 @@ function Gallery() {
     let cancelled = false;
     setLoadState('loading');
     Promise.all([listProjects(), listProjects3D()])
-      .then(([data, data3D]) => {
+      .then(async ([data, data3D]) => {
         if (cancelled) return;
+        let local: LocalProjectRecord[] = [];
+        if (auth.status === 'signed-in') {
+          try {
+            const db = await openLocalProjectDatabase();
+            local = await listProjectsForOwner(db, auth.user.username);
+            db.close();
+          } catch {
+            // A local storage failure must not hide server-backed projects.
+          }
+        }
         setProjects(data);
         setProjects3D(data3D);
+        setLocalProjects(local);
         setLoadState('ready');
       })
       .catch(() => {
@@ -41,7 +58,7 @@ function Gallery() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [auth]);
 
   // Defense-in-depth beyond the API's own owner scoping: never render a
   // project whose owner isn't the signed-in user, even if a future bug
@@ -52,8 +69,13 @@ function Gallery() {
     auth.status === 'signed-in' ? projects3D.filter((p) => p.owner === auth.user.username) : [];
   const filteredProjects = projectRenderer === '3d' ? [] : ownProjects;
   const filteredProjects3D = projectRenderer === '2d' ? [] : ownProjects3D;
-  const hasProjects = ownProjects.length > 0 || ownProjects3D.length > 0;
-  const hasFilteredProjects = filteredProjects.length > 0 || filteredProjects3D.length > 0;
+  const filteredLocalProjects = projectRenderer === '3d' ? [] : localProjects;
+  const hasProjects =
+    ownProjects.length > 0 || ownProjects3D.length > 0 || localProjects.length > 0;
+  const hasFilteredProjects =
+    filteredProjects.length > 0 ||
+    filteredProjects3D.length > 0 ||
+    filteredLocalProjects.length > 0;
 
   if (loadState === 'loading') {
     return (
@@ -125,6 +147,21 @@ function Gallery() {
                 project={project}
                 onDeleted={(id) => setProjects3D((current) => current.filter((p) => p.id !== id))}
               />
+            </li>
+          ))}
+          {filteredLocalProjects.map((project) => (
+            <li key={`local-${project.id}`}>
+              <article className="project-card" aria-labelledby={`local-project-${project.id}`}>
+                <div className="project-card-body">
+                  <h3 id={`local-project-${project.id}`}>{project.title}</h3>
+                  <p>
+                    <span className="visibility-badge">Local only</span>
+                  </p>
+                  <a className="shell-action" href={`/local-projects/${project.id}`}>
+                    Open local editor
+                  </a>
+                </div>
+              </article>
             </li>
           ))}
         </ul>

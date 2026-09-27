@@ -8,20 +8,35 @@
  * `handleCreate3DAiAssisted` navigated to -- a pure extraction, not a
  * behavior change.
  */
-import { createBlankProject } from '../api/projects';
 import { createProject3D } from '../api/projects3d';
 import { fetchProfile } from '../api/profile';
+import {
+  createProject,
+  createScene,
+  openLocalProjectDatabase,
+} from '../storage/localProjectRepository';
 
 export type NewProjectRenderer = 'p5' | 'canvas2d' | 'svg';
 
 export async function createNewAnimation(renderer: NewProjectRenderer): Promise<string> {
   const profile = await fetchProfile();
-  const requestId = crypto.randomUUID();
-  const project = await createBlankProject(requestId, renderer);
-  if (!project.editor_url || !profile.handle) {
-    throw new Error('The canonical editor URL was not returned for the new project.');
+  if (!profile.handle) throw new Error('A signed-in profile is required for local projects.');
+  const db = await openLocalProjectDatabase();
+  try {
+    const project = await createProject(db, {
+      ownerId: profile.handle,
+      title: 'Untitled animation',
+      kind: '2d',
+    });
+    await createScene(db, profile.handle, {
+      projectId: project.id,
+      name: 'Scene 1',
+      sceneJson: { version: 1, renderer, shapes: [], layers: [] },
+    });
+    return `/local-projects/${project.id}`;
+  } finally {
+    db.close();
   }
-  return project.editor_url;
 }
 
 export async function createAiAssistedAnimation(renderer: NewProjectRenderer): Promise<string> {

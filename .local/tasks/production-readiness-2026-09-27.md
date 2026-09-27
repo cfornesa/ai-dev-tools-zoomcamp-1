@@ -136,3 +136,14 @@ It confirms the exact evidence split: active Chrome is available, while the
 published Replit deployment lacks both a safe preview launcher and an
 interactive production shell. The readiness result remains `BLOCKED`; no
 production-write criterion was treated as passed or silently deferred.
+## Reassessment after #938 local generated implementation — 2026-09-27
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Local repository quality | PASS | Backend checks: 1752 passed/39 skipped; frontend: 290 files/3069 tests, typecheck and format pass, lint only existing warnings. |
+| #938 browser verification | PASS / PARTIAL | Rebuilt Compose Chromium `localFirstCreateGenerated.spec.ts` passed 2/2 at 1280x900 and 375x812, including no POST API mutation, sandbox preview, PNG screenshot, ZIP export, version save/restore, and reload. |
+| Intended functionality | OPEN FOLLOW-UP | #938 remains open because AI transfer disclosure/consent is owned by #939 and generated capability-control parity is incomplete. |
+| Replit publication | BLOCKED | `GIT_URL` remains absent; no safe push or Replit Publish was attempted. |
+| #788 production data action | BLOCKED | The reviewed wrapper is not published, so preview → snapshot → one write → live verification cannot begin. |
+
+Readiness remains `BLOCKED`. Local/Compose evidence is not production evidence, and no production database, secret, publish, or data action was performed.

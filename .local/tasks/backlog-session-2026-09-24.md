@@ -6931,3 +6931,13 @@ been attempted and no production publish or data action has occurred.
 | engineer | Pending | NOT STARTED | Next transaction: implement local generated records and owner preview with the existing IndexedDB seam and `artPieceSandbox.ts`; no server/public/sync/production writes. |
 | qa-self-review | Pending | NOT STARTED | No #938 diff yet. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN / QUEUED | #939 remains dependent on #938. |
+
+## Transaction: #938 resumed implementation — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA FAIL / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #938 remains the generated-piece local-first owner; #939 remains the separate off-browser AI-transfer consent owner. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Handoff comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/938#issuecomment-5859303221. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS | Commit `28ee2cee` adds local generated creation/editor route, IndexedDB version save/restore, sandbox preview, package import/export, chooser actions, and 1280x900/375x812 E2E coverage. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 service unavailable and not credited | FAIL / PARTIAL | QA matrix: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/938#issuecomment-5859468717; screenshot follow-up: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/938#issuecomment-5859496393. Focused package tests 6/6 and rebuilt-Compose Chromium 2/2 pass; full frontend 290 files/3069 tests pass; screenshot capture is now PASS, while AI consent and generated capability controls remain incomplete. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / FOLLOW-UP | Not closed: #939 must complete AI transfer disclosure/consent, and the local generated route still needs explicit screenshot/thumbnail capture before every criterion can pass. No production evidence inferred. |

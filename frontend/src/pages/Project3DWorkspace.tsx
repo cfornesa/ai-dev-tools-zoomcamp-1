@@ -944,18 +944,20 @@ function Project3DWorkspace({
                         <span aria-hidden="true">▣</span>
                         <span className="piece-stage-action-label">Save scene</span>
                       </button>
-                      <button
-                        type="button"
-                        className="piece-stage-icon-button"
-                        onClick={handleAskAiImproveScene}
-                        aria-label="Ask AI to improve this scene"
-                        title="Ask AI to improve this scene"
-                      >
-                        <span aria-hidden="true">✦</span>
-                        <span className="piece-stage-action-label">
-                          Ask AI to improve this scene
-                        </span>
-                      </button>
+                      {!projectStorage.local && (
+                        <button
+                          type="button"
+                          className="piece-stage-icon-button"
+                          onClick={handleAskAiImproveScene}
+                          aria-label="Ask AI to improve this scene"
+                          title="Ask AI to improve this scene"
+                        >
+                          <span aria-hidden="true">✦</span>
+                          <span className="piece-stage-action-label">
+                            Ask AI to improve this scene
+                          </span>
+                        </button>
+                      )}
                     </span>
                   </span>
                 </>

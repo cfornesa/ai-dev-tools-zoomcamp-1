@@ -6323,6 +6323,14 @@ select.ai-proposal-field-full-width {
   pointer-events: auto;
 }
 
+/* The editor action group and the lower text actions occupy separate overlay
+   regions. Keep the named authoring trigger above the lower action rail on
+   narrow stages so a disabled Save button cannot intercept its tap target. */
+.editor-piece-stage-toolbar [aria-label='Editor actions'] {
+  position: relative;
+  z-index: 3;
+}
+
 .editor-piece-stage-toolbar .editor-stage-text-actions {
   position: absolute;
   left: 0.75rem;
@@ -6331,6 +6339,7 @@ select.ai-proposal-field-full-width {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.65rem;
+  z-index: 2;
 }
 
 .editor-piece-stage-toolbar .editor-stage-text-actions button {

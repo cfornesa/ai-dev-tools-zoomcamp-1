@@ -8,8 +8,8 @@ follow-up.
 
 | Category | Count | Issues |
 |---|---:|---|
-| Completed and closed this continuation | 6 | #965 parent tracker, #966, #967, #968, #969, #970 |
-| Blocked / dependency-blocked and still open | 27 | GitHub open-issue audit after #965/#969 close; see readiness report and exact issue pages |
+| Completed and closed this continuation | 8 | #965 parent tracker, #966, #967, #968, #969, #970, #935, #936 |
+| Blocked / dependency-blocked and still open | 24 | GitHub open-issue audit after #935/#936 close; see readiness report and exact issue pages |
 | Handed off | 0 | None |
 | Missing terminal status in this processed batch | 0 | #965–#969 reconciled; #965 is explicitly a parent-tracker exception |
 
@@ -25,7 +25,8 @@ follow-up.
 
 ## Final verification boundary
 
-`make check` passed at the final revisions used for #968, #969, and #970. Exact
+`make check` passed at the final revision used for #936, #968, #969, and #970:
+backend 1752 passed/39 skipped; frontend 289 files/3064 tests. Exact
 Compose Chromium scenarios passed at 1280x900 and 375x812; #970 additionally
 covered 768x1024. These are local and
 approved-browser evidence only. CI, published Replit revision, production
@@ -45,8 +46,9 @@ unverified or blocked as documented in
 - Production-data blocker: #788's local rehearsal and snapshot are complete,
   but no supported production runtime was available, so no production rows
   were changed.
-- Dependency chain: #936–#945 and #941–#944 remain open; no work was silently
-  dropped into this narrative.
+- Dependency chain: #937–#945 and #941–#944 remain open; #936 is closed for
+  local 2D import, with 3D/generated import explicitly rejected pending
+  #937/#938. No work was silently dropped into this narrative.
 - Non-actionable verification boundary: the absence of a server-backed 3D
   browser media store means #968 exports no fabricated media; it is recorded
   in the QA matrix rather than treated as a hidden asset failure.
@@ -78,8 +80,8 @@ new actionable follow-up was created because #788 and #954 already cover the
 production import and safe wrapper respectively.
 
 The final `make check` rerun passed: backend 1752 passed/39 skipped and
-frontend 288 files/3061 tests. The batch remains incomplete: 6 issues are
-closed in this continuation and 27 remain open with recorded blocker,
+frontend 289 files/3064 tests. The batch remains incomplete: 8 issues are
+closed in this continuation and 24 remain open with recorded blocker,
 dependency, owner, or verification-boundary statuses. Missing terminal status
 for the processed records is zero; the open inventory itself is not silently
 claimed complete.

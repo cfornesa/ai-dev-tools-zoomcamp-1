@@ -11,7 +11,7 @@ open.
 
 | Dimension | Result | Evidence / boundary |
 |---|---|---|
-| Local deployment and repository quality | PASS | Final `make check` exit 0: backend 1752 passed/39 skipped; frontend 288 files/3061 tests. No migration or dependency was introduced by #968/#969/#970. |
+| Local deployment and repository quality | PASS | Final `make check` exit 0: backend 1752 passed/39 skipped; frontend 289 files/3064 tests. No migration or dependency was introduced by #936/#968/#969/#970. |
 | Approved browser verification | PASS for this batch | Rebuilt repository Compose stack; Chromium passed #968 2/2, #969 2/2, and #970 1/1 at 1280x900 and 375x812; #970 also covered 768x1024. Artifacts were inspected. |
 | CI | OPEN FOLLOW-UP | No remote CI run was initiated in this session; local `make check` is not CI evidence. Next action: let the normal push/PR CI complete and reconcile its exact revision. |
 | Intended functionality | BLOCKED | #970's scoped responsive 2D authored-preview regression is closed locally. Open #874, #886, #911–#916, #926, #937–#941, #945–#946, and related parity/verification issues still cover incomplete or unverified behavior. |
@@ -34,8 +34,10 @@ open.
   after the underlying parity work is available.
 - #906/#946 — obtain explicit owner authorization for the separate production
   data action, then snapshot, execute once, and reconcile live evidence.
-- #936–#940/#945 — finish the dependency chain: import, local-first 3D and
-  generated pieces, transfer disclosure, account sync, then account export.
+- #937–#940/#945 — finish the dependency chain: local-first 3D and generated
+  pieces, transfer disclosure, account sync, then account export. #936 is
+  closed for its current local 2D import scope; 3D/generated import remains
+  explicitly rejected until #937/#938.
 - #941–#944 — complete public media delivery and the dependent transfer,
   retention, and sync contracts.
 - #935 — parent export scope now has completed server-backed children #966,
@@ -74,10 +76,10 @@ the remaining parity issues.
 
 | Dimension | Result | Current evidence / boundary |
 |---|---|---|
-| Local deployment and repository quality | PASS | Re-ran `make check` on the current checkout: backend 1752 passed/39 skipped; frontend 288 files/3061 tests; lint emitted only existing warnings. |
+| Local deployment and repository quality | PASS | Re-ran `make check` on the current checkout: backend 1752 passed/39 skipped; frontend 289 files/3064 tests; lint emitted only existing warnings. |
 | Approved browser verification | PASS for #970 | Active Chrome session is present. #970's Compose Chromium evidence remains valid at 1280x900, 768x1024, and 375x812. No new browser defect was found in this read-only refresh. |
 | CI | OPEN FOLLOW-UP | No remote CI run was initiated; local checks are not CI evidence. Normal push/PR CI remains the next CI action. |
-| Intended functionality | BLOCKED | 27 GitHub issues remain open. No new implementation issue was discovered; remaining work is already represented by the open issue set and dependency graph. |
+| Intended functionality | BLOCKED | 24 GitHub issues remain open. #936 is closed for local 2D import; remaining work is already represented by the open issue set and dependency graph. |
 | Replit publication | BLOCKED | Active Replit UI was inspected. Published metadata exposes no Git SHA; the visible workspace/published revision is older than the local mode-aware wrapper. No publish was authorized or performed in this refresh. |
 | Production data action | BLOCKED | #788 remains blocked only at the production execution boundary. Chrome availability is confirmed; Replit lacks a supported production shell/preview path. No production row changed. |
 

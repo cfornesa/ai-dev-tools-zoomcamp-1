@@ -6824,3 +6824,39 @@ https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/936#issuecomment-5856
 The issue was closed with `gh issue close 936 --reason completed`. The earlier
 stale-runtime failure remains recorded as an evidence boundary, not as a
 product failure.
+
+## Transaction: #937 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERING BLOCKED / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Dependencies #933/#934/#936 checked; #937 is the local-first 3D editor owner and must not be reduced to a partial create-only change. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Source audit found server-owned `Project3DWorkspace` and 2D-only `LocalEditorWorkspace`; no local 3D route/persistence adapter currently exists. Grooming comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/937#issuecomment-5856500280. |
+| engineer | Pending | BLOCKED / NOT STARTED | Requires a focused implementation design for a second editor data layer covering versions, drawing planes, ink, capture, and Three.js/A-Frame parity. No partial implementation or server fallback was introduced. |
+| qa-self-review | Pending | NOT STARTED | No #937 diff exists. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / QUEUED | Remains open for engineering; no production, sync, AI, or server data action. |
+
+## Transaction: #926 — 2026-09-27 — DISTILLED / GROOMED / VERIFICATION BOUNDARY / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Manual QA owner requires three bounded real-provider runs; fake-provider evidence is explicitly insufficient. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | No implementation scope; owner must provision/select the provider credential in the app session. Agent will not type/store/obtain keys. |
+| engineer | N/A | N/A | QA-only issue; no code changed. |
+| qa-self-review | Codex / GPT-5 / medium; Chrome QA substitution | BLOCKED / NOT STARTED | No live runs attempted; no quota consumed. Comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/926#issuecomment-5856504857. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / OWNER ACTION | Await authorized provider credential and bounded Chrome evidence. |
+
+## Final verification reconciliation — 2026-09-27
+
+The final repository-wide check completed successfully after the #936 E2E
+typing correction:
+
+- make check — PASS, backend `1752 passed, 39 skipped`; frontend `289 test
+  files, 3064 tests passed`; lint reported only existing warnings.
+- `E2E_DOCKER_COMPOSE=true npx playwright test e2e/pieceImport.spec.ts --project=chromium`
+  — PASS, 1/1 against the rebuilt repository Compose stack.
+
+#936 is therefore reconciled CLOSED for its local 2D import contract. The
+earlier stale-runtime failure remains recorded as a verification boundary;
+it was resolved by rebuilding the local Compose frontend/backend and rerunning
+the exact scenario. This evidence is local/Compose only and does not close
+#937, #926, #788, or any deployed/live/hardware criterion.

@@ -1,0 +1,26 @@
+{
+  "captured_at": "2026-09-27",
+  "origin": "https://augmentrart.com/api/public/art-pieces/",
+  "pieces": [
+    {
+      "public_id": "53b5b0e8-16dc-4e18-aedf-4419231d7ea7",
+      "public_slug": "reference-c2-interactive-study",
+      "engine": "c2js-interactive",
+      "current_version": {
+        "id": 6,
+        "sequence": 1,
+        "source": "window.sketch = ({ c2, canvas, startFrame }) => { canvas.addEventListener('pointermove', (event) => { canvas.dataset.pointerX = String(event.offsetX); }); const context = canvas.getContext('2d'); startFrame(() => { context.fillStyle = '#1f2937'; context.fillRect(0, 0, canvas.width, canvas.height); context.fillStyle = '#fb7185'; context.beginPath(); context.arc(Number(canvas.dataset.pointerX || 160), 120, 42, 0, Math.PI * 2); context.fill(); }); };"
+      }
+    },
+    {
+      "public_id": "b945eb03-79aa-4c9d-89c6-4d44cc1d486e",
+      "public_slug": "reference-c2-study",
+      "engine": "c2js",
+      "current_version": {
+        "id": 5,
+        "sequence": 1,
+        "source": "window.sketch = ({ c2, canvas, startFrame }) => { const context = canvas.getContext('2d'); startFrame((frame) => { context.fillStyle = '#111827'; context.fillRect(0, 0, canvas.width, canvas.height); context.fillStyle = '#22d3ee'; context.beginPath(); context.arc(160 + Math.sin(frame / 20) * 40, 120, 42, 0, Math.PI * 2); context.fill(); }); };"
+      }
+    }
+  ]
+}

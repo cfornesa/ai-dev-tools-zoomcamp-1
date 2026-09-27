@@ -6625,3 +6625,13 @@ open and must not be run against the stale route assumption.
 | engineer | N/A | N/A | Discovery/fixture reconciliation only; no implementation started. |
 | qa-self-review | N/A | N/A | Not applicable before the route contract is chosen. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN | PROPOSED issue created as #964 and linked from #924; owner decision/route reconciliation is required before browser implementation can proceed. |
+
+## Transaction: #788 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED-N/A / QA BLOCKED / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Production action remains explicitly authorized; command behavior and affected C2 scope were re-audited against the current code and public API. |
+| groom | Codex / GPT-5 / medium | PASS | Safeguards retained: inspect/dry-run, disposable rehearsal, pre-write snapshot, one production write, live C2 verification, version-history check, and unrelated-piece check. |
+| engineer | N/A — production data action | N/A | No code change required; production operation only. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution | BLOCKED | Local rehearsal passed and snapshot captured. Replit’s visible Shell is development-only; no supported interactive production shell is available in the active workspace. QA record: `.local/tasks/qa-788-comment.md`. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / PRODUCTION BLOCKER | No production rows were changed. Requires a supported one-shot production execution path before the authorized import can occur. |

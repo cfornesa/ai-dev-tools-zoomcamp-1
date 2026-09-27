@@ -81,7 +81,7 @@ production import and safe wrapper respectively.
 
 The final `make check` rerun passed: backend 1752 passed/39 skipped and
 frontend 289 files/3064 tests. The batch remains incomplete: 8 issues are
-closed in this continuation and 24 remain open with recorded blocker,
+closed in this continuation and 25 remain open with recorded blocker,
 dependency, owner, or verification-boundary statuses. Missing terminal status
 for the processed records is zero; the open inventory itself is not silently
 claimed complete.
@@ -106,4 +106,5 @@ inspection evidence, provenance, and next action. The batch therefore has
 zero missing terminal statuses for processed transactions, while the overall
 project remains open because the 24 issue inventory contains unresolved
 owner, dependency, live-provider, hardware, architecture, and production
-boundaries.
+boundaries. The live GitHub inventory was re-counted at 25 open issues; the
+earlier count of 24 was stale and is corrected here.

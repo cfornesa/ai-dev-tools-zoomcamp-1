@@ -30,6 +30,7 @@ import {
   saveProviderCredential,
 } from '../api/credentials';
 import EntitlementsSummary from './EntitlementsSummary';
+import CloudSyncSettings from './CloudSyncSettings';
 import { ApiError } from '../api/client';
 import {
   deleteProfileImage,
@@ -54,6 +55,7 @@ const AI_MODEL_DOCS = [
 const SETTINGS_LAYOUT_KEY = 'augmentrart:account-settings-layout:v1';
 const DEFAULT_SECTION_ORDER = [
   'plan',
+  'cloudSync',
   'profile',
   'management',
   'credentials',
@@ -289,6 +291,14 @@ function AccountSettings() {
       content: (
         <section className="account-settings-card">
           <EntitlementsSummary />
+        </section>
+      ),
+    },
+    cloudSync: {
+      label: 'Cloud sync',
+      content: (
+        <section className="account-settings-card">
+          <CloudSyncSettings />
         </section>
       ),
     },

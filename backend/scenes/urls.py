@@ -102,6 +102,7 @@ from scenes.cloud_backup_api import (
     CloudBackupView,
 )
 from scenes.cloud_retention_api import AdminCloudRetentionPurgeView, AdminCloudRetentionView
+from scenes.cloud_sync_preference_api import AccountCloudSyncView
 from scenes.collections_api import (
     CollectionDetailView,
     CollectionItemsView,
@@ -217,6 +218,7 @@ urlpatterns = [
     path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
     path("account/billing/", AccountBillingView.as_view(), name="account-billing"),
     path("account/entitlements/", AccountEntitlementsView.as_view(), name="account-entitlements"),
+    path("account/cloud-sync/", AccountCloudSyncView.as_view(), name="account-cloud-sync"),
     path(
         "account/storage/estimate/",
         AccountStorageEstimateView.as_view(),

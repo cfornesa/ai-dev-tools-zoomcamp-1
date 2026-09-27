@@ -1050,6 +1050,27 @@ class CloudSyncSignupConsent(models.Model):
         return f"Signup cloud-sync consent for user {self.owner_id}: {self.sync_enabled}"
 
 
+class CloudSyncPreference(models.Model):
+    """Account-level cloud-sync choice (#940).
+
+    Enabling this preference authorizes future eligible pieces to offer sync;
+    it never uploads an existing browser-only piece. Consent is retained with
+    the exact copy version and timestamp so the warning can be audited.
+    """
+
+    owner = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cloud_sync_preference"
+    )
+    enabled = models.BooleanField(default=False)
+    consent_version = models.CharField(max_length=64, blank=True)
+    consent_text = models.TextField(blank=True)
+    consented_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Account cloud-sync preference for user {self.owner_id}: {self.enabled}"
+
+
 class SyncMutationReceipt(models.Model):
     """Durable acknowledgement for one deterministic offline mutation (#543).
 

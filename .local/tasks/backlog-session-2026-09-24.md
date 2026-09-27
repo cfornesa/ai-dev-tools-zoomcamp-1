@@ -6979,3 +6979,13 @@ wrapper publication once the secure push credential is available through the
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS | Added fail-closed per-piece/version consent storage, accessible alertdialog, local AI revision flow, network inventory, and Chromium audit. |
 | qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 unavailable and not credited | PASS | QA matrix: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/939#issuecomment-5859901143. Focused tests 2/2; rebuilt-Compose Chromium 3/3 including 375x812; full check backend 1752 passed/39 skipped and frontend 292 files/3071 tests. |
 | reconcile / close | Codex / GPT-5 / medium | CLOSED | Closure comment posted on #939; no production or live vendor evidence inferred. |
+
+## Transaction: #940 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PARTIAL / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #939 and #932 were closed; #940 became the next eligible local-first account-sync item. No duplicate found. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Fixed contract retained site/entitlement gates, explicit consent, signup preselection, future-piece scope, and #943 handoff. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution | PASS / PARTIAL | Added `CloudSyncPreference`, migration 0099, gated GET/PUT API, versioned consent copy/timestamp, account settings UI, and backend/frontend tests. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 unavailable and not credited | PARTIAL | QA matrix: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/940#issuecomment-5860065184. Focused backend 4/4, AccountSettings/EntitlementsSummary 18/18, migration check clean, full check backend 1756 passed/39 skipped and frontend 292 files/3071 tests. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / FOLLOW-UP | The existing backup schema cannot distinguish account-inherited rows from explicit per-piece opt-ins, so disable-time selective pause is intentionally not implemented. Requires a follow-up ownership-mode/data-model decision; no production account mutation. |

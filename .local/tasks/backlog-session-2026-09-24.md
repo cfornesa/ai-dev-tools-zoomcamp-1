@@ -6675,3 +6675,13 @@ open and must not be run against the stale route assumption.
 | engineer | N/A — verification issue | N/A | No code change is authorized or required. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution | BLOCKED | Owner has not supplied a provider credential through the app's supported settings flow; no live run was started and no quota was spent. QA record: `.local/tasks/qa-926-comment.md`. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN / VERIFICATION BOUNDARY | QA comment will record the blocked criteria and preserve the issue for a future owner-authorized live-model session; no production or live-model evidence is claimed. |
+
+## Transaction: #936 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED-N/A / QA BLOCKED / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Import remains a distinct atomic local-store contract; duplicate audit found no replacement. |
+| groom | Codex / GPT-5 / medium | BLOCKED | Explicit dependency #935 is not closed: only local 2D export (#956) is complete; server-backed/3D/generated export is not yet criterion-ready. |
+| engineer | N/A | N/A | No implementation started against an incomplete package producer contract. |
+| qa-self-review | N/A | BLOCKED | No import browser or storage test is valid until all required #935 package fixtures exist. QA record: `.local/tasks/qa-936-comment.md`. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / DEPENDENCY BLOCKER | Missing child #965 created after duplicate audit: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/965. |

@@ -6055,6 +6055,25 @@ fixtures, mirrored validation, atomic ZIP parsing, scene/source validation,
 checksums and limits, and compatibility readers for #512/#526. The issue is
 local-only; no production or browser deployment evidence was required.
 
+## Transaction: #931 — 2026-09-26 — CLOSED / QA PASS
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #931 is the next dependency-ready queue item after #930; duplicate search found no separate quota, estimate, or usage-report issue. The distillation manifest and `docs/local-first-storage-contract.md` are the only related records. |
+| groom | Codex / GPT-5 / medium | PASS | Existing issue is criterion-ready: separate private/public plan caps, read-only measurement command, estimate endpoint, admin auditability, migration/test coverage, and #932 enforcement boundary are explicit. |
+| routing | Codex / GPT-5 / medium | PASS | Stage 2b complex: model fields, migration, entitlement/quota resolution, admin settings, authenticated estimate endpoint, and read-only reporting command. |
+| engineer | Codex / GPT-5 / medium; rostered complex service substituted | PASS | Commit `185f1b69`: separate private/public plan quota fields and migration, audited admin API/UI, read-only estimate endpoint, JSON/CSV usage report, docs, and focused tests. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | PASS | QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/931#issuecomment-5851591462`; focused backend 28 passed, frontend 4 passed, full `make check` passed with backend 1739 passed / 39 skipped and frontend 285 files / 3046 tests, and `git diff --check` passed. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #931 closed after all in-scope criteria passed. No production data action; #932 retains intake enforcement. |
+
+## Transaction completion: #931 — 2026-09-26 — CLOSED / QA PASS
+
+Storage caps are now separate, editable plan policy with audit history; the
+read-only estimate and measurement paths provide the data needed by future
+transfer enforcement. The migration was exercised on the disposable test
+database. The direct deployment settings check remains environment-gated by
+the absent local `backend/.env`; no production database was touched.
+
 ## Production-readiness refresh: 2026-09-26 — NOT READY
 
 | Dimension | Result | Evidence / boundary |
@@ -6062,14 +6081,15 @@ local-only; no production or browser deployment evidence was required.
 | Browser/session state | VERIFIED | Chrome process and tab are active; the local tab is unauthenticated and exposes Login, so the fixture route is unavailable without a signed-in local fixture session. No logout action was performed. |
 | #929 implementation | PASS | Closed QA PASS; full local `make check` passed. |
 | #930 readiness | PASS | Engineering and QA are complete; shared fixtures, focused suites, and full `make check` passed. |
+| #931 readiness | PASS | Engineering and QA are complete; migration, focused suites, and full `make check` passed. |
 | Production actions | UNCHANGED | No publish, production database, secret, auth-setting, or external data action was taken in this continuation. |
-| Complete backlog readiness | OPEN | Independent open issues remain, beginning with #930 and including the authorized-but-production-blocked #788. |
+| Complete backlog readiness | OPEN | Independent open issues remain, beginning with #932 and including the authorized-but-production-blocked #788. |
 
 ## Session-completion refresh: 2026-09-26
 
 This continuation completed task-distillation, reconciled the active Chrome
-evidence, closed #929 and #930 with QA PASS, and recorded no new duplicate
-decisions. Counts for this continuation: 2 issues closed, 0 issues ready, 0 new
+evidence, closed #929, #930, and #931 with QA PASS, and recorded no new
+duplicate decisions. Counts for this continuation: 3 issues closed, 0 issues ready, 0 new
 issues, 0 production data actions, and 0 unresolved duplicate decisions.
 The overall goal remains active because open backlog work and #788's external
 production boundary remain.

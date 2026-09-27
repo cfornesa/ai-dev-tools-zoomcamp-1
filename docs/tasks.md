@@ -24077,3 +24077,4 @@ microphone behavior remain `VALID WITH GAPS` and link to their open follow-ups.
 | 2026-09-26 | #898, #899 | OPEN / DISTILLED | #892 was decomposed into closure-sized generated embed and immersive-3D route contracts; #893 remains the immersive-2D child. |
 - [#929](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/929) — **CLOSED / QA PASS:** version-tagged visitor sound overrides, generated-runtime protection, and browser-storage audit; full `make check` passed.
 - [#930](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/930) — **CLOSED / QA PASS:** portable piece-package v1 schema, mirrored validators, ZIP round trips, checksums, limits, and #512/#526 compatibility readers; full `make check` passed.
+- [#931](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/931) — **CLOSED / QA PASS:** separate admin-editable private/public storage caps, read-only transfer estimates, and JSON/CSV usage reporting; full `make check` passed.

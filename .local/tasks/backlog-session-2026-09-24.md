@@ -6771,7 +6771,7 @@ changes.
 | qa-self-review | Codex / GPT-5 / medium; Replit Free Agent read-only substitution | FAIL / BLOCKED | Local disposable PostgreSQL rehearsal passed and recorded exactly one deliberate stale-C2 update (version 1→2). Replit read-only inspection confirmed no production dry-run was available on the published revision; enabling its current startup gate could write immediately, so it was not enabled. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5855972863. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN / PRODUCTION BOUNDARY | No production command, publish, secret, migration, or production row changed. Snapshot and rollback source strings remain recorded at https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5855923667. |
 
-## Transaction: #970 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / OPEN
+## Transaction: #970 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
@@ -6779,4 +6779,4 @@ changes.
 | groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Contract is limited to responsive placement/grouping of Screenshot, Sound, ink color, and Draw ink immediately below authored-preview guidance at desktop/tablet/mobile; behavior, frozen drawing mode, and ink refinement data remain out of scope. |
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Changed only the shared generated-ink preview layout CSS and added `frontend/e2e/generatedInkControlsLayout.spec.ts`; no API, data, dependency, migration, or production change. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium; independent-family stage 3 not run | PASS | Focused Vitest 3/3; Compose Chromium `E2E_DOCKER_COMPOSE=true npx playwright test e2e/generatedInkControlsLayout.spec.ts --project=chromium` passed 1/1 and inspected screenshots at 1280x900, 768x1024, and 375x812; existing `inkLayerGenerated2d.spec.ts` passed 6/6; `make check` passed (backend 1752 passed/39 skipped; frontend 288 files/3061 tests). |
-| reconcile / close | Codex / GPT-5 / medium | OPEN / PUBLISHING BOUNDARY | QA PASS is local/Compose only. #970 remains open until the owner-approved deployment path publishes the fix and production Chrome verifies the same control grouping; no production evidence is claimed. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | QA PASS is local/Compose only, which satisfies this local responsive-layout contract. Production evidence is not claimed and no production publish was performed. #970 was closed without reopening #963. |

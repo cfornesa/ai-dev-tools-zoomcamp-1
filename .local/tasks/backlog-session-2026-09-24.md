@@ -6163,16 +6163,16 @@ found no replacement for #955; #935 is the next independent closure-ready
 issue now that #934 and #930 are terminal. #955 is now dependency-ready because
 the local-first base contract is closed.
 
-## Transaction: #955 — 2026-09-26 — DISTILLED / GROOMED / ENGINEERING READY
+## Transaction: #955 — 2026-09-26 — CLOSED / QA PASS
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
 | distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | New gap discovered during #934: template creation still calls server clone and the template listing lacks a validated scene transfer payload. Duplicate search found no existing issue covering local-only template transfer; linked dependency #934. |
-| groom | Codex / GPT-5 / medium | PASS | Issue `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/955` is criterion-ready with authenticated template detail/transfer, IndexedDB atomic creation, unauthorized-template rejection, backward compatibility, focused tests, and 1280x900/375x812 browser coverage. Routing: Stage 2b complex. |
+| groom | Codex / GPT-5 / medium | PASS | Issue `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/955` was criterion-ready with authenticated template detail/transfer, IndexedDB atomic creation, unauthorized-template rejection, backward compatibility, focused tests, and 1280x900/375x812 browser coverage. Routing: Stage 2b complex. |
 | routing | Codex / GPT-5 / medium | PASS | Authenticated API authorization, validated scene payload transfer, and local persistence require complex routing. |
-| engineer | pending | READY | #934 is closed with its narrowed contract; #955 may enter engineering after the current #956 reconciliation. |
-| qa-self-review | pending | — | — |
-| reconcile / close | pending | — | — |
+| engineer | Codex / GPT-5 / medium; rostered implementation-complex service substituted | PASS | Commit `9b8514d2`: authenticated template detail transfer, atomic IndexedDB project/scene creation, local route, and 1280x900/375x812 browser coverage. Existing list/clone APIs remain unchanged. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | PASS | QA comment posted on #955; focused backend 12/1 skipped, frontend 29/29, exact Chrome Playwright 2/2, and final `make check` passed (1746 backend passed/39 skipped; 286 frontend files/3053 tests). |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #955 closed. Anonymous and 3D/generated template transfer remain outside this issue; #935/#936 retain their separate scopes. |
 
 ## Transaction: #935 — 2026-09-27 — DISTILLED / GROOMED / TRACKING PARENT
 

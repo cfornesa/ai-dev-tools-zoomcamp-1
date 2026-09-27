@@ -15,6 +15,7 @@ export type PiecePackageRecord = {
   data: Record<string, unknown>;
 };
 export type PiecePackageMedia = {
+  sourceAssetId?: string;
   filename: string;
   altText: string;
   mimeType: string;
@@ -55,6 +56,7 @@ type PackageManifest = {
   records: Array<{ index: number; schemaVersion: number; fileIndex: number }>;
   mediaAssets: Array<{
     index: number;
+    sourceAssetId?: string;
     fileIndex: number;
     filename: string;
     altText: string;
@@ -163,6 +165,7 @@ export async function buildPiecePackage(input: PiecePackageInput): Promise<Uint8
     mediaAssets.push({
       index,
       fileIndex,
+      sourceAssetId: asset.sourceAssetId,
       filename: asset.filename,
       altText: asset.altText,
       mimeType: asset.mimeType,

@@ -290,6 +290,7 @@ def intake_package(
                 owner=owner,
                 piece_kind=kind,
                 piece_public_id=public_id,
+                source_asset_id=asset.get("sourceAssetId"),
                 filename=str(asset["filename"]),
                 alt_text=str(asset["altText"]),
                 mime_type=mime_type,

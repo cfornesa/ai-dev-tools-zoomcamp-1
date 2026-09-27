@@ -7037,3 +7037,22 @@ wrapper publication once the secure push credential is available through the
 | #943 reconciliation | CLOSED | Inventory, opt-in selection, persisted sync identity, retry, over-quota handling, and responsive Chromium coverage passed locally. |
 | Production wrapper / #788 | BLOCKED | `GIT_URL` remains unavailable; no safe push, Replit Publish, production shell, snapshot, or write was attempted. |
 | Next transaction | READY | Distill and groom #946 before engineering; do not begin #788 until the authorized wrapper is published. |
+
+## Distillation refresh — 2026-09-27 — next eligible #941
+
+| Check | Result | Evidence / next action |
+|---|---|---|
+| Dependency order | PASS | #932 is closed, satisfying #941's prerequisite. #941 is Q48 and precedes #942/#946 in the reconciled G-stream queue. |
+| Duplicate audit | PASS | No open issue duplicates server-hosted public media delivery; #886 is the referenced architecture decision, not a duplicate implementation item. |
+| Authorization boundary | PASS | #941 is local/backend/frontend implementation and Compose/browser QA; no production data action is authorized or required. |
+| Next transaction | READY | Groom #941, then implement its public asset authorization/headers/viewer/ZIP contract with focused and browser evidence. |
+
+## Discovery transaction: #971 — 2026-09-27 — PROPOSED / LINKED / DEFERRED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Duplicate audit found no existing issue preserving stable mediaAssetId through package intake. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Scope is schema/package/intake identity preservation only; public delivery remains #941-owned. |
+| engineer | Deferred | NOT STARTED | #971 was created and linked before continuing; no code changed in this discovery step. |
+| qa-self-review | Pending | NOT STARTED | No diff exists. |
+| reconcile / close | Codex / GPT-5 / medium | PROPOSED / OPEN | Issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/971. #941 is blocked on this prerequisite. |

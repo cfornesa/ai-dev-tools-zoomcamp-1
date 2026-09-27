@@ -16,6 +16,7 @@ export type LocalPiecePackageModule = {
     appVersion: string;
     records: Array<{ schemaVersion: number; data: Record<string, unknown> }>;
     mediaAssets: Array<{
+      sourceAssetId?: string;
       filename: string;
       altText: string;
       mimeType: string;
@@ -53,6 +54,7 @@ export async function buildLocalPiecePackage(
       continue;
     }
     mediaAssets.push({
+      sourceAssetId: asset.id,
       filename: asset.filename,
       altText: asset.altText,
       mimeType: asset.mimeType,
@@ -115,6 +117,7 @@ export async function buildLocal2dPiecePackage(
       continue;
     }
     mediaAssets.push({
+      sourceAssetId: asset.id,
       filename: asset.filename,
       altText: asset.altText,
       mimeType: asset.mimeType,

@@ -1245,6 +1245,7 @@ class PieceIntakeAsset(models.Model):
     )
     piece_kind = models.CharField(max_length=16)
     piece_public_id = models.UUIDField()
+    source_asset_id = models.UUIDField(null=True, blank=True)
     filename = models.CharField(max_length=255)
     alt_text = models.TextField(blank=True, default="")
     mime_type = models.CharField(max_length=128)
@@ -1254,7 +1255,13 @@ class PieceIntakeAsset(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        indexes = [models.Index(fields=["owner", "piece_kind", "piece_public_id"])]
+        indexes = [
+            models.Index(fields=["owner", "piece_kind", "piece_public_id"]),
+            models.Index(
+                fields=["piece_public_id", "source_asset_id"],
+                name="piece_asset_public_source_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"Piece asset {self.filename} for {self.piece_public_id}"

@@ -53,6 +53,7 @@
         "required": ["index", "fileIndex", "filename", "altText", "mimeType", "byteSize", "sha256"],
         "properties": {
           "index": { "type": "integer", "minimum": 0 },
+          "sourceAssetId": { "type": "string", "format": "uuid" },
           "fileIndex": { "type": "integer", "minimum": 0 },
           "filename": { "type": "string" },
           "altText": { "type": "string" },

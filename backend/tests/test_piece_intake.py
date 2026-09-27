@@ -1,5 +1,7 @@
+import hashlib
 import io
 import json
+import uuid
 import zipfile
 
 import pytest
@@ -108,6 +110,68 @@ def test_intake_creates_private_piece_and_is_idempotent(client):
     assert replay.json() == first.json()
     assert Project.objects.count() == 1
     assert PieceIntakeReceipt.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_intake_preserves_optional_source_asset_id(client):
+    source_asset_id = uuid.uuid4()
+    image = io.BytesIO()
+    Image.new("RGB", (1, 1), "red").save(image, format="PNG")
+    image_bytes = image.getvalue()
+    record_package = _package()
+    with zipfile.ZipFile(io.BytesIO(record_package)) as source:
+        record = source.read("files/0.json")
+    manifest = {
+        "formatVersion": 1,
+        "kind": "2d",
+        "metadata": {
+            "title": "Imported with media",
+            "description": "Imported fixture",
+            "tags": [],
+            "visibilityIntent": "private",
+            "origin": {"appVersion": "test", "exportedAt": "2026-09-26T00:00:00Z"},
+        },
+        "records": [{"index": 0, "schemaVersion": 1, "fileIndex": 0}],
+        "mediaAssets": [
+            {
+                "index": 0,
+                "sourceAssetId": str(source_asset_id),
+                "fileIndex": 1,
+                "filename": "dot.png",
+                "altText": "Dot",
+                "mimeType": "image/png",
+                "byteSize": len(image_bytes),
+                "sha256": hashlib.sha256(image_bytes).hexdigest(),
+            }
+        ],
+        "files": [
+            {
+                "index": 0,
+                "path": "files/0.json",
+                "byteSize": len(record),
+                "sha256": hashlib.sha256(record).hexdigest(),
+            },
+            {
+                "index": 1,
+                "path": "files/1.bin",
+                "byteSize": len(image_bytes),
+                "sha256": hashlib.sha256(image_bytes).hexdigest(),
+            },
+        ],
+    }
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as archive:
+        archive.writestr("manifest.json", json.dumps(manifest))
+        archive.writestr("files/0.json", record)
+        archive.writestr("files/1.bin", image_bytes)
+
+    response = client.post(
+        "/api/pieces/intake/",
+        {"package": io.BytesIO(output.getvalue()), "idempotency_key": "with-source-id"},
+        format="multipart",
+    )
+    assert response.status_code == 201
+    assert PieceIntakeAsset.objects.get().source_asset_id == source_asset_id
 
 
 @pytest.mark.django_db

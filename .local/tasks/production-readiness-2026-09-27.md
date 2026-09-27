@@ -99,3 +99,12 @@ criteria remain incomplete.
 
 No production command, publish, restart, secret, environment setting,
 migration, or production data mutation was performed during this refresh.
+
+## Reassessment after #788 QA transaction — 2026-09-27
+
+The latest per-issue QA record is
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5856656886.
+It confirms the exact evidence split: active Chrome is available, while the
+published Replit deployment lacks both a safe preview launcher and an
+interactive production shell. The readiness result remains `BLOCKED`; no
+production-write criterion was treated as passed or silently deferred.

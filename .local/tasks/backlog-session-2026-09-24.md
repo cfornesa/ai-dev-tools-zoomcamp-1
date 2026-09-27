@@ -6876,3 +6876,13 @@ linked to an existing issue with a finite contract, explicitly classified as
 closed, blocked, dependency-blocked, owner-gated, or verification-boundary;
 there is no untracked actionable gap and no criterion-ready independent issue
 that can safely enter engineering before its stated prerequisite.
+
+## Transaction: #788 recheck — 2026-09-27 — GROOMED → ENGINEERING/QA → BLOCKED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Fresh duplicate, dependency, authorization, and evidence-boundary audit retained #788 as the sole owner of the authorized C2 production import. |
+| groom | Codex / GPT-5 / medium | PASS | Closure contract remains preview → snapshot → one write → live verification; no code engineering is required. |
+| engineer | N/A — production data action | N/A | No product diff; production action was not attempted. |
+| qa-self-review | Codex / GPT-5 / medium; Replit Free Agent read-only substitution | FAIL / BLOCKED | Active Chrome was confirmed, but the published launcher has no safe dry-run mode, no deployed SHA is exposed, and no interactive production shell exists. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5856656886. |
+| reconcile / close | Codex / GPT-5 / medium | BLOCKED / OPEN | No production command, publish, restart, setting, secret, migration, or data mutation. Next action is owner-authorized publication of the reviewed mode-aware preview wrapper, followed by the guarded one-shot sequence. |

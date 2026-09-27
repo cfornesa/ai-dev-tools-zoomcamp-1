@@ -99,3 +99,11 @@ The remaining 24 open issues are all reconciled to existing records with
 explicit next actions. No duplicate or untracked follow-up was created. No
 independent criterion-ready issue is available before its owner, dependency,
 provider, hardware, architecture, or production boundary is resolved.
+
+The latest #788 QA transaction is terminally `BLOCKED` rather than missing a
+status. Its `## QA: FAIL` comment records the criterion matrix, exact Replit
+inspection evidence, provenance, and next action. The batch therefore has
+zero missing terminal statuses for processed transactions, while the overall
+project remains open because the 24 issue inventory contains unresolved
+owner, dependency, live-provider, hardware, architecture, and production
+boundaries.

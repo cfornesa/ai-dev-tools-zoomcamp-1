@@ -86,3 +86,16 @@ the remaining parity issues.
 The readiness gate therefore remains `BLOCKED`, not because of browser
 availability, but because required production/dependency/live-verification
 criteria remain incomplete.
+
+## Reassessment after active-Chrome and Replit read-only recheck — 2026-09-27
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Active Chrome | PASS | `cua.getState()` showed the owner’s Chrome session and the local/Replit tabs. Browser availability is confirmed. |
+| Local repository quality | PASS | Latest completed `make check`: backend 1752 passed/39 skipped; frontend 289 files/3064 tests. No product files changed in this refresh. |
+| #788 production preview/import | BLOCKED | Replit Free Agent read-only inspection confirmed no interactive production shell, no deployed SHA, and a launcher that invokes `--allow-production --json` without `--dry-run`. It stopped without invoking the importer. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5856633092. |
+| Remaining issue graph | BLOCKED / GATED | 24 issues remain open. Fresh distillation found no independent criterion-ready issue whose prerequisites and evidence boundary are satisfied: #937 is design-blocked; #926 owner-credential gated; #859–#861 dependency-blocked; #874/#886 owner/data gated; #911–#916 dependency/hardware gated; #906/#946 unauthorized production actions; #938–#945 dependency chain. |
+| Production readiness | BLOCKED | Chrome is available, but required production, provider, hardware, owner-decision, and dependency evidence remains incomplete. |
+
+No production command, publish, restart, secret, environment setting,
+migration, or production data mutation was performed during this refresh.

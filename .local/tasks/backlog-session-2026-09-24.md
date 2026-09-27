@@ -6860,3 +6860,19 @@ earlier stale-runtime failure remains recorded as a verification boundary;
 it was resolved by rebuilding the local Compose frontend/backend and rerunning
 the exact scenario. This evidence is local/Compose only and does not close
 #937, #926, #788, or any deployed/live/hardware criterion.
+
+## Distillation refresh — 2026-09-27 — active Chrome and Replit re-audit
+
+| Check | Result | Evidence / next action |
+|---|---|---|
+| Active browser availability | PASS | `cua.getState()` confirmed the owner’s Chrome session, including the Replit workspace and local AugmentrART tabs. Chrome is not the #788 blocker. |
+| #788 production path | BLOCKED | Replit Free Agent performed a read-only inspection. Published Autoscale has no exposed deployed Git SHA, no interactive production shell, and no safe preview invocation in the published launcher. No importer, restart, publish, setting, secret, migration, or production data action was performed. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5856633092. |
+| Duplicate/follow-up audit | PASS | Existing #788 and closed prerequisite #954 remain the sole owners of this C2 production import and safe wrapper. No duplicate issue created. |
+| Independent actionable queue | NONE READY | #937 is engineering/design blocked; #926 requires owner-provided live-provider credentials; #859–#861 depend on unresolved fixture/audio prerequisites; #874/#886 require owner decisions or production data boundaries; #906/#946 are separately unauthorized production data actions; #911–#916 are microphone dependency/hardware gated; #938–#945 are dependency chains. |
+| Next transaction | HANDOFF | Resume #788 only after the mode-aware preview wrapper is published through an authorized path, then run preview → snapshot → one write → live verification. Otherwise obtain the owner decision/credential required by the next independent issue. |
+
+Distillation exit criteria are satisfied for this refresh: every open issue is
+linked to an existing issue with a finite contract, explicitly classified as
+closed, blocked, dependency-blocked, owner-gated, or verification-boundary;
+there is no untracked actionable gap and no criterion-ready independent issue
+that can safely enter engineering before its stated prerequisite.

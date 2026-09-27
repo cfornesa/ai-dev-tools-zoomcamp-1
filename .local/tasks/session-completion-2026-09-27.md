@@ -85,3 +85,17 @@ closed in this continuation and 24 remain open with recorded blocker,
 dependency, owner, or verification-boundary statuses. Missing terminal status
 for the processed records is zero; the open inventory itself is not silently
 claimed complete.
+
+## Final continuation audit — 2026-09-27
+
+The user-reported browser-availability boundary was rechecked directly:
+Chrome is active, and the Replit workspace is open. The fresh #788 QA pass
+therefore classifies the blocker as a production-runtime/preview-path
+boundary, not a browser-unavailable boundary. The read-only Replit inspection
+reported no interactive production shell, no deployed Git SHA, and no safe
+preview invocation in the published launcher; it made no changes.
+
+The remaining 24 open issues are all reconciled to existing records with
+explicit next actions. No duplicate or untracked follow-up was created. No
+independent criterion-ready issue is available before its owner, dependency,
+provider, hardware, architecture, or production boundary is resolved.

@@ -24076,3 +24076,4 @@ microphone behavior remain `VALID WITH GAPS` and link to their open follow-ups.
 | 2026-09-26 | #895, #896, #897 | OPEN / DISTILLED | Downloaded regular/immersive artifact parity, system-default adjacent motion toggle, and explicit public authorship identity were duplicate-audited and captured as criterion-ready follow-ups. |
 | 2026-09-26 | #898, #899 | OPEN / DISTILLED | #892 was decomposed into closure-sized generated embed and immersive-3D route contracts; #893 remains the immersive-2D child. |
 - [#929](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/929) — **CLOSED / QA PASS:** version-tagged visitor sound overrides, generated-runtime protection, and browser-storage audit; full `make check` passed.
+- [#930](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/930) — **READY FOR ENGINEERING:** portable piece-package v1 schema/validator/fixture contract; stage 2b complex/schema work, with #929 closed as its prerequisite.

@@ -6340,10 +6340,12 @@ select.ai-proposal-field-full-width {
   align-items: center;
   gap: 0.65rem;
   z-index: 2;
+  pointer-events: none;
 }
 
 .editor-piece-stage-toolbar .editor-stage-text-actions button {
   min-height: 2.75rem;
+  pointer-events: auto;
 }
 
 .editor-piece-stage-toolbar .editor-stage-text-actions button:disabled {

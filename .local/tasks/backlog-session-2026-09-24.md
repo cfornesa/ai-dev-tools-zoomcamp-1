@@ -6272,3 +6272,25 @@ for #916.
 | qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | FAIL / DEPENDENCY-BLOCKED | Existing QA FAIL comments document that the fake-device route reports active but `sourceConnected = 0`; current exact run `PLAYWRIGHT_CHANNEL=chrome E2E_DOCKER_COMPOSE=true npx playwright test e2e/artPieceSoundRuntime.spec.ts --project=chromium` produced 2 passed/3 failed. The routing gap belongs to #911; the six-case matrix cannot pass before #911–#915 wiring. |
 | production-readiness | not applicable while QA is blocked | — | — |
 | reconcile / close | pending | BLOCKED | Keep #916 open; next action is #911 generated-route mic routing, then rerun the harness and matrix. No new duplicate issue created because #911 owns the defect. |
+
+## Distillation refresh: 2026-09-27 — next independent frontend targeting transaction
+
+#923 is independent of the blocked microphone stream and is unblocked by the
+closed #922 contract. Its architecture is the persisted agent-run path: the
+client must send only bounded asset descriptors, select the `add_layer` scope,
+and let the existing provider/validation contract create the candidate image
+layer. The legacy one-shot AI endpoint is not expanded in this transaction.
+Duplicate audit found no existing implementation child for the unified editor
+media-library target picker.
+
+## Transaction: #923 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERING PENDING
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #923 is closure-sized after narrowing to the #922 agent-run contract: library-derived target options, metadata-only descriptor submission, candidate preview, accept/reject, resolver registration, keyboard/mobile coverage. Public/export delivery remains out of scope. |
+| groom | Codex / GPT-5 / medium | PASS | `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/923`; fixed unified editor entry point, unplaced PNG fixture, 1280x900 and 375x812, exact focused Vitest and `make check` commands. |
+| routing | Codex / GPT-5 / medium | PASS | Stage 2a frontend integration; rostered implementation-mechanical service/model substitution will be recorded before engineering. Reroute to complex if the existing #922 contract requires backend/schema changes. |
+| engineer | pending | — | — |
+| qa-self-review | pending | — | — |
+| production-readiness | pending | — | — |
+| reconcile / close | pending | — | — |

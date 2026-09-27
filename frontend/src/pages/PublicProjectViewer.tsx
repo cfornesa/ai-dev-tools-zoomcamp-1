@@ -32,7 +32,7 @@ import { createSonicEngine } from '../audio/sonicEngine';
 import DemoControlsPanel from './DemoControlsPanel';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 import { useFullscreenToggle } from './useFullscreenToggle';
-import { fetchPublicPieceAsset } from '../api/publicPieceAssets';
+import { fetchPublicPieceAsset, loadPublicSceneAssets } from '../api/publicPieceAssets';
 import { setActiveMediaAssetResolver } from '../render/mediaAssetResolver';
 
 type LoadState = 'loading' | 'ready' | 'unavailable' | 'error';
@@ -414,7 +414,7 @@ function PublicProjectViewer({
     }
   }
 
-  function handleDownload(variant: 'full' | 'non-camera' = 'full') {
+  async function handleDownload(variant: 'full' | 'non-camera' = 'full') {
     if (!project?.current_version) return;
     const availableModes = getAvailableInteractionModes(project.current_version.scene_json);
     const interactionMode =
@@ -423,12 +423,18 @@ function PublicProjectViewer({
         : availableModes.includes('demo-camera')
           ? 'demo-camera'
           : 'demo';
+    const mediaAssets = await loadPublicSceneAssets(
+      '2d',
+      project.id,
+      project.current_version.scene_json,
+    );
     const result = generateHtmlExport({
       scene: project.current_version.scene_json,
       title: project.title,
       description: project.description ?? '',
       interactionMode,
       includeAttribution: true,
+      mediaAssets,
     });
     if (!result.ok) {
       setSurfaceError(result.reasons.join(' '));

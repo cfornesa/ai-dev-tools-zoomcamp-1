@@ -383,10 +383,10 @@ describe('generateHtmlExport: safe scene embedding (XSS prevention)', () => {
       const doc = new DOMParser().parseFromString(result.html, 'text/html');
       const scripts = Array.from(doc.querySelectorAll('script'));
 
-      // Exactly the five expected scripts exist: the p5 CDN tag, the two
+      // Exactly the six expected scripts exist: the p5 CDN tag, the three
       // application/json data blocks, the scene runtime, and the stage
-      // controls runtime -- never a sixth one an injection could create.
-      expect(scripts).toHaveLength(5);
+      // controls runtime -- never a seventh one an injection could create.
+      expect(scripts).toHaveLength(6);
 
       const sceneDataScript = doc.getElementById('scene-data');
       expect(sceneDataScript?.getAttribute('type')).toBe('application/json');

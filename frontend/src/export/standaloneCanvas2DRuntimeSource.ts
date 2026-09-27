@@ -64,6 +64,8 @@ export function buildStandaloneCanvas2DRuntimeScript(): string {
 
   var SCENE = JSON.parse(document.getElementById("scene-data").textContent);
   var CONFIG = JSON.parse(document.getElementById("export-config").textContent);
+  var MEDIA_ASSETS = JSON.parse((document.getElementById("media-assets") || { textContent: "{}" }).textContent || "{}");
+  var IMAGE_CACHE = {};
   var PLAYBACK_SCRIPT = ${JSON.stringify(DEMO_PLAYBACK_SCRIPT)};
 
   // ---------------------------------------------------------------------
@@ -169,6 +171,23 @@ export function buildStandaloneCanvas2DRuntimeScript(): string {
 
   function drawShapeGeometry(ctx, shape, state) {
     switch (shape.type) {
+      case "image": {
+        var source = MEDIA_ASSETS[shape.mediaAssetId];
+        if (!source) return;
+        var image = IMAGE_CACHE[shape.mediaAssetId];
+        if (!image) {
+          image = new Image();
+          image.src = source;
+          IMAGE_CACHE[shape.mediaAssetId] = image;
+        }
+        if (image.complete && image.naturalWidth > 0) {
+          ctx.save();
+          ctx.globalAlpha = shape.transform.opacity;
+          ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
+          ctx.restore();
+        }
+        return;
+      }
       case "circle":
         ctx.beginPath();
         ctx.arc(0, 0, shape.radius, 0, Math.PI * 2);

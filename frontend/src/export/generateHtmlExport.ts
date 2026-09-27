@@ -137,6 +137,8 @@ export type GenerateHtmlExportInput = {
    * the dialog's own documented default. */
   includeAttribution?: boolean;
   cameraOverlay?: CameraOverlayExport | null;
+  /** Public asset ids mapped to data URLs for an offline-capable artifact. */
+  mediaAssets?: Record<string, string>;
 };
 
 export type GenerateHtmlExportResult =
@@ -410,6 +412,7 @@ export function generateHtmlExport(input: GenerateHtmlExportInput): GenerateHtml
 
   ${usesCdnFreeRenderer ? '' : `<script src="${P5_CDN_URL}"></script>`}
   ${embedJsonScript('scene-data', strippedScene)}
+  ${embedJsonScript('media-assets', input.mediaAssets ?? {})}
   ${embedJsonScript(
     'export-config',
     input.cameraOverlay

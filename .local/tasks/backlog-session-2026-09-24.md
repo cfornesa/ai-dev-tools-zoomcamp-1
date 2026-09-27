@@ -6037,7 +6037,7 @@ available, but the local fixture tab is unauthenticated and shows Login; no
 logout was performed. #788 remains blocked on a supported authorized
 production execution path; unrelated open issues remain routed separately.
 
-## Transaction: #930 — 2026-09-26 — ENGINEERED / QA PENDING
+## Transaction: #930 — 2026-09-26 — CLOSED / QA PASS
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
@@ -6045,8 +6045,15 @@ production execution path; unrelated open issues remain routed separately.
 | groom | Codex / GPT-5 / medium | PASS | Closure contract names the shared schema, mirrored frontend/backend validators, one valid and four invalid fixture classes, 2D/3D/generated round trips, compatibility readers, exact focused commands, and no UI/endpoints/production scope. |
 | routing | Codex / GPT-5 / medium | PASS | Stage 2b complex/schema contract; implementation must keep frontend/backend validators and shared fixtures in parity. |
 | engineer | Codex / GPT-5 / medium; rostered complex service substituted | PASS | Added shared manifest schema, frontend/backend ZIP builders/parsers, SHA-256 and atomic validation, scene/source validation, legacy #512/#526 converters, shared fixtures, and focused tests. |
-| qa-self-review | pending | — | Focused checks pass; final full gate after the completed implementation and criterion matrix remain pending. |
-| reconcile / close | pending | — | Keep #930 open until QA reviews every acceptance criterion and records the issue comment. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA service substituted | PASS | QA comment `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/930#issuecomment-5851389323`; focused backend 7 passed, focused frontend 9 passed, full `make check` passed with backend 1735 passed / 39 skipped and frontend 285 files / 3046 tests, and `git diff --check` passed. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #930 closed after every acceptance criterion passed; implementation commit `106d5883`, validation hardening commit `28df5398`. No production data action. |
+
+## Transaction completion: #930 — 2026-09-26 — CLOSED / QA PASS
+
+The portable package contract is now implemented and documented with shared
+fixtures, mirrored validation, atomic ZIP parsing, scene/source validation,
+checksums and limits, and compatibility readers for #512/#526. The issue is
+local-only; no production or browser deployment evidence was required.
 
 ## Production-readiness refresh: 2026-09-26 — NOT READY
 
@@ -6054,15 +6061,15 @@ production execution path; unrelated open issues remain routed separately.
 |---|---|---|
 | Browser/session state | VERIFIED | Chrome process and tab are active; the local tab is unauthenticated and exposes Login, so the fixture route is unavailable without a signed-in local fixture session. No logout action was performed. |
 | #929 implementation | PASS | Closed QA PASS; full local `make check` passed. |
-| #930 readiness | OPEN | Distilled and groomed only; engineering, QA, and closure remain. |
+| #930 readiness | PASS | Engineering and QA are complete; shared fixtures, focused suites, and full `make check` passed. |
 | Production actions | UNCHANGED | No publish, production database, secret, auth-setting, or external data action was taken in this continuation. |
 | Complete backlog readiness | OPEN | Independent open issues remain, beginning with #930 and including the authorized-but-production-blocked #788. |
 
 ## Session-completion refresh: 2026-09-26
 
 This continuation completed task-distillation, reconciled the active Chrome
-evidence, closed #929 with QA PASS, and groomed #930 as the next engineering
-item. Counts for this continuation: 1 issue closed, 1 issue ready, 0 new
+evidence, closed #929 and #930 with QA PASS, and recorded no new duplicate
+decisions. Counts for this continuation: 2 issues closed, 0 issues ready, 0 new
 issues, 0 production data actions, and 0 unresolved duplicate decisions.
 The overall goal remains active because open backlog work and #788's external
 production boundary remain.

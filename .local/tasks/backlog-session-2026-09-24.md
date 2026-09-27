@@ -6750,3 +6750,13 @@ changes.
 | engineer | Codex / GPT-5 / medium; implementation-complex substitution for rostered Opencode Go kimi-k3 | PASS | Commit `b7d5151d` adds the owner-authorized version-history GET, typed client, validated/reparsed 3D package builder, editor export control, focused backend/frontend tests, and responsive Playwright coverage. No migration, dependency, production data, or public route change. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | Focused backend 10 passed; focused frontend 2 files/10 tests; exact Chromium 2/2 at 1280x900 and 375x812 with inspected screenshots; final `make check` exit 0 with backend 1752 passed/39 skipped and frontend 288 files/3061 tests. QA record: `.local/tasks/qa-968-comment.md`. |
 | reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | QA comment records local and Compose/browser evidence separately; no production evidence inferred. |
+
+## Transaction: #969 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | New gap discovered during #966 browser QA; duplicate audit found no existing pointer-layering owner. Scope is limited to File-menu hit-testing and does not reopen #966's export contract. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Retained pointer/touch activation at both viewports plus existing keyboard, Escape, and outside-click behavior; no API, data, or production scope. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Commit `044abce5` adds the control-panel stacking context and converts the existing browser assertion to a real pointer click. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | Focused component tests 2 files/17 tests; exact Chromium 2/2 at 1280x900 and 375x812; final `make check` exit 0 with backend 1752 passed/39 skipped and frontend 288 files/3061 tests. QA record: `.local/tasks/qa-969-comment.md`. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Pointer and keyboard evidence are both recorded; no production evidence inferred. |

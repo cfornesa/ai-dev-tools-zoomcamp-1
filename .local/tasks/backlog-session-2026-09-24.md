@@ -6074,6 +6074,17 @@ transfer enforcement. The migration was exercised on the disposable test
 database. The direct deployment settings check remains environment-gated by
 the absent local `backend/.env`; no production database was touched.
 
+## Transaction: #932 — 2026-09-26 — DISTILLED / GROOMED / ENGINEERING PENDING
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #932 is the next queue item after its explicit dependencies #930 and #931 closed; duplicate search found no competing intake/security upload issue. |
+| groom | Codex / GPT-5 / medium | PASS | Existing issue is criterion-ready and keeps #941 public media delivery, #942 publish timing, and UI out of scope; malicious fixtures, owner boundaries, quota source, idempotency, and exact verification commands are explicit. |
+| routing | Codex / GPT-5 / medium | PASS | Stage 2b complex/security-sensitive data path; requires API contract documentation before route changes and migration/authorization review before writes. |
+| engineer | pending | — | Pending implementation pass. |
+| qa-self-review | pending | — | — |
+| reconcile / close | pending | — | — |
+
 ## Production-readiness refresh: 2026-09-26 — NOT READY
 
 | Dimension | Result | Evidence / boundary |

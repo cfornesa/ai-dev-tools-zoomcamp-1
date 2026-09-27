@@ -6635,3 +6635,13 @@ open and must not be run against the stale route assumption.
 | engineer | N/A — production data action | N/A | No code change required; production operation only. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution | BLOCKED | Local rehearsal passed and snapshot captured. Replit’s visible Shell is development-only; no supported interactive production shell is available in the active workspace. QA record: `.local/tasks/qa-788-comment.md`. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN / PRODUCTION BLOCKER | QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5854523700. No production rows were changed. Requires a supported one-shot production execution path before the authorized import can occur. |
+
+## Transaction: #924 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA BLOCKED / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #923 is the implementation owner and #924 is the separate new-piece browser contract. The route assumption was reconciled through #964: use server-backed `POST /api/projects/blank/` and `/ai-projects/:id`, not the local-first `/create` route. |
+| groom | Codex / GPT-5 / medium | PASS | Scenario is limited to a fresh 2D project, one browser-local PNG import, metadata-only add-layer targeting, candidate/accept persistence, resolver visibility, and 1280x900/375x812 screenshots. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Added `frontend/e2e/aiMediaAssetNewPiece.spec.ts` in commit `79842414`; discovers two Chromium tests and asserts version sequence, one new image layer, selected asset identity, no un-imported asset reference, candidate preview, and accepted canvas. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution | BLOCKED | `make check` passed (backend 1750/39 skipped; frontend 286 files/3057 tests); Playwright `--list` discovered both tests; exact Chromium run is blocked before setup by macOS `MachPortRendezvousServer` permission denied. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/924#issuecomment-5854645980. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / BROWSER BLOCKER | The scenario is committed and reviewable, but no browser criterion is closed without an approved browser runner or equivalent active authenticated evidence. #923 remains open pending #924/#925 browser reconciliation. |

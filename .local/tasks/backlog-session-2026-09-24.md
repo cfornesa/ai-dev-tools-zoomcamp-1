@@ -6417,3 +6417,13 @@ open work remains in the local/editor and browser-verification streams; the
 next selectable item is #858, subject to its documented disposable local
 Compose and real-Chrome prerequisites. No production mutation is authorized
 by this blocker evidence.
+
+## Transaction: #858 — 2026-09-27 — DISTILLED / GROOMED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Duplicate/dependency audit confirmed #858 was the local authored-Three.js sound verification item; prerequisites #832/#833/#844/#852/#834–#839/#841/#849–#851 were closed and #919 remained closed as the stale-localStorage precedent. |
+| groom | Codex / GPT-5 / medium | PASS | Criteria retained exact 1280x720 and 375x667 nonblank rendering, slow motion, authored 90 BPM/major/synth defaults, regular-view sound controls, keyboard defaults, and no runtime errors. |
+| engineer | not applicable | — | Verification-only issue. No repository implementation was required; local disposable fixture content was created and edited through the authenticated editor for evidence. |
+| qa-self-review | Codex / GPT-5 / medium; active Chrome + fresh anonymous browser | PASS | Version 4 current; authored sky/moon/three hills/water/36 stars rendered at exact 1280x720 and 375x667; fresh anonymous sound activation reported running, 90 BPM, major scale, and live ambient note telemetry; no error-level logs. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/858#issuecomment-5853446337. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | GitHub issue #858 closed after the criterion matrix. Evidence is local disposable Compose/PostgreSQL plus real Chrome only; no production criterion was inferred or closed. |

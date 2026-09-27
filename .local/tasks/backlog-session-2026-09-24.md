@@ -6587,3 +6587,21 @@ discovered.
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Moved 2D Sound into the GeneratedInkPanel control group, added ink color propagation into frozen InkEditor sessions, added responsive control/refine-card styling, and corrected active preview contrast. No API, schema, migration, dependency, route, or production-data change. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with active Chrome | PASS | Focused frontend checks, full `make check`, rebuilt local Compose frontend, and active Chrome normal inspection at 1280x900 and 375x812. Geometry showed no horizontal overflow; accessibility tree exposed the grouped controls and refine textbox. QA record: `.local/tasks/qa-963-comment.md`. |
 | reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Local acceptance is complete. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/963#issuecomment-5854406108. Issue closed after the criterion matrix; no production evidence is inferred. |
+
+### Distillation refresh after #963 — 2026-09-27
+
+#963 is closed. #921 is the next closure-sized item in the generated-targeting
+stream: its implementation prerequisites #958/#959/#960 and the ink data fix
+#961 are closed, so this pass is verification/reconciliation only. No new
+implementation gap was found; the exact Playwright CLI remains a host-level
+MachPort boundary and active Chrome is the approved evidence path.
+
+## Transaction: #921 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED-N/A / QA PASS / RECONCILED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Re-audited #921 against closed #958/#959/#960/#961 and found no remaining implementation owner; #921 is the parent browser verification contract. |
+| groom | Codex / GPT-5 / medium | PASS | Acceptance retained: region isolation at desktop/mobile, ink-only metadata mutation, SVG sibling preservation, unresolved mention no-version behavior, and inspected before/after views. |
+| engineer | N/A — verification issue | N/A | No code change required in this transaction; implementation belongs to the already-closed linked issues. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with active Chrome | PASS | Focused backend refine tests passed 19/19; active Chrome normal-click evidence covered the target flows and 1280x900/375x812 views; Playwright scenario list discovered all 4 tests. QA record: `.local/tasks/qa-921-comment.md`. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/921#issuecomment-5854437465. Issue closed after reconciling the linked implementation fixes; exact Playwright remains explicitly host-blocked, not silently passed. |

@@ -6624,7 +6624,7 @@ open and must not be run against the stale route assumption.
 | groom | Codex / GPT-5 / medium | PASS | Scope is limited to selecting the current AI-capable route/fixture and updating #924; no product behavior or local-media privacy boundary is silently changed. |
 | engineer | N/A | N/A | Discovery/fixture reconciliation only; no implementation started. |
 | qa-self-review | N/A | N/A | Not applicable before the route contract is chosen. |
-| reconcile / close | Codex / GPT-5 / medium | OPEN | PROPOSED issue created as #964 and linked from #924; owner decision/route reconciliation is required before browser implementation can proceed. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Route resolved to server-backed POST `/api/projects/blank/` plus `/ai-projects/:id`; QA/browser scenario remains in #924. QA/reconciliation comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/964#issuecomment-5854545657. |
 
 ## Transaction: #788 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED-N/A / QA BLOCKED / OPEN
 
@@ -6634,4 +6634,4 @@ open and must not be run against the stale route assumption.
 | groom | Codex / GPT-5 / medium | PASS | Safeguards retained: inspect/dry-run, disposable rehearsal, pre-write snapshot, one production write, live C2 verification, version-history check, and unrelated-piece check. |
 | engineer | N/A — production data action | N/A | No code change required; production operation only. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution | BLOCKED | Local rehearsal passed and snapshot captured. Replit’s visible Shell is development-only; no supported interactive production shell is available in the active workspace. QA record: `.local/tasks/qa-788-comment.md`. |
-| reconcile / close | Codex / GPT-5 / medium | OPEN / PRODUCTION BLOCKER | No production rows were changed. Requires a supported one-shot production execution path before the authorized import can occur. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / PRODUCTION BLOCKER | QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5854523700. No production rows were changed. Requires a supported one-shot production execution path before the authorized import can occur. |

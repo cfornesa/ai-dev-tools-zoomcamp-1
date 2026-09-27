@@ -6740,3 +6740,13 @@ changes.
 | engineer | Codex / GPT-5 / medium; implementation-mechanical substitution for rostered Opencode Go kimi-k3 | PASS | Added `serverGeneratedPiecePackage`, validated/reparsed ZIP export, sanitized filename, editor toolbar action, focused unit test, and responsive browser scenario. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | Focused package tests 2 files/10 tests; Chromium 2/2 at 1280x900 and 375x812 with ZIP, ordered-history, metadata, no-mutation, and inspected screenshot assertions; `make check` exit 0 with frontend 287 files/3060 tests. QA record: `.local/tasks/qa-967-comment.md`; GitHub: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/967#issuecomment-5855523108. |
 | reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | Generated piece export is closed within the current media model; no production evidence inferred. |
+
+## Transaction: #968 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Duplicate audit confirmed #968 is the distinct server-backed 3D child of #965; it required the absent owner-scoped version-history GET contract and remains separate from #966, #967, #936, and public runnable ZIP behavior. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Retained checksum-validated keyboard export, complete ordered history, media-model boundary, responsive controls, canonical authorization, no mutation, focused tests, and Chromium evidence. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution for rostered Opencode Go kimi-k3 | PASS | Commit `b7d5151d` adds the owner-authorized version-history GET, typed client, validated/reparsed 3D package builder, editor export control, focused backend/frontend tests, and responsive Playwright coverage. No migration, dependency, production data, or public route change. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 Medium substitution with host-level Chromium | PASS | Focused backend 10 passed; focused frontend 2 files/10 tests; exact Chromium 2/2 at 1280x900 and 375x812 with inspected screenshots; final `make check` exit 0 with backend 1752 passed/39 skipped and frontend 288 files/3061 tests. QA record: `.local/tasks/qa-968-comment.md`. |
+| reconcile / close | Codex / GPT-5 / medium | PASS / CLOSED | QA comment records local and Compose/browser evidence separately; no production evidence inferred. |

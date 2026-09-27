@@ -2,7 +2,11 @@ import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useMenuButton } from '../a11y/useMenuButton';
-import { createNew3DProject, createNewAnimation } from './galleryCreateActions';
+import {
+  createLocalGeneratedPiece,
+  createNew3DProject,
+  createNewAnimation,
+} from './galleryCreateActions';
 
 type GalleryCreateMenuProps = {
   creating: boolean;
@@ -49,6 +53,11 @@ function GalleryCreateMenu({
       run: () => createNewAnimation('svg'),
     },
     { id: 'create-3d', label: 'Create a new 3D project', run: createNew3DProject },
+    {
+      id: 'create-generated-local',
+      label: 'Create a local generated piece',
+      run: createLocalGeneratedPiece,
+    },
   ];
 
   const { isOpen, toggle, close, triggerRef, onTriggerKeyDown, onMenuKeyDown, getItemRef } =

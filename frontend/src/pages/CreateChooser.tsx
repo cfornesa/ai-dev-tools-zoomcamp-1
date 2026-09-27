@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { createNew3DProject, createNewAnimation } from './galleryCreateActions';
+import {
+  createLocalGeneratedPiece,
+  createNew3DProject,
+  createNewAnimation,
+} from './galleryCreateActions';
 
 type ChooserAction = { id: string; label: string; description: string; run: () => Promise<string> };
 
@@ -24,6 +28,12 @@ const ACTIONS: ChooserAction[] = [
     label: 'Create a new 3D project',
     description: 'Start a blank 3D scene in the manual editor.',
     run: createNew3DProject,
+  },
+  {
+    id: 'create-generated-local',
+    label: 'Create a local generated piece',
+    description: 'Edit generated source locally without sending it to the server.',
+    run: createLocalGeneratedPiece,
   },
 ];
 

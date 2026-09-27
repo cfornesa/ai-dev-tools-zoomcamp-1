@@ -869,7 +869,11 @@ export async function saveLocal3DVersion(
   sceneJson: Record<string, unknown>,
 ): Promise<LocalPieceVersionRecord> {
   const project = await getProject(db, ownerId, projectId);
-  if (!project || project.kind !== '3d' || !project.activeSceneId) {
+  if (
+    !project ||
+    (project.kind !== '3d' && project.kind !== 'generated') ||
+    !project.activeSceneId
+  ) {
     throw corruptData(`Local 3D project "${projectId}" was not found for this owner.`);
   }
   const version = await appendPieceVersion(db, ownerId, projectId, sceneJson);
@@ -887,7 +891,11 @@ export async function restoreLocal3DVersion(
   versionId: string,
 ): Promise<LocalPieceVersionRecord> {
   const project = await getProject(db, ownerId, projectId);
-  if (!project || project.kind !== '3d' || !project.activeSceneId) {
+  if (
+    !project ||
+    (project.kind !== '3d' && project.kind !== 'generated') ||
+    !project.activeSceneId
+  ) {
     throw corruptData(`Local 3D project "${projectId}" was not found for this owner.`);
   }
   try {
@@ -916,6 +924,73 @@ export async function restoreLocal3DVersion(
     if (err instanceof LocalRepositoryException) throw err;
     throw classifyDbFailure(err);
   }
+}
+
+/** Creates a local-only generated piece. Generated source is stored as an
+ * opaque version payload and is never sent to the Django API. */
+export async function createLocalGeneratedProject(
+  db: IDBDatabase,
+  input: {
+    ownerId: string;
+    title: string;
+    description?: string;
+    engine: string;
+    source: string;
+    capabilities?: Record<string, unknown>;
+    ink?: Record<string, unknown> | null;
+    sonic?: Record<string, unknown> | null;
+  },
+): Promise<{
+  project: LocalProjectRecord;
+  scene: LocalSceneRecord;
+  version: LocalPieceVersionRecord;
+}> {
+  const payload: Record<string, unknown> = {
+    source: input.source,
+    engine: input.engine,
+    description: input.description ?? '',
+    capabilities: input.capabilities ?? {},
+    ink: input.ink ?? null,
+    sonic: input.sonic ?? null,
+  };
+  const created = await createProjectWithScene(db, {
+    ownerId: input.ownerId,
+    title: input.title,
+    kind: 'generated',
+    sceneName: 'Generated preview',
+    sceneJson: payload,
+  });
+  const version = await appendPieceVersion(db, input.ownerId, created.project.id, payload);
+  return { ...created, version };
+}
+
+export async function saveLocalGeneratedVersion(
+  db: IDBDatabase,
+  ownerId: string,
+  projectId: string,
+  payload: Record<string, unknown>,
+): Promise<LocalPieceVersionRecord> {
+  const project = await getProject(db, ownerId, projectId);
+  if (!project || project.kind !== 'generated' || !project.activeSceneId) {
+    throw corruptData(`Local generated project "${projectId}" was not found for this owner.`);
+  }
+  const version = await appendPieceVersion(db, ownerId, projectId, payload);
+  await updateScene(db, project.activeSceneId, { sceneJson: payload });
+  return version;
+}
+
+export async function restoreLocalGeneratedVersion(
+  db: IDBDatabase,
+  ownerId: string,
+  projectId: string,
+  versionId: string,
+): Promise<LocalPieceVersionRecord> {
+  const project = await getProject(db, ownerId, projectId);
+  if (!project || project.kind !== 'generated' || !project.activeSceneId) {
+    throw corruptData(`Local generated project "${projectId}" was not found for this owner.`);
+  }
+  const restored = await restoreLocal3DVersion(db, ownerId, projectId, versionId);
+  return restored;
 }
 
 export async function getProjectStorageUsage(

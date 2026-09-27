@@ -16,6 +16,7 @@ import {
   createScene,
   createLocal3DProject,
   openLocalProjectDatabase,
+  createLocalGeneratedProject,
 } from '../storage/localProjectRepository';
 
 export type NewProjectRenderer = 'p5' | 'canvas2d' | 'svg';
@@ -114,4 +115,24 @@ export async function createNew3DProject(): Promise<string> {
 
 export async function createAiAssisted3DProject(): Promise<string> {
   return createNew3DProject();
+}
+
+export async function createLocalGeneratedPiece(): Promise<string> {
+  const profile = await fetchProfile();
+  if (!profile.handle) throw new Error('A signed-in profile is required for local projects.');
+  const db = await openLocalProjectDatabase();
+  try {
+    const { project } = await createLocalGeneratedProject(db, {
+      ownerId: profile.handle,
+      title: 'Local generated SVG',
+      description:
+        'A local-only generated piece. Edit the source and save versions without server transfer.',
+      engine: 'svg',
+      source:
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="#101827"/><circle cx="400" cy="300" r="120" fill="#35c6dc"/></svg>',
+    });
+    return `/local-generated/${project.id}`;
+  } finally {
+    db.close();
+  }
 }

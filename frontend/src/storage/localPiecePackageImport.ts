@@ -27,10 +27,6 @@ function corruptData(message: string): LocalRepositoryException {
   return new LocalRepositoryException({ kind: 'corrupt-data', message });
 }
 
-function unsupported(message: string): LocalRepositoryException {
-  return new LocalRepositoryException({ kind: 'unsupported-file-type', message });
-}
-
 function classifyWriteFailure(error: unknown): LocalRepositoryException {
   if (error instanceof LocalRepositoryException) return error;
   const name = error instanceof DOMException ? error.name : undefined;
@@ -52,12 +48,9 @@ function classifyWriteFailure(error: unknown): LocalRepositoryException {
   });
 }
 
-function assertSupportedPackage(pkg: PiecePackage): void {
-  if (pkg.kind === 'generated') {
-    throw unsupported(
-      'Generated piece packages are not supported yet. Importing them will be available in a later release.',
-    );
-  }
+function assertSupportedPackage(_pkg: PiecePackage): void {
+  // Generated packages are intentionally local-only. Their source is kept as
+  // opaque version data and is rendered only through the existing sandbox.
 }
 
 async function verifyMediaAssets(mediaAssets: PiecePackageMedia[]): Promise<PiecePackageMedia[]> {
@@ -127,14 +120,24 @@ export async function importLocalPiecePackage(
     createdAt: now,
   }));
   const scenes: LocalSceneRecord[] =
-    pkg.kind === '3d'
+    pkg.kind === '3d' || pkg.kind === 'generated'
       ? [
           {
             id: crypto.randomUUID(),
             projectId,
             name: 'Scene 1',
             position: 0,
-            sceneJson: pkg.records.at(-1)?.data ?? {},
+            sceneJson:
+              pkg.kind === 'generated'
+                ? {
+                    ...(pkg.records.at(-1)?.data ?? {}),
+                    source: pkg.source?.source ?? pkg.records.at(-1)?.data.source ?? '',
+                    engine: pkg.source?.engine ?? pkg.records.at(-1)?.data.engine ?? 'svg',
+                    ink: pkg.ink ?? pkg.records.at(-1)?.data.ink ?? null,
+                    sonic: pkg.sonic ?? pkg.records.at(-1)?.data.sonic ?? null,
+                    capabilities: pkg.capabilities ?? pkg.records.at(-1)?.data.capabilities ?? {},
+                  }
+                : (pkg.records.at(-1)?.data ?? {}),
             updatedAt: now,
           },
         ]
@@ -172,7 +175,7 @@ export async function importLocalPiecePackage(
     versionOrder: [],
     currentVersionId: null,
   };
-  if (pkg.kind === '3d') {
+  if (pkg.kind === '3d' || pkg.kind === 'generated') {
     project.versionOrder = importedVersions.map((version) => version.id);
     project.currentVersionId = importedVersions.at(-1)?.id ?? null;
   }

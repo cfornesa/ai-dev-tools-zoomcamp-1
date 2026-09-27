@@ -92,20 +92,22 @@ describe('importLocalPiecePackage', () => {
     ]);
   });
 
-  it('rejects generated packages before writing anything', async () => {
+  it('imports generated packages as local-only versioned source', async () => {
     const db = await openLocalProjectDatabase();
     const bytes = await buildPiecePackage({
       kind: 'generated',
       title: 'generated package',
       description: '',
       appVersion: 'test',
-      records: [{ schemaVersion: 1, data: { schemaVersion: 1, kind: 'generated' } }],
+      records: [{ schemaVersion: 1, data: { source: '<svg/>', engine: 'svg' } }],
+      source: { source: '<svg/>', engine: 'svg' },
+      capabilities: { screenshot: true },
     });
-    await expect(importLocalPiecePackage(db, 'alice', bytes)).rejects.toMatchObject({
-      kind: 'unsupported-file-type',
-      message: expect.stringContaining('not supported yet'),
-    });
-    expect(await listProjectsForOwner(db, 'alice')).toEqual([]);
+    const result = await importLocalPiecePackage(db, 'alice', bytes);
+    expect(result.project.kind).toBe('generated');
+    expect(result.versions).toHaveLength(1);
+    expect(result.project.currentVersionId).toBe(result.versions[0].id);
+    expect(result.scenes[0].sceneJson).toMatchObject({ source: '<svg/>', engine: 'svg' });
   });
 
   it('rejects a package containing an unsafe extra file before writing', async () => {

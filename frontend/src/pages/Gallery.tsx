@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { listProjects, type Project } from '../api/projects';
 import { listProjects3D, type Project3D } from '../api/projects3d';
@@ -157,9 +158,9 @@ function Gallery() {
                   <p>
                     <span className="visibility-badge">Local only</span>
                   </p>
-                  <a className="shell-action" href={`/local-projects/${project.id}`}>
+                  <Link className="shell-action" to={`/local-projects/${project.id}`}>
                     Open local editor
-                  </a>
+                  </Link>
                 </div>
               </article>
             </li>

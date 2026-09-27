@@ -148,6 +148,18 @@ production-write criterion was treated as passed or silently deferred.
 
 Readiness remains `BLOCKED`. Local/Compose evidence is not production evidence, and no production database, secret, publish, or data action was performed.
 
+## Reassessment after #943 closure — 2026-09-27
+
+| Dimension | Result | Evidence / boundary |
+|---|---|---|
+| Repository quality | PASS | Existing full `make check` passed after #943 implementation; focused Vitest 53 passed, typecheck and format passed. |
+| #943 local upload offer | PASS / CLOSED | Rebuilt repository Compose Chromium passed 2/2 at 1280x900 and 375x812, including three local kinds, quota preflight, retry, and persisted sync-state implementation. Local/Compose only. |
+| Remaining issue graph | OPEN | #946 is the next eligible local-first issue; other issues retain production/provider/hardware/owner/dependency gates. |
+| Replit publication | BLOCKED | `GIT_URL` is still absent; wrapper push and Publish were not attempted. |
+| #788 production import | BLOCKED | Wrapper publication and supported preview/shell remain prerequisites; no production rows changed. |
+
+Readiness remains `BLOCKED`; #943's local closure does not promote evidence to production.
+
 ## Reassessment after current distillation refresh — 2026-09-27
 
 | Dimension | Result | Evidence / boundary |

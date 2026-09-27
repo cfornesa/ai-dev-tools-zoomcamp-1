@@ -219,6 +219,20 @@ and session-completion were Codex/GPT-5/medium substitutions where rostered
   inherited-vs-explicit backup ownership rule, and record that a published
   wrapper plus safe push credential is a prerequisite for production data
   actions.
+
+## Session-completion refresh after #943 — 2026-09-27
+
+- #943 is CLOSED after persisted local sync identity/status, per-row retry, and
+  responsive Chromium coverage passed at 1280x900 and 375x812. QA evidence is
+  local/Compose only; no production criterion was inferred.
+- The next eligible transaction is #946. The open graph remains unresolved,
+  and #788 remains production-blocked pending publication of the reviewed
+  wrapper and supported preview/shell access.
+- Repository QA remains green from the recorded full check; the Compose stack
+  was rebuilt from the current checkout before the #943 browser run.
+- Proposed durable-memory update: record that Compose browser evidence can be
+  invalid when its image predates the checkout, and must be rebuilt before
+  accepting a local E2E result. No memory files were silently changed.
 external services were unavailable; independent stage-3 review was not run or
 credited. The unrelated parity document remains unstaged. No production data,
 secrets, settings, publish, or external repository was touched.

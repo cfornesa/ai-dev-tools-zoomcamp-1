@@ -7018,3 +7018,22 @@ wrapper publication once the secure push credential is available through the
 | #943 implementation | OPEN / FOLLOW-UP | The offer path is implemented locally, but the explicit per-row retry and local-to-server identity/status criterion remains. Continue #943 before #946. |
 | Production wrapper / #788 | BLOCKED | Reviewed wrapper is local-only; `GIT_URL` is unavailable, so safe push, Replit publish, and production import were not attempted. |
 | Overall session state | OPEN | Local quality checks pass, but 21 open issues and the authorized production workflow remain unresolved. |
+
+## Transaction: #943 final reconciliation — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Fresh duplicate audit retained #943 as the next eligible local-first transfer issue; #946 remains its downstream dependency. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Account-level consent, explicit per-piece selection, all local kinds, quota preflight, sequential/idempotent intake, and local-data preservation remained binding. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution | PASS | Commits `ce39e0c9` and `797303fe`; persisted local sync state/remote identity/version, piece-level cloud-sync control, retry action, and responsive browser coverage added. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 unavailable and not credited | PASS | Focused Vitest 53 passed; typecheck and format passed; rebuilt repository Compose Chromium `localPieceUploadOffer.spec.ts` 2/2 at 1280x900 and 375x812, including three local kinds, unchecked selection, quota summary, forced over-quota result, retry, and final verification; prior full `make check` passed with backend 1757 passed/39 skipped and frontend 292 files/3071 tests. |
+| reconcile / close | Codex / GPT-5 / medium | CLOSED | QA evidence recorded on https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/943 (local/Compose evidence only). |
+
+## Distillation refresh — 2026-09-27 — post-#943
+
+| Check | Result | Evidence / next action |
+|---|---|---|
+| Live issue graph | PASS | GitHub open inventory refreshed after closing #943; #946 is now the next local-first transfer issue, while production/provider/hardware/owner-gated issues remain explicitly bounded. |
+| #943 reconciliation | CLOSED | Inventory, opt-in selection, persisted sync identity, retry, over-quota handling, and responsive Chromium coverage passed locally. |
+| Production wrapper / #788 | BLOCKED | `GIT_URL` remains unavailable; no safe push, Replit Publish, production shell, snapshot, or write was attempted. |
+| Next transaction | READY | Distill and groom #946 before engineering; do not begin #788 until the authorized wrapper is published. |

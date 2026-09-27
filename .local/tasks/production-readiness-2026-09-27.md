@@ -11,10 +11,10 @@ open.
 
 | Dimension | Result | Evidence / boundary |
 |---|---|---|
-| Local deployment and repository quality | PASS | Final `make check` exit 0: backend 1752 passed/39 skipped; frontend 288 files/3061 tests. No migration or dependency was introduced by #968/#969. |
-| Approved browser verification | PASS for this batch | Rebuilt repository Compose stack; Chromium passed #968 2/2 and #969 2/2 at 1280x900 and 375x812. Artifacts were inspected. |
+| Local deployment and repository quality | PASS | Final `make check` exit 0: backend 1752 passed/39 skipped; frontend 288 files/3061 tests. No migration or dependency was introduced by #968/#969/#970. |
+| Approved browser verification | PASS for this batch | Rebuilt repository Compose stack; Chromium passed #968 2/2, #969 2/2, and #970 1/1 at 1280x900 and 375x812; #970 also covered 768x1024. Artifacts were inspected. |
 | CI | OPEN FOLLOW-UP | No remote CI run was initiated in this session; local `make check` is not CI evidence. Next action: let the normal push/PR CI complete and reconcile its exact revision. |
-| Intended functionality | BLOCKED | Open #874, #886, #911–#916, #926, #937–#941, #945–#946, and related parity/verification issues still cover incomplete or unverified behavior. |
+| Intended functionality | BLOCKED | #970's scoped responsive 2D authored-preview regression is closed locally. Open #874, #886, #911–#916, #926, #937–#941, #945–#946, and related parity/verification issues still cover incomplete or unverified behavior. |
 | Replit publication | BLOCKED / OPEN FOLLOW-UP | No #747/#748 publish/live verification was performed in this batch, and no production revision comparison is claimed. Next action: owner-authorized publish and Chrome verification only for those exact issues. |
 | Production data action | BLOCKED | #788 remains open because a supported Replit production shell/database path was unavailable; no import or production write was attempted. #906/#946 remain separately authorization/data-action bounded. |
 
@@ -40,6 +40,9 @@ open.
   retention, and sync contracts.
 - #935 — parent export scope now has completed server-backed children #966,
   #967, and #968; remaining import/account/export work stays in #936/#945.
+- #970 — closed after local/Compose responsive browser evidence for the
+  generated-ink authored-preview control grouping. No production publish was
+  performed or claimed under the current authorization boundary.
 
 ## Routing and provenance audit
 
@@ -50,6 +53,9 @@ open.
   contract were tested by backend pytest and browser export.
 - #969: implementation-mechanical substitution; component and pointer-browser
   regression evidence passed.
+- #970: implementation-mechanical substitution; responsive CSS and browser
+  regression evidence passed at desktop, tablet, and mobile widths. Independent
+  stage-3 review was not run and is not credited.
 - Stage-3 independent second-opinion review was unavailable and was not
   credited as completed. Production-readiness itself is a Codex/GPT-5/medium
   substitution for the rostered external readiness model and is explicitly

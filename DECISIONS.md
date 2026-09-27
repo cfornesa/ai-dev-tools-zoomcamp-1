@@ -1833,3 +1833,17 @@ production publish or data mutation is authorized by this decision.
   The project remains blocked by open production, live-model, audio, parity,
   and deployment-verification issues; no production write or publish was
   inferred from local/browser evidence.
+
+## 2026-09-27 — authored-preview control regression and production boundary (#970/#788)
+
+- #970 was created rather than reopening closed #963 after active Chrome showed
+  the generated-ink authored-preview controls had regressed to an orphaned
+  Sound/Draw Ink layout. The scoped responsive CSS fix was verified locally and
+  in Compose Chromium at desktop, tablet, and mobile widths, then closed. No
+  production publish was performed or claimed.
+- #788 remains blocked at the production boundary. The importer was rehearsed
+  against disposable PostgreSQL and the affected production C2 sources were
+  snapshotted, but the visible Replit/published revision lacks a safe preview
+  path and no supported production shell was available. Do not enable the
+  current write-capable gate or infer production success from development
+  Shell access.

@@ -3,11 +3,12 @@
 ## Manifest and rollup
 
 Manifest: `.local/tasks/backlog-session-2026-09-24.md` plus the newly
-distilled #969 regression.
+distilled #970 authored-preview regression and the reconciled #788 production
+follow-up.
 
 | Category | Count | Issues |
 |---|---:|---|
-| Completed and closed this continuation | 5 | #965 parent tracker, #966, #967, #968, #969 |
+| Completed and closed this continuation | 6 | #965 parent tracker, #966, #967, #968, #969, #970 |
 | Blocked / dependency-blocked and still open | 27 | GitHub open-issue audit after #965/#969 close; see readiness report and exact issue pages |
 | Handed off | 0 | None |
 | Missing terminal status in this processed batch | 0 | #965–#969 reconciled; #965 is explicitly a parent-tracker exception |
@@ -18,13 +19,15 @@ distilled #969 regression.
 - #967 QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/967#issuecomment-5855523108
 - #968 QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/968#issuecomment-5855756083
 - #969 QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/969#issuecomment-5855829200
+- #970 QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/970#issuecomment-5856142487
 - Local QA records: `.local/tasks/qa-966-comment.md`, `.local/tasks/qa-967-comment.md`,
   `.local/tasks/qa-968-comment.md`, `.local/tasks/qa-969-comment.md`.
 
 ## Final verification boundary
 
-`make check` passed at the final revisions used for #968 and #969. Exact
-Compose Chromium scenarios passed at 1280x900 and 375x812. These are local and
+`make check` passed at the final revisions used for #968, #969, and #970. Exact
+Compose Chromium scenarios passed at 1280x900 and 375x812; #970 additionally
+covered 768x1024. These are local and
 approved-browser evidence only. CI, published Replit revision, production
 database, live-model provider, and real microphone/hardware evidence remain
 unverified or blocked as documented in
@@ -32,11 +35,16 @@ unverified or blocked as documented in
 
 ## Follow-up and blocker audit
 
-- Created and reconciled: #969, pointer-layering regression found during #966.
+- Created and reconciled: #969, pointer-layering regression found during #966;
+  #970, the authored-preview control-grouping regression found during current
+  Chrome review. #963 was not reopened.
 - Reused existing records: #935 parent and #966/#967/#968 children; no issue
   was reopened.
 - Pending authorization/environment: #788, #906, #946, and #926 retain their
   explicit production/live-provider boundaries.
+- Production-data blocker: #788's local rehearsal and snapshot are complete,
+  but no supported production runtime was available, so no production rows
+  were changed.
 - Dependency chain: #936–#945 and #941–#944 remain open; no work was silently
   dropped into this narrative.
 - Non-actionable verification boundary: the absence of a server-backed 3D
@@ -55,7 +63,8 @@ rostered readiness model. No provenance was backfilled by inference.
 
 No pull request was created. The working tree contains only the pre-existing
 unrelated modification to `docs/distillation-2026-09-26-cross-surface-parity.md`;
-the scoped commits are `b7d5151d`, `ab8cfd38`, `044abce5`, and `f8af9e0f`.
+the scoped commits are `b7d5151d`, `ab8cfd38`, `044abce5`, `f8af9e0f`,
+`6754e815`, and `372424ba`.
 Next work should start with the highest-priority blocked production/live
 boundary chosen by the owner, without treating this session as production
 ready.

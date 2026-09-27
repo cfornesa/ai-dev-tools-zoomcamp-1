@@ -6440,3 +6440,36 @@ availability. #958 also remains blocked by the repeatable Playwright Chrome
 SIGABRT/EPERM launch failure for the exact normal-click 375px run; no new
 duplicate issue is created. Do not start #921 or dependents until #958 has
 normal actionability evidence or a reconciled infrastructure blocker.
+
+### Distillation correction: local-first `untitled-animation` route — 2026-09-27
+
+The active authenticated Chrome session was rechecked after the owner
+reported that `/users/@e2e_owner/edit/untitled-animation` was unavailable.
+The session showed `Logout` in the primary navigation and `/studio` listed
+**Untitled animation** as `Local only`, with the canonical link
+`/local-projects/2c017f9d-6345-484a-ba85-8d4da87dc35c`. Navigating the
+user/slug editor URL therefore does not prove logout: that URL is the
+generated/remote ArtPiece route, while this project is a browser-local
+IndexedDB project. Duplicate audit found the local-first lifecycle stream
+(`#937`–`#946`, with the route contract recorded by closed #537) already owns
+the local-only behavior; no new duplicate issue was created and no closed
+issue was reopened. The local-first stream should keep this route distinction
+explicit in its QA/UX acceptance: local-only projects must expose their
+canonical local editor link and must not be presented as unavailable
+generated ArtPieces.
+
+Current next closure-sized issue remains #958. The generated 2D fixture
+exists in the disposable Compose database, but the active browser run still
+did not produce closure-grade normal-click evidence for the 375px AI-edit
+control; synthetic dispatch remains excluded. This is a verification
+boundary for #958, not evidence that the owner session was logged out.
+
+## Transaction: #958 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Rechecked the generated-2D editor gap after the local-first route report; no duplicate found. #958 remained the independent prerequisite for #921. |
+| groom | Codex / GPT-5 / medium | PASS | Existing contract retained: accessible 2D AI-edit control, responsive disclosure, revise-panel toggle, preserved target suggestions, desktop + 375px evidence, no API/auth/provider changes. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS | Existing product fix `ebc7e2aa` exposes the `ai-edit` panel before the 2D tool branch and makes the expanded responsive grid explicit. `frontend/e2e/aiRegionTargetExisting.spec.ts` was corrected to use normal Playwright `.click()` for all AI-edit activation paths. |
+| qa-self-review | Codex / GPT-5 / medium; active Chrome substitution | PASS | Real authenticated Chrome normal clicks passed at 375x812 and 1280x900 on disposable local Compose/PostgreSQL fixture `e2e-ai-2d-mobile`: disclosure expanded, AI edit was reachable, and `Revise this piece` plus its named textbox appeared. `npx playwright test ... --list` discovered all 4 tests. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/958#issuecomment-5853585262. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #958 closed after the criterion matrix. No production or deployed-URL criterion was inferred; #921 remains the next independent browser verification transaction. |

@@ -61,7 +61,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
           'false',
         );
       }
-      await page.locator('button[aria-label="AI edit"]').dispatchEvent('click');
+      await page.locator('button[aria-label="AI edit"]').click();
       const prompt = page.getByRole('textbox', {
         name: 'Describe the revision you want to generate',
       });
@@ -128,7 +128,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
         'false',
       );
     }
-    await page.locator('button[aria-label="AI edit"]').dispatchEvent('click');
+    await page.locator('button[aria-label="AI edit"]').click();
     const prompt = page.getByRole('textbox', {
       name: 'Describe the revision you want to generate',
     });
@@ -185,7 +185,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
         'false',
       );
     }
-    await page.locator('button[aria-label="AI edit"]').dispatchEvent('click');
+    await page.locator('button[aria-label="AI edit"]').click();
     const prompt = page.getByRole('textbox', {
       name: 'Describe the revision you want to generate',
     });

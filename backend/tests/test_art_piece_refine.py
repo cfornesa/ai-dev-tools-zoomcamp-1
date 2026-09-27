@@ -116,6 +116,39 @@ def test_refine_resolves_region_and_ink_mentions_before_provider_call(monkeypatc
     assert '"kind": "ink"' in provider.instructions[0]
 
 
+def test_same_line_svg_elements_preserve_unmentioned_sibling():
+    before = (
+        '<svg><rect id="target" width="100" fill="teal"/>'
+        '<circle id="other" cx="220" fill="blue"/></svg>'
+    )
+    after = before.replace('fill="teal"', 'fill="#e76f51"')
+
+    art_piece_refine.enforce_preservation(
+        engine="svg",
+        before=before,
+        after=after,
+        instruction="make the selected element warmer",
+        mentions=[{"kind": "element", "id": "target"}],
+    )
+
+
+def test_same_line_svg_unmentioned_sibling_change_is_rejected():
+    before = (
+        '<svg><rect id="target" width="100" fill="teal"/>'
+        '<circle id="other" cx="220" fill="blue"/></svg>'
+    )
+    after = before.replace('fill="blue"', 'fill="#e76f51"')
+
+    with pytest.raises(art_piece_refine.PreservationError, match="other"):
+        art_piece_refine.enforce_preservation(
+            engine="svg",
+            before=before,
+            after=after,
+            instruction="make the selected element warmer",
+            mentions=[{"kind": "element", "id": "target"}],
+        )
+
+
 @pytest.mark.django_db
 def test_unresolved_mention_returns_422_without_creating_run_or_call(monkeypatch, owner, piece):
     provider = _Provider([_result('color = "red"', 'color = "blue"')])

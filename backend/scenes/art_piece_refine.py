@@ -129,6 +129,9 @@ def _delete_intent(instruction: str, name: str) -> bool:
 
 
 def _region_sources(source: str, engine: str) -> dict[str, str]:
+    if engine == "svg":
+        return _svg_element_sources(source)
+
     lines = source.splitlines()
     result: dict[str, str] = {}
     for region in parse_regions(source, engine):
@@ -137,10 +140,36 @@ def _region_sources(source: str, engine: str) -> dict[str, str]:
         while end > start + 1 and lines[end - 1].strip() in {"}", "};", ")"}:
             end -= 1
         result[str(region["name"])] = "\n".join(lines[start:end])
-    if engine == "svg":
-        for line in lines:
-            for match in re.finditer(r"\bid=[\"']([^\"']+)[\"']", line):
-                result.setdefault(match.group(1), line)
+    return result
+
+
+def _svg_element_sources(source: str) -> dict[str, str]:
+    """Return exact source spans for identified SVG elements.
+
+    SVG elements are frequently minified onto one line. Comparing the whole
+    source line would therefore report an unrelated sibling as changed when a
+    targeted element's attribute is edited. Capture the element's own opening
+    tag (or matching closing tag) instead, preserving the existing source
+    bytes for every other id.
+    """
+    result: dict[str, str] = {}
+    id_pattern = re.compile(r"\bid\s*=\s*([\"'])([^\"']+)\1", re.I)
+    tag_start_pattern = re.compile(r"<([A-Za-z_][\w:.-]*)")
+    for match in id_pattern.finditer(source):
+        start = source.rfind("<", 0, match.start())
+        tag_match = tag_start_pattern.match(source, start)
+        if start < 0 or tag_match is None:
+            continue
+        tag_name = tag_match.group(1)
+        open_end = source.find(">", match.end())
+        if open_end < 0:
+            continue
+        if source[open_end - 1] == "/":
+            end = open_end + 1
+        else:
+            closing = re.search(rf"</{re.escape(tag_name)}\s*>", source[open_end + 1 :], re.I)
+            end = open_end + 1 + closing.end() if closing else open_end + 1
+        result.setdefault(match.group(2), source[start:end])
     return result
 
 

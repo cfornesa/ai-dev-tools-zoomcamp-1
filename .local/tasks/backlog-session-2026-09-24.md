@@ -6493,3 +6493,24 @@ Chrome, same-line SVG targeting passed after #959's fix, and the `@ink`
 option was reachable, but exact Playwright execution remains blocked by the
 macOS Chrome MachPort permission failure; synthetic dispatch is not closure
 evidence. No production issue is closed by these local results.
+
+## Transaction: #959 — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | The #921 SVG criterion exposed a same-line source-preservation defect. Duplicate audit found closed #820 only covers the broader preservation contract; #959 is the narrow extraction gap. |
+| groom | Codex / GPT-5 / medium | PASS | Contract limited the change to element-level SVG source comparison, preserving siblings and rejecting unmentioned changes, with focused backend and existing browser targeting criteria. |
+| engineer | Codex / GPT-5 / medium; implementation-mechanical substitution | PASS | Added `_svg_element_sources` and routed SVG region comparison through it; added two focused regression tests. No API, schema, migration, dependency, or production data changes. |
+| qa-self-review | Codex / GPT-5 / medium; active Chrome + repository checks | PASS | Focused refine tests passed; full `make check` passed; active Chrome accepted region workflows at 1280x900 and 375x812, exposed `@ink`, and verified same-line SVG target-only preservation. Exact Playwright execution is separately recorded as host-blocked before setup. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/959#issuecomment-5853840351. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | #959 closed after the criterion matrix. #921 remains open/partial for its exact screenshot and unresolved-target browser evidence boundary; no synthetic evidence was promoted. |
+
+### Distillation refresh after #959 — 2026-09-27
+
+#959 and its dependency #960 are closed. The generated-editor stream now has
+the implementation and local regression coverage needed for #921. #921 is
+not closed: region targeting passed in active Chrome at both requested sizes,
+same-line SVG preservation passed, and `@ink` was reachable, but the exact
+Playwright command cannot launch Chromium on this macOS host because of the
+MachPort permission failure. The remaining action is an approved browser
+runner or equivalent closure-grade screenshot/API evidence, not another
+implementation rewrite. No production or deployed-URL criterion is inferred.

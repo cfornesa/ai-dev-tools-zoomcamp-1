@@ -6896,3 +6896,18 @@ that can safely enter engineering before its stated prerequisite.
 | engineer | Pending | NOT STARTED | No product code changed before the local data-layer architecture is selected. |
 | qa-self-review | Pending | NOT STARTED | No diff exists. |
 | reconcile / close | Codex / GPT-5 / medium | BLOCKED / OPEN | Owner must select the local 3D persistence architecture before implementation. Comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/937#issuecomment-5856703332. |
+
+## Transaction: #937 resumed implementation — 2026-09-27 — DISTILLED / GROOMED / ENGINEERED / QA PASS / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | Fresh duplicate audit retained #937 as the local-first 3D owner; the mobile overlay failure found during verification was folded into #937 rather than creating a duplicate. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Owner approved extending the existing IndexedDB/local repository with typed 3D records and reusing the existing 3D editor lifecycle; no second repository or server fallback. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution for rostered Ollama kimi-k3 | PASS | Commits `bf38b7f6`, `12191cc3`, `b08cad0a`, `d3aba33c`, and `4e9a5540` add local 3D creation/persistence, route adapter, lifecycle E2E, and responsive overlay hit-target fix. |
+| qa-self-review | Codex / GPT-5 / medium; rostered QA substitution; independent stage-3 service unavailable and not credited | PASS | Rebuilt repository Compose stack; `E2E_DOCKER_COMPOSE=true npx playwright test e2e/localFirstCreate3d.spec.ts --project=chromium` passed 2/2 at 1280x900 and 375x812. `make check` passed: backend 1752 passed/39 skipped; frontend 289 files/3065 tests; lint only existing warnings. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN / PRODUCTION-BOUND | Local-first code criteria are QA-passed. Issue remains open for the broader dependency chain and authorized production publication; no production evidence is inferred from Compose. |
+
+The reviewed mode-aware production preview wrapper remains in the checkout
+(`cad0f924`) for the owner-authorized #788 publication attempt. The current
+environment has no `GIT_URL` credential available, so the safe push has not
+been attempted and no production publish or data action has occurred.

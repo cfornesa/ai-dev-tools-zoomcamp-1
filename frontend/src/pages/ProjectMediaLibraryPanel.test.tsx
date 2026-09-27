@@ -17,9 +17,19 @@ const repo = vi.hoisted(() => ({
   updateMediaAssetMetadata: vi.fn(),
   SUPPORTED_MEDIA_MIME_TYPES: new Set(['image/png', 'image/jpeg', 'audio/mpeg']),
 }));
+const packageExport = vi.hoisted(() => ({
+  buildServer2dPiecePackage: vi.fn().mockResolvedValue({
+    bytes: new Uint8Array([80, 75]),
+    missingAssets: [],
+  }),
+}));
 
 vi.mock('../storage/localProjectRepository', () => repo);
 vi.mock('../storage/localProjectExport', () => ({ exportLocalProject: repo.exportLocalProject }));
+vi.mock('../storage/server2dPiecePackage', () => ({
+  buildServer2dPiecePackage: packageExport.buildServer2dPiecePackage,
+  server2dPackageFilename: (title: string) => `${title}-package.zip`,
+}));
 
 const commitScene = vi.fn();
 const selectShape = vi.fn();
@@ -86,6 +96,34 @@ describe('ProjectMediaLibraryPanel', () => {
     await user.keyboard('{Escape}');
     expect(fileButton).toHaveFocus();
     expect(screen.queryByRole('menu', { name: 'File menu' })).not.toBeInTheDocument();
+  });
+
+  it('prepares a validated server-backed piece package from the File menu', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Export piece package' }));
+    await waitFor(() => expect(packageExport.buildServer2dPiecePackage).toHaveBeenCalled());
+  });
+
+  it('offers an explicit omit-or-cancel choice when package media is missing', async () => {
+    packageExport.buildServer2dPiecePackage.mockResolvedValueOnce({
+      bytes: new Uint8Array([80, 75]),
+      missingAssets: [{ id: 'asset-missing', filename: 'missing.png' }],
+    });
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Export piece package' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Some media is unavailable' });
+    expect(dialog).toHaveTextContent('missing.png');
+    expect(
+      within(dialog).getByRole('button', { name: 'Export without missing media' }),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel export' }));
+    expect(
+      screen.queryByRole('dialog', { name: 'Some media is unavailable' }),
+    ).not.toBeInTheDocument();
   });
 
   it('reports unsupported files without opening the import metadata dialog', async () => {

@@ -22,12 +22,20 @@ import {
   type LocalMediaAssetRecord,
 } from '../storage/localProjectRepository';
 import { exportLocalProject } from '../storage/localProjectExport';
+import {
+  buildServer2dPiecePackage,
+  server2dPackageFilename,
+  type Server2dPiecePackageResult,
+} from '../storage/server2dPiecePackage';
 import { setActiveMediaAssetResolver } from '../render/mediaAssetResolver';
 import type { SceneEditor } from './useSceneEditor';
 
 type Props = {
   projectId: string;
   projectTitle: string;
+  projectDescription?: string;
+  projectTags?: string[];
+  projectVisibility?: 'private' | 'public';
   ownerId: string;
   workingCopy: SceneDocument | null;
   sceneEditor: SceneEditor;
@@ -44,9 +52,16 @@ function imageUseCount(asset: LocalMediaAssetRecord): number {
   return Math.max(0, asset.refCount - 1);
 }
 
+function piecePackageBlob(bytes: Uint8Array): Blob {
+  return new Blob([bytes.slice().buffer as ArrayBuffer], { type: 'application/zip' });
+}
+
 export default function ProjectMediaLibraryPanel({
   projectId,
   projectTitle,
+  projectDescription = '',
+  projectTags = [],
+  projectVisibility = 'private',
   ownerId,
   workingCopy,
   sceneEditor,
@@ -60,6 +75,7 @@ export default function ProjectMediaLibraryPanel({
     'Storage status unavailable until the library opens.',
   );
   const [error, setError] = useState<string | null>(null);
+  const [pendingPackage, setPendingPackage] = useState<Server2dPiecePackageResult | null>(null);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -166,6 +182,35 @@ export default function ProjectMediaLibraryPanel({
     } catch (cause) {
       setError(errorMessage(cause));
     }
+  }
+
+  async function preparePiecePackage() {
+    setFileMenuOpen(false);
+    setError(null);
+    try {
+      const exported = await buildServer2dPiecePackage({
+        id: projectId,
+        title: projectTitle,
+        description: projectDescription,
+        tags: projectTags,
+        visibility: projectVisibility,
+      });
+      if (exported.missingAssets.length > 0) {
+        setPendingPackage(exported);
+        return;
+      }
+      downloadBlob(piecePackageBlob(exported.bytes), server2dPackageFilename(projectTitle));
+      setStorageText(`Piece package ready (${exported.bytes.byteLength} bytes).`);
+    } catch (cause) {
+      setError(errorMessage(cause));
+    }
+  }
+
+  function downloadPreparedPackage() {
+    if (!pendingPackage) return;
+    downloadBlob(piecePackageBlob(pendingPackage.bytes), server2dPackageFilename(projectTitle));
+    setStorageText(`Piece package ready (${pendingPackage.bytes.byteLength} bytes).`);
+    setPendingPackage(null);
   }
 
   function chooseFile(event: ChangeEvent<HTMLInputElement>) {
@@ -314,6 +359,16 @@ export default function ProjectMediaLibraryPanel({
             >
               Export local project
             </button>
+            <button
+              ref={(element) => {
+                menuItemsRef.current[3] = element;
+              }}
+              type="button"
+              role="menuitem"
+              onClick={() => void preparePiecePackage()}
+            >
+              Export piece package
+            </button>
             <p role="status" aria-live="polite">
               {storageText}
             </p>
@@ -361,6 +416,31 @@ export default function ProjectMediaLibraryPanel({
           </button>
           <button type="button" onClick={() => setPendingImport(null)}>
             Cancel
+          </button>
+        </div>
+      )}
+      {pendingPackage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="piece-package-warning-title"
+          className="media-import-dialog"
+        >
+          <h3 id="piece-package-warning-title">Some media is unavailable</h3>
+          <p>
+            This package is {pendingPackage.bytes.byteLength.toLocaleString()} bytes. The following
+            browser-only assets will be omitted:
+          </p>
+          <ul>
+            {pendingPackage.missingAssets.map((asset) => (
+              <li key={asset.id}>{asset.filename}</li>
+            ))}
+          </ul>
+          <button type="button" onClick={downloadPreparedPackage}>
+            Export without missing media
+          </button>
+          <button type="button" onClick={() => setPendingPackage(null)}>
+            Cancel export
           </button>
         </div>
       )}

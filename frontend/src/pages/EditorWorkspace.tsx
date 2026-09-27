@@ -3211,6 +3211,9 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                 <ProjectMediaLibraryPanel
                   projectId={id}
                   projectTitle={project?.title ?? 'Local project'}
+                  projectDescription={project?.description ?? ''}
+                  projectTags={project?.tags ?? []}
+                  projectVisibility={project?.visibility ?? 'private'}
                   ownerId={auth.user.username}
                   workingCopy={workingCopy}
                   sceneEditor={sceneEditor}

@@ -6140,3 +6140,15 @@ quota, and dashboard criteria passed. Updated continuation counts: 4 issues
 closed, 0 issues ready, 0 new issues, 0 production data actions, and 0
 unresolved duplicate decisions. The overall goal remains active because open
 backlog work remains, beginning with #934, and #788 is still production-blocked.
+
+## Transaction: #934 — 2026-09-26 — DISTILLED / GROOMED / ENGINEERING PENDING
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #934 is the next dependency-ready issue after #933. Duplicate search found no separate local-first 2D creation issue; #935/#936/#942/#943 remain distinct dependent transfer/artifact contracts. Current Chrome evidence is browser-available but app-session unauthenticated; this is not a product blocker for local implementation, and no logout was performed. |
+| groom | Codex / GPT-5 / medium | PASS | Existing issue is criterion-ready: `/create` and gallery creation entry points, local IndexedDB persistence, `/local-projects/:id` reload, local gallery badge, server-route compatibility, signed-out policy, exact Vitest/Playwright/full-check commands, and explicit 3D/generated/sync exclusions. Routing: Stage 2a unless repository changes require Stage 2b. |
+| routing | pending | — | Engineering handoff next. |
+| engineer | pending | — | — |
+| qa-self-review | pending | — | — |
+| production-readiness | pending | — | — |
+| reconcile / close | pending | — | — |

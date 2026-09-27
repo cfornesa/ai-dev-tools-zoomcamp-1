@@ -6695,3 +6695,18 @@ open and must not be run against the stale route assumption.
 | engineer | Pending — frontend implementation | NOT STARTED | Requires a dedicated implementation pass; no code has been changed for this issue. |
 | qa-self-review | Pending | NOT STARTED | No diff exists. |
 | reconcile / close | Pending | OPEN | Child issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/965. |
+
+## Dependency audit: #937–#940, #945–#946 — 2026-09-27 — DISTILLED / BLOCKED / OPEN
+
+| Issue | Distillation and evidence | Current boundary |
+|---|---|---|
+| #937 | Local-first 3D creation is downstream of #936 and its package contract. | BLOCKED; no code or data changed. |
+| #938 | Local-first generated pieces are downstream of #937. | BLOCKED; no code or data changed. |
+| #939 | Off-browser transfer disclosure is downstream of #938. | BLOCKED; no implementation started. |
+| #940 | Account-level sync is downstream of #939 and #932. | BLOCKED; no account or cloud-sync state changed. |
+| #945 | Account export depends on complete per-piece export/import; #965 and #936 remain open. | BLOCKED; no export data produced. |
+| #946 | Owner-run grandfathering is a production data action outside the current authorization (#747/#748/#788 only). | AUTHORIZATION BLOCKED; no script or production write. |
+
+Each issue received an explicit GitHub blocker comment. These are not QA
+passes and remain open until their dependencies or authorization boundary
+changes.

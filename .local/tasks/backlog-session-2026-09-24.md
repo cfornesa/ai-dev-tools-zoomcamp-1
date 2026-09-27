@@ -6074,16 +6074,25 @@ transfer enforcement. The migration was exercised on the disposable test
 database. The direct deployment settings check remains environment-gated by
 the absent local `backend/.env`; no production database was touched.
 
-## Transaction: #932 — 2026-09-26 — DISTILLED / GROOMED / ENGINEERING PENDING
+## Transaction: #932 — 2026-09-26 — CLOSED / QA PASS
 
 | Stage | Service / model / effort | Result | Evidence |
 |---|---|---|---|
 | distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #932 is the next queue item after its explicit dependencies #930 and #931 closed; duplicate search found no competing intake/security upload issue. |
 | groom | Codex / GPT-5 / medium | PASS | Existing issue is criterion-ready and keeps #941 public media delivery, #942 publish timing, and UI out of scope; malicious fixtures, owner boundaries, quota source, idempotency, and exact verification commands are explicit. |
 | routing | Codex / GPT-5 / medium | PASS | Stage 2b complex/security-sensitive data path; requires API contract documentation before route changes and migration/authorization review before writes. |
-| engineer | pending | — | Pending implementation pass. |
-| qa-self-review | pending | — | — |
-| reconcile / close | pending | — | — |
+| engineer | Codex / GPT-5 / medium; rostered Ollama Cloud kimi-k3 substituted | PASS | Commit `812722a1`: hardened ZIP decompressed-size preflight; atomic authenticated `POST /api/pieces/intake/`; private fresh-ID create and immutable version append for 2D/3D/generated packages; owner/site/entitlement gates; quota/rate limits; EXIF/GPS-stripping image normalization; audit/idempotency models; API docs/OpenAPI; focused tests. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude Sonnet 5 substituted | PASS | QA comments `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/932#issuecomment-5851797914` and amended counts `https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/932#issuecomment-5851857522`; focused 11 passed, final make check backend 1743 passed/39 skipped and frontend 285 files/3046 tests, migration/type/lint/OpenAPI checks passed. |
+| production-readiness | Codex / GPT-5 / medium; owner-authorized session substitution | NOT READY overall / PASS for #932 | Local checks and contract evidence pass; no production evidence was required for this local-only issue. Independent backlog and authorized production boundaries remain open. |
+| reconcile / close | Codex / GPT-5 / medium | PASS | All in-scope criteria pass; #932 closed. No production database, deployment, secret, or external data action. |
+
+## Transaction completion: #932 — 2026-09-26 — CLOSED / QA PASS
+
+#932's local server package intake contract is implemented and verified. The
+endpoint remains a private sync boundary; publishing/public media delivery
+remain separate follow-ups. The active Chrome process is still available, but
+the local fixture tab is unauthenticated and shows Login; no logout was
+performed by this session.
 
 ## Production-readiness refresh: 2026-09-26 — NOT READY
 

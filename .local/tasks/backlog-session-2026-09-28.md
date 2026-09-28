@@ -88,6 +88,66 @@ requested batch readiness/completion reports without claiming readiness.
   through the authenticated connector in this environment. The blocker and
   full QA intake are preserved here; no local `gh` token workaround was used.
 
+## Fresh distillation / QA refresh — 2026-09-28
+
+The previous table's dependency classifications were rechecked against the
+current GitHub issue state and comments. #832, #833, #844, #853–#858, #886,
+#909, #910, #918, #920, #924, #925, #928, and #947 are closed. Therefore
+#859, #926, and #941 are not blocked by the prerequisites named in their issue
+bodies. #916 remains open because its own six-case matrix still depends on
+the downstream microphone routing work; #941 remains an implementation
+parent whose children own the remaining route/artifact evidence.
+
+### Issue #973 transaction — 2026-09-28 — BLOCKED / verification-boundary
+
+- **State:** `GROOMED → ENGINEERING/QA → BLOCKED`.
+- **Scope:** anonymous structured-2D public media embed verification, using
+  the disposable `public-media-create` fixture and both required viewports.
+- **Stage provenance:** scoping `Codex / GPT-5 / medium / substituted: no`;
+  implementation `not applicable — verification-only`; second opinion `not
+  run`; QA `Codex / GPT-5 / medium / substituted: yes`; readiness
+  `Codex / GPT-5 / medium / substituted: yes` at batch gate.
+- **Automated evidence:** `E2E_DOCKER_COMPOSE=true npx playwright test
+  e2e/publicMediaAssetsEmbed.spec.ts --project=chromium` attempted both cases
+  but failed before test bodies because Playwright Chromium terminated at
+  `MachPortRendezvousServer ... Permission denied`. This is a host/browser
+  verification boundary, not an assertion failure.
+- **Focused evidence:** backend `uv run pytest tests -k "public_asset or
+  media"` passed 12 tests; frontend `npx vitest run src/render src/generative`
+  passed 17 files / 261 tests. The Compose fixture created one published
+  project and was cleaned up successfully (`deleted: 1`). Direct HTTP checks
+  returned 200 PNG with `nosniff`, `public, immutable`, `access-control-allow-
+  origin: *`, and a 64-hex checksum; foreign and unknown assets returned 404.
+  Active Chrome inspected the real embed at 1280x900 and 375x812; Preview,
+  canvas, Piece actions, and mobile `scrollWidth == clientWidth == 375` were
+  confirmed.
+- **QA result:** `## QA: FAIL` only for the required automated browser gate;
+  no product defect is inferred and no code was changed. Evidence is local
+  Compose/Chrome only, not production.
+- **Exact next action:** rerun the named Playwright Chromium command on the
+  repository's approved Linux/Docker browser runner or CI environment, retain
+  its screenshots/trace, and then reconcile #973. Do not close it on active
+  Chrome plus HTTP checks alone because the issue names the Playwright command.
+
+### Scope corrections from the same refresh
+
+- **#1016:** source inspection confirms the current media library is
+  browser-IndexedDB-only (`frontend/src/validation/scene.ts` and
+  `frontend/src/render/mediaAssetResolver.ts`); no backend `MediaAsset` or
+  collection cover upload/reference contract exists. This is now a genuine
+  contract blocker, not merely an unvisited issue. Owner must choose a
+  server-backed media contract or revise the cover source; no narrowing was
+  silently implemented.
+- **#1019:** the issue itself says the browse feature likely needs separate
+  backend and frontend criterion-ready children. It remains handed off to a
+  distillation/scoping pass; no child was created because the available
+  GitHub connector lacks milestone-management support required by repository
+  policy, and no new child will be implemented in this goal.
+- **#859/#926/#941:** prerequisites are now verified closed, so they are
+  actionable in principle. #859 still requires a broad six-engine browser
+  matrix, #926 remains an owner credential boundary, and #941 remains
+  parent/child route-artifact work. They are not silently marked complete.
+
 ## Distillation manifest
 
 Project: `cfornesa/ai-dev-tools-zoomcamp-1` on

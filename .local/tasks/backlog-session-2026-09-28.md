@@ -94,6 +94,29 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #994 transaction ledger
+
+- **Issue:** [#994](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/994)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Documented WCAG AA targets of 4.5:1 for normal text and
+  3:1 for large text, then audited the primary light/dark color-token pairs.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `a5344829` (`docs(a11y): record contrast target
+  and audit`).
+- **Checks:** Calculated ratios: light text 5.73:1, light heading 20.15:1,
+  light accent 4.39:1, dark text 7.04:1, dark heading 16.25:1, dark accent
+  6.77:1. The sole below-target pair was filed as follow-up #1020; no color
+  change was made in this audit issue.
+- **Discovery gate:** Follow-up [#1020](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1020)
+  was created and linked before continuing.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** #1020 is deferred to a later transaction.
+
 ## Issue #993 transaction ledger
 
 - **Issue:** [#993](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/993)

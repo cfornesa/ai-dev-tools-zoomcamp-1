@@ -94,6 +94,31 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #997 transaction ledger
+
+- **Issue:** [#997](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/997)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Replace per-item collection record lookups with batched
+  per-kind fetches and eager-load public profiles in collection context.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `5aa499a2` (`perf(collections): batch collection item lookups`).
+- **Changed files:** `backend/scenes/collections.py`,
+  `backend/tests/test_collections.py`.
+- **Checks:** `uv run ruff format --check scenes/collections.py tests/test_collections.py`;
+  `uv run ruff check scenes/collections.py tests/test_collections.py`;
+  `uv run pytest tests/test_collections.py` — 26 passed.
+- **QA matrix:** Mixed Project/Project3D/ArtPiece payloads preserve ordering and
+  titles. A four-item collection with two same-kind items is guarded by a
+  constant query-count assertion. Public collection context with three rows is
+  guarded by a single-query assertion.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #994 transaction ledger
 
 - **Issue:** [#994](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/994)

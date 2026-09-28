@@ -32,12 +32,27 @@ every owner-hands-on production/credential action.
 | #1004 | Owner decided show-with-caption everywhere. Decision recorded in `docs/conventions/design-ux.md`; follow-up #1031 filed; closed. |
 | #1005 | Owner decided unify onto `.shell-action` sizing. Decision recorded in `docs/conventions/design-ux.md`; follow-up #1032 filed (also closes #993's admin touch-target gap as a side effect); closed. |
 | #1006 | Owner decided pilot Radix UI `AlertDialog` on the `confirm()` replacement; AGENTS.md §8 question asked and approved. Decision + new-dependency rationale recorded in `docs/conventions/design-ux.md` and `docs/dependencies.md`; follow-up #1033 filed; closed. |
-| #973, #974, #859, #975 | CI dispatched for real Linux/Chromium evidence (run 36464649615, in progress at time of this entry). Outcome to be appended once the run completes. |
+| #973, #974, #859, #975 | CI dispatched (run 36464649615) but produced no usable evidence: shard 3 (where #973/#974/#975's specs live) hit its 25-minute `globalTimeout` before reaching them; shard 1 (where #859's five specs live) had its entire full-suite step skipped because a preceding, unrelated WebKit fullscreen/Escape regression check failed first. Both are CI reliability problems, filed as #1034, not a statement about these issues' own correctness. All four remain open, verification-boundary, now pointed at #1034 specifically instead of a generic runner-unavailable note. |
 
-New child/follow-up issues filed this pass (all milestone-assigned, none
-implemented per the discovery-gate rule against same-session implementation
-of newly filed work): #1022, #1023, #1024, #1025, #1026, #1027, #1028,
-#1029, #1030, #1031, #1032, #1033.
+New child/follow-up/discovery issues filed this pass (all milestone-assigned,
+none implemented per the discovery-gate rule against same-session
+implementation of newly filed work): #1022, #1023, #1024, #1025, #1026,
+#1027, #1028, #1029, #1030, #1031, #1032, #1033, #1034.
+
+### CI-dispatch outcome detail (run 36464649615)
+
+Conclusion: `failure`. Per-job: Workflow validation ✓, Disposable published
+routing smoke check ✓, Backend checks ✗ (mypy reported the two errors #1021
+already fixed — reproduced locally against the identical locked
+dependencies as a clean pass, so this is CI-only nondeterminism, not a
+regression of #1021), Frontend checks ✗ (a `publicPieceAssets.test.ts`
+Vitest failure plus 21 pre-existing oxlint warnings — not yet triaged
+further; unrelated to the e2e target specs), Browser acceptance E2E shard 1
+✗ (WebKit fullscreen/Escape regression failed, gating the rest of the job),
+shard 2 ✗ (`17 failed, 26 passed (25.0m)`, hit globalTimeout), shard 3 ✗
+(`39 failed, 29 passed (25.0m)`, hit globalTimeout before reaching
+`publicMediaAssets*.spec.ts`). Full diagnosis and acceptance criteria to fix
+this: #1034.
 
 ## Current-goal final reconciliation — 2026-09-28
 

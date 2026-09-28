@@ -31,7 +31,15 @@ per the discovery-gate rule), chained vague blockers to the concrete #941
 upstream issue across #847/#941/#942/#944/#945/#946/#1016, documented
 (without executing) the owner-hands-on next steps for #788/#906/#926, and
 dispatched the existing CI e2e workflow for real Linux/Chromium evidence on
-the #973/#974/#859/#975 verification-boundary cluster. Full per-issue detail:
+the #973/#974/#859/#975 verification-boundary cluster. That dispatch (run
+36464649615) did not reach its target specs: shard 3 hit its 25-minute
+`globalTimeout` before `publicMediaAssets*.spec.ts`, and shard 1 (holding
+#859's five specs) had its full-suite step skipped entirely by a preceding
+WebKit fullscreen/Escape regression failure. It also failed Backend checks
+in CI only (reproduces clean locally against the identical lockfile) and
+Frontend checks. Filed as new discovery issue #1034 with acceptance criteria
+to fix the CI gating/timeout and re-dispatch; #973/#974/#859/#975 remain open,
+now pointed at #1034. Full per-issue detail:
 `.local/tasks/backlog-session-2026-09-28.md`'s "Owner-workability
 reconciliation pass" section.
 

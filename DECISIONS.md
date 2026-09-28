@@ -2049,4 +2049,17 @@ production publish or data mutation is authorized by this decision.
   buttons) is kept additive alongside the new capability (drag-and-drop),
   not replaced — drag-and-drop alone isn't keyboard-accessible. None of the
   13 issues have been implemented; that's later work through the normal
-  one-issue-at-a-time transaction.
+one-issue-at-a-time transaction.
+
+## 2026-09-28 — Full substitution session provenance
+
+Codex/GPT-5 was explicitly authorized as a full substitution for the
+rostered backlog-session, engineering, QA, production-readiness, and
+session-completion services in this session. The session completed the #979
+camera-overlay hook extraction in commit `550089a3`, with 37 focused test
+files/425 tests plus typecheck, lint, and format-check passing. The required
+GitHub QA comment was rejected by the connector's external-publication risk
+policy; the complete evidence and boundary are recorded in
+`.local/tasks/backlog-session-2026-09-28.md`. The remaining open backlog was
+not silently claimed complete; #980 was left unchanged after an unverified
+abstraction attempt was backed out.

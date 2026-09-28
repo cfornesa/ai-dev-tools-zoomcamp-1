@@ -20,6 +20,7 @@ export type Collection = {
   owner: string;
   owner_handle?: string | null;
   visibility: 'private' | 'public';
+  status?: 'active' | 'draft' | 'archived';
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -44,7 +45,12 @@ export function createCollection(title: string, description = '') {
 
 export function updateCollection(
   id: string,
-  values: { title?: string; description?: string; public_slug?: string },
+  values: {
+    title?: string;
+    description?: string;
+    public_slug?: string;
+    status?: Collection['status'];
+  },
 ) {
   return apiFetch<Collection>(`/api/account/collections/${id}/`, {
     method: 'PATCH',

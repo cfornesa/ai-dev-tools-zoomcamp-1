@@ -232,6 +232,38 @@ def test_owner_can_create_stable_slug_and_update_collection(owner_client, owner)
 
 
 @pytest.mark.django_db
+def test_collection_status_controls_public_visibility_and_owner_listing(
+    owner_client, anonymous_client
+):
+    collection = _create_collection(owner_client, "Status collection")
+    collection_id = collection["id"]
+    public_url = "/api/public/collections/collection-owner/status-collection/"
+
+    drafted = owner_client.patch(
+        f"/api/account/collections/{collection_id}/",
+        {"status": "draft"},
+        format="json",
+    )
+    assert drafted.status_code == 200
+    assert drafted.json()["status"] == "draft"
+    assert (
+        owner_client.post(f"/api/account/collections/{collection_id}/publish/").status_code == 200
+    )
+    assert anonymous_client.get(public_url).status_code == 404
+
+    archived = owner_client.patch(
+        f"/api/account/collections/{collection_id}/",
+        {"status": "archived"},
+        format="json",
+    )
+    assert archived.status_code == 200
+    assert archived.json()["status"] == "archived"
+    assert all(
+        item["id"] != collection_id for item in owner_client.get("/api/account/collections/").json()
+    )
+
+
+@pytest.mark.django_db
 def test_collection_slugs_cannot_shadow_public_namespaces(owner_client):
     generated = _create_collection(owner_client, "Pieces")
     assert generated["slug"] == "pieces-2"

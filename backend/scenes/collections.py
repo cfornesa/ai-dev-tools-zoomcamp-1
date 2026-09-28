@@ -145,6 +145,7 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
         "owner": public_author_name(collection.owner),
         "owner_handle": public_author_handle(collection.owner),
         "visibility": collection.visibility,
+        "status": collection.status,
         "published_at": collection.published_at.isoformat() if collection.published_at else None,
         "created_at": collection.created_at.isoformat(),
         "updated_at": collection.updated_at.isoformat(),
@@ -180,6 +181,7 @@ def public_collection_context(kind: str, item_id) -> list[dict[str, str]]:
             kind=kind,
             item_id=item_id,
             collection__visibility=Collection.Visibility.PUBLIC,
+            collection__status=Collection.Status.ACTIVE,
             collection__is_deleted=False,
         )
         .select_related("collection__owner__public_profile")
@@ -254,7 +256,7 @@ def create_collection(*, owner, title: str, description: str = "") -> Collection
 
 @transaction.atomic
 def update_collection(
-    *, collection: Collection, title=None, description=None, public_slug=None
+    *, collection: Collection, title=None, description=None, public_slug=None, status=None
 ) -> Collection:
     locked = Collection.objects.select_for_update().get(pk=collection.pk)
     if title is not None:
@@ -266,6 +268,10 @@ def update_collection(
         if not isinstance(description, str):
             raise CollectionValidationError("description must be text.")
         locked.description = description
+    if status is not None:
+        if status not in Collection.Status.values:
+            raise CollectionValidationError("status must be active, draft, or archived.")
+        locked.status = status
     if public_slug is not None:
         normalized = normalize_public_slug(public_slug)
         if not normalized:
@@ -294,7 +300,9 @@ def update_collection(
             )
     if hasattr(collection, "_seo_config_update"):
         locked.seo_config = collection._seo_config_update
-    locked.save(update_fields=["title", "description", "slug", "seo_config", "updated_at"])
+    locked.save(
+        update_fields=["title", "description", "slug", "seo_config", "status", "updated_at"]
+    )
     return locked
 
 
@@ -349,6 +357,7 @@ def public_collection(*, handle: str, slug: str) -> Collection | None:
             owner__public_profile__is_public=True,
             slug=slug,
             visibility=Collection.Visibility.PUBLIC,
+            status=Collection.Status.ACTIVE,
             is_deleted=False,
             published_at__isnull=False,
         )
@@ -364,6 +373,7 @@ def public_collection_redirect(*, handle: str, slug: str) -> Collection | None:
             owner__public_profile__is_public=True,
             old_slug=slug,
             collection__visibility=Collection.Visibility.PUBLIC,
+            collection__status=Collection.Status.ACTIVE,
             collection__is_deleted=False,
             collection__published_at__isnull=False,
         )

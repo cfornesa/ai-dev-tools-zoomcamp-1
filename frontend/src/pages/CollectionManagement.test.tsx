@@ -100,6 +100,7 @@ describe('CollectionManagement', () => {
         title: 'Renamed',
         description: 'Small experiments',
         public_slug: 'spring-studies',
+        status: 'active',
       });
     });
 

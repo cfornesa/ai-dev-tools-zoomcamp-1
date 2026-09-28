@@ -47,7 +47,11 @@ class CollectionListCreateView(APIView):
         if denied:
             return denied
         collections = (
-            Collection.objects.filter(owner=request.user, is_deleted=False)
+            Collection.objects.filter(
+                owner=request.user,
+                is_deleted=False,
+            )
+            .exclude(status=Collection.Status.ARCHIVED)
             .select_related("owner")
             .prefetch_related("items")
         )
@@ -96,6 +100,7 @@ class CollectionDetailView(APIView):
                 title=request.data.get("title"),
                 description=request.data.get("description"),
                 public_slug=request.data.get("public_slug"),
+                status=request.data.get("status"),
             )
         except CollectionValidationError as exc:
             return Response({"error": "validation_failed", "detail": str(exc)}, status=400)

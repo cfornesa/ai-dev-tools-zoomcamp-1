@@ -26,6 +26,7 @@ export default function CollectionManagement() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [publicSlug, setPublicSlug] = useState('');
+  const [collectionStatus, setCollectionStatus] = useState<Collection['status']>('active');
   const [kind, setKind] = useState<CollectionItem['kind']>('project');
   const [itemId, setItemId] = useState('');
   const [busy, setBusy] = useState(false);
@@ -58,6 +59,7 @@ export default function CollectionManagement() {
     setTitle(selected.title);
     setDescription(selected.description);
     setPublicSlug(selected.slug);
+    setCollectionStatus(selected.status ?? 'active');
   }, [selected]);
 
   if (auth.status === 'loading') return <p role="status">Loading collections…</p>;
@@ -105,7 +107,13 @@ export default function CollectionManagement() {
   async function saveDetails() {
     if (!selected) return;
     await run(
-      () => updateCollection(selected.id, { title, description, public_slug: publicSlug }),
+      () =>
+        updateCollection(selected.id, {
+          title,
+          description,
+          public_slug: publicSlug,
+          status: collectionStatus,
+        }),
       'Collection details saved.',
     );
   }
@@ -283,6 +291,18 @@ export default function CollectionManagement() {
                   autoCapitalize="none"
                   spellCheck={false}
                 />
+                <label htmlFor="collection-status">Collection status</label>
+                <select
+                  id="collection-status"
+                  value={collectionStatus}
+                  onChange={(event) =>
+                    setCollectionStatus(event.target.value as Collection['status'])
+                  }
+                >
+                  <option value="active">Active</option>
+                  <option value="draft">Draft (not publicly visible)</option>
+                  <option value="archived">Archived (hidden from this list)</option>
+                </select>
               </>
             )}
             <button type="submit" disabled={busy}>

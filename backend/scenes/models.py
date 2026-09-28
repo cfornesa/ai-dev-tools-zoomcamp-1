@@ -269,6 +269,11 @@ class Collection(models.Model):
         PRIVATE = "private", "Private"
         PUBLIC = "public", "Public"
 
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        DRAFT = "draft", "Draft"
+        ARCHIVED = "archived", "Archived"
+
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="collections"
@@ -279,6 +284,9 @@ class Collection(models.Model):
     slug = models.SlugField(max_length=120)
     visibility = models.CharField(
         max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
+    )
+    status = models.CharField(
+        max_length=8, choices=Status.choices, default=Status.ACTIVE, db_index=True
     )
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
     is_deleted = models.BooleanField(default=False)

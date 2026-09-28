@@ -94,6 +94,30 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1010 transaction ledger
+
+- **Issue:** [#1010](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1010)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Add the already schema-supported box and cylinder creation
+  buttons to the manual 3D authoring menu, with matching default dimensions,
+  material, placement, and naming conventions.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `569c35f2` (`feat(editor3d): add box and cylinder buttons`).
+- **Changed files:** `frontend/src/pages/Project3DWorkspace.tsx`,
+  `frontend/src/pages/Project3DWorkspace.save.test.tsx`.
+- **Checks:** Focused Vitest — 8 passed; typecheck, lint, and format-check
+  passed.
+- **QA matrix:** Existing sphere, plane, and drawing-plane controls remain;
+  new Box 1 and Cylinder 1 outline entries are created through the same
+  undoable authoring path and use schema-supported dimensions/materials.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #1008 transaction ledger
 
 - **Issue:** [#1008](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1008)

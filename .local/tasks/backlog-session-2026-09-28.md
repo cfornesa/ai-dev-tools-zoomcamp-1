@@ -94,6 +94,32 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #982 transaction ledger
+
+- **Issue:** [#982](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/982)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Extract the AI-fix and AI-layer panel open/seed state into
+  `useAiAssistPanels` without changing panel behavior.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `a70fbcd7` (`refactor(editor): extract AI
+  assist panel state`).
+- **Changed files:** `frontend/src/pages/EditorWorkspace.tsx`,
+  `frontend/src/pages/useAiAssistPanels.ts`.
+- **Checks:** `npx vitest run src/pages/EditorWorkspace*.test.tsx` — 35 files,
+  399 tests passed; `npm run typecheck` passed; `npm run lint -- --quiet`
+  passed; `npm run format:check` passed.
+- **QA matrix:** All finite automated criteria PASS. Fix and layer panel
+  opening, prompt seeding, closing, and preview-error auto-close behavior
+  remained covered by the unchanged EditorWorkspace matrix. No live browser
+  session was available for an additional manual interaction check.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #981 transaction ledger
 
 - **Issue:** [#981](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/981)

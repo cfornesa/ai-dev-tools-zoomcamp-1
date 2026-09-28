@@ -439,7 +439,7 @@ function buildExportControls(
   <label for="art-piece-keyboard-octave">Octave: <output id="art-piece-keyboard-octave-value">0</output><input id="art-piece-keyboard-octave" type="range" min="-2" max="2" step="1" value="0"></label></fieldset>`
       : '',
     includeMicrophone
-      ? '<button type="button" data-action="microphone" aria-pressed="false">Enable microphone</button>\n  <p id="art-piece-microphone-status" role="status">Microphone is off.</p>'
+      ? '<div role="group" aria-label="Live mic"><button type="button" data-action="microphone" aria-pressed="false">Enable microphone</button>\n  <p id="art-piece-microphone-status" role="status">Microphone is off.</p><fieldset id="art-piece-microphone-effects" hidden><legend>Microphone effects</legend><label><input type="checkbox" data-mic-effect="distortion">Distortion</label><label><input type="checkbox" data-mic-effect="chorus">Chorus</label><label><input type="checkbox" data-mic-effect="tremolo">Tremolo</label><label><input type="checkbox" data-mic-effect="pitch_shift">Pitch shift</label><label><input type="checkbox" data-mic-effect="bitcrusher">Bitcrusher</label><label><input type="checkbox" data-mic-effect="flanger">Flanger</label><label><input type="checkbox" data-mic-effect="ring_mod">Ring mod</label></fieldset></div>'
       : '',
     includeCamera
       ? '<button type="button" data-action="camera" aria-pressed="false">Enable camera view</button>\n  <p id="art-piece-camera-status" role="status">Camera is off.</p>'

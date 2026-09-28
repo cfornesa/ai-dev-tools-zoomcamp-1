@@ -1292,3 +1292,36 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   explicit unsupported boundary. The requested live Chromium and responsive
   screenshot run remains subject to the known host MachPort permission failure.
 - **New gaps:** No new implementation gaps discovered.
+
+## Issue #914 transaction ledger
+
+- **Issue:** [#914](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/914)
+- **Phase:** QA passed locally; pending typed GitHub closure after evidence
+  reconciliation.
+- **Transaction:** Replace the generated Full and Non-Camera ZIP microphone
+  permission stub with an offline native Web Audio path and seven-effect
+  controls, preserving microphone capability independently from camera and
+  steering.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineering and QA — Codex / GPT-5 substitution for the rostered
+  implementation/review services; no independent second-opinion model was
+  available.
+- **Implementation commit:** Pending commit after this ledger update.
+- **Changed files:** `frontend/src/export/standaloneArtPieceRuntimeSource.ts`,
+  `frontend/src/generative/artPieceBundle.ts`, and
+  `docs/piece-toolbar-parity-matrix.md`.
+- **Checks:** Standalone runtime and bundle tests — 2 files / 58 tests passed;
+  frontend typecheck, format-check, and lint passed. ZIP Playwright discovery
+  lists all seven requested scenarios. The full ZIP, immersive ZIP, and
+  Non-Camera ZIP Chromium suite was attempted, but all seven tests failed before
+  execution at the host's known macOS MachPortRendezvous permission boundary.
+- **QA matrix:** The generated runtime requests the stream before lazy audio
+  initialization, connects it to the master output through a rebuildable fixed
+  order of distortion, chorus, tremolo, pitch shift, bitcrusher, flanger, and
+  ring-mod nodes, exposes effects only while active, categorizes unsupported,
+  insecure, denied, and missing-device failures, and stops/disconnects on
+  disable and unload. Bundle markup keeps microphone controls in Full and
+  Non-Camera exports whenever capability is enabled and omits them otherwise.
+  The parity matrix records the camera-independent Non-Camera behavior.
+- **New gaps:** Live extracted-ZIP audio assertions and screenshots remain
+  blocked by the host browser runner; no browser or production claim is made.

@@ -69,7 +69,9 @@ Legend: ● present, ○ present only when its gate is on, — never.
 Notes:
 
 - Non-Camera ZIPs drop the camera and steering rows from Piece controls and
-  the hand guide (camera-free export).
+  the hand guide (camera-free export), but retain the microphone row whenever
+  the authored `microphone` capability is enabled; microphone capture is
+  independent of camera capability.
 - The PHP immersive toolbar groups its controls in a left group (view, VR,
   screenshot, download) and a right group (sound, panel trigger); the owner
   chose one ordered group with Fullscreen last for both repositories.

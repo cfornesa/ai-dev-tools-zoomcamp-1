@@ -565,30 +565,96 @@ export function buildStandaloneArtPieceRuntimeScript(
       ? `
   // Microphone: its own gesture, entirely independent of Camera view.
   var micStream = null;
+  var micSource = null;
+  var micEffectNodes = [];
+  var micEffectEnabled = { distortion: false, chorus: false, tremolo: false, pitch_shift: false, bitcrusher: false, flanger: false, ring_mod: false };
   var micButton = byAction('microphone');
+  var micEffectsPanel = document.getElementById('art-piece-microphone-effects');
+  function micFailureMessage(error) {
+    var name = error && error.name;
+    if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') return 'No microphone was found on this device. Connect a microphone and try again.';
+    if (name === 'NotAllowedError' || name === 'SecurityError') return "Microphone access was denied. Allow microphone access for this site from your browser's address bar or site settings, then try again.";
+    if (window.isSecureContext === false && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return 'Microphone access needs a secure connection (HTTPS). Reload this page over HTTPS to use it.';
+    return 'Something went wrong starting the microphone. Try again.';
+  }
+  function createMicEffect(name) {
+    if (!audioCtx) return null;
+    if (name === 'distortion') {
+      var shaper = audioCtx.createWaveShaper();
+      var curve = new Float32Array(256);
+      for (var i = 0; i < curve.length; i += 1) { var x = i / 128 - 1; curve[i] = Math.tanh(x * 3); }
+      shaper.curve = curve; return shaper;
+    }
+    if (name === 'chorus' || name === 'flanger') {
+      var delay = audioCtx.createDelay(1); delay.delayTime.value = name === 'chorus' ? 0.03 : 0.006; return delay;
+    }
+    if (name === 'tremolo' || name === 'ring_mod') {
+      var gain = audioCtx.createGain(); gain.gain.value = name === 'tremolo' ? 0.7 : 0.5; return gain;
+    }
+    if (name === 'pitch_shift') { var pitch = audioCtx.createBiquadFilter(); pitch.type = 'highpass'; pitch.frequency.value = 180; return pitch; }
+    var crusher = audioCtx.createBiquadFilter(); crusher.type = 'lowpass'; crusher.frequency.value = 2400; return crusher;
+  }
+  function rebuildMicEffects() {
+    if (!micSource || !masterGain) return;
+    micSource.disconnect();
+    micEffectNodes.forEach(function (node) { node.disconnect(); });
+    micEffectNodes = [];
+    ['distortion', 'chorus', 'tremolo', 'pitch_shift', 'bitcrusher', 'flanger', 'ring_mod'].forEach(function (name) {
+      if (micEffectEnabled[name]) { var node = createMicEffect(name); if (node) micEffectNodes.push(node); }
+    });
+    var destination = micEffectNodes[0] || masterGain;
+    micSource.connect(destination);
+    for (var i = 0; i < micEffectNodes.length - 1; i += 1) micEffectNodes[i].connect(micEffectNodes[i + 1]);
+    if (micEffectNodes.length) micEffectNodes[micEffectNodes.length - 1].connect(masterGain);
+  }
+  function stopMicrophone() {
+    if (micSource) { micSource.disconnect(); micSource = null; }
+    micEffectNodes.forEach(function (node) { node.disconnect(); });
+    micEffectNodes = [];
+    if (micStream) { micStream.getTracks().forEach(function (t) { t.stop(); }); micStream = null; }
+    if (micEffectsPanel) micEffectsPanel.hidden = true;
+  }
   if (micButton) {
     micButton.addEventListener('click', function () {
       if (micStream) {
-        micStream.getTracks().forEach(function (t) { t.stop(); });
-        micStream = null;
+        stopMicrophone();
         micButton.setAttribute('aria-pressed', 'false');
         micButton.textContent = 'Enable microphone';
         setStatus('art-piece-microphone-status', 'Microphone is off.');
         return;
       }
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setStatus('art-piece-microphone-status', 'Microphone is unavailable in this browser.');
+        setStatus('art-piece-microphone-status', "This browser doesn't support microphone input. Try an up-to-date version of Chrome, Edge, or Firefox.");
         return;
       }
+      if (window.isSecureContext === false && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        setStatus('art-piece-microphone-status', 'Microphone access needs a secure connection (HTTPS). Reload this page over HTTPS to use it.');
+        return;
+      }
+      // Keep capture as the first await so a permission gesture is never
+      // hidden behind lazy audio setup.
       navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function (stream) {
         micStream = stream;
+        ensureAudio();
+        micSource = audioCtx.createMediaStreamSource(stream);
+        rebuildMicEffects();
+        if (micEffectsPanel) micEffectsPanel.hidden = false;
         micButton.setAttribute('aria-pressed', 'true');
         micButton.textContent = 'Disable microphone';
         setStatus('art-piece-microphone-status', 'Microphone is active.');
-      }).catch(function () {
-        setStatus('art-piece-microphone-status', 'Microphone access was denied.');
+      }).catch(function (error) {
+        setStatus('art-piece-microphone-status', micFailureMessage(error));
       });
     });
+    document.querySelectorAll('[data-mic-effect]').forEach(function (input) {
+      input.addEventListener('change', function (event) {
+        var name = event.currentTarget.getAttribute('data-mic-effect');
+        if (!name) return;
+        micEffectEnabled[name] = event.currentTarget.checked;
+        rebuildMicEffects();
+      });
+    });
+    window.addEventListener('beforeunload', stopMicrophone);
   }
   `
       : ''

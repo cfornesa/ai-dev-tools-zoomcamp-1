@@ -1,5 +1,17 @@
 # AugmentrART Backlog
 
+## 2026-09-28 — owner-requested backlog goal final refresh
+
+The live 25-issue inventory was processed through the backlog-session gates.
+#1020 (light accent contrast) closed after commit `83131c3f`, focused/full
+frontend checks, rendered local Chrome inspection, and `## QA: PASS`.
+#1021 (collections mypy repair) closed after commit `5887d2a1`, full backend
+and frontend checks, `make check`, and `## QA: PASS`. The remaining 23 issues
+are intentionally open with authenticated reconciliation comments and terminal
+blocked/dependency-blocked/handed-off status; see
+`.local/tasks/backlog-session-2026-09-28.md`. Production readiness is
+`NO-GO/BLOCKED` because owner/dependency/browser/deployment gates remain.
+
 This file is the full, chronological, per-issue ledger — not something to
 scroll through for orientation. For a themed jump-in point (GitHub
 Milestones grouping the ~937 closed issues by the week they closed, added

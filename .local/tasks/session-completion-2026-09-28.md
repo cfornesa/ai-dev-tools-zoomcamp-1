@@ -2,6 +2,37 @@
 
 Project: `cfornesa/ai-dev-tools-zoomcamp-1`.
 
+## Final completion pass for the owner-requested goal — 2026-09-28
+
+Manifest: `.local/tasks/backlog-session-2026-09-28.md` (current-goal final
+reconciliation).
+
+Rollup: discovered 25; completed 2 (#1020, #1021); blocked 10;
+dependency-blocked 7; handed-off 6; missing-terminal-status 0. All 25 have
+terminal workflow status and authenticated GitHub reconciliation comments;
+only the two passing issues are closed on GitHub. No PR was created because
+required work remains open.
+
+Production readiness ran and is `NO-GO/BLOCKED`. Local `make check` is now
+green after #1021. `make deploy-check` reports six release-blocking warnings,
+Docker Compose preflight cannot run because Docker is unavailable, and the
+approved browser matrix remains blocked by the documented runner/harness
+boundaries. No production or Replit mutation was performed.
+
+Routing audit: #1020/#1021 scoping was Codex/GPT-5/Medium (no substitution);
+implementation was Codex/GPT-5/Medium substituting for Opencode Go; second
+opinion was not run; QA was Codex/GPT-5/Medium substituting for Claude Sonnet
+5; readiness was Codex/GPT-5/Medium substituting for the owner-authorized
+Claude Opus/Sonnet gate. The remaining blocked/handoff records explicitly
+state which stages did not run; no second opinion is credited to an
+implementer.
+
+Follow-up audit: no new actionable item was discovered. All blockers are
+classified and linked to existing issues with an owner/context and exact next
+action. Memory topics were unchanged: no new durable constraint was learned.
+The Batch 9 milestone stays open because its issues are not all terminal in
+the GitHub sense; no milestone was reopened or closed.
+
 This is an incomplete handoff, not a full-batch completion claim.
 
 ## Rollup

@@ -2,6 +2,26 @@
 
 Result: BLOCKED.
 
+## Final readiness gate — 2026-09-28
+
+Result: **NO-GO / BLOCKED** for the complete project. The requested
+production-readiness assessment ran after per-issue reconciliation using the
+owner-authorized Codex/GPT-5 substitution for the rostered Claude Opus/Sonnet
+tier; this is explicitly flagged and is not presented as a rostered run.
+
+| Dimension | Result | Evidence |
+| --- | --- | --- |
+| Local automated checks | PASS | `UV_CACHE_DIR=/tmp/codex-uv-cache-1021 make check` passed: backend 1,768 passed/39 skipped, mypy 379 files/0 errors, frontend 296 files/3,089 tests, lint/format/typecheck green. |
+| Local web deployment | BLOCKED | `make deploy-check` reports six deployment warnings (HSTS, SSL redirect, secure session/CSRF cookies, DEBUG, deprecated account rate-limit setting); repository policy treats warnings as a release blocker. Compose preflight reports Docker unavailable. |
+| Approved-browser/CI verification | BLOCKED | #859/#973/#975 retain exact browser-matrix/harness boundaries; local Playwright Chromium has the known macOS Mach-port launch failure. |
+| Intended functionality | BLOCKED | 23 issues remain open as owner-gated, dependency-blocked, verification-boundary, or handed-off; exact next actions are in the backlog ledger and GitHub comments. |
+| Replit/publication | BLOCKED | No production mutation or publication was authorized; #788, #906, and #946 remain owner/data actions. |
+| Production readiness | NO-GO | Open criteria, owner decisions, dependency chains, browser evidence, and deploy warnings remain. |
+
+No new follow-up issue was necessary: each finding maps to an existing issue.
+No issue was silently omitted or duplicated. The final verification boundary is
+the remaining 23 open issues plus deployment/browser environment evidence.
+
 The selected project has 62 open issues in the live GitHub inventory. Only
 #979 reached a terminal implementation/QA/reconciliation state in this
 session. The remaining 61 issues were not engineered or verified, so the

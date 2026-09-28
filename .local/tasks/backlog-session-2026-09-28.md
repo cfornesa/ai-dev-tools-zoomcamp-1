@@ -1,5 +1,54 @@
 # Backlog session 2026-09-28
 
+## Current-goal final reconciliation — 2026-09-28
+
+The user-requested goal resumed the live 25-issue inventory after the prior
+incomplete handoff. Two independent follow-up issues were implemented and
+terminalized; the remaining 23 received authenticated GitHub reconciliation
+comments and remain open with terminal workflow status.
+
+| Issue | Terminal status | Commit / QA | Exact next action |
+| --- | --- | --- | --- |
+| #1020 | completed | `83131c3f`; `## QA: PASS`; GitHub closed | None; local implementation/verification complete. |
+| #1021 | completed | `5887d2a1`; `## QA: PASS`; GitHub closed | None; local implementation/verification complete. |
+| #788 | dependency-blocked | Owner production publication/import | Owner runs the guarded production workflow after the supported publish/runtime gate. |
+| #847 | dependency-blocked | #941 media/audio chain | Complete the public media/export contract, then implement ambient sample. |
+| #859 | blocked | Approved-browser verification boundary | Run the six-engine matrix on the approved Compose/Linux/CI Chrome runner. |
+| #906 | blocked | Owner authorization | Owner chooses re-author, guarded copy, or abandon and supplies live evidence. |
+| #926 | blocked | Real-provider credential/owner action | Owner provisions a provider and authorizes at most six bounded live runs. |
+| #941 | dependency-blocked/handed-off | Children #973/#974/#975 | Resolve route/artifact children, then reconcile the parent. |
+| #942 | dependency-blocked | Depends on #941 | Implement transfer after #941 is terminal. |
+| #944 | dependency-blocked | Depends on #942 | Implement retention after transfer contract is terminal. |
+| #945 | dependency-blocked | Server-media/export contract | Implement complete account ZIP after prerequisites reconcile. |
+| #946 | blocked | Owner production action | Owner authorizes and runs the bounded grandfathering workflow. |
+| #973 | blocked | Playwright runner boundary | Run the named embed spec on approved Linux/CI Chrome. |
+| #974 | dependency-blocked/verification-boundary | Route/media prerequisite | Resolve the 2D immersive route/media contract, then run the named spec. |
+| #975 | blocked | Missing ZIP harness + runner boundary | Restore/add the ZIP spec, then run it on approved Chrome. |
+| #987 | handed-off | Tracking parent | Roll up children #911–#916 only; do not implement parent. |
+| #988 | handed-off | Tracking parent | Roll up children #979–#986 only; do not implement parent. |
+| #995 | handed-off | Tracking/scoping parent | Define CI dependency-scanning decision and file milestone-assigned children. |
+| #996 | handed-off | Tracking/scoping parent | Define incremental lint/strictness children before implementation. |
+| #1004 | blocked | Owner decision | Owner selects and documents entitlement-gating UI pattern. |
+| #1005 | blocked | Owner decision | Owner selects and documents button shape language. |
+| #1006 | blocked | Owner decision | Owner selects hand-rolled vs. primitives pilot; answer vendor question if needed. |
+| #1013 | handed-off | Tracking/scoping parent | Define 3D grammar and file atomic child issues. |
+| #1016 | blocked | No server-backed collection media contract | Owner chooses server media or revises source/scope. |
+| #1019 | handed-off | Backend/frontend split required | Scope criterion-ready backend and frontend children. |
+
+Stage provenance for #1020/#1021: scoping Codex/GPT-5/Medium/substituted:no;
+implementation Codex/GPT-5/Medium/substituted:yes for Opencode Go;
+second-opinion not run; QA Codex/GPT-5/Medium/substituted:yes for Claude
+Sonnet 5; readiness Codex/GPT-5/Medium/substituted:yes for the rostered
+Claude Opus/Sonnet gate. For blocked/handoff issues, implementation/QA were
+not run after grooming; their reconciliation comments name the owner,
+dependency, evidence boundary, and next action.
+
+Final counts for this goal: discovered 25; completed 2; blocked 10;
+dependency-blocked 7; handed-off 6; missing terminal status 0. No new
+actionable follow-up issue was created: every remaining item reuses an existing
+issue or is an explicit owner/dependency/tracking handoff. No second-opinion
+stage was credited to an implementing model.
+
 ## Current-goal reconciliation — 2026-09-28
 
 This section is the live reconciliation for the current user-requested goal;

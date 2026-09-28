@@ -2099,3 +2099,15 @@ updates. The remaining open backlog was not silently claimed complete.
 - No issue was reopened; nothing was implemented in this correction pass —
   filing/commenting/status-correction only, consistent with the rest of
   this session's discipline.
+
+## 2026-09-28 (continued) — current backlog goal closure and GPT-5 stage substitution
+
+- The owner-requested backlog goal resumed the 25-issue live inventory after
+  the prior incomplete handoff. #1020 and #1021 were implemented, independently
+  re-verified, commented with `## QA: PASS`, and closed as completed.
+- The active Codex/GPT-5 runtime substituted for unavailable rostered
+  implementation and QA services, and for the stage-5 readiness gate, with the
+  substitution explicitly recorded in the ledger. No second-opinion review was
+  credited to the implementing model.
+- The remaining 23 open issues retain explicit blocked, dependency-blocked, or
+  handed-off status and exact next actions; open GitHub state is intentional.

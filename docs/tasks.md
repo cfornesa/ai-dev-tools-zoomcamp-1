@@ -24266,3 +24266,37 @@ Chrome check was unavailable because no running local stack/browser session
 was provided; this was recorded as an environment boundary. It was
 reconciled and closed with the same connector publication boundary recorded
 in the ledger.
+
+## 2026-09-28 — two issue-scoping corrections during the Codex backlog run
+
+Codex (running this session's backlog-session/QA/production-readiness/
+session-completion substitution) correctly stopped rather than deciding
+architecture silently, and correctly filed a new discovery rather than
+implementing it in the same session — both per the standing rules added
+2026-09-27/28. Both issues re-scoped/re-verified against current source and
+made criterion-ready for the next round:
+
+- **[#984](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/984)**
+  — Codex found the original premise inaccurate: `PieceStageControls.tsx`
+  does not contain `effects`/`voiceInstruments`-as-state/piano-press
+  tracking; those exist only in `Scene3DPreview.tsx`.
+  `PieceStageControls.tsx` uses a command-dispatch model instead. Re-verified
+  against source and narrowed to the real overlap: ~10 shared scalar
+  ambient/keyboard fields declared separately in both files (matching the
+  existing canonical `SoundSettings` type in `frontend/src/audio/
+  soundSettings.ts`, which `Scene3DPreview.tsx` doesn't use — it hardcodes a
+  drifting second copy of the same defaults). Rewritten to extract only
+  those fields via a shared hook with an injected apply-callback, explicitly
+  not touching `PieceStageControls.tsx`'s command-dispatch architecture.
+- **[#1020](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1020)**
+  — filed by Codex as the correct follow-up to closed `#994`'s contrast
+  audit (light `--accent`/`--bg` at 4.39:1, below the 4.5:1 floor). Original
+  body lacked acceptance criteria/regression-safeguard/discovery-gate
+  sections. Re-verified every real consumer of bare `--accent` in
+  `index.css` (not just the two `#994` originally sampled) and found 3 more
+  real text usages (`--profile-accent` fallback on public profile/collection
+  headings) plus 2 accent-as-background-with-white-text sites
+  (`.admin-action-primary`, `.profile-feed-actions` hover/focus) that need
+  re-verification, not assumption, once `--accent` changes. Cross-linked to
+  the still-open `#1005` (admin-action-* shape reconciliation) since they
+  touch the same selector for different reasons.

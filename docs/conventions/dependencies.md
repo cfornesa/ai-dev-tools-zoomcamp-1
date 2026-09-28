@@ -51,12 +51,18 @@ check `pyproject.toml`/`package.json` for an existing package covering
 overlapping ground, and say so explicitly in the dependency-authorization
 question if one exists but doesn't fully cover the need.
 
-## Vulnerability/audit scanning — a real gap, not yet policy
+## Vulnerability triage
 
-Confirmed: no `pip-audit`, `npm audit`, `safety`, Snyk, or Dependabot
-configuration exists anywhere in this repo (`.github/workflows/ci.yml` runs
-lint/typecheck/test/E2E jobs only; no `.github/dependabot.yml` exists).
-This means a known-vulnerable transitive dependency could ship without any
-automated signal. Tracked as its own issue (add CI-level scanning); until
-that lands, treat "check for known CVEs" as a manual step during any
-dependency-review pass, not an automated guarantee.
+GitHub Dependabot alerts are the repository's native vulnerability signal for
+the backend and frontend dependency ecosystems. Review each new alert within
+the next 7 days. A finding that already exists when an issue or pull request
+is opened does not block CI or an otherwise unrelated pull request; triage it
+separately and record the owner, affected package, severity, and next action.
+
+Critical and High findings must be fixed within the next backlog
+reconciliation session and before the next release. Medium and Low findings
+must be tracked with an owner and next action, but are not release-blocking.
+
+Dependabot alerts surface in GitHub's Security tab and are not required CI
+checks. Existing CI jobs therefore remain unchanged and continue to report
+only their current lint, type-check, test, and browser verification results.

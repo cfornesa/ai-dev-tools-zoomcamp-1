@@ -1097,3 +1097,40 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   the authenticated connector's external-publication risk policy. The issue
   was closed through the typed issue-state update; no workaround was attempted.
 - **New gaps:** None.
+
+## Issue #1012 transaction ledger
+
+- **Issue:** [#1012](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1012)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA
+  and evidence reconciliation.
+- **Transaction:** Add draggable Three.js transform controls to the manual 3D
+  editor while keeping the existing numeric inspector fields as the persisted
+  transform path.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineering — Codex / GPT-5 substitution for the rostered Ollama Cloud
+  implementation service. QA — Codex / GPT-5 substitution for the rostered
+  Claude Sonnet fresh-eyes reviewer; no independent second-opinion model was
+  available in this session. Production-readiness remains Codex / GPT-5
+  substitution for the rostered readiness service.
+- **Implementation commit:** `4846dd50` (`feat(3d-editor): add transform gizmo controls`).
+- **Changed files:** `frontend/src/pages/Scene3DPreview.tsx`,
+  `frontend/src/pages/Project3DWorkspace.tsx`, and
+  `frontend/src/pages/Scene3DPreview.orbitControls.test.tsx`.
+- **QA checks:** Focused gizmo/OrbitControls test — 6 passed; full frontend
+  Vitest — 294 files / 3,080 tests passed; frontend typecheck passed;
+  format-check passed; lint passed with the repository's existing warnings;
+  production frontend build passed. The build reported only existing chunk
+  size and ineffective dynamic-import warnings.
+- **QA matrix:** The selected scene node receives the installed
+  `TransformControls` addon; gizmo drag state disables OrbitControls even on
+  the render loop; final local position/rotation/scale are converted back to
+  the existing scene object and flow through the workspace's existing gesture
+  and undo boundary; numeric inspector editing remains unchanged; cleanup
+  detaches and disposes the control. No route, schema, API, package, or
+  migration changed.
+- **Browser boundary:** A live Chromium drag was not run because this host's
+  previously recorded browser runner fails before tests with the macOS
+  MachPortRendezvous permission error. The focused test exercises the control
+  lifecycle and callback contract; no claim is made about manual pointer
+  feel on that unavailable runner.
+- **New gaps:** None discovered.

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { deleteProject, getSceneVersion, type Project } from '../api/projects';
 import { saveNowBeforeClearing } from '../storage/cloudSnapshot';
+import { ConfirmDialog } from './ConfirmDialog';
 import { originLabel } from './originLabel';
 
 function formatDate(iso: string): string {
@@ -33,10 +34,6 @@ function ProjectCard({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Issue #252: mirrors Project3DCard.tsx's delete pattern (added for
-  // #242) exactly -- window.confirm is this codebase's existing
-  // destructive-action confirmation pattern.
-  //
   // Issue #527: before actually deleting a project explicitly opted into
   // cloud sync, attempt one bounded "Save now" checkpoint of its current
   // saved content -- a scheduled snapshot may not have run yet, so the
@@ -45,10 +42,7 @@ function ProjectCard({
   // same as before. A failed checkpoint never silently proceeds -- it
   // asks for an explicit "delete anyway" confirmation naming why the
   // checkpoint failed, and declining leaves the project untouched.
-  async function handleDelete() {
-    if (!window.confirm(`Delete "${project.title}"? This cannot be undone from the gallery.`)) {
-      return;
-    }
+  async function confirmDelete() {
     setDeleting(true);
     setDeleteError(null);
 
@@ -124,9 +118,21 @@ function ProjectCard({
         <Link className="shell-action" to={`/projects/${project.id}`}>
           Edit
         </Link>{' '}
-        <button type="button" className="shell-action" onClick={handleDelete} disabled={deleting}>
-          {deleting ? 'Deleting…' : 'Delete'}
-        </button>
+        <ConfirmDialog
+          trigger={
+            <button type="button" className="shell-action" disabled={deleting}>
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+          }
+          title="Delete project?"
+          description={
+            <>
+              Delete <strong>“{project.title}”</strong>? This cannot be undone from the gallery.
+            </>
+          }
+          confirmLabel="Delete"
+          onConfirm={confirmDelete}
+        />
       </p>
       {deleteError && (
         <p role="alert" aria-live="assertive">

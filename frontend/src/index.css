@@ -1088,6 +1088,8 @@ button:disabled {
 .admin-action-primary,
 .admin-action-secondary,
 .admin-action-danger {
+  min-height: 44px;
+  padding: 8px 16px;
   border-radius: 6px;
   font-weight: 700;
 }
@@ -1216,8 +1218,8 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  padding: 8px 14px;
+  min-height: 44px;
+  padding: 8px 16px;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-h);

@@ -20,8 +20,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 
-from scenes.management.commands.e2e_fixtures import E2E_USERS
-from scenes.models import ForkProvenance, Project, PublicProfile, SceneVersion
+from scenes.management.commands.e2e_fixtures import E2E_USERS, PUBLIC_MEDIA_FIXTURE_SLUG
+from scenes.models import ForkProvenance, PieceIntakeAsset, Project, PublicProfile, SceneVersion
 
 BLANK_SCENE = json.loads(
     (
@@ -119,3 +119,23 @@ def test_create_provisions_public_profiles_for_canonical_fixture_routes():
     # stable, which is required for repeated disposable browser runs.
     call_command("e2e_fixtures", "create", "--json")
     assert PublicProfile.objects.filter(handle="e2e_owner", is_public=True).count() == 1
+
+
+@pytest.mark.django_db
+def test_public_media_fixture_create_and_cleanup_is_repeatable():
+    call_command("e2e_fixtures", "public-media-create", "--json")
+
+    project = Project.objects.get(public_slug=PUBLIC_MEDIA_FIXTURE_SLUG)
+    asset = PieceIntakeAsset.objects.get(piece_public_id=project.public_id)
+    assert asset.mime_type == "image/png"
+    assert asset.data
+
+    call_command("e2e_fixtures", "public-media-create", "--json")
+    assert Project.objects.filter(public_slug=PUBLIC_MEDIA_FIXTURE_SLUG).count() == 1
+    current_project = Project.objects.get(public_slug=PUBLIC_MEDIA_FIXTURE_SLUG)
+    assert PieceIntakeAsset.objects.filter(piece_public_id=current_project.public_id).count() == 1
+    assert not PieceIntakeAsset.objects.filter(piece_public_id=project.public_id).exists()
+
+    call_command("e2e_fixtures", "public-media-cleanup", "--json")
+    assert not Project.all_objects.filter(public_slug=PUBLIC_MEDIA_FIXTURE_SLUG).exists()
+    assert not PieceIntakeAsset.objects.filter(piece_public_id=project.public_id).exists()

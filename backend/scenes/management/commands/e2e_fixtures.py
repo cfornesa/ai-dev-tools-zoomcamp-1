@@ -26,12 +26,16 @@ to every project, version, draft, and activity row the fixture users
 created, so a single delete is enough to leave no cross-run residue.
 """
 
+import base64
+import hashlib
 import json
 import os
+import uuid
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
+from django.utils import timezone
 
 # Fixed, non-secret credentials -- these users only ever exist against a
 # throwaway/dev PostgreSQL database for the lifetime of one E2E run, never
@@ -60,6 +64,11 @@ E2E_USERS = {
     # deletion test would break every later spec in the same run).
     "deletable": ("e2e_deletable", "e2e-deletable@example.test"),
 }
+
+PUBLIC_MEDIA_FIXTURE_SLUG = "public-media-fixture"
+PUBLIC_MEDIA_FIXTURE_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+)
 
 
 def _get_or_create_user(username: str, email: str):
@@ -97,7 +106,16 @@ class Command(BaseCommand):
     )
 
     def add_arguments(self, parser):
-        parser.add_argument("action", choices=["create", "cleanup", "reset-sessions"])
+        parser.add_argument(
+            "action",
+            choices=[
+                "create",
+                "cleanup",
+                "reset-sessions",
+                "public-media-create",
+                "public-media-cleanup",
+            ],
+        )
         parser.add_argument(
             "--json",
             action="store_true",
@@ -124,6 +142,10 @@ class Command(BaseCommand):
             self._cleanup(as_json)
         elif action == "reset-sessions":
             self._reset_sessions(as_json)
+        elif action == "public-media-create":
+            self._public_media_create(as_json)
+        elif action == "public-media-cleanup":
+            self._public_media_cleanup(as_json)
         else:  # pragma: no cover - argparse already restricts choices
             raise CommandError(f"Unknown action: {action}")
 
@@ -436,3 +458,116 @@ class Command(BaseCommand):
                     f"Deleted E2E fixture users and their data ({deleted_count} row(s))."
                 )
             )
+
+    def _public_media_create(self, as_json: bool):
+        """Create one published server-backed image scene for public-media E2E tests."""
+        from scenes.models import PieceIntakeAsset, Project, Scene, SceneVersion
+
+        owner = _get_or_create_user(*E2E_USERS["owner"])
+        source_asset_id = uuid.uuid4()
+        payload = PUBLIC_MEDIA_FIXTURE_PNG
+        scene_json = {
+            "schemaVersion": 1,
+            "id": "public-media-fixture-scene",
+            "canvas": {"width": 320, "height": 240, "backgroundColor": "#ffffff"},
+            "renderer": {"preferred": "canvas2d"},
+            "layers": [
+                {"id": "layer-1", "name": "Image", "order": 0, "visible": True, "locked": False}
+            ],
+            "groups": [],
+            "shapes": [
+                {
+                    "id": "image-1",
+                    "type": "image",
+                    "layerId": "layer-1",
+                    "groupId": None,
+                    "transform": {
+                        "x": 20,
+                        "y": 20,
+                        "rotation": 0,
+                        "scaleX": 1,
+                        "scaleY": 1,
+                        "opacity": 1,
+                    },
+                    "style": {"fill": None, "stroke": None, "strokeWidth": 0},
+                    "mediaAssetId": str(source_asset_id),
+                    "altText": "Public media fixture image",
+                    "decorative": False,
+                }
+            ],
+            "bindings": [],
+            "graph": {"nodes": [], "connections": []},
+            "accessibility": {"reducedMotion": "auto"},
+            "randomness": {"seed": 1, "enabled": False},
+        }
+        with transaction.atomic():
+            old_projects = Project.all_objects.filter(
+                owner=owner, public_slug=PUBLIC_MEDIA_FIXTURE_SLUG
+            )
+            PieceIntakeAsset.objects.filter(
+                owner=owner, piece_public_id__in=old_projects.values("public_id")
+            ).delete()
+            Scene.objects.filter(project__in=old_projects).update(current_version=None)
+            old_projects.update(current_version=None, active_scene=None)
+            old_projects.delete()
+            project = Project.objects.create(
+                owner=owner,
+                title="Public media fixture",
+                public_slug=PUBLIC_MEDIA_FIXTURE_SLUG,
+                description="A published public media fixture.",
+                visibility=Project.Visibility.PUBLIC,
+                published_at=timezone.now(),
+            )
+            scene = Scene.objects.create(project=project, name="Scene 1", position=0)
+            version = SceneVersion.objects.create(
+                project=project,
+                scene=scene,
+                sequence=1,
+                scene_json=scene_json,
+                created_by=owner,
+                origin=SceneVersion.Origin.MANUAL,
+                change_label="Public media E2E fixture",
+            )
+            scene.current_version = version
+            scene.save(update_fields=["current_version", "updated_at"])
+            project.current_version = version
+            project.active_scene = scene
+            project.save(update_fields=["current_version", "active_scene", "updated_at"])
+            PieceIntakeAsset.objects.create(
+                owner=owner,
+                piece_kind="2d",
+                piece_public_id=project.public_id,
+                source_asset_id=source_asset_id,
+                filename="public-media-fixture.png",
+                alt_text="Public media fixture image",
+                mime_type="image/png",
+                byte_size=len(payload),
+                checksum=hashlib.sha256(payload).hexdigest(),
+                data=payload,
+            )
+        result = {
+            "available": True,
+            "public_id": str(project.public_id),
+            "slug": PUBLIC_MEDIA_FIXTURE_SLUG,
+            "asset_id": str(source_asset_id),
+        }
+        self.stdout.write(json.dumps(result) if as_json else self.style.SUCCESS(json.dumps(result)))
+
+    def _public_media_cleanup(self, as_json: bool):
+        from scenes.models import PieceIntakeAsset, Project, Scene
+
+        owner = get_user_model().objects.filter(username=E2E_USERS["owner"][0]).first()
+        deleted = 0
+        if owner is not None:
+            projects = list(
+                Project.all_objects.filter(owner=owner, public_slug=PUBLIC_MEDIA_FIXTURE_SLUG)
+            )
+            public_ids = [project.public_id for project in projects]
+            deleted = len(projects)
+            PieceIntakeAsset.objects.filter(owner=owner, piece_public_id__in=public_ids).delete()
+            doomed = Project.all_objects.filter(pk__in=[project.pk for project in projects])
+            Scene.objects.filter(project__in=doomed).update(current_version=None)
+            doomed.update(current_version=None, active_scene=None)
+            doomed.delete()
+        result = {"available": True, "deleted": deleted}
+        self.stdout.write(json.dumps(result) if as_json else self.style.SUCCESS(json.dumps(result)))

@@ -81,6 +81,7 @@ import { useDraftRecovery } from './useDraftRecovery';
 import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
+import { useAiAssistPanels } from './useAiAssistPanels';
 import {
   clampPanValue,
   MAX_ZOOM,
@@ -1288,15 +1289,23 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // constraints). `aiFixSeed.nonce` (not just its `prompt` text) changes
   // on every click so `AIProposalPanel`'s seed effect fires again even for
   // two clicks describing the identical error.
-  const [showAiFixPanel, setShowAiFixPanel] = useState(false);
-  const [aiFixSeed, setAiFixSeed] = useState<{ prompt: string; nonce: number } | null>(null);
+  const {
+    showAiFixPanel,
+    aiFixSeed,
+    showAiLayerPanel,
+    aiLayerSeed,
+    openAiFixPanel,
+    closeAiFixPanel,
+    openAiLayerPanel,
+    closeAiLayerPanel,
+  } = useAiAssistPanels();
 
   // Closes the ask-AI-to-fix panel automatically once the render failure
   // it was opened for is actually resolved (a scene edit, an accepted AI
   // proposal, undo, etc.) — never left open pointing at a stale error.
   useEffect(() => {
-    if (!previewError) setShowAiFixPanel(false);
-  }, [previewError]);
+    if (!previewError) closeAiFixPanel();
+  }, [closeAiFixPanel, previewError]);
 
   // Issue #282: "Ask AI to change this" on a `LayersPanel.tsx` row —
   // mirrors #159's `showAiFixPanel`/`aiFixSeed` pair exactly (a second,
@@ -1322,11 +1331,8 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     }
   }
 
-  const [showAiLayerPanel, setShowAiLayerPanel] = useState(false);
-  const [aiLayerSeed, setAiLayerSeed] = useState<{ prompt: string; nonce: number } | null>(null);
   const handleAskAiChangeLayer = (label: string) => {
-    setAiLayerSeed({ prompt: `Change ${label}: `, nonce: Date.now() });
-    setShowAiLayerPanel(true);
+    openAiLayerPanel(`Change ${label}: `);
   };
 
   // Issue #283: unscoped, whole-scene counterpart — not tied to any
@@ -1334,8 +1340,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // user fills in, rather than naming anything (documented implementation
   // decision, per the issue's own "decide during implementation" note).
   const handleAskAiImproveScene = () => {
-    setAiLayerSeed({ prompt: 'Improve this scene: ', nonce: Date.now() });
-    setShowAiLayerPanel(true);
+    openAiLayerPanel('Improve this scene: ');
   };
 
   // Task 26: "latest value" refs so the window-level drag listeners below
@@ -2710,13 +2715,9 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   <button
                     type="button"
                     data-testid="ask-ai-fix-preview-error"
-                    onClick={() => {
-                      setAiFixSeed({
-                        prompt: `Fix this scene so it renders correctly. ${description}`,
-                        nonce: Date.now(),
-                      });
-                      setShowAiFixPanel(true);
-                    }}
+                    onClick={() =>
+                      openAiFixPanel(`Fix this scene so it renders correctly. ${description}`)
+                    }
                   >
                     Ask AI to fix this
                   </button>
@@ -2742,11 +2743,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
             >
               <div className="editor-ai-fix-panel-header">
                 <h4>Ask AI to fix this error</h4>
-                <button
-                  type="button"
-                  data-testid="close-ai-fix-panel"
-                  onClick={() => setShowAiFixPanel(false)}
-                >
+                <button type="button" data-testid="close-ai-fix-panel" onClick={closeAiFixPanel}>
                   Close
                 </button>
               </div>
@@ -3578,7 +3575,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   <button
                     type="button"
                     data-testid="close-ai-layer-panel"
-                    onClick={() => setShowAiLayerPanel(false)}
+                    onClick={closeAiLayerPanel}
                   >
                     Close
                   </button>

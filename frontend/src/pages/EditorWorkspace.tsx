@@ -2573,8 +2573,78 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   workingCopy={workingCopy}
                   sceneEditor={sceneEditor}
                   onAssetsChange={setMediaAssets}
+                  publicationStatus={
+                    id ? (
+                      <PublishControl
+                        id={id}
+                        project={project}
+                        setProject={setProject}
+                        persistPendingDetails={persistPendingDetails}
+                        compact
+                        inline
+                      />
+                    ) : null
+                  }
                 />
               )}
+              <button type="button" onClick={handleAskAiImproveScene}>
+                Ask AI to improve this scene
+              </button>
+              <div
+                role="radiogroup"
+                aria-label="Preview view"
+                className="editor-tool-group"
+                data-testid="editor-preview-view-toggle"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={previewView === 'visual'}
+                  onClick={() => setPreviewView('visual')}
+                >
+                  Visual
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={previewView === 'code'}
+                  onClick={() => setPreviewView('code')}
+                >
+                  Code
+                </button>
+              </div>
+              <div className="editor-zoom-controls" role="group" aria-label="Zoom controls">
+                <ToolbarButton
+                  label="Zoom out"
+                  glyph="−"
+                  onClick={() => applyZoomChange(zoom - ZOOM_STEP)}
+                  disabled={zoom <= MIN_ZOOM + ZOOM_EPSILON}
+                />
+                <span
+                  className="editor-zoom-readout"
+                  data-testid="editor-zoom-readout"
+                  aria-live="polite"
+                >
+                  {Math.round(zoom * 100)}%
+                </span>
+                <ToolbarButton
+                  label="Zoom in"
+                  glyph="+"
+                  onClick={() => applyZoomChange(zoom + ZOOM_STEP)}
+                  disabled={zoom >= MAX_ZOOM - ZOOM_EPSILON}
+                />
+                <button
+                  type="button"
+                  className="editor-zoom-reset-button"
+                  onClick={() => applyZoomChange(1)}
+                  disabled={zoom === 1 && pan.x === 0 && pan.y === 0}
+                >
+                  Reset zoom
+                </button>
+                <button type="button" className="editor-zoom-reset-button" onClick={fitToViewport}>
+                  Fit to viewport
+                </button>
+              </div>
               {id && (
                 <SaveControl
                   projectId={id}
@@ -2584,9 +2654,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   compact
                 />
               )}
-              <button type="button" onClick={handleAskAiImproveScene}>
-                Ask AI to improve this scene
-              </button>
             </div>
             <button
               ref={editorToolsToggleRef}
@@ -2663,44 +2730,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
               />
             </div>
           )}
-          {/* Issue #159: the Visual/Code sub-toggle. Deliberately a
-              `role="radiogroup"`/`role="radio"` pair (the same pattern
-              `AIProposalPanel.tsx`'s own Create/Edit mode selector already
-              uses), not `role="tablist"`/`role="tab"` — `EditorPanelSwitcher.tsx`'s
-              own tablist is a hard "the only switcher, and only below
-              1024px" landmark several existing tests assert on directly
-              (e.g. `queryByRole('tablist')).not.toBeInTheDocument()` at
-              >=1024px), so a second, always-visible tablist here would
-              both violate that assertion and be genuinely confusing to
-              assistive tech (two unrelated tablists with no relationship
-              to each other). This toggle is local to the Preview panel,
-              not one of `EditorPanelSwitcher`'s `EditorPanelName` tabs —
-              Preview is never one of those (see `panelHidden` above) —
-              and stays reachable regardless of narrow/wide viewport,
-              exactly like the rest of the Preview panel already is. */}
-          <div
-            role="radiogroup"
-            aria-label="Preview view"
-            className="editor-tool-group"
-            data-testid="editor-preview-view-toggle"
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={previewView === 'visual'}
-              onClick={() => setPreviewView('visual')}
-            >
-              Visual
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={previewView === 'code'}
-              onClick={() => setPreviewView('code')}
-            >
-              Code
-            </button>
-          </div>
           {/* Issue #177: still a conditional render, not `hidden` -- see
               `CodeTab`'s doc comment for why. The sub-tabs' unsaved-edit
               state lives in the `jsonCodeSync`/`htmlCssCodeSync`/
@@ -2716,50 +2745,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
               active, but leave the stage-local editor/runtime toolbars
               reachable. Only the artwork canvas is hidden below; this keeps
               the compact overlay actions available in both sub-views. */}
-          <div>
-            {/* Issue #156: zoom in/out buttons, a live percentage readout,
-              and a reset-to-100% action. Reuses `ToolbarButton` (issue
-              #143's existing icon-button pattern — visible `aria-hidden`
-              glyph, `aria-label` for the accessible name, a CSS hover/
-              focus tooltip) rather than a new one-off control. Each
-              zoom button is disabled at its respective bound (comparing
-              with a small epsilon since `zoom` is a floating-point
-              accumulator), and the readout is `aria-live="polite"` so
-              screen-reader users hear it change without needing to
-              re-focus it after every zoom action. */}
-            <div className="editor-zoom-controls" role="group" aria-label="Zoom controls">
-              <ToolbarButton
-                label="Zoom out"
-                glyph="−"
-                onClick={() => applyZoomChange(zoom - ZOOM_STEP)}
-                disabled={zoom <= MIN_ZOOM + ZOOM_EPSILON}
-              />
-              <span
-                className="editor-zoom-readout"
-                data-testid="editor-zoom-readout"
-                aria-live="polite"
-              >
-                {Math.round(zoom * 100)}%
-              </span>
-              <ToolbarButton
-                label="Zoom in"
-                glyph="+"
-                onClick={() => applyZoomChange(zoom + ZOOM_STEP)}
-                disabled={zoom >= MAX_ZOOM - ZOOM_EPSILON}
-              />
-              <button
-                type="button"
-                className="editor-zoom-reset-button"
-                onClick={() => applyZoomChange(1)}
-                disabled={zoom === 1 && pan.x === 0 && pan.y === 0}
-              >
-                Reset zoom
-              </button>
-              <button type="button" className="editor-zoom-reset-button" onClick={fitToViewport}>
-                Fit to viewport
-              </button>
-            </div>
-          </div>
           <div className="piece-stage-shell" data-testid="editor-piece-stage-shell">
             {inkSession && (
               <InkEditor
@@ -3327,15 +3312,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                         disabled={!workingCopy}
                         onBegin={beginInk}
                       />
-                      {id ? (
-                        <PublishControl
-                          id={id}
-                          project={project}
-                          setProject={setProject}
-                          persistPendingDetails={persistPendingDetails}
-                          compact
-                        />
-                      ) : null}
                     </>
                   }
                   toolbarMode="inline"

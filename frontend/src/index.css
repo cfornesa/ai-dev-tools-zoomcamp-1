@@ -3078,6 +3078,21 @@ code {
   gap: 8px;
 }
 
+.editor-panel-primary-actions > .editor-tool-group,
+.editor-panel-primary-actions > .editor-zoom-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.publication-status-inline {
+  display: grid;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
 .editor-panel-primary-actions > * {
   min-height: 2.5rem;
 }

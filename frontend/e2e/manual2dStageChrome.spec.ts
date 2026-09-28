@@ -1,4 +1,4 @@
-/** Issue #951: structured 2D editor-shell placement and responsive tools access. */
+/** Issue #977: structured 2D editor control-row placement and responsive tools access. */
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
@@ -52,7 +52,17 @@ test.describe('manual 2D editor shell', () => {
         .evaluateAll((buttons) =>
           buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent?.trim()),
         ),
-    ).toEqual(['File', 'Save scene', 'Ask AI to improve this scene']);
+    ).toEqual([
+      'File',
+      'Ask AI to improve this scene',
+      'Visual',
+      'Code',
+      'Zoom out',
+      'Zoom in',
+      'Reset zoom',
+      'Fit to viewport',
+      'Save scene',
+    ]);
     await expect(file).toBeVisible();
     await expect(save).toBeVisible();
     await expect(askAi).toBeVisible();

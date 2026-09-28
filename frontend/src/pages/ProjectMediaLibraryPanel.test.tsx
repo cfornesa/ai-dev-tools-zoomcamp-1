@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -42,7 +43,7 @@ const sceneEditor = {
 
 const workingCopy = { shapes: [], layers: [{ id: 'layer-1' }] } as never;
 
-function renderPanel() {
+function renderPanel(publicationStatus?: ReactNode) {
   return render(
     <ProjectMediaLibraryPanel
       projectId="project-1"
@@ -50,11 +51,22 @@ function renderPanel() {
       ownerId="alice"
       workingCopy={workingCopy}
       sceneEditor={sceneEditor}
+      publicationStatus={publicationStatus}
     />,
   );
 }
 
 describe('ProjectMediaLibraryPanel', () => {
+  it('keeps publication status inside the File menu', async () => {
+    const user = userEvent.setup();
+    renderPanel(<div data-testid="publication-status">Draft</div>);
+    await user.click(screen.getByRole('button', { name: 'File' }));
+    expect(screen.getByTestId('publication-status')).toBeInTheDocument();
+    expect(screen.getByRole('menu', { name: 'File menu' })).toContainElement(
+      screen.getByTestId('publication-status'),
+    );
+  });
+
   it('exposes File actions and requires meaningful alt text or an explicit decorative choice', async () => {
     const user = userEvent.setup();
     renderPanel();

@@ -136,6 +136,33 @@ this: #1034.
 
 ## Current-goal final reconciliation — 2026-09-28
 
+## Current-goal correction — 2026-09-28 (continued after owner feedback)
+
+The earlier reconciliation over-gated workable issues and is superseded by this
+entry. The local Compose/browser boundary was restored, so #941 and its browser
+follow-ups #973–#975 were implemented/verified and closed in commit `d6fb73c9`.
+The ZIP run exposed a real `image` compatibility-gate defect and a browser blob
+URL revocation race; both were fixed and covered. #1032 was also completed and
+closed after the authenticated admin responsive check at 1280x900 and 375x812.
+
+The six-engine run now passes regular and embed coverage locally, but the
+thumbnail sweep exposes a concrete product/UI dependency: the current 2D
+generated-piece editor does not expose the thumbnail regeneration control that
+the verification workflow requires. This was filed as #1047 and #859 remains
+open pending that dependency plus matching-ref CI evidence from #1034. The
+previous claim that Docker/browser availability itself blocked these items is
+invalid and must not be reused.
+
+The explicit owner stop on #1035/#1036 remains binding; neither issue was
+modified. #788/#946 remain owner-run production actions under their own safety
+contracts. #926 still requires the owner-supplied real provider credential and
+bounded live runs; no credential was entered or stored. #847 is no longer
+blocked by the now-closed #941/#957 chain and requires a fresh implementation
+pass under its export-only owner decision.
+
+New discovery issue: #1047 (2D generated-piece thumbnail regeneration action),
+linked from #859. No production data or credentials were used.
+
 The user-requested goal resumed the live 25-issue inventory after the prior
 incomplete handoff. Two independent follow-up issues were implemented and
 terminalized; the remaining 23 received authenticated GitHub reconciliation

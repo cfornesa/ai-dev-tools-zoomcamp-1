@@ -1,5 +1,17 @@
 # AugmentrART Backlog
 
+## 2026-09-28 — corrected continuation
+
+The prior final reconciliation over-gated several workable issues. The local
+Compose/browser boundary is available and was used to close #941 and its
+follow-ups #973–#975 in commit `d6fb73c9`, including a real ZIP export fix for
+image assets. #1032 was closed after authenticated admin checks at both
+1280x900 and 375x812. #859 remains open only because its six-engine thumbnail
+workflow revealed the missing 2D editor regeneration affordance; that concrete
+dependency is now tracked in #1047, alongside the matching-ref CI evidence
+requirement in #1034. #1035/#1036 remain untouched under the owner's explicit
+Claude Code scoping stop. #847 is now actionable after #941/#957 closed.
+
 ## 2026-09-28 — final backlog-session reconciliation
 
 The current backlog-session batch has been reconciled against GitHub and the

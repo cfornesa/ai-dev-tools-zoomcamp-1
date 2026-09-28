@@ -94,6 +94,38 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #983 transaction ledger
+
+- **Issue:** [#983](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/983)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Extract dirty tracking, before-unload protection, exit
+  confirmation/save-failure state, and draft-failure notices into
+  `useEditSessionLifecycle` without changing recovery behavior.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `30a6a4ff` (`refactor(editor): extract edit
+  session lifecycle hook`).
+- **Changed files:** `frontend/src/pages/EditorWorkspace.tsx`,
+  `frontend/src/pages/useEditSessionLifecycle.ts`.
+- **Checks:** `npx vitest run src/pages/EditorWorkspace*.test.tsx` — 35 files,
+  399 tests passed; `npm run typecheck` passed; `npm run lint -- --quiet`
+  passed; `npm run format:check` passed; `git diff --check` passed.
+- **E2E boundary:** The required `E2E_DOCKER_COMPOSE=true npx playwright test
+  e2e/aiAndRecovery.spec.ts --project=chromium` was run with the healthy local
+  Compose preflight and elevated browser-launch permission. All seven
+  scenarios timed out in the shared `createBlankProjectViaUI` setup while
+  waiting for the editor API response, before reaching assertions. The first
+  attempt also hit the host's Chromium Mach-rendezvous permission boundary.
+  No manual Chrome exit/failure check could be completed beyond that setup
+  failure; this is recorded as an environment/setup boundary, not as a
+  passing E2E result.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #982 transaction ledger
 
 - **Issue:** [#982](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/982)

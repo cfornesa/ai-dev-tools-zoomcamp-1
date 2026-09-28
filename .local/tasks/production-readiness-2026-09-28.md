@@ -77,3 +77,15 @@ No new production or Replit evidence was obtained. The final readiness
 decision is still NO-GO until the named browser artifacts/runner exist, the
 owner gates are resolved, the remaining implementation chain is processed,
 and `make check` is green after deferred #1021.
+
+## Terminal-status gate refresh — 2026-09-28
+
+The backlog-session terminal audit now covers all 33 open GitHub issues:
+none are missing a workflow status, but none of the remaining open issues can
+be reported completed. The batch is therefore `NO-GO`, with local backend and
+frontend unit/regression evidence green, `make check` blocked by #1021's two
+mypy errors, browser evidence blocked by the approved-runner/harness gaps in
+#859/#973/#975, and owner/production/dependency gates still open elsewhere.
+
+No production mutation, publication, dependency installation, or new issue
+creation occurred in this pass.

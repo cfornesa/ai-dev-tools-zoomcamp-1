@@ -87,3 +87,16 @@ current batch still has open owner/data, dependency, tracking, and deferred
 same-goal issues; production readiness remains NO-GO. The next safe work is
 the next independent existing issue after its dependencies and evidence
 runner are available.
+
+## Terminal-status gate refresh — 2026-09-28
+
+The current backlog ledger contains a terminal workflow classification for
+all 33 live open issues: blocked, dependency-blocked, or handed-off. Missing
+terminal-status count is zero. This is not a completion claim: no remaining
+issue is completed in the current pass, and GitHub issues remain open with
+their exact owner, dependency, verification, or workflow next actions.
+
+The final verification boundary is unchanged: backend pytest and frontend
+Vitest passed, while `make check` fails at deferred #1021; #973/#975 have
+fresh QA records and #859 remains unverified. No PR was created and no newly
+created issue was implemented.

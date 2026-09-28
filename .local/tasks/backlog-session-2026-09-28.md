@@ -94,6 +94,32 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1011 transaction ledger
+
+- **Issue:** [#1011](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1011)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Add browser-local, toggleable numeric-field snapping for
+  3D position, rotation, and scale transforms.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `c03c2ac6` (`feat(editor3d): add numeric transform snapping`).
+- **Changed files:** `frontend/src/editor/snap3d.ts`,
+  `frontend/src/editor/snap3d.test.ts`,
+  `frontend/src/pages/Outline3DInspector.tsx`.
+- **Checks:** Focused Vitest — 21 passed; typecheck, lint, and format-check
+  passed.
+- **QA matrix:** Position snaps to 0.5 units, rotation to 15 degrees, and
+  scale to 0.1 increments; the toggle defaults off like the existing 2D
+  preference, persists through the existing external-store mechanism, and
+  snap-off behavior remains unchanged. Gizmo integration is out of scope.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** #1012 remains blocked pending the explicit owner decision
+  required before using the installed Three.js `TransformControls` addon.
+
 ## Issue #1009 transaction ledger
 
 - **Issue:** [#1009](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1009)

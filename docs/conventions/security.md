@@ -6,6 +6,23 @@ Cybersecurity Framework's five functions. This session's full sweep found
 architecture gap or a real defect, evidenced with file/line citations, not
 speculation.
 
+## Deliberate non-ports (record why, don't just omit)
+
+**Raw user-supplied `iframe_code` for collections.** `augment-humankind`
+(PHP)'s `PlatformCollection` model supports a free-text `iframe_code` field
+letting an owner embed arbitrary iframe HTML. This app deliberately does
+**not** port that field (see the 2026-09-27 editor/collections parity
+plan). A free-text iframe field is exactly the kind of surface this
+repo's sandboxed-rendering conventions exist to prevent — user-controlled
+markup that could load an arbitrary origin, bypass this app's own CSP, or
+be used to embed deceptive/malicious content under this app's domain. This
+app's existing pattern (`.agents/memory/c2-opaque-sandbox-rendering.md`,
+`frontend/src/export/safeEmbed.ts`) is to keep any embed surface behind a
+fixed, owned route (e.g. `/embed/collections/@handle/:slug`) rather than
+accepting arbitrary iframe markup from a user. If this is ever revisited,
+it needs its own owner-decision issue stating the tradeoff explicitly, not
+a silent addition during unrelated collections work.
+
 ## Identify
 
 Every external integration's credential type and source is documented in

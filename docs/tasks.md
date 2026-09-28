@@ -24201,3 +24201,43 @@ gap or a real-but-bounded defect, each with its own regression-risk/
 restoration-path section per `AGENTS.md` §13. None of these issues have
 been implemented yet; that follows later through the normal one-issue-at-
 a-time engineer/QA transaction.
+
+## 2026-09-27 (continued) — 2D/3D editor and collections parity: Batch 10
+
+A live Chrome inspection of `/users/@cfornesa/edit/untitled-animation-2`
+plus a code audit of the 2D editor toolbar, the manual 3D editor, and a
+collections comparison against the read-only reference repos
+`augment-humankind` (PHP) and `augment-humankind-react-node` produced 13
+new issues under a new milestone, **Batch 10: 2D/3D editor and collections
+parity**, plus cross-linking comments on the two already-open issues
+(`#977`, `#951`) that already describe the 2D toolbar problem. Two
+compatible ideas from `LIGDOL_Creative_Continuity_Thesis.md` were folded in
+narrowly (canvas-as-materialized-state informing the Code/Visual parity
+standard; "bring it into a project" informing the collections item-picker
+issue) — the thesis's larger social/memory-graph scope was explicitly
+deferred, not adopted.
+
+| Issue | Scope | Kind |
+|---|---|---|
+| [#1007](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1007) | Fix `StageControlsPopover`'s hardcoded icon | 2a/owner-priority |
+| [#1008](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1008) | Fix Ask AI button's stacking-context risk | 2a/owner-priority |
+| [#1009](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1009) | 3D editor: ground grid + axes helper | 2a |
+| [#1010](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1010) | 3D editor: missing box/cylinder creation buttons | 2a |
+| [#1011](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1011) | 3D editor: snapping | 2b |
+| [#1012](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1012) | 3D editor: draggable transform gizmo (new-dependency question flagged) | 2b |
+| [#1013](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1013) | Tracking: 3D code-grammar (raw JSON → `codeGrammar.ts`-equivalent) | tracking |
+| [#1014](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1014) | Collections: item picker | 2b/owner-priority |
+| [#1015](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1015) | Collections: drag-and-drop reorder (additive, not replacing Move-up/down) | 2a |
+| [#1016](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1016) | Collections: cover image (manual) | 2b |
+| [#1017](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1017) | Collections: draft/archived status | 2b |
+| [#1018](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1018) | Collections: comments | 2b |
+| [#1019](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1019) | Collections: curated public browse/search | 2b |
+
+**Deliberately not ported:** `augment-humankind`'s raw user-supplied
+`iframe_code` field for collections — a free-text iframe surface conflicts
+with this app's sandboxed-rendering security conventions. Recorded in
+`docs/conventions/security.md`'s new "Deliberate non-ports" section rather
+than silently omitted. `#823` (item count, complete download bundle) was
+already tracked and is not re-filed. Nested/sub-collections were checked
+against both reference repos and found unsupported in either — not a gap.
+None of the 13 issues have been implemented yet.

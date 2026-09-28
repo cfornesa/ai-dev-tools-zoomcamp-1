@@ -2009,3 +2009,44 @@ production publish or data mutation is authorized by this decision.
   (2D/3D editor design standards, a collections UI, and incorporating
   `LIGDOL_Creative_Continuity_Thesis.md`); owner explicitly directed
   finishing this issue-filing pass first before that new plan proceeds.
+
+## 2026-09-27 (continued) — 2D/3D editor + collections parity: Batch 10
+
+- Owner asked for editor design standards (2D and 3D), a collections UI on
+  par with the `augment-humankind`/`augment-humankind-react-node` reference
+  repos, and named ideas from `LIGDOL_Creative_Continuity_Thesis.md`
+  ("@"-referenced, gitignored, read directly) to incorporate — while
+  preserving existing functionality and only adding what's simple,
+  implementable, and industry-standard.
+- Grounded the plan in a **live Chrome inspection** (owner-requested) of
+  `https://augmentrart.com/users/@cfornesa/edit/untitled-animation-2`, not
+  just code reading — confirmed the 2D toolbar problems firsthand (two
+  unrelated `StageControlsPopover` instances rendering an identical
+  hardcoded icon; `File` structurally misplaced in a different DOM region
+  than the icon row it visually sits beside; the Ask AI button's
+  stacking-context risk, already flagged in the code's own comment).
+- **LIGDOL scoping decision:** the thesis describes a full social-creative
+  network (feed, cross-project memory graph, capability routing) — an
+  order of magnitude beyond this app's V1 scope. Imported exactly two
+  compatible ideas (canvas-as-materialized-state informing the Code/Visual
+  parity standard; "bring it into a project" informing the collections
+  item-picker issue) and explicitly deferred the rest as a separate,
+  future, deliberate initiative — not silently expanded into.
+- Confirmed two already-open issues (`#977`, `#951`) already describe the
+  2D toolbar problem; cross-linked this session's root-cause findings onto
+  them via comments rather than re-filing duplicates.
+- Compared this repo's collections feature against both reference repos
+  (read-only, unmodified) and found real gaps: item picker, drag-reorder,
+  cover image, draft/archived status, comments, curated public browse.
+  Nested/sub-collections and the PHP's raw `iframe_code` field were
+  checked and explicitly **not** treated as gaps to close — the former
+  isn't supported in either reference repo either; the latter conflicts
+  with this app's sandboxed-rendering security conventions and is recorded
+  as a deliberate non-port in `docs/conventions/security.md`.
+- Filed 13 new issues under a new milestone, **Batch 10: 2D/3D editor and
+  collections parity**. Every issue that touches accessibility explicitly
+  states existing functionality (e.g. collections' Move-up/Move-down
+  buttons) is kept additive alongside the new capability (drag-and-drop),
+  not replaced — drag-and-drop alone isn't keyboard-accessible. None of the
+  13 issues have been implemented; that's later work through the normal
+  one-issue-at-a-time transaction.

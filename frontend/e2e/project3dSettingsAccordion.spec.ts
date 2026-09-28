@@ -61,6 +61,12 @@ test.describe('3D project settings accordion (#1037)', () => {
       await expect(settings.locator('#project3d-sound-panel')).toBeVisible();
       await expect(web).toHaveAttribute('aria-expanded', 'true');
 
+      const askAi = settings.getByRole('button', { name: 'Ask AI to improve this scene' });
+      await expect(askAi).toHaveAttribute('aria-expanded', 'false');
+      await askAi.click();
+      await expect(askAi).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.getByTestId('project3d-ai-improve-panel')).toBeVisible();
+
       const bounds = await settings.evaluate((element) => {
         const panels = Array.from(
           element.querySelectorAll<HTMLElement>('.project3d-accordion-panel'),

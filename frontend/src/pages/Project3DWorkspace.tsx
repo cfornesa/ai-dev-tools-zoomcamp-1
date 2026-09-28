@@ -1014,22 +1014,7 @@ function Project3DWorkspace({
                         onBegin={() => setDrawObjectId(selectedObject()?.id ?? null)}
                       />
                     )}
-                    <span className="editor-stage-text-actions">
-                      {!projectStorage.local && (
-                        <button
-                          type="button"
-                          className="piece-stage-icon-button"
-                          onClick={handleAskAiImproveScene}
-                          aria-label="Ask AI to improve this scene"
-                          title="Ask AI to improve this scene"
-                        >
-                          <span aria-hidden="true">✦</span>
-                          <span className="piece-stage-action-label">
-                            Ask AI to improve this scene
-                          </span>
-                        </button>
-                      )}
-                    </span>
+                    <span className="editor-stage-text-actions" />
                   </span>
                 </>
               }
@@ -1089,6 +1074,19 @@ function Project3DWorkspace({
               </div>
             </div>
           )}
+          {!projectStorage.local && (
+            <div className="project3d-accordion-section">
+              <button
+                type="button"
+                className="project3d-accordion-trigger"
+                aria-expanded={showAiPanel}
+                aria-controls="project3d-ai-improve-panel"
+                onClick={handleAskAiImproveScene}
+              >
+                Ask AI to improve this scene
+              </button>
+            </div>
+          )}
         </section>
         <Outline3DInspector
           scene={workingScene}
@@ -1103,6 +1101,7 @@ function Project3DWorkspace({
               aria-label="Ask AI to improve this scene"
               role="region"
               data-testid="project3d-ai-improve-panel"
+              id="project3d-ai-improve-panel"
             >
               <button type="button" onClick={() => setShowAiPanel(false)}>
                 Close

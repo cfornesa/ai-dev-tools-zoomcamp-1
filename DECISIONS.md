@@ -1941,3 +1941,29 @@ production publish or data mutation is authorized by this decision.
   independently-testable fixes — splitting it into its true atomic parts is
   the point, not a sign this pass under-consolidated; the 25-issue backlog
   proper only shrank (dropped 4, gained 0).
+
+## 2026-09-27 (continued) — navigability, priority, and closed-issue index
+
+- Owner asked two follow-up questions: (1) are code-quality/control-flow/
+  found-defect fixes actually prioritized among open issues, and (2) can
+  closed issues be consolidated, since 932+ flat closed issues obfuscate
+  interpretability.
+- **(1) No prioritization existed.** This repo had zero milestones and no
+  priority label before now; open issues were ordered only by the feature-
+  delivery queue in `docs/distillation-2026-09-26-cross-surface-parity.md`,
+  which is dependency order, not importance — #977 (a found button-
+  placement defect) wasn't even in that queue. Created the `owner-priority`
+  label and applied it to #976, #977, #979–#986, #988: the found defects and
+  code-quality/control-flow work, ahead of feature-queue order. Documented
+  in `docs/tasks.md`'s new "Owner priority (2026-09-27)" section.
+- **(2) Closed issues themselves stay unmerged** — that's the same
+  immutability principle protecting the owner's own work; rewriting history
+  there would be the same violation in the other direction. Instead, added
+  additive-only interpretability: created 8 GitHub Milestones (weekly
+  batches, 2026-08-10 through 2026-09-28, covering all ~937 closed issues)
+  and a new `docs/tasks-index.md` pointing at them, since `docs/tasks.md`
+  itself (24,000+ lines) was part of the obfuscation problem, not a fix for
+  it. No closed issue's title, body, or evidence changed — only a milestone
+  field was added.
+- Owner explicitly confirmed doing the milestone/index work now rather than
+  scoping it as a separate follow-up issue.

@@ -1,5 +1,10 @@
 # AugmentrART Backlog
 
+This file is the full, chronological, per-issue ledger — not something to
+scroll through for orientation. For a themed jump-in point (GitHub
+Milestones grouping the ~937 closed issues by the week they closed, added
+2026-09-27), start at [`docs/tasks-index.md`](tasks-index.md) instead.
+
 ## 2026-09-26 — active follow-up batch
 
 - [#823](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/823) — **CLOSED / QA PASS:** public collection item count and complete ZIP download; local Compose/Chromium evidence and full checks are recorded in the issue comment.
@@ -24137,3 +24142,24 @@ two triplets that were byte-for-byte the same checklist template repeated
 per surface, and merged them:
 - [#859](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/859) — now covers immersive, embed, and both ZIP variants as separate acceptance-criteria rows. #860 and #861 closed, pointing here.
 - #973/#974/#975 were reviewed for the same treatment and **not** merged: each cites a different dedicated Playwright spec file and a different routing stage, and #974 additionally requires implementing a missing route (not pure verification like #973/#975) — merging would have reduced atomicity rather than improved it, the opposite of what this pass is for.
+
+**Navigability (2026-09-27, no scope change):** linked #942/#944/#945/#946/#973/#974/#975 as real GitHub sub-issues of #941 (their existing "Parent" text field, now structural). Filed two tracking-only parents — [#987](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/987) (Stream E microphone: #911–#916) and [#988](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/988) (code-health decomposition: #979–#986) — each with its children linked as GitHub sub-issues so the open-issue list collapses under 3 parents instead of reading as 21 flat rows. No child's scope, criteria, or verification changed.
+
+## Owner priority (2026-09-27)
+
+This repo had no priority mechanism before now — no milestone, no priority
+label; open issues were ordered only by feature-delivery dependency (the
+"Queue position" streams in `docs/distillation-2026-09-26-cross-surface-parity.md`),
+which is not the same as importance. The owner confirmed code quality,
+control-flow cleanliness, and known UI/interaction defects (e.g. button
+placement) should be worked **ahead of** feature-queue order. Created the
+`owner-priority` GitHub label and applied it to:
+
+- [#976](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/976), [#977](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/977) — found UI/routing defects (missing canonical route; control-bar button placement/inert controls), not new features.
+- [#979](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/979)–[#986](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/986) and their tracker [#988](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/988) — the code-quality/control-flow decomposition work from this session's audit.
+
+This label marks *what* to prioritize; it does not itself reorder the
+feature-queue streams (A–G) in the distillation doc, which still govern
+their own internal sequencing. Anything newly found with the same character
+(a control-flow tangle, a button/UI placement defect, an inconsistency) should
+get this label as it's filed, not just these ten.

@@ -1263,8 +1263,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 ## Issue #913 transaction ledger
 
 - **Issue:** [#913](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/913)
-- **Phase:** QA passed locally; pending typed GitHub closure after evidence
-  reconciliation.
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA
+  and evidence reconciliation.
 - **Transaction:** Add the shared microphone capture lifecycle and seven-effect
   controls to structured 2D and structured 3D surfaces, retaining categorized
   failure copy and cleanup while documenting A-Frame structured previews as
@@ -1273,7 +1273,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   no. Engineering and QA — Codex / GPT-5 substitution for the rostered
   implementation/review services; no independent second-opinion model was
   available.
-- **Implementation commit:** Pending commit after this ledger update.
+- **Implementation commit:** `ef846608` (`feat(audio): add structured
+  microphone effects`).
 - **Changed files:** `frontend/src/components/Structured2DSoundControls.tsx`,
   `frontend/src/components/Structured2DSoundControls.test.tsx`, and
   `frontend/src/pages/Scene3DPreview.tsx`.

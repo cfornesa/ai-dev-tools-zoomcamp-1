@@ -1608,3 +1608,38 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   approved Linux/Compose runner.
 - **GitHub:** Reassessment comment posted to #975; issue remains open and
   terminally blocked at the verification/workflow-infrastructure boundary.
+
+## Final reconciliation — 2026-09-28
+
+The open inventory was rechecked after the final backlog comments. This
+transaction corrected the prior over-gating interpretation: well-scoped issues
+were treated as actionable, while only concrete contract, owner-run,
+credential, or external-publication boundaries were classified as blocked.
+
+- Closed/QA-reconciled transactions include #945, #1016, #1037, #1038, #1039,
+  and #1047; their GitHub QA comments are live.
+- #1035/#1036 are **HANDED-OFF / DO NOT TOUCH** by explicit owner direction;
+  Claude Code is actively scoping them.
+- #1048 was filed as the requested deferred schema/API contract for
+  human-readable HTML/CSS/JS views and JSON synchronization across 2D and 3D.
+- #926 and #1040–#1046 are owner/provider verification boundaries. Local
+  Compose preflight passed, but the supported local owner account has no
+  configured Mistral credential.
+- #859 remains a verification boundary for runtime and matching-ref CI
+  evidence. #1034 is blocked on externally publishing the matching ref; the
+  safety policy rejected the attempted non-force push.
+- #847 is blocked on the generated/3D piece-to-local-audio binding contract.
+  #942 is blocked on the local public-transfer metadata/API contract; #944
+  follows #942; #946 follows #942/#944.
+- #788 remains owner-run production work. Its approved guarded flow still
+  stands, but publication provenance and production preview/write evidence
+  are not agent actions.
+
+Final gate artifacts:
+
+- `.local/tasks/production-readiness-2026-09-28-final.md`
+- `.local/tasks/session-completion-2026-09-28-final.md`
+
+Final local checks: `UV_CACHE_DIR=/tmp/codex-uv-cache-20260928 make check`
+passed (1,779 backend passed / 39 skipped; 3,114 frontend passed), and
+`make compose-preflight` passed. Missing terminal classifications: zero.

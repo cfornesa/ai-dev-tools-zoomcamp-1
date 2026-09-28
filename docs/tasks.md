@@ -24285,7 +24285,30 @@ No live exploitable security vulnerability was found (see
 gap or a real-but-bounded defect, each with its own regression-risk/
 restoration-path section per `AGENTS.md` §13. None of these issues have
 been implemented yet; that follows later through the normal one-issue-at-
-a-time engineer/QA transaction.
+
+## 2026-09-28 — backlog-session terminal reconciliation
+
+The current open inventory was rechecked against GitHub after the corrected
+owner-input interpretation. Well-scoped implementation issues were treated as
+actionable; an issue is classified as blocked only where the next step needs a
+concrete upstream contract, owner-run production action, owner credential, or
+external publication boundary. #1035 and #1036 were explicitly excluded from
+this run at the owner's direction and remain handed off to active Claude Code
+scoping work.
+
+| Terminal class | Issues | Boundary / next action |
+|---|---|---|
+| Closed with implementation and QA | #941, #973, #974, #975, #1016, #1037, #1038, #1039, #1047, #945 | Evidence and QA comments are on the linked issues; full `make check` passes. |
+| Handed off / do not touch | #1035, #1036 | Claude Code is actively scoping the HTML/CSS/JS editor and 3D persistence work. |
+| Owner/source contract | #1048 | New deferred schema/API issue for 2D+3D human-readable HTML/CSS/JS views and JSON synchronization; owner review required. |
+| Owner/provider verification | #926, #1040–#1046 | Local Compose is healthy, but the supported local account has no Mistral credential; no production secret is copied or entered. |
+| Verification/publication boundary | #859, #1034 | #859 still needs runtime/CI evidence; #1034 needs matching-ref CI publication, and the safety boundary rejected the attempted push. |
+| Dependency/contract | #847, #942, #944 | #847 needs a generated/3D piece-to-local-audio binding; #942 needs the local public-transfer contract before retention can build on it. |
+| Owner-run production action | #788, #946 | Approved flows remain owner-run; production writes and unpublished deployment provenance are not agent actions. #946 also follows #942/#944. |
+
+The required final gates are recorded in
+`.local/tasks/production-readiness-2026-09-28-final.md` and
+`.local/tasks/session-completion-2026-09-28-final.md`.
 
 ## 2026-09-27 (continued) — 2D/3D editor and collections parity: Batch 10
 

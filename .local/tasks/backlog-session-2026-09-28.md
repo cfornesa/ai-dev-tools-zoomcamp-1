@@ -94,6 +94,28 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #989 transaction ledger
+
+- **Issue:** [#989](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/989)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Removed the weaker duplicate `cryptography>=46.0.0`
+  declaration, retaining the stronger `>=50.0.0` floor.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `abf0b7fd` (`chore(backend): remove duplicate
+  cryptography dependency`).
+- **Checks:** `uv lock` regenerated the lockfile with only the expected
+  metadata-line removal; `make backend-lint` passed; `git diff --check`
+  passed.
+- **QA matrix:** Both dependency declarations now have one effective source;
+  no resolved package version changed.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #984 transaction ledger
 
 - **Issue:** [#984](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/984)

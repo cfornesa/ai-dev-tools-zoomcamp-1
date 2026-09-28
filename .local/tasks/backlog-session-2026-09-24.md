@@ -7085,3 +7085,11 @@ wrapper publication once the secure push credential is available through the
 | Replit Publish | Chrome/Replit UI | UNVERIFIED | Republish was submitted. The visible Replit workspace still reported older HEAD `2c246cda`, while the pushed checkout is `d66e85fe`; browser debugger disconnected before a completed deployment revision or matching SHA was exposed. |
 | published smoke | shell / curl | PASS | `GET https://animate.creatrweb.com/health/` returned 200 with `status/database/cache: ok`; `PUBLISHED_APP_URL=https://animate.creatrweb.com scripts/smoke-published.sh` passed anonymous root, whoami 401, and login checks. This proves reachability, not wrapper provenance. |
 | #788 production workflow | Codex / GPT-5 / medium | BLOCKED | No production shell, dry-run output, snapshot, importer invocation, database write, secret change, or settings change was performed. Require matching deployed wrapper provenance and supported production shell before the one-shot guarded import. |
+
+## Reassessment after Replit source-control verification — 2026-09-28 — PUBLISH BLOCKED / #788 BLOCKED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| Replit workspace audit | Replit Agent / Free / low | PASS | Clean workspace HEAD `c3c1b7ce7b57e9cfefe269daa806ed5df10fb6d3`; fetched `origin/main` is reviewed `5dbc47c7b4b51a901d08bcb58e96f079e10ae1b3`. Checked-out wrapper lacks `REFERENCE_IMPORT_MODE` and `--dry-run`. |
+| Non-destructive reconciliation check | Replit Agent / Free / low | BLOCKED | Read-only merge-tree found one conflict: `.local/tasks/backlog-session-2026-09-24.md`; workspace history has 9 commits not in origin and origin has 21 not in workspace. No merge, reset, rebase, edit, importer, or publish occurred. |
+| #788 guarded production action | Codex / GPT-5 / medium | BLOCKED | No reviewed-wrapper provenance, supported preview shell, affected-row snapshot, production command, database write, or live 1280x900/375x812 verification. Evidence: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5861251860. |

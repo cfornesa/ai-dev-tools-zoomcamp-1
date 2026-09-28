@@ -204,3 +204,13 @@ or production-database criteria.
 | #943 local upload offer | PARTIAL / OPEN | Inventory, consent gate, quota summary, sequential intake, and result states are locally implemented. Per-row retry and persisted local-to-server synced identity remain missing; no production evidence inferred. |
 | Production wrapper and #788 | BLOCKED | `GIT_URL` is unavailable. No safe push, Replit Publish, production shell, snapshot mutation, or live production verification occurred. |
 | Overall readiness | NOT READY | GitHub currently reports 21 open issues. Local evidence cannot close deployed-URL, production-data, provider, hardware, or remaining parity criteria. |
+
+## Reassessment after Replit source-control verification — 2026-09-28
+
+| Dimension | Result | Evidence boundary |
+|---|---|---|
+| Reviewed wrapper source | BLOCKED | Replit Agent verified workspace HEAD `c3c1b7ce7b57e9cfefe269daa806ed5df10fb6d3` does not contain the mode-aware `REFERENCE_IMPORT_MODE`/`--dry-run` gate; fetched `origin/main` at `5dbc47c7b4b51a901d08bcb58e96f079e10ae1b3` does. |
+| Non-destructive reconciliation | BLOCKED | Histories diverge (9 workspace-only commits, 21 origin-only commits); merge-tree reports one ledger conflict at `.local/tasks/backlog-session-2026-09-24.md`. No merge or publish was performed. |
+| #788 production import | BLOCKED | No supported production preview/shell or matching deployed provenance; therefore no snapshot, one-shot import, database mutation, or live piece verification. |
+
+Readiness remains `BLOCKED` pending an explicit safe reconciliation of the Replit workspace history and publication of the reviewed wrapper.

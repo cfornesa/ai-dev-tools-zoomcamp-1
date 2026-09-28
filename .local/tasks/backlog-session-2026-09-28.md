@@ -127,6 +127,34 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 - **New gaps:** Manual Chrome sound-control verification remains a follow-up
   evidence boundary, not a discovered implementation defect.
 
+## Issue #985 transaction ledger
+
+- **Issue:** [#985](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/985)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Extract gesture/theremin state, hand-signal refs, gesture
+  camera state, and independent camera-preview state from `Scene3DPreview.tsx`
+  into `useScene3DCameraState`, preserving the existing `CameraControl` and
+  render-loop contracts.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `5434ea87` (`refactor(3d): extract camera and gesture state hook`).
+- **Changed files:** `frontend/src/pages/useScene3DCameraState.ts` and
+  `frontend/src/pages/Scene3DPreview.tsx`.
+- **Checks:** Gesture, camera-overlay, and sound regression tests — 48 passed;
+  frontend typecheck and format-check passed; lint passed with existing
+  repository warnings. No manual Chrome hardware check was run in this pass.
+- **QA matrix:** Gesture steering refs, theremin refs, hand-signal extractor,
+  camera stream/status state, video refs, and reset behavior now live in the
+  hook; the component retains frame processing, engine calls, rendering, and
+  UI wiring unchanged.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** Manual Chrome camera/gesture verification remains an evidence
+  boundary, not a discovered implementation defect.
+
 ## Issue #1017 transaction ledger
 
 - **Issue:** [#1017](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1017)

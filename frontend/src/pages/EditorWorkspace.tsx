@@ -82,6 +82,14 @@ import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import {
+  clampPanValue,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  ZOOM_EPSILON,
+  ZOOM_STEP,
+  useCanvasViewport,
+} from './useCanvasViewport';
+import {
   codeDiagnostic,
   SceneCodeEditor,
   useJsonCodeSync,
@@ -344,66 +352,7 @@ function TopLevelPanel({
   );
 }
 
-/**
- * Issue #156: the Preview canvas's client-side zoom/pan view state — never
- * written to `workingCopy`/scene JSON (see `EditorWorkspace.tsx`'s render
- * below, which applies it purely as a CSS `transform` on `.editor-scene-
- * canvas`, never touching the scene). Bounded to a comfortable 25%-400%
- * range in 25-point-percentage steps, matching this issue's "sensible
- * range... comfortable steps" acceptance criterion.
- */
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 4;
-const ZOOM_STEP = 0.25;
-// Floating-point tolerance for the zoom-bound disabled-button comparisons
-// below (0.25-multiples are exactly representable in binary, but this stays
-// safe against any future step-size change that isn't).
-const ZOOM_EPSILON = 1e-6;
-
-function clampZoomValue(zoom: number): number {
-  const rounded = Math.round(zoom * 100) / 100;
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, rounded));
-}
-
-/**
- * Returns the largest uniform scale that fits a canonical scene into the
- * usable (already padded) viewport area. Keeping this pure makes the layout
- * contract easy to regression-test without relying on a browser layout
- * engine, which jsdom does not provide.
- */
-export function getCanvasFitScale(
-  viewportWidth: number,
-  viewportHeight: number,
-  canvasWidth: number,
-  canvasHeight: number,
-): number {
-  if (viewportWidth <= 0 || viewportHeight <= 0 || canvasWidth <= 0 || canvasHeight <= 0) {
-    return 1;
-  }
-  return Math.min(viewportWidth / canvasWidth, viewportHeight / canvasHeight);
-}
-
-/**
- * Clamps a pan offset (raw screen pixels, applied as a CSS `translate` on
- * `.editor-scene-canvas` — see the render below) to the actual overflow of
- * the fitted scene inside the clipping viewport. This is important when a
- * wide workspace is height-limited: the fitted scene can be narrower than
- * the viewport on one axis, so using viewport dimensions alone would expose
- * dead space. At `zoom <= 1` callers reset pan to the centered position.
- */
-function clampPanValue(
-  pan: Point,
-  zoom: number,
-  viewport: { width: number; height: number },
-  contentSize?: { width: number; height: number },
-): Point {
-  const maxX = Math.max(0, ((contentSize?.width ?? viewport.width) * zoom - viewport.width) / 2);
-  const maxY = Math.max(0, ((contentSize?.height ?? viewport.height) * zoom - viewport.height) / 2);
-  return {
-    x: Math.min(maxX, Math.max(-maxX, pan.x)),
-    y: Math.min(maxY, Math.max(-maxY, pan.y)),
-  };
-}
+export { getCanvasFitScale } from './useCanvasViewport';
 
 /**
  * Task 112 (issue #143): one always-visible toolbar button — a visible
@@ -1223,40 +1172,22 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   const workingCopyRef = useRef(workingCopy);
   workingCopyRef.current = workingCopy;
 
-  // Issue #156: the Preview canvas's zoom/pan view state. Purely local —
-  // never derived from or written into `workingCopy` — and reset to
-  // 100%/centered on every fresh mount (a plain `useState` initializer,
-  // not anything persisted), matching the issue's "not persisted" and
-  // "resets... on every fresh mount" acceptance criteria.
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
-  // Issue #184: `zoom` is a user multiplier over the responsive layout fit.
-  // The fit is deliberately local state, never scene state or persistence.
-  const [fitScale, setFitScale] = useState(1);
-  const fitScaleRef = useRef(fitScale);
-  fitScaleRef.current = fitScale;
-  const [viewportNode, setViewportNode] = useState<HTMLDivElement | null>(null);
-  // "Latest value" ref for `zoom`, read by the window-level drag listeners
-  // and the native (non-passive) wheel listener below — both are created
-  // once/lazily and reused across renders, so they can't close over a
-  // fresh `zoom` each render the way an inline render-scope handler can
-  // (same rationale as `sceneEditorRef`/`snapSettingsRef` above).
-  const zoomRef = useRef(zoom);
-  zoomRef.current = zoom;
-  // The clipping viewport (`.editor-scene-canvas-viewport`, `overflow:
-  // hidden` once zoomed) that pan is bounded against — see
-  // `clampPanValue`. A callback ref (matching `previewMountCallbackRef`'s
-  // own rationale below): this component early-returns for several
-  // `loadState`/`draftRecovery.status` values before the Preview panel
-  // ever renders, so a plain `useRef` + `useEffect(fn, [])` pair for the
-  // native wheel listener would attach before the node exists on the
-  // commit where it's first created, and never re-run once it finally
-  // does. The callback ref fires exactly when the node attaches/detaches,
-  // so the listener (registered `{ passive: false }`, required to
-  // `preventDefault()` a wheel event — React's own `onWheel` prop is
-  // passive by default and can't block the page's native scroll) is
-  // always attached to the real, current node.
-  const viewportRef = useRef<HTMLDivElement | null>(null);
+  // Issue #981: the canvas viewport hook owns local zoom/pan/fit state and
+  // its wheel/resize lifecycle. The dimensions ref remains shared with the
+  // camera and gesture code, which also needs the current logical canvas size.
+  const canvasSizeRef = useRef({ width: 800, height: 600 });
+  const {
+    zoom,
+    pan,
+    setPan,
+    fitScale,
+    fitScaleRef,
+    zoomRef,
+    viewportRef,
+    viewportCallbackRef,
+    applyZoomChange,
+    fitToViewport,
+  } = useCanvasViewport(canvasSizeRef);
   // Issue #171 (task 139): the Preview/canvas `<section>` itself (not the
   // inner scroll/zoom viewport `viewportRef` above tracks) — the element
   // `handleLayerRowSelect` below scrolls into view when a Layers-panel row
@@ -1293,74 +1224,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     // jsdom (unit tests) has no `scrollIntoView` implementation at all.
     el.scrollIntoView?.({ block: 'nearest' });
   }, []);
-  const wheelCleanupRef = useRef<(() => void) | null>(null);
-  const viewportCallbackRef = useCallback((node: HTMLDivElement | null) => {
-    wheelCleanupRef.current?.();
-    wheelCleanupRef.current = null;
-    viewportRef.current = node;
-    setViewportNode(node);
-    if (!node) return;
-    // Issue #156: Ctrl/Cmd+scroll-wheel is the zoom accelerator — a plain
-    // scroll (no modifier) must NOT be hijacked, so this only ever calls
-    // `preventDefault()` once the modifier check below passes.
-    const onWheel = (event: WheelEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) return;
-      event.preventDefault();
-      const next = clampZoomValue(zoomRef.current - event.deltaY * 0.001);
-      setZoom(next);
-      setPan((current) =>
-        next <= 1
-          ? { x: 0, y: 0 }
-          : clampPanValue(current, next, node.getBoundingClientRect(), {
-              width: canvasSizeRef.current.width * fitScaleRef.current,
-              height: canvasSizeRef.current.height * fitScaleRef.current,
-            }),
-      );
-    };
-    node.addEventListener('wheel', onWheel, { passive: false });
-    wheelCleanupRef.current = () => node.removeEventListener('wheel', onWheel);
-  }, []);
-
-  // Issue #184: recalculate the largest scene fit whenever the actual
-  // Preview framing box changes. ResizeObserver is preferred because panel
-  // allocation can change without a window resize; the window fallback keeps
-  // this usable in older browsers and lightweight test environments.
-  useEffect(() => {
-    if (!viewportNode) return;
-    const updateFit = () => {
-      const rect = viewportNode.getBoundingClientRect();
-      const styles = window.getComputedStyle(viewportNode);
-      const cssPixels = (value: string) => Number.parseFloat(value) || 0;
-      const horizontalPadding = cssPixels(styles.paddingLeft) + cssPixels(styles.paddingRight);
-      const verticalPadding = cssPixels(styles.paddingTop) + cssPixels(styles.paddingBottom);
-      const width = Math.max(0, rect.width - horizontalPadding);
-      const height = Math.max(0, rect.height - verticalPadding);
-      const { width: logicalWidth, height: logicalHeight } = canvasSizeRef.current;
-      const nextFit = getCanvasFitScale(width, height, logicalWidth, logicalHeight);
-      setFitScale((current) => (Math.abs(current - nextFit) < 0.0001 ? current : nextFit));
-      setPan((current) =>
-        zoomRef.current <= 1
-          ? { x: 0, y: 0 }
-          : clampPanValue(
-              current,
-              zoomRef.current,
-              { width, height },
-              {
-                width: logicalWidth * fitScaleRef.current,
-                height: logicalHeight * fitScaleRef.current,
-              },
-            ),
-      );
-    };
-    updateFit();
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(updateFit) : null;
-    observer?.observe(viewportNode);
-    window.addEventListener('resize', updateFit);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', updateFit);
-    };
-  }, [viewportNode]);
   // Issue #111: the shape currently under the pointer, hit-tested the same
   // way `handleCanvasClick`/`handleCanvasPointerDown` do (topmost-shape-
   // wins), so hovering can show a distinct affordance from the selected
@@ -1482,7 +1345,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // drag gesture began.
   const sceneEditorRef = useRef(sceneEditor);
   sceneEditorRef.current = sceneEditor;
-  const canvasSizeRef = useRef({ width: 800, height: 600 });
   const getCameraOverlay = (): RenderableCameraOverlay | undefined => {
     if (cameraStatus !== 'active' || !cameraStream || !cameraVideoRef.current) return undefined;
     const { width, height } = canvasSizeRef.current;
@@ -1915,7 +1777,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [applyZoomChange, zoomRef]);
 
   // Issue #79: vertex edit mode's two keyboard affordances that aren't
   // already covered by the generic drag-cancel/undo-redo listeners above:
@@ -2204,29 +2066,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return null;
     return clientToCanvasPoint(rect, clientX, clientY, canvasWidth, canvasHeight);
-  }
-
-  // Issue #156: the single entry point every zoom-changing affordance (the
-  // +/- toolbar buttons below, the Ctrl/Cmd+"+"/"-"/0 keyboard shortcuts
-  // above, and the Ctrl/Cmd+scroll-wheel listener registered in
-  // `viewportCallbackRef` above) goes through — clamps the new zoom to
-  // [MIN_ZOOM, MAX_ZOOM], and either resets pan to centered (at/below
-  // 100%, where there is no overflow to pan into) or re-clamps the
-  // existing pan against the new zoom level (so zooming back down never
-  // leaves the view stuck panned past the now-smaller overflow).
-  function applyZoomChange(nextRaw: number) {
-    const next = clampZoomValue(nextRaw);
-    setZoom(next);
-    setPan((current) => {
-      if (next <= 1) return { x: 0, y: 0 };
-      const rect = viewportRef.current?.getBoundingClientRect();
-      return rect
-        ? clampPanValue(current, next, rect, {
-            width: canvasSizeRef.current.width * fitScaleRef.current,
-            height: canvasSizeRef.current.height * fitScaleRef.current,
-          })
-        : current;
-    });
   }
 
   function handleCanvasClick(event: ReactMouseEvent<HTMLDivElement>) {
@@ -3013,28 +2852,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
               >
                 Reset zoom
               </button>
-              <button
-                type="button"
-                className="editor-zoom-reset-button"
-                onClick={() => {
-                  const rect = viewportRef.current?.getBoundingClientRect();
-                  if (rect) {
-                    const styles = window.getComputedStyle(viewportRef.current!);
-                    const cssPixels = (value: string) => Number.parseFloat(value) || 0;
-                    const width = Math.max(
-                      0,
-                      rect.width - cssPixels(styles.paddingLeft) - cssPixels(styles.paddingRight),
-                    );
-                    const height = Math.max(
-                      0,
-                      rect.height - cssPixels(styles.paddingTop) - cssPixels(styles.paddingBottom),
-                    );
-                    setFitScale(getCanvasFitScale(width, height, canvasWidth, canvasHeight));
-                  }
-                  setZoom(1);
-                  setPan({ x: 0, y: 0 });
-                }}
-              >
+              <button type="button" className="editor-zoom-reset-button" onClick={fitToViewport}>
                 Fit to viewport
               </button>
             </div>

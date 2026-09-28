@@ -61,7 +61,7 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
     expect(profileResponse.ok()).toBe(true);
     const profile = (await profileResponse.json()) as Record<string, unknown>;
     const updatedProfile = await apiPatch(context, '/api/account/profile/', {
-      ...profile,
+      revision: profile.revision,
       handle: 'e2e-six-engine',
       display_name: 'Six Engine Fixture',
       is_public: true,

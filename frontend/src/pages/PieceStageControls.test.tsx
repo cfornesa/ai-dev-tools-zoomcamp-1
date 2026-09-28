@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -107,8 +107,7 @@ describe('PieceStageControls capability gating', () => {
     vi.clearAllMocks();
   });
 
-  it('keeps unavailable controls visible, disabled, and explained', async () => {
-    const user = userEvent.setup();
+  it('keeps unavailable top-level controls visible while omitting an empty controls panel', () => {
     renderControls();
 
     expect(screen.getByRole('button', { name: /unmute sound/i })).toBeDisabled();
@@ -118,18 +117,8 @@ describe('PieceStageControls capability gating', () => {
       'piece-stage-sound-reason',
     );
 
-    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
-
-    expect(screen.getByRole('region', { name: 'Piece controls' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Enable microphone' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Enable camera view' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Steer the piece' })).toBeDisabled();
-    expect(screen.getByLabelText('Sound volume')).toBeDisabled();
-    expect(
-      within(screen.getByRole('region', { name: 'Piece controls' })).getAllByText(
-        'Requires the Creator plan.',
-      ),
-    ).toHaveLength(5);
+    expect(screen.queryByRole('button', { name: 'Piece controls' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Piece controls' })).not.toBeInTheDocument();
   });
 
   it('does not disable capability controls that are available', async () => {

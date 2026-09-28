@@ -53,7 +53,7 @@ export const RENDERER_LABELS: Record<RendererId, string> = {
  * driven by the same renderer-agnostic runtime for every node type), so
  * their capability sets are identical — see module doc comment above. */
 const FULL_2D_CAPABILITIES = {
-  shapeTypes: new Set(['circle', 'rect', 'line', 'path', 'particleEmitter']),
+  shapeTypes: new Set(['image', 'circle', 'rect', 'line', 'path', 'particleEmitter']),
   nodeTypes: new Set([
     'handSignal',
     'gestureEvent',

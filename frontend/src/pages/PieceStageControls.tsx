@@ -1060,14 +1060,18 @@ function PieceStageControls({
     download: capabilities.download === true ? ('zip' as const) : false,
     // The immersive surface is already the immersive view: no self-link (matrix row 3, #753).
     immersive: capabilities.immersive === true && presentation !== 'immersive',
-    // Keep the affordance visible when the published piece does not have the
-    // capability. The button explains the entitlement boundary instead of
-    // making the feature disappear from the stage toolbar.
+    // Keep the Sound affordance visible so a capability-disabled piece can
+    // explain the entitlement boundary without changing the toolbar shape.
     sound: true,
-    // Matrix (#766): the single Piece controls popover exists whenever any of its
-    // contents (sound, mic, keyboard, camera view, Steer) is offered. Steer lives
-    // inside that popover, never as its own toolbar button.
-    pieceControls: true,
+    // Matrix (#766): expose the shared popover only when it has a usable
+    // surface, or when immersive navigation needs its reset controls.
+    pieceControls:
+      soundAvailable ||
+      capabilities.keyboard === true ||
+      capabilities.microphone === true ||
+      capabilities.camera_view === true ||
+      capabilities.hand_steering === true ||
+      presentation === 'immersive',
     gesture: false,
     gestureGuide: true,
     fullscreen: capabilities.fullscreen !== false,

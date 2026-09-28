@@ -1326,3 +1326,32 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   The parity matrix records the camera-independent Non-Camera behavior.
 - **New gaps:** Live extracted-ZIP audio assertions and screenshots remain
   blocked by the host browser runner; no browser or production claim is made.
+
+## Issue #915 transaction ledger
+
+- **Issue:** [#915](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/915)
+- **Phase:** QA passed locally; pending typed GitHub closure after evidence
+  reconciliation.
+- **Transaction:** Add the reference seven-effect microphone chain and audio
+  context recovery to the standalone structured-3D export while preserving
+  real stream routing and cleanup.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineering and QA — Codex / GPT-5 substitution for the rostered
+  implementation/review services; no independent second-opinion model was
+  available.
+- **Implementation commit:** Pending commit after this ledger update.
+- **Changed files:** `frontend/src/export/standaloneThreeRuntimeSource.ts`,
+  `frontend/src/export/standaloneThreeRuntimeSource.test.ts`, and
+  `frontend/src/export/generateHtmlExport3D.ts`.
+- **Checks:** Standalone 3D source and generated-export tests — 2 files / 19
+  tests passed; frontend typecheck, format-check, and lint passed. The targeted
+  3D browser test was attempted and failed before execution at the host's known
+  macOS MachPortRendezvous permission boundary.
+- **QA matrix:** Full structured-3D exports expose the seven fixed-order effect
+  toggles only while mic is active; toggling rebuilds the source chain, no
+  effects routes dry to `masterGain`, stopping releases the stream and nodes,
+  and `statechange` resumes suspended/interrupted contexts. Non-Camera exports
+  continue to omit the device-control module. The source test asserts every
+  effect name, rebuild hook, and recovery listener.
+- **New gaps:** Live analyser, screenshot, and physical browser verification
+  remain host-environment boundaries; no browser or production claim is made.

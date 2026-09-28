@@ -172,6 +172,7 @@ function buildIndexHtml(
   sonic?: SonicDefaults,
 ): string {
   const authored = sonic ?? normalizeSonic({})!;
+  const microphoneControls = `<div role="group" aria-label="Live mic"><button id="piece-mic" type="button" aria-pressed="false">Live mic</button><fieldset id="piece-mic-effects" hidden><legend>Microphone effects</legend>${['distortion', 'chorus', 'tremolo', 'pitch_shift', 'bitcrusher', 'flanger', 'ring_mod'].map((effect) => `<label><input type="checkbox" data-mic-effect="${effect}">${effect.replace('_', ' ')}</label>`).join('')}</fieldset></div>`;
   const selected = (value: string, current: string) => (value === current ? ' selected' : '');
   return `<!doctype html>
 <html>
@@ -208,7 +209,7 @@ ${renderExportStageToolbar({ buttons: ['screenshot', 'sound', 'controls', 'guide
     </fieldset>
     <p id="piece-sound-status" role="status">Sound is off.</p>
     <p id="piece-keyboard-status" role="status">Turn on Sound to play keyboard notes.</p>
-    ${variant === 'full' ? '<button id="piece-mic" type="button" aria-pressed="false">Live mic</button>' : ''}
+    ${variant === 'full' ? microphoneControls : ''}
     ${variant === 'full' ? '<button id="piece-theremin" type="button" aria-pressed="false">Camera theremin</button>' : ''}
     <p>Enable sound, then turn on keyboard notes to play A–L keys.</p>
     ${variant === 'full' ? '<div id="camera-controls-host" role="group" aria-label="Camera controls"></div>' : ''}

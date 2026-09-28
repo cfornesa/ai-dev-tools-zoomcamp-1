@@ -42,6 +42,20 @@ describe('standalone Three.js runtime source (#787)', () => {
     expect(full).toContain("['attack', 'decay', 'sustain', 'release']");
     expect(nonCamera).toContain("['attack', 'decay', 'sustain', 'release']");
     expect(full).toContain("getElementById('piece-mic')");
+    expect(full).toContain('piece-mic-effects');
+    expect(full).toContain('rebuildMicEffects');
+    expect(full).toContain('statechange');
+    for (const effect of [
+      'distortion',
+      'chorus',
+      'tremolo',
+      'pitch_shift',
+      'bitcrusher',
+      'flanger',
+      'ring_mod',
+    ]) {
+      expect(full).toContain(effect);
+    }
     expect(full).toContain("getElementById('piece-theremin')");
     expect(nonCamera).not.toContain("getElementById('piece-mic')");
     expect(nonCamera).not.toContain("getElementById('piece-theremin')");

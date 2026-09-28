@@ -227,6 +227,8 @@ ${ANIMATION_MATH_SOURCE}
     /* EXPORT_CAMERA_FEATURES_START */
     var micStream = null;
     var micSource = null;
+    var micEffectNodes = [];
+    var micEffectEnabled = { distortion: false, chorus: false, tremolo: false, pitch_shift: false, bitcrusher: false, flanger: false, ring_mod: false };
     var thereminEnabled = false;
     var thereminOscillator = null;
     var thereminGain = null;
@@ -243,6 +245,33 @@ ${ANIMATION_MATH_SOURCE}
     function setKeyboardStatus(text) {
       var status = document.getElementById('piece-keyboard-status');
       if (status) status.textContent = text;
+    }
+
+    function createMicEffect(name) {
+      if (!audioContext) return null;
+      if (name === 'distortion') {
+        var shaper = audioContext.createWaveShaper();
+        var curve = new Float32Array(256);
+        for (var i = 0; i < curve.length; i += 1) { var x = i / 128 - 1; curve[i] = Math.tanh(x * 3); }
+        shaper.curve = curve; return shaper;
+      }
+      if (name === 'chorus' || name === 'flanger') { var delay = audioContext.createDelay(1); delay.delayTime.value = name === 'chorus' ? 0.03 : 0.006; return delay; }
+      if (name === 'tremolo' || name === 'ring_mod') { var gain = audioContext.createGain(); gain.gain.value = name === 'tremolo' ? 0.7 : 0.5; return gain; }
+      if (name === 'pitch_shift') { var pitch = audioContext.createBiquadFilter(); pitch.type = 'highpass'; pitch.frequency.value = 180; return pitch; }
+      var crusher = audioContext.createBiquadFilter(); crusher.type = 'lowpass'; crusher.frequency.value = 2400; return crusher;
+    }
+    function rebuildMicEffects() {
+      if (!micSource || !masterGain) return;
+      micSource.disconnect();
+      micEffectNodes.forEach(function (node) { node.disconnect(); });
+      micEffectNodes = [];
+      ['distortion', 'chorus', 'tremolo', 'pitch_shift', 'bitcrusher', 'flanger', 'ring_mod'].forEach(function (name) {
+        if (micEffectEnabled[name]) { var node = createMicEffect(name); if (node) micEffectNodes.push(node); }
+      });
+      var destination = micEffectNodes[0] || masterGain;
+      micSource.connect(destination);
+      for (var i = 0; i < micEffectNodes.length - 1; i += 1) micEffectNodes[i].connect(micEffectNodes[i + 1]);
+      if (micEffectNodes.length) micEffectNodes[micEffectNodes.length - 1].connect(masterGain);
     }
 
     function stopAmbient() {
@@ -323,6 +352,9 @@ ${ANIMATION_MATH_SOURCE}
       masterGain.gain.value = volumePercent / 100;
       masterGain.connect(masterFilter);
       masterFilter.connect(audioContext.destination);
+      audioContext.addEventListener('statechange', function () {
+        if (audioContext.state === 'suspended' || audioContext.state === 'interrupted') audioContext.resume();
+      });
       soundEnabled = true;
       setSoundButton();
       setSoundStatus('Sound is on. Ambient sound is playing.');
@@ -362,6 +394,8 @@ ${ANIMATION_MATH_SOURCE}
         micSource.disconnect();
         micSource = null;
       }
+      micEffectNodes.forEach(function (node) { node.disconnect(); });
+      micEffectNodes = [];
       if (micStream) {
         micStream.getTracks().forEach(function (track) { track.stop(); });
         micStream = null;
@@ -371,6 +405,8 @@ ${ANIMATION_MATH_SOURCE}
         micButton.setAttribute('aria-pressed', 'false');
         micButton.textContent = 'Live mic';
       }
+      var effectsPanel = document.getElementById('piece-mic-effects');
+      if (effectsPanel) effectsPanel.hidden = true;
     }
     document.getElementById('piece-mic')?.addEventListener('click', async function () {
       if (!soundEnabled || !audioContext || !masterGain) return;
@@ -381,13 +417,23 @@ ${ANIMATION_MATH_SOURCE}
       try {
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         micSource = audioContext.createMediaStreamSource(micStream);
-        micSource.connect(masterGain);
+        rebuildMicEffects();
+        var effectsPanel = document.getElementById('piece-mic-effects');
+        if (effectsPanel) effectsPanel.hidden = false;
         this.setAttribute('aria-pressed', 'true');
         this.textContent = 'Stop live mic';
       } catch {
         stopMic();
         this.textContent = 'Mic unavailable';
       }
+    });
+    document.querySelectorAll('[data-mic-effect]').forEach(function (input) {
+      input.addEventListener('change', function (event) {
+        var name = event.currentTarget.getAttribute('data-mic-effect');
+        if (!name) return;
+        micEffectEnabled[name] = event.currentTarget.checked;
+        rebuildMicEffects();
+      });
     });
     function stopTheremin() {
       if (thereminOscillator) {

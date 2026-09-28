@@ -387,3 +387,28 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   closed through the typed issue-state update after this ledger captured the
   complete evidence; no workaround was attempted.
 - **New gaps:** None.
+
+## Issue #999 transaction ledger
+
+- **Issue:** [#999](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/999)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Add one-pass `shapeLabels` generation and use it for the
+  outline and behavior-card target picker, preserving `shapeLabel` for single
+  shape callers.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `76657481` (`perf(editor): batch shape label generation`).
+- **Changed files:** `frontend/src/pages/sceneShapes.ts`,
+  `frontend/src/pages/sceneShapes.test.ts`, `frontend/src/pages/sceneOutline.ts`,
+  `frontend/src/pages/BehaviorCardsPanel.tsx`.
+- **Checks:** Targeted scene-shape/outline tests — 107 passed; `npm run typecheck`;
+  `npm run lint -- --quiet`; `npm run format:check`.
+- **QA matrix:** The new 200-shape test compares independent expected labels
+  and the old `shapeLabel` output, including per-type ordinals; outline and
+  existing single-shape label tests remain green.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.

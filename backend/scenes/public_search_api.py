@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.art_piece_persistence import eligible_art_pieces
+from scenes.collections import _cover_payload, _thumbnail_url
 from scenes.gallery import (
     DEFAULT_PAGE_SIZE,
     clamp_page_size,
@@ -111,6 +112,15 @@ def _public_collection_index_payloads(collections):
     }
     payloads = []
     for collection in collections:
+        explicit_cover = _cover_payload(collection, public=True)
+        fallback_cover = next(
+            (
+                _thumbnail_url(item.kind, item.item_id)
+                for item in getattr(collection, "_public_index_items", [])
+                if item.item_id in eligible_ids_by_kind[item.kind]
+            ),
+            None,
+        )
         public_item_count = sum(
             item.item_id in eligible_ids_by_kind[item.kind]
             for item in getattr(collection, "_public_index_items", [])
@@ -121,7 +131,7 @@ def _public_collection_index_payloads(collections):
                 "id": str(collection.public_id),
                 "title": collection.title,
                 "owner_handle": handle,
-                "cover_url": None,
+                "cover_url": (explicit_cover or {}).get("url") or fallback_cover,
                 "item_count": public_item_count,
                 "published_at": collection.published_at,
                 "viewer_url": (

@@ -32,7 +32,20 @@ export type Collection = {
   immersive_url?: string | null;
   embed_url?: string | null;
   download_url?: string | null;
+  cover: CollectionCover | null;
+  cover_url: string | null;
 };
+
+export type CollectionCover = {
+  piece_kind: '2d' | '3d' | 'generated';
+  piece_public_id: string;
+  asset_id: string;
+  filename: string;
+  mime_type: string;
+  url: string | null;
+};
+
+export type CollectionCoverAsset = Omit<CollectionCover, 'url'>;
 
 export type CollectionComment = {
   id: number;
@@ -74,6 +87,10 @@ export function fetchCollections() {
   return apiFetch<Collection[]>('/api/account/collections/');
 }
 
+export function fetchCollectionCoverAssets() {
+  return apiFetch<CollectionCoverAsset[]>('/api/account/collections/cover-assets/');
+}
+
 export function createCollection(title: string, description = '') {
   return apiFetch<Collection>('/api/account/collections/', {
     method: 'POST',
@@ -89,6 +106,7 @@ export function updateCollection(
     public_slug?: string;
     status?: Collection['status'];
     comments_enabled?: boolean;
+    cover?: CollectionCoverAsset | null;
   },
 ) {
   return apiFetch<Collection>(`/api/account/collections/${id}/`, {

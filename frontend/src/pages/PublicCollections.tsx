@@ -17,6 +17,13 @@ function PublicCollectionCard({ collection }: { collection: PublicCollectionInde
     <article className="public-collections-card" aria-label={accessibleName}>
       {collection.viewer_url ? (
         <Link to={collection.viewer_url} aria-label={`Open ${accessibleName}`}>
+          {collection.cover_url ? (
+            <img src={collection.cover_url} alt="" className="public-collections-cover" />
+          ) : (
+            <div role="img" aria-label="Collection preview unavailable">
+              No preview available
+            </div>
+          )}
           <h3>{collection.title}</h3>
         </Link>
       ) : (

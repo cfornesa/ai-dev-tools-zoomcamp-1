@@ -15,6 +15,7 @@ from scenes.models import (
     Collection,
     CollectionItem,
     CollectionSlugRedirect,
+    PieceIntakeAsset,
     Project,
     Project3D,
     PublicProfile,
@@ -103,6 +104,43 @@ def _thumbnail_url(kind: str, item_id: uuid.UUID) -> str:
     return f"/api/public/art-pieces/{item_id}/thumbnail.png"
 
 
+def _public_cover_piece(owner, kind: str, public_id: uuid.UUID):
+    if kind == "2d":
+        return eligible_projects().filter(owner=owner, public_id=public_id).first()
+    if kind == "3d":
+        return eligible_projects3d().filter(owner=owner, public_id=public_id).first()
+    if kind == "generated":
+        return eligible_art_pieces().filter(owner=owner, public_id=public_id).first()
+    return None
+
+
+def _cover_payload(collection: Collection, *, public: bool) -> dict | None:
+    kind = collection.cover_piece_kind
+    piece_id = collection.cover_piece_public_id
+    asset_id = collection.cover_asset_id
+    if not kind or not piece_id or not asset_id:
+        return None
+    asset = PieceIntakeAsset.objects.filter(
+        owner=collection.owner,
+        piece_kind=kind,
+        piece_public_id=piece_id,
+        source_asset_id=asset_id,
+        mime_type__startswith="image/",
+    ).first()
+    if asset is None:
+        return None
+    if public and _public_cover_piece(collection.owner, kind, piece_id) is None:
+        return None
+    return {
+        "piece_kind": kind,
+        "piece_public_id": str(piece_id),
+        "asset_id": str(asset_id),
+        "filename": asset.filename,
+        "mime_type": asset.mime_type,
+        "url": (f"/api/pieces/{kind}/{piece_id}/assets/{asset_id}/" if public else None),
+    }
+
+
 def _item_payload(item: CollectionItem, *, public: bool) -> dict | None:
     if hasattr(item, "_resolved_record"):
         record = cast(_ResolvedCollectionItem, item)._resolved_record
@@ -145,6 +183,7 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
     payloads = [
         payload for item in items if (payload := _item_payload(item, public=public)) is not None
     ]
+    cover = _cover_payload(collection, public=public)
     return {
         "id": str(collection.public_id),
         "title": collection.title,
@@ -160,6 +199,8 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
         "created_at": collection.created_at.isoformat(),
         "updated_at": collection.updated_at.isoformat(),
         "items": payloads,
+        "cover": cover,
+        "cover_url": cover["url"] if cover else None,
         "seo_config": collection.seo_config,
         "canonical_url": (
             f"/users/@{profile.handle}/collections/{collection.slug}" if profile else None
@@ -279,7 +320,13 @@ def create_collection(*, owner, title: str, description: str = "") -> Collection
 
 @transaction.atomic
 def update_collection(  # noqa: C901
-    *, collection: Collection, title=None, description=None, public_slug=None, status=None
+    *,
+    collection: Collection,
+    title=None,
+    description=None,
+    public_slug=None,
+    status=None,
+    cover=None,
 ) -> Collection:
     locked = Collection.objects.select_for_update().get(pk=collection.pk)
     if title is not None:
@@ -295,6 +342,32 @@ def update_collection(  # noqa: C901
         if status not in Collection.Status.values:
             raise CollectionValidationError("status must be active, draft, or archived.")
         locked.status = status
+    if cover is not None:
+        if cover == {} or cover is False:
+            locked.cover_piece_kind = ""
+            locked.cover_piece_public_id = None
+            locked.cover_asset_id = None
+        elif not isinstance(cover, dict):
+            raise CollectionValidationError("cover must be an object or null.")
+        else:
+            kind = cover.get("piece_kind")
+            piece_id = _as_uuid(cover.get("piece_public_id"))
+            asset_id = _as_uuid(cover.get("asset_id"))
+            if kind not in {"2d", "3d", "generated"}:
+                raise CollectionValidationError("cover piece_kind is invalid.")
+            if _public_cover_piece(locked.owner, kind, piece_id) is None:
+                raise CollectionValidationError("cover must reference your published artwork.")
+            if not PieceIntakeAsset.objects.filter(
+                owner=locked.owner,
+                piece_kind=kind,
+                piece_public_id=piece_id,
+                source_asset_id=asset_id,
+                mime_type__startswith="image/",
+            ).exists():
+                raise CollectionValidationError("cover image was not found.")
+            locked.cover_piece_kind = kind
+            locked.cover_piece_public_id = piece_id
+            locked.cover_asset_id = asset_id
     if public_slug is not None:
         normalized = normalize_public_slug(public_slug)
         if not normalized:
@@ -324,7 +397,17 @@ def update_collection(  # noqa: C901
     if hasattr(collection, "_seo_config_update"):
         locked.seo_config = collection._seo_config_update
     locked.save(
-        update_fields=["title", "description", "slug", "seo_config", "status", "updated_at"]
+        update_fields=[
+            "title",
+            "description",
+            "slug",
+            "seo_config",
+            "status",
+            "cover_piece_kind",
+            "cover_piece_public_id",
+            "cover_asset_id",
+            "updated_at",
+        ]
     )
     return locked
 

@@ -8,12 +8,14 @@ import { listProjects3D } from '../api/projects3d';
 import {
   createCollection,
   deleteCollection,
+  fetchCollectionCoverAssets,
   fetchCollections,
   replaceCollectionItems,
   setCollectionPublished,
   updateCollection,
   type Collection,
   type CollectionItem,
+  type CollectionCoverAsset,
 } from '../api/collections';
 
 const ITEM_KINDS: Array<CollectionItem['kind']> = ['project', 'project3d', 'art_piece'];
@@ -39,6 +41,8 @@ export default function CollectionManagement() {
   const [pickerItems, setPickerItems] = useState<PickerItem[]>([]);
   const [pickerQuery, setPickerQuery] = useState('');
   const [pickerSelection, setPickerSelection] = useState('');
+  const [coverAssets, setCoverAssets] = useState<CollectionCoverAsset[]>([]);
+  const [coverLoading, setCoverLoading] = useState(false);
 
   useEffect(() => {
     if (auth.status !== 'signed-in') return;
@@ -63,6 +67,23 @@ export default function CollectionManagement() {
     setCollectionStatus(selected.status ?? 'active');
     setCommentsEnabled(selected.comments_enabled ?? false);
   }, [selected]);
+
+  async function loadCoverAssets() {
+    if (coverAssets.length > 0 || coverLoading) return;
+    setCoverLoading(true);
+    try {
+      setCoverAssets(await fetchCollectionCoverAssets());
+    } catch {
+      setError('Could not load your published image assets.');
+    } finally {
+      setCoverLoading(false);
+    }
+  }
+
+  async function saveCover(cover: CollectionCoverAsset | null) {
+    if (!selected) return;
+    await run(() => updateCollection(selected.id, { cover }), 'Collection cover saved.');
+  }
 
   if (auth.status === 'loading') return <p role="status">Loading collections…</p>;
   if (auth.status !== 'signed-in') return <Navigate to="/" replace />;
@@ -429,6 +450,31 @@ export default function CollectionManagement() {
                     </form>
                   )}
                 </div>
+              </section>
+              <section aria-labelledby="collection-cover-heading">
+                <h3 id="collection-cover-heading">Cover image</h3>
+                <p>Choose an image retained with one of your published pieces.</p>
+                <button type="button" onClick={() => void loadCoverAssets()} disabled={busy}>
+                  {coverLoading ? 'Loading image assets…' : 'Load image assets'}
+                </button>
+                {coverAssets.length > 0 && (
+                  <select
+                    aria-label="Collection cover image"
+                    value={selected.cover?.asset_id ?? ''}
+                    onChange={(event) => {
+                      const asset = coverAssets.find((candidate) => candidate.asset_id === event.target.value);
+                      void saveCover(asset ?? null);
+                    }}
+                  >
+                    <option value="">No cover image</option>
+                    {coverAssets.map((asset) => (
+                      <option key={`${asset.piece_public_id}:${asset.asset_id}`} value={asset.asset_id}>
+                        {asset.filename} ({asset.piece_kind})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {selected.cover?.filename && <p role="status">Current cover: {selected.cover.filename}</p>}
               </section>
               <div className="collection-management-actions">
                 <button type="button" disabled={busy} onClick={() => void togglePublished()}>

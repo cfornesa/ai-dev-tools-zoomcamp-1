@@ -289,6 +289,12 @@ class Collection(models.Model):
         max_length=8, choices=Status.choices, default=Status.ACTIVE, db_index=True
     )
     comments_enabled = models.BooleanField(default=False)
+    # Polymorphic reference to a server-retained image from a published piece.
+    # This deliberately mirrors PieceIntakeAsset's public delivery contract
+    # instead of introducing a second collection-only blob store.
+    cover_piece_kind = models.CharField(max_length=16, blank=True, default="")
+    cover_piece_public_id = models.UUIDField(null=True, blank=True)
+    cover_asset_id = models.UUIDField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)

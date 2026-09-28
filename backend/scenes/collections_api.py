@@ -16,6 +16,7 @@ from scenes.collections import (
     CollectionNotFound,
     CollectionValidationError,
     _collection_for_owner,
+    _public_cover_piece,
     collection_payload,
     create_collection,
     public_collection,
@@ -26,7 +27,7 @@ from scenes.collections import (
     update_collection,
 )
 from scenes.content_metadata import sanitize_content_seo
-from scenes.models import Collection, CollectionComment
+from scenes.models import Collection, CollectionComment, PieceIntakeAsset
 
 
 def _auth_required(request):
@@ -102,6 +103,9 @@ class CollectionDetailView(APIView):
                 description=request.data.get("description"),
                 public_slug=request.data.get("public_slug"),
                 status=request.data.get("status"),
+                cover=({} if request.data.get("cover") is None else request.data["cover"])
+                if "cover" in request.data
+                else None,
             )
             if "comments_enabled" in request.data:
                 collection.comments_enabled = bool(request.data["comments_enabled"])
@@ -212,6 +216,39 @@ class CollectionSnapshotView(APIView):
         if collection is None:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         return Response(collection_payload(collection, public=False))
+
+
+class CollectionCoverAssetListView(APIView):
+    """List owner-owned published image assets eligible for collection covers."""
+
+    def get(self, request):
+        denied = _auth_required(request)
+        if denied:
+            return denied
+        assets = PieceIntakeAsset.objects.filter(
+            owner=request.user, mime_type__startswith="image/", source_asset_id__isnull=False
+        ).order_by("-created_at", "-id")
+        payload = []
+        seen = set()
+        for asset in assets:
+            key = (asset.piece_kind, asset.piece_public_id, asset.source_asset_id)
+            if (
+                key in seen
+                or _public_cover_piece(request.user, asset.piece_kind, asset.piece_public_id)
+                is None
+            ):
+                continue
+            seen.add(key)
+            payload.append(
+                {
+                    "piece_kind": asset.piece_kind,
+                    "piece_public_id": str(asset.piece_public_id),
+                    "asset_id": str(asset.source_asset_id),
+                    "filename": asset.filename,
+                    "mime_type": asset.mime_type,
+                }
+            )
+        return Response(payload)
 
 
 class PublicCollectionDetailView(APIView):

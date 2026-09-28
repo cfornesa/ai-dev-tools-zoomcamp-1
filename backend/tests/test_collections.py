@@ -3,6 +3,7 @@
 import copy
 import io
 import json
+import uuid
 from datetime import timedelta
 from pathlib import Path
 from zipfile import ZipFile
@@ -22,6 +23,7 @@ from scenes.models import (
     Collection,
     CollectionItem,
     CollectionSlugRedirect,
+    PieceIntakeAsset,
     Project,
     Project3D,
     PublicProfile,
@@ -231,6 +233,60 @@ def test_owner_can_create_stable_slug_and_update_collection(owner_client, owner)
     assert old_response.status_code == 200
     renamed_payload = next(item for item in old_response.json() if item["id"] == first["id"])
     assert renamed_payload["canonical_url"].endswith("/collections/curated-works")
+
+
+@pytest.mark.django_db
+def test_owner_can_select_published_piece_image_as_collection_cover(
+    owner_client, owner, anonymous_client
+):
+    project = _published_project(owner, "Cover source")
+    asset_id = uuid.uuid4()
+    PieceIntakeAsset.objects.create(
+        owner=owner,
+        piece_kind="2d",
+        piece_public_id=project.public_id,
+        source_asset_id=asset_id,
+        filename="cover.png",
+        mime_type="image/png",
+        byte_size=3,
+        checksum="a" * 64,
+        data=b"png",
+    )
+    collection = _create_collection(owner_client, "Covered")
+    response = owner_client.patch(
+        f"/api/account/collections/{collection['id']}/",
+        {
+            "cover": {
+                "piece_kind": "2d",
+                "piece_public_id": str(project.public_id),
+                "asset_id": str(asset_id),
+            }
+        },
+        format="json",
+    )
+    assert response.status_code == 200
+    assert response.json()["cover"]["filename"] == "cover.png"
+    assert response.json()["cover_url"] is None
+    assert owner_client.get("/api/account/collections/cover-assets/").json()[0]["asset_id"] == str(
+        asset_id
+    )
+
+    assert (
+        owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+        == 200
+    )
+    public = anonymous_client.get("/api/public/collections/collection-owner/covered/")
+    assert public.status_code == 200
+    assert public.json()["cover_url"].endswith(
+        f"/api/pieces/2d/{project.public_id}/assets/{asset_id}/"
+    )
+    cleared = owner_client.patch(
+        f"/api/account/collections/{collection['id']}/",
+        {"cover": None},
+        format="json",
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["cover"] is None
 
 
 @pytest.mark.django_db

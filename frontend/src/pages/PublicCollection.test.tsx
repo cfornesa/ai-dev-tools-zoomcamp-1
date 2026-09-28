@@ -29,6 +29,8 @@ const SAMPLE: collectionsApi.Collection = {
   published_at: '2026-01-01T00:00:00Z',
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
+  cover: null,
+  cover_url: null,
   canonical_url: '/users/@alice/collections/spring-studies',
   immersive_url: '/users/@alice/collections/spring-studies/immersive',
   items: [

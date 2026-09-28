@@ -105,6 +105,7 @@ from scenes.cloud_retention_api import AdminCloudRetentionPurgeView, AdminCloudR
 from scenes.cloud_sync_preference_api import AccountCloudSyncView
 from scenes.collections_api import (
     CollectionCommentDeleteView,
+    CollectionCoverAssetListView,
     CollectionDetailView,
     CollectionItemsView,
     CollectionListCreateView,
@@ -142,6 +143,11 @@ from scenes.storage_usage_api import AccountStorageEstimateView
 from scenes.sync_mutation_api import SyncMutationReceiptView
 
 urlpatterns = [
+    path(
+        "account/collections/cover-assets/",
+        CollectionCoverAssetListView.as_view(),
+        name="collection-cover-assets",
+    ),
     path("pieces/intake/", PiecePackageIntakeView.as_view(), name="piece-package-intake"),
     path(
         "pieces/<str:kind>/<uuid:public_id>/assets/<uuid:asset_id>/",

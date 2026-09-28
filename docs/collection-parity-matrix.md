@@ -13,5 +13,6 @@ Source surfaces: the external owner repository’s collection routes and collect
 | Explicit item count on detail | External collection detail exposes the collection item count | Current public collection detail relies on the item list and has no explicit count | Gap | New criterion-ready issue [#823](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/823) |
 | Complete collection download | External collection detail exposes a complete collection download action | Current public collection detail has no complete-collection download action | Gap | New criterion-ready issue [#823](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/823) |
 | Legacy collection URLs | External route changes must remain addressable | Legacy regular and immersive collection URLs redirect permanently to canonical routes | Same | Existing `collections.spec.ts` |
+| Manual collection cover image | External collection supports an owner-selected thumbnail with item-preview fallback | Owner can select an image retained with a published piece; public cards and detail render it, falling back to the first public item preview | Same | `collectionCover.spec.ts` and API tests |
 
 The audit is presentation-only. It does not reopen the closed collection-domain issues or implement #823; #823 is the routed implementation item for the two identified gaps.

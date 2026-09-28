@@ -136,6 +136,19 @@ export default function PublicCollection() {
           </Link>
         </p>
         <h2 id="public-collection-heading">{collection.title}</h2>
+        {collection.cover_url ? (
+          <img
+            src={collection.cover_url}
+            alt={`Cover for ${collection.title}`}
+            className="public-collection-cover"
+          />
+        ) : collection.items[0]?.thumbnail_url ? (
+          <img
+            src={collection.items[0].thumbnail_url}
+            alt={`Preview of ${collection.items[0].title}`}
+            className="public-collection-cover"
+          />
+        ) : null}
         <p className="page-kind">{collection.items.length} items</p>
         {collection.description && <p>{collection.description}</p>}
         <div className="public-collection-actions" aria-label="Collection actions">

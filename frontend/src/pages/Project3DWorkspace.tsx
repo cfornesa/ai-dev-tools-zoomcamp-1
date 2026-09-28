@@ -437,7 +437,9 @@ function Project3DWorkspace({
     opacity: 1,
   };
 
-  function addObject(type: Extract<Object3DType, 'sphere' | 'plane' | 'drawingPlane'>) {
+  function addObject(
+    type: Extract<Object3DType, 'box' | 'sphere' | 'cylinder' | 'plane' | 'drawingPlane'>,
+  ) {
     const id = createId(
       type,
       currentScene.objects.map((object) => object.id),
@@ -454,37 +456,63 @@ function Project3DWorkspace({
             visible: true,
             radius: 1,
           }
-        : type === 'drawingPlane'
+        : type === 'box'
           ? {
               id,
-              name: `Drawing plane ${currentScene.objects.filter((item) => item.type === 'drawingPlane').length + 1}`,
-              type,
-              groupId: null,
-              transform: structuredClone(identityTransform),
-              material: { color: '#ffffff' },
-              visible: true,
-              width: 4,
-              height: 3,
-              doubleSided: true,
-              // #781: the documented drawing resolution (4:3, matching the default 4 x 3 plane).
-              drawing: {
-                width: DRAWING_PLANE_RESOLUTION.width,
-                height: DRAWING_PLANE_RESOLUTION.height,
-                background: '#ffffff',
-                shapes: [],
-              },
-            }
-          : {
-              id,
-              name: `Plane ${currentScene.objects.filter((item) => item.type === 'plane').length + 1}`,
+              name: `Box ${currentScene.objects.filter((item) => item.type === 'box').length + 1}`,
               type,
               groupId: null,
               transform: structuredClone(identityTransform),
               material: { color: '#7b7bd8' },
               visible: true,
-              width: 4,
-              height: 4,
-            };
+              width: 2,
+              height: 2,
+              depth: 2,
+            }
+          : type === 'cylinder'
+            ? {
+                id,
+                name: `Cylinder ${currentScene.objects.filter((item) => item.type === 'cylinder').length + 1}`,
+                type,
+                groupId: null,
+                transform: structuredClone(identityTransform),
+                material: { color: '#7b7bd8' },
+                visible: true,
+                radiusTop: 1,
+                radiusBottom: 1,
+                height: 2,
+              }
+            : type === 'drawingPlane'
+              ? {
+                  id,
+                  name: `Drawing plane ${currentScene.objects.filter((item) => item.type === 'drawingPlane').length + 1}`,
+                  type,
+                  groupId: null,
+                  transform: structuredClone(identityTransform),
+                  material: { color: '#ffffff' },
+                  visible: true,
+                  width: 4,
+                  height: 3,
+                  doubleSided: true,
+                  // #781: the documented drawing resolution (4:3, matching the default 4 x 3 plane).
+                  drawing: {
+                    width: DRAWING_PLANE_RESOLUTION.width,
+                    height: DRAWING_PLANE_RESOLUTION.height,
+                    background: '#ffffff',
+                    shapes: [],
+                  },
+                }
+              : {
+                  id,
+                  name: `Plane ${currentScene.objects.filter((item) => item.type === 'plane').length + 1}`,
+                  type,
+                  groupId: null,
+                  transform: structuredClone(identityTransform),
+                  material: { color: '#7b7bd8' },
+                  visible: true,
+                  width: 4,
+                  height: 4,
+                };
     // #781: the plane's material is lit, so in a scene with no lights at all the drawing would render
     // black. Adding the first drawing plane also adds a neutral ambient light so it shows true colours.
     const lights =
@@ -911,6 +939,16 @@ function Project3DWorkspace({
                           aria-label="Add plane"
                         >
                           Add plane
+                        </button>
+                        <button type="button" onClick={() => addObject('box')} aria-label="Add box">
+                          Add box
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => addObject('cylinder')}
+                          aria-label="Add cylinder"
+                        >
+                          Add cylinder
                         </button>
                         <button
                           type="button"

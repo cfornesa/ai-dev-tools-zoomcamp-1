@@ -127,9 +127,13 @@ describe('Project3DWorkspace Save action', () => {
     expect(screen.getByRole('group', { name: '3D authoring actions' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add sphere' }));
     await user.click(screen.getByRole('button', { name: 'Add plane' }));
+    await user.click(screen.getByRole('button', { name: 'Add box' }));
+    await user.click(screen.getByRole('button', { name: 'Add cylinder' }));
     await user.click(screen.getByRole('button', { name: 'Add group' }));
     expect(screen.getByRole('button', { name: 'Sphere 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Plane 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Box 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cylinder 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Group: Group 1' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Sphere 1' }));

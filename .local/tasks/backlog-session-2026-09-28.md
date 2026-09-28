@@ -1134,3 +1134,35 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   lifecycle and callback contract; no claim is made about manual pointer
   feel on that unavailable runner.
 - **New gaps:** None discovered.
+
+## Issue #976 transaction ledger
+
+- **Issue:** [#976](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/976)
+- **Phase:** QA passed locally; pending typed GitHub closure after evidence
+  reconciliation.
+- **Transaction:** Restore the canonical immersive route for published
+  structured 2D pieces by mounting the existing public 2D renderer from the
+  existing canonical slug resolver, with a keyboard-accessible back link to
+  the regular canonical view.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineering — Codex / GPT-5 substitution for the rostered
+  implementation service. QA — Codex / GPT-5 substitution for the rostered
+  fresh-eyes reviewer; no independent second-opinion model was available.
+- **Changed files:** `frontend/src/pages/CanonicalImmersiveStructuredPiece.tsx`,
+  `frontend/src/pages/PublicProjectViewer.tsx`, and
+  `frontend/src/pages/CanonicalImmersiveStructuredPiece.test.tsx`.
+- **Checks:** Focused frontend route/viewer tests — 36 passed; canonical
+  backend API and slug-race tests — 30 passed; full frontend Vitest — 295
+  files / 3,081 tests passed; frontend typecheck, format-check, lint, and
+  production build passed. Lint and build emitted existing warnings only.
+- **QA matrix:** The canonical slug resolver continues to enforce public,
+  non-deleted, owner-scoped resolution and current-version serialization;
+  2D now renders through `PublicProjectViewer` on the immersive route, while
+  generated and 3D branches remain unchanged. The regular `/p/:id` and
+  `/embed/p/:id` routes are untouched. The added back link is semantic and
+  keyboard accessible.
+- **Browser boundary:** The required Playwright Chromium scenario was
+  attempted and failed before test execution because the host Chromium
+  process cannot register its macOS MachPortRendezvous service (`Permission
+  denied (1100)`). No browser pass or production claim is made.
+- **New gaps:** None discovered.

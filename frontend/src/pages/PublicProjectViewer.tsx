@@ -125,12 +125,15 @@ function PublicProjectViewer({
   authorDisplayName,
   authorHandle,
   canonicalRoute = false,
+  regularHref,
 }: {
   initialProject?: PublicProject;
   toolbarMode?: 'menu' | 'inline';
   authorDisplayName?: string;
   authorHandle?: string | null;
   canonicalRoute?: boolean;
+  /** #976: regular canonical view for the chrome-less immersive surface. */
+  regularHref?: string;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = routeId ?? initialProject?.id;
@@ -544,6 +547,11 @@ function PublicProjectViewer({
               authorHandle || project.owner_handle,
             )}
           </p>
+          {regularHref && (
+            <p>
+              <Link to={regularHref}>Back to regular view</Link>
+            </p>
+          )}
 
           {provenance &&
             (provenance.source_public_id && provenance.source_viewer_url ? (

@@ -184,6 +184,41 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 - **New gaps:** Manual desktop/mobile pointer verification remains an evidence
   boundary, not a discovered implementation defect.
 
+## Issue #1018 transaction ledger
+
+- **Issue:** [#1018](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1018)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Add an opt-in collection comments flag and authenticated
+  public comment endpoint. Comments are disabled by default, public payloads
+  include comments only when enabled, posts are per-user rate-limited, and
+  owners/admins can soft-delete comments.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `31d459a1` (`feat(collections): add authenticated comments`).
+- **Changed files:** `backend/scenes/models.py`,
+  `backend/scenes/migrations/0103_collection_comments_enabled_collectioncomment.py`,
+  `backend/scenes/collections.py`, `backend/scenes/collections_api.py`,
+  `backend/scenes/urls.py`, `backend/tests/test_collections.py`,
+  `frontend/src/api/collections.ts`, `frontend/src/pages/CollectionManagement.tsx`,
+  `frontend/src/pages/CollectionManagement.test.tsx`, and
+  `frontend/src/pages/PublicCollection.tsx`.
+- **Checks:** 28 backend collection tests passed; 8 focused frontend collection
+  tests passed; frontend typecheck and format-check passed; targeted backend
+  Ruff check/format-check and Django migration consistency check passed.
+- **QA matrix:** Disabled collections render no comment UI and reject posts;
+  anonymous posts receive 401; authenticated posts create comments; repeated
+  posts within the one-minute per-user/per-collection window receive 429;
+  the comments toggle persists independently of visibility/status. Repository
+  search found no existing moderation/reporting convention, so the issue's
+  permitted basic ownership/admin soft-delete fallback was used. No manual
+  browser verification was run.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** Rich moderation/reporting remains intentionally out of scope.
+
 ## Issue #1017 transaction ledger
 
 - **Issue:** [#1017](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1017)

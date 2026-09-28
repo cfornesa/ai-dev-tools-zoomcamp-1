@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any, Protocol, cast
 
 from django.db import transaction
 
@@ -28,6 +29,10 @@ class CollectionValidationError(Exception):
 
 class CollectionNotFound(Exception):
     """A collection is missing or not visible to the caller."""
+
+
+class _ResolvedCollectionItem(Protocol):
+    _resolved_record: Any
 
 
 _KIND_TO_LABEL: dict[str, str] = {
@@ -100,7 +105,7 @@ def _thumbnail_url(kind: str, item_id: uuid.UUID) -> str:
 
 def _item_payload(item: CollectionItem, *, public: bool) -> dict | None:
     if hasattr(item, "_resolved_record"):
-        record = item._resolved_record
+        record = cast(_ResolvedCollectionItem, item)._resolved_record
     else:
         record = _item_record(item.collection.owner, item.kind, item.item_id, public=public)
     if record is None:
@@ -129,10 +134,14 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
         CollectionItem.Kind.ART_PIECE: eligible_art_pieces() if public else ArtPiece.objects,
     }
     for kind, item_ids in item_ids_by_kind.items():
-        for record in querysets[kind].filter(owner=collection.owner, public_id__in=item_ids):
+        for record in querysets[cast(CollectionItem.Kind, kind)].filter(
+            owner=collection.owner, public_id__in=item_ids
+        ):
             records_by_key[(kind, record.public_id)] = record
     for item in items:
-        item._resolved_record = records_by_key.get((item.kind, item.item_id))
+        cast(_ResolvedCollectionItem, item)._resolved_record = records_by_key.get(
+            (item.kind, item.item_id)
+        )
     payloads = [
         payload for item in items if (payload := _item_payload(item, public=public)) is not None
     ]

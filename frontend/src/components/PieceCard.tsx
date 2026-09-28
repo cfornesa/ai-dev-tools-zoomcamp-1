@@ -75,7 +75,7 @@ export default function PieceCard({
         ) : (
           <img
             src={thumbnailUrl}
-            alt=""
+            alt={`Preview of ${title}`}
             className="piece-card-thumbnail public-project-thumbnail"
             onError={() => setThumbnailFailed(true)}
           />

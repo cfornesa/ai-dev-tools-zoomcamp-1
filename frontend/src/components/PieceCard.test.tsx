@@ -31,7 +31,7 @@ describe('PieceCard', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('presentation')).toHaveAttribute(
+    expect(screen.getByRole('img', { name: 'Preview of Fallback piece' })).toHaveAttribute(
       'src',
       '/api/public/art-pieces/fallback/thumbnail.png',
     );
@@ -53,7 +53,7 @@ describe('PieceCard', () => {
       </MemoryRouter>,
     );
 
-    expect(document.querySelector('img')).toHaveAttribute('alt', '');
+    expect(document.querySelector('img')).toHaveAttribute('alt', 'Preview of Editorial study');
     expect(screen.getByRole('link', { name: 'Editorial study' })).toHaveAttribute(
       'href',
       '/users/@alice/pieces/study',

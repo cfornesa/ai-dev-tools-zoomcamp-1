@@ -7,6 +7,10 @@ import { AuthContext } from '../auth/context';
 import * as repository from '../storage/localProjectRepository';
 import * as mutationOutbox from '../storage/mutationOutbox';
 import * as mediaTransferRepository from '../storage/mediaTransferRepository';
+import * as localPiecePackage from '../storage/localPiecePackage';
+import * as pieceIntake from '../api/pieceIntake';
+import * as projectsApi from '../api/projects';
+import * as storageUsageApi from '../api/storageUsage';
 import LocalEditorWorkspace from './LocalEditorWorkspace';
 
 vi.mock('../storage/localProjectRepository', async () => {
@@ -20,7 +24,21 @@ vi.mock('../storage/localProjectRepository', async () => {
     listScenesForProject: vi.fn(),
     listMediaAssetsForProject: vi.fn(),
     updateScene: vi.fn(),
+    updateProject: vi.fn(),
+    getProjectStorageUsage: vi.fn(),
   };
+});
+vi.mock('../storage/localPiecePackage', async () => {
+  const actual = await vi.importActual<typeof import('../storage/localPiecePackage')>(
+    '../storage/localPiecePackage',
+  );
+  return { ...actual, buildLocal2dPiecePackage: vi.fn() };
+});
+vi.mock('../api/pieceIntake', () => ({ intakePiecePackage: vi.fn() }));
+vi.mock('../api/storageUsage', () => ({ fetchStorageEstimate: vi.fn() }));
+vi.mock('../api/projects', async () => {
+  const actual = await vi.importActual<typeof import('../api/projects')>('../api/projects');
+  return { ...actual, publishProject: vi.fn() };
 });
 
 const mockedOpen = vi.mocked(repository.openLocalProjectDatabase);
@@ -28,8 +46,14 @@ const mockedGetProject = vi.mocked(repository.getProject);
 const mockedListScenes = vi.mocked(repository.listScenesForProject);
 const mockedListAssets = vi.mocked(repository.listMediaAssetsForProject);
 const mockedUpdateScene = vi.mocked(repository.updateScene);
+const mockedUpdateProject = vi.mocked(repository.updateProject);
+const mockedGetUsage = vi.mocked(repository.getProjectStorageUsage);
 const mockedListMutationOutbox = vi.spyOn(mutationOutbox, 'listMutationOutbox');
 const mockedListMediaTransfers = vi.spyOn(mediaTransferRepository, 'listMediaTransfersForProject');
+const mockedBuildPackage = vi.mocked(localPiecePackage.buildLocal2dPiecePackage);
+const mockedIntake = vi.mocked(pieceIntake.intakePiecePackage);
+const mockedPublish = vi.mocked(projectsApi.publishProject);
+const mockedEstimate = vi.mocked(storageUsageApi.fetchStorageEstimate);
 const db = { close: vi.fn() } as unknown as IDBDatabase;
 
 const project = {
@@ -72,6 +96,7 @@ function renderPage() {
       <MemoryRouter initialEntries={['/local-projects/p1']}>
         <Routes>
           <Route path="/local-projects/:id" element={<LocalEditorWorkspace />} />
+          <Route path="/users/:handle/edit/:slug" element={<div>Server-backed editor</div>} />
         </Routes>
       </MemoryRouter>
     </AuthContext.Provider>,
@@ -87,6 +112,34 @@ beforeEach(() => {
   mockedUpdateScene.mockResolvedValue({ ...scene, name: 'Renamed scene' });
   mockedListMutationOutbox.mockResolvedValue([]);
   mockedListMediaTransfers.mockResolvedValue([]);
+  mockedUpdateProject.mockImplementation((_db, _ownerId, _id, patch) =>
+    Promise.resolve({ ...project, ...patch }),
+  );
+  mockedGetUsage.mockResolvedValue({
+    versionBytesUsed: 100,
+    bytesUsed: 200,
+    fileCount: 1,
+  });
+  mockedBuildPackage.mockResolvedValue({
+    bytes: new Uint8Array([1, 2, 3]),
+    missingAssets: [],
+  });
+  mockedEstimate.mockResolvedValue({
+    remaining_after: { private: { bytes: 1000, files: 10 }, public: { bytes: 1000, files: 10 } },
+    fits: { private: true, public: true },
+  });
+  mockedIntake.mockResolvedValue({
+    kind: '2d',
+    public_id: 'server-p1',
+    version: 1,
+    visibility: 'private',
+    media_count: 0,
+  });
+  mockedPublish.mockResolvedValue({
+    ...project,
+    id: 'server-p1',
+    editor_url: '/users/@alice/edit/local-project',
+  } as unknown as Awaited<ReturnType<typeof projectsApi.publishProject>>);
 });
 
 describe('LocalEditorWorkspace', () => {
@@ -145,5 +198,66 @@ describe('LocalEditorWorkspace', () => {
     expect(
       screen.getByText(/missing from this browser or belongs to another local owner/i),
     ).toBeVisible();
+  });
+
+  describe('Make public (#942)', () => {
+    it('blocks Publish until title and description are both present', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(await screen.findByRole('button', { name: 'Make public' }));
+      const publishButton = screen.getByRole('button', { name: 'Publish' });
+      expect(publishButton).toBeDisabled();
+      expect(screen.getByText(/add a description before publishing/i)).toBeVisible();
+
+      await user.type(screen.getByLabelText('Description'), 'A short description.');
+      expect(publishButton).toBeEnabled();
+
+      await user.clear(screen.getByLabelText('Title'));
+      expect(publishButton).toBeDisabled();
+      expect(screen.getByText(/choose a meaningful title/i)).toBeVisible();
+    });
+
+    it('uploads and publishes a valid local-only piece, then navigates to the server-backed editor', async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(await screen.findByRole('button', { name: 'Make public' }));
+      await user.type(screen.getByLabelText('Description'), 'A short description.');
+      await user.click(screen.getByRole('button', { name: 'Publish' }));
+
+      expect(await screen.findByText('Server-backed editor')).toBeVisible();
+      expect(mockedBuildPackage).toHaveBeenCalledWith(
+        db,
+        'alice',
+        'p1',
+        undefined,
+        'A short description.',
+      );
+      expect(mockedIntake).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), expect.any(String));
+      expect(mockedPublish).toHaveBeenCalledWith('server-p1');
+      expect(mockedUpdateProject).toHaveBeenCalledWith(db, 'alice', 'p1', {
+        cloudSyncState: 'synced',
+        remotePublicId: 'server-p1',
+        remoteVersion: 1,
+      });
+    });
+
+    it('refuses to upload over quota and leaves the local piece untouched', async () => {
+      mockedEstimate.mockResolvedValue({
+        remaining_after: { private: { bytes: 1000, files: 10 }, public: { bytes: 0, files: 0 } },
+        fits: { private: true, public: false },
+      });
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(await screen.findByRole('button', { name: 'Make public' }));
+      await user.type(screen.getByLabelText('Description'), 'A short description.');
+      await user.click(screen.getByRole('button', { name: 'Publish' }));
+
+      expect(await screen.findByText(/over quota/i)).toBeVisible();
+      expect(mockedIntake).not.toHaveBeenCalled();
+      expect(mockedPublish).not.toHaveBeenCalled();
+    });
   });
 });

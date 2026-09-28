@@ -95,12 +95,20 @@ export async function buildLocalPiecePackage(
   return { bytes, missingAssets };
 }
 
-/** Build and checksum-verify a single local 2D piece without mutating IndexedDB. */
+/**
+ * Build and checksum-verify a single local 2D piece without mutating
+ * IndexedDB. `descriptionOverride` (issue #942) lets a caller supply a
+ * description for the outgoing package — `LocalProjectRecord` has no
+ * persisted description field of its own, so this is the only place a
+ * local-only 2D piece's description reaches the server, via the "make
+ * public" transfer's own dialog input.
+ */
 export async function buildLocal2dPiecePackage(
   db: IDBDatabase,
   ownerId: string,
   projectId: string,
   packageModule?: LocalPiecePackageModule,
+  descriptionOverride?: string,
 ): Promise<LocalPiecePackageResult> {
   const project = await getProject(db, ownerId, projectId);
   if (!project) throw new Error('The local piece is missing or belongs to another owner.');
@@ -129,7 +137,7 @@ export async function buildLocal2dPiecePackage(
   const bytes = await buildPiecePackage({
     kind: '2d',
     title: project.title,
-    description: '',
+    description: descriptionOverride ?? '',
     appVersion: 'local-first-2d',
     records: scenes.map((scene) => ({ schemaVersion: 1, data: scene.sceneJson })),
     mediaAssets,

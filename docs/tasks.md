@@ -24241,3 +24241,17 @@ than silently omitted. `#823` (item count, complete download bundle) was
 already tracked and is not re-filed. Nested/sub-collections were checked
 against both reference repos and found unsupported in either — not a gap.
 None of the 13 issues have been implemented yet.
+
+## 2026-09-28 — Codex substitution backlog transaction
+
+The live inventory contained 62 open issues. Production data actions #788
+and #906 and owner-decision issues #1004–#1006 remain blocked; #976 remains
+blocked pending the irreversible public-route confirmation. The first
+unblocked owner-priority transaction, #979, was implemented and locally QA
+verified by Codex as the authorized substitution for the rostered engineering
+and QA services. Commit `550089a3` extracts `useCameraOverlay` from
+`EditorWorkspace.tsx`; 37 test files/425 tests, typecheck, lint, and
+format-check passed. The required GitHub QA comment was rejected by the
+connector's external-publication risk policy, so the complete evidence and
+the publication boundary are recorded in
+`.local/tasks/backlog-session-2026-09-28.md`; no workaround was attempted.

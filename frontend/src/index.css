@@ -637,7 +637,7 @@ button:disabled {
 }
 
 .account-settings-input {
-  min-height: 40px;
+  min-height: 44px;
   box-sizing: border-box;
   padding: 8px 12px;
   border: 1px solid var(--border);
@@ -2229,7 +2229,7 @@ code {
 .publish-visibility-switch .publish-visibility-option {
   width: auto;
   flex: 0 0 auto;
-  min-height: 2rem;
+  min-height: 44px;
   padding: 0.25rem 0.75rem;
   border: 0;
   background: transparent;

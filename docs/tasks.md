@@ -24259,3 +24259,10 @@ Issue #980 then centralized code-tab synchronization in `f5866d72`; its
 35-file/399-test EditorWorkspace matrix, typecheck, lint, and format-check
 passed. It was reconciled and closed with the same connector publication
 boundary recorded in the ledger.
+Issue #981 then extracted the canvas viewport lifecycle into
+`useCanvasViewport` in `a4a1e4f4`; its 35-file/399-test EditorWorkspace
+matrix, typecheck, quiet lint, format-check, and diff-check passed. The live
+Chrome check was unavailable because no running local stack/browser session
+was provided; this was recorded as an environment boundary. It was
+reconciled and closed with the same connector publication boundary recorded
+in the ledger.

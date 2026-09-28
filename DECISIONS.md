@@ -2060,6 +2060,7 @@ camera-overlay hook extraction in commit `550089a3`, with 37 focused test
 files/425 tests plus typecheck, lint, and format-check passing. The required
 GitHub QA comment was rejected by the connector's external-publication risk
 policy; the complete evidence and boundary are recorded in
-`.local/tasks/backlog-session-2026-09-28.md`. The remaining open backlog was
-not silently claimed complete; #980 was left unchanged after an unverified
-abstraction attempt was backed out.
+`.local/tasks/backlog-session-2026-09-28.md`. #980 was also completed in
+`f5866d72`, and #981's canvas viewport extraction was completed in
+`a4a1e4f4`; both were locally verified and closed through typed issue-state
+updates. The remaining open backlog was not silently claimed complete.

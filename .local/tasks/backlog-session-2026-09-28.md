@@ -94,6 +94,26 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1008 transaction ledger
+
+- **Issue:** [#1008](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1008)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local
+  reconciliation.
+- **Transaction:** Resolved by #977: Ask AI now sits in the z-indexed editor
+  control panel above the canvas rail, eliminating the documented overlap and
+  pointer-hit-testing risk without changing its behavior.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `cd66b916` (#977).
+- **Checks:** #977 focused and full frontend suites, typecheck, lint, and
+  format-check passed; its Chromium setup boundary is recorded in the #977
+  ledger entry.
+- **GitHub closure evidence:** The attempted linkage comment was rejected by
+  the authenticated connector's external-publication risk policy. The issue
+  was closed through the typed issue-state update; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #997 transaction ledger
 
 - **Issue:** [#997](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/997)

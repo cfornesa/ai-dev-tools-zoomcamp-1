@@ -125,6 +125,13 @@ describe('Project3DWorkspace Save action', () => {
     await user.click(screen.getByRole('button', { name: '3D authoring' }));
 
     expect(screen.getByRole('group', { name: '3D authoring actions' })).toBeInTheDocument();
+    const helpersToggle = screen.getByRole('button', { name: 'Hide grid and axes' });
+    expect(helpersToggle).toHaveAttribute('aria-pressed', 'true');
+    await user.click(helpersToggle);
+    expect(screen.getByRole('button', { name: 'Show grid and axes' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     await user.click(screen.getByRole('button', { name: 'Add sphere' }));
     await user.click(screen.getByRole('button', { name: 'Add plane' }));
     await user.click(screen.getByRole('button', { name: 'Add box' }));

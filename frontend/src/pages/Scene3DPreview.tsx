@@ -236,6 +236,7 @@ function ThreeScenePreview({
   showScreenshotButton = true,
   showGestureControl = true,
   showSoundControl = true,
+  showEditorHelpers = false,
   flyControls = false,
   screenshotBaseName,
   onDownload,
@@ -288,6 +289,8 @@ function ThreeScenePreview({
   /** Base name for the downloaded screenshot filename (e.g. the project
    * title) -- falls back to the scene document's own `id`. */
   screenshotBaseName?: string;
+  /** Editor-only orientation aids; never part of the authored scene graph. */
+  showEditorHelpers?: boolean;
 }) {
   const frozenRef = useRef(frozen);
   frozenRef.current = frozen;
@@ -720,6 +723,13 @@ function ThreeScenePreview({
     const size = activeRenderer.getSize(new THREE.Vector2());
     const aspect = (size.x || 1) / (size.y || 1);
     const { scene: threeScene, camera } = buildThreeSceneGraph(scene, aspect);
+    if (showEditorHelpers) {
+      const grid = new THREE.GridHelper(20, 20, 0x64748b, 0x334155);
+      grid.name = '__editor-grid-helper';
+      const axes = new THREE.AxesHelper(5);
+      axes.name = '__editor-axes-helper';
+      threeScene.add(grid, axes);
+    }
     cameraRef.current = camera;
 
     // Issue #271: mouse-drag/touch-drag orbit, scroll/pinch zoom, and
@@ -977,7 +987,7 @@ function ThreeScenePreview({
       cameraRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rendererRef/renderError are refs/state read once per effect run, not reactive inputs the loop needs to resubscribe to independently of `scene`.
-  }, [scene, renderError]);
+  }, [scene, renderError, showEditorHelpers]);
 
   const cameraOverlayLive = Boolean(
     (showGestureControl && gestureControlEnabled && gestureCameraStream) ||

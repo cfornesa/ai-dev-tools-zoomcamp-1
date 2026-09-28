@@ -195,6 +195,7 @@ function Project3DWorkspace({
   const [project, setProject] = useState<Project3D | null>(null);
   const [versionHistory, setVersionHistory] = useState<SceneVersion3D[]>([]);
   const [workingScene, setWorkingScene] = useState<Scene3DDocument | null>(null);
+  const [editorHelpersVisible, setEditorHelpersVisible] = useState(true);
   // Issue #234: the last-saved scene, tracked separately from
   // `workingScene` so a dirty check (`workingScene !== persistedScene`,
   // by reference -- every mutation path replaces the object wholesale,
@@ -900,6 +901,7 @@ function Project3DWorkspace({
                   : undefined
               }
               scene={workingScene}
+              showEditorHelpers={editorHelpersVisible}
               screenshotBaseName={project?.title}
               immersiveHref={id ? `/immersive/p3d/${id}` : undefined}
               toolbarMode="inline"
@@ -926,6 +928,13 @@ function Project3DWorkspace({
                         aria-label="3D authoring actions"
                         className="editor-authoring-command-group"
                       >
+                        <button
+                          type="button"
+                          onClick={() => setEditorHelpersVisible((visible) => !visible)}
+                          aria-pressed={editorHelpersVisible}
+                        >
+                          {editorHelpersVisible ? 'Hide grid and axes' : 'Show grid and axes'}
+                        </button>
                         <button
                           type="button"
                           onClick={() => addObject('sphere')}

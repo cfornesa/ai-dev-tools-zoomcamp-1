@@ -24255,3 +24255,7 @@ format-check passed. The required GitHub QA comment was rejected by the
 connector's external-publication risk policy, so the complete evidence and
 the publication boundary are recorded in
 `.local/tasks/backlog-session-2026-09-28.md`; no workaround was attempted.
+Issue #980 then centralized code-tab synchronization in `f5866d72`; its
+35-file/399-test EditorWorkspace matrix, typecheck, lint, and format-check
+passed. It was reconciled and closed with the same connector publication
+boundary recorded in the ledger.

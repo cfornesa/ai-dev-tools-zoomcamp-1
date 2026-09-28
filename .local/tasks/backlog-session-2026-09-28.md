@@ -70,3 +70,26 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   owner confirmation of the redirect/shim and compatibility plan.
 - Issues depending on closed prerequisites remain dependency-blocked until
   their named prerequisite is terminal; they were not implemented here.
+
+## Issue #980 transaction ledger
+
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Centralize HTML/CSS and JS code-tab synchronization in the
+  parameterized `useCodeTabSync` hook without changing round-trip behavior.
+- **Implementation commit:** `f5866d72`.
+- **Changed files:** `frontend/src/pages/EditorWorkspace.tsx`,
+  `frontend/src/pages/useCodeTabSync.ts`.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Checks:** `npx vitest run src/pages/EditorWorkspace*.test.tsx` — 35 files,
+  399 tests passed; `npm run typecheck` passed; `npm run lint` exited 0 with
+  pre-existing warnings; `npm run format:check` passed.
+- **QA matrix:** All four acceptance criteria PASS. JSON remains on its
+  existing sync hook; HTML/CSS retain their coupled parser/save semantics;
+  JS retains its unchanged-save no-op and error behavior.
+- **GitHub closure evidence:** QA comment publication was rejected by the
+  connector's external-publication risk policy. The issue was closed through
+  the typed issue-state update after this local ledger captured the complete
+  evidence; no workaround was attempted.
+- **New gaps:** None.

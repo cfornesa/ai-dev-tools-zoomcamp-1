@@ -510,3 +510,35 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   closed through the typed issue-state update after this ledger captured the
   complete evidence; no workaround was attempted.
 - **New gaps:** None.
+
+## Issue #977 transaction ledger
+
+- **Issue:** [#977](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/977)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Consolidate the structured 2D editor's File, Ask AI,
+  Visual/Code, zoom, and remaining save actions into one responsive control
+  row, with publication status inside File.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `cd66b916` (`feat(editor): consolidate 2d control row`).
+- **Changed files:** `frontend/src/pages/EditorWorkspace.tsx`,
+  `frontend/src/pages/ProjectMediaLibraryPanel.tsx`,
+  `frontend/src/pages/ProjectMediaLibraryPanel.test.tsx`,
+  `frontend/src/pages/PublishControl.tsx`, `frontend/src/index.css`, and
+  `frontend/e2e/manual2dStageChrome.spec.ts`.
+- **Checks:** Focused Vitest — 44 passed; full frontend Vitest — 3,076 passed;
+  typecheck, lint, and format-check passed. Chromium E2E was attempted but
+  both scenarios timed out in shared project creation while waiting for the
+  editor API response, before issue assertions ran.
+- **QA matrix:** File has a unique icon and retains keyboard menu behavior;
+  Ask AI is immediately after File outside the stage; Visual/Code and zoom are
+  in the same row; publication status is rendered inside File; the duplicate
+  stage publication trigger is absent; responsive Editor tools behavior and
+  existing save/runtime controls remain covered.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** The shared Chromium E2E setup/API timeout remains an existing
+  environment boundary and is not attributed to this UI change.

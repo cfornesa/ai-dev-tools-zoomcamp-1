@@ -50,6 +50,8 @@ import Scene3DAFramePreview from './Scene3DAFramePreview';
 import { resolveScene3DRenderer } from '../validation/scene3d';
 import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
 import { normalizeSonic } from '../audio/sonicContract';
+import { DEFAULT_SOUND_SETTINGS, SCENE3D_DEFAULT_KEYBOARD_SCALE } from '../audio/soundSettings';
+import { useSoundSettingsState } from '../audio/useSoundSettingsState';
 
 const HAND_MOVE_PINCH_THRESHOLD = 0.75;
 const PIANO_NOTES = Object.values(PIANO_KEY_MAP);
@@ -320,12 +322,42 @@ function ThreeScenePreview({
   if (sonicEngineRef.current === null) sonicEngineRef.current = createSonicEngine();
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [soundControlsResetKey, setSoundControlsResetKey] = useState(0);
-  const [soundVolume, setSoundVolume] = useState(50);
-  const [ambientBpm, setAmbientBpm] = useState(90);
-  const [ambientVolume, setAmbientVolume] = useState(50);
-  const [ambientMuted, setAmbientMuted] = useState(false);
-  const [ambientScale, setAmbientScale] = useState<SonicScale>('pentatonic');
-  const [keyboardVolume, setKeyboardVolume] = useState(50);
+  const {
+    soundVolume,
+    setSoundVolume,
+    ambientBpm,
+    setAmbientBpm,
+    ambientVolume,
+    setAmbientVolume,
+    ambientMuted,
+    setAmbientMuted,
+    ambientScale,
+    setAmbientScale,
+    keyboardRoot: keyboardKey,
+    setKeyboardRoot: setKeyboardKey,
+    keyboardScale,
+    setKeyboardScale,
+    keyboardTranspose: transpose,
+    setKeyboardTranspose: setTranspose,
+    followKey,
+    setFollowKey,
+    keyboardEnabled,
+    setKeyboardEnabled,
+    keyboardVolume,
+    setKeyboardVolume,
+  } = useSoundSettingsState({
+    soundVolume: DEFAULT_SOUND_SETTINGS.soundVolume * 100,
+    ambientBpm: DEFAULT_SOUND_SETTINGS.ambientBpm,
+    ambientVolume: DEFAULT_SOUND_SETTINGS.ambientVolume,
+    ambientMuted: DEFAULT_SOUND_SETTINGS.ambientMuted,
+    ambientScale: DEFAULT_SOUND_SETTINGS.ambientScale,
+    keyboardRoot: DEFAULT_SOUND_SETTINGS.keyboardRoot,
+    keyboardScale: SCENE3D_DEFAULT_KEYBOARD_SCALE,
+    keyboardTranspose: DEFAULT_SOUND_SETTINGS.keyboardTranspose,
+    followKey: DEFAULT_SOUND_SETTINGS.followKey,
+    keyboardEnabled: false,
+    keyboardVolume: DEFAULT_SOUND_SETTINGS.keyboardVolume,
+  });
   const [melodicSynthSettings, setMelodicSynthSettings] = useState<MelodicSynthSettings>({
     oscillator: 'sine',
     envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 },
@@ -333,10 +365,6 @@ function ThreeScenePreview({
     octaveShift: 0,
   });
   const [masterFilterCutoff, setMasterFilterCutoff] = useState(2000);
-  const [keyboardKey, setKeyboardKey] = useState<PitchClass>('C');
-  const [keyboardScale, setKeyboardScale] = useState<SonicScale>('chromatic');
-  const [transpose, setTranspose] = useState(0);
-  const [followKey, setFollowKey] = useState(false);
   const [effects, setEffects] = useState<Record<SonicEffectName, SonicEffectSettings>>({
     distortion: { enabled: false, amount: 0 },
     chorus: { enabled: false, amount: 0, rate: 4, depth: 0.5 },
@@ -375,7 +403,18 @@ function ThreeScenePreview({
       envelope: authored.extras.synth.envelope,
       octaveShift: authored.extras.synth.octave_min - 3,
     }));
-  }, [scene.sonic]);
+  }, [
+    scene.sonic,
+    setAmbientBpm,
+    setAmbientScale,
+    setKeyboardKey,
+    setKeyboardScale,
+    setTranspose,
+    setFollowKey,
+    setSoundVolume,
+    setAmbientVolume,
+    setKeyboardVolume,
+  ]);
   useEffect(() => {
     const engine = sonicEngineRef.current;
     return () => engine?.dispose();
@@ -447,7 +486,6 @@ function ThreeScenePreview({
   // `isEditableElement` guards exactly that. Only attached at all while
   // both sound and this toggle are on, and torn down immediately if sound
   // itself is muted (see `handleToggleSound` above).
-  const [keyboardEnabled, setKeyboardEnabled] = useState(false);
   const [pressedPianoNotes, setPressedPianoNotes] = useState<Set<string>>(new Set());
 
   const pressPianoNote = useCallback(

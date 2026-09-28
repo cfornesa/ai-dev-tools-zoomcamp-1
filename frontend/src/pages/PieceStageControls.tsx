@@ -26,6 +26,7 @@ import {
   type SoundSettings,
   soundSettingsFromSonic,
 } from '../audio/soundSettings';
+import { useSoundSettingsState } from '../audio/useSoundSettingsState';
 import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
 import { createMediaPipeTrackingProvider } from '../tracking/mediapipeProvider';
 import type { TrackingProvider, TrackingProviderError } from '../tracking/types';
@@ -171,19 +172,42 @@ function PieceStageControls({
   const [soundOn, setSoundOn] = useState(false);
   const [audioContextState, setAudioContextState] = useState<string | null>(null);
   const sonicEngineRef = useRef<SonicEngine | null>(null);
-  const [volume, setVolume] = useState(initialSoundSettings.soundVolume);
-  const [ambientBpm, setAmbientBpm] = useState(initialSoundSettings.ambientBpm);
-  const [ambientVolume, setAmbientVolume] = useState(initialSoundSettings.ambientVolume);
-  const [ambientMuted, setAmbientMuted] = useState(initialSoundSettings.ambientMuted);
-  const [ambientScale, setAmbientScale] = useState(initialSoundSettings.ambientScale);
-  const [keyboardEnabled, setKeyboardEnabled] = useState(false);
-  const [keyboardRoot, setKeyboardRoot] = useState(initialSoundSettings.keyboardRoot);
-  const [keyboardScale, setKeyboardScale] = useState(initialSoundSettings.keyboardScale);
-  const [keyboardTranspose, setKeyboardTranspose] = useState(
-    initialSoundSettings.keyboardTranspose,
-  );
-  const [followKey, setFollowKey] = useState(initialSoundSettings.followKey);
-  const [keyboardVolume, setKeyboardVolume] = useState(initialSoundSettings.keyboardVolume);
+  const {
+    soundVolume: volume,
+    setSoundVolume: setVolume,
+    ambientBpm,
+    setAmbientBpm,
+    ambientVolume,
+    setAmbientVolume,
+    ambientMuted,
+    setAmbientMuted,
+    ambientScale,
+    setAmbientScale,
+    keyboardEnabled,
+    setKeyboardEnabled,
+    keyboardRoot,
+    setKeyboardRoot,
+    keyboardScale,
+    setKeyboardScale,
+    keyboardTranspose,
+    setKeyboardTranspose,
+    followKey,
+    setFollowKey,
+    keyboardVolume,
+    setKeyboardVolume,
+  } = useSoundSettingsState({
+    soundVolume: initialSoundSettings.soundVolume,
+    ambientBpm: initialSoundSettings.ambientBpm,
+    ambientVolume: initialSoundSettings.ambientVolume,
+    ambientMuted: initialSoundSettings.ambientMuted,
+    ambientScale: initialSoundSettings.ambientScale,
+    keyboardRoot: initialSoundSettings.keyboardRoot,
+    keyboardScale: initialSoundSettings.keyboardScale,
+    keyboardTranspose: initialSoundSettings.keyboardTranspose,
+    followKey: initialSoundSettings.followKey,
+    keyboardEnabled: false,
+    keyboardVolume: initialSoundSettings.keyboardVolume,
+  });
   const [keyboardOscillator, setKeyboardOscillator] = useState(
     initialSoundSettings.keyboardOscillator,
   );
@@ -690,7 +714,7 @@ function PieceStageControls({
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [authoredSoundSettings, iframeRef, pieceId, soundOn]);
+  }, [authoredSoundSettings, iframeRef, pieceId, setKeyboardEnabled, setVolume, soundOn]);
 
   function command(type: string, extra?: Record<string, unknown>) {
     if (
@@ -747,52 +771,67 @@ function PieceStageControls({
   }
   commandRef.current = command;
 
-  const applySoundSettings = useCallback((settings: SoundSettings, applyRuntime: boolean) => {
-    setVolume(settings.soundVolume);
-    setAmbientBpm(settings.ambientBpm);
-    setAmbientVolume(settings.ambientVolume);
-    setAmbientMuted(settings.ambientMuted);
-    setAmbientScale(settings.ambientScale);
-    setKeyboardVolume(settings.keyboardVolume);
-    setKeyboardRoot(settings.keyboardRoot);
-    setKeyboardScale(settings.keyboardScale);
-    setKeyboardTranspose(settings.keyboardTranspose);
-    setFollowKey(settings.followKey);
-    setKeyboardOscillator(settings.keyboardOscillator);
-    setKeyboardFilterType(settings.keyboardFilterType);
-    setKeyboardFilterCutoff(settings.keyboardFilterCutoff);
-    setKeyboardFilterResonance(settings.keyboardFilterResonance);
-    setKeyboardAttack(settings.keyboardAttack);
-    setKeyboardDecay(settings.keyboardDecay);
-    setKeyboardSustain(settings.keyboardSustain);
-    setKeyboardRelease(settings.keyboardRelease);
-    setKeyboardOctave(settings.keyboardOctave);
-    setKeyboardEnabled(applyRuntime ? settings.keyboardEnabled : false);
-    if (!applyRuntime) return;
-    commandRef.current('set-volume', { value: settings.soundVolume });
-    commandRef.current('set-tempo', { value: settings.ambientBpm });
-    commandRef.current('set-voice-volume', { voice: 'ambient', value: settings.ambientVolume });
-    commandRef.current('set-voice-muted', { voice: 'ambient', enabled: settings.ambientMuted });
-    commandRef.current('set-scale', { value: settings.ambientScale });
-    commandRef.current('set-key', { root: settings.keyboardRoot, scale: settings.keyboardScale });
-    commandRef.current('set-transpose', { value: settings.keyboardTranspose });
-    commandRef.current('set-follow-key', { enabled: settings.followKey });
-    commandRef.current('set-voice-volume', { voice: 'melodic', value: settings.keyboardVolume });
-    commandRef.current('set-oscillator', { value: settings.keyboardOscillator });
-    commandRef.current('set-filter', {
-      filterType: settings.keyboardFilterType,
-      cutoff: settings.keyboardFilterCutoff,
-      resonance: settings.keyboardFilterResonance,
-    });
-    commandRef.current('set-envelope', {
-      attack: settings.keyboardAttack,
-      decay: settings.keyboardDecay,
-      sustain: settings.keyboardSustain,
-      release: settings.keyboardRelease,
-    });
-    commandRef.current('set-octave', { value: settings.keyboardOctave });
-    commandRef.current('set-keyboard-enabled', { enabled: settings.keyboardEnabled });
-  }, []);
+  const applySoundSettings = useCallback(
+    (settings: SoundSettings, applyRuntime: boolean) => {
+      setVolume(settings.soundVolume);
+      setAmbientBpm(settings.ambientBpm);
+      setAmbientVolume(settings.ambientVolume);
+      setAmbientMuted(settings.ambientMuted);
+      setAmbientScale(settings.ambientScale);
+      setKeyboardVolume(settings.keyboardVolume);
+      setKeyboardRoot(settings.keyboardRoot);
+      setKeyboardScale(settings.keyboardScale);
+      setKeyboardTranspose(settings.keyboardTranspose);
+      setFollowKey(settings.followKey);
+      setKeyboardOscillator(settings.keyboardOscillator);
+      setKeyboardFilterType(settings.keyboardFilterType);
+      setKeyboardFilterCutoff(settings.keyboardFilterCutoff);
+      setKeyboardFilterResonance(settings.keyboardFilterResonance);
+      setKeyboardAttack(settings.keyboardAttack);
+      setKeyboardDecay(settings.keyboardDecay);
+      setKeyboardSustain(settings.keyboardSustain);
+      setKeyboardRelease(settings.keyboardRelease);
+      setKeyboardOctave(settings.keyboardOctave);
+      setKeyboardEnabled(applyRuntime ? settings.keyboardEnabled : false);
+      if (!applyRuntime) return;
+      commandRef.current('set-volume', { value: settings.soundVolume });
+      commandRef.current('set-tempo', { value: settings.ambientBpm });
+      commandRef.current('set-voice-volume', { voice: 'ambient', value: settings.ambientVolume });
+      commandRef.current('set-voice-muted', { voice: 'ambient', enabled: settings.ambientMuted });
+      commandRef.current('set-scale', { value: settings.ambientScale });
+      commandRef.current('set-key', { root: settings.keyboardRoot, scale: settings.keyboardScale });
+      commandRef.current('set-transpose', { value: settings.keyboardTranspose });
+      commandRef.current('set-follow-key', { enabled: settings.followKey });
+      commandRef.current('set-voice-volume', { voice: 'melodic', value: settings.keyboardVolume });
+      commandRef.current('set-oscillator', { value: settings.keyboardOscillator });
+      commandRef.current('set-filter', {
+        filterType: settings.keyboardFilterType,
+        cutoff: settings.keyboardFilterCutoff,
+        resonance: settings.keyboardFilterResonance,
+      });
+      commandRef.current('set-envelope', {
+        attack: settings.keyboardAttack,
+        decay: settings.keyboardDecay,
+        sustain: settings.keyboardSustain,
+        release: settings.keyboardRelease,
+      });
+      commandRef.current('set-octave', { value: settings.keyboardOctave });
+      commandRef.current('set-keyboard-enabled', { enabled: settings.keyboardEnabled });
+    },
+    [
+      setAmbientBpm,
+      setAmbientMuted,
+      setAmbientScale,
+      setAmbientVolume,
+      setKeyboardEnabled,
+      setKeyboardRoot,
+      setKeyboardScale,
+      setKeyboardTranspose,
+      setKeyboardVolume,
+      setFollowKey,
+      setVolume,
+    ],
+  );
 
   function resetVisitorSoundSettings() {
     const settings = resetSoundSettings(pieceId, undefined, authoredSoundSettings);

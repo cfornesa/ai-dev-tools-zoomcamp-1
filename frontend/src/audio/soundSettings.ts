@@ -19,6 +19,11 @@ export const SOUND_SCALES = [
 export const SOUND_OSCILLATORS = ['sine', 'square', 'sawtooth', 'triangle'] as const;
 export const SOUND_FILTER_TYPES = ['lowpass', 'highpass', 'bandpass'] as const;
 
+// The structured 3D editor predates persisted piece settings and intentionally
+// starts its on-screen keyboard in chromatic mode. Keep that surface default
+// named here so it cannot drift from the shared sound-settings contract.
+export const SCENE3D_DEFAULT_KEYBOARD_SCALE = 'chromatic' as const;
+
 export type SoundSettings = {
   version: typeof SOUND_SETTINGS_VERSION;
   soundVolume: number;

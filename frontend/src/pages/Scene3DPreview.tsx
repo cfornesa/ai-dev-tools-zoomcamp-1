@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 
 import CameraControl, { type CameraControlProps } from '../components/CameraControl';
 import PieceStageToolbar from '../components/PieceStageToolbar';
@@ -41,7 +42,7 @@ import { prefersReducedMotion } from '../render/objectAnimation';
 import type { HandSignals } from '../tracking/handSignals';
 import type { TrackingFrame } from '../tracking/types';
 import HandGestureGuideDialog from './HandGestureGuideDialog';
-import type { Scene3DDocument } from './scene3dTypes';
+import type { Object3D, Scene3DDocument, Transform3D } from './scene3dTypes';
 import { useFullscreenToggle } from './useFullscreenToggle';
 import Scene3DAFramePreview from './Scene3DAFramePreview';
 import { useScene3DCameraState } from './useScene3DCameraState';
@@ -249,6 +250,10 @@ function ThreeScenePreview({
   pauseAnimations = false,
   onPickObject,
   renderOverlay,
+  selectedObjectId,
+  onObjectGestureStart,
+  onObjectGestureChange,
+  onObjectGestureEnd,
 }: {
   scene: Scene3DDocument;
   /** #782: holds object animations at their authored pose (e.g. while a selection's handles are shown) without freezing the camera. */
@@ -259,6 +264,12 @@ function ThreeScenePreview({
   onPickObject?: (objectId: string | null) => void;
   /** #782: selection chrome (handles, floating toolbar, precise panel) drawn over the stage in canvas-frame pixels. */
   renderOverlay?: (context: StageOverlayContext) => ReactNode;
+  /** #1012: object selected in the manual editor receives the transform gizmo. */
+  selectedObjectId?: string | null;
+  /** #1012: transient transform gesture hooks owned by the manual editor. */
+  onObjectGestureStart?: () => void;
+  onObjectGestureChange?: (object: Object3D) => void;
+  onObjectGestureEnd?: () => void;
   /** #783/#781: while true (draw mode) object animations hold their authored pose. */
   frozen?: boolean;
   showScreenshotButton?: boolean;
@@ -303,6 +314,15 @@ function ThreeScenePreview({
   } | null>(null);
   const onPickRef = useRef(onPickObject);
   onPickRef.current = onPickObject;
+  const selectedObjectIdRef = useRef(selectedObjectId);
+  selectedObjectIdRef.current = selectedObjectId;
+  const onObjectGestureStartRef = useRef(onObjectGestureStart);
+  onObjectGestureStartRef.current = onObjectGestureStart;
+  const onObjectGestureChangeRef = useRef(onObjectGestureChange);
+  onObjectGestureChangeRef.current = onObjectGestureChange;
+  const onObjectGestureEndRef = useRef(onObjectGestureEnd);
+  onObjectGestureEndRef.current = onObjectGestureEnd;
+  const transformDraggingRef = useRef(false);
   // Bumped whenever the camera moves or the stage resizes so the overlay re-projects.
   const [, setOverlayTick] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -789,6 +809,46 @@ function ThreeScenePreview({
       setOverlayTick((tick) => tick + 1);
     });
 
+    // Issue #1012: the manual editor uses the existing Three.js addon rather
+    // than maintaining a second DOM transform layer. The builder preserves
+    // each object's local transform on the named mesh, so the gizmo works for
+    // grouped objects without changing the authored scene hierarchy.
+    const transformControls = new TransformControls(camera, activeRenderer.domElement);
+    const selectedNode = selectedObjectIdRef.current
+      ? threeScene.getObjectByName(selectedObjectIdRef.current)
+      : undefined;
+    if (selectedNode && selectedObjectIdRef.current) {
+      transformControls.attach(selectedNode);
+      threeScene.add(transformControls);
+    }
+    const readTransform = (node: THREE.Object3D): Transform3D => ({
+      position: { x: node.position.x, y: node.position.y, z: node.position.z },
+      rotation: {
+        x: THREE.MathUtils.radToDeg(node.rotation.x),
+        y: THREE.MathUtils.radToDeg(node.rotation.y),
+        z: THREE.MathUtils.radToDeg(node.rotation.z),
+      },
+      scale: { x: node.scale.x, y: node.scale.y, z: node.scale.z },
+      opacity: scene.objects.find((object) => object.id === node.name)?.transform.opacity ?? 1,
+    });
+    const handleTransformDragging = (event: { value: unknown }) => {
+      const dragging = event.value === true;
+      transformDraggingRef.current = dragging;
+      controls.enabled = !dragging;
+      if (dragging) onObjectGestureStartRef.current?.();
+      else if (selectedNode && selectedObjectIdRef.current) {
+        const source = scene.objects.find((object) => object.id === selectedObjectIdRef.current);
+        if (source) {
+          onObjectGestureChangeRef.current?.({
+            ...source,
+            transform: readTransform(selectedNode),
+          });
+        }
+        onObjectGestureEndRef.current?.();
+      }
+    };
+    transformControls.addEventListener('dragging-changed', handleTransformDragging);
+
     // #782: a click that is not a drag picks the scene object under the pointer (or clears the pick).
     const objectIds = new Set(scene.objects.map((object) => object.id));
     const pickDom = activeRenderer.domElement;
@@ -975,7 +1035,7 @@ function ThreeScenePreview({
       }
       // #781: a frozen stage (draw mode) also holds the camera -- no orbit/zoom drag, fly keys, or
       // hand steering move it, so Confirm/Cancel returns to exactly the prior camera.
-      controls.enabled = !frozenRef.current;
+      controls.enabled = !frozenRef.current && !transformDraggingRef.current;
       if (!frozenRef.current) {
         if (gestureControlEnabledRef.current) applyGestureCameraControl(deltaSeconds);
         if (flyControls) applyFlyTranslation(deltaSeconds);
@@ -1002,12 +1062,15 @@ function ThreeScenePreview({
       }
       pickDom.removeEventListener('pointerdown', handlePickDown);
       pickDom.removeEventListener('pointerup', handlePickUp);
+      transformControls.removeEventListener('dragging-changed', handleTransformDragging);
+      transformControls.dispose();
+      transformDraggingRef.current = false;
       controls.dispose();
       disposeThreeSceneGraph(threeScene);
       cameraRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rendererRef/renderError are refs/state read once per effect run, not reactive inputs the loop needs to resubscribe to independently of `scene`.
-  }, [scene, renderError, showEditorHelpers]);
+  }, [scene, renderError, selectedObjectId, showEditorHelpers]);
 
   const cameraOverlayLive = Boolean(
     (showGestureControl && gestureControlEnabled && gestureCameraStream) ||

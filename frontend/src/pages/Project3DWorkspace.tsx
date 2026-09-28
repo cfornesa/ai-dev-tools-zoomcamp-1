@@ -873,6 +873,12 @@ function Project3DWorkspace({
               onPickObject={(objectId) =>
                 requestSelection(objectId ? { kind: 'object', id: objectId } : null)
               }
+              selectedObjectId={
+                selectedOutlineItem?.kind === 'object' ? selectedOutlineItem.id : null
+              }
+              onObjectGestureStart={beginGesture}
+              onObjectGestureChange={changeGesture}
+              onObjectGestureEnd={endGesture}
               renderOverlay={
                 overlayObject
                   ? (stage) => (

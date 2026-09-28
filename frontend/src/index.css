@@ -7965,6 +7965,42 @@ select.ai-proposal-field-full-width {
   }
 }
 
+.project3d-accordion {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  margin: var(--space-4) 0;
+}
+
+.project3d-accordion-section {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--code-bg) 72%, transparent);
+}
+
+.project3d-accordion-trigger {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text-h);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project3d-accordion-trigger:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.project3d-accordion-panel {
+  width: 100%;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
 .editor-sound-details {
   margin: 0.75rem 0;
   max-width: 42rem;

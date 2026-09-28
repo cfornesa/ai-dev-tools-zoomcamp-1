@@ -109,6 +109,29 @@ describe('Project3DWorkspace rendering library (#771, #772)', () => {
 });
 
 describe('Project3DWorkspace Save action', () => {
+  it('renders independent full-width Web address and Sound accordion sections', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject());
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByTestId('project3d-save-status');
+    const webAddress = screen.getByRole('button', { name: 'Web address' });
+    const sound = screen.getByRole('button', { name: 'Sound' });
+    expect(webAddress).toHaveAttribute('aria-expanded', 'false');
+    expect(sound).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('region', { name: 'Project settings' })).toBeInTheDocument();
+
+    await user.click(webAddress);
+    expect(webAddress).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Public URL slug')).toBeVisible();
+    expect(sound).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(sound);
+    expect(sound).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('group', { name: 'Authored sound defaults' })).toBeVisible();
+    expect(webAddress).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('exposes 3D authoring commands in the stage menu and makes object edits undoable', async () => {
     mockedGetProject3D.mockResolvedValue(baseProject());
     const user = userEvent.setup();

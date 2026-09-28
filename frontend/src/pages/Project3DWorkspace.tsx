@@ -219,6 +219,8 @@ function Project3DWorkspace({
   const [undoStack, setUndoStack] = useState<Scene3DDocument[]>([]);
   const [redoStack, setRedoStack] = useState<Scene3DDocument[]>([]);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
+  const [webAddressOpen, setWebAddressOpen] = useState(false);
+  const [soundOpen, setSoundOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>(IDLE_SAVE_STATE);
   // Issue #290: a standalone export/download action, always against the
   // current `workingScene` (never a stale/persisted copy), so the
@@ -726,19 +728,6 @@ function Project3DWorkspace({
         {id && !projectStorage.local && (
           <PublishControl3D id={id} project={project} setProject={setProject} />
         )}
-        {id && !projectStorage.local && (
-          <details className="piece-slug-details">
-            <summary>Web address</summary>
-            <PieceSlugField
-              current={project?.public_slug}
-              save={(slug) => updateProjectMetadata3D(id, { public_slug: slug })}
-              onSaved={(updated) => {
-                setProject((current) => (current ? { ...current, ...updated } : current));
-                if (updated.editor_url) navigate(updated.editor_url, { replace: true });
-              }}
-            />
-          </details>
-        )}
         {workingScene && (
           // #771/#772: the piece's explicit rendering library. Changing it is an undoable edit
           // that is saved as a new version like any other scene change.
@@ -759,15 +748,6 @@ function Project3DWorkspace({
               <option value="aframe">A-Frame</option>
             </select>
           </label>
-        )}
-        {workingScene && (
-          <details className="editor-sound-details">
-            <summary>Sound</summary>
-            <SonicDefaultsPanel
-              value={normalizeSonic(workingScene.sonic)}
-              onChange={(sonic) => updateWorkingScene({ ...workingScene, sonic })}
-            />
-          </details>
         )}
         <p
           role="status"
@@ -1055,6 +1035,60 @@ function Project3DWorkspace({
               }
             />
           </div>
+        </section>
+        <section className="project3d-accordion" aria-label="Project settings">
+          {id && !projectStorage.local && (
+            <div className="project3d-accordion-section">
+              <button
+                type="button"
+                className="project3d-accordion-trigger"
+                aria-expanded={webAddressOpen}
+                aria-controls="project3d-web-address-panel"
+                onClick={() => setWebAddressOpen((open) => !open)}
+              >
+                Web address
+              </button>
+              <div
+                id="project3d-web-address-panel"
+                className="project3d-accordion-panel"
+                aria-hidden={!webAddressOpen}
+                hidden={!webAddressOpen}
+              >
+                <PieceSlugField
+                  current={project?.public_slug}
+                  save={(slug) => updateProjectMetadata3D(id, { public_slug: slug })}
+                  onSaved={(updated) => {
+                    setProject((current) => (current ? { ...current, ...updated } : current));
+                    if (updated.editor_url) navigate(updated.editor_url, { replace: true });
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          {workingScene && (
+            <div className="project3d-accordion-section">
+              <button
+                type="button"
+                className="project3d-accordion-trigger"
+                aria-expanded={soundOpen}
+                aria-controls="project3d-sound-panel"
+                onClick={() => setSoundOpen((open) => !open)}
+              >
+                Sound
+              </button>
+              <div
+                id="project3d-sound-panel"
+                className="project3d-accordion-panel"
+                aria-hidden={!soundOpen}
+                hidden={!soundOpen}
+              >
+                <SonicDefaultsPanel
+                  value={normalizeSonic(workingScene.sonic)}
+                  onChange={(sonic) => updateWorkingScene({ ...workingScene, sonic })}
+                />
+              </div>
+            </div>
+          )}
         </section>
         <Outline3DInspector
           scene={workingScene}

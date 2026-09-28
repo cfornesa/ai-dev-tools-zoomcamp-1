@@ -1967,3 +1967,45 @@ production publish or data mutation is authorized by this decision.
   field was added.
 - Owner explicitly confirmed doing the milestone/index work now rather than
   scoping it as a separate follow-up issue.
+
+## 2026-09-27 (continued) — CONVENTIONS.md: multi-pillar standard + Batch 9
+
+- Owner expanded the code-quality ask into a full standing standard:
+  Python/TypeScript/React/HTML/CSS/vanilla-JS/dependencies/testing/
+  architecture/efficiency, plus WCAG accessibility, NIST-CSF security, and
+  design/UX (Nielsen's heuristics, Jakob's/Hick's/Fitt's Law). Owner
+  decisions: formalize the existing 100%-hand-rolled UI system (no
+  component library exists) rather than migrate, with room for a mixed
+  approach (an unstyled primitives library evaluated per-pattern, not a
+  blanket adoption); run a full tool-assisted sweep now, not a light
+  sample; use both a succinct root `CONVENTIONS.md` and full-depth
+  `docs/conventions/*.md` pages.
+- Full-sweep findings (all cited with file/line in the pages themselves):
+  no live exploitable security vulnerability; this app's accessibility
+  posture is genuinely strong (a shared `a11y/` hook library, 11 `jest-axe`
+  files, `docs/plan.md` naming accessibility a V1 requirement) with a
+  handful of real, narrow gaps; a real CSS bug (`--space-1`/`--space-3`
+  used but never defined, silently collapsing to 0); two real N+1 queries;
+  one real O(n²) pattern and one real per-frame linear-scan pattern, both
+  bounded by this app's own published scale ceilings (`schema/limits.json`,
+  `docs/benchmarks.md`); three real UI-consistency gaps needing an owner
+  call, not a unilateral fix.
+- Published `CONVENTIONS.md` (root) + 11 `docs/conventions/*.md` pages;
+  added pointers in `AGENTS.md` §10/§13, `docs/process.md`, `docs/
+  task-template.md`, and the `implementation-mechanical`/
+  `implementation-complex`/`qa-self-review` skills (+ `.agents/skills/`
+  mirrors) — fixed two dangling references to docs that never existed in
+  this repo (`docs/testing-guidelines.md`, `docs/design-system.md`) to
+  point at the real new pages.
+- Filed 18 new issues + edited 9 existing ones (#979–#986, #988) under a
+  new milestone, **Batch 9: CONVENTIONS.md rollout** (created open — the 8
+  historical batches are all closed). Three of the new issues are
+  owner-decision issues (entitlement-gating UI pattern, `admin-action-*`
+  vs `shell-action` shape language, unstyled-primitives-library
+  evaluation) — matching #886's options-plus-recommendation pattern, not
+  resolved unilaterally. None of the 18 have been implemented; that's
+  later work through the normal one-issue-at-a-time transaction.
+- Mid-session, plan mode re-engaged for a follow-up scope expansion
+  (2D/3D editor design standards, a collections UI, and incorporating
+  `LIGDOL_Creative_Continuity_Thesis.md`); owner explicitly directed
+  finishing this issue-filing pass first before that new plan proceeds.

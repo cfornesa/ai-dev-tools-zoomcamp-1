@@ -24163,3 +24163,41 @@ feature-queue streams (A–G) in the distillation doc, which still govern
 their own internal sequencing. Anything newly found with the same character
 (a control-flow tangle, a button/UI placement defect, an inconsistency) should
 get this label as it's filed, not just these ten.
+
+## 2026-09-27 (continued) — CONVENTIONS.md rollout: Milestone Batch 9
+
+A full-sweep, multi-pillar conventions audit (code quality, WCAG-aligned
+accessibility, NIST-CSF-aligned security, design/UX) produced
+[`CONVENTIONS.md`](../CONVENTIONS.md) plus 11 `docs/conventions/*.md` pages,
+and 18 new issues + edits to 9 existing ones (#979–#986, #988). All are
+filed under the new **Batch 9: CONVENTIONS.md rollout** milestone (created
+open — Batch 1–8 are all closed/historical), per the milestone-assignment
+rule this session added to `docs/process.md`.
+
+| Issue | Scope | Kind |
+|---|---|---|
+| [#989](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/989) | Duplicate `cryptography` entry in `backend/pyproject.toml` | mechanical |
+| [#990](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/990) | `fflate`/`jszip` overlap | investigative |
+| [#991](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/991) | `PieceCard.tsx` alt-text inconsistency | mechanical/owner-priority |
+| [#992](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/992) | Undefined `--space-1`/`--space-3` CSS tokens (real bug) | mechanical/owner-priority |
+| [#993](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/993) | 44px/40px/32px touch-target split | 2a |
+| [#994](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/994) | Contrast-ratio target + audit | 2a |
+| [#995](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/995) | Tracking: dependency-vulnerability scanning in CI | tracking |
+| [#996](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/996) | Tracking: incremental ruff `C90`/`N` + TS `strict` rollout | tracking |
+| [#997](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/997) | Two N+1s in `collections.py` | 2b |
+| [#998](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/998) | `behaviorRuntime.ts`'s per-frame `findIndex` → `Map` | 2b |
+| [#999](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/999) | `sceneShapes.ts`'s `shapeLabel` O(n²) | 2a |
+| [#1000](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1000) | Login-endpoint rate-limit/lockout | 2b/owner-priority |
+| [#1001](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1001) | Log permission denials in `permissions.py` | 2a/owner-priority |
+| [#1002](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1002) | Log PayPal webhook signature failures | 2b/owner-priority |
+| [#1003](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1003) | Route `canonical_piece_api.py`'s inline check through `permissions.py` | 2b |
+| [#1004](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1004) | **Owner-decision:** entitlement-gating UI pattern | owner-decision |
+| [#1005](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1005) | **Owner-decision:** `admin-action-*` vs `shell-action` shape language | owner-decision |
+| [#1006](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1006) | **Owner-decision:** unstyled primitives library for dialog/menu/radio-group | owner-decision |
+
+No live exploitable security vulnerability was found (see
+`docs/conventions/security.md`) — everything above is a process/architecture
+gap or a real-but-bounded defect, each with its own regression-risk/
+restoration-path section per `AGENTS.md` §13. None of these issues have
+been implemented yet; that follows later through the normal one-issue-at-
+a-time engineer/QA transaction.

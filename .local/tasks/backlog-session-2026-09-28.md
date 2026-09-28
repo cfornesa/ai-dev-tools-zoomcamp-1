@@ -1356,3 +1356,24 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   effect name, rebuild hook, and recovery listener.
 - **New gaps:** Live analyser, screenshot, and physical browser verification
   remain host-environment boundaries; no browser or production claim is made.
+
+## Task-distillation refresh — 2026-09-28 after stream E
+
+- **Live inventory:** 25 open GitHub issues remain after closing #911–#915.
+- **Completed in this loop:** #1012, #976, #916, #911, #912, #913, #914,
+  and #915 are closed with implementation or QA evidence in this ledger.
+- **Deferred same-goal issues:** #1020, #1021, and #1013 were not implemented;
+  #1021 remains the known backend mypy gate and #1020/#1013 remain follow-up
+  work discovered during the active goal.
+- **Next implementable candidates:** #1016 is contract-blocked by the absent
+  server-backed collection-media path; #1019 requires the split it names before
+  implementation. The next independent implementation candidate is #926,
+  subject to its real-provider credential/browser boundary. #847 remains
+  dependent on the public-media contract.
+- **Owner/data gates:** #906, #788, and #946 remain owner-authorized or
+  owner-run production data actions and were not touched. #1004–#1006 remain
+  owner decisions. #941/#942/#944/#945 remain dependency-ordered local-first
+  work.
+- **Discovery reconciliation:** No new issue was created in this refresh; no
+  newly created issue was implemented. Existing same-goal follow-ups remain
+  explicitly deferred.

@@ -100,3 +100,24 @@ The final verification boundary is unchanged: backend pytest and frontend
 Vitest passed, while `make check` fails at deferred #1021; #973/#975 have
 fresh QA records and #859 remains unverified. No PR was created and no newly
 created issue was implemented.
+
+## Completion refresh after stream E — 2026-09-28
+
+This remains an incomplete handoff for the remaining project backlog, but
+stream E reached its terminal implementation batch.
+
+- #911, #912, #913, #914, and #915 were implemented, QA-reconciled, committed,
+  and closed as completed on GitHub. Earlier #1012, #976, and #916 remain
+  reconciled in the same ledger.
+- 25 open issues remain. #1020, #1021, and #1013 are same-goal follow-ups and
+  were not implemented; owner/data actions and dependency-ordered work remain
+  open.
+- Focused tests and the frontend build passed. Browser suites were attempted
+  but blocked before execution by the host Chromium MachPort permission
+  failure; no browser or production claim was substituted.
+- Project-level production readiness remains `NO-GO`; this is a stream-E batch
+  completion record, not a claim that the full backlog is complete.
+
+Next action: continue with the next existing implementable issue after its
+contract and verification prerequisites are checked, keeping the newly created
+follow-ups deferred.

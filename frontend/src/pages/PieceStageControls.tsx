@@ -86,6 +86,8 @@ const PARENT_SOUND_COMMANDS = new Set([
   'set-keyboard-enabled',
 ]);
 
+const CAPABILITY_REASON = 'Requires the Creator plan.';
+
 function noteFrequency(note: string): number | null {
   const match = /^([A-G](?:#|b)?)(-?\d+)$/.exec(note);
   if (!match) return null;
@@ -1052,26 +1054,22 @@ function PieceStageControls({
       setDownloadError(error instanceof Error ? error.message : 'Download failed.');
     }
   }
+  const soundAvailable = capabilities.sound === true;
   const toolbarCapabilities: PieceStageCapabilities = {
     screenshot: capabilities.screenshot !== false,
     download: capabilities.download === true ? ('zip' as const) : false,
     // The immersive surface is already the immersive view: no self-link (matrix row 3, #753).
     immersive: capabilities.immersive === true && presentation !== 'immersive',
-    sound: capabilities.sound === true,
+    // Keep the affordance visible when the published piece does not have the
+    // capability. The button explains the entitlement boundary instead of
+    // making the feature disappear from the stage toolbar.
+    sound: true,
     // Matrix (#766): the single Piece controls popover exists whenever any of its
     // contents (sound, mic, keyboard, camera view, Steer) is offered. Steer lives
     // inside that popover, never as its own toolbar button.
-    pieceControls:
-      capabilities.sound === true ||
-      capabilities.camera_view === true ||
-      capabilities.microphone === true ||
-      capabilities.keyboard === true ||
-      capabilities.hand_steering === true ||
-      // Reset view lives in the popover, and a walkable immersive piece must always be able to
-      // return home, so the popover exists on immersive surfaces regardless of capabilities.
-      presentation === 'immersive',
+    pieceControls: true,
     gesture: false,
-    gestureGuide: capabilities.hand_steering === true,
+    gestureGuide: true,
     fullscreen: capabilities.fullscreen !== false,
   };
   const toolbar = (
@@ -1086,18 +1084,24 @@ function PieceStageControls({
       capabilities={toolbarCapabilities}
       toolbarMode="inline"
       soundControl={
-        toolbarCapabilities.sound ? (
+        <>
           <button
             type="button"
             className="piece-stage-icon-button"
             aria-pressed={soundOn}
             aria-label={soundOn ? 'Mute sound' : 'Unmute sound'}
+            aria-describedby={!soundAvailable ? 'piece-stage-sound-reason' : undefined}
+            disabled={!soundAvailable}
+            title={!soundAvailable ? CAPABILITY_REASON : undefined}
             onClick={() => command('toggle-sound')}
           >
             <PieceStageIcon name="sound" />
             <span className="piece-stage-action-label">Sound</span>
           </button>
-        ) : undefined
+          <span id="piece-stage-sound-reason" className="visually-hidden">
+            {!soundAvailable && CAPABILITY_REASON}
+          </span>
+        </>
       }
       controlsControl={
         toolbarCapabilities.pieceControls ? (
@@ -1130,17 +1134,25 @@ function PieceStageControls({
         ) : undefined
       }
       gestureGuide={
-        toolbarCapabilities.gestureGuide ? (
+        <>
           <button
             type="button"
             className="piece-stage-icon-button"
             aria-label="Show hand gesture guide"
+            aria-describedby={
+              !capabilities.hand_steering ? 'piece-stage-hand-steering-reason' : undefined
+            }
+            disabled={!capabilities.hand_steering}
+            title={!capabilities.hand_steering ? CAPABILITY_REASON : undefined}
             onClick={() => setGuide(true)}
           >
             <PieceStageIcon name="guide" />
             <span className="piece-stage-action-label">Guide</span>
           </button>
-        ) : undefined
+          <span id="piece-stage-hand-steering-reason" className="visually-hidden">
+            {!capabilities.hand_steering && CAPABILITY_REASON}
+          </span>
+        </>
       }
       visitorDrawControl={
         library === 'c2js-interactive' ? (
@@ -1348,298 +1360,297 @@ function PieceStageControls({
         )}
       {open && (
         <div role="region" aria-label="Piece controls">
-          {capabilities.sound && (
-            <div role="group" aria-label="Sound">
-              <p data-testid="sound-status">
-                {soundOn
-                  ? `Sound is on at ${Math.round(volume * 100)}% volume${audioContextState ? ` (${audioContextState}).` : '.'}`
-                  : `Sound is off${audioContextState ? ` (${audioContextState})` : ''}.`}
-              </p>
-              <label htmlFor="art-piece-volume">Sound volume</label>
+          <div role="group" aria-label="Sound">
+            {!capabilities.sound && <p id="piece-stage-sound-panel-reason">{CAPABILITY_REASON}</p>}
+            <p data-testid="sound-status">
+              {soundOn
+                ? `Sound is on at ${Math.round(volume * 100)}% volume${audioContextState ? ` (${audioContextState}).` : '.'}`
+                : `Sound is off${audioContextState ? ` (${audioContextState})` : ''}.`}
+            </p>
+            <label htmlFor="art-piece-volume">Sound volume</label>
+            <input
+              id="art-piece-volume"
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volume}
+              disabled={!soundAvailable || !soundOn}
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                setVolume(value);
+                command('set-volume', { value });
+              }}
+            />
+            <button type="button" onClick={resetVisitorSoundSettings} disabled={!soundAvailable}>
+              Reset sound settings
+            </button>
+            <fieldset>
+              <legend>Ambient</legend>
+              <label htmlFor="art-piece-ambient-bpm">Ambient BPM: {ambientBpm}</label>
               <input
-                id="art-piece-volume"
+                id="art-piece-ambient-bpm"
                 type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={volume}
-                disabled={!soundOn}
+                min={40}
+                max={220}
+                value={ambientBpm}
+                disabled={!soundAvailable || !soundOn}
                 onChange={(event) => {
                   const value = Number(event.target.value);
-                  setVolume(value);
-                  command('set-volume', { value });
+                  setAmbientBpm(value);
+                  command('set-tempo', { value });
                 }}
               />
-              <button type="button" onClick={resetVisitorSoundSettings}>
-                Reset sound settings
+              <label htmlFor="art-piece-ambient-volume">Ambient volume: {ambientVolume}%</label>
+              <input
+                id="art-piece-ambient-volume"
+                type="range"
+                min={0}
+                max={100}
+                value={ambientVolume}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setAmbientVolume(value);
+                  command('set-voice-volume', { voice: 'ambient', value });
+                }}
+              />
+              <label htmlFor="art-piece-ambient-muted">
+                <input
+                  id="art-piece-ambient-muted"
+                  type="checkbox"
+                  checked={ambientMuted}
+                  disabled={!soundAvailable || !soundOn}
+                  onChange={(event) => {
+                    const enabled = event.target.checked;
+                    setAmbientMuted(enabled);
+                    command('set-voice-muted', { voice: 'ambient', enabled });
+                  }}
+                />
+                Mute ambient
+              </label>
+              <label htmlFor="art-piece-ambient-scale">Scale: {ambientScale}</label>
+              <select
+                id="art-piece-ambient-scale"
+                value={ambientScale}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setAmbientScale(value as SoundSettings['ambientScale']);
+                  command('set-scale', { value });
+                }}
+              >
+                {SONIC_SCALES.map((scale) => (
+                  <option key={scale} value={scale}>
+                    {scale}
+                  </option>
+                ))}
+              </select>
+            </fieldset>
+            <fieldset>
+              <legend>Keyboard</legend>
+              <label htmlFor="art-piece-keyboard-root">Key</label>
+              <select
+                id="art-piece-keyboard-root"
+                value={keyboardRoot}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value as SoundSettings['keyboardRoot'];
+                  setKeyboardRoot(value);
+                  command('set-key', { root: value, scale: keyboardScale });
+                }}
+              >
+                {SONIC_ROOTS.map((root) => (
+                  <option key={root} value={root}>
+                    {root}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="art-piece-keyboard-scale">Scale</label>
+              <select
+                id="art-piece-keyboard-scale"
+                value={keyboardScale}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value as SoundSettings['keyboardScale'];
+                  setKeyboardScale(value);
+                  command('set-key', { root: keyboardRoot, scale: value });
+                }}
+              >
+                {SONIC_SCALES.map((scale) => (
+                  <option key={scale} value={scale}>
+                    {scale}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="art-piece-keyboard-transpose">Transpose: {keyboardTranspose}</label>
+              <input
+                id="art-piece-keyboard-transpose"
+                type="range"
+                min={-12}
+                max={12}
+                value={keyboardTranspose}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardTranspose(value);
+                  command('set-transpose', { value });
+                }}
+              />
+              <button
+                type="button"
+                aria-pressed={keyboardEnabled}
+                disabled={!soundAvailable || !soundOn}
+                onClick={() => {
+                  const enabled = !keyboardEnabled;
+                  setKeyboardEnabled(enabled);
+                  command('set-keyboard-enabled', { enabled });
+                }}
+              >
+                {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
               </button>
-              <fieldset>
-                <legend>Ambient</legend>
-                <label htmlFor="art-piece-ambient-bpm">Ambient BPM: {ambientBpm}</label>
-                <input
-                  id="art-piece-ambient-bpm"
-                  type="range"
-                  min={40}
-                  max={220}
-                  value={ambientBpm}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setAmbientBpm(value);
-                    command('set-tempo', { value });
-                  }}
-                />
-                <label htmlFor="art-piece-ambient-volume">Ambient volume: {ambientVolume}%</label>
-                <input
-                  id="art-piece-ambient-volume"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={ambientVolume}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setAmbientVolume(value);
-                    command('set-voice-volume', { voice: 'ambient', value });
-                  }}
-                />
-                <label htmlFor="art-piece-ambient-muted">
+              <label htmlFor="art-piece-keyboard-volume">Volume: {keyboardVolume}%</label>
+              <input
+                id="art-piece-keyboard-volume"
+                type="range"
+                min={0}
+                max={100}
+                value={keyboardVolume}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardVolume(value);
+                  command('set-voice-volume', { voice: 'melodic', value });
+                }}
+              />
+              <label htmlFor="art-piece-keyboard-oscillator">Oscillator</label>
+              <select
+                id="art-piece-keyboard-oscillator"
+                value={keyboardOscillator}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setKeyboardOscillator(value as SoundSettings['keyboardOscillator']);
+                  command('set-oscillator', { value });
+                }}
+              >
+                {['sine', 'square', 'sawtooth', 'triangle'].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="art-piece-keyboard-filter-type">Filter type</label>
+              <select
+                id="art-piece-keyboard-filter-type"
+                value={keyboardFilterType}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setKeyboardFilterType(value as SoundSettings['keyboardFilterType']);
+                  command('set-filter', {
+                    filterType: value,
+                    cutoff: keyboardFilterCutoff,
+                    resonance: keyboardFilterResonance,
+                  });
+                }}
+              >
+                {['lowpass', 'highpass', 'bandpass'].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="art-piece-keyboard-filter-cutoff">
+                Cutoff: {keyboardFilterCutoff}
+              </label>
+              <input
+                id="art-piece-keyboard-filter-cutoff"
+                type="range"
+                min={20}
+                max={20000}
+                step={20}
+                value={keyboardFilterCutoff}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardFilterCutoff(value);
+                  command('set-filter', {
+                    filterType: keyboardFilterType,
+                    cutoff: value,
+                    resonance: keyboardFilterResonance,
+                  });
+                }}
+              />
+              <label htmlFor="art-piece-keyboard-filter-resonance">
+                Resonance: {keyboardFilterResonance}
+              </label>
+              <input
+                id="art-piece-keyboard-filter-resonance"
+                type="range"
+                min={0.1}
+                max={20}
+                step={0.1}
+                value={keyboardFilterResonance}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardFilterResonance(value);
+                  command('set-filter', {
+                    filterType: keyboardFilterType,
+                    cutoff: keyboardFilterCutoff,
+                    resonance: value,
+                  });
+                }}
+              />
+              {(
+                [
+                  ['attack', keyboardAttack, setKeyboardAttack],
+                  ['decay', keyboardDecay, setKeyboardDecay],
+                  ['sustain', keyboardSustain, setKeyboardSustain],
+                  ['release', keyboardRelease, setKeyboardRelease],
+                ] as const
+              ).map(([field, value, setter]) => (
+                <label key={field} htmlFor={`art-piece-keyboard-${field}`}>
+                  {field}: {value}
                   <input
-                    id="art-piece-ambient-muted"
-                    type="checkbox"
-                    checked={ambientMuted}
-                    disabled={!soundOn}
+                    id={`art-piece-keyboard-${field}`}
+                    type="range"
+                    min={field === 'sustain' ? 0 : 0.001}
+                    max={field === 'sustain' ? 1 : 10}
+                    step={field === 'sustain' ? 0.01 : 0.001}
+                    value={value}
+                    disabled={!soundAvailable || !soundOn}
                     onChange={(event) => {
-                      const enabled = event.target.checked;
-                      setAmbientMuted(enabled);
-                      command('set-voice-muted', { voice: 'ambient', enabled });
+                      const next = Number(event.target.value);
+                      setter(next);
+                      command('set-envelope', {
+                        attack: field === 'attack' ? next : keyboardAttack,
+                        decay: field === 'decay' ? next : keyboardDecay,
+                        sustain: field === 'sustain' ? next : keyboardSustain,
+                        release: field === 'release' ? next : keyboardRelease,
+                      });
                     }}
                   />
-                  Mute ambient
                 </label>
-                <label htmlFor="art-piece-ambient-scale">Scale: {ambientScale}</label>
-                <select
-                  id="art-piece-ambient-scale"
-                  value={ambientScale}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setAmbientScale(value as SoundSettings['ambientScale']);
-                    command('set-scale', { value });
-                  }}
-                >
-                  {SONIC_SCALES.map((scale) => (
-                    <option key={scale} value={scale}>
-                      {scale}
-                    </option>
-                  ))}
-                </select>
-              </fieldset>
-              <fieldset>
-                <legend>Keyboard</legend>
-                <label htmlFor="art-piece-keyboard-root">Key</label>
-                <select
-                  id="art-piece-keyboard-root"
-                  value={keyboardRoot}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value as SoundSettings['keyboardRoot'];
-                    setKeyboardRoot(value);
-                    command('set-key', { root: value, scale: keyboardScale });
-                  }}
-                >
-                  {SONIC_ROOTS.map((root) => (
-                    <option key={root} value={root}>
-                      {root}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="art-piece-keyboard-scale">Scale</label>
-                <select
-                  id="art-piece-keyboard-scale"
-                  value={keyboardScale}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value as SoundSettings['keyboardScale'];
-                    setKeyboardScale(value);
-                    command('set-key', { root: keyboardRoot, scale: value });
-                  }}
-                >
-                  {SONIC_SCALES.map((scale) => (
-                    <option key={scale} value={scale}>
-                      {scale}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="art-piece-keyboard-transpose">Transpose: {keyboardTranspose}</label>
-                <input
-                  id="art-piece-keyboard-transpose"
-                  type="range"
-                  min={-12}
-                  max={12}
-                  value={keyboardTranspose}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardTranspose(value);
-                    command('set-transpose', { value });
-                  }}
-                />
-                <button
-                  type="button"
-                  aria-pressed={keyboardEnabled}
-                  disabled={!soundOn}
-                  onClick={() => {
-                    const enabled = !keyboardEnabled;
-                    setKeyboardEnabled(enabled);
-                    command('set-keyboard-enabled', { enabled });
-                  }}
-                >
-                  {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
-                </button>
-                <label htmlFor="art-piece-keyboard-volume">Volume: {keyboardVolume}%</label>
-                <input
-                  id="art-piece-keyboard-volume"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={keyboardVolume}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardVolume(value);
-                    command('set-voice-volume', { voice: 'melodic', value });
-                  }}
-                />
-                <label htmlFor="art-piece-keyboard-oscillator">Oscillator</label>
-                <select
-                  id="art-piece-keyboard-oscillator"
-                  value={keyboardOscillator}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setKeyboardOscillator(value as SoundSettings['keyboardOscillator']);
-                    command('set-oscillator', { value });
-                  }}
-                >
-                  {['sine', 'square', 'sawtooth', 'triangle'].map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="art-piece-keyboard-filter-type">Filter type</label>
-                <select
-                  id="art-piece-keyboard-filter-type"
-                  value={keyboardFilterType}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setKeyboardFilterType(value as SoundSettings['keyboardFilterType']);
-                    command('set-filter', {
-                      filterType: value,
-                      cutoff: keyboardFilterCutoff,
-                      resonance: keyboardFilterResonance,
-                    });
-                  }}
-                >
-                  {['lowpass', 'highpass', 'bandpass'].map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="art-piece-keyboard-filter-cutoff">
-                  Cutoff: {keyboardFilterCutoff}
-                </label>
-                <input
-                  id="art-piece-keyboard-filter-cutoff"
-                  type="range"
-                  min={20}
-                  max={20000}
-                  step={20}
-                  value={keyboardFilterCutoff}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardFilterCutoff(value);
-                    command('set-filter', {
-                      filterType: keyboardFilterType,
-                      cutoff: value,
-                      resonance: keyboardFilterResonance,
-                    });
-                  }}
-                />
-                <label htmlFor="art-piece-keyboard-filter-resonance">
-                  Resonance: {keyboardFilterResonance}
-                </label>
-                <input
-                  id="art-piece-keyboard-filter-resonance"
-                  type="range"
-                  min={0.1}
-                  max={20}
-                  step={0.1}
-                  value={keyboardFilterResonance}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardFilterResonance(value);
-                    command('set-filter', {
-                      filterType: keyboardFilterType,
-                      cutoff: keyboardFilterCutoff,
-                      resonance: value,
-                    });
-                  }}
-                />
-                {(
-                  [
-                    ['attack', keyboardAttack, setKeyboardAttack],
-                    ['decay', keyboardDecay, setKeyboardDecay],
-                    ['sustain', keyboardSustain, setKeyboardSustain],
-                    ['release', keyboardRelease, setKeyboardRelease],
-                  ] as const
-                ).map(([field, value, setter]) => (
-                  <label key={field} htmlFor={`art-piece-keyboard-${field}`}>
-                    {field}: {value}
-                    <input
-                      id={`art-piece-keyboard-${field}`}
-                      type="range"
-                      min={field === 'sustain' ? 0 : 0.001}
-                      max={field === 'sustain' ? 1 : 10}
-                      step={field === 'sustain' ? 0.01 : 0.001}
-                      value={value}
-                      disabled={!soundOn}
-                      onChange={(event) => {
-                        const next = Number(event.target.value);
-                        setter(next);
-                        command('set-envelope', {
-                          attack: field === 'attack' ? next : keyboardAttack,
-                          decay: field === 'decay' ? next : keyboardDecay,
-                          sustain: field === 'sustain' ? next : keyboardSustain,
-                          release: field === 'release' ? next : keyboardRelease,
-                        });
-                      }}
-                    />
-                  </label>
-                ))}
-                <label htmlFor="art-piece-keyboard-octave">Octave: {keyboardOctave}</label>
-                <input
-                  id="art-piece-keyboard-octave"
-                  type="range"
-                  min={-2}
-                  max={2}
-                  value={keyboardOctave}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardOctave(value);
-                    command('set-octave', { value });
-                  }}
-                />
-              </fieldset>
-            </div>
-          )}
-          {capabilities.keyboard && (
+              ))}
+              <label htmlFor="art-piece-keyboard-octave">Octave: {keyboardOctave}</label>
+              <input
+                id="art-piece-keyboard-octave"
+                type="range"
+                min={-2}
+                max={2}
+                value={keyboardOctave}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardOctave(value);
+                  command('set-octave', { value });
+                }}
+              />
+            </fieldset>
+          </div>
+          <div role="group" aria-label="Keyboard">
             <p data-testid="keyboard-note-status">
               {soundOn
                 ? lastNote
@@ -1647,123 +1658,132 @@ function PieceStageControls({
                   : 'Keyboard notes available. Press A-K over the piece to play a note.'
                 : 'Turn on Sound to play keyboard notes.'}
             </p>
-          )}
+            {!capabilities.keyboard && <p id="piece-stage-keyboard-reason">{CAPABILITY_REASON}</p>}
+          </div>
           {soundOn && lastAmbientNote && (
             <p data-testid="ambient-note-status">
               Last ambient note: {lastAmbientNote.note} ({lastAmbientNote.frequency.toFixed(2)} Hz)
               at {lastAmbientNote.tempo} BPM.
             </p>
           )}
-          {capabilities.microphone && (
-            <div role="group" aria-label="Live mic">
-              <button
-                type="button"
-                aria-pressed={microphoneState === 'active'}
-                onClick={
-                  microphoneState === 'active' ? handleDisableMicrophone : handleEnableMicrophone
-                }
-              >
-                {microphoneState === 'active' ? 'Disable microphone' : 'Enable microphone'}
-              </button>
-              <p data-testid="microphone-status">
-                {microphoneState === 'active' && 'Microphone is active.'}
-                {microphoneState === 'denied' && 'Microphone access was denied.'}
-                {microphoneState === 'unavailable' && 'Microphone is unavailable in this browser.'}
-                {microphoneState === 'off' && 'Microphone is off.'}
+          <div role="group" aria-label="Live mic">
+            {!capabilities.microphone && (
+              <p id="piece-stage-microphone-reason">{CAPABILITY_REASON}</p>
+            )}
+            <button
+              type="button"
+              aria-pressed={microphoneState === 'active'}
+              aria-describedby={
+                !capabilities.microphone ? 'piece-stage-microphone-reason' : undefined
+              }
+              disabled={!capabilities.microphone}
+              onClick={
+                microphoneState === 'active' ? handleDisableMicrophone : handleEnableMicrophone
+              }
+            >
+              {microphoneState === 'active' ? 'Disable microphone' : 'Enable microphone'}
+            </button>
+            <p data-testid="microphone-status">
+              {microphoneState === 'active' && 'Microphone is active.'}
+              {microphoneState === 'denied' && 'Microphone access was denied.'}
+              {microphoneState === 'unavailable' && 'Microphone is unavailable in this browser.'}
+              {microphoneState === 'off' && 'Microphone is off.'}
+            </p>
+            {microphoneFailure && (
+              <p data-testid="microphone-recovery">{micRecoveryMessageFor(microphoneFailure)}</p>
+            )}
+            {microphoneState === 'active' && (
+              <fieldset>
+                <legend>Microphone effects</legend>
+                {MIC_EFFECTS.map(({ name, label }) => (
+                  <label key={name}>
+                    <input
+                      type="checkbox"
+                      checked={micEffects[name]}
+                      onChange={(event) => {
+                        const enabled = event.target.checked;
+                        if (sonicEngineRef.current?.setMicEffect(name, enabled)) {
+                          setMicEffects((current) => ({ ...current, [name]: enabled }));
+                        }
+                      }}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </div>
+          <div role="group" aria-label="Camera view">
+            {!capabilities.camera_view && <p id="piece-stage-camera-reason">{CAPABILITY_REASON}</p>}
+            <button
+              type="button"
+              aria-pressed={cameraState === 'active'}
+              aria-describedby={!capabilities.camera_view ? 'piece-stage-camera-reason' : undefined}
+              disabled={!capabilities.camera_view}
+              onClick={cameraState === 'active' ? handleDisableCamera : handleEnableCamera}
+            >
+              {cameraState === 'active' ? 'Disable camera view' : 'Enable camera view'}
+            </button>
+            <p data-testid="camera-status">
+              {cameraState === 'active' && 'Camera is active.'}
+              {cameraState === 'denied' && 'Camera access was denied.'}
+              {cameraState === 'unavailable' && 'Camera is unavailable in this browser.'}
+              {cameraState === 'ended' && 'Camera stream ended unexpectedly.'}
+              {cameraState === 'off' && 'Camera is off.'}
+            </p>
+            <label htmlFor="art-piece-camera-opacity">Camera overlay opacity</label>
+            <input
+              id="art-piece-camera-opacity"
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={cameraOpacity}
+              disabled={!capabilities.camera_view || cameraState !== 'active'}
+              onChange={(event) => setCameraOpacity(Number(event.target.value))}
+            />
+          </div>
+          <div role="group" aria-label="Hand steering">
+            {!capabilities.hand_steering && <p>{CAPABILITY_REASON}</p>}
+            <button
+              type="button"
+              aria-pressed={steeringState === 'active'}
+              aria-describedby={
+                !capabilities.hand_steering ? 'piece-stage-hand-steering-reason' : undefined
+              }
+              disabled={!capabilities.hand_steering}
+              onClick={() =>
+                command(
+                  steeringState === 'active' ? 'disable-hand-steering' : 'enable-hand-steering',
+                )
+              }
+            >
+              {steeringState === 'active' ? 'Stop steering' : 'Steer the piece'}
+            </button>
+            <p data-testid="steering-status">
+              {steeringState === 'active' && 'Steering is active.'}
+              {steeringState === 'camera-required' && 'Turn on Camera view before steering.'}
+              {steeringState === 'no-camera-registered' &&
+                'This piece has no steerable camera to control yet.'}
+              {steeringState === 'unsupported-engine' &&
+                'Hand steering is only available for 3D pieces.'}
+              {steeringState === 'off' && 'Steering is off.'}
+            </p>
+            {steeringState === 'active' && (
+              <p data-testid="hand-tracking-model-status">
+                {handTrackingModelState === 'loading' &&
+                  'Preparing hand tracking… keep your hand in view once it is ready.'}
+                {handTrackingModelState === 'ready' && 'Hand tracking is ready.'}
+                {handTrackingModelState === 'failed' &&
+                  'Hand tracking could not be prepared. Steering will not respond to gestures.'}
               </p>
-              {microphoneFailure && (
-                <p data-testid="microphone-recovery">{micRecoveryMessageFor(microphoneFailure)}</p>
-              )}
-              {microphoneState === 'active' && (
-                <fieldset>
-                  <legend>Microphone effects</legend>
-                  {MIC_EFFECTS.map(({ name, label }) => (
-                    <label key={name}>
-                      <input
-                        type="checkbox"
-                        checked={micEffects[name]}
-                        onChange={(event) => {
-                          const enabled = event.target.checked;
-                          if (sonicEngineRef.current?.setMicEffect(name, enabled)) {
-                            setMicEffects((current) => ({ ...current, [name]: enabled }));
-                          }
-                        }}
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </fieldset>
-              )}
-            </div>
-          )}
-          {capabilities.camera_view && (
-            <div role="group" aria-label="Camera view">
-              <button
-                type="button"
-                aria-pressed={cameraState === 'active'}
-                onClick={cameraState === 'active' ? handleDisableCamera : handleEnableCamera}
-              >
-                {cameraState === 'active' ? 'Disable camera view' : 'Enable camera view'}
-              </button>
-              <p data-testid="camera-status">
-                {cameraState === 'active' && 'Camera is active.'}
-                {cameraState === 'denied' && 'Camera access was denied.'}
-                {cameraState === 'unavailable' && 'Camera is unavailable in this browser.'}
-                {cameraState === 'ended' && 'Camera stream ended unexpectedly.'}
-                {cameraState === 'off' && 'Camera is off.'}
+            )}
+            {steeringPose && (
+              <p data-testid="steering-pose">
+                {steeringPose.x.toFixed(2)},{steeringPose.y.toFixed(2)},{steeringPose.z.toFixed(2)}
               </p>
-              <label htmlFor="art-piece-camera-opacity">Camera overlay opacity</label>
-              <input
-                id="art-piece-camera-opacity"
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={cameraOpacity}
-                disabled={cameraState !== 'active'}
-                onChange={(event) => setCameraOpacity(Number(event.target.value))}
-              />
-            </div>
-          )}
-          {capabilities.hand_steering && (
-            <div role="group" aria-label="Hand steering">
-              <button
-                type="button"
-                aria-pressed={steeringState === 'active'}
-                onClick={() =>
-                  command(
-                    steeringState === 'active' ? 'disable-hand-steering' : 'enable-hand-steering',
-                  )
-                }
-              >
-                {steeringState === 'active' ? 'Stop steering' : 'Steer the piece'}
-              </button>
-              <p data-testid="steering-status">
-                {steeringState === 'active' && 'Steering is active.'}
-                {steeringState === 'camera-required' && 'Turn on Camera view before steering.'}
-                {steeringState === 'no-camera-registered' &&
-                  'This piece has no steerable camera to control yet.'}
-                {steeringState === 'unsupported-engine' &&
-                  'Hand steering is only available for 3D pieces.'}
-                {steeringState === 'off' && 'Steering is off.'}
-              </p>
-              {steeringState === 'active' && (
-                <p data-testid="hand-tracking-model-status">
-                  {handTrackingModelState === 'loading' &&
-                    'Preparing hand tracking… keep your hand in view once it is ready.'}
-                  {handTrackingModelState === 'ready' && 'Hand tracking is ready.'}
-                  {handTrackingModelState === 'failed' &&
-                    'Hand tracking could not be prepared. Steering will not respond to gestures.'}
-                </p>
-              )}
-              {steeringPose && (
-                <p data-testid="steering-pose">
-                  {steeringPose.x.toFixed(2)},{steeringPose.y.toFixed(2)},
-                  {steeringPose.z.toFixed(2)}
-                </p>
-              )}
-            </div>
-          )}
+            )}
+          </div>
           <button type="button" onClick={() => command('reset-view')}>
             Reset view
           </button>

@@ -4,7 +4,18 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import type { SonicDefaults } from '../audio/sonicContract';
 import { SONIC_ROOTS, SONIC_SCALES } from '../audio/sonicContract';
-import { createSonicEngine, type SonicEngine, type SonicNoteEvent } from '../audio/sonicEngine';
+import {
+  createSonicEngine,
+  type MicEffectName,
+  type SonicEngine,
+  type SonicNoteEvent,
+} from '../audio/sonicEngine';
+import {
+  categorizeMicError,
+  isMicSupported,
+  micRecoveryMessageFor,
+  type MicFailureCategory,
+} from '../audio/micFailure';
 import { isEditableElement, PIANO_KEY_MAP } from '../audio/pianoKeyMap';
 import { scaleNotes, transposeNote } from '../audio/scaleTheory';
 import {
@@ -48,6 +59,15 @@ import type { VisitorStroke } from './visitorDrawing';
 const HAND_PAN_SENSITIVITY = 6;
 const HAND_ZOOM_SENSITIVITY = 20;
 const WHITE_PIANO_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k'] as const;
+const MIC_EFFECTS: ReadonlyArray<{ name: MicEffectName; label: string }> = [
+  { name: 'distortion', label: 'Distortion' },
+  { name: 'chorus', label: 'Chorus' },
+  { name: 'tremolo', label: 'Tremolo' },
+  { name: 'pitch_shift', label: 'Pitch shift' },
+  { name: 'bitcrusher', label: 'Bitcrusher' },
+  { name: 'flanger', label: 'Flanger' },
+  { name: 'ring_mod', label: 'Ring mod' },
+];
 
 const PARENT_SOUND_COMMANDS = new Set([
   'toggle-sound',
@@ -220,6 +240,14 @@ function PieceStageControls({
   const [microphoneState, setMicrophoneState] = useState<
     'off' | 'active' | 'denied' | 'unavailable'
   >('off');
+  const [microphoneFailure, setMicrophoneFailure] = useState<MicFailureCategory | null>(null);
+  const [micEffects, setMicEffects] = useState<Record<MicEffectName, boolean>>(
+    () =>
+      Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+        MicEffectName,
+        boolean
+      >,
+  );
   const [cameraState, setCameraState] = useState<
     'off' | 'active' | 'denied' | 'unavailable' | 'ended'
   >('off');
@@ -952,28 +980,47 @@ function PieceStageControls({
   // for the same opaque-origin SecurityError reason camera does -- the
   // sandboxed iframe can never call getUserMedia itself.
   function handleEnableMicrophone() {
-    if (
-      typeof navigator.mediaDevices === 'undefined' ||
-      typeof navigator.mediaDevices.getUserMedia !== 'function'
-    ) {
+    setMicrophoneFailure(null);
+    if (!isMicSupported()) {
       setMicrophoneState('unavailable');
       return;
     }
-    navigator.mediaDevices
+    if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+      setMicrophoneFailure('insecure-context');
+      setMicrophoneState('unavailable');
+      return;
+    }
+    void navigator.mediaDevices
       .getUserMedia({ audio: true, video: false })
-      .then((stream) => {
+      .then(async (stream) => {
         micStreamRef.current = stream;
+        if (!soundOn) await enableParentSound();
+        const engine = sonicEngineRef.current;
+        if (!engine || engine.status !== 'active') throw new Error('Sound engine unavailable.');
+        await engine.connectMic(stream);
         setMicrophoneState('active');
+        setMicrophoneFailure(null);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        micStreamRef.current?.getTracks().forEach((track) => track.stop());
+        micStreamRef.current = null;
+        setMicrophoneFailure(categorizeMicError(error));
         setMicrophoneState('denied');
       });
   }
 
   function handleDisableMicrophone() {
+    sonicEngineRef.current?.disconnectMic();
     micStreamRef.current?.getTracks().forEach((track) => track.stop());
     micStreamRef.current = null;
     setMicrophoneState('off');
+    setMicrophoneFailure(null);
+    setMicEffects(
+      Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+        MicEffectName,
+        boolean
+      >,
+    );
   }
 
   // Releases the camera/tracking provider and microphone stream if this
@@ -983,6 +1030,7 @@ function PieceStageControls({
   useEffect(() => {
     return () => {
       trackingProviderRef.current?.stop();
+      sonicEngineRef.current?.disconnectMic();
       micStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
@@ -1607,7 +1655,7 @@ function PieceStageControls({
             </p>
           )}
           {capabilities.microphone && (
-            <div role="group" aria-label="Microphone">
+            <div role="group" aria-label="Live mic">
               <button
                 type="button"
                 aria-pressed={microphoneState === 'active'}
@@ -1623,6 +1671,29 @@ function PieceStageControls({
                 {microphoneState === 'unavailable' && 'Microphone is unavailable in this browser.'}
                 {microphoneState === 'off' && 'Microphone is off.'}
               </p>
+              {microphoneFailure && (
+                <p data-testid="microphone-recovery">{micRecoveryMessageFor(microphoneFailure)}</p>
+              )}
+              {microphoneState === 'active' && (
+                <fieldset>
+                  <legend>Microphone effects</legend>
+                  {MIC_EFFECTS.map(({ name, label }) => (
+                    <label key={name}>
+                      <input
+                        type="checkbox"
+                        checked={micEffects[name]}
+                        onChange={(event) => {
+                          const enabled = event.target.checked;
+                          if (sonicEngineRef.current?.setMicEffect(name, enabled)) {
+                            setMicEffects((current) => ({ ...current, [name]: enabled }));
+                          }
+                        }}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </fieldset>
+              )}
             </div>
           )}
           {capabilities.camera_view && (

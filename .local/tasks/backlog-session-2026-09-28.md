@@ -1138,8 +1138,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 ## Issue #976 transaction ledger
 
 - **Issue:** [#976](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/976)
-- **Phase:** QA passed locally; pending typed GitHub closure after evidence
-  reconciliation.
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA
+  and evidence reconciliation.
 - **Transaction:** Restore the canonical immersive route for published
   structured 2D pieces by mounting the existing public 2D renderer from the
   existing canonical slug resolver, with a keyboard-accessible back link to
@@ -1170,8 +1170,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 ## Issue #916 transaction ledger
 
 - **Issue:** [#916](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/916)
-- **Phase:** QA passed locally; pending typed GitHub closure after evidence
-  reconciliation.
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA
+  and evidence reconciliation.
 - **Transaction:** Complete the microphone audio-flow verification boundary:
   retain the reusable Playwright source-to-bus probe and owner hardware
   checklist already present in the repository, and add the six named
@@ -1195,3 +1195,36 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   Android physical-device checklist remains explicitly owner-run; no hardware
   pass is claimed.
 - **New gaps:** None discovered.
+
+## Issue #911 transaction ledger
+
+- **Issue:** [#911](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/911)
+- **Phase:** QA passed locally; pending typed GitHub closure after evidence
+  reconciliation.
+- **Transaction:** Route the regular generated-piece live microphone through the
+  shared SonicEngine, enable the parent sound engine from the microphone gesture
+  when needed, expose the supported microphone effects, and provide categorized
+  recovery guidance for unsupported, insecure, denied, or failed microphone
+  access.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineering and QA — Codex / GPT-5 substitution for the rostered
+  implementation/review services; no independent second-opinion model was
+  available.
+- **Implementation commit:** Pending commit after this ledger update.
+- **Changed files:** `frontend/src/pages/PieceStageControls.tsx`.
+- **Checks:** Focused audio/viewer tests — 48 passed; SonicEngine interaction
+  matrix — 39 passed; full frontend Vitest — 295 files / 3,087 tests passed;
+  frontend typecheck, lint, format-check, and production build passed. Lint and
+  build emitted only repository warnings. The targeted Playwright Chromium run
+  was attempted but failed before test execution at the host's known macOS
+  MachPortRendezvous permission boundary.
+- **QA matrix:** Microphone permission is requested before lazy sound setup;
+  the same gesture enables the parent sound engine when required; the stream is
+  connected to `SonicEngine.connectMic`; disable and unmount disconnect the
+  engine and stop tracks; all seven supported effects are exposed only while
+  active and use the engine's effect API; categorized recovery text is rendered
+  for failure states; no backend, schema, route, or dependency contract
+  changed.
+- **New gaps:** The live browser and physical-device portions remain bounded by
+  the recorded Chromium host failure and the existing owner-run hardware
+  checklist; no browser or hardware pass is claimed.

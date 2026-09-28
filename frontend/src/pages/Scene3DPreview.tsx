@@ -20,6 +20,7 @@ import {
   createSonicEngine,
   SONIC_INSTRUMENT_OPTIONS,
   SONIC_SCALE_OPTIONS,
+  type MicEffectName,
   type SonicEngine,
   type SonicEffectName,
   type SonicEffectSettings,
@@ -28,6 +29,16 @@ import {
   type MelodicSynthSettings,
   type SonicVoice,
 } from '../audio/sonicEngine';
+
+const MIC_EFFECTS: ReadonlyArray<{ name: MicEffectName; label: string }> = [
+  { name: 'distortion', label: 'Distortion' },
+  { name: 'chorus', label: 'Chorus' },
+  { name: 'tremolo', label: 'Tremolo' },
+  { name: 'pitch_shift', label: 'Pitch shift' },
+  { name: 'bitcrusher', label: 'Bitcrusher' },
+  { name: 'flanger', label: 'Flanger' },
+  { name: 'ring_mod', label: 'Ring mod' },
+];
 import { identifyScale, noteInScale, type PitchClass, type ScaleMatch } from '../audio/scaleTheory';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
@@ -564,6 +575,13 @@ function ThreeScenePreview({
   // flow -- audio-only, never touches the camera.
   const [micState, setMicState] = useState<'idle' | 'requesting' | 'active' | 'error'>('idle');
   const [micFailure, setMicFailure] = useState<MicFailureCategory | null>(null);
+  const [micEffects, setMicEffects] = useState<Record<MicEffectName, boolean>>(
+    () =>
+      Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+        MicEffectName,
+        boolean
+      >,
+  );
   async function handleToggleMic() {
     const engine = sonicEngineRef.current;
     if (!engine) return;
@@ -571,6 +589,12 @@ function ThreeScenePreview({
       engine.disconnectMic();
       setMicState('idle');
       setMicFailure(null);
+      setMicEffects(
+        Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+          MicEffectName,
+          boolean
+        >,
+      );
       return;
     }
     if (!isMicSupported()) {
@@ -1762,6 +1786,26 @@ function ThreeScenePreview({
                     <p role="alert" aria-live="assertive" data-testid="mic-error">
                       {micRecoveryMessageFor(micFailure)}
                     </p>
+                  )}
+                  {micState === 'active' && (
+                    <fieldset>
+                      <legend>Microphone effects</legend>
+                      {MIC_EFFECTS.map(({ name, label }) => (
+                        <label key={name}>
+                          <input
+                            type="checkbox"
+                            checked={micEffects[name]}
+                            onChange={(event) => {
+                              const enabled = event.target.checked;
+                              if (sonicEngineRef.current?.setMicEffect(name, enabled)) {
+                                setMicEffects((current) => ({ ...current, [name]: enabled }));
+                              }
+                            }}
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </fieldset>
                   )}
                 </div>
               )}

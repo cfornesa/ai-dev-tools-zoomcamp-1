@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -23,6 +23,8 @@ function makeEngine(status: 'idle' | 'active' | 'error' = 'idle') {
     setTranspose: vi.fn(),
     setFollowKey: vi.fn(),
     setFilter: vi.fn(() => true),
+    setMicEffect: vi.fn(() => true),
+    disconnectMic: vi.fn(),
     setMelodicSynth: vi.fn(),
     triggerMelodicNote: vi.fn(),
   };
@@ -52,6 +54,10 @@ describe('Structured2DSoundControls', () => {
   it('does not request microphone access while idle', async () => {
     const user = userEvent.setup();
     const audio = makeEngine();
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn(async () => ({ getTracks: () => [] })) },
+    });
     render(<Structured2DSoundControls capabilities={enabled} engine={audio} />);
     expect(audio.connectMic).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Enable microphone' }));
@@ -66,6 +72,23 @@ describe('Structured2DSoundControls', () => {
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Sound could not start');
     expect(screen.getByRole('button', { name: 'Enable sound' })).toBeInTheDocument();
+  });
+
+  it('shows the seven microphone effects only after capture and forwards toggles', async () => {
+    const user = userEvent.setup();
+    const audio = makeEngine();
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn(async () => ({ getTracks: () => [] })) },
+    });
+    render(<Structured2DSoundControls capabilities={enabled} engine={audio} />);
+    expect(screen.queryByRole('group', { name: 'Live mic' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Microphone effects' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Enable microphone' }));
+    const effects = screen.getByRole('group', { name: 'Microphone effects' });
+    expect(within(effects).getAllByRole('checkbox')).toHaveLength(7);
+    await user.click(within(effects).getByLabelText('Distortion'));
+    expect(audio.setMicEffect).toHaveBeenCalledWith('distortion', true);
   });
 
   it('forwards ambient and keyboard controls to the shared engine', async () => {

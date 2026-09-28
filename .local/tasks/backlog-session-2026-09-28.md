@@ -1259,3 +1259,35 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   actual stream routing and effects contract.
 - **New gaps:** Live route execution remains a host-browser verification
   boundary; no browser or production claim is made.
+
+## Issue #913 transaction ledger
+
+- **Issue:** [#913](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/913)
+- **Phase:** QA passed locally; pending typed GitHub closure after evidence
+  reconciliation.
+- **Transaction:** Add the shared microphone capture lifecycle and seven-effect
+  controls to structured 2D and structured 3D surfaces, retaining categorized
+  failure copy and cleanup while documenting A-Frame structured previews as
+  unsupported because they do not mount the live sound-control surface.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineering and QA — Codex / GPT-5 substitution for the rostered
+  implementation/review services; no independent second-opinion model was
+  available.
+- **Implementation commit:** Pending commit after this ledger update.
+- **Changed files:** `frontend/src/components/Structured2DSoundControls.tsx`,
+  `frontend/src/components/Structured2DSoundControls.test.tsx`, and
+  `frontend/src/pages/Scene3DPreview.tsx`.
+- **Checks:** Focused structured/audio suite — 3 files / 76 tests passed;
+  frontend typecheck, format-check, and lint passed; the full frontend suite
+  previously passed at 295 files / 3,087 tests after the related microphone
+  work; production build passed with existing chunk-size and dynamic-import
+  warnings.
+- **QA matrix:** Structured 2D requests audio-only capture, routes the stream
+  through `connectMic`, exposes all seven effects only after activation, resets
+  effects on disable, and disconnects on unmount. Structured 3D exposes the
+  same seven controls over its existing engine lifecycle and resets them on
+  disable. Failure categories continue to use `micFailure.ts`; microphone is
+  off by default and not persisted. A-Frame structured previews remain an
+  explicit unsupported boundary. The requested live Chromium and responsive
+  screenshot run remains subject to the known host MachPort permission failure.
+- **New gaps:** No new implementation gaps discovered.

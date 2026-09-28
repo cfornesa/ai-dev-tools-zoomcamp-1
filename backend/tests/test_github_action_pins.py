@@ -91,6 +91,19 @@ def test_required_ci_jobs_run_for_push_and_pull_request_events():
         assert "    if: ${{ github.event_name != 'deployment_status' }}" in job_lines
 
 
+def test_full_browser_suite_runs_after_a_failed_webkit_gate():
+    job_lines = workflow_job_lines("e2e-browser")
+    step_start = job_lines.index("      - name: Run full browser acceptance suite")
+    step_lines = job_lines[step_start : step_start + 8]
+
+    assert (
+        "        if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') }}"
+        in step_lines
+    )
+    assert "      - name: Upload browser diagnostics" in job_lines
+    assert "        if: ${{ failure() }}" in job_lines
+
+
 def test_staging_smoke_job_remains_deployment_status_only():
     job_lines = workflow_job_lines("staging-authenticated-smoke")
     if_start = job_lines.index("    if: >-")

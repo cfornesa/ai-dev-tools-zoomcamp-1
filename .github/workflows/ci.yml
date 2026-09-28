@@ -459,7 +459,11 @@ jobs:
           --project=chromium
 
       - name: Run full browser acceptance suite
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+        # Keep collecting this shard's full-suite evidence even when the
+        # shard-1-only WebKit regression above fails. The failure still marks
+        # the job red, and the diagnostics/cleanup steps below retain their
+        # normal failure/always semantics.
+        if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') }}
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:5000

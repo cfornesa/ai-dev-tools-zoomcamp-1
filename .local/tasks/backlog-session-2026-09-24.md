@@ -7076,3 +7076,12 @@ wrapper publication once the secure push credential is available through the
 | engineer | Codex / GPT-5 / medium; implementation-complex substitution for Ollama Cloud kimi-k3 | PARTIAL | Commits `13134abd`, `945f8c64`, `e368dc8c`: guarded public endpoint, headers, API docs/OpenAPI, 2D/3D regular/embed/immersive resolver wiring, offline asset manifest/runtime support, and ZIP packaging. |
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude substitution; independent stage-3 unavailable and not credited | FAIL / OPEN | QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/941#issuecomment-5860885377. Backend 6 passed; frontend export suite 51 passed; typecheck passed. ZIP structure is covered; real-browser regular/embed/immersive render, extracted-artifact HTTP render, and header/CSP evidence remain missing. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN | Keep #941 open. No production/shared database write. Next action is the Compose Playwright/browser evidence pass before any production action. |
+
+## Production wrapper publication checkpoint — 2026-09-28 — PUSHED / PUBLISH UNVERIFIED / #788 BLOCKED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| reviewed wrapper | Codex / GPT-5 / medium | PASS | Owner-authorized wrapper commit `cad0f924` is included in pushed `origin/main` at `d66e85fe`; `GIT_URL=https://github.com/cfornesa/ai-dev-tools-zoomcamp-1.git make git-safe-push` fast-forwarded successfully. |
+| Replit Publish | Chrome/Replit UI | UNVERIFIED | Republish was submitted. The visible Replit workspace still reported older HEAD `2c246cda`, while the pushed checkout is `d66e85fe`; browser debugger disconnected before a completed deployment revision or matching SHA was exposed. |
+| published smoke | shell / curl | PASS | `GET https://animate.creatrweb.com/health/` returned 200 with `status/database/cache: ok`; `PUBLISHED_APP_URL=https://animate.creatrweb.com scripts/smoke-published.sh` passed anonymous root, whoami 401, and login checks. This proves reachability, not wrapper provenance. |
+| #788 production workflow | Codex / GPT-5 / medium | BLOCKED | No production shell, dry-run output, snapshot, importer invocation, database write, secret change, or settings change was performed. Require matching deployed wrapper provenance and supported production shell before the one-shot guarded import. |

@@ -183,7 +183,16 @@ or production-database criteria.
 | Local-first generated transfer boundary | PASS / CLOSED | #938 and #939 have criterion-level local/Compose QA; #939’s 375x812 consent audit proves no request before consent and no source field after consent. |
 | Account cloud-sync preference | PARTIAL / OPEN | #940’s gated API, versioned consent, signup preselection, and settings UI pass focused tests. Selective disable-time pause is not implemented because current backups lack inherited-vs-explicit ownership. QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/940#issuecomment-5860065184 |
 | Production publication | BLOCKED | `GIT_URL` remains unavailable; no safe push or Replit Publish was attempted. |
-| #788 production import | BLOCKED | Wrapper publication and supported production preview/shell remain prerequisites; no production snapshot/write/live verification occurred. |
+| #788 production import | BLOCKED | The reviewed wrapper was pushed (`d66e85fe`) and Replit Republish was submitted, but the visible Replit workspace still reported older HEAD `2c246cda`; deployment provenance is unverified. Published `/health/` and `scripts/smoke-published.sh` passed, but no production preview/shell, snapshot, importer, write, or live piece verification occurred. |
+
+## Reassessment after authorized wrapper publication attempt — 2026-09-28
+
+| Check | Result | Evidence boundary |
+|---|---|---|
+| Safe push | PASS | `GIT_URL=https://github.com/cfornesa/ai-dev-tools-zoomcamp-1.git make git-safe-push` fast-forwarded `origin/main` to `d66e85fe`; no force-push. |
+| Replit Publish | UNVERIFIED | Republish was submitted in the active Replit UI, but the workspace displayed older HEAD `2c246cda` and no matching deployed SHA became visible before browser debugger loss. |
+| Published reachability | PASS | `GET https://animate.creatrweb.com/health/` returned 200; `PUBLISHED_APP_URL=https://animate.creatrweb.com scripts/smoke-published.sh` passed. This is not proof that the reviewed wrapper is deployed. |
+| #788 guarded import | BLOCKED | No supported production shell or verified preview wrapper; therefore no snapshot, production command, write, or live verification was attempted. |
 | Overall readiness | BLOCKED | Open production, provider, hardware, parity, dependency, and #940 follow-up issues remain. Local evidence is not promoted to deployed evidence. |
 
 ## Reassessment after #940 closure and #943 partial implementation — 2026-09-27

@@ -94,6 +94,31 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #993 transaction ledger
+
+- **Issue:** [#993](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/993)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Raised `.admin-console-nav-button` and
+  `.publish-visibility-option` minimum heights to 44px, matching the stated
+  touch-target minimum.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `56c9214e` (`fix(a11y): normalize undersized
+  touch targets`).
+- **Checks:** `npm run build`, `npm run lint -- --quiet`, and
+  `npm run format:check` passed. No existing dimension assertion required
+  updates.
+- **QA matrix:** Both selectors now meet 44px minimums. Live before/after
+  screenshots at 1280x900 and 375x812 were not available in the current
+  browser environment; this visual verification boundary is recorded and not
+  claimed as performed.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #992 transaction ledger
 
 - **Issue:** [#992](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/992)

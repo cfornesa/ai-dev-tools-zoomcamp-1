@@ -1229,3 +1229,32 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 - **New gaps:** The live browser and physical-device portions remain bounded by
   the recorded Chromium host failure and the existing owner-run hardware
   checklist; no browser or hardware pass is claimed.
+
+## Issue #912 transaction ledger
+
+- **Issue:** [#912](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/912)
+- **Phase:** QA passed locally; pending typed GitHub closure after evidence
+  reconciliation.
+- **Transaction:** Verify the microphone-enabled immersive and immersive-embed
+  routes expose the shared Live mic controls independently of camera capability.
+  The actual parent-frame engine routing, effects, recovery, and cleanup are
+  shared with and implemented by issue #911's `PieceStageControls` change.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineering and QA — Codex / GPT-5 substitution for the rostered
+  implementation/review services; no independent second-opinion model was
+  available.
+- **Implementation commit:** Pending commit after this ledger update.
+- **Changed files:** `frontend/e2e/artPieceImmersiveRuntime.spec.ts`.
+- **Checks:** Immersive viewer unit tests — 4 passed; frontend format-check,
+  lint, and typecheck passed; Playwright test discovery lists all four immersive
+  scenarios including the new microphone route case. The Chromium suite was
+  attempted but all four tests failed before execution at the host's known
+  macOS MachPortRendezvous permission boundary.
+- **QA matrix:** The new route fixture enables microphone and sound while
+  disabling camera, visits both `/art-pieces/immersive/:id` and
+  `/embed/art-pieces/immersive/:id`, opens Piece controls, verifies the Live mic
+  group and enable button, verifies the off state, and asserts no camera control
+  is rendered. #911's shared component tests and audio-engine matrix cover the
+  actual stream routing and effects contract.
+- **New gaps:** Live route execution remains a host-browser verification
+  boundary; no browser or production claim is made.

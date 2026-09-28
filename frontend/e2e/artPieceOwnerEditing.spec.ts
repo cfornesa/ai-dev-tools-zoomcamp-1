@@ -288,6 +288,7 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
     const piece = (await created.json()) as { public_id: string };
 
     await page.goto(`/art-pieces/${piece.public_id}/edit`);
+    await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
     const thumbnailBefore = await page.locator('img').getAttribute('src');
     await page.getByTestId('art-piece-editor-regenerate-thumbnail').click();
     await expect.poll(() => page.locator('img').getAttribute('src')).not.toBe(thumbnailBefore);

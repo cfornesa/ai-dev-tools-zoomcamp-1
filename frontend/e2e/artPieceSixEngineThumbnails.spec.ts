@@ -100,6 +100,7 @@ test.describe('Six-engine captured thumbnails (#602)', () => {
       });
       expect(published.status()).toBe(200);
       await page.goto(`/art-pieces/${piece.public_id}/edit`);
+      await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
       await page.getByTestId('art-piece-editor-regenerate-thumbnail').click();
       await expect
         .poll(

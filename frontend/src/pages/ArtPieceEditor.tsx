@@ -752,6 +752,21 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           <span>{packageExporting ? 'Preparing package…' : 'Export package'}</span>
         </button>
         {packageExportError && <p role="alert">{packageExportError}</p>}
+        {currentVersion && (
+          <button
+            type="button"
+            className="generated-piece-thumbnail-button"
+            aria-label="Toggle thumbnail panel"
+            title="Toggle thumbnail panel"
+            aria-pressed={activeEditorPanel === 'thumbnail'}
+            onClick={() =>
+              setActiveEditorPanel((current) => (current === 'thumbnail' ? null : 'thumbnail'))
+            }
+          >
+            <span aria-hidden="true">▣</span>
+            <span>Thumbnail</span>
+          </button>
+        )}
         <ArtPieceEditorToolAvailability
           engine={piece.engine}
           onActivate={(tool) => {
@@ -825,17 +840,6 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
                 onClick={() => setIsPreviewFullscreen((current) => !current)}
               >
                 <PieceStageIcon name="fullscreen" />
-              </button>
-              <button
-                type="button"
-                aria-label="Toggle thumbnail panel"
-                title="Toggle thumbnail panel"
-                aria-pressed={activeEditorPanel === 'thumbnail'}
-                onClick={() =>
-                  setActiveEditorPanel((current) => (current === 'thumbnail' ? null : 'thumbnail'))
-                }
-              >
-                <span aria-hidden="true">▣</span>
               </button>
               <button
                 type="button"

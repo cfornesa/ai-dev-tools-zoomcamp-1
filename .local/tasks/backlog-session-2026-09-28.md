@@ -1,5 +1,44 @@
 # Backlog session 2026-09-28
 
+## Owner-workability reconciliation pass — 2026-09-28 (second pass, same date)
+
+External feedback (attributed to Codex) summarized the prior pass's 23 open
+issues using only two buckets — handed-off and dependency-blocked — and
+silently dropped the six plain **owner-decision blocked** issues from its
+accounting entirely (`#906`, `#926`, `#946`, `#1004`, `#1005`, `#1006`).
+`docs/process.md` now states all three terminal statuses explicitly (see its
+"The three non-closed terminal statuses" section) so this gap doesn't recur.
+This pass made every one of the 23 issues workable: resolved every
+outstanding owner decision in chat, closed what was already done but not
+rolled up, chained vague blockers to concrete upstream issues, dispatched CI
+for the verification-boundary cluster, and documented (without executing)
+every owner-hands-on production/credential action.
+
+| Issue | Outcome this pass |
+| --- | --- |
+| #987 | Closed — all 6 children (#911-916) were already closed; rolled up. |
+| #988 | Closed — all 8 children (#979-986) were already closed; rolled up. |
+| #995 | Owner decided Dependabot alerts; child #1022 filed. Stays open (handed-off) until #1022 closes. |
+| #996 | Owner decided baseline+ratchet; children #1023 (Ruff C90/N), #1024 (TS strict) filed. Stays open until both close. |
+| #1013 | Owner decided reuse `codeGrammar.ts`; children #1025 (transforms), #1026 (materials), #1027 (lights+composition) filed in that order. Stays open until all three close. |
+| #1019 | Owner decided newest-sort-only + backend/frontend split; children #1028 (backend), #1029 (frontend) filed; relevance sort deferred to new issue #1030 rather than dropped. Stays open until #1028/#1029 close. |
+| #1016 | Owner decided to depend on #941 rather than build a second media contract. Body updated with a `**Do not start until:** #941 closed` header; reclassified from vague `blocked` to concrete `dependency-blocked`. |
+| #941 | Confirmed root of the media chain; only blocked on children #973/#974/#975. CI dispatched (`gh workflow run ci.yml`, run 36464649615) for real Linux/Chromium evidence — see CI-dispatch outcome below. |
+| #942, #944, #946 | Status comments posted confirming each is dependency-blocked on the next link in the #941→#942→#944/#946 chain, not on any independent decision. #946's two other preconditions (#940, #931) were confirmed already closed. |
+| #847, #945 | Status comments posted confirming both are dependency-blocked on #941's (and #941/#942's) contract, not a vague/open decision. |
+| #788 | Owner decided: document, don't execute. Exact 8-step runbook posted (schema-preview review, preview-gate publish, evidence check, snapshot, write-gate publish, gate-disable, live verify, close-out evidence), drawing on the closed #954 tooling. Still dependency-blocked on the owner personally running it. |
+| #906 | Owner decided: re-author in the editor (Option 1, zero-risk). Exact next step posted. Stays open until the owner posts the rebuild evidence. |
+| #926 | Not a decision — restated the exact missing input (a real AI-provider credential in the app's own settings) and the issue's own 6-run budget. Stays open until the owner provisions the credential. |
+| #1004 | Owner decided show-with-caption everywhere. Decision recorded in `docs/conventions/design-ux.md`; follow-up #1031 filed; closed. |
+| #1005 | Owner decided unify onto `.shell-action` sizing. Decision recorded in `docs/conventions/design-ux.md`; follow-up #1032 filed (also closes #993's admin touch-target gap as a side effect); closed. |
+| #1006 | Owner decided pilot Radix UI `AlertDialog` on the `confirm()` replacement; AGENTS.md §8 question asked and approved. Decision + new-dependency rationale recorded in `docs/conventions/design-ux.md` and `docs/dependencies.md`; follow-up #1033 filed; closed. |
+| #973, #974, #859, #975 | CI dispatched for real Linux/Chromium evidence (run 36464649615, in progress at time of this entry). Outcome to be appended once the run completes. |
+
+New child/follow-up issues filed this pass (all milestone-assigned, none
+implemented per the discovery-gate rule against same-session implementation
+of newly filed work): #1022, #1023, #1024, #1025, #1026, #1027, #1028,
+#1029, #1030, #1031, #1032, #1033.
+
 ## Current-goal final reconciliation — 2026-09-28
 
 The user-requested goal resumed the live 25-issue inventory after the prior

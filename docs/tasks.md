@@ -17,6 +17,24 @@ The #975 public-media ZIP verification harness was restored in commit
 still blocked by unavailable Docker/Django health prerequisites. The issue
 remains open with `## QA: FAIL` and an exact Linux/Compose next action.
 
+## 2026-09-28 — owner-workability reconciliation pass (second pass, same date)
+
+External feedback summarized the prior pass's 23 open issues using only two
+of the backlog's three terminal-status buckets (handed-off,
+dependency-blocked), silently dropping six plain owner-decision-blocked
+issues from its accounting. `docs/process.md` now states all three statuses
+explicitly. This pass closed #987/#988 (tracking parents whose children were
+already all closed), resolved every outstanding owner decision in chat
+(#995, #996, #1013, #1019, #1016, #906, #1004, #1005, #1006), filed twelve
+new milestone-assigned child/follow-up issues (#1022-#1033, none implemented
+per the discovery-gate rule), chained vague blockers to the concrete #941
+upstream issue across #847/#941/#942/#944/#945/#946/#1016, documented
+(without executing) the owner-hands-on next steps for #788/#906/#926, and
+dispatched the existing CI e2e workflow for real Linux/Chromium evidence on
+the #973/#974/#859/#975 verification-boundary cluster. Full per-issue detail:
+`.local/tasks/backlog-session-2026-09-28.md`'s "Owner-workability
+reconciliation pass" section.
+
 This file is the full, chronological, per-issue ledger — not something to
 scroll through for orientation. For a themed jump-in point (GitHub
 Milestones grouping the ~937 closed issues by the week they closed, added

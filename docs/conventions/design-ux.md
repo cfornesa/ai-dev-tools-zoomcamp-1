@@ -66,6 +66,11 @@ relevant inconsistency between the app's two main surfaces. Filed as an
 **owner-decision issue**: which shape wins (or a third, reconciled one),
 since this is a visual-identity call, not a mechanical fix.
 
+**Decision (2026-09-28, #1005):** unify admin buttons onto `.shell-action`'s
+sizing (`min-height: 44px; padding: 8px 16px`). This also closes the
+40px-vs-44px touch-target gap (`#993`) for admin nav buttons if the CSS
+reconciliation follow-up issue is scoped together with it.
+
 ## Hick's Law: grouping exists, progressive disclosure doesn't (yet) on
 every surface
 
@@ -127,6 +132,13 @@ principled rule for when each applies — e.g. hide when the control would be
 meaningless without the entitlement, show-with-caption when it's genuinely
 "you could do this if you upgraded") and retrofit the other.
 
+**Decision (2026-09-28, #1004):** show-with-caption everywhere. A gated
+control stays visible, disabled, with a short reason ("Requires the Creator
+plan") rather than being removed from the DOM — matches heuristic #1
+(visibility of system status) and gives free users a visible upgrade path.
+`PieceStageControls.tsx` is retrofitted to this pattern in a follow-up
+implementation issue.
+
 ## The mixed-system option: unstyled primitives for WAI-ARIA plumbing
 
 This app already hand-builds the exact interaction patterns that libraries
@@ -155,6 +167,13 @@ than as a migration:
   hooks, with the `window.confirm()` replacement (above) as the most
   concrete first candidate pattern if the owner wants to pilot this on one
   real, already-identified pain point rather than in the abstract.
+
+**Decision (2026-09-28, #1006):** pilot Radix UI's `@radix-ui/react-alert-
+dialog` on the `window.confirm()` replacement specifically — the smallest,
+most concrete first step. This does not touch `useMenuButton` or
+`useRovingRadioGroup` yet; adopting a primitives library for those patterns
+remains a separate future decision, not implied by this pilot. New
+dependency recorded per `AGENTS.md` §8 in [`dependencies.md`](../dependencies.md).
 
 ## What's not yet machine-enforced
 

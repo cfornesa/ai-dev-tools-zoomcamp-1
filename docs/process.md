@@ -277,6 +277,38 @@ terminally handed off?” for the current ledger entry. If the answer is no, it
 must continue that issue or record its blocker; it may not advance merely to
 make progress appear elsewhere.
 
+### The three non-closed terminal statuses
+
+An issue that isn't closed must carry exactly one of three terminal
+statuses, recorded in its blocker-class field. These are easy to collapse
+into two if only "handed-off" and "dependency-blocked" are kept in mind —
+that gap previously caused an otherwise careful backlog summary to silently
+drop every plain owner-decision issue from its accounting (2026-09-28). All
+three are distinct and none subsumes another:
+
+- **Handed-off**: the work itself isn't scoped yet. No child issue exists,
+  and none can be drafted with finite acceptance criteria until further
+  decomposition, design, or child-issue creation happens. A tracking/rollup
+  parent whose children are still open is also handed-off. Next action:
+  scope children (see `issue-scoping`), or close the parent once every
+  child it tracks is closed.
+- **Dependency-blocked**: a concrete implementation already exists — the
+  issue itself is criterion-ready — but a named upstream issue, contract, or
+  system must reach a terminal state first. Next action: work the named
+  upstream issue; this issue becomes actionable automatically once it
+  closes. Never leave the upstream reference vague ("the media contract")
+  when a specific issue number is known — cite it.
+- **Owner-decision blocked**: the issue is criterion-ready except for one
+  fact only the repository owner can supply — an architectural/visual-
+  identity choice among stated options, an irreversible-decision-table item,
+  a production-data action, or a live credential/authorization only the
+  owner holds. Nothing about the codebase or another issue is missing; the
+  blocker is a decision or an action that must originate from the owner in
+  chat, not from further engineering. Next action: present the options (or
+  the exact step) and get the owner's answer; many of these issues are
+  themselves scoped to "closes on decision + doc, not code," with the
+  actual implementation filed as a separate follow-up once the owner picks.
+
 ## Scope-shifted completion
 
 ### CMS pieces parity boundary

@@ -155,6 +155,35 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 - **New gaps:** Manual Chrome camera/gesture verification remains an evidence
   boundary, not a discovered implementation defect.
 
+## Issue #986 transaction ledger
+
+- **Issue:** [#986](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/986)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Extract the visitor drawing overlay into
+  `useVisitorDrawingOverlay`, including drawing state/history, canvas
+  rendering and resize handling, pointer/touch input, eraser behavior,
+  keyboard undo/redo, and the overlay refs used by screenshot composition.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `1a9ce058` (`refactor(drawing): extract visitor overlay hook`).
+- **Changed files:** `frontend/src/pages/useVisitorDrawingOverlay.ts` and
+  `frontend/src/pages/PieceStageControls.tsx`.
+- **Checks:** `npm run typecheck`, `npm run format:check`, and the focused
+  visitor-drawing Vitest suite — 2 passed. Lint was previously green with
+  repository warnings; no manual desktop/mobile pointer verification was run
+  in this pass.
+- **QA matrix:** The hook owns visitor drawing state, history, canvas and
+  pointer refs, rendering/resizing, eraser hit-testing, touch interruption,
+  undo/redo, and the event handlers now wired by the stage UI. Screenshot
+  compositing continues to include visitor strokes through the shared refs.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** Manual desktop/mobile pointer verification remains an evidence
+  boundary, not a discovered implementation defect.
+
 ## Issue #1017 transaction ledger
 
 - **Issue:** [#1017](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1017)

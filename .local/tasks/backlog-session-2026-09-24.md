@@ -7094,6 +7094,14 @@ wrapper publication once the secure push credential is available through the
 | Non-destructive reconciliation check | Replit Agent / Free / low | BLOCKED | Read-only merge-tree found one conflict: `.local/tasks/backlog-session-2026-09-24.md`; workspace history has 9 commits not in origin and origin has 21 not in workspace. No merge, reset, rebase, edit, importer, or publish occurred. |
 | #788 guarded production action | Codex / GPT-5 / medium | BLOCKED | No reviewed-wrapper provenance, supported preview shell, affected-row snapshot, production command, database write, or live 1280x900/375x812 verification. Evidence: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5861251860. |
 
+## Reassessment after Replit merge — 2026-09-28 — MERGED / PUBLISH UNVERIFIED / #788 BLOCKED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| Replit reconciliation | Replit Agent / Free / low | PASS | Agent reports the sole ledger conflict was resolved with the exact `origin/main` chronology, workspace-only commits were retained, and the reviewed wrapper files were restored without reset/rebase. |
+| Replit publication | Chrome/Replit UI | UNVERIFIED | Agent detected both import-gate secrets and declined to publish while their enabled state could not be safely established without reading/changing secret values; the browser debugger detached during final verification. |
+| #788 guarded production action | Codex / GPT-5 / medium | BLOCKED | No production preview, affected-row snapshot, importer invocation, database write, or live 1280x900/375x812 verification. Evidence: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5861431416. |
+
 ## Transaction: #941 QA reassessment — 2026-09-28 — QA FAIL / OPEN
 
 | Stage | Service / model / effort | Result | Evidence |

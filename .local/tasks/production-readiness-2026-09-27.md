@@ -214,3 +214,13 @@ or production-database criteria.
 | #788 production import | BLOCKED | No supported production preview/shell or matching deployed provenance; therefore no snapshot, one-shot import, database mutation, or live piece verification. |
 
 Readiness remains `BLOCKED` pending an explicit safe reconciliation of the Replit workspace history and publication of the reviewed wrapper.
+
+## Reassessment after Replit merge — 2026-09-28
+
+| Dimension | Result | Evidence boundary |
+|---|---|---|
+| Replit workspace reconciliation | PASS | Agent reports the ledger conflict was resolved from `origin/main`, workspace-only commits were retained, and reviewed wrapper files restored without reset/rebase. |
+| Reviewed wrapper publication | UNVERIFIED | Both import-gate secrets exist; Agent did not publish while their enabled state was not safely established. Browser debugger detached before final SHA/publication evidence. |
+| #788 production import | BLOCKED | No production preview, snapshot, one-shot write, or live piece verification occurred. |
+
+Readiness remains `BLOCKED`; the merge is not evidence of publication or production-data safety.

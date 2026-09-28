@@ -94,6 +94,41 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1017 transaction ledger
+
+- **Issue:** [#1017](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1017)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Add an independent collection lifecycle status (`active`,
+  `draft`, `archived`) alongside public/private visibility. Draft collections
+  are excluded from all public collection reads, archived collections are
+  excluded from the owner's default management list, and the UI exposes the
+  lifecycle status separately from publishing.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `a52a4630` (`feat(collections): separate lifecycle status from visibility`).
+- **Changed files:** `backend/scenes/models.py`,
+  `backend/scenes/migrations/0102_collection_status.py`,
+  `backend/scenes/collections.py`, `backend/scenes/collections_api.py`,
+  `backend/tests/test_collections.py`, `frontend/src/api/collections.ts`,
+  `frontend/src/pages/CollectionManagement.tsx`, and its focused test.
+- **Checks:** `uv run pytest tests/test_collections.py` — 27 passed;
+  focused frontend Vitest — 10 passed; frontend typecheck, lint, and
+  format-check passed; targeted backend Ruff check and format-check passed;
+  Django migration consistency check reported no changes under
+  `backend.test_settings`. Mypy still reports the two pre-existing dynamic
+  collection-resolution errors in `scenes/collections.py` from #997.
+- **QA matrix:** Existing rows default to `active` through the additive
+  migration; draft status remains non-public even after a publish action;
+  archived status remains stored and is hidden from the owner list; public
+  collection, redirect, item-context, and management queries all enforce the
+  appropriate status boundary.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #1016 transaction ledger
 
 - **Issue:** [#1016](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1016)

@@ -152,3 +152,21 @@ stream E reached its terminal implementation batch.
 Next action: continue with the next existing implementable issue after its
 contract and verification prerequisites are checked, keeping the newly created
 follow-ups deferred.
+
+## Final completion refresh after #975 harness restoration — 2026-09-28
+
+Session status: `INCOMPLETE HANDOFF`.
+
+The #975 transaction is reconciled: commit `2e4a10d7` restores the missing ZIP
+browser spec, local static checks and `make check` pass, and authenticated QA
+evidence records `FAIL/BLOCKED` because the required Chromium execution was
+skipped by unavailable Compose/Django health prerequisites. No issue was
+closed from this transaction, no new backlog issue was discovered, and no
+production mutation occurred.
+
+Current rollup: 25 issues discovered in the run; 2 completed (#1020/#1021),
+10 blocked, 7 dependency-blocked, 6 handed-off, and 0 missing terminal
+classifications. The remaining 23 GitHub issues stay open intentionally.
+Production readiness remains `NO-GO / BLOCKED`; the next handoff is the
+approved Linux/Compose browser runner plus the owner/dependency actions listed
+in the backlog ledger.

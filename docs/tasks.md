@@ -12,6 +12,11 @@ blocked/dependency-blocked/handed-off status; see
 `.local/tasks/backlog-session-2026-09-28.md`. Production readiness is
 `NO-GO/BLOCKED` because owner/dependency/browser/deployment gates remain.
 
+The #975 public-media ZIP verification harness was restored in commit
+`2e4a10d7`; local checks pass, but its required Chromium/Compose execution is
+still blocked by unavailable Docker/Django health prerequisites. The issue
+remains open with `## QA: FAIL` and an exact Linux/Compose next action.
+
 This file is the full, chronological, per-issue ledger — not something to
 scroll through for orientation. For a themed jump-in point (GitHub
 Milestones grouping the ~937 closed issues by the week they closed, added

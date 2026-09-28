@@ -2111,3 +2111,15 @@ updates. The remaining open backlog was not silently claimed complete.
   credited to the implementing model.
 - The remaining 23 open issues retain explicit blocked, dependency-blocked, or
   handed-off status and exact next actions; open GitHub state is intentional.
+
+## 2026-09-28 — #975 ZIP browser harness restoration
+
+- Restored the missing `frontend/e2e/publicMediaAssetsZip.spec.ts` referenced
+  by #975; committed as `2e4a10d7`.
+- The restored spec covers archive contents, extraction, offline static serving,
+  desktop/mobile viewport overflow, screenshots, cleanup, and runtime asset
+  requests. `make check`, Playwright discovery, Prettier, and oxlint pass.
+- The exact Chromium execution remains blocked by unavailable Compose/Django
+  health prerequisites and the local Docker daemon. QA therefore records
+  `FAIL/BLOCKED` for evidence, not a product failure; no browser claim is
+  substituted from unit tests.

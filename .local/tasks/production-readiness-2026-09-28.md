@@ -135,3 +135,23 @@ reconciled.
 Next action: process the next independent existing implementation issue from the
 refreshed inventory, beginning with #926 only after its real-provider and
 browser evidence boundary is confirmed; keep #1020/#1021/#1013 deferred.
+
+## Final readiness refresh after #975 harness restoration — 2026-09-28
+
+Result: `NO-GO / BLOCKED`.
+
+- #975's missing named browser specification was restored in commit
+  `2e4a10d7` and the full local `make check` gate is green (backend 1,768
+  passed / 39 skipped; frontend 3,089 passed).
+- The exact Chromium ZIP command still skips during global setup because the
+  Compose/Django health prerequisite is unavailable; the local Docker daemon
+  is unavailable. This leaves extracted-ZIP rendering, viewport screenshots,
+  overflow, cleanup, and runtime asset-request evidence unverified.
+- The live open inventory remains 23 issues after #1020/#1021 closure. Every
+  remaining issue has an explicit blocked, dependency-blocked, or handed-off
+  terminal classification; no production, Replit, or authenticated browser
+  claim is made from local checks.
+
+Next action: run the restored #975 and related public-media browser suites on
+the approved Linux/Compose runner, then continue the dependency-ordered
+backlog and rerun this gate after owner/deployment blockers change.

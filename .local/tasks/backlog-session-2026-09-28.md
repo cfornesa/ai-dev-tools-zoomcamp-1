@@ -1426,3 +1426,24 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 - **Discovery reconciliation:** No new issue was created in this refresh; no
   newly created issue was implemented. Existing same-goal follow-ups remain
   explicitly deferred.
+
+## Issue #975 harness restoration — 2026-09-28
+
+- **Phase:** `GROOMED → ENGINEERING → QA → BLOCKED`.
+- **Transaction:** Restore the missing public-media ZIP browser specification
+  referenced by the issue, covering ZIP inspection, extraction, offline static
+  serving, desktop/mobile overflow, screenshots, cleanup, and source-asset
+  requests.
+- **Implementation:** Commit `2e4a10d7`; added
+  `frontend/e2e/publicMediaAssetsZip.spec.ts`.
+- **Checks:** `make check` passed (backend 1,768 passed / 39 skipped;
+  frontend 296 files / 3,089 tests; lint, format, typecheck, and build gates
+  passed). Playwright discovery lists one ZIP test; Prettier and oxlint pass.
+- **QA result:** `FAIL` only because the required Chromium execution was
+  skipped by global setup when the Compose/Django health prerequisite was
+  unavailable. `make compose-preflight` confirms the local Docker daemon is
+  unavailable. The harness is now present; archive rendering, both viewport
+  assertions, screenshots, and runtime asset requests still require the
+  approved Linux/Compose runner.
+- **GitHub:** Reassessment comment posted to #975; issue remains open and
+  terminally blocked at the verification/workflow-infrastructure boundary.

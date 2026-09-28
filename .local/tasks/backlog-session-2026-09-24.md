@@ -7093,3 +7093,10 @@ wrapper publication once the secure push credential is available through the
 | Replit workspace audit | Replit Agent / Free / low | PASS | Clean workspace HEAD `c3c1b7ce7b57e9cfefe269daa806ed5df10fb6d3`; fetched `origin/main` is reviewed `5dbc47c7b4b51a901d08bcb58e96f079e10ae1b3`. Checked-out wrapper lacks `REFERENCE_IMPORT_MODE` and `--dry-run`. |
 | Non-destructive reconciliation check | Replit Agent / Free / low | BLOCKED | Read-only merge-tree found one conflict: `.local/tasks/backlog-session-2026-09-24.md`; workspace history has 9 commits not in origin and origin has 21 not in workspace. No merge, reset, rebase, edit, importer, or publish occurred. |
 | #788 guarded production action | Codex / GPT-5 / medium | BLOCKED | No reviewed-wrapper provenance, supported preview shell, affected-row snapshot, production command, database write, or live 1280x900/375x812 verification. Evidence: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5861251860. |
+
+## Transaction: #941 QA reassessment — 2026-09-28 — QA FAIL / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude substitution; independent stage-3 unavailable and not credited | FAIL / OPEN | Backend public-asset and startup-wrapper tests 26 passed; frontend resolver/export tests 74 passed; elevated Compose Chromium spec 1 passed. Evidence remains mocked/partial; populated regular/embed/immersive routes, extracted ZIP HTTP render, and deployed header/CSP evidence are missing. QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/941#issuecomment-5861374139. |
+| reconcile / close | Codex / GPT-5 / medium | OPEN | Keep #941 open; no production/shared database write. |

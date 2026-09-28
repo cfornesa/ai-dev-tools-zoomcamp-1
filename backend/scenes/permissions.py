@@ -12,9 +12,12 @@ authenticated-non-owner, plus whatever a resource's own public/remix
 flags allow.
 """
 
+import logging
 from enum import StrEnum
 
 from scenes.models import ArtPiece, EditSessionDraft, Project, Project3D, Template
+
+logger = logging.getLogger("scenes.permissions")
 
 
 class Action(StrEnum):
@@ -207,4 +210,11 @@ def can(user, action: Action, resource=None) -> bool:
 def require(user, action: Action, resource=None) -> None:
     """Like can(), but raises PermissionDenied instead of returning False."""
     if not can(user, action, resource):
+        denial = {
+            "user_id": str(getattr(user, "id", None)) if _is_authenticated(user) else "anonymous",
+            "action": str(action),
+            "resource_type": type(resource).__name__ if resource is not None else None,
+            "resource_id": str(getattr(resource, "pk", None)) if resource is not None else None,
+        }
+        logger.warning("permissions.denied", extra={"permission_denial": denial})
         raise PermissionDenied(f"{action.value} denied for this user/resource.")

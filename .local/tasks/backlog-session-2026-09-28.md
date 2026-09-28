@@ -119,6 +119,29 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   complete evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1003 transaction ledger
+
+- **Issue:** [#1003](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1003)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Route canonical piece project and 3D project owner/public
+  lookup authorization through centralized `permissions.can()` checks.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `712db6c3` (`refactor(auth): centralize canonical piece read checks`).
+- **Changed files:** `backend/scenes/canonical_piece_api.py`.
+- **Checks:** `uv run pytest tests/test_canonical_piece.py tests/test_permissions.py`
+  — 74 passed; ruff check passed. Mypy was attempted but remains blocked by
+  pre-existing errors in imported `scenes/collections.py` from #997.
+- **QA matrix:** Public, owner-private, foreign-user, and permission tests
+  pass unchanged; project and Project3D lookups use `Action.PROJECT_READ` and
+  `Action.PROJECT3D_READ` through the centralized authorization service.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #994 transaction ledger
 
 - **Issue:** [#994](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/994)

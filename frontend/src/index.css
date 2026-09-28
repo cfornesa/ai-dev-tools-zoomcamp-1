@@ -5073,6 +5073,36 @@ select.ai-proposal-field-full-width {
   padding-inline-start: 24px;
 }
 
+.public-collections-panel {
+  width: min(1100px, calc(100% - 32px));
+  margin: 24px auto;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.public-collections-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 0 24px;
+  padding-inline-start: 24px;
+}
+
+.public-collections-card {
+  height: 100%;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.public-collections-card h3 {
+  margin-block: 0 8px;
+}
+
+.public-collections-card p {
+  margin-block: 4px;
+}
+
 .public-collection-card {
   height: 100%;
   padding: 12px;
@@ -5121,12 +5151,14 @@ select.ai-proposal-field-full-width {
 
 @media (max-width: 700px) {
   .collection-management-layout,
-  .public-collection-grid {
+  .public-collection-grid,
+  .public-collections-grid {
     grid-template-columns: 1fr;
   }
 
   .collection-management,
-  .public-collection {
+  .public-collection,
+  .public-collections-panel {
     width: calc(100% - 20px);
   }
 }

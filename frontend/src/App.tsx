@@ -21,6 +21,7 @@ const LocalEditorWorkspace = lazy(() => import('./pages/LocalEditorWorkspace'));
 const LocalProject3DWorkspace = lazy(() => import('./pages/LocalProject3DWorkspace'));
 const LocalGeneratedPieceWorkspace = lazy(() => import('./pages/LocalGeneratedPieceWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
+const PublicCollections = lazy(() => import('./pages/PublicCollections'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
 const PublicProject3DViewer = lazy(() => import('./pages/PublicProject3DViewer'));
 const ImmersiveProject3DViewer = lazy(() => import('./pages/ImmersiveProject3DViewer'));
@@ -85,6 +86,7 @@ function App() {
                   never checks `useAuth()`'s status, unlike the index route's
                   Home/Gallery split. */}
               <Route path="gallery" element={<PublicGallery />} />
+              <Route path="collections" element={<PublicCollections />} />
               <Route path="users/:handle" element={<PublicProfile />} />
               <Route path="users/:handle/feeds" element={<PublicProfileFeeds />} />
               <Route

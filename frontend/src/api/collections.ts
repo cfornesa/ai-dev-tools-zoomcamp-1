@@ -41,6 +41,29 @@ export type CollectionComment = {
   created_at: string;
 };
 
+export type PublicCollectionIndexItem = {
+  id: string;
+  title: string;
+  owner_handle: string | null;
+  cover_url: string | null;
+  item_count: number;
+  published_at: string;
+  viewer_url: string | null;
+};
+
+export type PublicCollectionIndexPage = {
+  results: PublicCollectionIndexItem[];
+  next_cursor: string | null;
+  has_more: boolean;
+};
+
+export function fetchPublicCollections(cursor?: string): Promise<PublicCollectionIndexPage> {
+  const params = new URLSearchParams();
+  if (cursor) params.set('cursor', cursor);
+  const query = params.toString();
+  return apiFetch<PublicCollectionIndexPage>(`/api/collections/public/${query ? `?${query}` : ''}`);
+}
+
 export function fetchCollections() {
   return apiFetch<Collection[]>('/api/account/collections/');
 }

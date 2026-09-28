@@ -99,7 +99,10 @@ def _thumbnail_url(kind: str, item_id: uuid.UUID) -> str:
 
 
 def _item_payload(item: CollectionItem, *, public: bool) -> dict | None:
-    record = _item_record(item.collection.owner, item.kind, item.item_id, public=public)
+    if hasattr(item, "_resolved_record"):
+        record = item._resolved_record
+    else:
+        record = _item_record(item.collection.owner, item.kind, item.item_id, public=public)
     if record is None:
         return None
     return {
@@ -115,10 +118,23 @@ def _item_payload(item: CollectionItem, *, public: bool) -> dict | None:
 
 def collection_payload(collection: Collection, *, public: bool) -> dict:
     profile = PublicProfile.objects.filter(user=collection.owner).first()
-    items = [
-        payload
-        for item in collection.items.select_related("collection__owner").order_by("position", "id")
-        if (payload := _item_payload(item, public=public)) is not None
+    items = list(collection.items.select_related("collection__owner").order_by("position", "id"))
+    item_ids_by_kind: dict[str, set[uuid.UUID]] = {}
+    for item in items:
+        item_ids_by_kind.setdefault(item.kind, set()).add(item.item_id)
+    records_by_key: dict[tuple[str, uuid.UUID], object] = {}
+    querysets = {
+        CollectionItem.Kind.PROJECT: eligible_projects() if public else Project.objects,
+        CollectionItem.Kind.PROJECT3D: eligible_projects3d() if public else Project3D.objects,
+        CollectionItem.Kind.ART_PIECE: eligible_art_pieces() if public else ArtPiece.objects,
+    }
+    for kind, item_ids in item_ids_by_kind.items():
+        for record in querysets[kind].filter(owner=collection.owner, public_id__in=item_ids):
+            records_by_key[(kind, record.public_id)] = record
+    for item in items:
+        item._resolved_record = records_by_key.get((item.kind, item.item_id))
+    payloads = [
+        payload for item in items if (payload := _item_payload(item, public=public)) is not None
     ]
     return {
         "id": str(collection.public_id),
@@ -132,7 +148,7 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
         "published_at": collection.published_at.isoformat() if collection.published_at else None,
         "created_at": collection.created_at.isoformat(),
         "updated_at": collection.updated_at.isoformat(),
-        "items": items,
+        "items": payloads,
         "seo_config": collection.seo_config,
         "canonical_url": (
             f"/users/@{profile.handle}/collections/{collection.slug}" if profile else None
@@ -166,12 +182,15 @@ def public_collection_context(kind: str, item_id) -> list[dict[str, str]]:
             collection__visibility=Collection.Visibility.PUBLIC,
             collection__is_deleted=False,
         )
-        .select_related("collection__owner")
+        .select_related("collection__owner__public_profile")
         .order_by("collection__owner_id", "collection__slug", "collection_id")
     )
     result = []
     for row in rows:
-        profile = PublicProfile.objects.filter(user=row.collection.owner).first()
+        try:
+            profile = row.collection.owner.public_profile
+        except PublicProfile.DoesNotExist:
+            profile = None
         if profile is None or profile.handle is None:
             continue
         result.append(

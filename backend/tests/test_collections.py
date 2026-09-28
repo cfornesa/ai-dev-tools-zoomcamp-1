@@ -8,9 +8,12 @@ from zipfile import ZipFile
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from scenes.collections import collection_payload, public_collection_context
 from scenes.models import (
     ArtPiece,
     ArtPieceVersion,
@@ -117,6 +120,84 @@ def _create_collection(client, title="My collection"):
     response = client.post("/api/account/collections/", {"title": title}, format="json")
     assert response.status_code == 201
     return response.json()
+
+
+@pytest.mark.django_db
+def test_collection_payload_batches_mixed_item_lookups(owner_client, owner):
+    project = _published_project(owner, "Mixed 2D")
+    second_project = _published_project(owner, "Mixed 2D second")
+    project3d = _published_project3d(owner, "Mixed 3D")
+    piece = _published_piece(owner, "Mixed generated")
+    payload = _create_collection(owner_client, "Mixed collection")
+    collection = Collection.objects.get(public_id=payload["id"])
+    CollectionItem.objects.bulk_create(
+        [
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT,
+                item_id=project.public_id,
+                position=0,
+            ),
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT3D,
+                item_id=project3d.public_id,
+                position=2,
+            ),
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.ART_PIECE,
+                item_id=piece.public_id,
+                position=3,
+            ),
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT,
+                item_id=second_project.public_id,
+                position=1,
+            ),
+        ]
+    )
+
+    with CaptureQueriesContext(connection) as queries:
+        result = collection_payload(collection, public=True)
+
+    assert [item["title"] for item in result["items"]] == [
+        "Mixed 2D",
+        "Mixed 2D second",
+        "Mixed 3D",
+        "Mixed generated",
+    ]
+    assert len(queries) <= 11
+
+
+@pytest.mark.django_db
+def test_public_collection_context_batches_profile_lookup(owner_client, owner):
+    project = _published_project(owner, "Context project")
+    for index in range(3):
+        collection = _create_collection(owner_client, f"Context collection {index}")
+        assert (
+            owner_client.post(
+                f"/api/account/collections/{collection['id']}/items/",
+                {"items": [{"kind": "project", "id": str(project.public_id)}]},
+                format="json",
+            ).status_code
+            == 200
+        )
+        assert (
+            owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+            == 200
+        )
+
+    with CaptureQueriesContext(connection) as queries:
+        result = public_collection_context("project", project.public_id)
+
+    assert [item["title"] for item in result] == [
+        "Context collection 0",
+        "Context collection 1",
+        "Context collection 2",
+    ]
+    assert len(queries) <= 1
 
 
 @pytest.mark.django_db

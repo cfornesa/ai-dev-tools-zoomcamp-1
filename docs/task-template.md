@@ -29,6 +29,10 @@ One or two sentences on what should be true when this is done.
 
 ## Evidence and pending items
 
+- **Milestone:** The GitHub milestone this issue is filed under (existing
+  open one it's a follow-up to, or a newly created one — see
+  `docs/process.md`'s "Milestone assignment" section for which). Never
+  leave this unset once the issue is filed.
 - **Status:** PROPOSED | ACTIVE | COMPLETE
 - **Evidence so far:** What has been observed or verified
 - **Pending verification:** The exact check that remains, if any
@@ -76,6 +80,9 @@ contract.
   for a duplicate
 - [ ] Added the matching GitHub issue link, or recorded why issue creation is
   still pending
+- [ ] Assigned an existing open milestone (if this is a direct follow-up of
+  work already in one) or created a new one (per `docs/process.md`); never
+  left unmilestoned
 - [ ] Reconciled newly discovered out-of-scope work before closing this task
 
 ## Constraints

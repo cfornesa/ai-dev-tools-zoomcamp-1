@@ -57,9 +57,8 @@ Antigravity's Sonnet implementation.
 Choosing one of these supported profiles is not a substitution. Record the
 actual platform, model, and effort in the session provenance, then apply the
 same ledger, handoff, and completion requirements without weakening them for a
-faster model. The owner-authorized Luna routing for the separate
-`issue-scoping` stage does not alter the independent orchestration profile
-used by this orchestration task.
+faster model. The Luna restriction on the separate `issue-scoping` stage does
+not apply to this orchestration task.
 
 ## Multi-service stage routing
 
@@ -201,6 +200,8 @@ guidance. Confirm or update:
 If the issue is not implementable because a dependency is unresolved, record `dependency-blocked`, its exact prerequisite, and its next action. Continue to the next independent issue. If the issue spans multiple independently observable surfaces, stop grooming it as a unit and create/reuse one criterion-ready child per surface before engineering.
 
 If grooming discovers distinct actionable work outside the current issue, reuse an existing issue or create a criterion-ready follow-up immediately through the authenticated connector when authorized. Link it from the current issue and manifest. If creation is not authorized, mark the current work `handed-off` with `issue-creation-pending-authorization`, an owner, and the exact issue definition needed; do not silently absorb or omit the work.
+
+Any issue created this way gets a milestone before it's left — reuse the current issue's open milestone (it's a direct follow-up), or create a new one if none fits. Never leave a newly filed issue unmilestoned; see `docs/process.md`'s "Milestone assignment" section.
 
 ### Engineer pass — implement
 

@@ -100,7 +100,7 @@ to the later backlog-session engineer pass.
 1. Identify exactly one project and read its `tasks.md`, relevant plan, `docs/process.md`, and applicable acceptance criteria and constraints.
 2. Inspect the current worktree and relevant repository history without overwriting user changes.
 3. Use the authenticated GitHub connector to enumerate open issues associated with the project. Compare GitHub issues, `tasks.md`, existing memory topics, related PRs, and the user's evidence.
-4. Build or update an issue manifest containing issue number, URL, goal, dependencies, priority/order, duplicate links, scope, status, and the routing hint (intended implementation owner and rationale).
+4. Build or update an issue manifest containing issue number, URL, goal, dependencies, priority/order, duplicate links, scope, status, milestone, and the routing hint (intended implementation owner and rationale).
 5. Order work by dependencies, then backlog order, then priority. Mark already-completed, duplicate, blocked, and dependency-blocked items explicitly.
 
 ## Atomicity and closure cadence
@@ -211,6 +211,7 @@ For each gap:
 1. State the current behavior, desired behavior, evidence, and verification boundary.
 2. Identify actionable implementation items, decisions, blockers, lessons, constraints, and context; classify each blocker using the triage rules above.
 3. Reuse or update an existing GitHub issue when it covers the item. Create a new issue in the same distillation pass when the work is genuinely absent and issue creation is authorized. Link parent/child issues and state whether the parent is blocked, dependency-blocked, or handed-off.
+3a. Assign a milestone to every newly filed issue — never leave one unmilestoned. Reuse the current open milestone when this issue is a direct follow-up/discovered sub-scope of work already in it; otherwise create a new milestone (`Batch N: <theme> (<date range>)`, numbered from the highest existing batch). Full rule in `docs/process.md`'s "Milestone assignment" section. Record the milestone in the manifest alongside the issue link.
 4. Give each issue a clear goal, checkable acceptance criteria, constraints, out-of-scope links, dependencies, and exact next action.
 5. Create or update memory topics only for durable decisions, blockers, verification boundaries, lessons, constraints, actionable context, or other information needed by a later session. Link each topic to its issue(s).
 6. Reconcile issue status, backlog entry, memory topic, PR/commit evidence, blocker classification, issue-creation decision, owner, and next action before moving on.
@@ -228,6 +229,7 @@ Produce:
 - a dependency/order rationale;
 - an explicit list of unresolved blockers and verification boundaries.
 - a blocker triage and follow-up issue report showing why each blocker did or did not produce a new issue.
+- confirmation that every newly filed issue in this pass has a milestone assigned (existing-reused or newly created), with the reused/new decision stated per issue.
 
 No actionable item may be left only in prose. Every actionable follow-up must be linked to an existing or newly created issue, or explicitly marked `issue-creation-pending-authorization` with an owner and next action. No issue or memory topic may be created twice because a prior session already captured it. If external tooling is unavailable, record the attempted tool, exact failure, issue-creation decision, impact, and next action.
 

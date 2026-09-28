@@ -163,6 +163,51 @@ or review:
    discovered actionable items and reconcile every item.
 6. When all intended tasks for a session are sufficiently complete, commit the changes as a single pull request, aptly named given the context of each session.
 
+### Milestone assignment (owner rule, 2026-09-27)
+
+Every GitHub issue is assigned a milestone at filing time — never left
+unmilestoned. This exists so the backlog stays navigable as it grows (see
+`docs/tasks-index.md`); it is metadata only and never changes an issue's
+content, criteria, or evidence.
+
+**Reuse the current open milestone** when the new issue is a direct
+follow-up, discovered sub-scope, or split-out of an issue already in that
+milestone, **and** that milestone is still open (its batch hasn't been
+reconciled/closed out yet). This is the common case: most issues discovered
+mid-transaction (the "independent actionable gap" case above) belong in the
+milestone of the work that surfaced them.
+
+**Create a new milestone** when any of these hold:
+
+- A task-distillation pass is starting a new backlog batch with no natural
+  open-milestone parent (a fresh review, a new feature stream, a new audit).
+- The most recent milestone has already been closed out by session-completion
+  (see below) — do not reopen a closed milestone or add issues to it; that
+  mirrors the closed-issue-immutability rule above. Start the next one
+  instead.
+- The current open milestone has grown past roughly 150 issues — split
+  rather than let one milestone balloon past what a milestone view can
+  usefully summarize.
+
+**Naming convention:** `Batch N: <short theme> (<date or date range>)`,
+numbered sequentially from whatever the highest existing batch number is
+(retroactive history starts at Batch 1; do not renumber it). The description
+states the issue-number range and a few representative titles.
+
+**Who does this:**
+
+- `task-distillation` decides and applies the milestone when filing an issue
+  during discovery/grooming (create the milestone first if none fits).
+- `backlog-session` applies the same rule for an issue discovered and filed
+  mid-transaction; it never leaves a newly filed issue unmilestoned.
+- `session-completion` decides, at batch rollup, whether every issue in a
+  milestone has reached a terminal status; if so, it marks that milestone
+  closed and records the decision. A milestone with any non-terminal issue
+  stays open.
+- Add or update the corresponding row in `docs/tasks-index.md` when a
+  milestone is created or closed — that file is the human-facing index; it
+  is not a substitute for setting the milestone field on the issue itself.
+
 ### Where each item belongs
 
 | Item | Canonical markdown location | What to store |

@@ -660,6 +660,15 @@ addition to this one, not instead of it.
 
 ## 13. Project Specific Rules
 
+- **Milestone assignment (owner-mandated, 2026-09-27):** Every GitHub issue
+  gets a milestone at filing time — never left unmilestoned. Reuse the
+  current open milestone for a direct follow-up/discovered sub-scope of
+  work already in it; open a new one for a new backlog batch, once the
+  prior milestone is closed out, or once the current one exceeds ~150
+  issues. Full mechanics, naming convention, and stage ownership
+  (task-distillation files/assigns, session-completion closes out) are in
+  `docs/process.md`'s "Milestone assignment" section — read it before filing
+  or closing any issue, don't re-derive this rule from memory.
 - **No regressions for new features:** Do not remove, relocate, disable, or
   contradict an established feature/specification while implementing a new
   feature. Preserve existing behavior and add explicit regression coverage

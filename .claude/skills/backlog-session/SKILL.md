@@ -201,6 +201,8 @@ If the issue is not implementable because a dependency is unresolved, record `de
 
 If grooming discovers distinct actionable work outside the current issue, reuse an existing issue or create a criterion-ready follow-up immediately through the authenticated connector when authorized. Link it from the current issue and manifest. If creation is not authorized, mark the current work `handed-off` with `issue-creation-pending-authorization`, an owner, and the exact issue definition needed; do not silently absorb or omit the work.
 
+Any issue created this way gets a milestone before it's left — reuse the current issue's open milestone (it's a direct follow-up), or create a new one if none fits. Never leave a newly filed issue unmilestoned; see `docs/process.md`'s "Milestone assignment" section.
+
 ### Engineer pass — implement
 
 Delegated to stage 2. Select by the issue's routing hint: the

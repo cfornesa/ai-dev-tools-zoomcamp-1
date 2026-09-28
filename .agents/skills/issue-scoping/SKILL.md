@@ -48,6 +48,10 @@ The issue must contain:
 - a **routing hint** — stage 2a (mechanical/boilerplate) or stage 2b (complex
   logic: auth, data layer, migrations, schema and business-logic translation)
   — and the reason. Work spanning both is a signal to split the issue.
+- a **milestone** — the existing open milestone this issue follows up on, or
+  a note that it needs a new one (task-distillation/backlog-session creates
+  it if this stage cannot). Never hand off an issue with no milestone
+  decision at all; see `docs/process.md`'s "Milestone assignment" section.
 
 If the work touches translated business logic, cite the source-of-truth
 document (`ALGORITHMS.md`-equivalent, `docs/benchmarks.md` for runtime and

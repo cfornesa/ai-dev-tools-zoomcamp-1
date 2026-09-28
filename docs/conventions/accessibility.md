@@ -46,12 +46,13 @@ real, evidenced gaps.
 
 ## Real, evidenced gaps
 
-1. **No documented contrast-ratio target.** `index.css`'s `:root` color
-   tokens (`--text`, `--bg`, `--accent`, etc.) are raw hex/rgba values, both
-   light and dark variants exist, but nothing states an intended WCAG AA
-   (4.5:1 normal text / 3:1 large text) or AAA ratio, so no contrast-audit
-   tool has ever been run against them as a gate. Filed as its own issue:
-   define the target, audit the current tokens against it.
+1. **Contrast target and audit.** The app adopts WCAG AA as its floor: 4.5:1
+   for normal text and 3:1 for large text. The primary light/dark token pairs
+   were audited on 2026-09-28: light `--text`/`--bg` 5.73:1, light
+   `--text-h`/`--bg` 20.15:1, light `--accent`/`--bg` 4.39:1, dark
+   `--text`/`--bg` 7.04:1, dark `--text-h`/`--bg` 16.25:1, and dark
+   `--accent`/`--bg` 6.77:1. The light accent is below the normal-text floor;
+   its separate follow-up is [#1020](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1020).
 2. **`PieceCard.tsx:76` hardcodes `alt=""`** where every sibling card
    component (`ProjectCard.tsx`, `Project3DCard.tsx`, `PublicProjectCard.
    tsx`) uses a real descriptive `alt={`Preview of ${title}`}`. One

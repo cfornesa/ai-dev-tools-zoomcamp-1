@@ -1330,8 +1330,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 ## Issue #915 transaction ledger
 
 - **Issue:** [#915](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/915)
-- **Phase:** QA passed locally; pending typed GitHub closure after evidence
-  reconciliation.
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA
+  and evidence reconciliation.
 - **Transaction:** Add the reference seven-effect microphone chain and audio
   context recovery to the standalone structured-3D export while preserving
   real stream routing and cleanup.
@@ -1339,7 +1339,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   no. Engineering and QA — Codex / GPT-5 substitution for the rostered
   implementation/review services; no independent second-opinion model was
   available.
-- **Implementation commit:** Pending commit after this ledger update.
+- **Implementation commit:** `0a3b8691` (`feat(export): add structured 3d
+  microphone effects`).
 - **Changed files:** `frontend/src/export/standaloneThreeRuntimeSource.ts`,
   `frontend/src/export/standaloneThreeRuntimeSource.test.ts`, and
   `frontend/src/export/generateHtmlExport3D.ts`.

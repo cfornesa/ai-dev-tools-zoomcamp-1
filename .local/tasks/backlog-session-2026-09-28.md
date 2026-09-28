@@ -94,6 +94,39 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #984 transaction ledger
+
+- **Issue:** [#984](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/984)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Consolidate the genuinely overlapping ambient/keyboard
+  sound-settings state into `useSoundSettingsState`, consumed by both the
+  structured 3D editor and the generated-piece stage controls. The hook keeps
+  each caller's existing execution path: direct `SonicEngine` calls for 3D
+  scenes and command dispatch for sandboxed pieces.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `6c6a5915` (`refactor(sound): share settings state across stage controls`).
+- **Changed files:** `frontend/src/audio/useSoundSettingsState.ts`,
+  `frontend/src/audio/soundSettings.ts`, `frontend/src/pages/Scene3DPreview.tsx`,
+  and `frontend/src/pages/PieceStageControls.tsx`.
+- **Checks:** Relevant Scene3DPreview, Structured2DSoundControls, and
+  PieceStageControls tests — 58 passed; frontend typecheck, format-check, and
+  lint passed. Lint retains repository warnings, including the pre-existing
+  `authoredSoundSettings` dependency warning. No manual Chrome hardware check
+  was run in this pass.
+- **QA matrix:** Shared state owns the listed scalar settings and exposes
+  canonical names; the 3D editor's pre-existing chromatic keyboard default is
+  preserved through a named sound-settings compatibility constant; effects,
+  voice instruments, piano-note tracking, camera/gesture state, and visitor
+  drawing remain local to their existing components.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** Manual Chrome sound-control verification remains a follow-up
+  evidence boundary, not a discovered implementation defect.
+
 ## Issue #1017 transaction ledger
 
 - **Issue:** [#1017](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1017)

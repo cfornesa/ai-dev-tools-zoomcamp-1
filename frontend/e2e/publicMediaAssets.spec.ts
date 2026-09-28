@@ -46,9 +46,15 @@ function publicProject() {
   };
 }
 
-test('anonymous public viewer resolves retained media and keeps private assets denied', async ({ page }) => {
+test('anonymous public viewer resolves retained media and keeps private assets denied', async ({
+  page,
+}) => {
   await page.route(`**/api/public/projects/${PUBLIC_ID}/`, (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(publicProject()) }),
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(publicProject()),
+    }),
   );
   await page.route('**/api/pieces/2d/**/assets/**', (route) => {
     return route.fulfill({
@@ -67,10 +73,13 @@ test('anonymous public viewer resolves retained media and keeps private assets d
   await page.goto(`/p/${PUBLIC_ID}`);
   await expect(page.getByRole('heading', { name: 'Public media fixture' })).toBeVisible();
   await expect(page.locator('canvas')).toBeVisible();
-  const assetResponse = await page.evaluate(async ({ publicId, assetId }) => {
-    const response = await fetch(`/api/pieces/2d/${publicId}/assets/${assetId}/`);
-    return { status: response.status, nosniff: response.headers.get('x-content-type-options') };
-  }, { publicId: PUBLIC_ID, assetId: ASSET_ID });
+  const assetResponse = await page.evaluate(
+    async ({ publicId, assetId }) => {
+      const response = await fetch(`/api/pieces/2d/${publicId}/assets/${assetId}/`);
+      return { status: response.status, nosniff: response.headers.get('x-content-type-options') };
+    },
+    { publicId: PUBLIC_ID, assetId: ASSET_ID },
+  );
   expect(assetResponse.status).toBe(200);
   expect(assetResponse.nosniff).toBe('nosniff');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(

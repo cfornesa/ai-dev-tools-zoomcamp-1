@@ -51,5 +51,7 @@ export async function loadPublicSceneAssets(
       return blob ? ([assetId, await blobToDataUrl(blob)] as const) : null;
     }),
   );
-  return Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => entry !== null));
+  return Object.fromEntries(
+    entries.filter((entry): entry is readonly [string, string] => entry !== null),
+  );
 }

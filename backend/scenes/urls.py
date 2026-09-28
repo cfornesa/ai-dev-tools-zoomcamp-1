@@ -114,7 +114,6 @@ from scenes.collections_api import (
 )
 from scenes.pages_api import PublicPageDetailView, PublicPageNavigationView
 from scenes.piece_intake_api import PiecePackageIntakeView
-from scenes.public_asset_api import PublicPieceAssetView
 from scenes.profile_api import (
     AccountProfileImageView,
     AccountProfileView,
@@ -123,6 +122,7 @@ from scenes.profile_api import (
 )
 from scenes.profile_styles_api import AdminProfileStyleDetailView, AdminProfileStyleListCreateView
 from scenes.provider_credentials_api import ProviderCredentialView
+from scenes.public_asset_api import PublicPieceAssetView
 from scenes.public_search_api import PublicGallerySearchView
 from scenes.scene_conversion_api import (
     SceneConversionAcceptView,

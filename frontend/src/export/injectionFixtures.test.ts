@@ -99,18 +99,18 @@ function elementsWithEventHandlerAttrs(doc: Document): string[] {
 }
 
 /** `<script>` elements beyond the exact expected set for a given mode: the
- * p5 CDN loader, the two `application/json` data blocks, the runtime
- * script, the stage-controls script, and (camera-inclusive modes only) the camera script -- any
- * additional executable script node is a real breakout. */
+ * p5 CDN loader, the three `application/json` data blocks, the runtime
+ * script, the stage-controls script, and (camera-inclusive modes only) the
+ * camera script -- any additional executable script node is a real breakout. */
 function unexpectedScriptCount(doc: Document, includesCamera: boolean): number {
   const scripts = Array.from(doc.querySelectorAll('script'));
-  // Exactly: p5 CDN loader, scene-data json, export-config json, scene
-  // runtime script, stage-controls script, and (camera-inclusive modes only)
-  // the camera script. Any extra
+  // Exactly: p5 CDN loader, scene-data json, media-assets json,
+  // export-config json, scene runtime script, stage-controls script, and
+  // (camera-inclusive modes only) the camera script. Any extra
   // <script> element beyond this exact count is a real breakout -- an
   // injected script produced by a hostile payload would show up as an
   // additional element in this same query.
-  const expected = includesCamera ? 6 : 5;
+  const expected = includesCamera ? 7 : 6;
   return Math.max(0, scripts.length - expected);
 }
 

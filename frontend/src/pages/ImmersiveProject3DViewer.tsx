@@ -103,9 +103,7 @@ function ImmersiveProject3DViewer({
       setActiveMediaAssetResolver(null);
       return;
     }
-    setActiveMediaAssetResolver((assetId) =>
-      fetchPublicPieceAsset('3d', project.id, assetId),
-    );
+    setActiveMediaAssetResolver((assetId) => fetchPublicPieceAsset('3d', project.id, assetId));
     return () => setActiveMediaAssetResolver(null);
   }, [project]);
 

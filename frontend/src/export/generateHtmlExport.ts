@@ -466,9 +466,7 @@ export function triggerHtmlDownload(html: string, filename: string): void {
  * bytes for future runtime revisions. */
 export async function generateHtmlExportZip(
   input: GenerateHtmlExportInput,
-): Promise<
-  { ok: true; zipBlob: Blob; filename: string } | { ok: false; reasons: string[] }
-> {
+): Promise<{ ok: true; zipBlob: Blob; filename: string } | { ok: false; reasons: string[] }> {
   const result = generateHtmlExport(input);
   if (!result.ok) return result;
   const zip = new JSZip();

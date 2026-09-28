@@ -19,10 +19,7 @@ import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePrevi
 import { normalizeSceneLayers } from '../validation/scene';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
 import { downloadBlob } from '../export/downloadBlob';
-import {
-  generateHtmlExportZip,
-  triggerHtmlZipDownload,
-} from '../export/generateHtmlExport';
+import { generateHtmlExportZip, triggerHtmlZipDownload } from '../export/generateHtmlExport';
 import { getAvailableInteractionModes } from '../export/exportCompatibility';
 import PieceStageToolbar from '../components/PieceStageToolbar';
 import StageControlsPopover from '../components/StageControlsPopover';
@@ -332,9 +329,7 @@ function PublicProjectViewer({
       setActiveMediaAssetResolver(null);
       return;
     }
-    setActiveMediaAssetResolver((assetId) =>
-      fetchPublicPieceAsset('2d', project.id, assetId),
-    );
+    setActiveMediaAssetResolver((assetId) => fetchPublicPieceAsset('2d', project.id, assetId));
     return () => setActiveMediaAssetResolver(null);
   }, [project]);
 

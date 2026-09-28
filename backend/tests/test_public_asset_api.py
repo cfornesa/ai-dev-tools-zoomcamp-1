@@ -30,9 +30,7 @@ def test_public_piece_asset_is_anonymous_and_cacheable():
         data=payload,
     )
 
-    response = APIClient().get(
-        f"/api/pieces/2d/{piece.public_id}/assets/{source_asset_id}/"
-    )
+    response = APIClient().get(f"/api/pieces/2d/{piece.public_id}/assets/{source_asset_id}/")
 
     assert response.status_code == 200
     assert response.content == payload
@@ -59,8 +57,6 @@ def test_private_piece_asset_does_not_leak_to_anonymous_client():
         data=b"x",
     )
 
-    response = APIClient().get(
-        f"/api/pieces/2d/{piece.public_id}/assets/{source_asset_id}/"
-    )
+    response = APIClient().get(f"/api/pieces/2d/{piece.public_id}/assets/{source_asset_id}/")
 
     assert response.status_code == 404

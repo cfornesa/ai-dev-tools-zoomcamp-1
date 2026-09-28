@@ -7,15 +7,14 @@ describe('fetchPublicPieceAsset', () => {
 
   it('requests the anonymous immutable asset route and returns its blob', async () => {
     const blob = new Blob(['asset'], { type: 'image/png' });
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(blob, { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(blob, { status: 200 }));
 
     await expect(fetchPublicPieceAsset('2d', 'piece-id', 'asset-id')).resolves.toEqual(blob);
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/pieces/2d/piece-id/assets/asset-id/',
-      { credentials: 'include' },
-    );
+    expect(fetchMock).toHaveBeenCalledWith('/api/pieces/2d/piece-id/assets/asset-id/', {
+      credentials: 'include',
+    });
   });
 
   it('soft-falls for assets that are missing or no longer public', async () => {

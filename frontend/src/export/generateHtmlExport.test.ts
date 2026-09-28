@@ -838,9 +838,9 @@ describe('generateHtmlExport: inline icon-only stage toolbar (#761)', () => {
 describe('generateHtmlExportZip: public media bundle (#941)', () => {
   it('includes the runnable HTML and fetched media bytes', async () => {
     const assetBytes = new Uint8Array([1, 2, 3]);
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(assetBytes, { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(assetBytes, { status: 200 }));
     const result = await generateHtmlExportZip({
       ...baseInput(),
       mediaAssets: { 'asset-1': 'data:image/png;base64,AQID' },
@@ -848,12 +848,13 @@ describe('generateHtmlExportZip: public media bundle (#941)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const zip = await JSZip.loadAsync(result.zipBlob);
-    expect(Object.keys(zip.files).filter((name) => !zip.files[name].dir).sort()).toEqual([
-      'assets/asset-1',
-      'index.html',
-    ]);
+    expect(
+      Object.keys(zip.files)
+        .filter((name) => !zip.files[name].dir)
+        .sort(),
+    ).toEqual(['assets/asset-1', 'index.html']);
     expect(await zip.file('assets/asset-1')!.async('uint8array')).toEqual(assetBytes);
-    expect((await zip.file('index.html')!.async('string'))).toContain('media-assets');
+    expect(await zip.file('index.html')!.async('string')).toContain('media-assets');
     expect(fetchMock).toHaveBeenCalledWith('data:image/png;base64,AQID');
     fetchMock.mockRestore();
   });

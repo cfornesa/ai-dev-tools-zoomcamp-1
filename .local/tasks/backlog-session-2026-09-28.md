@@ -63,6 +63,62 @@ Current live remainder after these closures: #788, #847, #859, #906, #926,
 actions, the public-media/browser evidence chain, the local-first collection
 media contract, the #1030 ranking-signal decision, and CI/browser triage.
 
+### Continued owner-input and independent issue pass — 2026-09-28
+
+- **#906:** owner-authorized production reauthoring completed in the active
+  authenticated Chrome session. Reloaded private route shows version 2 with
+  Sphere, Plane, Ambient light, and Directional light; visual mode renders the
+  red sphere. QA PASS comment posted and issue closed.
+- **#1030:** owner selected newest/default, oldest, and item-count ranking;
+  views remain deferred until unique-IP tracking exists and curation has no
+  independent model signal. Implemented mode-bound cursor pagination and the
+  accessible frontend selector in commits `f84b60c3` and `c7c438bf`.
+  Focused API 36 passed, backend full 1,778 passed / 39 skipped, frontend
+  full 3,111 passed, build/typecheck/lint/format/mypy passed. QA PASS posted;
+  issue closed.
+- **#926:** owner-authorized Chrome session is available, but the required
+  local Compose boundary is unavailable: local tab shows gallery-load failure
+  and `make compose-preflight` reports Docker daemon unavailable. No
+  production AI run substituted. Dependency-blocked comment posted.
+- **#1034:** fresh CI run `36470205676` completed against divergent remote SHA
+  `e0e7bfe6`, not this local branch, and failed in frontend/backend/browser
+  jobs. It is not admissible evidence for local commits; branch/CI ref
+  reconciliation remains a verification-boundary dependency.
+- **#1035/#1036:** owner explicitly instructed that Claude Code is actively
+  scoping both issues; no implementation or further changes are authorized in
+  this session. #1036 is the deferred schema/API persistence follow-up.
+- **#788/#946:** owner reconfirmed the previously approved flows. Their
+  production steps remain owner-run by issue contract; no agent production
+  write was performed.
+
+### Final readiness and completion reconciliation — 2026-09-28
+
+The live GitHub inventory was re-read after the implementation pass. It has
+zero unclassified open issues: #788 and #946 are owner-run blocked; #847,
+#926, #941, #942, #944, #945, #1016, #973, #974, and #975 are
+dependency-blocked or verification-boundary blocked; #859 is waiting on the
+same CI/browser evidence chain; #1032 is waiting on authenticated local
+browser evidence; #1034 is waiting on a matching-ref CI rerun; and #1035 and
+#1036 are handed off to the owner's active Claude Code scoping work. Closed
+issues remain closed and were not reopened by readiness review.
+
+Production-readiness result: `NO-GO / BLOCKED`. Local deployment-quality
+evidence passed with `make check` (action pins, backend lint/format/mypy,
+1,778 backend tests / 39 skipped, frontend lint/format/typecheck, and 3,111
+frontend tests). Approved-browser evidence exists for the owner-authorized
+#906 production correction. CI evidence for #1034 is not admissible because
+the fresh run executed divergent remote SHA `e0e7bfe6` and failed frontend,
+backend, and browser steps. Production evidence remains owner-run for #788
+and #946, and no published or production AI run was substituted for #926.
+
+Final blocker triage: each blocked item names its dependency, owner action,
+or verification boundary in its latest GitHub comment. No new actionable
+issue was discovered during the final read-only checks; #1035/#1036 were not
+modified after the owner's explicit stop instruction. The only pending
+follow-up requiring a new state change is to provide the named environment,
+owner decision, or matching CI ref for each issue above; no issue is silently
+omitted.
+
 ### CI-dispatch outcome detail (run 36464649615)
 
 Conclusion: `failure`. Per-job: Workflow validation ✓, Disposable published

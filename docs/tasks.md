@@ -1,5 +1,22 @@
 # AugmentrART Backlog
 
+## 2026-09-28 — final backlog-session reconciliation
+
+The current backlog-session batch has been reconciled against GitHub and the
+working tree. Closed in this batch are #1012, #1019, #1020, #1021, #1022–#1031,
+#1033, #906, and #1030, each with issue-scoped commits and QA evidence where
+implementation was in scope. The remaining open issues have terminal
+blocked, dependency-blocked, or owner-run/verification-boundary records in
+`.local/tasks/backlog-session-2026-09-28.md`; they are not treated as
+production-ready merely because the local gate passes.
+
+The final local `make check` passed: 1,778 backend tests passed / 39 skipped,
+3,111 frontend tests passed, and action-pin, lint, format, typecheck, build,
+and mypy checks passed. #1034's remote CI run is not admissible for this
+checkout because it executed a divergent remote SHA and failed independent
+frontend/backend/browser steps. #1035 and #1036 remain explicitly under
+Claude Code scoping and were not modified after the owner's stop instruction.
+
 ## 2026-09-28 — owner-requested backlog goal final refresh
 
 The live 25-issue inventory was processed through the backlog-session gates.

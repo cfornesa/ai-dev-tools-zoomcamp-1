@@ -31,7 +31,9 @@ history) or search `docs/tasks.md` for the issue number.
 This session's own issue actions aren't retroactively bucketed into the
 weekly milestones above (they're this week's work, not history to file
 away yet):
-- Closed: #874, #886, #860, #861, #978.
+- Closed: #874, #886, #860, #861, #978, #906, #1012, #1019–#1033.
+- Remaining open issues are reconciled as owner-run, dependency-blocked, or
+  verification-boundary work in the active backlog-session ledger.
 - Filed: #979–#986 (atomic code-health issues, replacing #978), plus
   tracking-only parents #987 (microphone stream) and #988 (code-health
   decomposition), each with real GitHub sub-issue links to their children.

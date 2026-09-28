@@ -439,3 +439,26 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   closed through the typed issue-state update after this ledger captured the
   complete evidence; no workaround was attempted.
 - **New gaps:** None.
+
+## Issue #1001 transaction ledger
+
+- **Issue:** [#1001](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1001)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Emit one structured minimal warning record from
+  `permissions.require()` before raising `PermissionDenied`.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `c980bf62` (`observability(auth): log permission denials`).
+- **Changed files:** `backend/scenes/permissions.py`,
+  `backend/tests/test_permissions.py`.
+- **Checks:** Full backend `uv run pytest` — 1766 passed, 39 skipped; focused
+  permissions suite — 51 passed; ruff format/check passed.
+- **QA matrix:** The denial record contains only user id/anonymous, action,
+  resource type, and resource id. The test asserts exactly one record and the
+  existing table-driven authorization behavior remains green.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.

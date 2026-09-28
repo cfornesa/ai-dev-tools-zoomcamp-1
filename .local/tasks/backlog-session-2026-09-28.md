@@ -148,6 +148,32 @@ parent whose children own the remaining route/artifact evidence.
   matrix, #926 remains an owner credential boundary, and #941 remains
   parent/child route-artifact work. They are not silently marked complete.
 
+### Issue #975 transaction — 2026-09-28 — BLOCKED / workflow-infrastructure
+
+- **State:** `GROOMED → ENGINEERING/QA → BLOCKED`.
+- **Scope:** extracted structured-2D ZIP media verification.
+- **Stage provenance:** scoping `Codex / GPT-5 / medium / substituted: no`;
+  implementation `not applicable — verification-only`; second opinion `not
+  run`; QA `Codex / GPT-5 / medium / substituted: yes`; readiness
+  `Codex / GPT-5 / medium / substituted: yes` at batch gate.
+- **Checks:** `npx vitest run src/export` passed 18 files / 232 tests. The
+  exact required command `E2E_DOCKER_COMPOSE=true npx playwright test
+  e2e/publicMediaAssetsZip.spec.ts --project=chromium` cannot run because
+  `frontend/e2e/publicMediaAssetsZip.spec.ts` is absent (`Error: No tests
+  found`), independently of the known Chromium Mach-port launcher failure.
+  Existing files include `publicMediaAssets.spec.ts`,
+  `publicMediaAssetsRegular.spec.ts`, and `publicMediaAssetsEmbed.spec.ts`,
+  but none covers extracted ZIP media.
+- **QA result:** `## QA: FAIL` / workflow-infrastructure defect. The named
+  browser artifact is missing, so no extracted ZIP criterion can be accepted;
+  no product source was changed and no test assertion was weakened.
+- **Exact next action:** add or restore the criterion-ready
+  `publicMediaAssetsZip.spec.ts` harness (with disposable archive/server and
+  cleanup), then run it on the approved browser runner/CI. Because the
+  current GitHub connector cannot create milestone-assigned issues, this is
+  recorded against #975 rather than silently filed as an unmilestoned new
+  issue or implemented in this goal.
+
 ## Distillation manifest
 
 Project: `cfornesa/ai-dev-tools-zoomcamp-1` on

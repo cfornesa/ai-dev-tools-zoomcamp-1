@@ -3,10 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-import CameraControl, {
-  type CameraControlProps,
-  type CameraStatus,
-} from '../components/CameraControl';
+import CameraControl, { type CameraControlProps } from '../components/CameraControl';
 import PieceStageToolbar from '../components/PieceStageToolbar';
 import StageControlsPopover from '../components/StageControlsPopover';
 import PieceStageIcon from '../components/PieceStageIcon';
@@ -41,12 +38,13 @@ import {
   updateThreeCameraAspect,
 } from '../render/threeSceneBuilder';
 import { prefersReducedMotion } from '../render/objectAnimation';
-import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
+import type { HandSignals } from '../tracking/handSignals';
 import type { TrackingFrame } from '../tracking/types';
 import HandGestureGuideDialog from './HandGestureGuideDialog';
 import type { Scene3DDocument } from './scene3dTypes';
 import { useFullscreenToggle } from './useFullscreenToggle';
 import Scene3DAFramePreview from './Scene3DAFramePreview';
+import { useScene3DCameraState } from './useScene3DCameraState';
 import { resolveScene3DRenderer } from '../validation/scene3d';
 import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
 import { normalizeSonic } from '../audio/sonicContract';
@@ -576,29 +574,32 @@ function ThreeScenePreview({
     }
   }
 
-  // Issue #294: "Steer the piece" -- gesture-driven camera control.
-  const [gestureControlEnabled, setGestureControlEnabled] = useState(false);
-  // The scene-rebuild effect below only re-runs when `scene`/`renderError`
-  // change, not on every `gestureControlEnabled` toggle (toggling it
-  // shouldn't tear down and rebuild the whole Three.js scene graph) -- a
-  // ref, kept in sync on every render, is what its render-loop closure
-  // actually reads, matching this codebase's existing "latest value ref"
-  // convention (e.g. `CameraControl.tsx`'s own `onFrameRef`).
-  const gestureControlEnabledRef = useRef(gestureControlEnabled);
-  gestureControlEnabledRef.current = gestureControlEnabled;
-  const handSignalExtractorRef = useRef(createHandSignalExtractor());
-  const latestHandSignalsRef = useRef<HandSignals | null>(null);
-  const previousHandSignalsRef = useRef<HandSignals | null>(null);
-  const gestureStartRef = useRef<number | null>(null);
+  const {
+    gestureControlEnabled,
+    setGestureControlEnabled,
+    gestureControlEnabledRef,
+    handSignalExtractorRef,
+    latestHandSignalsRef,
+    previousHandSignalsRef,
+    gestureStartRef,
+    thereminEnabled,
+    setThereminEnabled,
+    thereminEnabledRef,
+    gestureCameraStatus,
+    setGestureCameraStatus,
+    gestureCameraStream,
+    setGestureCameraStream,
+    gestureCameraVideoRef,
+    cameraPreviewEnabled,
+    setCameraPreviewEnabled,
+    cameraPreviewStatus,
+    setCameraPreviewStatus,
+    cameraPreviewStream,
+    setCameraPreviewStream,
+    cameraPreviewVideoRef,
+    resetGestureSignals,
+  } = useScene3DCameraState();
 
-  // Issue #309: "camera theremin" -- independently toggleable alongside
-  // "Steer the piece", sharing this same `CameraControl`/hand-tracking
-  // pipeline (see the combined mount condition below and
-  // `handleGestureFrame`'s own doc comment) rather than a second camera
-  // stream/model instance.
-  const [thereminEnabled, setThereminEnabled] = useState(false);
-  const thereminEnabledRef = useRef(thereminEnabled);
-  thereminEnabledRef.current = thereminEnabled;
   function handleToggleTheremin() {
     const engine = sonicEngineRef.current;
     if (thereminEnabled) {
@@ -610,31 +611,12 @@ function ThreeScenePreview({
     setThereminEnabled(true);
   }
 
-  // Issue #297: camera-feed overlay + opacity/mirror controls. The stream
-  // becomes available before CameraControl marks hand tracking active.
-  const [gestureCameraStatus, setGestureCameraStatus] = useState<CameraStatus>('idle');
-  const [gestureCameraStream, setGestureCameraStream] = useState<MediaStream | null>(null);
-  const gestureCameraVideoRef = useRef<HTMLVideoElement | null>(null);
-  // Issue #342: a camera preview is independently toggleable from gesture
-  // steering and theremin. It uses the existing permission/error lifecycle,
-  // but has no frame handler, so it cannot alter the scene or sound.
-  const [cameraPreviewEnabled, setCameraPreviewEnabled] = useState(false);
-  const [cameraPreviewStatus, setCameraPreviewStatus] = useState<CameraStatus>('idle');
-  const [cameraPreviewStream, setCameraPreviewStream] = useState<MediaStream | null>(null);
-  const cameraPreviewVideoRef = useRef<HTMLVideoElement | null>(null);
   const {
     opacity: cameraOverlayOpacity,
     mirrored: cameraOverlayMirrored,
     setOpacity,
     setMirrored,
   } = useCameraOverlaySettings();
-
-  function resetGestureSignals() {
-    previousHandSignalsRef.current = null;
-    latestHandSignalsRef.current = null;
-    gestureStartRef.current = null;
-    handSignalExtractorRef.current = createHandSignalExtractor();
-  }
 
   useEffect(() => {
     const videoEl = gestureCameraVideoRef.current;
@@ -650,14 +632,14 @@ function ThreeScenePreview({
     // Keep status in the dependencies so stream attachment is retried after
     // a tracking transition; the video itself mounts as soon as the stream
     // exists, without waiting for the first tracked frame.
-  }, [gestureCameraStream, gestureCameraStatus]);
+  }, [gestureCameraStream, gestureCameraStatus, gestureCameraVideoRef]);
 
   useEffect(() => {
     const videoEl = cameraPreviewVideoRef.current;
     if (!videoEl) return;
     videoEl.srcObject = cameraPreviewStream;
     if (cameraPreviewStream) void Promise.resolve(videoEl.play()).catch(() => {});
-  }, [cameraPreviewStream, cameraPreviewStatus]);
+  }, [cameraPreviewStream, cameraPreviewStatus, cameraPreviewVideoRef]);
 
   function handleGestureFrame(frame: TrackingFrame) {
     if (gestureStartRef.current === null) gestureStartRef.current = performance.now();

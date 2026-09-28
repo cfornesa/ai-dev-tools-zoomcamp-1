@@ -7,6 +7,22 @@ One or two sentences on what should be true when this is done.
 - [ ] A statement you can check by looking at the result
 - [ ] One line per case, including the awkward ones
 
+## Regression-risk and restoration safeguard (required if any risk exists)
+
+- **Regression risk:** Does this task touch, remove, relocate, or change the
+  behavior of anything that already works? If none, state "None" and skip
+  the rest of this section.
+- **Restoration path:** If risk exists, the concrete mechanism that lets the
+  prior behavior be restored without a code archaeology exercise — a
+  feature flag, a reversible migration, the old path kept live behind a
+  switch, or an equivalent. An issue with regression risk and no stated
+  restoration path is not criterion-ready; do not move it past GROOMED.
+- **QA restoration check:** The exact step QA takes to confirm the
+  restoration path actually restores prior behavior, not just that the new
+  behavior works.
+- This task may not degrade or regress existing functionality without the
+  owner's explicit, per-change permission (see `AGENTS.md` §13).
+
 ## Out of scope
 
 - Something that does not belong in this task, moved to #TASK-NUMBER

@@ -1856,3 +1856,88 @@ production publish or data mutation is authorized by this decision.
   revision lacking the safe preview wrapper. Keep the issue open and do not
   enable the write-capable startup gate or publish without the separately
   authorized production path.
+
+## 2026-09-28 — explicit no-regression constraint
+
+- The owner explicitly requires that new feature work never regress an
+  established feature or contradict an existing specification. Preserve
+  existing behavior, add regression coverage for affected surfaces, and
+  reconcile any apparent specification conflict in a scoped issue before
+  implementation.
+
+## 2026-09-27 — backlog re-evaluation, doc reconciliation, code-health audit
+
+- Owner asked for a re-evaluation of the GitHub issue backlog
+  (consolidate/merge, refine, cut), which the owner then expanded to: add a
+  hard, standing no-regression rule with mandatory restoration safeguards;
+  audit the codebase for tangled control flow; and reconcile
+  `docs/plan.md`/`AGENTS.md` with the repo's actual and intended scope. The
+  owner explicitly directed that GitHub issues, documentation, and
+  `docs/tasks.md` be the deliverables of this pass, not a deferred report.
+- **Hard no-regression rule strengthened** (`AGENTS.md` §13): extended from
+  "new features" to every change, with a mandatory restoration/rollback path
+  requirement in issue scoping (`docs/task-template.md` gained a
+  "Regression-risk and restoration safeguard" section). This formalizes,
+  rather than duplicates, the constraint already logged above
+  (2026-09-28 entry).
+- **Issue re-evaluation:** reviewed all 25 open issues in full. None
+  qualified for consolidation or cutting as redundant — the backlog was
+  already criterion-ready and non-duplicate (confirmed by
+  `docs/distillation-2026-09-26-cross-surface-parity.md`'s stream/queue
+  structure). Owner resolved two blocking decisions in this session:
+  closed #874 (all code criteria met, remaining item tracked in #906) and
+  closed #886 (Option 1: ambient audio stays export-only/local, no new
+  public server contract; #847 updated to match; recorded in `docs/api.md`
+  and `.agents/memory/ambient-audio-export-only-delivery.md`).
+- **Documentation reconciliation:** `docs/plan.md` gained a "Scope
+  reconciliation (2026-09-27)" section. Confirmed as in-scope: 3D/A-Frame,
+  ink, admin CMS, collections, generated-art sandbox, cloud-backup/local-first
+  sync (audio/mic already confirmed in an earlier turn). Flagged, not
+  resolved: billing/PayPal/entitlements as an undocumented business-model
+  addition, and a direct contradiction between shipped ZIP export and the
+  "Explicit V1 exclusions" list's ZIP-packaging exclusion — owner decision
+  needed on both before further related issues are scoped.
+- **Code-health audit:** targeted, not sweeping — most large files are large
+  because the product is large, not because they're tangled (e.g.
+  `backend/scenes/models.py`, 2,511 lines, is declarative). Filed
+  [#978](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/978) to
+  decompose `frontend/src/pages/EditorWorkspace.tsx`'s orchestration
+  (4,366 lines) with a zero-behavior-change requirement gated on its 35
+  existing co-located tests. Did not file issues for
+  `Scene3DPreview.tsx`/`PieceStageControls.tsx`/`useSceneEditor.ts` — same
+  size pattern observed but not read deeply enough to claim real tangle.
+  Explicitly did not treat the owner-approved per-surface parity
+  duplication pattern as a tangle finding.
+- No code was changed and no literal GitHub issue was deleted in this pass;
+  closes were used as the durable, reversible substitute for deletion,
+  consistent with a standing rule against permanent data deletion that holds
+  regardless of instruction.
+
+## 2026-09-27 (continued) — owner pushback: more consolidation, atomic new issues
+
+- Owner judged the first pass insufficient: too little consolidation/closing,
+  and one umbrella code-quality issue (#978) instead of several atomic ones.
+  Re-did both with a more critical read rather than defaulting to "the
+  existing convention is deliberate, leave it":
+- **Closed #978**, replaced with 8 atomic issues (#979–#986) after reading
+  `Scene3DPreview.tsx`, `PieceStageControls.tsx`, and `useSceneEditor.ts` in
+  real depth. #984 is a genuine cross-file state-duplication finding
+  (`Scene3DPreview.tsx` and `PieceStageControls.tsx` each independently
+  reimplement the same sonic-engine/keyboard state) — the clearest true
+  tangle in the audit. `useSceneEditor.ts` was reviewed and explicitly
+  **not** issued against — one cohesive concern, not tangle.
+- **Merged #860 and #861 into #859** (closed, pointing to #859): the three
+  Chrome-verification issues were the identical checklist template repeated
+  per surface with only one line differing. #859 now carries all three
+  surfaces as separate acceptance-criteria rows.
+- **Did not merge #973/#974/#975**, after checking: unlike the #859 triplet,
+  these cite different Playwright spec files, different routing stages, and
+  #974 requires implementing a missing route (not pure verification) —
+  merging them would have made the result less atomic, not more.
+- Net effect this session: 25 open → 21 open from closures (#874, #886,
+  #860, #861), then → 29 open after filing 8 atomic replacement issues for
+  #978 (which nets to 0 itself: filed and closed same session). The open
+  count rose because #978 was one issue covering many distinct, real,
+  independently-testable fixes — splitting it into its true atomic parts is
+  the point, not a sign this pass under-consolidated; the 25-issue backlog
+  proper only shrank (dropped 4, gained 0).

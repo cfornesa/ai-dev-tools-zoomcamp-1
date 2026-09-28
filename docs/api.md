@@ -29,6 +29,17 @@ current cloud-backup API covers structured 2D projects only; public media for
 server copy or transfer must document its state transition and consent record
 before implementation.
 
+## Owner-uploaded ambient audio (#886)
+
+Owner-uploaded ambient audio samples (`ambient_sample`, #847) have **no
+public server delivery contract**. The sample plays only in the authoring
+browser (from the existing local media asset, no new upload pipeline) and is
+bundled into the piece's downloaded ZIP export; public viewers, embeds, and
+immersive views fall back to the existing synthesized ambient voice with a
+status message. This is deliberate (owner decision, Option 1 of #886) — do
+not add a public asset endpoint for this audio without a new owner-decision
+issue. See `.agents/memory/ambient-audio-export-only-delivery.md`.
+
 ## Authored per-piece sound contract (#833)
 
 Structured 2D and 3D scene documents may carry an optional `sonic` object

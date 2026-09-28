@@ -24078,3 +24078,62 @@ microphone behavior remain `VALID WITH GAPS` and link to their open follow-ups.
 - [#929](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/929) — **CLOSED / QA PASS:** version-tagged visitor sound overrides, generated-runtime protection, and browser-storage audit; full `make check` passed.
 - [#930](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/930) — **CLOSED / QA PASS:** portable piece-package v1 schema, mirrored validators, ZIP round trips, checksums, limits, and #512/#526 compatibility readers; full `make check` passed.
 - [#931](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/931) — **CLOSED / QA PASS:** separate admin-editable private/public storage caps, read-only transfer estimates, and JSON/CSV usage reporting; full `make check` passed.
+
+## 2026-09-27 — backlog re-evaluation, documentation reconciliation, and code-health audit
+
+A full re-evaluation pass (not a normal implementation batch): re-checked all
+25 then-open issues against a corrected `docs/plan.md`, reconciled
+`docs/plan.md`/`AGENTS.md` against roughly a dozen shipped feature domains
+they never documented, added a hard owner-mandated no-regression rule
+(`AGENTS.md` §13, `docs/task-template.md`), and ran a targeted code-tangle
+audit. Full findings and rationale live in this session's transcript;
+summarized here per the discovery-gate/reconciliation convention.
+
+**Issue re-evaluation outcome:** of the 25 open issues, 0 were consolidated
+or cut as redundant — full-body review found every one is already
+criterion-ready, non-duplicate, and either actively queued
+(`docs/distillation-2026-09-26-cross-surface-parity.md` streams A–G) or
+correctly blocked pending an owner decision/authorization. Two issues that
+were specifically blocked on an owner decision were resolved in this
+session:
+
+- [#874](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/874) — **CLOSED**, owner-confirmed 2026-09-27: all code/layout criteria were already implemented and verified; the remaining production-data item stays tracked in #906 (owner authorization required, not run in this session).
+- [#886](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/886) — **CLOSED**, owner decision recorded: Option 1 (export-only/local ambient audio delivery, no new public server contract). See `docs/api.md` ("Owner-uploaded ambient audio (#886)") and `.agents/memory/ambient-audio-export-only-delivery.md`. [#847](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/847) updated to match the narrowed scope.
+
+**Documentation reconciliation:** `docs/plan.md` gained a "Scope reconciliation (2026-09-27)" section confirming 3D/A-Frame, ink, audio (already confirmed), admin CMS, collections, the generated-art sandbox, and cloud-backup/local-first sync as in-scope shipped domains, and flagging two items the owner still needs to decide: billing/PayPal/entitlements as a business-model addition, and a direct contradiction between shipped ZIP export and the "Explicit V1 exclusions" list's "Fully offline/bundled HTML or ZIP dependency packaging" line. `AGENTS.md`'s layout section was corrected (stale `ProjectMetadataForm`/`EditorPlaceholder` component names removed; the app/module list now matches what's on disk).
+
+**Code-health audit → filed as 8 atomic issues (revised 2026-09-27, per owner
+feedback that the first pass under-delivered and code-quality work should be
+many small atomic issues, not one umbrella):** the initial single umbrella
+issue #978 was closed and replaced after reading `Scene3DPreview.tsx`,
+`PieceStageControls.tsx`, and `useSceneEditor.ts` in enough depth to find
+concrete evidence, not just size — including a real cross-file state
+duplication (#984), the clearest tangle finding of the audit.
+
+| Issue | Scope | Routing | Status |
+|---|---|---|---|
+| ~~#978~~ | Umbrella "decompose EditorWorkspace.tsx" | — | CLOSED / superseded by #979–#983 |
+| [#979](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/979) | `EditorWorkspace.tsx`: extract camera-overlay state into a hook | 2b | PROPOSED / criterion-ready |
+| [#980](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/980) | `EditorWorkspace.tsx`: extract HTML/CSS/JS code-tab sync into a hook | 2b | PROPOSED / criterion-ready |
+| [#981](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/981) | `EditorWorkspace.tsx`: extract canvas viewport (zoom/pan/fit) into a hook | 2b | PROPOSED / criterion-ready |
+| [#982](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/982) | `EditorWorkspace.tsx`: extract AI-assist panel state into a hook | 2a | PROPOSED / criterion-ready |
+| [#983](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/983) | `EditorWorkspace.tsx`: extract edit-session lifecycle state into a hook | 2b | PROPOSED / criterion-ready |
+| [#984](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/984) | Deduplicate sonic-engine/keyboard state shared by `Scene3DPreview.tsx` and `PieceStageControls.tsx` — a real duplication, not just size | 2b | PROPOSED / criterion-ready |
+| [#985](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/985) | `Scene3DPreview.tsx`: extract gesture/theremin/camera-preview state into hooks | 2b | PROPOSED / criterion-ready |
+| [#986](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/986) | `PieceStageControls.tsx`: extract visitor-drawing-overlay state into a hook | 2b | PROPOSED / criterion-ready |
+
+`useSceneEditor.ts` (1,721 lines) was read at the same depth and found
+**not** to be a tangle finding: it's one large hook covering one cohesive
+concern (selection, undo/redo, transforms, layers, groups, graph nodes — all
+scene-editing operations), the same "big but not tangled" pattern as
+`backend/scenes/models.py`. No issue filed for it. The per-surface
+duplication pattern (regular/embed/immersive/download × render engines) was
+explicitly excluded from "untangle" findings — it is owner-approved
+deliberate architecture per `docs/piece-surface-parity.md` et al.
+
+**Issue-count consolidation (2026-09-27):** re-reading the 25 open issues'
+full bodies for genuine merge candidates (not just theme similarity) found
+two triplets that were byte-for-byte the same checklist template repeated
+per surface, and merged them:
+- [#859](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/859) — now covers immersive, embed, and both ZIP variants as separate acceptance-criteria rows. #860 and #861 closed, pointing here.
+- #973/#974/#975 were reviewed for the same treatment and **not** merged: each cites a different dedicated Playwright spec file and a different routing stage, and #974 additionally requires implementing a missing route (not pure verification like #973/#975) — merging would have reduced atomicity rather than improved it, the opposite of what this pass is for.

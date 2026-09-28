@@ -4,14 +4,32 @@ Layout
   `backend/backend/` — the Django settings package, renamed from the
   former `config/` — `backend/tests/`)
 - Frontend: React/TypeScript/Vite app in `frontend/`
-- `backend/scenes/`: Django app for the canonical scene domain — `validation.py`
-  (Tasks 5-7), `models.py` (Tasks 8-10), `permissions.py` (Task 11), the
-  single authorization service every project/version/draft/template
-  endpoint must go through.
+- `backend/scenes/`: still the single Django app hosting the canonical scene
+  domain (`validation.py`/`validation3d.py`, `models.py`, `permissions.py`,
+  the single authorization service every project/version/draft/template
+  endpoint must go through), but it has grown well past the original 2D
+  scene CRUD slice — as of 2026-09-27 it also hosts, in the same app:
+  billing/PayPal (`billing.py`, `billing_api.py`, `paypal_adapter.py`),
+  admin CMS (`admin_content.py`, `admin_pages.py`, `admin_settings.py` +
+  `_api.py` counterparts), collections (`collections.py`,
+  `collections_api.py`), the generated-art sandbox (`art_piece_*.py`), 3D
+  scenes (`api3d.py`, `patch3d.py`, `validation3d.py`, `thumbnails3d.py`),
+  ink/drawing (`ink_document.py`), sonic/audio contracts
+  (`sonic_contract.py`), account data lifecycle (`account_export*.py`,
+  `account_deletion*.py`, `account_entitlements*.py`,
+  `account_identities*.py`, `account_sessions*.py`), entitlements
+  (`entitlements.py`), cloud backup/sync (`cloud_backup*.py`,
+  `cloud_retention*.py`, `sync_mutation_api.py`), and public
+  gallery/search/sharing (`gallery.py`, `public_search_api.py`,
+  `public_asset_api.py`, `share_metadata.py`, `publishing.py`). See
+  `docs/plan.md` for the reconciled scope this reflects.
 - `schema/`: the canonical scene JSON Schema, complexity/payload limits,
-  and shared fixtures — the single contract both `backend/scenes/validation.py`
-  and `frontend/src/validation/scene.ts` validate against. See
-  `schema/README.md`.
+  and shared fixtures — the contract both `backend/scenes/validation.py`
+  and `frontend/src/validation/scene.ts` validate against for 2D scenes.
+  `schema/scene3d.schema.json`/`limits3d.json` and
+  `schema/piece-package.schema.json` are parallel contracts for the 3D
+  scene domain and exported piece packages respectively — not folded into
+  the 2D schema. See `schema/README.md`.
 - `frontend/src/api/`: typed fetch wrappers for the Django API
   (`client.ts` handles the session cookie + CSRF header; `auth.ts`,
   `projects.ts` are the per-resource calls). Requests use relative paths
@@ -20,9 +38,22 @@ Layout
   configuration needed).
 - `frontend/src/auth/`: `AuthProvider`/`useAuth` — who, if anyone, is
   signed in, checked once via `GET /api/whoami/`.
-- `frontend/src/pages/`, `frontend/src/components/`: routed pages
-  (`Gallery`, `ProjectMetadataForm`, `EditorPlaceholder`, `Home`) and
-  shared UI (`ProjectCard`, `Layout`) — see `App.tsx` for the route table.
+- `frontend/src/pages/` (288 files) and `frontend/src/components/`: routed
+  pages (`Gallery`, `Home`, plus the 2D `EditorWorkspace`, 3D
+  `Project3DWorkspace`/`Scene3DPreview`, admin console, art-piece studio,
+  and collection/immersive-viewer pages — see `App.tsx` for the route
+  table) and shared UI (`ProjectCard`, `Layout`, `PieceStageToolbar`,
+  `CameraControl`). `ProjectMetadataForm` and `EditorPlaceholder`, named
+  here in earlier revisions, no longer exist on disk — this line is
+  corrected as of 2026-09-27; check `App.tsx` for the current route table
+  rather than relying on named examples here, since this surface changes
+  often.
+- Other top-level `frontend/src/` domains beyond `pages`/`components`/`api`/
+  `auth`: `audio/` (sonic engine, mic capture), `ink/` (drawing-plane
+  editor), `export/` (HTML/CSS/JS code generation), `generative/`
+  (art-piece sandbox), `runtime/` (behavior/interaction runtime),
+  `storage/` (local-first project repository), `render/`, `tracking/`
+  (MediaPipe provider abstraction), `theme/`.
 
 ## Durable agent memory
 
@@ -628,3 +659,21 @@ For multi-service work, run `GRAPH-AGENTS.md` Section 8's graph-level eval in
 addition to this one, not instead of it.
 
 ## 13. Project Specific Rules
+
+- **No regressions for new features:** Do not remove, relocate, disable, or
+  contradict an established feature/specification while implementing a new
+  feature. Preserve existing behavior and add explicit regression coverage
+  for the affected surface before release. If the new requirement conflicts
+  with an existing specification, stop and reconcile the specifications in a
+  scoped issue before changing code.
+- **Hard no-regression rule (owner-mandated, 2026-09-27):** No change of any
+  kind — feature, refactor, dependency bump, control-flow cleanup, or
+  documentation-driven correction — may degrade or regress any existing
+  functionality without the owner's explicit, per-change permission. This
+  extends the rule above from "new features" to every change. Where a change
+  carries any real regression risk, issue scoping (`docs/task-template.md`)
+  must name a concrete restoration/rollback path before implementation
+  starts — a feature flag, a reversible migration, the old code path kept
+  live behind a switch, or an equivalent — and QA must verify that path
+  actually restores prior behavior before the issue can close. An issue with
+  regression risk and no stated restoration path is not criterion-ready.

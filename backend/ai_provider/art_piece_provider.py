@@ -316,7 +316,7 @@ class ArtPieceProvider:
             ),
         )
 
-    def generate(self, prompt: str, library: str) -> ArtPieceResult:
+    def generate(self, prompt: str, library: str) -> ArtPieceResult:  # noqa: C901
         zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
         if library not in SUPPORTED_LIBRARIES:
             # Defense in depth: `ArtPieceGenerateRequestSerializer` already
@@ -433,7 +433,7 @@ class ArtPieceProvider:
         warnings = [] if regions else ["missing_layer_markers"]
         return ArtPieceResult(usage=usage, code=snippet, regions=regions, warnings=warnings)
 
-    def refine(
+    def refine(  # noqa: C901
         self,
         instruction: str,
         source: str,

@@ -623,7 +623,7 @@ def fixed_unified_fixture(owner):
     private_3d = _make_project3d(owner, title="Private 3D sentinel")
     _ = private_3d
     _make_art_piece(owner, title="Draft generated sentinel")
-    Archived = ArtPiece.Status.ARCHIVED
+    Archived = ArtPiece.Status.ARCHIVED  # noqa: N806
     archived = _make_art_piece(owner, title="Archived generated sentinel")
     archived.status = Archived
     archived.save(update_fields=["status"])

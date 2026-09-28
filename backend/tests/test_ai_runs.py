@@ -1058,7 +1058,7 @@ def test_postgres_concurrent_advance_calls_never_double_attempt(django_db_blocke
     proceeds and the other gets a documented 409 `advance_in_progress`.
     """
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="ai-runs-concurrent-user"
         )

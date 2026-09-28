@@ -341,7 +341,7 @@ def test_postgres_concurrent_deletion_requests_only_one_succeeds(django_db_block
     (and potentially double-billing-eventing) an already-deleted account.
     """
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-delete-user", password="correct-horse-battery-staple"
         )

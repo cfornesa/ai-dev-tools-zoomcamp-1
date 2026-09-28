@@ -75,7 +75,7 @@ def _get_or_create_user(username: str, email: str):
     from allauth.account.models import EmailAddress
     from allauth.socialaccount.models import SocialAccount
 
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     user, _created = User.objects.update_or_create(
         username=username,
         defaults={"email": email, "is_active": True},
@@ -252,7 +252,7 @@ class Command(BaseCommand):
 
         from scenes.models import SessionMetadata
 
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         usernames = [username for username, _email in E2E_USERS.values()]
         fixture_users = User.objects.filter(username__in=usernames)
         with transaction.atomic():
@@ -289,7 +289,7 @@ class Command(BaseCommand):
             Scene,
         )
 
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         usernames = [username for username, _email in E2E_USERS.values()]
 
         def _owned_by_a_fixture_user(relation: str = "") -> Q:

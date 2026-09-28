@@ -38,7 +38,7 @@ MAX_RETRIES = 2
 MAX_MENTIONS = 10
 
 
-class UnresolvedMention(ValueError):
+class UnresolvedMention(ValueError):  # noqa: N818
     pass
 
 
@@ -77,7 +77,7 @@ class ArtPieceRefineRequestSerializer(serializers.Serializer):
         return value
 
 
-def resolve_mentions(piece: ArtPiece, mentions: list[dict[str, str]]) -> list[dict[str, Any]]:
+def resolve_mentions(piece: ArtPiece, mentions: list[dict[str, str]]) -> list[dict[str, Any]]:  # noqa: C901
     """Resolve bounded owner-local targets without executing generated code."""
     version = piece.current_version
     if version is None:
@@ -273,7 +273,7 @@ def _record_quota_or_fail(run: ArtPieceRefineRun, owner) -> bool:
     return True
 
 
-def refine_art_piece(
+def refine_art_piece(  # noqa: C901
     *,
     owner,
     piece: ArtPiece,

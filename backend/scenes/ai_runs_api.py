@@ -106,7 +106,7 @@ class AIRunStartRequestSerializer(serializers.Serializer):
     def validate_model(self, value: str) -> str:
         return _validate_model_id(value)
 
-    def validate(self, data):
+    def validate(self, data):  # noqa: C901
         if data["scope"] == AIRun.Scope.SELECTION and not data.get("selected_target_ids"):
             raise serializers.ValidationError(
                 "selected_target_ids is required when scope is 'selection'."

@@ -69,19 +69,19 @@ class AccountDeletionError(Exception):
     code = "account_deletion_error"
 
 
-class ReauthenticationRequired(AccountDeletionError):
+class ReauthenticationRequired(AccountDeletionError):  # noqa: N818
     """The caller's password didn't match, or one was required but missing."""
 
     code = "reauthentication_required"
 
 
-class ConfirmationMismatch(AccountDeletionError):
+class ConfirmationMismatch(AccountDeletionError):  # noqa: N818
     """The caller's typed confirmation text didn't match what was required."""
 
     code = "confirmation_mismatch"
 
 
-class AccountAlreadyDeleted(AccountDeletionError):
+class AccountAlreadyDeleted(AccountDeletionError):  # noqa: N818
     """A concurrent or repeated deletion request found the account already
     deactivated -- a safe, idempotent no-op rather than a second pass over
     already-anonymized data."""

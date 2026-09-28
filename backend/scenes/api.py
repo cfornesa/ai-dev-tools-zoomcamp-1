@@ -469,7 +469,7 @@ class PublicGalleryListView(APIView):
         "generated": ("generated",),
     }
 
-    def get(self, request):
+    def get(self, request):  # noqa: C901
         gallery_type = request.query_params.get("type", "all")
         if gallery_type not in VALID_GALLERY_TYPES:
             return Response(
@@ -644,7 +644,7 @@ class ProjectThumbnailView(APIView):
         return HttpResponse(bytes(thumbnail.image_data), content_type=thumbnail.content_type)
 
 
-class ProjectForkNotAvailable(Exception):
+class ProjectForkNotAvailable(Exception):  # noqa: N818
     """Raised inside the locked fork transaction when the source project turns
     out not to be forkable after all (checked fresh under the lock)."""
 
@@ -731,7 +731,7 @@ class ProjectForkView(APIView):
     changes after fork time.
     """
 
-    def post(self, request, public_id):
+    def post(self, request, public_id):  # noqa: C901
         source = _get_project_or_404(public_id)
 
         if not request.user.is_authenticated:
@@ -958,7 +958,7 @@ def _get_version_or_404(project: Project, version_id) -> SceneVersion:
         raise Http404 from exc
 
 
-class CannotModifyCurrentVersion(Exception):
+class CannotModifyCurrentVersion(Exception):  # noqa: N818
     """Raised inside an atomic block to abort restoring/deleting the current version."""
 
 

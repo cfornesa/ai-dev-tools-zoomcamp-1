@@ -24,7 +24,7 @@ def test_reference_import_is_idempotent_owner_scoped_and_reversible():
         "reference-owner",
         "--json",
     )
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     owner = User.objects.get(username="reference_owner")
     first = list(
         ArtPiece.objects.filter(owner=owner).values_list("public_id", "public_slug", "engine")
@@ -107,7 +107,7 @@ def test_production_import_requires_explicit_opt_in():
 @pytest.mark.django_db
 @override_settings(DEBUG=False)
 def test_production_dry_run_resolves_existing_owner_without_writing():
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     owner = User.objects.create_user(
         username="christopher1", email="cfornesa@outlook.com", password="unused"
     )
@@ -138,7 +138,7 @@ def test_production_dry_run_resolves_existing_owner_without_writing():
 @pytest.mark.django_db
 @override_settings(DEBUG=False)
 def test_production_import_is_existing_owner_scoped_and_idempotent():
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     owner = User.objects.create_user(
         username="christopher1", email="cfornesa@outlook.com", password="unused"
     )
@@ -167,7 +167,7 @@ def test_production_import_is_existing_owner_scoped_and_idempotent():
 @pytest.mark.django_db
 @override_settings(DEBUG=False)
 def test_production_import_reconciles_changed_source_without_mutating_history():
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     owner = User.objects.create_user(
         username="christopher1", email="cfornesa@outlook.com", password="unused"
     )
@@ -203,7 +203,7 @@ def test_production_import_reconciles_changed_source_without_mutating_history():
 @pytest.mark.django_db
 @override_settings(DEBUG=False)
 def test_production_dry_run_reports_changed_source_update_without_writing():
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     owner = User.objects.create_user(
         username="christopher1", email="cfornesa@outlook.com", password="unused"
     )
@@ -235,7 +235,7 @@ def test_production_dry_run_reports_changed_source_update_without_writing():
 @pytest.mark.django_db
 @override_settings(DEBUG=False)
 def test_production_import_reports_slug_conflict_and_keeps_existing_owner():
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     owner = User.objects.create_user(
         username="christopher1", email="cfornesa@outlook.com", password="unused"
     )
@@ -263,7 +263,7 @@ def test_production_import_reports_slug_conflict_and_keeps_existing_owner():
 @pytest.mark.django_db
 @override_settings(DEBUG=True)
 def test_reference_import_leaves_non_reference_piece_untouched():
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     owner = User.objects.create_user(username="reference_owner")
     unrelated = ArtPiece.objects.create(
         owner=owner,

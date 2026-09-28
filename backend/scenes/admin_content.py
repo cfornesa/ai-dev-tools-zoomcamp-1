@@ -26,11 +26,11 @@ RESOURCE_TYPES = frozenset({"project", "project3d", "art_piece"})
 ACTION_TYPES = frozenset({"publish", "unpublish", "restore", "delete"})
 
 
-class AdminContentValidationFailed(Exception):
+class AdminContentValidationFailed(Exception):  # noqa: N818
     pass
 
 
-class AdminContentConflict(Exception):
+class AdminContentConflict(Exception):  # noqa: N818
     pass
 
 
@@ -190,7 +190,7 @@ def _resource(resource_type: str, resource_id: str) -> Any:
 
 
 @transaction.atomic
-def apply_action(*, actor, resource_type: str, resource_id: str, action: str):
+def apply_action(*, actor, resource_type: str, resource_id: str, action: str):  # noqa: C901
     if resource_type not in RESOURCE_TYPES or action not in ACTION_TYPES:
         raise AdminContentValidationFailed("unsupported content resource or action.")
     resource = _resource(resource_type, resource_id)
@@ -267,7 +267,7 @@ def apply_action(*, actor, resource_type: str, resource_id: str, action: str):
 def set_application_access(*, actor, username: str, granted: bool):
     if not isinstance(username, str) or not username.strip():
         raise AdminContentValidationFailed("username or verified email is required.")
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     identifier = username.strip()
     user = User.objects.filter(username=identifier).first()
     if user is None:

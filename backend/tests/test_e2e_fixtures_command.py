@@ -37,7 +37,7 @@ BLANK_SCENE = json.loads(
 @pytest.mark.django_db
 def test_cleanup_removes_fixture_users_with_version_history_and_current_version():
     call_command("e2e_fixtures", "create", "--json")
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     owner = User.objects.get(username=E2E_USERS["owner"][0])
     project = Project.objects.create(owner=owner)
     v1 = SceneVersion.objects.create(
@@ -68,7 +68,7 @@ def test_cleanup_removes_fixture_users_with_version_history_and_current_version(
 @pytest.mark.django_db
 def test_cleanup_removes_fork_provenance_sourced_from_a_fixture_project():
     call_command("e2e_fixtures", "create", "--json")
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     owner = User.objects.get(username=E2E_USERS["owner"][0])
     source_project = Project.objects.create(owner=owner)
     source_version = SceneVersion.objects.create(

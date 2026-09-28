@@ -358,7 +358,7 @@ class AIEditScene3DView(APIView):
     counterpart of `AIEditSceneView`. Same stale-base detection and
     failure taxonomy, scoped to `Project3D`/`scene3d`."""
 
-    def post(self, request, public_id):
+    def post(self, request, public_id):  # noqa: C901
         project = _get_project3d_or_404(public_id)
         if not can(request.user, Action.PROJECT3D_WRITE, project):
             raise Http404
@@ -470,7 +470,7 @@ class AIAcceptProposal3DRequestSerializer(serializers.Serializer):
     client_request_id = serializers.UUIDField(required=False, allow_null=True, default=None)
 
 
-class _StaleBase3D(Exception):
+class _StaleBase3D(Exception):  # noqa: N818
     pass
 
 
@@ -496,7 +496,7 @@ class AIAcceptProposal3DView(APIView):
     endpoint.
     """
 
-    def post(self, request, public_id):
+    def post(self, request, public_id):  # noqa: C901
         project = _get_project3d_or_404(public_id)
         if not can(request.user, Action.PROJECT3D_WRITE, project):
             raise Http404

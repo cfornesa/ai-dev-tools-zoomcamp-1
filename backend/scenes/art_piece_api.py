@@ -156,7 +156,7 @@ _current_ai_persona_prompt: ContextVar[str | None] = ContextVar(
 )
 
 
-class MissingPersonalMistralCredential(Exception):
+class MissingPersonalMistralCredential(Exception):  # noqa: N818
     """Raised before any provider call when the owner has no usable key."""
 
 
@@ -168,7 +168,7 @@ def _resolve_persona_prompt(user, persona_id: int | None) -> str | None:
     return persona.prompt_text if persona else None
 
 
-def get_art_piece_provider() -> ArtPieceProvider:
+def get_art_piece_provider() -> ArtPieceProvider:  # noqa: C901
     """Mirrors `scenes.ai_api.get_ai_provider`'s exact shape (including the
     fake-provider short-circuit for `AI_PROVIDER=fake`, and the
     zero-argument/contextvar pattern so tests can monkeypatch this the
@@ -188,7 +188,7 @@ def get_art_piece_provider() -> ArtPieceProvider:
         # matches the shape `artPieceSandbox.ts`'s `buildArtPieceSandboxDocument`
         # expects for that library (self-contained markup for
         # canvas2d/svg/aframe; plain JS for threejs).
-        _FAKE_CODE_BY_LIBRARY = {
+        _FAKE_CODE_BY_LIBRARY = {  # noqa: N806
             "canvas2d": (
                 '<canvas id="art-piece-canvas" width="800" height="600"></canvas>'
                 "<script>const c=document.getElementById('art-piece-canvas');"
@@ -248,8 +248,8 @@ def get_art_piece_provider() -> ArtPieceProvider:
         # sandbox's error-before-ready ordering still holds after switching
         # its readiness handshake from requestAnimationFrame to setTimeout --
         # without needing a real Mistral response that happens to be broken.
-        _THROWING_SNIPPET_MARKER = "__e2e_throwing_snippet__"
-        _THROWING_CODE = "<script>throw new Error('e2e synchronous throw fixture');</script>"
+        _THROWING_SNIPPET_MARKER = "__e2e_throwing_snippet__"  # noqa: N806
+        _THROWING_CODE = "<script>throw new Error('e2e synchronous throw fixture');</script>"  # noqa: N806
 
         class _FakeArtPieceProvider:
             def generate(self, prompt: str, library: str) -> ArtPieceResult:
@@ -399,7 +399,7 @@ class ArtPieceGenerateView(APIView):
     protect, only a personal-credential-gated feature.
     """
 
-    def post(self, request):
+    def post(self, request):  # noqa: C901
         if not request.user.is_authenticated:
             return Response(
                 {"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED

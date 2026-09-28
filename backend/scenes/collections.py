@@ -27,7 +27,7 @@ class CollectionValidationError(Exception):
     """A finite, client-actionable collection validation failure."""
 
 
-class CollectionNotFound(Exception):
+class CollectionNotFound(Exception):  # noqa: N818
     """A collection is missing or not visible to the caller."""
 
 
@@ -278,7 +278,7 @@ def create_collection(*, owner, title: str, description: str = "") -> Collection
 
 
 @transaction.atomic
-def update_collection(
+def update_collection(  # noqa: C901
     *, collection: Collection, title=None, description=None, public_slug=None, status=None
 ) -> Collection:
     locked = Collection.objects.select_for_update().get(pk=collection.pk)

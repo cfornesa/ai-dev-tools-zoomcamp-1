@@ -265,7 +265,7 @@ def _group_cycle(group_id: str, groups_by_id: dict[str, dict], visiting: set[str
     return False
 
 
-def _find_graph_cycle(node_ids: list[str], edges: list[tuple[str, str]]) -> str | None:
+def _find_graph_cycle(node_ids: list[str], edges: list[tuple[str, str]]) -> str | None:  # noqa: C901
     """Detect a cycle anywhere in `graph.connections`' directed edges using
     standard three-color DFS. Mirrors `frontend/src/validation/scene.ts`'s
     `findCycle` (which `frontend/src/runtime/behaviorRuntime.ts` also
@@ -282,7 +282,7 @@ def _find_graph_cycle(node_ids: list[str], edges: list[tuple[str, str]]) -> str 
         if from_id in adjacency:
             adjacency[from_id].append(to_id)
 
-    WHITE, GRAY, BLACK = 0, 1, 2
+    WHITE, GRAY, BLACK = 0, 1, 2  # noqa: N806
     color: dict[str, int] = {node_id: WHITE for node_id in node_ids}
     cycle_node: str | None = None
 
@@ -310,7 +310,7 @@ def _find_graph_cycle(node_ids: list[str], edges: list[tuple[str, str]]) -> str 
     return cycle_node
 
 
-def _check_references(data: dict) -> list[SceneValidationError]:
+def _check_references(data: dict) -> list[SceneValidationError]:  # noqa: C901
     """Check cross-references JSON Schema cannot express: ids that must resolve to a real object."""
     errors: list[SceneValidationError] = []
 
@@ -485,7 +485,7 @@ def _check_references(data: dict) -> list[SceneValidationError]:
     return errors
 
 
-def _check_limits(data: dict) -> list[SceneValidationError]:
+def _check_limits(data: dict) -> list[SceneValidationError]:  # noqa: C901
     """Enforce schema/limits.json scene-wide complexity and payload caps (Task 7)."""
     errors: list[SceneValidationError] = []
 

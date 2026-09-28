@@ -354,7 +354,7 @@ def test_postgres_concurrent_duplicate_accepts_produce_exactly_one_version(djang
     creating a duplicate.
     """
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-accept-user"
         )
@@ -413,7 +413,7 @@ def test_postgres_concurrent_accepts_without_request_id_serialize_to_distinct_se
     stay consistent afterward (no partial save under any interleaving).
     """
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-accept-user-2"
         )

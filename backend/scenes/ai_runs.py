@@ -107,7 +107,7 @@ def _stable_scene_ids(scene_json: dict[str, Any] | None) -> set[str]:
     return ids
 
 
-def validate_plan(plan: dict[str, Any], scene_json: dict[str, Any] | None = None) -> None:
+def validate_plan(plan: dict[str, Any], scene_json: dict[str, Any] | None = None) -> None:  # noqa: C901
     """Validate the bounded structured plan contract before implementation."""
     if not isinstance(plan, dict) or plan.get("revision") != 1:
         raise InvalidTarget("plan revision must be 1.")
@@ -439,11 +439,11 @@ class AIRunError(Exception):
         super().__init__(message or self.code)
 
 
-class RunNotFound(AIRunError):
+class RunNotFound(AIRunError):  # noqa: N818
     code = "not_found"
 
 
-class QuotaExceeded(AIRunError):
+class QuotaExceeded(AIRunError):  # noqa: N818
     code = "quota_exceeded"
 
     def __init__(self, cap: int) -> None:
@@ -451,40 +451,40 @@ class QuotaExceeded(AIRunError):
         self.cap = cap
 
 
-class RateLimited(AIRunError):
+class RateLimited(AIRunError):  # noqa: N818
     code = "rate_limited"
 
 
-class MissingCredential(AIRunError):
+class MissingCredential(AIRunError):  # noqa: N818
     code = "missing_credential"
 
 
-class InvalidTarget(AIRunError):
+class InvalidTarget(AIRunError):  # noqa: N818
     code = "invalid_target"
 
 
-class NotRunning(AIRunError):
+class NotRunning(AIRunError):  # noqa: N818
     """Raised by `advance_run` when the run is not in `running` (already
     awaiting review, or already terminal)."""
 
     code = "not_running"
 
 
-class AdvanceInProgress(AIRunError):
+class AdvanceInProgress(AIRunError):  # noqa: N818
     """Another `advance` call already holds this run's lease."""
 
     code = "advance_in_progress"
 
 
-class NotAwaitingReview(AIRunError):
+class NotAwaitingReview(AIRunError):  # noqa: N818
     code = "not_awaiting_review"
 
 
-class StaleBase(AIRunError):
+class StaleBase(AIRunError):  # noqa: N818
     code = "stale_base"
 
 
-class AgenticNotSupported(AIRunError):
+class AgenticNotSupported(AIRunError):  # noqa: N818
     """Raised when the requested (vendor, model) is not marked
     `agentic_supported` in the admin AI model catalog (issue #523) for
     this run's task kind -- checked before any provider call."""
@@ -665,7 +665,7 @@ def _run_one_attempt(run: AIRun) -> _AttemptOutcome:
     )
 
 
-def start_run(
+def start_run(  # noqa: C901
     *,
     owner,
     target_type: str,
@@ -764,7 +764,7 @@ def start_run(
     return run
 
 
-def advance_run(run: AIRun) -> AIRun:
+def advance_run(run: AIRun) -> AIRun:  # noqa: C901
     """Performs at most one provider call and checkpoints the outcome.
     Never called while holding a transaction open across the provider
     call itself -- see the module docstring."""
@@ -937,7 +937,7 @@ def cancel_run(run: AIRun) -> AIRun:
         return locked
 
 
-def accept_run(run: AIRun) -> tuple[AIRun, SceneVersion | SceneVersion3D]:
+def accept_run(run: AIRun) -> tuple[AIRun, SceneVersion | SceneVersion3D]:  # noqa: C901
     if run.status == AIRun.Status.ACCEPTED and run.accepted_version_id is not None:
         version_model = (
             SceneVersion if run.target_type == AIRun.TargetType.PROJECT else SceneVersion3D

@@ -426,7 +426,7 @@ def test_postgres_concurrent_saves_never_collide_on_sequence(django_db_blocker):
     current_version/parent stay consistent afterward.
     """
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(username="concurrent-save-user")
         project = Project.objects.using("postgres_test").create(owner=user)
 
@@ -486,14 +486,14 @@ def test_postgres_concurrent_saves_never_collide_on_sequence(django_db_blocker):
 @pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_rollback_on_injected_failure_leaves_state_unchanged(django_db_blocker):
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(username="rollback-user")
         project = Project.objects.using("postgres_test").create(owner=user)
 
         from django.db import transaction as txn
         from django.db.models import Max
 
-        class InjectedFailure(Exception):
+        class InjectedFailure(Exception):  # noqa: N818
             pass
 
         with pytest.raises(InjectedFailure):

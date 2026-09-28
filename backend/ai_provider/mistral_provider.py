@@ -626,7 +626,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             change_summary=summarize_patch(raw_patch),
         )
 
-    def _invoke(
+    def _invoke(  # noqa: C901
         self, prompt: str, schema_version: int
     ) -> tuple[AIUsageMetadata, Callable[[], dict[str, Any]]]:
         """Perform the real (or mocked) Mistral call and return the usage
@@ -721,7 +721,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
 
         return usage, (lambda: scene)
 
-    def _invoke_edit(
+    def _invoke_edit(  # noqa: C901
         self, prompt: str, current_scene: dict[str, Any]
     ) -> tuple[AIUsageMetadata, Callable[[], list[Any]]]:
         """Same shape/purpose as `_invoke`, but for `edit_scene`: the
@@ -883,7 +883,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             change_summary=summarize_patch(raw_patch),
         )
 
-    def _invoke_3d(self, prompt: str) -> tuple[AIUsageMetadata, Callable[[], dict[str, Any]]]:
+    def _invoke_3d(self, prompt: str) -> tuple[AIUsageMetadata, Callable[[], dict[str, Any]]]:  # noqa: C901
         """Same shape/purpose as `_invoke`, targeting `scene3d`."""
         zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
 
@@ -969,7 +969,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
         normalized_scene = normalize_scene3d_ai_output(scene)
         return usage, (lambda: normalized_scene)
 
-    def _invoke_convert_3d(
+    def _invoke_convert_3d(  # noqa: C901
         self, prompt: str, source_scene: dict[str, Any]
     ) -> tuple[AIUsageMetadata, Callable[[], dict[str, Any]]]:
         """Same shape/purpose as `_invoke_3d`, but targets
@@ -1061,7 +1061,7 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
         normalized_scene = normalize_scene3d_ai_output(scene)
         return usage, (lambda: normalized_scene)
 
-    def _invoke_edit_3d(
+    def _invoke_edit_3d(  # noqa: C901
         self, prompt: str, current_scene: dict[str, Any]
     ) -> tuple[AIUsageMetadata, Callable[[], list[Any]]]:
         """Same shape/purpose as `_invoke_edit`, targeting `scene3d`."""

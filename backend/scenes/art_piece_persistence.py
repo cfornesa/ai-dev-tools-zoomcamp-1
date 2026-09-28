@@ -163,7 +163,7 @@ def regenerate_thumbnail(version: ArtPieceVersion) -> ArtPieceThumbnail:
 class ArtPieceThumbnailUploadSerializer(serializers.Serializer):
     image = serializers.FileField()
 
-    def validate_image(self, value):
+    def validate_image(self, value):  # noqa: C901
         content_type = getattr(value, "content_type", "")
         if content_type not in {"image/png", "image/jpeg"}:
             raise serializers.ValidationError("Thumbnail must be a PNG or JPEG image.")

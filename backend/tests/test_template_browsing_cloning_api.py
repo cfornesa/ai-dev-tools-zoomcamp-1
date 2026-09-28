@@ -213,7 +213,7 @@ def test_postgres_rollback_on_injected_failure_leaves_no_records(django_db_block
 
         from django.db import transaction as txn
 
-        class InjectedFailure(Exception):
+        class InjectedFailure(Exception):  # noqa: N818
             pass
 
         with pytest.raises(InjectedFailure):

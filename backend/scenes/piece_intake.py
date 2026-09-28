@@ -139,7 +139,7 @@ def _check_quota(owner, package_bytes: int, asset_count: int) -> None:
         raise PieceIntakeError("Package exceeds the owner's storage quota.")
 
 
-def intake_package(
+def intake_package(  # noqa: C901
     *,
     owner,
     archive: bytes,

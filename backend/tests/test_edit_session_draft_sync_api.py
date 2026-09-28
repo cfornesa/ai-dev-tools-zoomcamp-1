@@ -356,7 +356,7 @@ def test_postgres_concurrent_upserts_never_let_an_older_client_seq_win(django_db
     with django_db_blocker.unblock():
         from scenes.api import _upsert_draft
 
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-draft-user"
         )
@@ -423,7 +423,7 @@ def test_postgres_concurrent_first_writes_serialize_without_duplicate_rows(djang
     with django_db_blocker.unblock():
         from scenes.api import _upsert_draft
 
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-first-write"
         )

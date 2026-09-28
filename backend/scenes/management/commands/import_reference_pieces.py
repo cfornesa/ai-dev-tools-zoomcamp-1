@@ -229,7 +229,7 @@ class Command(BaseCommand):
         handle = normalize_public_slug(options["handle"])
         if not handle:
             raise CommandError("--handle must contain a letter or number.")
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         if production:
             owner = self._resolve_existing_owner(username, handle, options["email"])
         else:

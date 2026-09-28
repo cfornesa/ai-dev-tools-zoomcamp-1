@@ -33,7 +33,7 @@ def is_provider_enabled(provider: str) -> bool:
     return bool(check and check())
 
 
-class CannotUnlink(Exception):
+class CannotUnlink(Exception):  # noqa: N818
     """Raised when there is nothing to unlink, or unlinking would strand
     the account with zero usable sign-in methods. Nothing is mutated."""
 

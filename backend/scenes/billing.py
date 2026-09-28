@@ -40,7 +40,7 @@ from scenes.paypal_adapter import verify_webhook_signature
 logger = logging.getLogger("scenes.billing")
 
 
-class WebhookRejected(Exception):
+class WebhookRejected(Exception):  # noqa: N818
     """Raised only for a signature that fails verification."""
 
 

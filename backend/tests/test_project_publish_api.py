@@ -449,7 +449,7 @@ def test_postgres_concurrent_publish_and_save_leave_a_consistent_public_state(dj
 
         from scenes.publishing import validate_meaningful_metadata
 
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-publish-user"
         )

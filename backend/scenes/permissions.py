@@ -70,7 +70,7 @@ class Action(StrEnum):
     ART_PIECE_DELETE = "art_piece.delete"
 
 
-class PermissionDenied(Exception):
+class PermissionDenied(Exception):  # noqa: N818
     """Raised by require() when can() returns False."""
 
 
@@ -133,7 +133,7 @@ _OWNER_ONLY_PROJECT3D_ACTIONS = frozenset(
 )
 
 
-def can(user, action: Action, resource=None) -> bool:
+def can(user, action: Action, resource=None) -> bool:  # noqa: C901
     """Return whether `user` may perform `action` on `resource`. Default deny."""
     if action == Action.PROJECT_CREATE:
         return _is_authenticated(user)

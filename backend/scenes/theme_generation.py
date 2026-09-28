@@ -59,7 +59,7 @@ def _fake_definition(prompt: str, current: dict[str, Any] | None = None) -> dict
     return definition
 
 
-def validate_theme_definition(value: object) -> dict[str, Any]:
+def validate_theme_definition(value: object) -> dict[str, Any]:  # noqa: C901
     if not isinstance(value, dict):
         raise ThemeGenerationError("Theme output must be an object.")
     key = value.get("key")

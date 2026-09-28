@@ -307,7 +307,7 @@ pytestmark_postgres = pytest.mark.skipif(
 @pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_restores_never_collide_on_sequence(django_db_blocker):
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-restore-user"
         )
@@ -377,7 +377,7 @@ def test_postgres_concurrent_restores_never_collide_on_sequence(django_db_blocke
 @pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_rollback_on_restore_failure_leaves_state_unchanged(django_db_blocker):
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="restore-rollback-user"
         )
@@ -391,7 +391,7 @@ def test_postgres_rollback_on_restore_failure_leaves_state_unchanged(django_db_b
         from django.db import transaction as txn
         from django.db.models import Max
 
-        class InjectedFailure(Exception):
+        class InjectedFailure(Exception):  # noqa: N818
             pass
 
         with pytest.raises(InjectedFailure):

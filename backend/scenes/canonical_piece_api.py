@@ -51,7 +51,7 @@ def _public_art_piece_versions(piece):
 class PublicPieceBySlugView(APIView):
     permission_classes: list = []
 
-    def get(self, request, handle, piece_slug):
+    def get(self, request, handle, piece_slug):  # noqa: C901
         try:
             profile = _profile_or_404(handle, request)
         except PublicProfile.DoesNotExist as exc:

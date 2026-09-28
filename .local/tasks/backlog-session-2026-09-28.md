@@ -1296,8 +1296,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 ## Issue #914 transaction ledger
 
 - **Issue:** [#914](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/914)
-- **Phase:** QA passed locally; pending typed GitHub closure after evidence
-  reconciliation.
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA
+  and evidence reconciliation.
 - **Transaction:** Replace the generated Full and Non-Camera ZIP microphone
   permission stub with an offline native Web Audio path and seven-effect
   controls, preserving microphone capability independently from camera and
@@ -1306,7 +1306,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   no. Engineering and QA — Codex / GPT-5 substitution for the rostered
   implementation/review services; no independent second-opinion model was
   available.
-- **Implementation commit:** Pending commit after this ledger update.
+- **Implementation commit:** `bbe26c04` (`feat(export): route generated zip
+  microphone audio`).
 - **Changed files:** `frontend/src/export/standaloneArtPieceRuntimeSource.ts`,
   `frontend/src/generative/artPieceBundle.ts`, and
   `docs/piece-toolbar-parity-matrix.md`.

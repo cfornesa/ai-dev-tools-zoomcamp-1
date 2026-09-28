@@ -499,11 +499,21 @@ class ArtPieceDetailView(APIView):
                 )
                 if next_slug and slug_taken:
                     return Response({"public_slug": ["This slug is already in use."]}, status=400)
+                was_published = locked.status == ArtPiece.Status.PUBLISHED
                 for key, value in serializer.validated_data.items():
                     setattr(locked, key, value)
                 locked.published_at = (
                     timezone.now() if next_status == ArtPiece.Status.PUBLISHED else None
                 )
+                # Issue #944: unpublish-retention parity with Project/
+                # Project3D -- only a genuine PUBLISHED-to-other transition
+                # starts the retention clock; a draft that's never been
+                # published has nothing to retain. Re-publishing (to
+                # PUBLISHED) clears it, the same "restore" contract.
+                if next_status == ArtPiece.Status.PUBLISHED:
+                    locked.unpublished_at = None
+                elif was_published:
+                    locked.unpublished_at = timezone.now()
                 locked.save()
         except IntegrityError:
             return Response({"public_slug": ["This slug is already in use."]}, status=400)

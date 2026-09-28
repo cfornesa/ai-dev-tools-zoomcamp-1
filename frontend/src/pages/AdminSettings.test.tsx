@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,6 +23,9 @@ vi.mock('../api/adminSettings', async () => {
     fetchRoles: vi.fn(),
     fetchGlobalCapabilities: vi.fn(),
     fetchCloudRetentionPolicy: vi.fn(),
+    fetchUnpublishRetentionPolicy: vi.fn(),
+    updateUnpublishRetentionPolicy: vi.fn(),
+    purgeUnpublishRetention: vi.fn(),
     fetchAIProviderModels: vi.fn(),
     updateAIProviderModel: vi.fn(),
     fetchProfileStyles: vi.fn(),
@@ -60,6 +63,11 @@ beforeEach(() => {
     deleted_grace_days: 30,
     entitlement_grace_days: 30,
     disabled_sync_grace_days: 30,
+    revision: 1,
+    updated_at: '2026-01-01T00:00:00Z',
+  });
+  vi.mocked(adminApi.fetchUnpublishRetentionPolicy).mockResolvedValue({
+    unpublished_grace_days: 30,
     revision: 1,
     updated_at: '2026-01-01T00:00:00Z',
   });
@@ -189,6 +197,56 @@ describe('AdminSettings presentation choices (#643)', () => {
     expect((await screen.findAllByText('Celestial')).length).toBeGreaterThan(0);
     expect(screen.getByRole('combobox', { name: 'Celestial font family' })).toHaveValue('script');
     expect(screen.getByRole('combobox', { name: 'Celestial backdrop' })).toHaveValue('cosmic');
+  });
+});
+
+describe('Unpublish retention settings (#944)', () => {
+  it('saves the unpublished grace-days window', async () => {
+    const user = userEvent.setup();
+    vi.mocked(adminApi.updateUnpublishRetentionPolicy).mockResolvedValue({
+      unpublished_grace_days: 14,
+      revision: 2,
+      updated_at: '2026-01-02T00:00:00Z',
+    });
+    render(
+      <MemoryRouter>
+        <AdminSettings />
+      </MemoryRouter>,
+    );
+
+    const input = await screen.findByLabelText('Unpublished grace days');
+    fireEvent.change(input, { target: { value: '14' } });
+    await user.click(screen.getByRole('button', { name: 'Save unpublish retention policy' }));
+
+    expect(adminApi.updateUnpublishRetentionPolicy).toHaveBeenCalledWith(
+      expect.objectContaining({ unpublished_grace_days: 14 }),
+    );
+    expect(await screen.findByText('Unpublish retention policy saved.')).toBeVisible();
+  });
+
+  it('purges expired unpublished pieces after an explicit confirmation', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(adminApi.purgeUnpublishRetention).mockResolvedValue({
+      scanned: 2,
+      purged_project: 1,
+      purged_project3d: 1,
+      purged_art_piece: 0,
+      policy_revision: 1,
+    });
+    render(
+      <MemoryRouter>
+        <AdminSettings />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Purge expired unpublished pieces' }),
+    );
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(adminApi.purgeUnpublishRetention).toHaveBeenCalledWith(100, true);
+    expect(await screen.findByText(/Purge complete: 1 2D projects, 1 3D projects/)).toBeVisible();
   });
 });
 

@@ -6,6 +6,7 @@ import {
   type EntitlementRole,
   type GlobalCapability,
   type CloudRetentionPolicy,
+  type UnpublishRetentionPolicy,
   type SiteSettings,
   type AIProviderModel,
   fetchPlans,
@@ -14,6 +15,9 @@ import {
   fetchCloudRetentionPolicy,
   updateCloudRetentionPolicy,
   purgeCloudRetention,
+  fetchUnpublishRetentionPolicy,
+  updateUnpublishRetentionPolicy,
+  purgeUnpublishRetention,
   updateRole,
   updateGlobalCapability,
   fetchSiteSettings,
@@ -542,6 +546,103 @@ function CloudRetentionSettings({
           disabled={busy}
         >
           Purge expired remote copies
+        </button>
+      </div>
+      {message && <p role="status">{message}</p>}
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+
+/** Issue #944: sibling of CloudRetentionSettings above, for unpublished
+ * 2D/3D/generated pieces rather than cloud-backup copies. */
+function UnpublishRetentionSettings({
+  policy,
+  onSaved,
+}: {
+  policy: UnpublishRetentionPolicy;
+  onSaved: (next: UnpublishRetentionPolicy) => void;
+}) {
+  const [draft, setDraft] = useState(policy);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => setDraft(policy), [policy]);
+
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const next = await updateUnpublishRetentionPolicy(draft);
+      onSaved(next);
+      setMessage('Unpublish retention policy saved.');
+    } catch (err) {
+      setError(
+        err instanceof ApiError && err.status === 409
+          ? 'The policy changed elsewhere. Reload before saving.'
+          : 'Could not save the unpublish retention policy.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function purge() {
+    if (
+      !window.confirm(
+        'Permanently delete unpublished pieces past their retention window? This cannot be undone.',
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const result = await purgeUnpublishRetention(100, true);
+      setMessage(
+        `Purge complete: ${result.purged_project} 2D projects, ${result.purged_project3d} 3D projects, and ${result.purged_art_piece} generated pieces removed.`,
+      );
+    } catch {
+      setError('Could not purge expired unpublished pieces.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="admin-settings-form" aria-label="Unpublish retention policy" onSubmit={save}>
+      <h4>Unpublished piece retention</h4>
+      <p>
+        An unpublished piece stays intact and restorable for this many days before it becomes
+        eligible for permanent removal.
+      </p>
+      <label htmlFor="unpublish-retention-grace-days">Unpublished grace days</label>
+      <input
+        id="unpublish-retention-grace-days"
+        type="number"
+        min={0}
+        max={3650}
+        value={draft.unpublished_grace_days}
+        onChange={(event) =>
+          setDraft({ ...draft, unpublished_grace_days: Number(event.target.value) })
+        }
+        required
+      />
+      <div className="admin-settings-actions">
+        <button className="admin-action-primary" type="submit" disabled={busy}>
+          Save unpublish retention policy
+        </button>
+        <button
+          className="admin-action-danger"
+          type="button"
+          onClick={() => void purge()}
+          disabled={busy}
+        >
+          Purge expired unpublished pieces
         </button>
       </div>
       {message && <p role="status">{message}</p>}
@@ -1496,6 +1597,8 @@ function AdminSettings() {
   const [roles, setRoles] = useState<EntitlementRole[] | null>(null);
   const [globals, setGlobals] = useState<Record<string, GlobalCapability> | null>(null);
   const [retentionPolicy, setRetentionPolicy] = useState<CloudRetentionPolicy | null>(null);
+  const [unpublishRetentionPolicy, setUnpublishRetentionPolicy] =
+    useState<UnpublishRetentionPolicy | null>(null);
   const [aiModels, setAiModels] = useState<AIProviderModel[] | null>(null);
   const [profileStyles, setProfileStyles] = useState<ProfileStyle[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -1508,18 +1611,31 @@ function AdminSettings() {
       fetchRoles(),
       fetchGlobalCapabilities(),
       fetchCloudRetentionPolicy(),
+      fetchUnpublishRetentionPolicy(),
       fetchAIProviderModels(),
       fetchProfileStyles(),
     ])
-      .then(([settings, planList, roleList, globalList, retention, models, styles]) => {
-        setSiteSettings(settings);
-        setPlans(planList);
-        setRoles(roleList);
-        setGlobals(globalList);
-        setRetentionPolicy(retention);
-        setAiModels(models);
-        setProfileStyles(styles);
-      })
+      .then(
+        ([
+          settings,
+          planList,
+          roleList,
+          globalList,
+          retention,
+          unpublishRetention,
+          models,
+          styles,
+        ]) => {
+          setSiteSettings(settings);
+          setPlans(planList);
+          setRoles(roleList);
+          setGlobals(globalList);
+          setRetentionPolicy(retention);
+          setUnpublishRetentionPolicy(unpublishRetention);
+          setAiModels(models);
+          setProfileStyles(styles);
+        },
+      )
       .catch(() => setLoadError('Could not load admin settings.'));
   }, [auth]);
 
@@ -1588,6 +1704,18 @@ function AdminSettings() {
         <section className="admin-console-section" aria-labelledby="admin-retention-heading">
           <h3 id="admin-retention-heading">Cloud retention</h3>
           <CloudRetentionSettings policy={retentionPolicy} onSaved={setRetentionPolicy} />
+        </section>
+      )}
+      {unpublishRetentionPolicy && (
+        <section
+          className="admin-console-section"
+          aria-labelledby="admin-unpublish-retention-heading"
+        >
+          <h3 id="admin-unpublish-retention-heading">Unpublish retention</h3>
+          <UnpublishRetentionSettings
+            policy={unpublishRetentionPolicy}
+            onSaved={setUnpublishRetentionPolicy}
+          />
         </section>
       )}
       {aiModels ? (

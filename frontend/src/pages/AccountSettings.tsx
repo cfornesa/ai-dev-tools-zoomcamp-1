@@ -365,6 +365,11 @@ function AccountSettings() {
                 <span aria-hidden="true">▣</span> View local storage usage
               </Link>
             </li>
+            <li>
+              <Link to="/account/settings/unpublished">
+                <span aria-hidden="true">↺</span> Retained unpublished pieces
+              </Link>
+            </li>
             <li className="account-settings-action-danger">
               <Link to="/account/settings/delete">
                 <span aria-hidden="true">⚠</span> Delete your account

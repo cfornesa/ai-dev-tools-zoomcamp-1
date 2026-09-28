@@ -360,6 +360,11 @@ export default function CollectionManagement() {
                       <span>
                         {item.title || item.id} ({item.label})
                       </span>
+                      {item.is_hidden_from_public && (
+                        <span role="status" className="collection-item-hidden-notice">
+                          Currently unpublished — hidden from your public collection until restored
+                        </span>
+                      )}
                       <button
                         type="button"
                         disabled={busy || index === 0}

@@ -194,7 +194,12 @@ class Project3DPublishView(APIView):
 
                 locked_project.visibility = Project3D.Visibility.PUBLIC
                 locked_project.published_at = timezone.now()
-                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+                # Issue #944: republish restores an unpublished piece within
+                # its retention window -- clear the purge-eligibility clock.
+                locked_project.unpublished_at = None
+                locked_project.save(
+                    update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
+                )
         except Project3DPublishValidationError as exc:
             return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Project3D.DoesNotExist as exc:
@@ -218,7 +223,12 @@ class Project3DUnpublishView(APIView):
                 locked_project = Project3D.objects.select_for_update().get(pk=project.pk)
                 locked_project.visibility = Project3D.Visibility.PRIVATE
                 locked_project.published_at = None
-                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+                # Issue #944: start the unpublish-retention clock; see the
+                # 2D counterpart's comment in scenes/api.py for the contract.
+                locked_project.unpublished_at = timezone.now()
+                locked_project.save(
+                    update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
+                )
         except Project3D.DoesNotExist as exc:
             raise Http404 from exc
 

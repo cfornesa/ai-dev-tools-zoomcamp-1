@@ -158,6 +158,15 @@ export type CloudRetentionPolicy = {
   updated_at: string;
 };
 
+/** Issue #944: sibling policy to CloudRetentionPolicy above, but for
+ * unpublished-piece retention (a piece's own visibility lifecycle), not
+ * cloud-backup remote-copy states. */
+export type UnpublishRetentionPolicy = {
+  unpublished_grace_days: number;
+  revision: number;
+  updated_at: string;
+};
+
 export async function fetchSiteSettings(): Promise<SiteSettings> {
   return apiFetch<SiteSettings>('/api/admin/settings/');
 }
@@ -242,6 +251,35 @@ export async function purgeCloudRetention(
   policy_revision: number;
 }> {
   return apiFetch('/api/admin/cloud-retention/purge/', {
+    method: 'POST',
+    body: JSON.stringify({ limit, confirm_retroactive: confirmRetroactive }),
+  });
+}
+
+export async function fetchUnpublishRetentionPolicy(): Promise<UnpublishRetentionPolicy> {
+  return apiFetch<UnpublishRetentionPolicy>('/api/admin/unpublish-retention/');
+}
+
+export async function updateUnpublishRetentionPolicy(
+  policy: UnpublishRetentionPolicy,
+): Promise<UnpublishRetentionPolicy> {
+  return apiFetch<UnpublishRetentionPolicy>('/api/admin/unpublish-retention/', {
+    method: 'PATCH',
+    body: JSON.stringify(policy),
+  });
+}
+
+export async function purgeUnpublishRetention(
+  limit = 100,
+  confirmRetroactive = false,
+): Promise<{
+  scanned: number;
+  purged_project: number;
+  purged_project3d: number;
+  purged_art_piece: number;
+  policy_revision: number;
+}> {
+  return apiFetch('/api/admin/unpublish-retention/purge/', {
     method: 'POST',
     body: JSON.stringify({ limit, confirm_retroactive: confirmRetroactive }),
   });

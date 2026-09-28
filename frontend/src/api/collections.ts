@@ -9,6 +9,10 @@ export type CollectionItem = {
   viewer_url: string;
   thumbnail_url: string | null;
   label: string;
+  /** Issue #944: only present in the owner's own (non-public) management
+   * view — true when this item is currently unpublished/retained and so
+   * doesn't appear in the public collection right now. */
+  is_hidden_from_public?: boolean;
 };
 
 export type Collection = {

@@ -422,6 +422,31 @@ class CloudRetentionPolicy(models.Model):
         return obj
 
 
+class UnpublishRetentionPolicy(models.Model):
+    """Singleton lifecycle policy for unpublished 2D/3D/generated pieces
+    (#944). Deliberately a sibling of `CloudRetentionPolicy`, not a shared
+    field on it — that model governs cloud-*backup* remote-copy states
+    (`CloudBackupProject`), a different lifecycle from a piece's own
+    visibility/publish state."""
+
+    unpublished_grace_days = models.PositiveIntegerField(
+        default=30, validators=[MaxValueValidator(3650)]
+    )
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+
+    def __str__(self) -> str:
+        return f"Unpublish retention policy (revision {self.revision})"
+
+    @classmethod
+    def get_solo(cls) -> "UnpublishRetentionPolicy":
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class PageManager(models.Manager):
     """Active CMS pages; soft-deleted pages remain queryable explicitly."""
 
@@ -984,6 +1009,14 @@ class Project(models.Model):
     # (`scenes/gallery.py`) both need: a sort key that doesn't move under a
     # project already sitting on some page of gallery results.
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Issue #944: when this project most recently *stopped* being public,
+    # set by `ProjectUnpublishView` and cleared back to `None` by
+    # `ProjectPublishView` on restore (republish). Governs unpublish-
+    # retention purge eligibility (`scenes/unpublish_retention.py`) — a
+    # project is purge-eligible once `unpublished_at` plus the policy's
+    # `unpublished_grace_days` has passed, unless the owner republishes
+    # first (which clears this field again).
+    unpublished_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     # Issue #510: which of this project's `Scene`s is currently being
@@ -1913,6 +1946,9 @@ class Project3D(models.Model):
         max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
     )
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Issue #944: unpublish-retention parity with the 2D `Project` above —
+    # see its `unpublished_at` field doc for the full contract.
+    unpublished_at = models.DateTimeField(null=True, blank=True, db_index=True)
     current_version = models.ForeignKey(
         "scenes.SceneVersion3D",
         null=True,
@@ -2108,6 +2144,10 @@ class ArtPiece(models.Model):
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Issue #944: unpublish-retention parity with `Project`/`Project3D` —
+    # set by `ArtPieceDetailView.patch` on any PUBLISHED→other transition,
+    # cleared on a transition back to PUBLISHED.
+    unpublished_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

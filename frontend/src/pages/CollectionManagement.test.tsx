@@ -161,4 +161,23 @@ describe('CollectionManagement', () => {
       ]),
     );
   });
+
+  it('flags an unpublished item as hidden from the public collection (#944)', async () => {
+    mockedFetch.mockResolvedValueOnce([
+      { ...SAMPLE, items: [{ ...SAMPLE.items[0], is_hidden_from_public: true }] },
+    ]);
+    renderPage();
+    await screen.findByRole('heading', { name: 'Edit collection' });
+    expect(
+      screen.getByText(/Currently unpublished — hidden from your public collection/),
+    ).toBeVisible();
+  });
+
+  it('does not show the hidden notice for a currently public item', async () => {
+    renderPage();
+    await screen.findByRole('heading', { name: 'Edit collection' });
+    expect(
+      screen.queryByText(/Currently unpublished — hidden from your public collection/),
+    ).not.toBeInTheDocument();
+  });
 });

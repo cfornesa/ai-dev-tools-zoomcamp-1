@@ -227,7 +227,13 @@ class ProjectPublishView(APIView):
                 # -- see scenes/gallery.py's module docstring for why this,
                 # not updated_at, is the public gallery's sort/cursor key.
                 locked_project.published_at = timezone.now()
-                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+                # Issue #944: republishing is how an owner "restores" an
+                # unpublished piece within its retention window -- clear the
+                # unpublish-retention clock so it's no longer purge-eligible.
+                locked_project.unpublished_at = None
+                locked_project.save(
+                    update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
+                )
                 ProjectActivity.objects.create(
                     project=locked_project,
                     actor=request.user,
@@ -277,7 +283,14 @@ class ProjectUnpublishView(APIView):
                 # request excludes this project -- no stale card lingers
                 # because of a cached/prior publish timestamp.
                 locked_project.published_at = None
-                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+                # Issue #944: start the unpublish-retention clock -- the
+                # server copy stays intact and restorable (republish clears
+                # this again) until the retention policy's grace window
+                # passes, at which point it becomes purge-eligible.
+                locked_project.unpublished_at = timezone.now()
+                locked_project.save(
+                    update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
+                )
                 ProjectActivity.objects.create(
                     project=locked_project,
                     actor=request.user,

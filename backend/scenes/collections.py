@@ -141,6 +141,17 @@ def _cover_payload(collection: Collection, *, public: bool) -> dict | None:
     }
 
 
+def _is_publicly_visible(kind: str, record) -> bool:
+    """Issue #944: whether `record` would itself satisfy `eligible_*()`'s
+    public-visibility filter, independent of the queryset it was actually
+    fetched from. Used only to flag an owner-view item as currently hidden
+    from their public collection (e.g. unpublished, retained pending
+    restore-or-purge) -- never to gate what the owner themselves can see."""
+    if kind == CollectionItem.Kind.ART_PIECE:
+        return getattr(record, "status", None) == ArtPiece.Status.PUBLISHED
+    return getattr(record, "visibility", None) == "public"
+
+
 def _item_payload(item: CollectionItem, *, public: bool) -> dict | None:
     if hasattr(item, "_resolved_record"):
         record = cast(_ResolvedCollectionItem, item)._resolved_record
@@ -148,7 +159,7 @@ def _item_payload(item: CollectionItem, *, public: bool) -> dict | None:
         record = _item_record(item.collection.owner, item.kind, item.item_id, public=public)
     if record is None:
         return None
-    return {
+    payload = {
         "kind": item.kind,
         "id": str(item.item_id),
         "position": item.position,
@@ -157,6 +168,14 @@ def _item_payload(item: CollectionItem, *, public: bool) -> dict | None:
         "thumbnail_url": _thumbnail_url(item.kind, item.item_id),
         "label": _KIND_TO_LABEL[item.kind],
     }
+    if not public:
+        # Issue #944: the owner's own management view resolves items via
+        # the unfiltered default manager (see `collection_payload`), so an
+        # unpublished/retained item still appears here -- flag it rather
+        # than silently showing it as if it were live in the public
+        # collection.
+        payload["is_hidden_from_public"] = not _is_publicly_visible(item.kind, record)
+    return payload
 
 
 def collection_payload(collection: Collection, *, public: bool) -> dict:

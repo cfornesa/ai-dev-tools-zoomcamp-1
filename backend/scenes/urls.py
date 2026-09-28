@@ -141,6 +141,11 @@ from scenes.share_metadata import (
 )
 from scenes.storage_usage_api import AccountStorageEstimateView
 from scenes.sync_mutation_api import SyncMutationReceiptView
+from scenes.unpublish_retention_api import (
+    AdminUnpublishRetentionPurgeView,
+    AdminUnpublishRetentionView,
+    MyUnpublishedPiecesView,
+)
 
 urlpatterns = [
     path(
@@ -233,6 +238,21 @@ urlpatterns = [
         "admin/cloud-retention/purge/",
         AdminCloudRetentionPurgeView.as_view(),
         name="admin-cloud-retention-purge",
+    ),
+    path(
+        "admin/unpublish-retention/",
+        AdminUnpublishRetentionView.as_view(),
+        name="admin-unpublish-retention",
+    ),
+    path(
+        "admin/unpublish-retention/purge/",
+        AdminUnpublishRetentionPurgeView.as_view(),
+        name="admin-unpublish-retention-purge",
+    ),
+    path(
+        "account/unpublished-pieces/",
+        MyUnpublishedPiecesView.as_view(),
+        name="account-unpublished-pieces",
     ),
     path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
     path("account/billing/", AccountBillingView.as_view(), name="account-billing"),

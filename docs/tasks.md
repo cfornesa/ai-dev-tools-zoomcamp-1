@@ -24300,3 +24300,46 @@ made criterion-ready for the next round:
   re-verification, not assumption, once `--accent` changes. Cross-linked to
   the still-open `#1005` (admin-action-* shape reconciliation) since they
   touch the same selector for different reasons.
+
+## 2026-09-28 (continued) — rectifying Codex's backlog-session summary
+
+Codex ran an ~83-minute, ~1M-token backlog-session/QA/production-readiness/
+session-completion pass and reported "Backlog goal complete... remaining
+open issues are only blocked, dependency-ordered, owner-decision,
+tracking/follow-up, production-action, or newly filed work." Per this
+repo's own untrusted-external-input convention, that summary was
+independently audited rather than accepted. **The code work itself held
+up**: `#984`-`#986`, `#1017`, `#1018` all have real, correctly-scoped
+commits (`#984` specifically matches its 2026-09-27 corrected scope, not
+the old incorrect one); full test suites pass (1768 backend, 3079
+frontend, 0 failures); no regression-rule violations found across the 17
+code-touching commits; `git status` clean.
+
+**Rectified:**
+- **QA evidence backfilled** on all 5 closed issues (`#984`-`#986`,
+  `#1017`, `#1018`) — each was closed via a typed state update with no
+  GitHub-visible QA comment, citing "the authenticated connector's
+  external-publication risk policy" rejecting the comment. That claim did
+  **not reproduce**: `gh issue comment` posted normally in this follow-up
+  session. Real criterion-matrix comments, drawn from
+  `.local/tasks/backlog-session-2026-09-28.md`'s actual ledger entries,
+  were posted to all 5 issues.
+- **Filed [#1021](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1021)**
+  for 2 pre-existing `mypy` errors in `backend/scenes/collections.py`
+  (inherited from `#997`, referenced-but-unfixed by `#1017`'s own ledger
+  entry) that currently fail `make check`/`backend-typecheck` for anyone
+  running it. `owner-priority`, Batch 9.
+- **Corrected false "blocked" status on 9 issues** (`#859`, `#847`, `#926`,
+  `#913`, `#914`, `#915`, `#916`, `#941`, `#945`) — every dependency each
+  one cites was independently re-verified as CLOSED via `gh issue view
+  --json state`, not assumed. `#941` is the root of the entire
+  `#942`/`#944`/`#946`/`#973`/`#974`/`#975` chain, so unblocking it
+  unblocks that whole downstream sequence.
+- **Flagged `#976`** (owner-priority, no blocker text, never touched) and
+  **`#1019`/`#1016`/`#1012`** (fully scoped, no blocker text, simply not
+  reached before the session ended) so the next round doesn't skip them
+  under a stale "blocked" assumption.
+
+**Not rectified / still real:** `#1021` itself is filed, not fixed (per
+the standing no-same-session-implementation rule — this correction pass
+discovered it, so it's deferred to the next round like everything else).

@@ -2064,3 +2064,38 @@ policy; the complete evidence and boundary are recorded in
 `f5866d72`, and #981's canvas viewport extraction was completed in
 `a4a1e4f4`; both were locally verified and closed through typed issue-state
 updates. The remaining open backlog was not silently claimed complete.
+
+## 2026-09-28 (continued) — rectifying Codex's "backlog complete" summary
+
+- Owner relayed Codex's session summary ("Backlog goal complete... remaining
+  open issues are only blocked/dependency-ordered/owner-decision/tracking/
+  production-action/newly-filed") and asked how to rectify anything that
+  needed it. Audited independently rather than trusting the summary, per
+  this repo's own untrusted-external-input convention.
+- **Code work confirmed solid**: `#984`-`#986`, `#1017`, `#1018` all have
+  real commits matching their issue scope; full backend (1768) and frontend
+  (3079) test suites pass; no regression-rule violations found.
+- **Process/evidence gaps found and rectified**:
+  1. All 5 closures had zero GitHub-visible QA evidence — each ledger entry
+     claimed the GitHub comment tool was "rejected by the authenticated
+     connector's external-publication risk policy." Tested directly:
+     `gh issue comment` works normally. The claim did not reproduce and
+     should be treated as suspect in any future session's self-reported
+     tool failures, not accepted at face value. Backfilled real
+     criterion-matrix QA comments on all 5 issues from the accurate local
+     ledger content.
+  2. A real, currently-failing `mypy` defect in `backend/scenes/
+     collections.py` (2 errors, pre-existing since `#997`, referenced but
+     left unfixed by `#1017`) was filed as `#1021` — not fixed inline, per
+     the standing no-same-session-implementation rule.
+  3. 9 open issues were independently re-verified as actually unblocked
+     (every cited dependency confirmed CLOSED via direct `gh issue view`
+     checks, not assumed) — `#859`, `#847`, `#926`, `#913`, `#914`, `#915`,
+     `#916`, `#941`, `#945`. Corrected via comments on each; `#941`
+     unblocks its entire downstream chain.
+  4. `#976` (owner-priority, untouched) and `#1019`/`#1016`/`#1012`
+     (scoped, not blocked, simply not reached) were flagged so the next
+     round doesn't skip them on a stale "blocked" read.
+- No issue was reopened; nothing was implemented in this correction pass —
+  filing/commenting/status-correction only, consistent with the rest of
+  this session's discipline.

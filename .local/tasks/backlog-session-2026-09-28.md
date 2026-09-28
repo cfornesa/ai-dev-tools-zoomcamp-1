@@ -1,5 +1,93 @@
 # Backlog session 2026-09-28
 
+## Current-goal reconciliation — 2026-09-28
+
+This section is the live reconciliation for the current user-requested goal;
+earlier entries in this file are historical transactions from the same date.
+The repository is a single-node project governed by `LOOP-AGENTS.md` (the
+standalone graph manifest has no edges). The worktree was clean at intake on
+`docs/backlog-reevaluation-2026-09-27`; existing user/session commits are
+preserved.
+
+### GitHub inventory and dependency order
+
+Authenticated GitHub inventory at intake: 33 open issues. Issues #1020 and
+#1021 were created during the preceding distillation/rectification pass of
+this still-active goal and are explicitly deferred under the discovery-gate
+rule; they will not be implemented here. No new issue is created by this
+reconciliation.
+
+| Order | Issue | Scope / routing | Current terminal classification | Dependency or next action |
+| --- | --- | --- | --- | --- |
+| 1 | [#1012](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1012) | 3D editor gizmo / 2b | BLOCKED | Owner must confirm the existing Three.js `TransformControls` addon import; then implement and QA. |
+| 2 | [#1016](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1016) | Collection cover / 2b | BLOCKED | Owner must choose/authorize a server-backed media source; current local-first media cannot serve public collection payloads. |
+| 3 | [#1019](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1019) | Public collection browse / 2b | HANDED-OFF | Issue body requires backend/frontend split before engineering; next action is criterion-ready child scoping. |
+| 4 | [#1020](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1020) | Light accent contrast / 2a | HANDED-OFF | Same-goal discovery; do not implement. Resume in a later goal after #994 follow-up scope is accepted. |
+| 5 | [#1021](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1021) | Backend mypy repair / 2a | HANDED-OFF | Same-goal discovery; do not implement. Resume in a later goal. |
+| 6 | [#788](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788) | Production data import / owner action | DEPENDENCY-BLOCKED | #763 must be published via supported production runtime; owner-authorized write and live evidence only. |
+| 7 | [#906](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/906) | Production record reconciliation / owner action | BLOCKED | Owner selects re-author, guarded copy, or abandon; no agent production write. |
+| 8 | [#1004](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1004) | Entitlement UI decision | BLOCKED | Owner selects and documents one of the issue's patterns. |
+| 9 | [#1005](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1005) | Button-shape decision | BLOCKED | Owner selects and documents the shape language; implementation is a later issue. |
+| 10 | [#1006](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1006) | Primitives-library decision | BLOCKED | Owner selects stay hand-rolled or a scoped pilot; any dependency requires the mandated vendor question. |
+| 11 | [#976](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/976) | Canonical immersive route / 2a | BLOCKED | Owner confirms redirect/shim plan before any public URL change. |
+| 12 | [#847](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/847) | Ambient sample / 2b | DEPENDENCY-BLOCKED | Requires the resolved media/audio delivery contract and current authored-sound decisions; no public asset contract is inferred. |
+| 13 | [#859](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/859) | Six-engine browser verification | DEPENDENCY-BLOCKED | Requires named serene fixtures and sound prerequisites; run local Compose/Chrome only after those fixtures are terminal. |
+| 14 | [#926](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/926) | Real-provider Chrome demonstration | BLOCKED | Owner supplies/authorizes real-provider credential and bounded run; fake provider is not equivalent. |
+| 15 | [#941](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/941) | Public media delivery / 2b | DEPENDENCY-BLOCKED | Depends on the local-first/media contract and must be scoped against current storage/auth boundaries before code. |
+| 16 | [#942](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/942) | Publish-as-transfer / 2b | DEPENDENCY-BLOCKED | Depends on #941. |
+| 17 | [#944](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/944) | Unpublish retention / 2b | DEPENDENCY-BLOCKED | Depends on publication/media retention contract. |
+| 18 | [#945](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/945) | Account export ZIP / 2b | DEPENDENCY-BLOCKED | Depends on browser-only media/export contract; preserve JSON export behavior. |
+| 19 | [#946](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/946) | Grandfathering script / owner action | BLOCKED | Owner-run production data/config action; no agent execution without explicit authorization. |
+| 20 | [#973](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/973) | Embed media verification | DEPENDENCY-BLOCKED | Depends on #941 and its published media fixtures. |
+| 21 | [#974](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/974) | Immersive media verification | DEPENDENCY-BLOCKED | Depends on #941 and its published media fixtures. |
+| 22 | [#975](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/975) | ZIP media verification | DEPENDENCY-BLOCKED | Depends on #941 and its extracted artifact fixtures. |
+| 23 | [#911](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/911) | Regular generated mic / 2a | DEPENDENCY-BLOCKED | Requires #909, #910, and #916. |
+| 24 | [#912](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/912) | Immersive generated mic / 2a | DEPENDENCY-BLOCKED | Requires #911. |
+| 25 | [#913](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/913) | Structured mic / 2a | DEPENDENCY-BLOCKED | Requires #909, #910, and #916. |
+| 26 | [#914](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/914) | Generated ZIP mic / 2b | DEPENDENCY-BLOCKED | Requires #910 and the generated runtime path. |
+| 27 | [#915](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/915) | Structured 3D ZIP mic / 2b | DEPENDENCY-BLOCKED | Requires #910 and the shared audio-flow contract. |
+| 28 | [#916](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/916) | Mic harness/matrix | BLOCKED | Real hardware is explicitly an owner/browser boundary; agent can implement harness only after the capture/effects contract is selected. |
+| 29 | [#987](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/987) | Tracking parent | HANDED-OFF | Navigability-only container; children #911–#916 own implementation and QA. |
+| 30 | [#988](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/988) | Tracking parent | HANDED-OFF | Navigability-only container; children own decomposition. |
+| 31 | [#995](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/995) | Dependency scanning tracking | HANDED-OFF | Requires a criterion-ready CI/dependency-tool decision before implementation. |
+| 32 | [#996](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/996) | Ruff/TypeScript rollout tracking | HANDED-OFF | Requires incremental rollout plan and child issue boundaries. |
+| 33 | [#1013](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1013) | 3D code grammar tracking | HANDED-OFF | Requires design/scoping pass and child issues; no monolithic implementation. |
+
+The inventory report also contains #847, #859, #906, and the entries above;
+the table is the complete 33-item authenticated list including the two
+same-goal deferred discoveries. No duplicate follow-up was filed. The next
+engineering-eligible item remains #1012 only after its owner gate; otherwise
+the next safe action is to reconcile all blocked/handoff records and run the
+requested batch readiness/completion reports without claiming readiness.
+
+## Issue #1012 transaction — 2026-09-28 — BLOCKED
+
+- **State:** `GROOMED → ENGINEERING/QA → BLOCKED`.
+- **Scope:** manual 3D editor `TransformControls` gizmo; numeric fields and
+  `OrbitControls` must remain functional and accessible.
+- **Stage provenance:** scoping `Codex / GPT-5 / default / substituted: no`;
+  implementation `not run — owner gate`; second opinion `not run`; QA
+  `Codex / GPT-5 / medium / substituted: yes`, intake `RETURNED-TO-owner`;
+  readiness `Codex / GPT-5 / medium / substituted: yes` at batch gate.
+- **QA result:** `## QA: FAIL` in the blocked-transaction sense: no diff was
+  accepted because the issue explicitly requires owner confirmation of the
+  already-installed Three.js addon import before engineering. No product code,
+  dependency manifest, route, schema, or public interface was changed.
+- **Focused checks:** read-only `rg` confirmed the repository uses
+  `three/examples/jsm/controls/OrbitControls.js`, has no existing
+  `TransformControls` import, and retains numeric transform fields in
+  `frontend/src/pages/Outline3DInspector.tsx`; no test was run because the
+  owner gate precedes implementation.
+- **Blocker class:** owner decision / irreversible-decision gate. Exact next
+  action: owner confirms use of `TransformControls` from the installed
+  `three` package (no new package), then re-enter implementation with the
+  issue's finite criteria and run QA.
+- **GitHub evidence boundary:** the available GitHub connector exposes issue
+  reads and state updates but no issue-comment creation endpoint (its comment
+  writer is PR-only); the attempted comment publication cannot be completed
+  through the authenticated connector in this environment. The blocker and
+  full QA intake are preserved here; no local `gh` token workaround was used.
+
 ## Distillation manifest
 
 Project: `cfornesa/ai-dev-tools-zoomcamp-1` on

@@ -25,3 +25,34 @@ Blocking dimensions:
 Next action: resume the live issue manifest at #980, preserving the strict
 one-issue transaction order and the owner/production gates documented in the
 repository workflow.
+
+## Current-goal reassessment — 2026-09-28
+
+Result: `BLOCKED` / `INCOMPLETE`.
+
+The live authenticated GitHub inventory is 33 open issues. The current-goal
+distillation manifest is in `.local/tasks/backlog-session-2026-09-28.md` and
+records every issue, dependency edge, blocker class, owner/next action, and
+same-goal deferral. No newly discovered issue was implemented.
+
+| Dimension | Result | Evidence |
+| --- | --- | --- |
+| Local web-app deployment | BLOCKED | `make check` reaches backend Ruff/format, then fails at the two known `scenes/collections.py` mypy errors owned by deferred #1021. |
+| Backend regression suite | PASS | `UV_CACHE_DIR=/tmp/codex-uv-cache-20260928 uv run pytest`: 1768 passed, 39 skipped, 10 warnings. |
+| Frontend checks | PASS | lint, format-check, typecheck, and full Vitest: 294 files / 3079 tests passed; existing lint warnings remain. |
+| Approved-browser verification | BLOCKED | No project-wide browser matrix was run; #859 and related surface checks remain dependency-ordered. |
+| Intended functionality | BLOCKED | Open implementation, verification, owner-decision, and tracking issues remain. |
+| Replit/publication | BLOCKED | No production mutation or publication was authorized; #788/#906/#946 retain owner/data boundaries. |
+| Production-ready | NO-GO | Open criteria and the full `make check` mypy gate remain unresolved. |
+
+Routing audit: scoping/distillation used `Codex / GPT-5`; implementation,
+QA, and readiness used the active `Codex / GPT-5` runtime as explicitly
+recorded substitutions where rostered external services were unavailable;
+second-opinion review was not run. #1012's implementation was not started
+because its owner gate precedes engineering. The readiness gate is a GPT-5
+substitution, not a rostered Opus/Sonnet run, and is not presented as a pass.
+
+Exact next actions: obtain the owner's answer for #1012; keep #1020/#1021
+deferred to a later goal; resolve each owner/dependency boundary in the
+manifest; then process one issue through implementation, QA, reconciliation,
+and GitHub state before selecting the next.

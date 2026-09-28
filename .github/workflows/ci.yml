@@ -434,6 +434,18 @@ jobs:
             done
           '
 
+      - name: Run public-media browser acceptance targets
+        if: ${{ matrix.shard == 1 }}
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:5000
+        run: >-
+          npm run test:e2e --
+          e2e/publicMediaAssetsEmbed.spec.ts
+          e2e/publicMediaAssetsRegular.spec.ts
+          e2e/publicMediaAssetsZip.spec.ts
+          --project=chromium
+
       - name: Run WebKit fullscreen Escape regression
         if: ${{ matrix.shard == 1 }}
         working-directory: frontend

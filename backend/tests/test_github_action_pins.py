@@ -104,6 +104,21 @@ def test_full_browser_suite_runs_after_a_failed_webkit_gate():
     assert "        if: ${{ failure() }}" in job_lines
 
 
+def test_public_media_targets_run_early_on_the_disposable_chromium_stack():
+    job_lines = workflow_job_lines("e2e-browser")
+    target_start = job_lines.index("      - name: Run public-media browser acceptance targets")
+    webkit_start = job_lines.index("      - name: Run WebKit fullscreen Escape regression")
+    full_suite_start = job_lines.index("      - name: Run full browser acceptance suite")
+    target_lines = job_lines[target_start:webkit_start]
+
+    assert target_start < webkit_start < full_suite_start
+    assert "        if: ${{ matrix.shard == 1 }}" in target_lines
+    assert "          e2e/publicMediaAssetsEmbed.spec.ts" in target_lines
+    assert "          e2e/publicMediaAssetsRegular.spec.ts" in target_lines
+    assert "          e2e/publicMediaAssetsZip.spec.ts" in target_lines
+    assert "          --project=chromium" in target_lines
+
+
 def test_staging_smoke_job_remains_deployment_status_only():
     job_lines = workflow_job_lines("staging-authenticated-smoke")
     if_start = job_lines.index("    if: >-")

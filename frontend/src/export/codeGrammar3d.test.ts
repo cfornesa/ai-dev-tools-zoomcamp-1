@@ -3,8 +3,12 @@ import { describe, expect, it } from 'vitest';
 import type { Scene3DDocument } from '../pages/scene3dTypes';
 import { validateScene3D } from '../validation/scene3d';
 import {
+  generateEditable3dLights,
+  generateEditable3dScene,
   generateEditable3dMaterials,
   generateEditable3dTransforms,
+  parseEditable3dLights,
+  parseEditable3dScene,
   parseEditable3dMaterials,
   parseEditable3dTransforms,
 } from './codeGrammar3d';
@@ -30,6 +34,15 @@ function baseScene(): Scene3DDocument {
         intensity: 2,
         direction: { x: 1, y: -1, z: 0 },
       },
+      {
+        id: 'fill',
+        name: 'Fill light',
+        type: 'point',
+        color: '#88aaff',
+        intensity: 0.75,
+        position: { x: -2, y: 3, z: 4 },
+      },
+      { id: 'ambient', type: 'ambient', color: '#ffffff', intensity: 0.2 },
     ],
     groups: [],
     objects: [
@@ -166,5 +179,87 @@ describe('codeGrammar3d material slice', () => {
     if (result.ok) return;
     expect(result.errors[0]).toMatch(/^Line 4:/);
     expect(result.errors[0]).toContain('color material line');
+  });
+});
+
+describe('codeGrammar3d light slice', () => {
+  it('round-trips multiple schema light types without changing light fields', () => {
+    const scene = baseScene();
+    const result = parseEditable3dLights(generateEditable3dLights(scene), scene);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.scene.lights).toEqual(scene.lights);
+    expect(result.scene.objects).toEqual(scene.objects);
+  });
+
+  it('edits one light field while preserving all other scene data', () => {
+    const scene = baseScene();
+    const text = generateEditable3dLights(scene).replace(
+      '    intensity = 0.75;',
+      '    intensity = 1.25;',
+    );
+    const result = parseEditable3dLights(text, scene);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.scene.lights[1].intensity).toBe(1.25);
+    expect(result.scene.lights[0]).toEqual(scene.lights[0]);
+    expect(result.scene.lights[1].position).toEqual(scene.lights[1].position);
+    expect(result.scene.objects).toEqual(scene.objects);
+    expect(result.scene.camera).toEqual(scene.camera);
+  });
+
+  it('rejects an out-of-grammar light type with a line-specific error', () => {
+    const text = generateEditable3dLights(baseScene()).replace(
+      '    type = "directional";',
+      '    type = "spot";',
+    );
+    const result = parseEditable3dLights(text, baseScene());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors[0]).toMatch(/^Line 4:/);
+    expect(result.errors[0]).toContain('unsupported light type');
+  });
+
+  it('rejects an out-of-grammar light property with a line-specific error', () => {
+    const text = generateEditable3dLights(baseScene()).replace(
+      '    intensity = 2;',
+      '    range = 10;',
+    );
+    const result = parseEditable3dLights(text, baseScene());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors[0]).toMatch(/^Line 6:/);
+    expect(result.errors[0]).toContain('unsupported or malformed light property');
+  });
+});
+
+describe('codeGrammar3d combined scene grammar', () => {
+  it('round-trips transforms, materials, and lights in one editable block', () => {
+    const scene = baseScene();
+    const result = parseEditable3dScene(generateEditable3dScene(scene), scene);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.scene).toEqual(scene);
+  });
+
+  it('applies a single-field edit without changing the other field groups', () => {
+    const scene = baseScene();
+    const text = generateEditable3dScene(scene).replace(
+      '    color = "#88aaff";',
+      '    color = "#112233";',
+    );
+    const result = parseEditable3dScene(text, scene);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.scene.lights[1].color).toBe('#112233');
+    expect(result.scene.objects).toEqual(scene.objects);
+    expect(result.scene.lights[0]).toEqual(scene.lights[0]);
+    expect(result.scene.lights[2]).toEqual(scene.lights[2]);
   });
 });

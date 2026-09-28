@@ -462,3 +462,28 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   closed through the typed issue-state update after this ledger captured the
   complete evidence; no workaround was attempted.
 - **New gaps:** None.
+
+## Issue #1002 transaction ledger
+
+- **Issue:** [#1002](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1002)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Record forged PayPal signature deliveries as rejected
+  `BillingEvent` rows and structured warning logs without signature material.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `725b9be9` (`observability(billing): record rejected PayPal signatures`).
+- **Changed files:** `backend/scenes/billing.py`,
+  `backend/tests/test_paypal_webhooks.py`.
+- **Checks:** `uv run pytest tests/test_paypal_webhooks.py` — 15 passed; ruff
+  format/check passed; mypy passed.
+- **QA matrix:** A forged delivery records event id/type/detail and source IP
+  in the structured warning, creates a rejected BillingEvent, returns 403,
+  and creates no subscription. Verification still precedes accepted-event
+  reads; accepted processing remains atomic. The rejection record is outside
+  that transaction so the intentional exception cannot roll it back.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.

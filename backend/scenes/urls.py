@@ -125,7 +125,7 @@ from scenes.profile_api import (
 from scenes.profile_styles_api import AdminProfileStyleDetailView, AdminProfileStyleListCreateView
 from scenes.provider_credentials_api import ProviderCredentialView
 from scenes.public_asset_api import PublicPieceAssetView
-from scenes.public_search_api import PublicGallerySearchView
+from scenes.public_search_api import PublicCollectionListView, PublicGallerySearchView
 from scenes.scene_conversion_api import (
     SceneConversionAcceptView,
     SceneConversionAdvanceView,
@@ -178,6 +178,11 @@ urlpatterns = [
     ),
     path("site-theme/", SiteThemeView.as_view(), name="site-theme"),
     path("public/gallery/search/", PublicGallerySearchView.as_view(), name="public-gallery-search"),
+    path(
+        "collections/public/",
+        PublicCollectionListView.as_view(),
+        name="public-collection-list",
+    ),
     path(
         "public/share-meta/<str:kind>/<uuid:public_id>/",
         PublicShareMetadataView.as_view(),

@@ -3,6 +3,7 @@
 import copy
 import io
 import json
+from datetime import timedelta
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -544,6 +545,144 @@ def test_public_gallery_collections_mode_is_profile_and_visibility_filtered(
     profile.is_public = False
     profile.save(update_fields=["is_public"])
     assert anonymous_client.get("/api/public/gallery/?type=collections").json()["results"] == []
+
+
+@pytest.mark.django_db
+def test_public_list_returns_newest_first_with_exact_safe_card_payload(
+    owner_client, anonymous_client, owner
+):
+    older = _create_collection(owner_client, "Older collection")
+    newer = _create_collection(owner_client, "Newer collection")
+    assert owner_client.post(f"/api/account/collections/{older['id']}/publish/").status_code == 200
+    assert owner_client.post(f"/api/account/collections/{newer['id']}/publish/").status_code == 200
+    Collection.objects.filter(public_id=older["id"]).update(published_at=timezone.now())
+    Collection.objects.filter(public_id=newer["id"]).update(
+        published_at=timezone.now() + timedelta(seconds=1)
+    )
+
+    response = anonymous_client.get("/api/collections/public/")
+
+    assert response.status_code == 200
+    assert response.json()["has_more"] is False
+    assert response.json()["next_cursor"] is None
+    assert [item["title"] for item in response.json()["results"]] == [
+        "Newer collection",
+        "Older collection",
+    ]
+    assert set(response.json()["results"][0]) == {
+        "id",
+        "title",
+        "owner_handle",
+        "cover_url",
+        "item_count",
+        "published_at",
+        "viewer_url",
+    }
+    assert response.json()["results"][0]["owner_handle"] == "collection-owner"
+    assert response.json()["results"][0]["cover_url"] is None
+    assert response.json()["results"][0]["item_count"] == 0
+    assert response.json()["results"][0]["viewer_url"].endswith("/newer-collection")
+
+
+@pytest.mark.django_db
+def test_public_list_cursor_round_trip_is_keyset_paginated(owner_client, anonymous_client):
+    collections = [_create_collection(owner_client, f"Collection {index}") for index in range(3)]
+    for index, collection in enumerate(collections):
+        assert (
+            owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+            == 200
+        )
+        Collection.objects.filter(public_id=collection["id"]).update(
+            published_at=timezone.now() + timedelta(seconds=index)
+        )
+
+    first = anonymous_client.get("/api/collections/public/?page_size=2")
+    assert first.status_code == 200
+    assert first.json()["has_more"] is True
+    assert first.json()["next_cursor"]
+
+    second = anonymous_client.get(
+        "/api/collections/public/", {"page_size": 2, "cursor": first.json()["next_cursor"]}
+    )
+    assert second.status_code == 200
+    assert second.json()["has_more"] is False
+    assert second.json()["next_cursor"] is None
+    first_ids = {item["id"] for item in first.json()["results"]}
+    second_ids = {item["id"] for item in second.json()["results"]}
+    assert first_ids.isdisjoint(second_ids)
+    assert len(first_ids | second_ids) == 3
+
+
+@pytest.mark.django_db
+def test_public_list_excludes_draft_archived_private_and_deleted_collections(
+    owner_client, anonymous_client
+):
+    visible = _create_collection(owner_client, "Visible collection")
+    draft = _create_collection(owner_client, "Draft collection")
+    archived = _create_collection(owner_client, "Archived collection")
+    private = _create_collection(owner_client, "Private collection")
+    deleted = _create_collection(owner_client, "Deleted collection")
+    for collection in (visible, draft, archived, private, deleted):
+        Collection.objects.filter(public_id=collection["id"]).update(published_at=timezone.now())
+    Collection.objects.filter(public_id=visible["id"]).update(
+        visibility=Collection.Visibility.PUBLIC, status=Collection.Status.ACTIVE
+    )
+    Collection.objects.filter(public_id=draft["id"]).update(
+        visibility=Collection.Visibility.PUBLIC, status=Collection.Status.DRAFT
+    )
+    Collection.objects.filter(public_id=archived["id"]).update(
+        visibility=Collection.Visibility.PUBLIC, status=Collection.Status.ARCHIVED
+    )
+    Collection.objects.filter(public_id=deleted["id"]).update(
+        visibility=Collection.Visibility.PUBLIC, is_deleted=True
+    )
+
+    response = anonymous_client.get("/api/collections/public/")
+
+    assert response.status_code == 200
+    assert [item["title"] for item in response.json()["results"]] == ["Visible collection"]
+
+
+@pytest.mark.django_db
+def test_public_list_counts_only_currently_public_collection_members(
+    owner_client, anonymous_client, owner
+):
+    first = _published_project(owner, "Public member")
+    second = _published_project(owner, "Member that becomes private")
+    collection = _create_collection(owner_client, "Counted collection")
+    assert (
+        owner_client.post(
+            f"/api/account/collections/{collection['id']}/items/",
+            {
+                "items": [
+                    {"kind": "project", "id": str(first.public_id)},
+                    {"kind": "project", "id": str(second.public_id)},
+                ]
+            },
+            format="json",
+        ).status_code
+        == 200
+    )
+    assert (
+        owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+        == 200
+    )
+    second.visibility = Project.Visibility.PRIVATE
+    second.published_at = None
+    second.save(update_fields=["visibility", "published_at"])
+
+    response = anonymous_client.get("/api/collections/public/")
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["item_count"] == 1
+
+
+@pytest.mark.django_db
+def test_public_list_returns_empty_result_without_authentication(anonymous_client):
+    response = anonymous_client.get("/api/collections/public/")
+
+    assert response.status_code == 200
+    assert response.json() == {"results": [], "next_cursor": None, "has_more": False}
 
 
 @pytest.mark.django_db

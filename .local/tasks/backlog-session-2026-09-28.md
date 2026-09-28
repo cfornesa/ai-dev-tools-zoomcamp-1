@@ -39,6 +39,30 @@ none implemented per the discovery-gate rule against same-session
 implementation of newly filed work): #1022, #1023, #1024, #1025, #1026,
 #1027, #1028, #1029, #1030, #1031, #1032, #1033, #1034.
 
+### Expanded-goal implementation and QA pass — 2026-09-28
+
+The expanded objective required the newly filed child issues to be implemented,
+not merely handed off. The following child issues were implemented, covered by
+authenticated `## QA: PASS` comments, and closed: #1022, #1023, #1024, #1025,
+#1026, #1027, #1028, #1029, #1031, and #1033. Parent tracking issues #995,
+#996, #1013, and #1019 were then rolled up and closed. Full local verification
+passed after integration: backend 1,773 passed / 39 skipped; frontend 300
+files / 3,110 tests; lint, format, typecheck, build, and mypy passed.
+
+#1032 has a verified implementation and `## QA: FAIL / BLOCKED` only for its
+authenticated desktop/mobile admin browser spot-check; Django was unavailable
+locally. The CI reliability defect discovered while dispatching the public-media
+matrix was filed as #1034. Its mechanical `always()` fix landed in
+`cd57da3a`, with workflow/actionlint/pin/focused-test checks passing, and a
+fresh CI run `36469307875` was dispatched. The 25-minute timeout and prior
+56 failures remain intentionally unmasked pending that run's triage.
+
+Current live remainder after these closures: #788, #847, #859, #906, #926,
+#941, #942, #944, #945, #946, #973, #974, #975, #1016, #1030, #1032, and
+#1034. The remaining blockers are owner-controlled production/credential
+actions, the public-media/browser evidence chain, the local-first collection
+media contract, the #1030 ranking-signal decision, and CI/browser triage.
+
 ### CI-dispatch outcome detail (run 36464649615)
 
 Conclusion: `failure`. Per-job: Workflow validation ✓, Disposable published

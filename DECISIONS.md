@@ -2112,6 +2112,20 @@ updates. The remaining open backlog was not silently claimed complete.
 - The remaining 23 open issues retain explicit blocked, dependency-blocked, or
   handed-off status and exact next actions; open GitHub state is intentional.
 
+## 2026-09-28 — expanded backlog child implementation pass
+
+- Owner decisions converted #995, #996, #1013, and #1019 into criterion-ready
+  child work. Children #1022–#1029, #1031, and #1033 were implemented and
+  closed after QA; #1032 remains evidence-blocked only for authenticated admin
+  browser inspection.
+- CI dispatch run `36464649615` exposed a real workflow gating defect, so #1034
+  was created under the discovery gate. Its `always()` shard-1 fix is in
+  `cd57da3a`, and fresh run `36469307875` is required to establish whether the
+  remaining timeout/failure cluster is genuine or test-infrastructure noise.
+- No production data, real-provider credential, or owner-controlled write was
+  performed. Those remain explicit user/owner decisions rather than silently
+  inferred authorization.
+
 ## 2026-09-28 — #975 ZIP browser harness restoration
 
 - Restored the missing `frontend/e2e/publicMediaAssetsZip.spec.ts` referenced

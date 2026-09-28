@@ -43,6 +43,19 @@ now pointed at #1034. Full per-issue detail:
 `.local/tasks/backlog-session-2026-09-28.md`'s "Owner-workability
 reconciliation pass" section.
 
+## 2026-09-28 — expanded backlog implementation pass
+
+The newly filed child issues #1022–#1029, #1031, and #1033 were implemented,
+verified with authenticated QA PASS comments, and closed. Their tracking
+parents #995, #996, #1013, and #1019 were rolled up and closed. The integrated
+repository gate passed with backend 1,773 passed / 39 skipped and frontend 300
+files / 3,110 tests, plus lint, format, typecheck, build, and mypy.
+
+#1032 remains open only for authenticated admin browser evidence. #1034 fixes
+the CI shard gating defect mechanically in `cd57da3a`; fresh run
+`36469307875` is still the authoritative evidence source for the remaining
+public-media/browser matrix and timeout triage.
+
 This file is the full, chronological, per-issue ledger — not something to
 scroll through for orientation. For a themed jump-in point (GitHub
 Milestones grouping the ~937 closed issues by the week they closed, added

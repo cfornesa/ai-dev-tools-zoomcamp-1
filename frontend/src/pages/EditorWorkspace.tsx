@@ -36,14 +36,6 @@ import { exportRendererIdFor } from '../export/generateHtmlExport';
 import { RENDERER_LABELS } from '../export/exportCompatibility';
 import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePreview';
 import {
-  generateEditableCss,
-  generateEditableHtml,
-  generateEditableJs,
-  isEditableJsUnchanged,
-  parseEditableHtmlAndCss,
-  parseEditableJs,
-} from '../export/codeGrammar';
-import {
   applyGroupDrag,
   applyMoveSnap,
   applyResizeSnap,
@@ -106,6 +98,7 @@ import {
 } from '../ink/sceneInk';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
 import { useCameraOverlay } from './useCameraOverlay';
+import { useCodeTabSync, type HtmlCssCodeSync, type JsCodeSync } from './useCodeTabSync';
 import { useFullscreenToggle } from './useFullscreenToggle';
 import { sceneHasActiveBehaviors, usePreviewRuntime } from './usePreviewRuntime';
 import { useSceneEditor, type SceneEditor } from './useSceneEditor';
@@ -574,105 +567,6 @@ type CodeSubTab = 'json' | 'html' | 'css' | 'js';
  * means either box's text no longer matches what was last
  * generated/committed, since a Save always applies both together.
  */
-function useHtmlCssCodeSync(
-  workingCopy: SceneDocument | null,
-  onCommit: (scene: SceneDocument) => void,
-) {
-  const [htmlText, setHtmlText] = useState(() => generateEditableHtml(workingCopy));
-  const [cssText, setCssText] = useState(() => generateEditableCss(workingCopy));
-  const [errors, setErrors] = useState<string[] | null>(null);
-  const [externalChangePending, setExternalChangePending] = useState(false);
-  const htmlTextRef = useRef(htmlText);
-  const cssTextRef = useRef(cssText);
-  const lastSyncedHtmlRef = useRef(htmlText);
-  const lastSyncedCssRef = useRef(cssText);
-  const lastSyncedWorkingCopyRef = useRef(workingCopy);
-
-  useEffect(() => {
-    if (workingCopy === lastSyncedWorkingCopyRef.current) return;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    const dirty =
-      htmlTextRef.current !== lastSyncedHtmlRef.current ||
-      cssTextRef.current !== lastSyncedCssRef.current;
-    if (dirty) {
-      setExternalChangePending(true);
-      return;
-    }
-    const generatedHtml = generateEditableHtml(workingCopy);
-    const generatedCss = generateEditableCss(workingCopy);
-    lastSyncedHtmlRef.current = generatedHtml;
-    lastSyncedCssRef.current = generatedCss;
-    htmlTextRef.current = generatedHtml;
-    cssTextRef.current = generatedCss;
-    setHtmlText(generatedHtml);
-    setCssText(generatedCss);
-  }, [workingCopy]);
-
-  function onHtmlChange(value: string) {
-    htmlTextRef.current = value;
-    setHtmlText(value);
-  }
-
-  function onCssChange(value: string) {
-    cssTextRef.current = value;
-    setCssText(value);
-  }
-
-  function onReload() {
-    const generatedHtml = generateEditableHtml(workingCopy);
-    const generatedCss = generateEditableCss(workingCopy);
-    lastSyncedHtmlRef.current = generatedHtml;
-    lastSyncedCssRef.current = generatedCss;
-    htmlTextRef.current = generatedHtml;
-    cssTextRef.current = generatedCss;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    setHtmlText(generatedHtml);
-    setCssText(generatedCss);
-    setErrors(null);
-    setExternalChangePending(false);
-  }
-
-  function onSave() {
-    if (!workingCopy) return;
-    const result = parseEditableHtmlAndCss(htmlTextRef.current, cssTextRef.current, workingCopy);
-    if (!result.ok) {
-      setErrors(result.errors);
-      return;
-    }
-    setErrors(null);
-    onCommit(result.scene);
-    // Re-canonicalize both boxes from the just-applied scene so the visible
-    // text always matches what `generateEditableHtml`/`generateEditableCss`
-    // would produce for it -- this is what makes "re-save unchanged -> no
-    // diff" hold even after a save that only touched a few properties. Also
-    // mark them (and `workingCopy`) as already synced, so the `workingCopy`
-    // change this Save causes doesn't flag itself as an external change.
-    const generatedHtml = generateEditableHtml(result.scene);
-    const generatedCss = generateEditableCss(result.scene);
-    lastSyncedHtmlRef.current = generatedHtml;
-    lastSyncedCssRef.current = generatedCss;
-    htmlTextRef.current = generatedHtml;
-    cssTextRef.current = generatedCss;
-    lastSyncedWorkingCopyRef.current = result.scene;
-    setHtmlText(generatedHtml);
-    setCssText(generatedCss);
-    setExternalChangePending(false);
-  }
-
-  return {
-    htmlText,
-    cssText,
-    errors,
-    externalChangePending,
-    onHtmlChange,
-    onCssChange,
-    onSave,
-    onReload,
-  };
-}
-
-type HtmlCssCodeSync = ReturnType<typeof useHtmlCssCodeSync>;
-
 /**
  * Task 142 (issue #174): the HTML/CSS sub-tabs' Save action -- reverse-
  * parses the CURRENT text in both boxes (they're interdependent: a CSS rule
@@ -779,75 +673,6 @@ function HtmlCssCodeEditor({
  * Issue #177: the JS sub-tab's sync hook -- see `useJsonCodeSync`'s doc
  * comment for the general strategy.
  */
-function useJsCodeSync(
-  workingCopy: SceneDocument | null,
-  onCommit: (scene: SceneDocument) => void,
-) {
-  const [text, setText] = useState(() => generateEditableJs(workingCopy));
-  const [errors, setErrors] = useState<string[] | null>(null);
-  const [externalChangePending, setExternalChangePending] = useState(false);
-  const textRef = useRef(text);
-  const lastSyncedTextRef = useRef(text);
-  const lastSyncedWorkingCopyRef = useRef(workingCopy);
-
-  useEffect(() => {
-    if (workingCopy === lastSyncedWorkingCopyRef.current) return;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    if (textRef.current !== lastSyncedTextRef.current) {
-      setExternalChangePending(true);
-      return;
-    }
-    const generated = generateEditableJs(workingCopy);
-    lastSyncedTextRef.current = generated;
-    textRef.current = generated;
-    setText(generated);
-  }, [workingCopy]);
-
-  function onChange(value: string) {
-    textRef.current = value;
-    setText(value);
-  }
-
-  function onReload() {
-    const generated = generateEditableJs(workingCopy);
-    lastSyncedTextRef.current = generated;
-    textRef.current = generated;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    setText(generated);
-    setErrors(null);
-    setExternalChangePending(false);
-  }
-
-  function onSave() {
-    if (!workingCopy) return;
-    if (isEditableJsUnchanged(textRef.current, workingCopy)) {
-      setErrors(null);
-      return;
-    }
-    const result = parseEditableJs(textRef.current, workingCopy);
-    if (!result.ok) {
-      setErrors(result.errors);
-      return;
-    }
-    setErrors(null);
-    onCommit(result.scene);
-    // Re-canonicalize from the just-applied scene, matching the HTML/CSS
-    // sub-tabs' own convention, so "re-save unchanged -> no diff" holds. Also
-    // mark it (and `workingCopy`) as already synced, so the `workingCopy`
-    // change this Save causes doesn't flag itself as an external change.
-    const generated = generateEditableJs(result.scene);
-    lastSyncedTextRef.current = generated;
-    textRef.current = generated;
-    lastSyncedWorkingCopyRef.current = result.scene;
-    setText(generated);
-    setExternalChangePending(false);
-  }
-
-  return { text, errors, externalChangePending, onChange, onSave, onReload };
-}
-
-type JsCodeSync = ReturnType<typeof useJsCodeSync>;
-
 /**
  * Task 143 (issue #175; extended by task 144 / issue #176): the JavaScript
  * sub-tab. Shows a live-generated view of this scene's interaction runtime
@@ -1102,8 +927,8 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // accept, a version restore) is observed even while the Code tab isn't
   // the one currently on screen.
   const jsonCodeSync = useJsonCodeSync(workingCopy, setWorkingCopy);
-  const htmlCssCodeSync = useHtmlCssCodeSync(workingCopy, sceneEditor.commitScene);
-  const jsCodeSync = useJsCodeSync(workingCopy, sceneEditor.commitScene);
+  const htmlCssCodeSync = useCodeTabSync('html-css', workingCopy, sceneEditor.commitScene);
+  const jsCodeSync = useCodeTabSync('js', workingCopy, sceneEditor.commitScene);
   // Issue #78: the client-only snap-to-grid / alignment-guide preference —
   // see `../editor/snapSettings.ts`'s own doc comment for why this is a
   // plain external store rather than scene state.

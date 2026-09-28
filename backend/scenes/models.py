@@ -288,6 +288,7 @@ class Collection(models.Model):
     status = models.CharField(
         max_length=8, choices=Status.choices, default=Status.ACTIVE, db_index=True
     )
+    comments_enabled = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -310,6 +311,24 @@ class Collection(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+class CollectionComment(models.Model):
+    """Authenticated visitor comment on a public collection (#1018)."""
+
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name="comments")
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="collection_comments"
+    )
+    body = models.TextField(max_length=2000)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def __str__(self) -> str:
+        return f"Comment by {self.author_id} on {self.collection_id}"
 
 
 class CollectionSlugRedirect(models.Model):

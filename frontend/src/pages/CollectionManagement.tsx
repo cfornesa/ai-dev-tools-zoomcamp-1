@@ -27,6 +27,7 @@ export default function CollectionManagement() {
   const [description, setDescription] = useState('');
   const [publicSlug, setPublicSlug] = useState('');
   const [collectionStatus, setCollectionStatus] = useState<Collection['status']>('active');
+  const [commentsEnabled, setCommentsEnabled] = useState(false);
   const [kind, setKind] = useState<CollectionItem['kind']>('project');
   const [itemId, setItemId] = useState('');
   const [busy, setBusy] = useState(false);
@@ -60,6 +61,7 @@ export default function CollectionManagement() {
     setDescription(selected.description);
     setPublicSlug(selected.slug);
     setCollectionStatus(selected.status ?? 'active');
+    setCommentsEnabled(selected.comments_enabled ?? false);
   }, [selected]);
 
   if (auth.status === 'loading') return <p role="status">Loading collections…</p>;
@@ -113,6 +115,7 @@ export default function CollectionManagement() {
           description,
           public_slug: publicSlug,
           status: collectionStatus,
+          comments_enabled: commentsEnabled,
         }),
       'Collection details saved.',
     );
@@ -303,6 +306,14 @@ export default function CollectionManagement() {
                   <option value="draft">Draft (not publicly visible)</option>
                   <option value="archived">Archived (hidden from this list)</option>
                 </select>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={commentsEnabled}
+                    onChange={(event) => setCommentsEnabled(event.target.checked)}
+                  />{' '}
+                  Allow authenticated visitors to comment
+                </label>
               </>
             )}
             <button type="submit" disabled={busy}>

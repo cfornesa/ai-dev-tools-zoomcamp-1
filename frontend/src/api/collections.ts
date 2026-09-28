@@ -21,6 +21,8 @@ export type Collection = {
   owner_handle?: string | null;
   visibility: 'private' | 'public';
   status?: 'active' | 'draft' | 'archived';
+  comments_enabled?: boolean;
+  comments?: CollectionComment[];
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -30,6 +32,13 @@ export type Collection = {
   immersive_url?: string | null;
   embed_url?: string | null;
   download_url?: string | null;
+};
+
+export type CollectionComment = {
+  id: number;
+  body: string;
+  author: string;
+  created_at: string;
 };
 
 export function fetchCollections() {
@@ -50,6 +59,7 @@ export function updateCollection(
     description?: string;
     public_slug?: string;
     status?: Collection['status'];
+    comments_enabled?: boolean;
   },
 ) {
   return apiFetch<Collection>(`/api/account/collections/${id}/`, {
@@ -81,4 +91,11 @@ export function setCollectionPublished(id: string, published: boolean) {
 
 export function fetchPublicCollection(handle: string, slug: string) {
   return apiFetch<Collection>(`/api/public/collections/${encodeURIComponent(handle)}/${slug}/`);
+}
+
+export function postCollectionComment(handle: string, slug: string, body: string) {
+  return apiFetch<CollectionComment>(
+    `/api/public/collections/${encodeURIComponent(handle)}/${slug}/comments/`,
+    { method: 'POST', body: JSON.stringify({ body }) },
+  );
 }

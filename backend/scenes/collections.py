@@ -146,6 +146,7 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
         "owner_handle": public_author_handle(collection.owner),
         "visibility": collection.visibility,
         "status": collection.status,
+        "comments_enabled": collection.comments_enabled,
         "published_at": collection.published_at.isoformat() if collection.published_at else None,
         "created_at": collection.created_at.isoformat(),
         "updated_at": collection.updated_at.isoformat(),
@@ -164,6 +165,19 @@ def collection_payload(collection: Collection, *, public: bool) -> dict:
             f"/api/public/collections/{profile.handle}/{collection.slug}/download/"
             if public and profile
             else None
+        ),
+        "comments": (
+            [
+                {
+                    "id": comment.id,
+                    "body": comment.body,
+                    "author": comment.author.get_username(),
+                    "created_at": comment.created_at.isoformat(),
+                }
+                for comment in collection.comments.filter(is_deleted=False).select_related("author")
+            ]
+            if public and collection.comments_enabled
+            else []
         ),
     }
 

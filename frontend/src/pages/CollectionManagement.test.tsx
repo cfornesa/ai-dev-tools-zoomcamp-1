@@ -101,6 +101,7 @@ describe('CollectionManagement', () => {
         description: 'Small experiments',
         public_slug: 'spring-studies',
         status: 'active',
+        comments_enabled: false,
       });
     });
 

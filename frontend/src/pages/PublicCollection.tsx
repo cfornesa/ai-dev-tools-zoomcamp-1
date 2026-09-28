@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 
-import { fetchPublicCollection, type Collection, type CollectionItem } from '../api/collections';
+import {
+  fetchPublicCollection,
+  postCollectionComment,
+  type Collection,
+  type CollectionItem,
+} from '../api/collections';
 import { fetchPublicProfile, type PublicProfile } from '../api/profile';
 import { applyContentMetadata } from '../metadata';
 import { profileStyleVars } from '../theme/profileStyle';
@@ -41,6 +46,8 @@ export default function PublicCollection() {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [showEmbed, setShowEmbed] = useState(false);
   const [embedCopyStatus, setEmbedCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [commentBody, setCommentBody] = useState('');
+  const [commentStatus, setCommentStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setState('loading');
@@ -79,6 +86,21 @@ export default function PublicCollection() {
       setEmbedCopyStatus('copied');
     } catch {
       setEmbedCopyStatus('failed');
+    }
+  }
+
+  async function submitComment(event: React.FormEvent) {
+    event.preventDefault();
+    setCommentStatus(null);
+    try {
+      const comment = await postCollectionComment(handle, collectionSlug, commentBody);
+      setCollection((current) =>
+        current ? { ...current, comments: [...(current.comments ?? []), comment] } : current,
+      );
+      setCommentBody('');
+      setCommentStatus('Comment posted.');
+    } catch (error) {
+      setCommentStatus(error instanceof Error ? error.message : 'Unable to post comment.');
     }
   }
 
@@ -165,6 +187,30 @@ export default function PublicCollection() {
             </li>
           ))}
         </ol>
+      )}
+      {collection.comments_enabled && (
+        <section aria-labelledby="collection-comments-heading">
+          <h3 id="collection-comments-heading">Comments</h3>
+          {(collection.comments ?? []).map((comment) => (
+            <article key={comment.id}>
+              <p>{comment.body}</p>
+              <small>{comment.author}</small>
+            </article>
+          ))}
+          <form onSubmit={(event) => void submitComment(event)}>
+            <label htmlFor="collection-comment-body">Add a comment</label>
+            <textarea
+              id="collection-comment-body"
+              value={commentBody}
+              maxLength={2000}
+              onChange={(event) => setCommentBody(event.target.value)}
+            />
+            <button type="submit" disabled={!commentBody.trim()}>
+              Post comment
+            </button>
+            {commentStatus && <p role="status">{commentStatus}</p>}
+          </form>
+        </section>
       )}
       <p className="public-collection-download">
         <a

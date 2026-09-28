@@ -8,6 +8,7 @@ from zipfile import ZipFile
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
@@ -261,6 +262,28 @@ def test_collection_status_controls_public_visibility_and_owner_listing(
     assert all(
         item["id"] != collection_id for item in owner_client.get("/api/account/collections/").json()
     )
+
+
+@pytest.mark.django_db
+def test_collection_comments_require_enabled_flag_and_are_rate_limited(
+    owner_client, anonymous_client
+):
+    collection = _create_collection(owner_client, "Comment collection")
+    url = "/api/public/collections/collection-owner/comment-collection/comments/"
+    assert owner_client.post(url, {"body": "blocked"}, format="json").status_code == 404
+    assert anonymous_client.post(url, {"body": "anonymous"}, format="json").status_code == 401
+
+    owner_client.patch(
+        f"/api/account/collections/{collection['id']}/",
+        {"comments_enabled": True},
+        format="json",
+    )
+    owner_client.post(f"/api/account/collections/{collection['id']}/publish/")
+    cache.clear()
+    created = owner_client.post(url, {"body": "hello"}, format="json")
+    assert created.status_code == 201
+    assert created.json()["body"] == "hello"
+    assert owner_client.post(url, {"body": "again"}, format="json").status_code == 429
 
 
 @pytest.mark.django_db

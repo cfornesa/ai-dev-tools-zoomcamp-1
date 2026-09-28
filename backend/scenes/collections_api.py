@@ -6,6 +6,7 @@ import io
 import json
 import zipfile
 
+from django.core.cache import cache
 from django.http import HttpResponse, HttpResponsePermanentRedirect
 from rest_framework import status
 from rest_framework.response import Response
@@ -25,7 +26,7 @@ from scenes.collections import (
     update_collection,
 )
 from scenes.content_metadata import sanitize_content_seo
-from scenes.models import Collection
+from scenes.models import Collection, CollectionComment
 
 
 def _auth_required(request):
@@ -102,6 +103,9 @@ class CollectionDetailView(APIView):
                 public_slug=request.data.get("public_slug"),
                 status=request.data.get("status"),
             )
+            if "comments_enabled" in request.data:
+                collection.comments_enabled = bool(request.data["comments_enabled"])
+                collection.save(update_fields=["comments_enabled", "updated_at"])
         except CollectionValidationError as exc:
             return Response({"error": "validation_failed", "detail": str(exc)}, status=400)
         except ValueError as exc:
@@ -117,6 +121,56 @@ class CollectionDetailView(APIView):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         soft_delete_collection(collection=collection)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PublicCollectionCommentsView(APIView):
+    def post(self, request, handle, slug):
+        denied = _auth_required(request)
+        if denied:
+            return denied
+        collection = public_collection(handle=handle, slug=slug)
+        if collection is None or not collection.comments_enabled:
+            return Response({"detail": "Comments are disabled."}, status=status.HTTP_404_NOT_FOUND)
+        body = request.data.get("body")
+        if not isinstance(body, str) or not body.strip() or len(body.strip()) > 2000:
+            return Response(
+                {"error": "validation_failed", "detail": "body must be 1-2000 characters."},
+                status=400,
+            )
+        key = f"collection-comment:{request.user.pk}:{collection.pk}"
+        if not cache.add(key, True, timeout=60):
+            return Response({"error": "rate_limited"}, status=429)
+        comment = CollectionComment.objects.create(
+            collection=collection, author=request.user, body=body.strip()
+        )
+        return Response(
+            {
+                "id": comment.id,
+                "body": comment.body,
+                "author": comment.author.get_username(),
+                "created_at": comment.created_at.isoformat(),
+            },
+            status=201,
+        )
+
+
+class CollectionCommentDeleteView(APIView):
+    def delete(self, request, public_id, comment_id):
+        denied = _auth_required(request)
+        if denied:
+            return denied
+        comment = (
+            CollectionComment.objects.filter(
+                id=comment_id, collection__public_id=public_id, is_deleted=False
+            )
+            .select_related("collection")
+            .first()
+        )
+        if comment is None or (comment.author_id != request.user.id and not request.user.is_staff):
+            return Response({"detail": "Not found."}, status=404)
+        comment.is_deleted = True
+        comment.save(update_fields=["is_deleted"])
+        return Response(status=204)
 
 
 class CollectionItemsView(APIView):

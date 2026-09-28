@@ -104,11 +104,13 @@ from scenes.cloud_backup_api import (
 from scenes.cloud_retention_api import AdminCloudRetentionPurgeView, AdminCloudRetentionView
 from scenes.cloud_sync_preference_api import AccountCloudSyncView
 from scenes.collections_api import (
+    CollectionCommentDeleteView,
     CollectionDetailView,
     CollectionItemsView,
     CollectionListCreateView,
     CollectionSnapshotView,
     CollectionVisibilityView,
+    PublicCollectionCommentsView,
     PublicCollectionDetailView,
     PublicCollectionDownloadView,
 )
@@ -273,6 +275,11 @@ urlpatterns = [
         name="account-collection-items",
     ),
     path(
+        "account/collections/<uuid:public_id>/comments/<int:comment_id>/",
+        CollectionCommentDeleteView.as_view(),
+        name="account-collection-comment-delete",
+    ),
+    path(
         "account/collections/<uuid:public_id>/publish/",
         CollectionVisibilityView.as_view(),
         {"public": True},
@@ -293,6 +300,11 @@ urlpatterns = [
         "public/collections/<str:handle>/<slug:slug>/",
         PublicCollectionDetailView.as_view(),
         name="public-collection-detail",
+    ),
+    path(
+        "public/collections/<str:handle>/<slug:slug>/comments/",
+        PublicCollectionCommentsView.as_view(),
+        name="public-collection-comments",
     ),
     path(
         "public/collections/<str:handle>/<slug:slug>/download/",

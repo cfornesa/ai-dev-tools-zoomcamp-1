@@ -94,6 +94,31 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #990 transaction ledger
+
+- **Issue:** [#990](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/990)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Inventoried all `fflate` and `JSZip` usage and documented
+  why both remain: JSZip supplies the async object-oriented generated-export
+  API, while fflate supplies synchronous low-level `Uint8Array` local archive
+  operations.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `da6fed4b` (`docs(deps): justify fflate and
+  jszip coexistence`).
+- **Checks:** Focused export/archive tests — 21 files, 259 tests passed;
+  `make check` — 1,761 backend tests passed/39 skipped and 3,074 frontend
+  tests passed; backend/frontend lint, formatting, and typecheck passed with
+  existing warnings only.
+- **QA matrix:** Both packages remain intentionally; no archive usage was
+  migrated and no package-lock change was needed.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #989 transaction ledger
 
 - **Issue:** [#989](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/989)

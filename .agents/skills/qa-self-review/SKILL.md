@@ -50,6 +50,14 @@ except that it can never satisfy stage 3.
 
 ## Verification
 
+Check the diff against the `CONVENTIONS.md` page(s) the issue's Code-
+quality checklist named: automated gates (ruff/mypy/oxlint/tsc, once the
+tracked incremental rollout adds complexity/strict rules) still pass on the
+changed files, and any documentation-only rule cited (naming, colocation,
+state-scoping, data-structure scale justification, the applicable
+accessibility/security pattern) was actually followed, not just asserted.
+This is part of the same criterion matrix, not a separate pass.
+
 Exercise every criterion against the running result using automated tests,
 browser automation, fixtures, and the exact commands and environment the issue
 specifies. The agent owns local execution: provision disposable services,

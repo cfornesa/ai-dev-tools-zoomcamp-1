@@ -29,7 +29,12 @@ did not name. Do not run QA or the readiness gate, and do not close the issue.
 Read the issue's acceptance criteria, `AGENTS.md`, `CONSTRAINTS.md`,
 `docs/team/software-engineer.md`, and **every cited source-of-truth document**
 — legacy code, business-logic docs, `docs/benchmarks.md` for runtime and
-`schema/limits.json` caps — before writing anything.
+`schema/limits.json` caps — before writing anything. Read `CONVENTIONS.md`
+and the `docs/conventions/<topic>.md` page(s) the issue names in its
+Code-quality checklist — for complex-logic issues this is most often
+`docs/conventions/efficiency.md` (data-structure scale justification),
+`docs/conventions/security.md`, or `docs/conventions/python.md`'s
+env-var-discipline section.
 
 When translating existing behavior, the cited source is authoritative. Add
 focused regression coverage that asserts the criterion, and run the issue's

@@ -2,7 +2,10 @@
 - Read the acceptance criteria before starting and before closing
 - Commit regularly
 
-Closure-ready atomicity
+Closure-ready atomicity (this is *issue-level* atomicity — one vertical
+slice of work. *Code-level* atomicity — function/hook/module shape,
+naming, state-scoping — is `CONVENTIONS.md`'s domain; the two are related
+but distinct, don't conflate them.)
 
 - An issue is atomic only when it has one named entry point or workflow, one
   fixed fixture/precondition, a finite observable acceptance checklist, exact

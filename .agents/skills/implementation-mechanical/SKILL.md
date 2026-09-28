@@ -8,7 +8,7 @@ description: Implement one criterion-ready issue whose work is mechanical or boi
 Stage 2a of the loop in `LOOP-AGENTS.md` Section 2. Read
 `.agents/skills/_shared/HANDOFF-CONTRACT.md` first.
 
-**Rostered owner:** Opencode Go — `kimi-k3` for frontend/React work,
+**Rostered owner:** Opencode Go — `kimi-k2.5` for frontend/React work,
 `qwen3.6-plus` for backend/API work. State which you selected and why; the
 choice is recorded as provenance.
 
@@ -28,8 +28,13 @@ a diff is never a terminal state.
 ## Procedure
 
 Read the issue's acceptance criteria, `AGENTS.md`, `CONSTRAINTS.md`, and
-`docs/team/software-engineer.md`. Before writing tests read
-`docs/testing-guidelines.md`; for UI work read `docs/design-system.md`.
+`docs/team/software-engineer.md`. Read `CONVENTIONS.md` and the
+`docs/conventions/<topic>.md` page(s) the issue names in its Code-quality
+checklist (`docs/task-template.md`) before implementing — naming,
+atomicity, state-scoping, and efficiency rules live there, not in memory.
+Before writing tests read `docs/conventions/testing.md`; for UI work read
+`docs/conventions/react.md`, `docs/conventions/design-ux.md`, and
+`docs/conventions/accessibility.md`.
 
 Implement the criteria and add focused regression coverage that asserts the
 criterion itself, not the implementation's shape. Run the issue's documented

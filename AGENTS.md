@@ -618,6 +618,7 @@ active/archive convention rather than imposing a parallel one.
 | `.agents/memory/MEMORY.md` | Agent (on confirmation) | Yes |
 | `DECISIONS.md` | Agent | Yes |
 | `CONSTRAINTS.md` | Agent (on statement) | Yes |
+| `CONVENTIONS.md` | Agent (on confirmation) | Yes |
 | `DESIGN.md` | Human + agent | Only when design work occurs |
 
 At the end of an interactive session, propose 1–3 `.agents/memory/` topic and
@@ -660,6 +661,16 @@ addition to this one, not instead of it.
 
 ## 13. Project Specific Rules
 
+- **Code-quality/accessibility/security/design-UX conventions
+  (owner-mandated, 2026-09-27):** `CONVENTIONS.md` (repo root) is the
+  standing reference across all of: Python/TypeScript/React/HTML/CSS/
+  vanilla-JS code quality, dependency hygiene, algorithmic efficiency,
+  WCAG-aligned accessibility, NIST-CSF-aligned security, and design/UX
+  (Nielsen's heuristics, Jakob's/Hick's/Fitt's Law). Read it — and the
+  linked `docs/conventions/<topic>.md` page — before filing or implementing
+  any issue that touches code structure, an accessible pattern, a
+  security-relevant boundary, or a UI surface. Cite which section applies;
+  don't re-derive a convention from memory when a page already states it.
 - **Milestone assignment (owner-mandated, 2026-09-27):** Every GitHub issue
   gets a milestone at filing time — never left unmilestoned. Reuse the
   current open milestone for a direct follow-up/discovered sub-scope of

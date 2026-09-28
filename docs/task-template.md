@@ -23,6 +23,25 @@ One or two sentences on what should be true when this is done.
 - This task may not degrade or regress existing functionality without the
   owner's explicit, per-change permission (see `AGENTS.md` §13).
 
+## Code-quality checklist (required if this issue touches code structure,
+an accessible pattern, a security-relevant boundary, or a UI surface)
+
+- **Applicable `CONVENTIONS.md` page(s):** Name which `docs/conventions/
+  <topic>.md` page(s) govern this issue (python/typescript/react/
+  html-css-vanilla-js/testing/dependencies/architecture/efficiency/
+  accessibility/security/design-ux) and the specific section/rule.
+- **Data-structure justification:** If this issue introduces or changes a
+  data structure in a hot path, name the scale ceiling or benchmark it's
+  justified against (e.g. `schema/limits.json`'s relevant cap, `docs/
+  benchmarks.md`'s budget). If none apply, state "None."
+- **Naming/organization conformance:** States whether new/moved code
+  follows the applicable naming/file-pairing/colocation convention from the
+  cited page(s).
+- **New global/shared state:** If this issue adds module-level or
+  cross-component state, states which category it falls under (document
+  state vs. device/browser preference, per `docs/conventions/react.md`) and
+  why.
+
 ## Out of scope
 
 - Something that does not belong in this task, moved to #TASK-NUMBER

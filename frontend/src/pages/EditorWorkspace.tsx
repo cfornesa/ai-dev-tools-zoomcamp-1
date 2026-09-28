@@ -3,7 +3,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -72,9 +71,7 @@ import { normalizeSceneLayers } from '../validation/scene';
 import { buildOutline, isEffectivelyLocked } from './sceneOutline';
 import { hitTestDrawioObjectAt } from './drawioDocument';
 import SnapPreferenceControl from './SnapPreferenceControl';
-import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
 import { useCloudBackupSchedule } from './useCloudBackupSchedule';
-import { saveNowBeforeClearing } from '../storage/cloudSnapshot';
 import type { CloudBackupFailure } from '../api/cloudBackupErrors';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useDraftRecovery } from './useDraftRecovery';
@@ -82,6 +79,7 @@ import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
 import { useAiAssistPanels } from './useAiAssistPanels';
+import { useEditSessionLifecycle } from './useEditSessionLifecycle';
 import {
   clampPanValue,
   MAX_ZOOM,
@@ -930,25 +928,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   );
   const reducedMotion = useReducedMotion();
 
-  // Task 41: the working/saved distinction, both visual (the status text
-  // rendered below) and programmatic (this boolean, which also gates the
-  // Save button in VersionHistoryPanel). A scene with no persisted
-  // version at all (shouldn't happen once loadState is 'ready' — Task 18
-  // always creates a first version) is treated as dirty rather than
-  // silently "saved."
-  const isDirty = useMemo(
-    () =>
-      persistedVersion == null ||
-      JSON.stringify(workingCopy) !== JSON.stringify(persistedVersion.scene_json),
-    [workingCopy, persistedVersion],
-  );
-
-  // Task 44: native beforeunload safeguard — registered only while
-  // `isDirty` is true, removed the instant it goes false (successful
-  // save, discard, or nothing unsaved to begin with). See
-  // `useBeforeUnloadGuard.ts` for why it never sets custom wording.
-  useBeforeUnloadGuard(isDirty);
-
   // Task 44: checks for a valid active draft (local IndexedDB + server,
   // reconciled) for this project BEFORE the interactive editor panels
   // render — see `useDraftRecovery.ts`. `persistedVersion?.scene_json` is
@@ -991,54 +970,26 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // backup snapshot once per project load if the plan's cadence says one
   // is due -- never on its own timer, and never surfaced to the user.
   useCloudBackupSchedule(id, gatedWorkingCopy);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [exitSaving, setExitSaving] = useState(false);
-  const [exitSaveFailure, setExitSaveFailure] = useState<CloudBackupFailure | null>(null);
-
-  // Issue #112: `draftAutosave`/`draftServerSync` above already classify
-  // and record autosave/sync failures via `getLastFailure()`, but nothing
-  // read that back into the UI — a failed local or server draft write
-  // failed completely silently, which is indistinguishable from "nothing
-  // happened yet" to the person editing. Surface the most recent failure
-  // as a non-blocking, actionable status message next to the save status —
-  // the editor stays on the same route and the working copy is untouched
-  // either way.
-  //
-  // This previously re-read both controllers on a 3s `setInterval`, which
-  // made the notice's own e2e coverage race real wall-clock time against
-  // a fake-clock-driven test (a timer established at mount, before the
-  // test's `page.clock.install()`, never gets virtualized — see
-  // `frontend/e2e/aiAndRecovery.spec.ts`'s "a failing server draft sync"
-  // test, which still flaked under CI load even with a 30s budget).
-  // `onFailureChange` (`draftServerSync.ts`/`draftAutosave.ts`) notifies
-  // synchronously the moment a failure is recorded or cleared, so this
-  // reacts immediately instead of polling — no timer to race, and real
-  // users see the notice without a several-second lag.
-  const [draftFailureNotice, setDraftFailureNotice] = useState<string | null>(null);
-  useEffect(() => {
-    if (!id) {
-      setDraftFailureNotice(null);
-      return;
-    }
-    function pollFailures() {
-      const autosaveFailure = draftAutosave.getLastFailure();
-      const syncFailure = draftServerSync.getLastFailure();
-      const failure = syncFailure ?? autosaveFailure;
-      setDraftFailureNotice(
-        failure
-          ? `Recovery draft couldn't be saved (${failure.message}). Your changes are still here — try saving explicitly.`
-          : null,
-      );
-    }
-    pollFailures();
-    const unsubscribeAutosave = draftAutosave.onFailureChange(pollFailures);
-    const unsubscribeSync = draftServerSync.onFailureChange(pollFailures);
-    return () => {
-      unsubscribeAutosave();
-      unsubscribeSync();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  const {
+    isDirty,
+    showExitConfirm,
+    exitSaving,
+    exitSaveFailure,
+    draftFailureNotice,
+    openExitConfirm,
+    cancelExit,
+    handleConfirmExit,
+    attemptExit,
+    clearDraftFailureNotice,
+  } = useEditSessionLifecycle({
+    id,
+    workingCopy,
+    persistedVersion,
+    gatedWorkingCopy,
+    draftAutosave,
+    draftServerSync,
+    navigate,
+  });
 
   // Issue #95 follow-up: shared by the header's `SaveControl` (the
   // prominent, always-reachable Save action) — the only caller now that
@@ -1064,7 +1015,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     // An explicit Save just persisted the authoritative version, so a
     // stale draft-sync failure notice from before this save no longer
     // describes anything the user needs to act on.
-    setDraftFailureNotice(null);
+    clearDraftFailureNotice();
   }
 
   // Issue #159: shared by both `AIProposalPanel` instances rendered below
@@ -1092,48 +1043,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     const acceptedScene = structuredClone(normalizedScene);
     void draftAutosave.clearDraft(acceptedScene);
     void draftServerSync.deleteServerDraft(acceptedScene);
-  }
-
-  async function handleConfirmExit() {
-    // Issue #125: same default-to-`workingCopy` baseline as
-    // `handleVersionSaved` above — after this, the working copy won't
-    // change again in this component (the confirmation navigates away),
-    // so no queued/in-flight periodic write can recreate a draft even if
-    // the component hasn't fully unmounted yet.
-    // Start local cleanup before leaving, but do not make navigation wait on
-    // IndexedDB while a fake clock or a slow browser is active. The draft
-    // clear is idempotent and continues after the route transition.
-    void draftAutosave.clearDraft();
-    void draftServerSync.deleteServerDraft();
-    setShowExitConfirm(false);
-    setExitSaveFailure(null);
-    // Use the authenticated landing route explicitly. The root route is an
-    // auth-sensitive redirect, and keeping the destination concrete prevents
-    // a pending auth/provider render from leaving the browser on the editor
-    // URL after the confirmation has completed.
-    navigate('/studio');
-  }
-
-  // Issue #527: "Save now before clearing" -- attempted once, the first
-  // time the user confirms "Exit without saving," for a project opted
-  // into cloud sync. `saveNowBeforeClearing` itself decides it's a no-op
-  // (`applicable: false`) for a project that isn't cloud-synced, so this
-  // never delays or changes behavior for the common (no-sync) case. A
-  // failure never auto-proceeds -- it replaces the dialog with an
-  // explicit "Clear anyway" override (`exitSaveFailure`); only a
-  // successful checkpoint (or no applicable checkpoint at all) exits
-  // directly.
-  async function attemptExit() {
-    if (id && gatedWorkingCopy) {
-      setExitSaving(true);
-      const result = await saveNowBeforeClearing(id, gatedWorkingCopy);
-      setExitSaving(false);
-      if (result.applicable && !result.success) {
-        setExitSaveFailure(result.failure);
-        return;
-      }
-    }
-    await handleConfirmExit();
   }
 
   // Task 44: "Recover draft" loads the reconciled draft's scene as the new
@@ -2578,17 +2487,14 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
           type="button"
           className="editor-icon-button editor-exit-button"
           aria-label="Exit without saving"
-          onClick={() => setShowExitConfirm(true)}
+          onClick={openExitConfirm}
         >
           <span aria-hidden="true">✕</span>
         </button>
         {showExitConfirm && (
           <ExitWithoutSavingConfirm
             onConfirm={() => void attemptExit()}
-            onCancel={() => {
-              setShowExitConfirm(false);
-              setExitSaveFailure(null);
-            }}
+            onCancel={cancelExit}
             saving={exitSaving}
             saveFailure={exitSaveFailure}
             onClearAnyway={() => void handleConfirmExit()}

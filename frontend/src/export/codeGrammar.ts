@@ -664,8 +664,8 @@ export function isEditableJsUnchanged(text: string, scene: SceneDocument | null)
 // Reverse direction: HTML + CSS -> SceneDocument mutations
 // ---------------------------------------------------------------------------
 
-export type GrammarParseResult =
-  { ok: true; scene: SceneDocument } | { ok: false; errors: string[] };
+export type GrammarParseResult<TScene = SceneDocument> =
+  { ok: true; scene: TScene } | { ok: false; errors: string[] };
 
 type ParsedShapeAttrs = {
   id: string;

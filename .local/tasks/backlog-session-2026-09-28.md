@@ -94,6 +94,21 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1016 transaction ledger
+
+- **Issue:** [#1016](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1016)
+- **Phase:** BLOCKED pending owner decision; GitHub issue remains open.
+- **Transaction:** Add a manually selected collection cover image with public
+  rendering and a first-item fallback.
+- **Blocker:** The issue assumes an existing server-backed media-asset
+  convention, but the current repository has no backend `MediaAsset` model or
+  upload contract. Its media assets are browser-local IndexedDB records, which
+  cannot be referenced by public collection payloads. Implementing this
+  requires choosing a new server-media contract or narrowing the feature to a
+  different source.
+- **Next action:** Owner decides whether to authorize a server-hosted media
+  asset contract or revise the cover-image source/scope.
+
 ## Issue #1014 transaction ledger
 
 - **Issue:** [#1014](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1014)

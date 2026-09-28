@@ -94,6 +94,30 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1014 transaction ledger
+
+- **Issue:** [#1014](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1014)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Add a local searchable picker for the owner's published
+  2D, 3D, and generated pieces while retaining raw UUID entry as a fallback.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `88637cd9` (`feat(collections): add published item picker`).
+- **Changed files:** `frontend/src/pages/CollectionManagement.tsx`,
+  `frontend/src/pages/CollectionManagement.test.tsx`.
+- **Checks:** Focused Vitest — 4 passed; typecheck, lint, and format-check
+  passed.
+- **QA matrix:** Picker data comes from existing list APIs, filters to public
+  projects / public 3D projects / published art pieces, searches title and ID
+  with a linear pass appropriate to the owner-list scale, and submits through
+  unchanged `replace_items` and server validation. UUID fallback remains.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #1012 transaction ledger
 
 - **Issue:** [#1012](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1012)

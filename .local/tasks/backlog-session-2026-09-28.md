@@ -94,6 +94,31 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1009 transaction ledger
+
+- **Issue:** [#1009](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1009)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Add transient Three.js grid and axes orientation helpers to
+  the manual 3D editor, default-visible and controlled by an accessible toggle.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `982d81a5` (`feat(editor3d): add viewport orientation helpers`).
+- **Changed files:** `frontend/src/pages/Project3DWorkspace.tsx`,
+  `frontend/src/pages/Scene3DPreview.tsx`,
+  `frontend/src/pages/Project3DWorkspace.save.test.tsx`.
+- **Checks:** Focused Vitest — 12 passed; typecheck, lint, and format-check
+  passed.
+- **QA matrix:** Helpers are created only in the transient Three.js scene when
+  enabled, remain outside `scene.objects`, and therefore cannot enter JSON,
+  exports, published runtime, or camera/OrbitControls state. The authoring
+  disclosure toggles them without changing the authored scene.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #1010 transaction ledger
 
 - **Issue:** [#1010](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1010)

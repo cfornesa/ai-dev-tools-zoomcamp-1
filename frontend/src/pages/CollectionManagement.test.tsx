@@ -4,6 +4,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as collectionsApi from '../api/collections';
+import * as artPiecesApi from '../api/artPieces';
+import * as projectsApi from '../api/projects';
+import * as projects3dApi from '../api/projects3d';
 import { AuthContext } from '../auth/context';
 import CollectionManagement from './CollectionManagement';
 
@@ -19,11 +22,17 @@ vi.mock('../api/collections', async () => {
     deleteCollection: vi.fn(),
   };
 });
+vi.mock('../api/artPieces');
+vi.mock('../api/projects');
+vi.mock('../api/projects3d');
 
 const mockedFetch = vi.mocked(collectionsApi.fetchCollections);
 const mockedUpdate = vi.mocked(collectionsApi.updateCollection);
 const mockedReplace = vi.mocked(collectionsApi.replaceCollectionItems);
 const mockedPublish = vi.mocked(collectionsApi.setCollectionPublished);
+const mockedListArtPieces = vi.mocked(artPiecesApi.listArtPieces);
+const mockedListProjects = vi.mocked(projectsApi.listProjects);
+const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
 
 const SAMPLE: collectionsApi.Collection = {
   id: 'collection-1',
@@ -70,6 +79,9 @@ beforeEach(() => {
   mockedUpdate.mockResolvedValue({ ...SAMPLE, title: 'Renamed' });
   mockedReplace.mockResolvedValue(SAMPLE);
   mockedPublish.mockResolvedValue({ ...SAMPLE, visibility: 'public' });
+  mockedListArtPieces.mockResolvedValue([]);
+  mockedListProjects.mockResolvedValue([]);
+  mockedListProjects3D.mockResolvedValue([]);
 });
 
 describe('CollectionManagement', () => {
@@ -121,6 +133,27 @@ describe('CollectionManagement', () => {
       expect(mockedReplace).toHaveBeenCalledWith('collection-1', [
         { kind: 'project', id: 'project-2' },
         { kind: 'project', id: 'project-1' },
+      ]),
+    );
+  });
+
+  it('browses published pieces and adds the selected item', async () => {
+    mockedListProjects.mockResolvedValueOnce([
+      { id: 'published-2d', title: 'Published study', visibility: 'public' } as projectsApi.Project,
+      { id: 'private-2d', title: 'Private study', visibility: 'private' } as projectsApi.Project,
+    ]);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByRole('heading', { name: 'Edit collection' });
+    await user.click(screen.getByRole('button', { name: 'Browse published items' }));
+    await screen.findByRole('option', { name: /Published study/ });
+    expect(screen.queryByRole('option', { name: /Private study/ })).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Published item'), 'project:published-2d');
+    await user.click(screen.getByRole('button', { name: 'Add selected item' }));
+    await waitFor(() =>
+      expect(mockedReplace).toHaveBeenCalledWith('collection-1', [
+        { kind: 'project', id: 'project-1' },
+        { kind: 'project', id: 'published-2d' },
       ]),
     );
   });

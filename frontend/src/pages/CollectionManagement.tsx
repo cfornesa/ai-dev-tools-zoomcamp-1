@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
+import { listArtPieces } from '../api/artPieces';
+import { listProjects } from '../api/projects';
+import { listProjects3D } from '../api/projects3d';
 import {
   createCollection,
   deleteCollection,
@@ -14,6 +17,7 @@ import {
 } from '../api/collections';
 
 const ITEM_KINDS: Array<CollectionItem['kind']> = ['project', 'project3d', 'art_piece'];
+type PickerItem = { kind: CollectionItem['kind']; id: string; title: string };
 
 export default function CollectionManagement() {
   const auth = useAuth();
@@ -28,6 +32,11 @@ export default function CollectionManagement() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerItems, setPickerItems] = useState<PickerItem[]>([]);
+  const [pickerQuery, setPickerQuery] = useState('');
+  const [pickerSelection, setPickerSelection] = useState('');
 
   useEffect(() => {
     if (auth.status !== 'signed-in') return;
@@ -118,6 +127,52 @@ export default function CollectionManagement() {
     if (!selected || !itemId.trim()) return;
     await changeItems([...selected.items, { kind, id: itemId.trim() } as CollectionItem]);
     setItemId('');
+  }
+
+  async function openPicker() {
+    if (pickerOpen) {
+      setPickerOpen(false);
+      return;
+    }
+    setPickerOpen(true);
+    if (pickerItems.length > 0) return;
+    setPickerLoading(true);
+    try {
+      const [projects, projects3d, artPieces] = await Promise.all([
+        listProjects(),
+        listProjects3D(),
+        listArtPieces(),
+      ]);
+      setPickerItems([
+        ...projects
+          .filter((item) => item.visibility === 'public')
+          .map((item) => ({ kind: 'project' as const, id: item.id, title: item.title })),
+        ...projects3d
+          .filter((item) => item.visibility === 'public')
+          .map((item) => ({ kind: 'project3d' as const, id: item.id, title: item.title })),
+        ...artPieces
+          .filter((item) => item.status === 'published')
+          .map((item) => ({ kind: 'art_piece' as const, id: item.public_id, title: item.title })),
+      ]);
+    } catch {
+      setError('Could not load your published pieces. Use the UUID fallback below.');
+    } finally {
+      setPickerLoading(false);
+    }
+  }
+
+  const filteredPickerItems = pickerItems.filter((item) =>
+    `${item.title} ${item.id}`.toLowerCase().includes(pickerQuery.trim().toLowerCase()),
+  );
+
+  async function addPickerItem(event: React.FormEvent) {
+    event.preventDefault();
+    const item = pickerItems.find(
+      (candidate) => `${candidate.kind}:${candidate.id}` === pickerSelection,
+    );
+    if (!item || !selected) return;
+    await changeItems([...selected.items, { kind: item.kind, id: item.id } as CollectionItem]);
+    setPickerSelection('');
   }
 
   async function removeItem(item: CollectionItem) {
@@ -299,6 +354,50 @@ export default function CollectionManagement() {
                     Add item
                   </button>
                 </form>
+                <div className="collection-item-picker">
+                  <button type="button" onClick={() => void openPicker()} disabled={busy}>
+                    {pickerOpen ? 'Hide published item picker' : 'Browse published items'}
+                  </button>
+                  {pickerOpen && (
+                    <form
+                      aria-label="Browse published items"
+                      onSubmit={(event) => void addPickerItem(event)}
+                    >
+                      <label htmlFor="collection-item-search">Search published items</label>
+                      <input
+                        id="collection-item-search"
+                        value={pickerQuery}
+                        onChange={(event) => setPickerQuery(event.target.value)}
+                        placeholder="Search by title or ID"
+                      />
+                      {pickerLoading ? (
+                        <p role="status">Loading published items…</p>
+                      ) : (
+                        <>
+                          <label htmlFor="collection-item-picker-select">Published item</label>
+                          <select
+                            id="collection-item-picker-select"
+                            value={pickerSelection}
+                            onChange={(event) => setPickerSelection(event.target.value)}
+                          >
+                            <option value="">Choose an item</option>
+                            {filteredPickerItems.map((item) => (
+                              <option
+                                key={`${item.kind}:${item.id}`}
+                                value={`${item.kind}:${item.id}`}
+                              >
+                                {item.title} ({item.kind})
+                              </option>
+                            ))}
+                          </select>
+                          <button type="submit" disabled={busy || !pickerSelection}>
+                            Add selected item
+                          </button>
+                        </>
+                      )}
+                    </form>
+                  )}
+                </div>
               </section>
               <div className="collection-management-actions">
                 <button type="button" disabled={busy} onClick={() => void togglePublished()}>

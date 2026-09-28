@@ -94,6 +94,29 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #991 transaction ledger
+
+- **Issue:** [#991](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/991)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Changed the PieceCard thumbnail from decorative `alt=""`
+  to descriptive `alt={`Preview of ${title}`}` and updated the affected
+  accessibility queries in PieceCard/PublicGallery tests.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `1ec038a8` (`fix(a11y): describe PieceCard
+  thumbnail previews`).
+- **Checks:** Full frontend suite — 293 files, 3,074 tests passed; focused
+  PieceCard/PublicGallery suite — 2 files, 31 tests passed; formatting passed.
+- **QA matrix:** The image now exposes a descriptive accessible name while
+  fallback placeholders retain their existing accessible labels; no layout
+  behavior changed.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #990 transaction ledger
 
 - **Issue:** [#990](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/990)

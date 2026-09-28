@@ -462,19 +462,26 @@ export default function CollectionManagement() {
                     aria-label="Collection cover image"
                     value={selected.cover?.asset_id ?? ''}
                     onChange={(event) => {
-                      const asset = coverAssets.find((candidate) => candidate.asset_id === event.target.value);
+                      const asset = coverAssets.find(
+                        (candidate) => candidate.asset_id === event.target.value,
+                      );
                       void saveCover(asset ?? null);
                     }}
                   >
                     <option value="">No cover image</option>
                     {coverAssets.map((asset) => (
-                      <option key={`${asset.piece_public_id}:${asset.asset_id}`} value={asset.asset_id}>
+                      <option
+                        key={`${asset.piece_public_id}:${asset.asset_id}`}
+                        value={asset.asset_id}
+                      >
                         {asset.filename} ({asset.piece_kind})
                       </option>
                     ))}
                   </select>
                 )}
-                {selected.cover?.filename && <p role="status">Current cover: {selected.cover.filename}</p>}
+                {selected.cover?.filename && (
+                  <p role="status">Current cover: {selected.cover.filename}</p>
+                )}
               </section>
               <div className="collection-management-actions">
                 <button type="button" disabled={busy} onClick={() => void togglePublished()}>

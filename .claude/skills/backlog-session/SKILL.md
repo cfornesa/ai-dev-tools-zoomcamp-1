@@ -32,7 +32,9 @@ classify it as in-scope (fix and retest this issue) or out-of-scope (reuse or
 create/link a criterion-ready issue, record the dependency, and keep the
 current issue's own finite criteria separate). Do not absorb an unrelated gap
 into the current issue and do not create a cosmetic duplicate solely to make
-the issue count larger.
+the issue count larger. An out-of-scope item that gets filed this way is
+never implemented in this same session — see `docs/process.md`'s Discovery
+gate rule 4; file it, milestone it, link it, and move on.
 
 Production-readiness is a post-child assessment. It may classify missing
 evidence or create/link follow-up issues, but it never reopens or re-engineers

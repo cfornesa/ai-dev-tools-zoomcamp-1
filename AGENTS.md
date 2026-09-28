@@ -680,6 +680,15 @@ addition to this one, not instead of it.
   (task-distillation files/assigns, session-completion closes out) are in
   `docs/process.md`'s "Milestone assignment" section — read it before filing
   or closing any issue, don't re-derive this rule from memory.
+- **No same-session implementation of newly discovered work (owner-
+  mandated, 2026-09-28):** The discovery gate still requires filing a new,
+  criterion-ready, milestone-assigned issue for any genuinely new
+  actionable item found mid-work — it never permits implementing that item
+  in the same session that found it, no matter how small or obviously
+  correct it looks. File it, link it, move on; only issues already open
+  and groomed before the session began get worked. Full rule and rationale
+  in `docs/process.md`'s Discovery gate, rule 4. This binds every session
+  and every substituted implementation service equally.
 - **No regressions for new features:** Do not remove, relocate, disable, or
   contradict an established feature/specification while implementing a new
   feature. Preserve existing behavior and add explicit regression coverage

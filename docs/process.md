@@ -160,10 +160,23 @@ or review:
 3. Put the issue link in the backlog entry and the backlog/task reference in
    the issue body. If issue creation is unavailable, record that pending
    linkage explicitly; never silently discard it.
-4. Only then decide whether to implement the item now, defer it, or return
-   it to the user for prioritization.
+4. **Never implement a newly discovered/proposed item in the same session
+   that discovered it (owner-mandated, 2026-09-28).** File it — `PROPOSED`,
+   milestone-assigned per "Milestone assignment" below, linked from the
+   current issue's ledger — and stop there. Continue only with issues that
+   were already open and groomed before this session began. This applies
+   regardless of how small, obvious, or low-risk the newly found item looks;
+   there is no judgment-call exception. A prior session implementing
+   same-session discoveries immediately produced wasted tokens, broken
+   existing functionality, and inconsistent, unreviewed implementation
+   choices — the fix is procedural, not a matter of being more careful next
+   time. This rule binds every session and every substituted service
+   (Codex, Opencode, Ollama Cloud, or Claude) equally; a handoff prompt may
+   restate it, but may not loosen it.
 5. Before marking the current task complete, repeat the search for newly
-   discovered actionable items and reconcile every item.
+   discovered actionable items and reconcile every item — "reconcile" means
+   confirmed filed-and-deferred per rule 4 above, or explicitly classified
+   non-actionable; it does not mean implemented.
 6. When all intended tasks for a session are sufficiently complete, commit the changes as a single pull request, aptly named given the context of each session.
 
 ### Milestone assignment (owner rule, 2026-09-27)

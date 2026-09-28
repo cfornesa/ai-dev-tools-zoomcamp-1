@@ -635,6 +635,43 @@ describe('createSonicEngine mic input (issue #308)', () => {
     expect(engine.isMicEffectEnabled('distortion')).toBe(false);
   });
 
+  it.each([
+    ['sound → mic', false, false],
+    ['sound → mic → camera', true, false],
+    ['sound → mic → steer', false, true],
+    ['sound → mic → camera → steer', true, true],
+    ['sound → camera → steer → mic', true, true],
+    ['sound → camera → mic → steer', true, true],
+  ])(
+    'keeps the native mic flow alive for the %s interaction case',
+    async (_name, camera, steer) => {
+      const fake = createFakeToneModule();
+      const source = { connect: vi.fn(), disconnect: vi.fn() };
+      const rawContext = {
+        state: 'running',
+        createMediaStreamSource: vi.fn(() => source),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      };
+      Object.assign(fake.fakeModule, {
+        getContext: () => ({ rawContext, resume: vi.fn().mockResolvedValue(undefined) }),
+      });
+      const track = { readyState: 'live', stop: vi.fn() };
+      const stream = { getTracks: () => [track] } as unknown as MediaStream;
+      const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+      await engine.enable();
+      if (camera) engine.startCameraTheremin();
+      if (steer) engine.reportMovement({ dx: 1, dy: 0, dz: 0 });
+      await engine.connectMic(stream);
+
+      expect(rawContext.createMediaStreamSource).toHaveBeenCalledWith(stream);
+      expect(source.connect).toHaveBeenCalled();
+      expect(track.stop).not.toHaveBeenCalled();
+      engine.disconnectMic();
+      expect(track.stop).toHaveBeenCalledOnce();
+    },
+  );
+
   it('disconnectMic() releases the microphone and is a safe no-op if never connected', async () => {
     const fake = createFakeToneModule();
     const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));

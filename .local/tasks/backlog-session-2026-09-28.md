@@ -1166,3 +1166,32 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   process cannot register its macOS MachPortRendezvous service (`Permission
   denied (1100)`). No browser pass or production claim is made.
 - **New gaps:** None discovered.
+
+## Issue #916 transaction ledger
+
+- **Issue:** [#916](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/916)
+- **Phase:** QA passed locally; pending typed GitHub closure after evidence
+  reconciliation.
+- **Transaction:** Complete the microphone audio-flow verification boundary:
+  retain the reusable Playwright source-to-bus probe and owner hardware
+  checklist already present in the repository, and add the six named
+  microphone/camera/steering interaction regression cases.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineering and QA — Codex / GPT-5 substitution for the rostered
+  implementation/review services; no independent second-opinion model was
+  available.
+- **Changed files:** `frontend/src/audio/sonicEngine.test.ts` plus the
+  previously landed repository evidence in `frontend/e2e/support/audioFlow.ts`,
+  `frontend/e2e/artPieceSoundRuntime.spec.ts`,
+  `docs/microphone-hardware-acceptance.md`, and
+  `.agents/memory/camera-synthetic-verification-gap.md`.
+- **Checks:** Sonic-engine suite — 39 passed; frontend typecheck passed. The
+  six cases cover mic-only, mic/camera, mic/steer, camera/steer ordering, and
+  camera+steer permutations while asserting the native source remains
+  connected and the track is released on teardown. The regular generated-piece
+  Playwright spec uses `audioFlow.ts`; its live browser execution remains
+  subject to the host's known Chromium MachPortRendezvous boundary.
+- **Acceptance boundary:** The written Chrome macOS, Safari iOS, and Chrome
+  Android physical-device checklist remains explicitly owner-run; no hardware
+  pass is claimed.
+- **New gaps:** None discovered.

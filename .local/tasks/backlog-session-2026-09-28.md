@@ -94,6 +94,21 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1012 transaction ledger
+
+- **Issue:** [#1012](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1012)
+- **Phase:** BLOCKED pending owner decision; GitHub issue remains open.
+- **Transaction:** Add a draggable Three.js `TransformControls` gizmo to the
+  manual 3D editor while preserving numeric-field accessibility and
+  OrbitControls coexistence.
+- **Blocker:** The issue explicitly requires owner approval before using the
+  already-installed `three` package's `TransformControls` addon import
+  surface. No code was changed for this issue.
+- **Related completed work:** #1011's numeric snapping landed independently
+  in commit `c03c2ac6`.
+- **Next action:** Owner confirms whether to proceed with the existing Three.js
+  addon import; then implement and verify the gizmo.
+
 ## Issue #1015 transaction ledger
 
 - **Issue:** [#1015](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1015)

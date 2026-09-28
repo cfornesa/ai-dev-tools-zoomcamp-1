@@ -213,3 +213,20 @@ Issues #947–#952 were defined by Codex during #920 QA and refined here. #947 a
 | 4 | #950 background modeling decision + meaningful fixture | #948 |
 | 5 | #952 canvas panel color swatch and legibility | #950 |
 | 6 | #951 editor shell: File and Ask AI to control panel, Editor tools toggle (reverses #325/#348/#362 for 2D; order File · Save · Ask AI as the first controls of the panel, before Visual/Code, zoom and the rest; decided by the owner 2026-09-26) | #950 #952 |
+
+## Stream I — production data tooling (added 2026-09-26)
+
+| Q | Issue | Waits for |
+| --- | --- | --- |
+| I1 | #954 Replit production reference-import workflow (preview-first). Core landed in `cad0f924`; remaining: runbook, startup-failure policy, time bound, concurrency, behavioral tests, optional plan-bound write, #788 handoff contract | — |
+
+#788 (owner data action) must not run until #954 is terminal. #954 never performs the production import.
+
+## Stream J — recent frontend/backend findings (refined 2026-09-27)
+
+| J | Issue | Waits for |
+| --- | --- | --- |
+| 1 | #961 generated-art @ink refine must not touch source (confirmed: refine_art_piece has one code path for every mention kind) | — |
+| 2 | #962 source preview full width + right-aligned Undo/Redo (confirmed: textarea has no width rule at all, shared .behavior-card-field rule only targets select/input) | — |
+
+Both independent of every other stream; #961 unblocks #921's remaining browser-verification criteria.

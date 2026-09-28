@@ -7137,3 +7137,13 @@ Readiness remains `BLOCKED`. The owner must resolve the Replit gate/schema conce
 | #972 reconciliation | CLOSED | Real populated structured 2D regular-view browser evidence now exists at both required viewports; #941 remains open for embed, immersive/gallery, ZIP, and deployed evidence. |
 | Working tree boundary | PASS | Only the #972 implementation/test files were committed; unrelated `docs/distillation-2026-09-26-cross-surface-parity.md` remains unstaged and untouched. |
 | Next transaction | READY | Groom and implement #973 (structured 2D embed browser verification), then restore #976 before #974's immersive/gallery verification dependency. |
+
+## Transaction: #977 — 2026-09-28 — DISTILLED / GROOMED / ENGINEERING PENDING / OPEN
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | New owner clarification and regression evidence were duplicate-audited against #951, #952, #874, and #969. Existing issues did not cover merging publication status into File, placing File/Ask AI before zoom/Fit, unique icons, or the inert lower-left control. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Created closure-sized frontend issue with explicit File-dialog, control-row order, canvas-boundary, inert-control, responsive, and no-regression acceptance criteria. |
+| engineer | Pending | NOT STARTED | Per owner instruction, no product code may be touched after this distillation. |
+| qa-self-review | Pending | NOT STARTED | No #977 diff exists. |
+| reconcile / close | Pending | OPEN / HALTED BY OWNER | GitHub issue: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/977. Resume only in a separately authorized implementation session. |

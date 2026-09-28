@@ -15,3 +15,5 @@ db.sqlite3
 # gitignored there) -- a node_modules/ at the repo root only ever means an
 # npm/npx command accidentally ran from the wrong working directory.
 node_modules/
+
+LIGDOL_Creative_Continuity_Thesis.md

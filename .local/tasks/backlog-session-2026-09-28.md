@@ -542,3 +542,22 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   complete evidence; no workaround was attempted.
 - **New gaps:** The shared Chromium E2E setup/API timeout remains an existing
   environment boundary and is not attributed to this UI change.
+
+## Issue #1007 transaction ledger
+
+- **Issue:** [#1007](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1007)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local
+  reconciliation.
+- **Transaction:** Resolved by #977: the publish-status stage popover was
+  removed and publication status moved into File, eliminating the duplicate
+  `StageControlsPopover` icon condition without an additional code change.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `cd66b916` (#977).
+- **Checks:** #977 focused and full frontend suites, typecheck, lint, and
+  format-check passed; its Chromium setup boundary is recorded above.
+- **GitHub closure evidence:** The attempted linkage comment was rejected by
+  the authenticated connector's external-publication risk policy. The issue
+  was closed through the typed issue-state update; no workaround was attempted.
+- **New gaps:** None.

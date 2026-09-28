@@ -23,7 +23,7 @@ import {
   type SceneVersion,
 } from '../api/projects';
 import { useReducedMotion } from '../a11y/reducedMotion';
-import CameraControl, { type CameraStatus } from '../components/CameraControl';
+import CameraControl from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import InkModeButton from '../components/InkModeButton';
 import PieceStageToolbar from '../components/PieceStageToolbar';
@@ -69,23 +69,16 @@ import {
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { resourceOwnershipStatus } from '../auth/resourceOwnership';
 import { useAuth } from '../auth/useAuth';
-import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import {
-  applyCameraOverlayAction,
   captureCameraStill,
   clampCameraOverlayGeometry,
-  getCameraOverlayLayerOrder,
-  useCameraOverlayGeometry,
-  setCameraOverlayLayerOrder,
   type CameraOverlayExport,
-  type CameraOverlayGeometry,
 } from '../editor/cameraOverlayGeometry';
 import { useSnapSettings } from '../editor/snapSettings';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
 import { normalizeSceneLayers } from '../validation/scene';
 import { buildOutline, isEffectivelyLocked } from './sceneOutline';
 import { hitTestDrawioObjectAt } from './drawioDocument';
-import type { TrackingFrame } from '../tracking/types';
 import SnapPreferenceControl from './SnapPreferenceControl';
 import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
 import { useCloudBackupSchedule } from './useCloudBackupSchedule';
@@ -111,8 +104,8 @@ import {
   applyInkStrokes,
   inkStrokeBudget,
 } from '../ink/sceneInk';
-import { createPreviewTrackingSource } from './previewTrackingSource';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
+import { useCameraOverlay } from './useCameraOverlay';
 import { useFullscreenToggle } from './useFullscreenToggle';
 import { sceneHasActiveBehaviors, usePreviewRuntime } from './usePreviewRuntime';
 import { useSceneEditor, type SceneEditor } from './useSceneEditor';
@@ -1126,93 +1119,40 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     y: AlignmentGuide | null;
   }>({ x: null, y: null });
 
-  // Task 82: observed success signals `OnboardingHints.tsx` uses to
-  // auto-clear its camera-enable/pinch hints — sourced from the same
-  // `CameraControl`/`DemoControlsPanel` instances already rendered below,
-  // not a separate tracking subscription.
-  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
-  const [pinchEventCount, setPinchEventCount] = useState(0);
-
-  // Task 110 (issue #141): the live camera `MediaStream` `CameraControl`'s
-  // tracking provider already has open, forwarded here so the Preview
-  // overlay can display it via a plain <video> element — no second
-  // `getUserMedia` call. Task 118 (issue #147): `cameraOverlayOpacity`/
-  // mirrored are now persisted client-side (see `../editor/
-  // cameraOverlaySettings.ts`) instead of session-only state that reset to
-  // a hardcoded default every time the camera became active — re-enabling
-  // the camera now restores the last-chosen values.
-  const {
-    opacity: cameraOverlayOpacity,
-    mirrored: cameraOverlayMirrored,
-    setOpacity: setCameraOverlayOpacity,
-    setMirrored: setCameraOverlayMirrored,
-  } = useCameraOverlaySettings();
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
-  const cameraGeometryState = useCameraOverlayGeometry();
-  const { setGeometry: setCameraGeometry, ...cameraGeometry } = cameraGeometryState;
-  const cameraGeometryRef = useRef<CameraOverlayGeometry>(cameraGeometry);
-  cameraGeometryRef.current = cameraGeometry;
-  const cameraGestureRef = useRef<'move' | 'resize' | null>(null);
-  const cameraGestureStartRef = useRef({ x: 0, y: 0, geometry: cameraGeometry });
-  const cameraTrackingGestureRef = useRef<{
-    handId: string;
-    x: number;
-    y: number;
-  } | null>(null);
-  const [cameraLayerOrder, setCameraLayerOrder] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (cameraLayerOrder !== null || !workingCopy) return;
-    const orders = (Array.isArray(workingCopy.layers) ? workingCopy.layers : [])
-      .map((layer) => (layer as { order?: unknown }).order)
-      .filter((order): order is number => typeof order === 'number');
-    const defaultOrder = Math.max(-1, ...orders) + 1;
-    setCameraLayerOrder(getCameraOverlayLayerOrder(defaultOrder));
-  }, [cameraLayerOrder, workingCopy]);
-
-  const updateCameraLayerOrder = (order: number) => {
-    setCameraLayerOrder(order);
-    setCameraOverlayLayerOrder(order);
+  const cameraCanvas = (workingCopy?.canvas as { width?: number; height?: number } | undefined) ?? {
+    width: 800,
+    height: 600,
   };
-
-  useEffect(() => {
-    const videoEl = cameraVideoRef.current;
-    if (!videoEl) return;
-    videoEl.srcObject = cameraStream;
-    if (cameraStream) {
-      // `Promise.resolve(...)` normalizes jsdom's non-conformant
-      // `HTMLMediaElement.play()` (returns `undefined`, not a `Promise`,
-      // and logs its own "Not implemented" notice) into a real promise,
-      // so this `.catch` is safe in tests without changing real-browser
-      // behavior (where `.play()` already always returns a `Promise`).
-      void Promise.resolve(videoEl.play()).catch(() => {
-        // Autoplay can be rejected in some environments; the video element
-        // still renders (just paused) and this is not a scene-breaking
-        // failure worth surfacing as `previewError`.
-      });
-    }
-    // `cameraStream` is set via `onStreamChange` well before `cameraStatus`
-    // ever reaches 'active' (mediapipeProvider.ts acquires the stream
-    // before the recognizer is ready or any frame flows) -- but the
-    // `<video>` element below is only ever mounted while
-    // `cameraStatus === 'active'`. Without `cameraStatus` in this
-    // dependency array, this effect fires once while the element doesn't
-    // exist yet (`cameraVideoRef.current` is null, so it silently no-ops)
-    // and never fires again once `cameraStatus` finally flips to 'active'
-    // and the element actually mounts -- `srcObject` would never get set,
-    // leaving the overlay permanently blank despite a live stream. Live-
-    // verified: this exact bug reproduced (video element present with
-    // `hasSrcObject: false`) before this dependency was added.
-  }, [cameraStream, cameraStatus]);
-
-  // Task 83 (issue #83): the shared "current tracking frame" mailbox the
-  // live preview runtime loop reads from — see `previewTrackingSource.ts`'s
-  // own doc comment for why this taps into the SAME `CameraControl`/
-  // `DemoControlsPanel` frame streams already rendered below, rather than
-  // creating a second, competing `TrackingProvider` instance. Created once
-  // (`useRef`) and never replaced for the life of this component.
-  const trackingSourceRef = useRef(createPreviewTrackingSource());
+  const {
+    cameraStatus,
+    pinchEventCount,
+    setPinchEventCount,
+    cameraStream,
+    setCameraStream,
+    cameraVideoRef,
+    cameraGeometry,
+    cameraGeometryRef,
+    cameraOverlayOpacity,
+    cameraOverlayMirrored,
+    setCameraOverlayOpacity,
+    setCameraOverlayMirrored,
+    cameraLayerOrder,
+    effectiveCameraLayerOrder,
+    cameraOverlayStatus,
+    trackingSourceRef,
+    updateCameraLayerOrder,
+    handleCameraTrackingFrame,
+    beginCameraGesture,
+    moveCameraGesture,
+    endCameraGesture,
+    handleCameraKeyDown,
+    handleCameraStatusChange,
+  } = useCameraOverlay(
+    workingCopy,
+    cameraCanvas.width ?? 800,
+    cameraCanvas.height ?? 600,
+    snapSettings.gridEnabled,
+  );
   const reducedMotion = useReducedMotion();
 
   // Task 41: the working/saved distinction, both visual (the status text
@@ -1629,8 +1569,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     setInkError(null);
     setInkSession({ snapshotUrl });
   };
-  const [cameraOverlayStatus, setCameraOverlayStatus] = useState<string | null>(null);
-
   // Issue #159: Visual/Code is a sub-toggle inside the Preview panel
   // (implementer's-call option from the issue) rather than a new entry in
   // `EditorPanelSwitcher`'s narrow-viewport tab list — Preview is never
@@ -2324,164 +2262,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   const canvasHeight = canvas.height ?? 600;
   canvasSizeRef.current = { width: canvasWidth, height: canvasHeight };
 
-  const updateCameraGeometry = (next: CameraOverlayGeometry, status = true) => {
-    const clamped = clampCameraOverlayGeometry(next, canvasWidth, canvasHeight);
-    cameraGeometryRef.current = clamped;
-    setCameraGeometry(clamped);
-    if (status)
-      setCameraOverlayStatus(
-        `Camera overlay: ${Math.round(clamped.width * canvasWidth)} by ${Math.round(clamped.height * canvasHeight)} pixels.`,
-      );
-  };
-
-  const handleCameraTrackingFrame = (frame: TrackingFrame) => {
-    const handFor = (handId: string) =>
-      frame.hands.find((hand) => hand.id === handId) ?? frame.hands[0];
-    const indexTip = (hand: (typeof frame.hands)[number] | undefined) => hand?.landmarks[8];
-
-    for (const event of frame.events) {
-      if (event.type === 'pinchStart' && !cameraTrackingGestureRef.current) {
-        const hand = handFor(event.handId);
-        const tip = indexTip(hand);
-        if (hand && tip) {
-          cameraTrackingGestureRef.current = { handId: hand.id, x: tip.x, y: tip.y };
-        }
-      } else if (
-        (event.type === 'pinchEnd' || event.type === 'handDisappear') &&
-        cameraTrackingGestureRef.current?.handId === event.handId
-      ) {
-        cameraTrackingGestureRef.current = null;
-      }
-    }
-
-    const gesture = cameraTrackingGestureRef.current;
-    if (!gesture) return;
-    const hand = handFor(gesture.handId);
-    const tip = indexTip(hand);
-    if (!tip) return;
-    const { width, height } = canvasSizeRef.current;
-    const next = applyCameraOverlayAction(
-      cameraGeometryRef.current,
-      {
-        type: 'move',
-        delta: { x: (tip.x - gesture.x) * width, y: (tip.y - gesture.y) * height },
-      },
-      width,
-      height,
-      snapSettings.gridEnabled,
-    );
-    updateCameraGeometry(next);
-    cameraTrackingGestureRef.current = { handId: hand?.id ?? gesture.handId, x: tip.x, y: tip.y };
-  };
-
-  const beginCameraGesture = (event: ReactPointerEvent, kind: 'move' | 'resize') => {
-    event.stopPropagation();
-    event.preventDefault();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    cameraGestureRef.current = kind;
-    cameraGestureStartRef.current = {
-      x: event.clientX,
-      y: event.clientY,
-      geometry: cameraGeometryRef.current,
-    };
-  };
-
-  const moveCameraGesture = (event: ReactPointerEvent) => {
-    const kind = cameraGestureRef.current;
-    if (!kind) return;
-    event.stopPropagation();
-    const start = cameraGestureStartRef.current;
-    const next =
-      kind === 'move'
-        ? applyCameraOverlayAction(
-            start.geometry,
-            {
-              type: 'move',
-              delta: { x: event.clientX - start.x, y: event.clientY - start.y },
-            },
-            canvasWidth,
-            canvasHeight,
-            snapSettings.gridEnabled,
-          )
-        : applyCameraOverlayAction(
-            start.geometry,
-            { type: 'resize', deltaX: event.clientX - start.x },
-            canvasWidth,
-            canvasHeight,
-          );
-    updateCameraGeometry(next);
-  };
-
-  const endCameraGesture = (event: ReactPointerEvent) => {
-    if (!cameraGestureRef.current) return;
-    event.stopPropagation();
-    cameraGestureRef.current = null;
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-  };
-
-  const handleCameraKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const step = event.shiftKey ? 0.05 : 0.02;
-    let next = cameraGeometryRef.current;
-    if (event.key === 'ArrowLeft')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'move', delta: { x: -canvasWidth * step, y: 0 } },
-        canvasWidth,
-        canvasHeight,
-        snapSettings.gridEnabled,
-      );
-    else if (event.key === 'ArrowRight')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'move', delta: { x: canvasWidth * step, y: 0 } },
-        canvasWidth,
-        canvasHeight,
-        snapSettings.gridEnabled,
-      );
-    else if (event.key === 'ArrowUp')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'move', delta: { x: 0, y: -canvasHeight * step } },
-        canvasWidth,
-        canvasHeight,
-        snapSettings.gridEnabled,
-      );
-    else if (event.key === 'ArrowDown')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'move', delta: { x: 0, y: canvasHeight * step } },
-        canvasWidth,
-        canvasHeight,
-        snapSettings.gridEnabled,
-      );
-    else if (event.key === '+' || event.key === '=')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'resize', deltaX: canvasWidth * step },
-        canvasWidth,
-        canvasHeight,
-      );
-    else if (event.key === '-' || event.key === '_')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'resize', deltaX: -canvasWidth * step },
-        canvasWidth,
-        canvasHeight,
-      );
-    else return;
-    event.preventDefault();
-    event.stopPropagation();
-    updateCameraGeometry(next);
-  };
-
-  const effectiveCameraLayerOrder =
-    cameraLayerOrder ??
-    Math.max(
-      0,
-      ...(Array.isArray(workingCopy?.layers)
-        ? workingCopy.layers.map((layer) => Number((layer as { order?: number }).order) || 0)
-        : [0]),
-    ) + 1;
   const renderedCameraGeometry = clampCameraOverlayGeometry(
     cameraGeometry,
     canvasWidth,
@@ -3946,11 +3726,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   controlsControl={
                     <StageControlsPopover>
                       <CameraControl
-                        onStatusChange={(status) => {
-                          setCameraStatus(status);
-                          if (status !== 'active') cameraTrackingGestureRef.current = null;
-                          trackingSourceRef.current.setCameraActive(status === 'active');
-                        }}
+                        onStatusChange={handleCameraStatusChange}
                         onFrame={(frame) => {
                           trackingSourceRef.current.reportCameraFrame(frame);
                           handleCameraTrackingFrame(frame);

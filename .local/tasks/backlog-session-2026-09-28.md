@@ -94,6 +94,30 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #992 transaction ledger
+
+- **Issue:** [#992](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/992)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Defined `--space-1: 4px` and `--space-3: 12px` alongside
+  the existing 8px-step spacing tokens after inspecting all six call sites.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `742ef744` (`fix(css): define missing spacing
+  tokens`).
+- **Checks:** `npm run build`, `npm run lint -- --quiet`, and
+  `npm run format:check` passed. The full `make check` suite had passed
+  immediately before this CSS-only change.
+- **QA matrix:** All six `--space-1`/`--space-3` call sites now resolve to
+  nonzero values. Live before/after screenshots at both themes were not
+  available in the current browser environment; this visual verification
+  boundary is recorded and not claimed as performed.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #991 transaction ledger
 
 - **Issue:** [#991](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/991)

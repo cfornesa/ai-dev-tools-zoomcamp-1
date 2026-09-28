@@ -94,6 +94,29 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #1015 transaction ledger
+
+- **Issue:** [#1015](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1015)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Add native drag-and-drop item reordering to collection
+  management while preserving the existing keyboard Move up/Move down path.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `cb1a2cdb` (`feat(collections): add drag reorder`).
+- **Changed files:** `frontend/src/pages/CollectionManagement.tsx`,
+  `frontend/src/pages/CollectionManagement.test.tsx`.
+- **Checks:** Focused Vitest — 3 passed; typecheck, lint, and format-check
+  passed.
+- **QA matrix:** Drag/drop computes the same full ordered list and calls the
+  existing `replace_items` API; the existing Move up/Move down and Remove
+  controls remain present and unchanged.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.
+
 ## Issue #1011 transaction ledger
 
 - **Issue:** [#1011](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1011)

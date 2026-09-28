@@ -74,6 +74,27 @@ describe('PublicCollections', () => {
     expect(mockedFetchPublicCollections).toHaveBeenNthCalledWith(2, 'next-page');
   });
 
+  it('lets visitors choose a supported sort mode and restarts from the first page', async () => {
+    mockedFetchPublicCollections
+      .mockResolvedValueOnce({
+        results: [collection()],
+        next_cursor: null,
+        has_more: false,
+      })
+      .mockResolvedValueOnce({
+        results: [collection({ title: 'Most curated items' })],
+        next_cursor: null,
+        has_more: false,
+      });
+
+    renderPage();
+    await screen.findByRole('heading', { name: 'Motion studies' });
+    await userEvent.setup().selectOptions(screen.getByLabelText('Sort collections'), 'item_count');
+
+    expect(await screen.findByRole('heading', { name: 'Most curated items' })).toBeInTheDocument();
+    expect(mockedFetchPublicCollections).toHaveBeenNthCalledWith(2, undefined, 'item_count');
+  });
+
   it('renders a clear empty state when no public collections exist', async () => {
     mockedFetchPublicCollections.mockResolvedValue({
       results: [],

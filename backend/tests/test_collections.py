@@ -585,6 +585,75 @@ def test_public_list_returns_newest_first_with_exact_safe_card_payload(
 
 
 @pytest.mark.django_db
+def test_public_list_supports_oldest_and_item_count_sort_modes(
+    owner_client, anonymous_client, owner
+):
+    oldest = _create_collection(owner_client, "Oldest collection")
+    newest = _create_collection(owner_client, "Newest collection")
+    counted = _create_collection(owner_client, "Most items collection")
+    projects = [_published_project(owner, f"Counted project {index}") for index in range(2)]
+    for collection in (oldest, newest, counted):
+        assert (
+            owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+            == 200
+        )
+    collection = Collection.objects.get(public_id=counted["id"])
+    CollectionItem.objects.bulk_create(
+        [
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT,
+                item_id=project.public_id,
+                position=index,
+            )
+            for index, project in enumerate(projects)
+        ]
+    )
+    now = timezone.now()
+    Collection.objects.filter(public_id=oldest["id"]).update(published_at=now)
+    Collection.objects.filter(public_id=newest["id"]).update(
+        published_at=now + timedelta(seconds=2)
+    )
+    Collection.objects.filter(public_id=counted["id"]).update(
+        published_at=now + timedelta(seconds=1)
+    )
+
+    oldest_response = anonymous_client.get("/api/collections/public/?sort=oldest")
+    assert oldest_response.status_code == 200
+    assert oldest_response.json()["results"][0]["title"] == "Oldest collection"
+
+    count_response = anonymous_client.get("/api/collections/public/?sort=item_count")
+    assert count_response.status_code == 200
+    assert count_response.json()["results"][0]["title"] == "Most items collection"
+    assert count_response.json()["results"][0]["item_count"] == 2
+
+
+@pytest.mark.django_db
+def test_public_collection_sort_and_cursor_modes_are_bound(owner_client, anonymous_client):
+    first = _create_collection(owner_client, "First")
+    second = _create_collection(owner_client, "Second")
+    for collection in (first, second):
+        assert (
+            owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+            == 200
+        )
+    response = anonymous_client.get("/api/collections/public/?sort=oldest&page_size=1")
+    assert response.status_code == 200
+    cursor = response.json()["next_cursor"]
+    assert cursor
+    mismatched = anonymous_client.get(f"/api/collections/public/?sort=newest&cursor={cursor}")
+    assert mismatched.status_code == 400
+    assert "cursor" in mismatched.json()["errors"]
+
+
+@pytest.mark.django_db
+def test_public_collection_rejects_unsupported_sort(owner_client, anonymous_client):
+    response = anonymous_client.get("/api/collections/public/?sort=views")
+    assert response.status_code == 400
+    assert response.json()["errors"]["sort"]
+
+
+@pytest.mark.django_db
 def test_public_list_cursor_round_trip_is_keyset_paginated(owner_client, anonymous_client):
     collections = [_create_collection(owner_client, f"Collection {index}") for index in range(3)]
     for index, collection in enumerate(collections):

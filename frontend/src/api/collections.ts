@@ -57,9 +57,15 @@ export type PublicCollectionIndexPage = {
   has_more: boolean;
 };
 
-export function fetchPublicCollections(cursor?: string): Promise<PublicCollectionIndexPage> {
+export type PublicCollectionSort = 'newest' | 'oldest' | 'item_count';
+
+export function fetchPublicCollections(
+  cursor?: string,
+  sort: PublicCollectionSort = 'newest',
+): Promise<PublicCollectionIndexPage> {
   const params = new URLSearchParams();
   if (cursor) params.set('cursor', cursor);
+  if (sort !== 'newest') params.set('sort', sort);
   const query = params.toString();
   return apiFetch<PublicCollectionIndexPage>(`/api/collections/public/${query ? `?${query}` : ''}`);
 }

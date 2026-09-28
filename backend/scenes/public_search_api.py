@@ -1,24 +1,76 @@
 """Anonymous public gallery search, separated by account/content scope (#581)."""
 
-from django.db.models import Prefetch, Q
+import base64
+import binascii
+from datetime import datetime
+
+from django.db.models import Count, Prefetch, Q
+from django.utils.dateparse import parse_datetime
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.art_piece_persistence import eligible_art_pieces
 from scenes.gallery import (
     DEFAULT_PAGE_SIZE,
-    InvalidCursor,
     clamp_page_size,
-    decode_gallery_cursor,
     eligible_collections,
     eligible_projects,
     eligible_projects3d,
-    encode_gallery_cursor,
-    filter_after_gallery_cursor,
 )
 from scenes.models import Collection, CollectionItem, PublicProfile
 from scenes.public_identity import public_author_handle, public_author_name
 from scenes.serializers import PublicGalleryItemSerializer
+
+COLLECTION_SORTS = frozenset(("newest", "oldest", "item_count"))
+
+
+def _encode_collection_cursor(sort: str, collection: Collection) -> str:
+    count = getattr(collection, "_index_item_count", None)
+    if collection.published_at is None:
+        raise ValueError("cannot cursor a collection without a publication timestamp")
+    raw = "|".join(
+        (
+            "collections",
+            sort,
+            str(count) if sort == "item_count" else "",
+            collection.published_at.isoformat(),
+            str(collection.id),
+        )
+    )
+    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
+
+
+def _decode_collection_cursor(value: str) -> tuple[str, int, datetime, int]:
+    try:
+        decoded = base64.urlsafe_b64decode(value.encode("ascii")).decode("utf-8")
+        prefix, sort, count_raw, published_at_raw, id_raw = decoded.split("|", 4)
+        published_at = parse_datetime(published_at_raw)
+        if prefix != "collections" or sort not in COLLECTION_SORTS or published_at is None:
+            raise ValueError
+        count = int(count_raw) if sort == "item_count" else 0
+        return sort, count, published_at, int(id_raw)
+    except (ValueError, TypeError, UnicodeDecodeError, binascii.Error) as exc:
+        raise ValueError("invalid collection cursor") from exc
+
+
+def _after_collection_cursor(queryset, sort: str, count: int, published_at, object_id: int):
+    if sort == "newest":
+        return queryset.filter(
+            Q(published_at__lt=published_at) | Q(published_at=published_at, id__lt=object_id)
+        )
+    if sort == "oldest":
+        return queryset.filter(
+            Q(published_at__gt=published_at) | Q(published_at=published_at, id__gt=object_id)
+        )
+    return queryset.filter(
+        Q(_index_item_count__lt=count)
+        | Q(_index_item_count=count, published_at__lt=published_at)
+        | Q(
+            _index_item_count=count,
+            published_at=published_at,
+            id__lt=object_id,
+        )
+    )
 
 
 def _public_collection_index_payloads(collections):
@@ -80,12 +132,18 @@ def _public_collection_index_payloads(collections):
 
 
 class PublicCollectionListView(APIView):
-    """Anonymous newest-first public collection index (#1028)."""
+    """Anonymous public collection index with bounded, cursor-safe sorting (#1030)."""
 
     authentication_classes: list = []
     permission_classes: list = []
 
     def get(self, request):
+        sort = request.query_params.get("sort", "newest")
+        if sort not in COLLECTION_SORTS:
+            return Response(
+                {"errors": {"sort": ["Must be one of: newest, oldest, item_count."]}},
+                status=400,
+            )
         page_size_raw = request.query_params.get("page_size")
         if page_size_raw is not None:
             try:
@@ -108,15 +166,27 @@ class PublicCollectionListView(APIView):
                 )
             )
         )
+        if sort == "item_count":
+            queryset = queryset.annotate(_index_item_count=Count("items", distinct=True))
+            queryset = queryset.order_by("-_index_item_count", "-published_at", "-id")
+        elif sort == "oldest":
+            queryset = queryset.order_by("published_at", "id")
+        else:
+            queryset = queryset.order_by("-published_at", "-id")
+
         cursor = request.query_params.get("cursor")
         if cursor:
             try:
-                published_at, kind, object_id, cursor_type = decode_gallery_cursor(cursor)
-            except InvalidCursor:
+                cursor_sort, cursor_count, cursor_published_at, cursor_id = (
+                    _decode_collection_cursor(cursor)
+                )
+                if cursor_sort != sort:
+                    raise ValueError
+            except ValueError:
                 return Response({"errors": {"cursor": ["Invalid or expired cursor."]}}, status=400)
-            if kind != "collection" or cursor_type != "collections":
-                return Response({"errors": {"cursor": ["Invalid or expired cursor."]}}, status=400)
-            queryset = filter_after_gallery_cursor(queryset, published_at, kind, object_id)
+            queryset = _after_collection_cursor(
+                queryset, sort, cursor_count, cursor_published_at, cursor_id
+            )
 
         page = list(queryset[: page_size + 1])
         has_more = len(page) > page_size
@@ -124,9 +194,7 @@ class PublicCollectionListView(APIView):
         next_cursor = None
         if has_more and page:
             last = page[-1]
-            next_cursor = encode_gallery_cursor(
-                last.published_at, "collection", last.id, "collections"
-            )
+            next_cursor = _encode_collection_cursor(sort, last)
 
         return Response(
             {

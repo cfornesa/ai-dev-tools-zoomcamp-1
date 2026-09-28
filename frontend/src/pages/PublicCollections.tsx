@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { fetchPublicCollections, type PublicCollectionIndexItem } from '../api/collections';
+import {
+  fetchPublicCollections,
+  type PublicCollectionIndexItem,
+  type PublicCollectionSort,
+} from '../api/collections';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -31,12 +35,13 @@ export default function PublicCollections() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const [sort, setSort] = useState<PublicCollectionSort>('newest');
 
   const loadFirstPage = useCallback(() => {
     let cancelled = false;
     setLoadState('loading');
     setLoadMoreError(null);
-    fetchPublicCollections()
+    (sort === 'newest' ? fetchPublicCollections() : fetchPublicCollections(undefined, sort))
       .then((page) => {
         if (cancelled) return;
         setCollections(page.results);
@@ -50,7 +55,7 @@ export default function PublicCollections() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [sort]);
 
   useEffect(() => loadFirstPage(), [loadFirstPage]);
 
@@ -59,7 +64,10 @@ export default function PublicCollections() {
     setLoadingMore(true);
     setLoadMoreError(null);
     try {
-      const page = await fetchPublicCollections(nextCursor);
+      const page =
+        sort === 'newest'
+          ? await fetchPublicCollections(nextCursor)
+          : await fetchPublicCollections(nextCursor, sort);
       setCollections((current) => {
         const seenIds = new Set(current.map((collection) => collection.id));
         return [...current, ...page.results.filter((collection) => !seenIds.has(collection.id))];
@@ -99,6 +107,16 @@ export default function PublicCollections() {
       aria-labelledby="public-collections-heading"
     >
       <h2 id="public-collections-heading">Public collections</h2>
+      <label htmlFor="public-collections-sort">Sort collections</label>
+      <select
+        id="public-collections-sort"
+        value={sort}
+        onChange={(event) => setSort(event.target.value as PublicCollectionSort)}
+      >
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="item_count">Most items</option>
+      </select>
       {collections.length === 0 ? (
         <p role="status">No public collections yet. Check back soon.</p>
       ) : (

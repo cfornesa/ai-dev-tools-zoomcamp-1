@@ -1199,8 +1199,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
 ## Issue #911 transaction ledger
 
 - **Issue:** [#911](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/911)
-- **Phase:** QA passed locally; pending typed GitHub closure after evidence
-  reconciliation.
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA
+  and evidence reconciliation.
 - **Transaction:** Route the regular generated-piece live microphone through the
   shared SonicEngine, enable the parent sound engine from the microphone gesture
   when needed, expose the supported microphone effects, and provide categorized
@@ -1210,7 +1210,8 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   no. Engineering and QA — Codex / GPT-5 substitution for the rostered
   implementation/review services; no independent second-opinion model was
   available.
-- **Implementation commit:** Pending commit after this ledger update.
+- **Implementation commit:** `5e2b607c` (`feat(audio): route generated-piece
+  microphone through engine`).
 - **Changed files:** `frontend/src/pages/PieceStageControls.tsx`.
 - **Checks:** Focused audio/viewer tests — 48 passed; SonicEngine interaction
   matrix — 39 passed; full frontend Vitest — 295 files / 3,087 tests passed;

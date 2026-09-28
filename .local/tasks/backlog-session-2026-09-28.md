@@ -174,6 +174,36 @@ parent whose children own the remaining route/artifact evidence.
   recorded against #975 rather than silently filed as an unmilestoned new
   issue or implemented in this goal.
 
+## Terminal-status audit — 2026-09-28
+
+The current open inventory remains 33 issues. Every row now has a terminal
+workflow status; open GitHub state is preserved where the work is blocked or
+handed off.
+
+- **Blocked:** #1012 (owner approval for installed Three.js addon), #1016
+  (no server-backed collection media contract), #906/#1004/#1005/#1006/#976
+  (owner/irreversible decisions), #926 (real-provider credential), #946
+  (owner-run production action), #916 (matrix cannot pass until routing
+  children are implemented), #973 (approved Playwright Chromium host
+  boundary), and #975 (missing ZIP browser harness plus runner boundary).
+- **Dependency-blocked:** #788 (supported production publication/runtime),
+  #847 (public media/audio contract), #941 (remaining route/artifact child
+  evidence), #942/#944/#945/#973/#974/#975 (the #941 chain), and #911–#915
+  (the #916/audio-routing chain). #974 additionally waits on #976.
+- **Handed off:** #1019 (backend/frontend child split), #987/#988 (tracking
+  parents), #995/#996 (tracking/scoping children), #1013 (3D grammar design
+  children), and same-goal deferred #1020/#1021. No newly created issue was
+  implemented.
+- **Verification-only follow-up:** #859 is unblocked by its named issue
+  prerequisites, but remains open because the six-engine serene fixture and
+  full cross-surface Chrome evidence are not present in the current local
+  state; the known Playwright Chromium launcher boundary also prevents the
+  named automated runner. It is not counted as passed or silently closed.
+
+No issue is marked completed by this audit. The exact focused evidence and
+next action for the two newly QA-exercised media issues are recorded above;
+all other rows retain their issue-specific owner/dependency boundaries.
+
 ## Distillation manifest
 
 Project: `cfornesa/ai-dev-tools-zoomcamp-1` on

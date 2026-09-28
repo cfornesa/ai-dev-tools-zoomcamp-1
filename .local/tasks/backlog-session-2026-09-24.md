@@ -7119,3 +7119,21 @@ wrapper publication once the secure push credential is available through the
 | #788 production action | NOT RUN | No production preview, snapshot refresh, importer invocation, database write, or live verification occurred. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5861471417. |
 
 Readiness remains `BLOCKED`. The owner must resolve the Replit gate/schema concern through supported controls before the authorized wrapper publication and one-time production workflow can be reconsidered.
+
+## Transaction: #972 regular viewer public media browser verification — 2026-09-28 — DISTILLED / GROOMED / ENGINEERED / QA PASS / CLOSED
+
+| Stage | Service / model / effort | Result | Evidence |
+|---|---|---|---|
+| distill | Codex / GPT-5 / medium; task-distillation substitution | PASS | #941's combined regular/embed/immersive/ZIP contract was split into independently observable child issues; #972 owns populated structured 2D regular-view browser verification only. |
+| groom | Codex / GPT-5 / medium; issue-scoping substitution | PASS | Criterion requires a disposable PostgreSQL fixture, real owner-scoped media response, 1280x900 and 375x812 Chromium coverage, overflow boundary, foreign/private 404 checks, and no production claims. |
+| engineer | Codex / GPT-5 / medium; implementation-complex substitution for Ollama Cloud kimi-k3 | PASS | Commit `e8d6ae6f`; added repeatable `public-media-create/cleanup` fixture actions, protected Scene.current_version cleanup, stale-asset cleanup, backend lifecycle coverage, and populated regular-view Playwright coverage. |
+| qa-self-review | Codex / GPT-5 / medium; rostered Claude substitution; independent stage-3 unavailable and not credited | PASS | Backend fixture test 5 passed; ruff passed; rebuilt Compose Chromium `publicMediaAssetsRegular.spec.ts` 2/2 passed at 1280x900 and 375x812; screenshots inspected; `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed with backend 1761 passed/39 skipped and frontend 293 files/3074 tests. |
+| reconcile / close | Codex / GPT-5 / medium | CLOSED | QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/972#issuecomment-5861755078. Safe push reached `origin/main` at `e8d6ae6f02c49ee622e386741274f439e2e78566`. Evidence is local disposable Compose only; no production/shared database write. |
+
+## Distillation refresh — 2026-09-28 — post-#972
+
+| Check | Result | Evidence / next action |
+|---|---|---|
+| #972 reconciliation | CLOSED | Real populated structured 2D regular-view browser evidence now exists at both required viewports; #941 remains open for embed, immersive/gallery, ZIP, and deployed evidence. |
+| Working tree boundary | PASS | Only the #972 implementation/test files were committed; unrelated `docs/distillation-2026-09-26-cross-surface-parity.md` remains unstaged and untouched. |
+| Next transaction | READY | Groom and implement #973 (structured 2D embed browser verification), then restore #976 before #974's immersive/gallery verification dependency. |

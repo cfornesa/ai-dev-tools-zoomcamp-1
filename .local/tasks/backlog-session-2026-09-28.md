@@ -361,3 +361,29 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   closed through the typed issue-state update after this ledger captured the
   complete evidence; no workaround was attempted.
 - **New gaps:** None.
+
+## Issue #998 transaction ledger
+
+- **Issue:** [#998](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/998)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Replace per-output `findIndex` lookups in
+  `applyRuntimeOutputsToScene` with hoisted shape/group ID maps.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `2beaa84d` (`perf(runtime): index scene outputs by id`).
+- **Changed files:** `frontend/src/runtime/behaviorRuntime.ts`.
+- **Checks:** `npm exec vitest run src/runtime/behaviorRuntime.test.ts` — 193
+  passed; `npm run typecheck`; `npm run lint -- --quiet`; `npm run format:check`.
+  Elevated `npm run bench:runtime` passed all 3 scenarios: `maxScene` avg
+  6.08ms/p95 6.60ms; `withinLimitsScene` avg 2.27ms/p95 3.00ms; forced
+  over-budget recovery passed.
+- **QA matrix:** Public renderer wiring tests remained green and benchmark
+  fixtures stayed within documented thresholds. The manual live interactive
+  piece check was not available; this is recorded as an environment boundary,
+  not claimed as performed.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.

@@ -27,6 +27,7 @@ export default function CollectionManagement() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (auth.status !== 'signed-in') return;
@@ -137,6 +138,15 @@ export default function CollectionManagement() {
     await changeItems(next);
   }
 
+  async function dropItem(targetIndex: number) {
+    if (!selected || draggedIndex === null || draggedIndex === targetIndex) return;
+    const next = [...selected.items];
+    const [moved] = next.splice(draggedIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    setDraggedIndex(null);
+    await changeItems(next);
+  }
+
   async function togglePublished() {
     if (!selected) return;
     await run(
@@ -231,7 +241,15 @@ export default function CollectionManagement() {
                 {selected.items.length === 0 && <p>No items in this collection yet.</p>}
                 <ol>
                   {selected.items.map((item, index) => (
-                    <li key={`${item.kind}-${item.id}`}>
+                    <li
+                      key={`${item.kind}-${item.id}`}
+                      draggable={!busy}
+                      onDragStart={() => setDraggedIndex(index)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => void dropItem(index)}
+                      onDragEnd={() => setDraggedIndex(null)}
+                      data-dragging={draggedIndex === index ? 'true' : undefined}
+                    >
                       <span>
                         {item.title || item.id} ({item.label})
                       </span>

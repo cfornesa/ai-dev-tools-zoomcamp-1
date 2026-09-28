@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -104,5 +104,24 @@ describe('CollectionManagement', () => {
     await user.click(screen.getByRole('button', { name: 'Create collection' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Enter a collection title first.');
     expect(collectionsApi.createCollection).not.toHaveBeenCalled();
+  });
+
+  it('reorders items with drag and drop while keeping keyboard buttons', async () => {
+    const second = { ...SAMPLE.items[0], id: 'project-2', title: 'Second work', position: 1 };
+    mockedFetch.mockResolvedValueOnce([{ ...SAMPLE, items: [SAMPLE.items[0], second] }]);
+    renderPage();
+    await screen.findByRole('heading', { name: 'Edit collection' });
+    const items = screen.getAllByRole('listitem').filter((item) => item.hasAttribute('draggable'));
+    expect(items).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Move project-2 up' })).toBeInTheDocument();
+    fireEvent.dragStart(items[1]);
+    fireEvent.dragOver(items[0]);
+    fireEvent.drop(items[0]);
+    await waitFor(() =>
+      expect(mockedReplace).toHaveBeenCalledWith('collection-1', [
+        { kind: 'project', id: 'project-2' },
+        { kind: 'project', id: 'project-1' },
+      ]),
+    );
   });
 });

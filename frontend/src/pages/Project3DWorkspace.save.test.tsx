@@ -115,6 +115,7 @@ describe('Project3DWorkspace Save action', () => {
 
     renderWorkspace();
     await screen.findByTestId('project3d-save-status');
+    expect(screen.getByTestId('project3d-save-button')).toBeInTheDocument();
     await screen.findByTestId('scene3d-preview-unavailable');
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 

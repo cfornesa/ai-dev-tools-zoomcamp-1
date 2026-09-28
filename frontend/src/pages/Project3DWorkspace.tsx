@@ -714,6 +714,15 @@ function Project3DWorkspace({
           setProject={setProject}
           updateMetadata={projectStorage.updateMetadata}
         />
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={!isDirty || saveState.pending}
+          data-testid="project3d-save-button"
+          aria-label={saveState.pending ? 'Saving scene' : 'Save scene'}
+        >
+          {saveState.pending ? 'Saving scene…' : 'Save scene'}
+        </button>
         {id && !projectStorage.local && (
           <PublishControl3D id={id} project={project} setProject={setProject} />
         )}
@@ -1026,18 +1035,6 @@ function Project3DWorkspace({
                       />
                     )}
                     <span className="editor-stage-text-actions">
-                      <button
-                        type="button"
-                        className="piece-stage-icon-button"
-                        onClick={() => void handleSave()}
-                        disabled={!isDirty || saveState.pending}
-                        data-testid="project3d-save-button"
-                        aria-label={saveState.pending ? 'Saving scene' : 'Save scene'}
-                        title={saveState.pending ? 'Saving scene' : 'Save scene'}
-                      >
-                        <span aria-hidden="true">▣</span>
-                        <span className="piece-stage-action-label">Save scene</span>
-                      </button>
                       {!projectStorage.local && (
                         <button
                           type="button"

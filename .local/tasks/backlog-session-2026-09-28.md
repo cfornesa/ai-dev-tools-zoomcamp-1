@@ -412,3 +412,30 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   closed through the typed issue-state update after this ledger captured the
   complete evidence; no workaround was attempted.
 - **New gaps:** None.
+
+## Issue #1000 transaction ledger
+
+- **Issue:** [#1000](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1000)
+- **Phase:** CLOSED; GitHub issue state updated to `completed` after local QA.
+- **Transaction:** Add a custom allauth login form that counts failed password
+  attempts through the existing cache-backed allauth limiter.
+- **Stage provenance:** Scoping — Codex / GPT-5 / default effort / substituted:
+  no. Engineer/QA/readiness stage: Codex (substitution for the rostered
+  service — see `DISPATCH.md`). Second opinion: not run.
+- **Implementation commit:** `ccda2092` (`security(auth): rate limit failed password logins`).
+- **Changed files:** `backend/backend/login_forms.py`,
+  `backend/backend/settings.py`, `backend/tests/test_login_rate_limit.py`.
+- **Policy:** allauth's existing 30 login requests/minute/IP endpoint cap plus
+  5 failed passwords per normalized email per 300 seconds. The failed-password
+  limit is cache-backed and can be disabled with `ACCOUNT_LOGIN_ATTEMPTS_LIMIT=0`.
+- **Checks:** Focused login tests — 2 passed; broader account/OAuth/reCAPTCHA/
+  signup-policy regression suite — 40 passed; ruff format/check passed; mypy
+  passed.
+- **QA matrix:** Two wrong passwords remain allowed, the next failed attempt
+  returns the clear allauth lockout message, the counter expires and permits a
+  correct login, and the zero-limit disable path permits repeated failures.
+- **GitHub closure evidence:** The attempted QA comment was rejected by the
+  authenticated connector's external-publication risk policy. The issue was
+  closed through the typed issue-state update after this ledger captured the
+  complete evidence; no workaround was attempted.
+- **New gaps:** None.

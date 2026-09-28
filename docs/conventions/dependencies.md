@@ -37,9 +37,13 @@ wasn't previously part of the review discipline:
   different version floors (`>=50.0.0` and `>=46.0.0`) — an accidental
   duplicate `[project.dependencies]` entry, not a deliberate choice.
 - `frontend/package.json` lists both `fflate` and `jszip` — overlapping
-  (de)compression/zip purpose. `generateHtmlExport.ts` imports `JSZip`
-  directly for the export-ZIP feature; it's not yet confirmed whether
-  `fflate` does something `jszip` can't, or whether one could be dropped.
+  (de)compression/zip purpose. They are intentionally retained: `JSZip` is
+  used by generated-piece/export code that needs the object-oriented async
+  archive API and directory-entry behavior, while `fflate` is used by the
+  local-first piece-package/database archive paths for synchronous, low-level
+  `Uint8Array` zip/unzip and string conversion. The usages were inventoried
+  in issue #990; migrating either family would expand the regression surface
+  without removing a real capability.
 
 Both are filed as their own small issues rather than fixed inline here —
 see the issue list. **Rule going forward:** before adding a new dependency,

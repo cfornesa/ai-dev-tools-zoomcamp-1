@@ -4,7 +4,8 @@ import base64
 import binascii
 from datetime import datetime
 
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, Prefetch, Q, Value
+from django.db.models.functions import Coalesce
 from django.utils.dateparse import parse_datetime
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -167,7 +168,27 @@ class PublicCollectionListView(APIView):
             )
         )
         if sort == "item_count":
-            queryset = queryset.annotate(_index_item_count=Count("items", distinct=True))
+            public_item_count = sum(
+                (
+                    Coalesce(
+                        Count(
+                            "items",
+                            filter=Q(
+                                items__kind=kind,
+                                items__item_id__in=eligible_queryset.values("public_id"),
+                            ),
+                            distinct=True,
+                        ),
+                        Value(0),
+                    )
+                    for kind, eligible_queryset in (
+                        (CollectionItem.Kind.PROJECT, eligible_projects()),
+                        (CollectionItem.Kind.PROJECT3D, eligible_projects3d()),
+                        (CollectionItem.Kind.ART_PIECE, eligible_art_pieces()),
+                    )
+                )
+            )
+            queryset = queryset.annotate(_index_item_count=public_item_count)
             queryset = queryset.order_by("-_index_item_count", "-published_at", "-id")
         elif sort == "oldest":
             queryset = queryset.order_by("published_at", "id")

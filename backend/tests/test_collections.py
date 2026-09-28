@@ -592,6 +592,10 @@ def test_public_list_supports_oldest_and_item_count_sort_modes(
     newest = _create_collection(owner_client, "Newest collection")
     counted = _create_collection(owner_client, "Most items collection")
     projects = [_published_project(owner, f"Counted project {index}") for index in range(2)]
+    private_project = _published_project(owner, "Private counted project")
+    private_project.visibility = Project.Visibility.PRIVATE
+    private_project.published_at = None
+    private_project.save(update_fields=["visibility", "published_at"])
     for collection in (oldest, newest, counted):
         assert (
             owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
@@ -607,6 +611,14 @@ def test_public_list_supports_oldest_and_item_count_sort_modes(
                 position=index,
             )
             for index, project in enumerate(projects)
+        ]
+        + [
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT,
+                item_id=private_project.public_id,
+                position=2,
+            )
         ]
     )
     now = timezone.now()

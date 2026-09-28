@@ -94,6 +94,21 @@ Batch 9 `owner-priority` issue with a finite criterion-ready contract.
   evidence; no workaround was attempted.
 - **New gaps:** None.
 
+## Issue #984 transaction ledger
+
+- **Issue:** [#984](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/984)
+- **Phase:** BLOCKED pending owner decision; no code changes made.
+- **Blocker:** The issue's evidence describes `effects`, `voiceInstruments`,
+  and pressed-piano-note state duplicated in both components, but the current
+  `PieceStageControls.tsx` has none of those states and uses a distinct
+  command-driven parent-audio model. Its shared state overlaps only partly
+  with `Scene3DPreview.tsx`, while its oscillator/filter/ADSR fields are
+  broader. Implementing the requested hook therefore requires an owner choice
+  between a limited common-state extraction and a broader audio-contract
+  redesign.
+- **Next action:** Owner confirms the intended shared contract/scope; issue
+  remains open and no implementation was started.
+
 ## Issue #983 transaction ledger
 
 - **Issue:** [#983](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/983)

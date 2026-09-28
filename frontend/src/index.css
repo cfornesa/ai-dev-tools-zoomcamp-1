@@ -7998,6 +7998,7 @@ select.ai-proposal-field-full-width {
 
 .project3d-accordion-panel {
   width: 100%;
+  box-sizing: border-box;
   padding: 0 var(--space-4) var(--space-4);
 }
 

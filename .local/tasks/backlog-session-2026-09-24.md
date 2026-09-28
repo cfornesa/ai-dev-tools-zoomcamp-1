@@ -7108,3 +7108,14 @@ wrapper publication once the secure push credential is available through the
 |---|---|---|---|
 | qa-self-review | Codex / GPT-5 / medium; rostered Claude substitution; independent stage-3 unavailable and not credited | FAIL / OPEN | Backend public-asset and startup-wrapper tests 26 passed; frontend resolver/export tests 74 passed; elevated Compose Chromium spec 1 passed. Evidence remains mocked/partial; populated regular/embed/immersive routes, extracted ZIP HTTP render, and deployed header/CSP evidence are missing. QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/941#issuecomment-5861374139. |
 | reconcile / close | Codex / GPT-5 / medium | OPEN | Keep #941 open; no production/shared database write. |
+
+## Reassessment after guarded Replit safety check — 2026-09-28 — PUBLISH BLOCKED / #788 BLOCKED
+
+| Dimension | Result | Evidence boundary |
+|---|---|---|
+| Import-gate evaluation | BLOCKED / UNVERIFIABLE | Replit Agent reported only that the gate secret exists; it could not safely compare the value to literal `true` without exposing a secret. No secret was read, printed, or changed. |
+| Schema preview | BLOCKED | Replit exposed a `TRUNCATE scenes_plan` operation. This is outside the authorized wrapper/import scope and must be reviewed before any publish. |
+| Reviewed wrapper publication | NOT RUN | Publication was withheld because gate state and schema safety could not be established. |
+| #788 production action | NOT RUN | No production preview, snapshot refresh, importer invocation, database write, or live verification occurred. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5861471417. |
+
+Readiness remains `BLOCKED`. The owner must resolve the Replit gate/schema concern through supported controls before the authorized wrapper publication and one-time production workflow can be reconsidered.

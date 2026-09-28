@@ -224,3 +224,13 @@ Readiness remains `BLOCKED` pending an explicit safe reconciliation of the Repli
 | #788 production import | BLOCKED | No production preview, snapshot, one-shot write, or live piece verification occurred. |
 
 Readiness remains `BLOCKED`; the merge is not evidence of publication or production-data safety.
+
+## Reassessment after guarded Replit safety check — 2026-09-28
+
+| Dimension | Result | Evidence boundary |
+|---|---|---|
+| Gate state | BLOCKED / UNVERIFIABLE | Replit Agent could not safely compare the existing import-gate secret with literal `true`; no secret was exposed or changed. |
+| Schema safety | BLOCKED | Preview exposed `TRUNCATE scenes_plan`, outside the authorized wrapper/import scope. |
+| Publication and #788 | BLOCKED / NOT RUN | No publish, production snapshot, importer, database write, or live verification occurred. QA: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/788#issuecomment-5861471417. |
+
+Readiness remains `BLOCKED` pending owner resolution of the Replit gate and schema-preview concerns.

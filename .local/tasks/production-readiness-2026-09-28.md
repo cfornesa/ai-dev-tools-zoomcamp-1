@@ -56,3 +56,24 @@ Exact next actions: obtain the owner's answer for #1012; keep #1020/#1021
 deferred to a later goal; resolve each owner/dependency boundary in the
 manifest; then process one issue through implementation, QA, reconciliation,
 and GitHub state before selecting the next.
+
+## Readiness refresh after #973/#975 QA — 2026-09-28
+
+Result remains `BLOCKED` / `INCOMPLETE`.
+
+- #973's backend/media and frontend render checks passed, and active Chrome
+  inspected both required viewports, but the required Playwright Chromium
+  runner hit the macOS Mach-port permission boundary.
+- #975's export suite passed 232 tests, but its named
+  `publicMediaAssetsZip.spec.ts` file is absent, so the browser gate is a
+  reproducible workflow/infrastructure defect rather than a passing check.
+- #1016 is now classified by source evidence as a contract blocker: the
+  current media library is IndexedDB-only and has no server-backed collection
+  cover reference path.
+- #1019 remains handed off for the backend/frontend split its own body
+  requires; no unmilestoned child was created.
+
+No new production or Replit evidence was obtained. The final readiness
+decision is still NO-GO until the named browser artifacts/runner exist, the
+owner gates are resolved, the remaining implementation chain is processed,
+and `make check` is green after deferred #1021.

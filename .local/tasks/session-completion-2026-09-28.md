@@ -70,3 +70,20 @@ Routing audit: every manifest row records scoping/implementation/QA/readiness
 ownership or an explicit `not run — blocker` state; second-opinion review is
 `not run`. Readiness ran on the active GPT-5 substitution and is flagged as
 such rather than credited to the rostered Opus/Sonnet tier.
+
+## Completion refresh after #973/#975 QA — 2026-09-28
+
+The batch remains incomplete. Two additional existing issues now have
+terminal workflow records: #973 is `blocked` by the approved Playwright
+Chromium host boundary after active-Chrome and HTTP evidence; #975 is
+`blocked` by its missing named ZIP browser spec plus the same approved-runner
+boundary. #1016 is `blocked` by the absent server-backed media contract, and
+#1019 is `handed-off` for criterion-ready child scoping. No newly discovered
+issue was implemented and no PR was created.
+
+Follow-up audit confirms #973 and #975 have exact next actions in the backlog
+ledger, with blocker classes, owners/context, and evidence boundaries. The
+current batch still has open owner/data, dependency, tracking, and deferred
+same-goal issues; production readiness remains NO-GO. The next safe work is
+the next independent existing issue after its dependencies and evidence
+runner are available.

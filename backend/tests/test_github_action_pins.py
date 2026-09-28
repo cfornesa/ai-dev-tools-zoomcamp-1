@@ -97,8 +97,8 @@ def test_full_browser_suite_runs_after_a_failed_webkit_gate():
     step_lines = job_lines[step_start : step_start + 8]
 
     assert (
-        "        if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') }}"
-        in step_lines
+        "        if: ${{ always() && (github.event_name == 'workflow_dispatch' || "
+        "github.event_name == 'schedule') }}" in step_lines
     )
     assert "      - name: Upload browser diagnostics" in job_lines
     assert "        if: ${{ failure() }}" in job_lines

@@ -427,8 +427,11 @@ type JsValue = number | string | boolean | null | { [key: string]: JsValue };
 
 class JsLiteralReader {
   private index = 0;
+  private readonly source: string;
 
-  constructor(private readonly source: string) {}
+  constructor(source: string) {
+    this.source = source;
+  }
 
   private skipWhitespace(): void {
     while (/\s/.test(this.source[this.index] ?? '')) this.index += 1;

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { generateEditable3dHtml, parseEditable3dHtml } from './codeGrammar3dTabs';
+import {
+  generateEditable3dCss,
+  generateEditable3dHtml,
+  parseEditable3dCss,
+  parseEditable3dHtml,
+} from './codeGrammar3dTabs';
 import type { Scene3DDocument } from '../pages/scene3dTypes';
 
 function scene(): Scene3DDocument {
@@ -121,5 +126,48 @@ describe('3D HTML code grammar', () => {
         original,
       ).ok,
     ).toBe(false);
+  });
+});
+
+describe('3D CSS code grammar', () => {
+  it('round-trips an unmodified scene', () => {
+    const original = scene();
+    const result = parseEditable3dCss(generateEditable3dCss(original), original);
+    expect(result).toEqual({ ok: true, scene: original });
+  });
+
+  it('updates one transform while preserving the rest of the scene', () => {
+    const original = scene();
+    const css = generateEditable3dCss(original).replace('--position-x: 1;', '--position-x: 9;');
+    const result = parseEditable3dCss(css, original);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.scene.objects[0].transform.position.x).toBe(9);
+      expect(result.scene.objects[1]).toEqual(original.objects[1]);
+      expect(result.scene.objects[0].material).toEqual(original.objects[0].material);
+    }
+  });
+
+  it('updates a material and light field', () => {
+    const original = scene();
+    const css = generateEditable3dCss(original)
+      .replace('--material-color: #ff0000;', '--material-color: #0000ff;')
+      .replace('--intensity: 1;', '--intensity: 2;');
+    const result = parseEditable3dCss(css, original);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.scene.objects[0].material.color).toBe('#0000ff');
+      expect(result.scene.lights[0].intensity).toBe(2);
+    }
+  });
+
+  it('rejects out-of-range opacity and intensity values with line errors', () => {
+    const original = scene();
+    const css = generateEditable3dCss(original)
+      .replace('--opacity: 1;', '--opacity: 2;')
+      .replace('--intensity: 1;', '--intensity: 101;');
+    const result = parseEditable3dCss(css, original);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.every((error) => error.startsWith('Line '))).toBe(true);
   });
 });

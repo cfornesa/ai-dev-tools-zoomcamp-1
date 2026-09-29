@@ -168,3 +168,252 @@ export function parseEditable3dHtml(
   }
   return { ok: true, scene: next };
 }
+
+const COLOR_PATTERN = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
+const CSS_NUMBER_PATTERN = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?$/;
+type CssRule = { selector: string; declarations: Map<string, string>; line: number };
+
+function cssNumber(value: number): string {
+  return JSON.stringify(value);
+}
+
+function cssVec(prefix: string, value: { x: number; y: number; z: number }): string[] {
+  return [
+    `  --${prefix}-x: ${cssNumber(value.x)};`,
+    `  --${prefix}-y: ${cssNumber(value.y)};`,
+    `  --${prefix}-z: ${cssNumber(value.z)};`,
+  ];
+}
+
+function cssTransform(
+  lines: string[],
+  transform: {
+    position: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+    scale: { x: number; y: number; z: number };
+    opacity: number;
+  },
+): void {
+  lines.push(...cssVec('position', transform.position));
+  lines.push(...cssVec('rotation', transform.rotation));
+  lines.push(...cssVec('scale', transform.scale));
+  lines.push(`  --opacity: ${cssNumber(transform.opacity)};`);
+}
+
+function cssRule(selector: string, declarations: string[]): string {
+  return `${selector} {\n${declarations.join('\n')}\n}`;
+}
+
+/** Generate the transform/material custom-property CSS projection. */
+export function generateEditable3dCss(scene: Scene3DDocument | null): string {
+  if (!scene) return '';
+  const blocks: string[] = [
+    cssRule('#scene-3d', [`  --background-color: ${scene.scene.backgroundColor};`]),
+  ];
+  blocks.push(
+    cssRule('#camera', [
+      ...cssVec('position', scene.camera.position),
+      ...cssVec('target', scene.camera.target),
+      `  --fov: ${cssNumber(scene.camera.fov)};`,
+      `  --near: ${cssNumber(scene.camera.near)};`,
+      `  --far: ${cssNumber(scene.camera.far)};`,
+    ]),
+  );
+  for (const group of scene.groups) {
+    const lines: string[] = [];
+    cssTransform(lines, group.transform);
+    blocks.push(cssRule(`#object-${group.id}`, lines));
+  }
+  for (const object of scene.objects) {
+    const lines: string[] = [];
+    cssTransform(lines, object.transform);
+    lines.push(`  --material-color: ${object.material.color};`);
+    if (object.material.opacity !== undefined)
+      lines.push(`  --material-opacity: ${cssNumber(object.material.opacity)};`);
+    if (object.material.emissive !== undefined)
+      lines.push(`  --material-emissive: ${object.material.emissive};`);
+    blocks.push(cssRule(`#object-${object.id}`, lines));
+  }
+  for (const light of scene.lights) {
+    const lines = [`  --color: ${light.color};`, `  --intensity: ${cssNumber(light.intensity)};`];
+    if (light.position) lines.push(...cssVec('position', light.position));
+    if (light.direction) lines.push(...cssVec('direction', light.direction));
+    blocks.push(cssRule(`#object-${light.id}`, lines));
+  }
+  return blocks.join('\n\n');
+}
+
+function parseCssRules(
+  text: string,
+): { ok: true; rules: CssRule[] } | { ok: false; errors: string[] } {
+  const rules: CssRule[] = [];
+  const errors: string[] = [];
+  const rulePattern = /([^{}]+)\{([^{}]*)\}/g;
+  let match: RegExpExecArray | null;
+  while ((match = rulePattern.exec(text)) !== null) {
+    const selector = match[1].trim();
+    const line = lineNumber(text, match.index);
+    const declarations = new Map<string, string>();
+    for (const rawDeclaration of match[2].split(';')) {
+      const declaration = rawDeclaration.trim();
+      if (!declaration) continue;
+      const separator = declaration.indexOf(':');
+      if (separator < 0) {
+        errors.push(`Line ${line}: CSS declaration must contain a colon.`);
+        continue;
+      }
+      const property = declaration.slice(0, separator).trim();
+      const value = declaration.slice(separator + 1).trim();
+      if (declarations.has(property))
+        errors.push(`Line ${line}: duplicate CSS property "${property}".`);
+      declarations.set(property, value);
+    }
+    rules.push({ selector, declarations, line });
+  }
+  if (rules.length === 0) errors.push('Line 1: CSS must contain at least one rule.');
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, rules };
+}
+
+function readCssNumber(rule: CssRule, property: string, errors: string[]): number | undefined {
+  const value = rule.declarations.get(property);
+  if (value === undefined) return undefined;
+  if (!CSS_NUMBER_PATTERN.test(value)) {
+    errors.push(`Line ${rule.line}: ${property} must be a number.`);
+    return undefined;
+  }
+  return Number(value);
+}
+
+function readCssColor(rule: CssRule, property: string, errors: string[]): string | undefined {
+  const value = rule.declarations.get(property);
+  if (value === undefined) return undefined;
+  if (!COLOR_PATTERN.test(value)) {
+    errors.push(`Line ${rule.line}: ${property} must be a hex color.`);
+    return undefined;
+  }
+  return value;
+}
+
+function applyCssVec(
+  transform: { x: number; y: number; z: number },
+  prefix: string,
+  rule: CssRule,
+  errors: string[],
+): { x: number; y: number; z: number } {
+  return {
+    x: readCssNumber(rule, `--${prefix}-x`, errors) ?? transform.x,
+    y: readCssNumber(rule, `--${prefix}-y`, errors) ?? transform.y,
+    z: readCssNumber(rule, `--${prefix}-z`, errors) ?? transform.z,
+  };
+}
+
+function applyCssTransform<
+  T extends {
+    position: { x: number; y: number; z: number };
+    rotation: { x: number; y: number; z: number };
+    scale: { x: number; y: number; z: number };
+    opacity: number;
+  },
+>(transform: T, rule: CssRule, errors: string[]): T {
+  return {
+    ...transform,
+    position: applyCssVec(transform.position, 'position', rule, errors),
+    rotation: applyCssVec(transform.rotation, 'rotation', rule, errors),
+    scale: applyCssVec(transform.scale, 'scale', rule, errors),
+    opacity: readCssNumber(rule, '--opacity', errors) ?? transform.opacity,
+  };
+}
+
+function validateCssRanges(scene: Scene3DDocument, rule: CssRule, errors: string[]): void {
+  const values = [...rule.declarations.entries()];
+  for (const [property, value] of values) {
+    if (!property.startsWith('--') || !CSS_NUMBER_PATTERN.test(value)) continue;
+    const number = Number(value);
+    if (property === '--opacity' || property === '--material-opacity') {
+      if (number < 0 || number > 1)
+        errors.push(`Line ${rule.line}: ${property} must be between 0 and 1.`);
+    } else if (property === '--intensity' && (number < 0 || number > 100)) {
+      errors.push(`Line ${rule.line}: --intensity must be between 0 and 100.`);
+    } else if (property === '--fov' && (number < 1 || number > 170)) {
+      errors.push(`Line ${rule.line}: --fov must be between 1 and 170.`);
+    } else if (property === '--near' && number <= 0) {
+      errors.push(`Line ${rule.line}: --near must be positive.`);
+    } else if (property === '--far' && number <= 0) {
+      errors.push(`Line ${rule.line}: --far must be positive.`);
+    }
+  }
+  void scene;
+}
+
+/** Parse the CSS projection, changing only fields represented by declarations. */
+export function parseEditable3dCss(
+  text: string,
+  previousScene: Scene3DDocument,
+): GrammarParseResult<Scene3DDocument> {
+  const parsed = parseCssRules(text);
+  if (!parsed.ok) return parsed;
+  const next = structuredClone(previousScene);
+  const errors: string[] = [];
+  const seen = new Set<string>();
+  for (const rule of parsed.rules) {
+    validateCssRanges(next, rule, errors);
+    if (rule.selector === '#scene-3d') {
+      const background = readCssColor(rule, '--background-color', errors);
+      if (background) next.scene.backgroundColor = background;
+      seen.add(rule.selector);
+      continue;
+    }
+    if (rule.selector === '#camera') {
+      next.camera.position = applyCssVec(next.camera.position, 'position', rule, errors);
+      next.camera.target = applyCssVec(next.camera.target, 'target', rule, errors);
+      next.camera.fov = readCssNumber(rule, '--fov', errors) ?? next.camera.fov;
+      next.camera.near = readCssNumber(rule, '--near', errors) ?? next.camera.near;
+      next.camera.far = readCssNumber(rule, '--far', errors) ?? next.camera.far;
+      seen.add(rule.selector);
+      continue;
+    }
+    const id = /^#object-([A-Za-z0-9_-]{1,64})$/.exec(rule.selector)?.[1];
+    if (!id) {
+      errors.push(`Line ${rule.line}: unsupported CSS selector "${rule.selector}".`);
+      continue;
+    }
+    if (seen.has(rule.selector))
+      errors.push(`Line ${rule.line}: duplicate CSS rule "${rule.selector}".`);
+    seen.add(rule.selector);
+    const object = next.objects.find((candidate) => candidate.id === id);
+    if (object) {
+      object.transform = applyCssTransform(object.transform, rule, errors);
+      object.material.color =
+        readCssColor(rule, '--material-color', errors) ?? object.material.color;
+      const materialOpacity = readCssNumber(rule, '--material-opacity', errors);
+      if (materialOpacity !== undefined) object.material.opacity = materialOpacity;
+      const emissive = readCssColor(rule, '--material-emissive', errors);
+      if (emissive !== undefined) object.material.emissive = emissive;
+      continue;
+    }
+    const group = next.groups.find((candidate) => candidate.id === id);
+    if (group) {
+      group.transform = applyCssTransform(group.transform, rule, errors);
+      continue;
+    }
+    const light = next.lights.find((candidate) => candidate.id === id);
+    if (light) {
+      light.color = readCssColor(rule, '--color', errors) ?? light.color;
+      light.intensity = readCssNumber(rule, '--intensity', errors) ?? light.intensity;
+      if (light.position) light.position = applyCssVec(light.position, 'position', rule, errors);
+      if (light.direction)
+        light.direction = applyCssVec(light.direction, 'direction', rule, errors);
+      continue;
+    }
+    errors.push(`Line ${rule.line}: no object, group, or light named "${id}" exists.`);
+  }
+  if (errors.length > 0) return { ok: false, errors };
+  const validation = validateScene3D(next);
+  if (!validation.valid) {
+    return {
+      ok: false,
+      errors: validation.errors.map((error) => `Line 1: ${error.path}: ${error.message}`),
+    };
+  }
+  return { ok: true, scene: next };
+}

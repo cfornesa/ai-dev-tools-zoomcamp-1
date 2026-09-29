@@ -114,6 +114,13 @@ and #1060–#1066. The complete readiness assessment is recorded in
 `.local/tasks/production-readiness-2026-09-29.md`; the batch completion report
 is in `.local/tasks/session-completion-2026-09-29.md`.
 
+Readiness also discovered a stale ambient-audio contract: `docs/api.md` and
+the durable decision still describe export-only delivery while closed #1056
+implements public server delivery. Criterion-ready follow-up
+[#1067](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1067) owns
+the owner decision and contract/memory reconciliation; #1056 remains closed
+and is not reopened.
+
 ## 2026-09-28 — live-provider QA follow-ups
 
 | Issue | Transaction | Result / next action |

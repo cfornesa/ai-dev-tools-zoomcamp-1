@@ -23,10 +23,10 @@ CI/publication, browser-verification, and owner-run production work.
 
 ## Remaining open inventory
 
-The authenticated GitHub search returned exactly these 19 open issues:
+The authenticated GitHub search returned exactly these 20 open issues:
 
 `#788 #859 #926 #1035 #1036 #1040 #1041 #1042 #1043 #1044 #1045 #1046
-#1060 #1061 #1062 #1063 #1064 #1065 #1066`.
+#1060 #1061 #1062 #1063 #1064 #1065 #1066 #1067`.
 
 No open issue was silently omitted or duplicated.
 
@@ -41,6 +41,13 @@ No open issue was silently omitted or duplicated.
 | Source-contract work | HANDED-OFF / OPEN | Owner-directed #1035/#1036 decision and implementation work remains. |
 | Replit/publication | BLOCKED / OWNER-RUN | Keep #788 and any production writes on the explicitly authorized owner workflow. |
 | Production readiness | BLOCKED | Re-run this gate after the listed open issues reach terminal states. |
+
+### New readiness follow-up
+
+`#1067` is an `OPEN FOLLOW-UP` for the contradictory ambient-audio public
+delivery contract discovered during this read-only audit. It owns the
+owner-selected policy and updates to `docs/api.md` and the durable memory
+topic. Closed #1056 is preserved as historical scoped completion.
 
 ## Routing audit
 

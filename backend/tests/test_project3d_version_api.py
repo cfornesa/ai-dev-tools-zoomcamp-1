@@ -50,6 +50,42 @@ def test_owner_can_save_a_new_version(owner_client):
 
 
 @pytest.mark.django_db
+def test_owner_can_save_and_list_persistent_source_projections(owner_client):
+    public_id = _create_project(owner_client)
+    scene = copy.deepcopy(_MINIMAL_SCENE_3D_FIXTURE)
+    sources = {
+        "html_source": '<main id="scene-3d"></main>',
+        "css_source": "#scene-3d { --background-color: #000000; }",
+        "js_source": "/* CAMERA_CONFIG_BEGIN */ const config = {}; /* CAMERA_CONFIG_END */",
+    }
+
+    response = owner_client.post(
+        f"/api/projects3d/{public_id}/versions/",
+        {"scene_json": scene, **sources},
+        format="json",
+    )
+
+    assert response.status_code == 201
+    assert {key: response.json()[key] for key in sources} == sources
+    listed = owner_client.get(f"/api/projects3d/{public_id}/versions/").json()
+    assert {key: listed[-1][key] for key in sources} == sources
+
+
+@pytest.mark.django_db
+def test_source_projection_size_limit_is_rejected_without_creating_version(owner_client):
+    public_id = _create_project(owner_client)
+    response = owner_client.post(
+        f"/api/projects3d/{public_id}/versions/",
+        {"scene_json": copy.deepcopy(_MINIMAL_SCENE_3D_FIXTURE), "html_source": "x" * 100_001},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert "html_source" in response.json()
+    assert Project3D.objects.get(public_id=public_id).current_version.sequence == 1
+
+
+@pytest.mark.django_db
 def test_owner_can_list_complete_3d_version_history(owner_client):
     public_id = _create_project(owner_client)
     scene = copy.deepcopy(_MINIMAL_SCENE_3D_FIXTURE)

@@ -171,11 +171,22 @@ keep their current slug; no migration.
 
 `GET /api/projects3d/<public_id>/versions/` returns the authenticated owner's
 complete immutable `SceneVersion3D` history in ascending sequence order. The
-existing POST save contract on the same path is unchanged. Anonymous users,
+`POST` on the same path accepts `scene_json` plus optional `html_source`,
+`css_source`, and `js_source` projections. Each source is an empty string for
+legacy JSON-only versions and is limited to 100,000 UTF-8 bytes. The saved projections
+are an immutable snapshot of the human-readable HTML/CSS/JS surfaces; the
+canonical validated `scene_json` remains the renderer/runtime representation,
+and the editor synchronizes all four surfaces before creating one new version.
+Anonymous users,
 non-owners, deleted projects, and unknown ids receive the existing 404-style
 authorization boundary; the response uses the existing
-`SceneVersion3DSerializer` shape and does not expose this owner history to
-public viewers.
+`SceneVersion3DSerializer` shape, including the three source fields only on
+owner-scoped responses, and does not expose those fields through public
+viewers. Existing JSON-only versions remain readable with empty source fields.
+The migration is reversible before deployment by dropping these three additive
+columns; because that rollback discards saved source text, a deployment must
+retain a database backup/export before applying it. No public payload or
+existing JSON snapshot is changed by the migration.
 
 ## Art-piece ink layer (#776)
 

@@ -193,6 +193,11 @@ describe('Project3DWorkspace Save action', () => {
       expect.objectContaining({
         objects: expect.arrayContaining([expect.objectContaining({ type: 'sphere' })]),
       }),
+      expect.objectContaining({
+        html_source: expect.stringContaining('<main id="scene-3d">'),
+        css_source: expect.stringContaining('#scene-3d'),
+        js_source: expect.stringContaining('CAMERA_CONFIG_BEGIN'),
+      }),
     );
   });
 
@@ -249,7 +254,15 @@ describe('Project3DWorkspace Save action', () => {
     await waitFor(() =>
       expect(screen.getByTestId('project3d-save-status')).toHaveTextContent('Saved as version 2'),
     );
-    expect(mockedSaveSceneVersion3D).toHaveBeenCalledWith('p1', expect.any(Object));
+    expect(mockedSaveSceneVersion3D).toHaveBeenCalledWith(
+      'p1',
+      expect.any(Object),
+      expect.objectContaining({
+        html_source: expect.any(String),
+        css_source: expect.any(String),
+        js_source: expect.any(String),
+      }),
+    );
     expect(screen.getByTestId('project3d-save-button')).toBeDisabled();
   });
 

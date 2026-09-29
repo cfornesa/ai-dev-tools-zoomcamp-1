@@ -13,8 +13,18 @@ export type SceneVersion3D = {
   sequence: number;
   origin: string;
   scene_json: SceneDocument3D;
+  /** #1036: empty on legacy versions created before source persistence. */
+  html_source?: string;
+  css_source?: string;
+  js_source?: string;
   created_by: string | null;
   created_at: string;
+};
+
+export type SceneVersion3DSourceInput = {
+  html_source?: string | null;
+  css_source?: string | null;
+  js_source?: string | null;
 };
 
 export type PublicSceneVersion3DSummary = {
@@ -103,10 +113,11 @@ export function deleteProject3D(id: string): Promise<void> {
 export function saveSceneVersion3D(
   projectId: string,
   sceneJson: SceneDocument3D,
+  sources?: SceneVersion3DSourceInput,
 ): Promise<SceneVersion3D> {
   return apiFetch<SceneVersion3D>(`/api/projects3d/${projectId}/versions/`, {
     method: 'POST',
-    body: JSON.stringify({ scene_json: sceneJson }),
+    body: JSON.stringify({ scene_json: sceneJson, ...sources }),
   });
 }
 

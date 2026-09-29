@@ -791,7 +791,17 @@ class SceneVersion3DSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SceneVersion3D
-        fields = ["id", "sequence", "origin", "scene_json", "created_by", "created_at"]
+        fields = [
+            "id",
+            "sequence",
+            "origin",
+            "scene_json",
+            "html_source",
+            "css_source",
+            "js_source",
+            "created_by",
+            "created_at",
+        ]
         read_only_fields = fields
 
 
@@ -993,3 +1003,18 @@ class SceneVersion3DCreateSerializer(serializers.Serializer):
     """
 
     scene_json = serializers.JSONField()
+    html_source = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    css_source = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    js_source = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+    def validate(self, attrs):
+        limit = SceneVersion3D.SOURCE_MAX_BYTES
+        for field_name in ("html_source", "css_source", "js_source"):
+            value = attrs.get(field_name)
+            if value is None:
+                attrs[field_name] = value = ""
+            if value is not None and len(value.encode("utf-8")) > limit:
+                raise serializers.ValidationError(
+                    {field_name: f"3D source must be no larger than {limit} bytes."}
+                )
+        return attrs

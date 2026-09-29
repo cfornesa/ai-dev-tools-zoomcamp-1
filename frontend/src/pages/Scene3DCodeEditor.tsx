@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { ApiError } from '../api/client';
-import { saveSceneVersion3D, type SceneVersion3D } from '../api/projects3d';
+import {
+  saveSceneVersion3D,
+  type SceneVersion3D,
+  type SceneVersion3DSourceInput,
+} from '../api/projects3d';
 import { validateScene3D } from '../validation/scene3d';
 import { codeDiagnostic } from './jsonCodeSync';
 import type { Scene3DDocument } from './scene3dTypes';
@@ -17,6 +21,7 @@ import {
 type Props = {
   projectId?: string;
   scene: Scene3DDocument;
+  sources?: SceneVersion3DSourceInput;
   /** Called only after a save actually persisted -- the caller updates its
    * own working scene/project state from the returned version, matching
    * `AiEditorWorkspace.tsx`'s `handleAccepted` convention. */
@@ -89,7 +94,12 @@ function LegacyScene3DCodeEditor({ projectId, scene, onSaved }: Props) {
     setSaveState({ pending: true, error: null });
     try {
       if (!projectId || !onSaved) return;
-      const version = await saveSceneVersion3D(projectId, parsed as Scene3DDocument);
+      const savedScene = parsed as Scene3DDocument;
+      const version = await saveSceneVersion3D(projectId, savedScene, {
+        html_source: generateEditable3dHtml(savedScene),
+        css_source: generateEditable3dCss(savedScene),
+        js_source: generateEditable3dJs(savedScene),
+      });
       setSaveState(IDLE_SAVE_STATE);
       const canonical = JSON.stringify(version.scene_json, null, 2);
       lastSyncedTextRef.current = canonical;
@@ -143,7 +153,7 @@ function LegacyScene3DCodeEditor({ projectId, scene, onSaved }: Props) {
 
 type CodeTab = 'json' | 'html' | 'css' | 'js';
 
-function generateWorkspaceCode(scene: Scene3DDocument) {
+function generateWorkspaceCode(scene: Scene3DDocument, sources?: SceneVersion3DSourceInput) {
   let css = '';
   try {
     css = generateEditable3dCss(scene);
@@ -154,15 +164,15 @@ function generateWorkspaceCode(scene: Scene3DDocument) {
   }
   return {
     json: JSON.stringify(scene, null, 2),
-    html: generateEditable3dHtml(scene),
-    css,
-    js: generateEditable3dJs(scene),
+    html: sources?.html_source || generateEditable3dHtml(scene),
+    css: sources?.css_source || css,
+    js: sources?.js_source || generateEditable3dJs(scene),
   };
 }
 
-function Scene3DWorkspaceCodeEditor({ scene, onChange }: Pick<Props, 'scene' | 'onChange'>) {
+function Scene3DWorkspaceCodeEditor({ scene, sources, onChange }: Pick<Props, 'scene' | 'sources' | 'onChange'>) {
   const [tab, setTab] = useState<CodeTab>('json');
-  const generated = generateWorkspaceCode(scene);
+  const generated = generateWorkspaceCode(scene, sources);
   const [texts, setTexts] = useState(generated);
   const [baseline, setBaseline] = useState(generated);
   const [externalChangePending, setExternalChangePending] = useState(false);

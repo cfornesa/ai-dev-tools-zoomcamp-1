@@ -32,7 +32,12 @@ import type {
   PublicGalleryPage,
   PublicProject,
 } from '../api/projects';
-import type { Project3D, SceneDocument3D, SceneVersion3D } from '../api/projects3d';
+import type {
+  Project3D,
+  SceneDocument3D,
+  SceneVersion3D,
+  SceneVersion3DSourceInput,
+} from '../api/projects3d';
 import type { AICreateSceneResponse, AIEditSceneResponse, AcceptAIProposalInput } from '../api/ai';
 import type {
   AICreateScene3DResponse,
@@ -105,7 +110,11 @@ export interface Projects3DService {
   getProject3D(id: string): Promise<Project3D>;
   refreshProject3DThumbnail(id: string): Promise<Project3D>;
   deleteProject3D(id: string): Promise<void>;
-  saveSceneVersion3D(projectId: string, sceneJson: SceneDocument3D): Promise<SceneVersion3D>;
+  saveSceneVersion3D(
+    projectId: string,
+    sceneJson: SceneDocument3D,
+    sources?: SceneVersion3DSourceInput,
+  ): Promise<SceneVersion3D>;
 }
 
 /** Mirrors `../api/ai.ts`. */

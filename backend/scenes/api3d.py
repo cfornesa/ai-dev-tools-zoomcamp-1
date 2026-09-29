@@ -267,6 +267,10 @@ class SceneVersion3DListCreateView(APIView):
         input_serializer = SceneVersion3DCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
         scene_json = normalize_scene_sonic(input_serializer.validated_data["scene_json"])
+        source_fields = {
+            field_name: input_serializer.validated_data.get(field_name)
+            for field_name in ("html_source", "css_source", "js_source")
+        }
 
         result = validate_scene3d(scene_json)
         if not result.valid:
@@ -296,6 +300,7 @@ class SceneVersion3DListCreateView(APIView):
                     ),
                     created_by=request.user,
                     origin=SceneVersion3D.Origin.MANUAL,
+                    **source_fields,
                 )
                 locked_project.current_version = version
                 locked_project.save(update_fields=["current_version", "updated_at"])

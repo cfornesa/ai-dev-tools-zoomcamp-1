@@ -2005,6 +2005,8 @@ class Project3D(models.Model):
 
 
 class SceneVersion3D(models.Model):
+    SOURCE_MAX_BYTES = 100_000
+
     class Origin(models.TextChoices):
         MANUAL = "manual", "Manual"
         # Issue #232: the 3D counterpart of SceneVersion's AI_CREATE/AI_EDIT.
@@ -2020,6 +2022,12 @@ class SceneVersion3D(models.Model):
     project = models.ForeignKey(Project3D, on_delete=models.CASCADE, related_name="versions")
     sequence = models.PositiveIntegerField()
     scene_json = models.JSONField()
+    # #1036: preserve the human-readable source projections alongside the
+    # canonical validated JSON snapshot. Empty strings preserve compatibility
+    # for pre-migration JSON-only versions and are never exposed publicly.
+    html_source = models.TextField(default="", blank=True)
+    css_source = models.TextField(default="", blank=True)
+    js_source = models.TextField(default="", blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -2068,6 +2076,16 @@ class SceneVersion3D(models.Model):
         return f"3d:{self.project_id} v{self.sequence}"
 
     def save(self, *args, **kwargs):
+        for field_name in ("html_source", "css_source", "js_source"):
+            source = getattr(self, field_name)
+            if source is not None and len(source.encode("utf-8")) > self.SOURCE_MAX_BYTES:
+                raise ValidationError(
+                    {
+                        field_name: [
+                            f"3D source must be no larger than {self.SOURCE_MAX_BYTES} bytes."
+                        ]
+                    }
+                )
         result = validate_scene3d(self.scene_json)
         if not result.valid:
             raise ValidationError(

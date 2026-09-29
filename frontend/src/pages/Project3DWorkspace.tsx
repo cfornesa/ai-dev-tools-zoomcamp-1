@@ -17,6 +17,7 @@ import {
   updateProjectMetadata3D,
   type Project3D,
   type SceneVersion3D,
+  type SceneVersion3DSourceInput,
 } from '../api/projects3d';
 import { resourceOwnershipStatus } from '../auth/resourceOwnership';
 import { useAuth } from '../auth/useAuth';
@@ -26,6 +27,11 @@ import {
   generateScene3DBundle,
   triggerScene3DBundleDownload,
 } from '../export/generateHtmlExport3D';
+import {
+  generateEditable3dCss,
+  generateEditable3dHtml,
+  generateEditable3dJs,
+} from '../export/codeGrammar3dTabs';
 import { downloadBlob } from '../export/downloadBlob';
 import {
   buildServer3dPiecePackage,
@@ -60,7 +66,11 @@ type ExportState = { pending: boolean; error: string | null };
 
 export type Project3DWorkspaceStorage = {
   loadProject: (id: string) => Promise<{ project: Project3D; versions: SceneVersion3D[] }>;
-  saveVersion: (id: string, scene: Scene3DDocument) => Promise<SceneVersion3D>;
+  saveVersion: (
+    id: string,
+    scene: Scene3DDocument,
+    sources?: SceneVersion3DSourceInput,
+  ) => Promise<SceneVersion3D>;
   restoreVersion?: (id: string, versionId: number) => Promise<SceneVersion3D>;
   updateMetadata: (id: string, data: { title?: string }) => Promise<Project3D>;
   local?: boolean;
@@ -185,7 +195,8 @@ function Project3DWorkspace({
           project: await getProject3D(projectId),
           versions: await listSceneVersions3D(projectId),
         }),
-        saveVersion: saveSceneVersion3D,
+        saveVersion: (projectId, scene, sources) =>
+          saveSceneVersion3D(projectId, scene, sources),
         updateMetadata: updateProjectMetadata3D,
       },
     [storage],
@@ -701,7 +712,12 @@ function Project3DWorkspace({
     }
     setSaveState({ pending: true, error: null });
     try {
-      const version = await projectStorage.saveVersion(id, workingScene);
+      const sources: SceneVersion3DSourceInput = {
+        html_source: generateEditable3dHtml(workingScene),
+        css_source: generateEditable3dCss(workingScene),
+        js_source: generateEditable3dJs(workingScene),
+      };
+      const version = await projectStorage.saveVersion(id, workingScene, sources);
       setSaveState(IDLE_SAVE_STATE);
       handleVersionSaved(version);
     } catch {
@@ -851,7 +867,11 @@ function Project3DWorkspace({
           </div>
           {previewView === 'code' && !projectStorage.local && (
             <section aria-label="Code" role="region" data-panel="code">
-              <Scene3DCodeEditor scene={workingScene} onChange={updateWorkingScene} />
+              <Scene3DCodeEditor
+                scene={workingScene}
+                sources={project?.current_version ?? undefined}
+                onChange={updateWorkingScene}
+              />
             </section>
           )}
           {drawTarget?.drawing && (

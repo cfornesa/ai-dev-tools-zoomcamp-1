@@ -1637,7 +1637,7 @@ function AdminSettings() {
         },
       )
       .catch(() => setLoadError('Could not load admin settings.'));
-  }, [auth]);
+  }, [auth.status, auth.user?.is_application_admin]);
 
   if (auth.status === 'loading') return null;
   if (auth.status !== 'signed-in' || !auth.user.is_application_admin) {

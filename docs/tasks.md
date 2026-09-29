@@ -109,7 +109,7 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 
 | Issue | Transaction | Result / next action |
 | --- | --- | --- |
-| [#1069](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1069) | `PROPOSED → ENGINEERING → QA PENDING` | Updated the affected browser contracts for the current visible-disabled capability UI, 2D editor disclosures, mobile editor-tool disclosure, current immersive new-tab behavior, and sound-test state isolation. `make check` passes; the focused Chromium set is 14/18 locally, with microphone activation still requiring CI confirmation in its matching browser environment. |
+| [#1069](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1069) | `PROPOSED → ENGINEERING → QA PENDING` | Updated the affected browser contracts for the current visible-disabled capability UI, 2D editor disclosures, mobile editor-tool disclosure, current immersive new-tab behavior, and sound-test state isolation. `make check` passes; the rebuilt-Compose focused Chromium set is 17/19 locally, with the two microphone scenarios and one six-engine regular scenario still failing and linked to #1070/#1071. |
 | [#1070](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1070) | `PROPOSED → ENGINEERING BLOCKED / HANDOFF` | Rebuilt-Compose and CI #1044 reproduction isolate a Tone/MediaStream parent-frame microphone integration failure; no unverified fix was committed. |
 | [#1071](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1071) | `PROPOSED → ENGINEERING BLOCKED / HANDOFF` | CI #1044 isolates non-microphone matrix failures: six-engine regular timeout, public shell/profile failures, and concurrent `django_cache_pkey` errors. |
 

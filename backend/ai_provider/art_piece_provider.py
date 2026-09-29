@@ -175,7 +175,10 @@ instead of across it.
 animation="property: rotation; to: 0 360 0; loop: true; dur: 4000") -- never JavaScript.
 - Never reference an external resource: no `src` pointing at a URL for any asset, texture, or \
 model, no <a-assets> item loaded from a remote path. Every color/material must be defined \
-inline via A-Frame's own material/color attributes."""
+inline via A-Frame's own material/color attributes.
+- For a `light-switch` prompt, register the custom component with lifecycle code and an event \
+listener, attach it to the switch entity, and toggle the emissive material on at least two \
+separate lamp entities together on every trigger."""
 
 
 @dataclass(frozen=True)
@@ -571,28 +574,37 @@ def _looks_like_snippet(snippet: str, library: str) -> bool:
 
 
 def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> bool:
-    """Reject generic Three.js fallbacks for the fixed orbital showcase only.
+    """Reject generic fallbacks for the two fixed showcase prompts only."""
 
-    Ordinary Three.js prompts remain governed by the engine-shape check above;
-    this targeted contract prevents the known sun/planet/moon evaluation prompt
-    from silently becoming a blank or single-cube artifact.
-    """
-
-    if library != "threejs":
-        return True
     prompt_words = prompt.casefold()
-    if not all(word in prompt_words for word in ("sun", "planet", "moon")):
-        return True
     lowered = snippet.casefold()
-    required_groups = "three.group" in lowered or "new three.group" in lowered
-    required_hierarchy = "planet" in lowered and "moon" in lowered
-    required_world_position = "getworldposition" in lowered or (
-        "planet.position" in lowered and "moon.position" in lowered
-    )
-    required_shadows = all(
-        marker in lowered for marker in ("shadowmap", "castshadow", "receiveshadow")
-    )
-    return required_groups and required_hierarchy and required_world_position and required_shadows
+    if library == "threejs" and all(word in prompt_words for word in ("sun", "planet", "moon")):
+        required_groups = "three.group" in lowered or "new three.group" in lowered
+        required_hierarchy = "planet" in lowered and "moon" in lowered
+        required_world_position = "getworldposition" in lowered or (
+            "planet.position" in lowered and "moon.position" in lowered
+        )
+        required_shadows = all(
+            marker in lowered for marker in ("shadowmap", "castshadow", "receiveshadow")
+        )
+        return (
+            required_groups and required_hierarchy and required_world_position and required_shadows
+        )
+    if library == "aframe" and "light-switch" in prompt_words:
+        return (
+            all(
+                marker in lowered
+                for marker in (
+                    "aframe.registercomponent",
+                    "addeventlistener",
+                    "light-switch",
+                    "lamp",
+                    "emissive",
+                )
+            )
+            and lowered.count("lamp") >= 2
+        )
+    return True
 
 
 def parse_regions(code: str, library: str) -> list[dict[str, int | str]]:

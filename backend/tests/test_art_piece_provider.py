@@ -138,6 +138,20 @@ def test_threejs_ordinary_prompt_keeps_accepting_non_orbital_source():
     assert _looks_like_requested_showcase(source, "a rotating teal cube", "threejs")
 
 
+def test_aframe_light_switch_showcase_rejects_empty_static_fallback():
+    source = '<a-scene><a-box id="lamp"></a-box></a-scene>'
+    assert not _looks_like_requested_showcase(
+        source,
+        "light-switch custom component toggles two lamps",
+        "aframe",
+    )
+
+
+def test_aframe_ordinary_prompt_keeps_accepting_static_source():
+    source = '<a-scene><a-box color="#2a9d8f"></a-box></a-scene>'
+    assert _looks_like_requested_showcase(source, "a teal box", "aframe")
+
+
 def test_generate_appends_persona_as_a_second_system_message():
     client = _CapturingClient()
     provider = ArtPieceProvider(client=client, persona_prompt="Use bright solar colors.")

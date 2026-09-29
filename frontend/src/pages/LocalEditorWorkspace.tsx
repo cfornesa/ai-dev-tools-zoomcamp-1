@@ -5,7 +5,13 @@ import { useAuth } from '../auth/useAuth';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { ApiError } from '../api/client';
 import { intakePiecePackage } from '../api/pieceIntake';
-import { publishProject, type PublishValidationErrorBody } from '../api/projects';
+import {
+  getProject as getRemoteProject,
+  getSceneVersion,
+  publishProject,
+  type PublishValidationErrorBody,
+  type Project,
+} from '../api/projects';
 import { fetchStorageEstimate } from '../api/storageUsage';
 import { validateProjectMetadataForPublish, type FieldErrors } from '../validation/projectMetadata';
 import { ConflictResolutionPanel } from '../components/ConflictResolutionPanel';
@@ -50,6 +56,11 @@ import {
   saveMediaTransfer,
 } from '../storage/mediaTransferRepository';
 import { resumeMediaTransfer, type MediaTransferRecord } from '../storage/mediaTransfer';
+import {
+  collectMediaAssetIds,
+  summarizeLocalPublicUpdate,
+  type LocalPublicUpdateDiff,
+} from '../storage/localPublicUpdate';
 import LocalProject3DWorkspace from './LocalProject3DWorkspace';
 import LocalCloudSyncControl from './LocalCloudSyncControl';
 
@@ -86,12 +97,18 @@ function MakePublicDialog({
   busy,
   onConfirm,
   onCancel,
+  actionLabel = 'Publish',
+  headingLabel = 'Make',
+  changeSummary,
 }: {
   initialTitle: string;
   initialDescription: string;
   busy: boolean;
   onConfirm: (title: string, description: string) => void;
   onCancel: () => void;
+  actionLabel?: string;
+  headingLabel?: string;
+  changeSummary?: string;
 }) {
   const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onCancel);
   const [title, setTitle] = useState(initialTitle);
@@ -108,7 +125,9 @@ function MakePublicDialog({
       aria-describedby="make-public-description"
       className="publish-confirm-dialog"
     >
-      <h4 id="make-public-title">Make &quot;{title || 'this piece'}&quot; public?</h4>
+      <h4 id="make-public-title">
+        {headingLabel} &quot;{title || 'this piece'}&quot; public?
+      </h4>
       <p id="make-public-description">
         This piece and its media currently exist only in this browser. Publishing uploads them to
         the server and makes them visible to anyone with the link or in the public gallery. Copies,
@@ -116,6 +135,11 @@ function MakePublicDialog({
         in transit but are not end-to-end encrypted — the server can read the content. Image
         location metadata is removed before upload.
       </p>
+      {changeSummary && (
+        <p aria-label="Changes since last public copy">
+          Changes since last public copy: {changeSummary}
+        </p>
+      )}
       <label htmlFor="make-public-title-input">Title</label>
       <input
         id="make-public-title-input"
@@ -145,7 +169,7 @@ function MakePublicDialog({
         onClick={() => onConfirm(title, description)}
         disabled={!canConfirm || busy}
       >
-        {busy ? 'Publishing…' : 'Publish'}
+        {busy ? 'Publishing…' : actionLabel}
       </button>
       <button type="button" onClick={onCancel} disabled={busy}>
         Cancel
@@ -183,6 +207,11 @@ function LocalEditorWorkspace() {
     state: 'over-quota' | 'error';
     detail: string;
   } | null>(null);
+  const [publicUpdate, setPublicUpdate] = useState<{
+    remoteProject: Project;
+    diff: LocalPublicUpdateDiff;
+  } | null>(null);
+  const [publicUpdateBusy, setPublicUpdateBusy] = useState(false);
   const sessionGeneration =
     auth.status === 'signed-in' ? getMutationSessionGeneration(auth.user.username) : undefined;
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId) ?? null;
@@ -318,6 +347,114 @@ function LocalEditorWorkspace() {
       }
     } finally {
       db.close();
+    }
+  }
+
+  async function preparePublicUpdate() {
+    if (auth.status !== 'signed-in' || !id || !project?.remotePublicId) return;
+    setMakePublicResult(null);
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      const remoteProject = await getRemoteProject(project.remotePublicId);
+      const remoteVersion = project.remoteVersion ?? remoteProject.current_version;
+      if (remoteVersion === null) throw new Error('The published piece has no saved version.');
+      const [remoteScene, localScenes] = await Promise.all([
+        getSceneVersion(project.remotePublicId, remoteVersion),
+        listScenesForProject(db, id),
+      ]);
+      const localScene =
+        localScenes.find((scene) => scene.id === project.activeSceneId) ??
+        localScenes.at(-1) ??
+        null;
+      if (!localScene) throw new Error('The local piece has no scene to publish.');
+      const localMediaIds = new Set<string>();
+      for (const scene of localScenes) collectMediaAssetIds(scene.sceneJson, localMediaIds);
+      const diff = summarizeLocalPublicUpdate(
+        remoteScene.scene_json,
+        localScene.sceneJson,
+        collectMediaAssetIds(remoteScene.scene_json),
+        localMediaIds,
+      );
+      setPublicUpdate({
+        remoteProject,
+        diff,
+      });
+    } catch (error) {
+      setMakePublicResult({
+        state: 'error',
+        detail: error instanceof Error ? error.message : 'Could not compare the public copy.',
+      });
+    } finally {
+      db?.close();
+    }
+  }
+
+  async function handlePublicUpdateConfirm(titleValue: string, descriptionValue: string) {
+    if (
+      auth.status !== 'signed-in' ||
+      !id ||
+      !project?.remotePublicId ||
+      project.remoteVersion === null ||
+      project.remoteVersion === undefined
+    ) {
+      return;
+    }
+    setPublicUpdateBusy(true);
+    setMakePublicResult(null);
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      const built = await buildLocal2dPiecePackage(
+        db,
+        auth.user.username,
+        id,
+        undefined,
+        descriptionValue,
+        titleValue,
+      );
+      if (built.missingAssets.length > 0) {
+        setMakePublicResult({
+          state: 'error',
+          detail: 'Missing local media; export or repair it before publishing.',
+        });
+        return;
+      }
+      const usage = await getProjectStorageUsage(db, id);
+      const estimate = await fetchStorageEstimate({
+        pieceBytes: built.bytes.byteLength,
+        mediaBytes: usage.bytesUsed,
+        pieceFiles: 1,
+        mediaFiles: usage.fileCount,
+      });
+      if (!estimate.fits.public) {
+        setMakePublicResult({
+          state: 'over-quota',
+          detail: `Over quota; ${formatBytes(Math.max(estimate.remaining_after.public.bytes, 0))} remains. The public copy was not changed.`,
+        });
+        return;
+      }
+      const intake = await intakePiecePackage(
+        built.bytes,
+        `local-republish-${id}-${project.remoteVersion}-${project.updatedAt}`,
+        { pieceId: project.remotePublicId, expectedRevision: project.remoteVersion },
+      );
+      const updated = await updateProject(db, auth.user.username, id, {
+        title: titleValue,
+        cloudSyncState: 'synced',
+        remoteVersion: intake.version,
+      });
+      setProject(updated);
+      setPublicUpdate(null);
+      setMessage(`Updated the public copy to version ${intake.version}.`);
+    } catch (error) {
+      setMakePublicResult({
+        state: 'error',
+        detail: error instanceof Error ? error.message : 'Could not update the public copy.',
+      });
+    } finally {
+      db?.close();
+      setPublicUpdateBusy(false);
     }
   }
 
@@ -752,6 +889,18 @@ function LocalEditorWorkspace() {
           </button>
         </p>
       )}
+      {project.remotePublicId && (
+        <p>
+          <button
+            type="button"
+            className="shell-action"
+            onClick={() => void preparePublicUpdate()}
+            disabled={publicUpdateBusy}
+          >
+            {publicUpdateBusy ? 'Comparing…' : 'Update public copy'}
+          </button>
+        </p>
+      )}
       {showMakePublic && (
         <MakePublicDialog
           initialTitle={project.title}
@@ -762,6 +911,23 @@ function LocalEditorWorkspace() {
           }
           onCancel={() => {
             setShowMakePublic(false);
+            setMakePublicResult(null);
+          }}
+        />
+      )}
+      {publicUpdate && (
+        <MakePublicDialog
+          initialTitle={project.title || publicUpdate.remoteProject.title}
+          initialDescription={publicUpdate.remoteProject.description}
+          busy={publicUpdateBusy}
+          actionLabel="Update public copy"
+          headingLabel="Update"
+          changeSummary={publicUpdate.diff.summary}
+          onConfirm={(titleValue, descriptionValue) =>
+            void handlePublicUpdateConfirm(titleValue, descriptionValue)
+          }
+          onCancel={() => {
+            setPublicUpdate(null);
             setMakePublicResult(null);
           }}
         />

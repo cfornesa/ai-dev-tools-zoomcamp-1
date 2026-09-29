@@ -38,7 +38,7 @@ vi.mock('../api/pieceIntake', () => ({ intakePiecePackage: vi.fn() }));
 vi.mock('../api/storageUsage', () => ({ fetchStorageEstimate: vi.fn() }));
 vi.mock('../api/projects', async () => {
   const actual = await vi.importActual<typeof import('../api/projects')>('../api/projects');
-  return { ...actual, publishProject: vi.fn() };
+  return { ...actual, publishProject: vi.fn(), getProject: vi.fn(), getSceneVersion: vi.fn() };
 });
 
 const mockedOpen = vi.mocked(repository.openLocalProjectDatabase);
@@ -53,6 +53,8 @@ const mockedListMediaTransfers = vi.spyOn(mediaTransferRepository, 'listMediaTra
 const mockedBuildPackage = vi.mocked(localPiecePackage.buildLocal2dPiecePackage);
 const mockedIntake = vi.mocked(pieceIntake.intakePiecePackage);
 const mockedPublish = vi.mocked(projectsApi.publishProject);
+const mockedGetRemoteProject = vi.mocked(projectsApi.getProject);
+const mockedGetSceneVersion = vi.mocked(projectsApi.getSceneVersion);
 const mockedEstimate = vi.mocked(storageUsageApi.fetchStorageEstimate);
 const db = { close: vi.fn() } as unknown as IDBDatabase;
 
@@ -140,6 +142,23 @@ beforeEach(() => {
     id: 'server-p1',
     editor_url: '/users/@alice/edit/local-project',
   } as unknown as Awaited<ReturnType<typeof projectsApi.publishProject>>);
+  mockedGetRemoteProject.mockResolvedValue({
+    ...project,
+    id: 'server-p1',
+    description: 'A short description.',
+    current_version: 1,
+  } as unknown as Awaited<ReturnType<typeof projectsApi.getProject>>);
+  mockedGetSceneVersion.mockResolvedValue({
+    id: 1,
+    sequence: 1,
+    origin: 'manual',
+    change_label: null,
+    created_by: 'alice',
+    parent: null,
+    fork_source_version: null,
+    created_at: '2026-01-01T00:00:00Z',
+    scene_json: { shapes: [{ id: 'shape-1', type: 'rect', mediaAssetId: 'a1' }] },
+  });
 });
 
 describe('LocalEditorWorkspace', () => {
@@ -258,6 +277,84 @@ describe('LocalEditorWorkspace', () => {
       expect(await screen.findByText(/over quota/i)).toBeVisible();
       expect(mockedIntake).not.toHaveBeenCalled();
       expect(mockedPublish).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Update public copy (#1051)', () => {
+    const publishedProject = {
+      ...project,
+      cloudSyncState: 'synced' as const,
+      remotePublicId: 'server-p1',
+      remoteVersion: 1,
+    };
+
+    function prepareUpdateFixture() {
+      mockedGetProject.mockResolvedValue(publishedProject);
+      mockedListScenes.mockResolvedValue([
+        {
+          ...scene,
+          sceneJson: {
+            shapes: [{ id: 'shape-1', type: 'circle', mediaAssetId: 'a2' }],
+          },
+        },
+      ]);
+    }
+
+    it('shows a deterministic scene/media diff before confirming', async () => {
+      prepareUpdateFixture();
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(await screen.findByRole('button', { name: 'Update public copy' }));
+
+      expect(
+        await screen.findByText(/1 shape changed; 1 media asset added; 1 media asset removed/i),
+      ).toBeVisible();
+      expect(screen.getAllByRole('button', { name: 'Update public copy' }).at(-1)).toBeEnabled();
+      expect(mockedIntake).not.toHaveBeenCalled();
+    });
+
+    it('uploads the current local state against the remote revision and advances remoteVersion', async () => {
+      prepareUpdateFixture();
+      mockedIntake.mockResolvedValue({
+        kind: '2d',
+        public_id: 'server-p1',
+        version: 2,
+        visibility: 'private',
+        media_count: 1,
+      });
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(await screen.findByRole('button', { name: 'Update public copy' }));
+      const confirm = screen.getAllByRole('button', { name: 'Update public copy' }).at(-1)!;
+      await user.click(confirm);
+
+      expect(await screen.findByText(/updated the public copy to version 2/i)).toBeVisible();
+      expect(mockedIntake).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), expect.any(String), {
+        pieceId: 'server-p1',
+        expectedRevision: 1,
+      });
+      expect(mockedUpdateProject).toHaveBeenCalledWith(
+        db,
+        'alice',
+        'p1',
+        expect.objectContaining({ cloudSyncState: 'synced', remoteVersion: 2 }),
+      );
+    });
+
+    it('leaves the prior local remoteVersion when the update upload fails', async () => {
+      prepareUpdateFixture();
+      mockedIntake.mockRejectedValue(new Error('upload failed'));
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(await screen.findByRole('button', { name: 'Update public copy' }));
+      const confirm = screen.getAllByRole('button', { name: 'Update public copy' }).at(-1)!;
+      await user.click(confirm);
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('upload failed');
+      expect(mockedUpdateProject).not.toHaveBeenCalled();
     });
   });
 });

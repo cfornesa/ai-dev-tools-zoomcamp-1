@@ -110,6 +110,7 @@ export async function buildLocal2dPiecePackage(
   projectId: string,
   packageModule?: LocalPiecePackageModule,
   descriptionOverride?: string,
+  titleOverride?: string,
 ): Promise<LocalPiecePackageResult> {
   const project = await getProject(db, ownerId, projectId);
   if (!project) throw new Error('The local piece is missing or belongs to another owner.');
@@ -137,7 +138,7 @@ export async function buildLocal2dPiecePackage(
     packageModule ?? (await loadPiecePackageModule());
   const bytes = await buildPiecePackage({
     kind: '2d',
-    title: project.title,
+    title: titleOverride ?? project.title,
     description: descriptionOverride ?? '',
     appVersion: 'local-first-2d',
     records: scenes.map((scene) => ({ schemaVersion: 1, data: scene.sceneJson })),

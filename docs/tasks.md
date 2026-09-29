@@ -109,8 +109,8 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 The dependency chain for #1059 → #1055/#1056 is now closed. The exact
 focused checks, full `make check`, Compose preflight, and local health result
 all pass. Production-readiness remains **BLOCKED / NOT PRODUCTION-READY**
-because 19 open issues remain: #788, #859, #926, #1035, #1036, #1040–#1046,
-and #1060–#1066. The complete readiness assessment is recorded in
+because 21 open issues remain: #788, #859, #926, #1035, #1036, #1040–#1046,
+and #1060–#1068. The complete readiness assessment is recorded in
 `.local/tasks/production-readiness-2026-09-29.md`; the batch completion report
 is in `.local/tasks/session-completion-2026-09-29.md`.
 
@@ -121,13 +121,20 @@ implements public server delivery. Criterion-ready follow-up
 the owner decision and contract/memory reconciliation; #1056 remains closed
 and is not reopened.
 
+The #1060 transaction reached QA with its scoped backend behavior passing, but
+the required full frontend gate reproduced an unrelated AdminSettings failure
+twice. Criterion-ready [#1068](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1068)
+owns that cross-file state regression; #1060 remains open until the full gate
+is green.
+
 ## 2026-09-28 — live-provider QA follow-ups
 
 | Issue | Transaction | Result / next action |
 | --- | --- | --- |
 | [#926](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/926) | `GROOMED → ENGINEERING/QA` | Local provider dependency cleared. Two bounded live Case-A attempts violated the selected `@Hills` scope; issue remains open and is linked to implementation defect #1060. Cases B/C were not started after the repeated scope failure. |
 | [#1041](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1041) | `GROOMED → ENGINEERING/QA` | Three bounded Three.js generations failed the rubric (blank, generic cube, blank). No artifact was published; issue remains open and is linked to #1061. |
-| [#1060](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1060) | `PROPOSED` | Discovery-gate follow-up for live AI target-scope enforcement; filed with reproduction, acceptance criteria, and exact full checks. Deferred from this session. |
+| [#1060](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1060) | `GROOMED → ENGINEERING → QA` | Commit `61fd250d` enforces selected-target scope at patch validation; focused backend tests and full backend checks pass. QA is FAIL only because the required frontend full suite reproducibly fails in AdminSettings; follow-up #1068 owns that regression. |
+| [#1068](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1068) | `PROPOSED` | Criterion-ready follow-up for the reproduced full-suite AdminSettings cross-file state regression. Deferred from the #1060 discovery/QA transaction. |
 | [#1061](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1061) | `PROPOSED` | Discovery-gate follow-up for blank/generic Three.js showcase output; filed with bounded evidence and validation criteria. Deferred from this session. |
 | [#1042](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1042) | `GROOMED → ENGINEERING/QA` | Three bounded A-Frame generations produced an empty preview; no artifact was published. Linked implementation follow-up #1062. |
 | [#1043](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1043) | `GROOMED → ENGINEERING/QA` | Three bounded p5.js generations produced a generic single-circle fallback; no artifact was published. Linked implementation follow-up #1063. |

@@ -890,7 +890,7 @@ function ProviderCredentialCards() {
   const [providers, setProviders] = useState<ProviderCredentialStatus[]>([]);
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [busyVendor, setBusyVendor] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ReactNode>(null);
 
   useEffect(() => {
     Promise.resolve(fetchProviderCredentials())
@@ -910,8 +910,21 @@ function ProviderCredentialCards() {
         ),
       );
       setKeys((current) => ({ ...current, [vendor]: '' }));
-    } catch {
-      setError(`Could not save your ${vendor} key.`);
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 401) {
+        setError(
+          <>
+            Your session expired. <Link to="/accounts/login/">Sign in again</Link> to save your{' '}
+            {vendor} key.
+          </>,
+        );
+      } else if (caught instanceof ApiError && caught.status === 400) {
+        const body = caught.body as { key?: string[] | string; detail?: string } | null;
+        const keyError = Array.isArray(body?.key) ? body.key[0] : body?.key;
+        setError(keyError ?? body?.detail ?? `Could not save your ${vendor} key.`);
+      } else {
+        setError(`Could not save your ${vendor} key.`);
+      }
     } finally {
       setBusyVendor(null);
     }

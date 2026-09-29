@@ -23,10 +23,10 @@ CI/publication, browser-verification, and owner-run production work.
 
 ## Remaining open inventory
 
-The authenticated GitHub search returned exactly these 20 open issues:
+The authenticated GitHub search returned exactly these 19 open issues:
 
 `#788 #859 #926 #1040 #1041 #1042 #1043 #1044 #1045 #1046
-#1061 #1062 #1063 #1064 #1065 #1066 #1067 #1069 #1070 #1071`.
+#1061 #1062 #1063 #1064 #1065 #1066 #1067 #1069 #1071`.
 
 No open issue was silently omitted or duplicated. #1035 and #1036 were
 reconciled and closed after their child/implementation criteria completed.

@@ -14,9 +14,9 @@ not silently absorbed implementation work.
 
 | Status | Issues | Evidence |
 | --- | --- | --- |
-| Completed/closed this continuation | #1059, #1055, #1056 | QA PASS comments, GitHub completed state, commits `12ee91b4`, `5693128c`, and `80a5df00`. |
+| Completed/closed this continuation | #1059, #1055, #1056, #1070 | QA PASS comments, GitHub completed state, commits `12ee91b4`, `5693128c`, `80a5df00`, and `a1e02203`. |
 | Previously completed in the implementation batch | #1050–#1054, #1057–#1058 | Existing issue comments, issue-scoped commits, and prior ledger entries. |
-| Open follow-up / blocked | #788, #859, #926, #1040–#1046, #1061–#1067, #1069–#1071 | #1035 and #1036 are closed after child/implementation QA, full checks, migration-backed local save/reload, and exact 1280x900/375x812 rendered evidence. #1060 and #1068 are closed; #1061–#1066 have implementation commits and green local checks but still need owner-run live evidence, #1067 needs an explicit contract decision, and #1069 remains open with linked #1070/#1071 follow-ups after CI #1044 reproduced microphone and browser-matrix failures. |
+| Open follow-up / blocked | #788, #859, #926, #1040–#1046, #1061–#1067, #1069, #1071 | #1035 and #1036 are closed after child/implementation QA, full checks, migration-backed local save/reload, and exact 1280x900/375x812 rendered evidence. #1060, #1068, and #1070 are closed; #1061–#1066 have implementation commits and green local checks but still need owner-run live evidence, #1067 needs an explicit contract decision, and #1069 remains open pending the #1071 browser/cache follow-up. |
 | Missing terminal classification | 0 for the processed batch | Every processed issue is closed or has an explicit open follow-up status. |
 
 ## Final verification
@@ -62,6 +62,6 @@ unrecorded production claim is being made.
 
 ## Next action
 
-Next engineering work should continue with #1070/#1071 under #1069 after #1067;
+Next engineering work should continue with #1071 under #1069 after #1067;
 keep #788 owner-run, #1067 at its contract decision gate, and the #1061–#1066
 live-provider evidence bounded by their issue contracts.

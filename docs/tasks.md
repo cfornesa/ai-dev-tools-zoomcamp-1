@@ -96,6 +96,14 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 - [#928](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/928) — **CLOSED / QA PASS:** normative local-first storage contract documentation; full `make check` passed and dependent implementation issues remain linked.
 - [#954](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/954) — **CLOSED / QA PASS:** Replit production reference-import execution path. Added the disabled-by-default startup helper with safe preview mode and explicit write mode; local command-capture tests and full `make check` passed. #788 remains the separate owner-authorized production data action.
 
+## 2026-09-28 — 3D code-tab QA and regression follow-up
+
+| Issue | Transaction | Result / next action |
+| --- | --- | --- |
+| [#1055](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1055) | `GROOMED → ENGINEERING → QA` | Product criteria pass on commit `5693128c`; focused tests, typecheck, build, and authenticated desktop/mobile browser evidence pass. Full `npm test` is red in unrelated `AdminSettings.test.tsx`; issue remains open pending #1059. |
+| [#1056](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1056) | `GROOMED → ENGINEERING → QA` | Product/focused criteria pass on commit `80a5df00`; prior QA recorded the same unrelated full-gate failure. Remains open pending #1059. |
+| [#1059](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1059) | `PROPOSED` | New discovery-gate follow-up for the reproducible AdminSettings grace-days regression (`expected 14, received 30`). Filed with focused/full verification commands; intentionally deferred from this session. |
+
 ## 2026-09-24 — active follow-up batch (#747, #748, #788, #798–#808)
 
 The current authoritative transaction ledger is

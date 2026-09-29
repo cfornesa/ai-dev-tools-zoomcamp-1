@@ -40,6 +40,7 @@ export async function buildLocalPiecePackage(
   db: IDBDatabase,
   ownerId: string,
   projectId: string,
+  options: { title?: string; description?: string } = {},
 ): Promise<LocalPiecePackageResult> {
   const project = await getProject(db, ownerId, projectId);
   if (!project) throw new Error('The local piece is missing or belongs to another owner.');
@@ -74,8 +75,8 @@ export async function buildLocalPiecePackage(
   const { buildPiecePackage, parsePiecePackage } = await import('./piecePackage');
   const bytes = await buildPiecePackage({
     kind,
-    title: project.title,
-    description: '',
+    title: options.title ?? project.title,
+    description: options.description ?? '',
     visibilityIntent: 'private',
     appVersion: 'augmentrart-local-sync',
     records,

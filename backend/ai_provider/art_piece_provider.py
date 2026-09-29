@@ -129,7 +129,11 @@ gestures: `window.__registerArtPieceCamera({ getPose: function () { return { x: 
 y: camera.position.y, z: camera.position.z }; }, setPose: function (x, y, z) { \
 camera.position.set(x, y, z); camera.lookAt(0, 0, 0); } });` -- replace `camera` with whatever \
 variable name you gave your camera. Always include this call; omitting it leaves hand-gesture \
-steering with nothing to control."""
+steering with nothing to control.
+- For a sun/planet/moon orbital system, create a planet `THREE.Group` and parent the planet \
+mesh to it; parent the moon to the planet group and derive the moon's world position from the \
+planet's current position plus a faster local orbit. Enable the renderer's shadow map and set \
+both `castShadow` and `receiveShadow` on the visible meshes and the sun light."""
 
 # Issue #199 (A-Frame extension): like SVG, this is declarative markup
 # only -- A-Frame's own built-in geometry/material/animation components
@@ -420,7 +424,11 @@ class ArtPieceProvider:
             )
 
         snippet = _strip_markdown_fence(text).strip()
-        if not _looks_like_snippet(snippet, library) or len(snippet) > MAX_SNIPPET_CHARS:
+        if (
+            not _looks_like_snippet(snippet, library)
+            or not _looks_like_requested_showcase(snippet, prompt, library)
+            or len(snippet) > MAX_SNIPPET_CHARS
+        ):
             return ArtPieceResult(
                 usage=usage,
                 error=(
@@ -560,6 +568,31 @@ def _looks_like_snippet(snippet: str, library: str) -> bool:
     # aframe: declarative markup only, matching SVG's inert-markup
     # rejection of any "<script" tag.
     return "<a-scene" in lowered and "<script" not in lowered
+
+
+def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> bool:
+    """Reject generic Three.js fallbacks for the fixed orbital showcase only.
+
+    Ordinary Three.js prompts remain governed by the engine-shape check above;
+    this targeted contract prevents the known sun/planet/moon evaluation prompt
+    from silently becoming a blank or single-cube artifact.
+    """
+
+    if library != "threejs":
+        return True
+    prompt_words = prompt.casefold()
+    if not all(word in prompt_words for word in ("sun", "planet", "moon")):
+        return True
+    lowered = snippet.casefold()
+    required_groups = "three.group" in lowered or "new three.group" in lowered
+    required_hierarchy = "planet" in lowered and "moon" in lowered
+    required_world_position = "getworldposition" in lowered or (
+        "planet.position" in lowered and "moon.position" in lowered
+    )
+    required_shadows = all(
+        marker in lowered for marker in ("shadowmap", "castshadow", "receiveshadow")
+    )
+    return required_groups and required_hierarchy and required_world_position and required_shadows
 
 
 def parse_regions(code: str, library: str) -> list[dict[str, int | str]]:

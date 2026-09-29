@@ -17,7 +17,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from ai_provider.art_piece_provider import ArtPieceProvider
+from ai_provider.art_piece_provider import ArtPieceProvider, _looks_like_requested_showcase
 
 
 class _CapturingChat:
@@ -100,6 +100,42 @@ def test_threejs_system_prompt_tells_the_model_to_register_a_steerable_camera():
     content = system_message["content"]
     assert "__registerArtPieceCamera" in content
     assert "getPose" in content and "setPose" in content
+
+
+def test_threejs_orbital_showcase_prompt_requires_hierarchy_and_shadows():
+    client = _CapturingClient()
+    provider = ArtPieceProvider(client=client)
+
+    provider.generate(
+        "sun planet moon hierarchical orbital system with shadows",
+        "threejs",
+    )
+
+    system_message = next(m for m in client.chat.last_kwargs["messages"] if m["role"] == "system")
+    content = system_message["content"].lower()
+    assert "planet" in content and "moon" in content
+    assert "shadow" in content
+
+
+def test_threejs_orbital_showcase_rejects_generic_cube_fallback():
+    source = """
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+    var renderer = new THREE.WebGLRenderer();
+    var cube = new THREE.Mesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial());
+    scene.add(cube);
+    window.__registerArtPieceCamera({getPose: function () { return {}; }, setPose: function () {}});
+    """
+    assert not _looks_like_requested_showcase(
+        source,
+        "sun planet moon hierarchical orbital system with shadows",
+        "threejs",
+    )
+
+
+def test_threejs_ordinary_prompt_keeps_accepting_non_orbital_source():
+    source = "const scene = new THREE.Scene(); const cube = new THREE.Mesh();"
+    assert _looks_like_requested_showcase(source, "a rotating teal cube", "threejs")
 
 
 def test_generate_appends_persona_as_a_second_system_message():

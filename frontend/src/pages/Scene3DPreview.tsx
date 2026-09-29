@@ -266,6 +266,7 @@ function ThreeScenePreview({
   onObjectGestureStart,
   onObjectGestureChange,
   onObjectGestureEnd,
+  ambientSampleResolver,
 }: {
   scene: Scene3DDocument;
   /** #782: holds object animations at their authored pose (e.g. while a selection's handles are shown) without freezing the camera. */
@@ -314,6 +315,8 @@ function ThreeScenePreview({
   screenshotBaseName?: string;
   /** Editor-only orientation aids; never part of the authored scene graph. */
   showEditorHelpers?: boolean;
+  /** Public viewers provide the server asset boundary; editors use IndexedDB. */
+  ambientSampleResolver?: (assetId: string) => Promise<Blob | null>;
 }) {
   const frozenRef = useRef(frozen);
   frozenRef.current = frozen;
@@ -488,7 +491,7 @@ function ThreeScenePreview({
         // Issue #847: fail soft to the synthesized ambient walk if the
         // sample can no longer be resolved locally (e.g. cleared browser
         // storage) -- never block sound from enabling at all.
-        resolveAmbientSample(ambientSampleId)
+        resolveAmbientSample(ambientSampleId, ambientSampleResolver)
           .then((blob) => {
             if (blob) {
               engine.setAmbientSample(blob);

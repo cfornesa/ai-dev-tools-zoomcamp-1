@@ -7,7 +7,19 @@ import { Blob as NodeBlob } from 'node:buffer';
 import 'fake-indexeddb/auto';
 
 import { IDBFactory } from 'fake-indexeddb';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { uploadProject3DAmbientSampleSpy } = vi.hoisted(() => ({
+  uploadProject3DAmbientSampleSpy: vi.fn().mockResolvedValue({
+    asset_id: 'asset-1',
+    mime_type: 'audio/mpeg',
+    byte_size: 3,
+  }),
+}));
+
+vi.mock('../api/projects3d', () => ({
+  uploadProject3DAmbientSample: uploadProject3DAmbientSampleSpy,
+}));
 
 import {
   AmbientSampleUnsupportedType,
@@ -37,6 +49,22 @@ describe('uploadAmbientSample (#847/#1049)', () => {
     await expect(uploadAmbientSample('piece-1', file)).rejects.toBeInstanceOf(
       AmbientSampleUnsupportedType,
     );
+  });
+
+  it('rejects samples over the shared server limit before local import', async () => {
+    const file = new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'large.mp3', {
+      type: 'audio/mpeg',
+    });
+
+    await expect(uploadAmbientSample('piece-1', file)).rejects.toThrow('10MB or smaller');
+  });
+
+  it('syncs a selected sample to the server when the editor opts in', async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], 'loop.mp3', { type: 'audio/mpeg' });
+
+    const assetId = await uploadAmbientSample('piece-1', file, { syncToServer: true });
+
+    expect(uploadProject3DAmbientSampleSpy).toHaveBeenCalledWith('piece-1', assetId, file);
   });
 
   it('binds the asset to the given piece id regardless of piece kind -- no schema constraint', async () => {

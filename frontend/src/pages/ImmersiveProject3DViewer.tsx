@@ -231,6 +231,9 @@ function ImmersiveProject3DViewer({
             flyControls
             onDownload={(variant) => void handleDownload(variant)}
             toolbarMode="inline"
+            ambientSampleResolver={(assetId) =>
+              fetchPublicPieceAsset('3d', readyProject.id, assetId)
+            }
           />
         )}
       </section>

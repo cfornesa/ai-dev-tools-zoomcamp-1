@@ -1088,6 +1088,7 @@ function Project3DWorkspace({
                   value={normalizeSonic(workingScene.sonic)}
                   onChange={(sonic) => updateWorkingScene({ ...workingScene, sonic })}
                   pieceId={id}
+                  syncToServer={!projectStorage.local}
                   ambientSampleFilename={ambientSampleFilename}
                 />
               </div>

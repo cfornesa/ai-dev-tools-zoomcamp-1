@@ -302,11 +302,23 @@ describe('Scene3DPreview sound control (issue #306)', () => {
     await user.click(screen.getByRole('button', { name: 'Enable sound' }));
     await user.click(screen.getByRole('button', { name: 'Piece controls' }));
 
-    expect(resolveAmbientSampleSpy).toHaveBeenCalledWith('asset-1');
+    expect(resolveAmbientSampleSpy).toHaveBeenCalledWith('asset-1', undefined);
     await vi.waitFor(() => expect(setAmbientSampleSpy).toHaveBeenCalled());
     expect(setAmbientSampleSpy).toHaveBeenCalledWith(expect.any(Blob));
     expect(screen.getByLabelText(/Ambient BPM/)).toBeDisabled();
     expect(screen.getByText('BPM has no effect while an ambient sample is playing.')).toBeVisible();
+  });
+
+  it('passes the public asset resolver through to ambient sample resolution (#1056)', async () => {
+    const remoteResolver = vi.fn().mockResolvedValue(new Blob(['bytes'], { type: 'audio/mpeg' }));
+    const scene = baseScene({ sonic: { extras: { ambient_sample: 'asset-remote' } } as never });
+    render(<Scene3DPreview scene={scene} ambientSampleResolver={remoteResolver} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+
+    expect(resolveAmbientSampleSpy).toHaveBeenCalledWith('asset-remote', remoteResolver);
   });
 
   it('falls back to the synthesized ambient walk when the sample cannot be resolved', async () => {

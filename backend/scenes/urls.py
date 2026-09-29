@@ -45,6 +45,7 @@ from scenes.ai_runs_api import (
     AIRunDetailView,
     AIRunListCreateView,
 )
+from scenes.ambient_sample_api import Project3DAmbientSampleView
 from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
@@ -158,6 +159,11 @@ urlpatterns = [
         "pieces/<str:kind>/<uuid:public_id>/assets/<uuid:asset_id>/",
         PublicPieceAssetView.as_view(),
         name="public-piece-asset",
+    ),
+    path(
+        "projects3d/<uuid:public_id>/ambient-sample/",
+        Project3DAmbientSampleView.as_view(),
+        name="project3d-ambient-sample",
     ),
     path("pages/", PublicPageNavigationView.as_view(), name="public-page-navigation"),
     path("pages/<slug:slug>/", PublicPageDetailView.as_view(), name="public-page-detail"),

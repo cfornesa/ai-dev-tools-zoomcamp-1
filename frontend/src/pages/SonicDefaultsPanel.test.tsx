@@ -37,7 +37,9 @@ describe('SonicDefaultsPanel ambient sample (#847)', () => {
     ) as HTMLInputElement;
     await user.upload(input, makeFile('loop.mp3', 'audio/mpeg'));
 
-    expect(mockedUpload).toHaveBeenCalledWith('piece-1', expect.any(File));
+    expect(mockedUpload).toHaveBeenCalledWith('piece-1', expect.any(File), {
+      syncToServer: false,
+    });
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ extras: expect.objectContaining({ ambient_sample: 'asset-123' }) }),
     );

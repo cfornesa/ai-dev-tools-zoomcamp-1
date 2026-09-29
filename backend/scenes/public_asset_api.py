@@ -8,6 +8,7 @@ from django.http import Http404, HttpResponse
 from rest_framework.views import APIView
 
 from scenes.models import ArtPiece, PieceIntakeAsset, Project, Project3D
+from scenes.sonic_contract import normalize_sonic
 
 
 def _published_piece(kind: str, public_id: uuid.UUID):
@@ -44,6 +45,17 @@ class PublicPieceAssetView(APIView):
         )
         if asset is None:
             raise Http404
+        if kind == "3d":
+            current = (
+                Project3D.objects.filter(public_id=public_id, current_version__isnull=False)
+                .values_list("current_version__scene_json", flat=True)
+                .first()
+            )
+            ambient_sample = normalize_sonic((current or {}).get("sonic"))
+            if not ambient_sample or ambient_sample["extras"].get("ambient_sample") != str(
+                asset.source_asset_id
+            ):
+                raise Http404
         response = HttpResponse(bytes(asset.data), content_type=asset.mime_type)
         response["X-Content-Type-Options"] = "nosniff"
         response["Cache-Control"] = "public, immutable"

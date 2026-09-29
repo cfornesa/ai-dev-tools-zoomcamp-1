@@ -37,7 +37,7 @@ No open issue was silently omitted or duplicated.
 | Local deployment and automated checks | PASS | Preserve the green `make check` result. |
 | Approved-browser verification | OPEN FOLLOW-UP | Complete #859's six-engine matrix; implement and verify #1061–#1066. |
 | CI verification | OPEN FOLLOW-UP | Obtain the matching-ref CI/browser evidence required by #859 and any parent release gate. |
-| Intended functionality | BLOCKED | Resolve #1060–#1066, then re-run the linked parent transactions. |
+| Intended functionality | BLOCKED | Resolve #1061–#1066, then re-run the linked parent transactions; #1061 still needs owner-run live/browser evidence. |
 | Source-contract work | HANDED-OFF / OPEN | Owner-directed #1035/#1036 decision and implementation work remains. |
 | Replit/publication | BLOCKED / OWNER-RUN | Keep #788 and any production writes on the explicitly authorized owner workflow. |
 | Production readiness | BLOCKED | Re-run this gate after the listed open issues reach terminal states. |

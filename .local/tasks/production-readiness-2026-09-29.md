@@ -10,8 +10,9 @@ CI/publication, browser-verification, and owner-run production work.
 
 - Local deployment: `make compose-preflight` passed and
   `curl -fsS http://127.0.0.1:5000/health/` returned database/cache `ok`.
-- Local quality: the exact `make check` for #1056 passed — 1,802 backend
-  tests passed / 39 skipped and 3,168 frontend tests passed; lint,
+- Local quality: the current `UV_CACHE_DIR=/tmp/codex-uv-cache make check`
+  passed — 1,821 backend tests passed / 39 skipped and 3,168 frontend tests
+  passed; lint,
   format-check, typecheck, and action-pin checks passed. Existing warnings
   were non-failing.
 - Approved browser: #1055 has rendered Chrome evidence at 1280x900 and
@@ -43,7 +44,7 @@ reconciled and closed after their child/implementation criteria completed.
 | Replit/publication | BLOCKED / OWNER-RUN | Keep #788 and any production writes on the explicitly authorized owner workflow. |
 | Production readiness | BLOCKED | Re-run this gate after the listed open issues reach terminal states. |
 
-### New readiness follow-up
+### Readiness reconciliation
 
 `#1067` is an `OPEN FOLLOW-UP` for the contradictory ambient-audio public
 delivery contract discovered during this read-only audit. It owns the
@@ -84,7 +85,8 @@ is inferred from local evidence.
    the issue marks it out of scope.
 2. Keep the source-contract implementation under regression coverage; #1035
    and #1036 are already reconciled and closed.
-3. Implement and verify #1069, then rerun #859's browser matrix after its
-   fixture dependencies and generated showcase follow-ups are resolved.
-4. Keep #788 and other production-data actions owner-run; do not use local
+3. Rerun #859's browser matrix after its fixture dependencies and generated
+   showcase follow-ups are resolved; #1069 is already implemented and closed.
+4. Resolve #1067's delivery-policy decision before changing the contract.
+5. Keep #788 and other production-data actions owner-run; do not use local
    Compose evidence as production evidence.

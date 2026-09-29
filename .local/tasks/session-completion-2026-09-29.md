@@ -28,8 +28,9 @@ not silently absorbed implementation work.
 - #1055 focused tests — 24 passed; typecheck and build passed; rendered
   desktop/mobile browser evidence remains valid for the unchanged 3D files.
 - #1056 focused tests — backend 3 passed and frontend 48 passed.
-- `make check` — 1,802 backend tests passed / 39 skipped and 3,168 frontend
-  tests passed; lint, format-check, typecheck, and action-pin checks passed.
+- `UV_CACHE_DIR=/tmp/codex-uv-cache make check` — 1,821 backend tests passed /
+  39 skipped and 3,168 frontend tests passed; lint, format-check, typecheck,
+  and action-pin checks passed.
 - `make compose-preflight` and local `/health/` — passed.
 
 ## Reconciliation and follow-up audit
@@ -64,6 +65,7 @@ unrecorded production claim is being made.
 
 ## Next action
 
-Next engineering work should continue with #859 after #1067;
-keep #788 owner-run, #1067 at its contract decision gate, and the #1061–#1066
-live-provider evidence bounded by their issue contracts.
+Next engineering work should continue with #859 after the #1067 contract
+decision; keep #788 owner-run, and keep the #1061–#1066 live-provider
+evidence bounded by their issue contracts. #1069, #1070, and #1071 are
+implemented, QA-verified, and closed.

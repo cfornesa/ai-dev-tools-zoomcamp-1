@@ -27,7 +27,16 @@ const TEAL_RECTANGLE =
   '<script>var c=document.getElementById("art-piece-canvas");' +
   'var x=c.getContext("2d");x.fillStyle="teal";x.fillRect(0,0,320,240);</script>';
 
+async function openAiEdit(page: Page): Promise<void> {
+  const toolsToggle = page.getByRole('button', { name: 'Editor tools', exact: true });
+  if (await toolsToggle.isVisible()) {
+    await toolsToggle.click();
+  }
+  await page.getByRole('button', { name: 'AI edit', exact: true }).click();
+}
+
 async function generateRevision(page: Page, prompt: string): Promise<'manual-save' | 'auto-saved'> {
+  await openAiEdit(page);
   await page.getByLabel('Describe the revision you want to generate').fill(prompt);
   await page.getByRole('button', { name: 'Refine piece' }).click();
   await expect(page.getByTestId('art-piece-editor-preview')).toBeVisible();
@@ -129,6 +138,7 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
 
         await page.goto(`/art-pieces/${piece.public_id}/edit`);
         await expect(page.getByRole('heading', { name: `Edit ${title}` })).toBeVisible();
+        await page.getByRole('button', { name: 'Toggle description panel' }).click();
 
         // Metadata edit + reload proves persistence, not just component state.
         const revisedTitle = `Revised title ${viewport.width}`;
@@ -211,6 +221,7 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
       const piece = (await created.json()) as { public_id: string };
 
       await page.goto(`/art-pieces/${piece.public_id}/edit`);
+      await page.getByRole('button', { name: 'Toggle description panel' }).click();
       await page.route(`**/api/art-pieces/${piece.public_id}/`, (route) => {
         if (route.request().method() === 'PATCH') {
           void route.fulfill({ status: 500, body: '{}' });
@@ -294,7 +305,8 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
     await expect.poll(() => page.locator('img').getAttribute('src')).not.toBe(thumbnailBefore);
 
     // Cancel preserves the piece.
-    await page.getByRole('button', { name: 'Delete piece' }).click();
+    await page.getByRole('button', { name: 'Toggle delete piece panel' }).click();
+    await page.getByRole('button', { name: 'Delete piece', exact: true }).click();
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toBeVisible();
     await expect(dialog).toBeFocused();
@@ -304,7 +316,7 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
     expect(stillThere.status()).toBe(200);
 
     // Confirm actually deletes and navigates away.
-    await page.getByRole('button', { name: 'Delete piece' }).click();
+    await page.getByRole('button', { name: 'Delete piece', exact: true }).click();
     await page.getByTestId('art-piece-editor-confirm-delete').click();
     await expect(page).toHaveURL(/\/art-pieces\/manage$/);
     const afterDelete = await apiGet(context, `/api/art-pieces/${piece.public_id}/`);

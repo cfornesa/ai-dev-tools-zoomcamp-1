@@ -237,7 +237,13 @@ test.describe('Generated immersive viewer: walkable navigation and stage control
       await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
       await expect(page.getByRole('group', { name: 'Live mic' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Enable microphone' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Enable camera view' })).toHaveCount(0);
+      // #1004/#1031 keep gated controls visible so the capability boundary is
+      // discoverable; they must remain inert when the capability is absent.
+      await expect(page.getByRole('button', { name: 'Enable camera view' })).toBeDisabled();
+      await expect(page.getByRole('button', { name: 'Enable camera view' })).toHaveAttribute(
+        'aria-describedby',
+        'piece-stage-camera-reason',
+      );
       await expect(page.getByTestId('microphone-status')).toContainText('Microphone is off.');
     }
   });

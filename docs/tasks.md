@@ -105,6 +105,12 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 | [#1056](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1056) | `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Product/focused criteria pass on commit `80a5df00`; focused backend/frontend tests and full `make check` pass. Closed with QA comment after #1059 resolved the prior full-gate failure. |
 | [#1059](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1059) | `PROPOSED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `12ee91b4` stabilizes the AdminSettings loader effect on primitive auth dependencies. Focused test, typecheck, and full frontend suite pass (307 files / 3,168 tests). Closed with QA comment. |
 
+## 2026-09-29 — #1069 CI regression stabilization
+
+| Issue | Transaction | Result / next action |
+| --- | --- | --- |
+| [#1069](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1069) | `PROPOSED → ENGINEERING → QA PENDING` | Updated the affected browser contracts for the current visible-disabled capability UI, 2D editor disclosures, mobile editor-tool disclosure, current immersive new-tab behavior, and sound-test state isolation. `make check` passes; the focused Chromium set is 14/18 locally, with microphone activation still requiring CI confirmation in its matching browser environment. |
+
 ## 2026-09-29 — 3D source persistence implementation
 
 | Issue | Transaction | Result / next action |

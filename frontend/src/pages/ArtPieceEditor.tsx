@@ -879,6 +879,34 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
             </div>
           )}
         </ArtPieceEditorToolAvailability>
+        {engineCapability.family === '2d' && (
+          <div className="generated-2d-action-items" role="toolbar" aria-label="2D editor actions">
+            <button
+              type="button"
+              aria-label="Toggle description panel"
+              title="Toggle description panel"
+              aria-pressed={activeEditorPanel === 'description'}
+              onClick={() =>
+                setActiveEditorPanel((current) =>
+                  current === 'description' ? null : 'description',
+                )
+              }
+            >
+              <span aria-hidden="true">ⓘ</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Toggle delete piece panel"
+              title="Toggle delete piece panel"
+              aria-pressed={activeEditorPanel === 'delete'}
+              onClick={() =>
+                setActiveEditorPanel((current) => (current === 'delete' ? null : 'delete'))
+              }
+            >
+              <span aria-hidden="true">⌫</span>
+            </button>
+          </div>
+        )}
       </div>
       {(piece.engine === 'threejs' || piece.engine === 'aframe') && currentVersion?.source && (
         <Generated3DEditorPreview
@@ -1020,6 +1048,16 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
             onChange={(event) => setDescription(event.target.value)}
           />
           {metadataError && <p role="alert">{metadataError}</p>}
+          {engineCapability.family === '2d' && (
+            <button
+              type="button"
+              onClick={handleSaveMetadata}
+              disabled={metadataSaving}
+              data-testid="art-piece-editor-save-metadata"
+            >
+              {metadataSaving ? 'Saving…' : 'Save changes'}
+            </button>
+          )}
         </div>
       </div>
 

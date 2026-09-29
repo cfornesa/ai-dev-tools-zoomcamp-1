@@ -104,6 +104,16 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 | [#1056](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1056) | `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Product/focused criteria pass on commit `80a5df00`; focused backend/frontend tests and full `make check` pass. Closed with QA comment after #1059 resolved the prior full-gate failure. |
 | [#1059](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1059) | `PROPOSED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `12ee91b4` stabilizes the AdminSettings loader effect on primitive auth dependencies. Focused test, typecheck, and full frontend suite pass (307 files / 3,168 tests). Closed with QA comment. |
 
+## 2026-09-29 — readiness and completion reconciliation
+
+The dependency chain for #1059 → #1055/#1056 is now closed. The exact
+focused checks, full `make check`, Compose preflight, and local health result
+all pass. Production-readiness remains **BLOCKED / NOT PRODUCTION-READY**
+because 19 open issues remain: #788, #859, #926, #1035, #1036, #1040–#1046,
+and #1060–#1066. The complete readiness assessment is recorded in
+`.local/tasks/production-readiness-2026-09-29.md`; the batch completion report
+is in `.local/tasks/session-completion-2026-09-29.md`.
+
 ## 2026-09-28 — live-provider QA follow-ups
 
 | Issue | Transaction | Result / next action |

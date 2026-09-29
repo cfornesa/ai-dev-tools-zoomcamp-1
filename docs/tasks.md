@@ -127,6 +127,16 @@ twice. Closed [#1068](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues
 fixed the dirty-draft overwrite; #1060 then passed its follow-up full gate and
 was closed with QA evidence.
 
+The #1066 transaction is implemented on commit `08df1b27`: the canonical SVG
+prompt now specifies the animated gauge contract and the provider rejects
+rubric-failing gauge fallbacks. Focused tests, lint/format, the full backend
+suite (1,818 passed / 39 skipped), frontend typecheck, and the full frontend
+suite (3,168 passed) are green. Its real-Mistral/public-browser rubric remains
+owner-run evidence, so #1066 stays open. #1067 remains an owner-decision hold
+because the durable export-only ambient contract conflicts with closed #1056's
+public-delivery implementation; neither #1056 nor the contract was silently
+rewritten.
+
 ## 2026-09-28 — live-provider QA follow-ups
 
 | Issue | Transaction | Result / next action |
@@ -140,6 +150,7 @@ was closed with QA evidence.
 | [#1063](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1063) | `PROPOSED → ENGINEERING → QA` | Commit `70c778d0` adds targeted p5.js N-body guidance and deterministic generic-fallback rejection. Focused provider/prompt tests, full backend (1,812 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live Mistral 60-second visual/stability evidence remains owner-run and additional quota is explicitly out of scope; issue remains open. |
 | [#1064](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1064) | `PROPOSED → ENGINEERING → QA` | Commit `08257b8d` adds targeted C2.js recursive-fractal guidance and deterministic empty/static-fallback rejection. Focused provider/prompt tests, full backend (1,814 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live Mistral desktop/mobile visual evidence remains owner-run and additional quota is explicitly out of scope; issue remains open. |
 | [#1065](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1065) | `PROPOSED → ENGINEERING → QA` | Commit `e164c471` adds targeted C2.js Interactive paint-tool guidance and deterministic blank/static-fallback rejection. Focused provider/prompt tests, full backend (1,816 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live interactive browser evidence remains owner-run; issue remains open. |
+| [#1066](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1066) | `PROPOSED → ENGINEERING → QA` | Commit `08df1b27` adds targeted SVG animated-gauge guidance and deterministic rubric-failure rejection. Focused provider/prompt tests (23 passed), full backend (1,818 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live Mistral/public-browser evidence remains owner-run; issue remains open. |
 | [#1061](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1061) | `PROPOSED` | Discovery-gate follow-up for blank/generic Three.js showcase output; filed with bounded evidence and validation criteria. Deferred from this session. |
 | [#1042](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1042) | `GROOMED → ENGINEERING/QA` | Three bounded A-Frame generations produced an empty preview; no artifact was published. Linked implementation follow-up #1062. |
 | [#1043](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1043) | `GROOMED → ENGINEERING/QA` | Three bounded p5.js generations produced a generic single-circle fallback; no artifact was published. Linked implementation follow-up #1063. |

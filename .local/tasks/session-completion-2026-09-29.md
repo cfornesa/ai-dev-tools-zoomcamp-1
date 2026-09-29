@@ -16,7 +16,7 @@ not silently absorbed implementation work.
 | --- | --- | --- |
 | Completed/closed this continuation | #1059, #1055, #1056 | QA PASS comments, GitHub completed state, commits `12ee91b4`, `5693128c`, and `80a5df00`. |
 | Previously completed in the implementation batch | #1050–#1054, #1057–#1058 | Existing issue comments, issue-scoped commits, and prior ledger entries. |
-| Open follow-up / blocked | #788, #859, #926, #1035, #1036, #1040–#1046, #1060–#1066 | Exact next actions and blocker classes are in `production-readiness-2026-09-29.md`. |
+| Open follow-up / blocked | #788, #859, #926, #1035, #1036, #1040–#1046, #1061–#1067 | #1060 and #1068 are closed; #1061–#1066 have implementation commits and green local checks but still need owner-run live evidence, while #1067 needs an explicit contract decision. |
 | Missing terminal classification | 0 for the processed batch | Every processed issue is closed or has an explicit open follow-up status. |
 
 ## Final verification
@@ -39,8 +39,9 @@ not silently absorbed implementation work.
 - #1060 reached QA with its scoped backend behavior passing, hit the unrelated
   AdminSettings full-suite regression, then passed follow-up QA after #1068.
   Both #1060 and #1068 are now closed with comments and commits.
-- #1061–#1066 are criterion-ready discovery-gate follow-ups and were not
-  implemented in the same discovery transaction.
+- #1061–#1066 now have isolated implementation commits, focused regression
+  coverage, green full local checks, and explicit issue comments. Their
+  real-provider/browser acceptance remains owner-run evidence where required.
 - Readiness discovered the stale ambient-audio export-only contract and filed
   criterion-ready #1067; it is deferred and does not reopen #1056.
 - No production database, published deployment, or production credential was
@@ -57,5 +58,6 @@ unrecorded production claim is being made.
 
 ## Next action
 
-Start the next backlog transaction at #1061, then process #1062–#1067 in
-order, preserving the one-issue implementation/test/QA/reconciliation loop.
+Next engineering work should continue with any unambiguous issue after #1067;
+keep #788 owner-run, #1067 at its contract decision gate, and the #1061–#1066
+live-provider evidence bounded by their issue contracts.

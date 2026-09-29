@@ -35,9 +35,9 @@ No open issue was silently omitted or duplicated.
 | Dimension | Result | Next action |
 | --- | --- | --- |
 | Local deployment and automated checks | PASS | Preserve the green `make check` result. |
-| Approved-browser verification | OPEN FOLLOW-UP | Complete #859's six-engine matrix; implement and verify #1061–#1066. |
+| Approved-browser verification | OPEN FOLLOW-UP | Complete #859's six-engine matrix; obtain owner-run live evidence for the implemented #1061–#1066 guards. |
 | CI verification | OPEN FOLLOW-UP | Obtain the matching-ref CI/browser evidence required by #859 and any parent release gate. |
-| Intended functionality | BLOCKED | Resolve #1061–#1066, then re-run the linked parent transactions; #1061–#1065 still need owner-run live/browser evidence. |
+| Intended functionality | BLOCKED | Re-run the linked parent transactions after owner-run live evidence for #1061–#1066; deterministic guards and full local checks are complete. |
 | Source-contract work | HANDED-OFF / OPEN | Owner-directed #1035/#1036 decision and implementation work remains. |
 | Replit/publication | BLOCKED / OWNER-RUN | Keep #788 and any production writes on the explicitly authorized owner workflow. |
 | Production readiness | BLOCKED | Re-run this gate after the listed open issues reach terminal states. |
@@ -65,9 +65,9 @@ is inferred from local evidence.
 
 ## Exact next actions
 
-1. Implement #1061–#1066 one at a time with focused tests
-   and full checks; do not spend more live-provider quota than each issue's
-   bounded contract permits.
+1. Run the owner-scoped live-provider/browser evidence for implemented #1061–#1066
+   within each issue's bounded contract; do not spend additional quota where
+   the issue marks it out of scope.
 2. Continue the owner-directed #1035/#1036 source-persistence work only under
    its settled HTML/CSS/JS + JSON contract.
 3. Run #859's browser matrix after its fixture dependencies and generated

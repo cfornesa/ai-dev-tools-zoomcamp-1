@@ -604,6 +604,16 @@ def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> b
             )
             and lowered.count("lamp") >= 2
         )
+    if library == "p5js" and all(
+        word in prompt_words for word in ("particles", "gravity", "collision")
+    ):
+        required_state = all(
+            marker in lowered for marker in ("particles", "mass", "radius", "velocity")
+        )
+        required_loop = "p.draw" in lowered and lowered.count("for") >= 2
+        required_physics = any(marker in lowered for marker in ("dist(", "distance", "gravity"))
+        required_stability = any(marker in lowered for marker in ("constrain", "clamp", "limit"))
+        return required_state and required_loop and required_physics and required_stability
     return True
 
 

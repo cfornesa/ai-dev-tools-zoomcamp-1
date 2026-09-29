@@ -152,6 +152,23 @@ def test_aframe_ordinary_prompt_keeps_accepting_static_source():
     assert _looks_like_requested_showcase(source, "a teal box", "aframe")
 
 
+def test_p5_n_body_showcase_rejects_generic_single_circle_fallback():
+    source = (
+        "window.sketch = function (p) { p.setup = function () {}; "
+        "p.draw = function () { p.circle(10, 10, 5); }; };"
+    )
+    assert not _looks_like_requested_showcase(
+        source,
+        "eight particles with gravity and elastic collision response",
+        "p5js",
+    )
+
+
+def test_p5_ordinary_prompt_keeps_accepting_simple_source():
+    source = "window.sketch = function (p) { p.setup = function () {}; p.draw = function () {}; };"
+    assert _looks_like_requested_showcase(source, "a teal circle", "p5js")
+
+
 def test_generate_appends_persona_as_a_second_system_message():
     client = _CapturingClient()
     provider = ArtPieceProvider(client=client, persona_prompt="Use bright solar colors.")

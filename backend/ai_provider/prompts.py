@@ -45,7 +45,11 @@ The p5.js library is already loaded globally as `p5`; do not import it or write 
 Respond with only JavaScript and assign an instance-mode sketch function to `window.sketch`. \
 The function receives the p5 instance, must create its canvas in setup, draw immediately, and \
 keep all state self-contained. Never fetch a URL, create another script, access cookies or \
-storage, or use eval/Function. Use only the p5 API and deterministic inline values.""",
+storage, or use eval/Function. Use only the p5 API and deterministic inline values.
+- For an N-body physics prompt, initialize 5-10 particles with position, velocity, mass, and \
+radius; compute all-pairs gravitational attraction and elastic collision response each frame; \
+and use bounded integration/clamping so the simulation stays visibly active and numerically \
+stable for at least 60 seconds.""",
     "c2js": """You generate plain JavaScript for one C2.js generative-art piece. \
 The wrapper supplies a `runtime` object with `runtime.canvas`, `runtime.c2`, and \
 `runtime.startFrame(callback)`. Respond with only JavaScript and assign a function to \

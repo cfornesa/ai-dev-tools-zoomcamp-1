@@ -116,6 +116,12 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 | [#1043](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1043) | `GROOMED → ENGINEERING/QA` | Three bounded p5.js generations produced a generic single-circle fallback; no artifact was published. Linked implementation follow-up #1063. |
 | [#1062](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1062) | `PROPOSED` | Discovery-gate follow-up for empty/static-only A-Frame output; filed with bounded evidence and validation criteria. Deferred from this session. |
 | [#1063](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1063) | `PROPOSED` | Discovery-gate follow-up for generic p5.js fallback output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1044](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1044) | `GROOMED → ENGINEERING/QA` | Three bounded C2.js generations produced an empty preview; no artifact was published. Linked implementation follow-up #1064. |
+| [#1045](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1045) | `GROOMED → ENGINEERING/QA` | Three bounded C2.js Interactive generations produced an empty preview with no paint controls or undo/redo behavior; no artifact was published. Linked implementation follow-up #1065. |
+| [#1046](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1046) | `GROOMED → ENGINEERING/QA` | Three bounded SVG generations produced an empty preview; no artifact was published. Linked implementation follow-up #1066. |
+| [#1064](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1064) | `PROPOSED` | Discovery-gate follow-up for empty procedural C2.js output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1065](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1065) | `PROPOSED` | Discovery-gate follow-up for empty C2.js Interactive paint-tool output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1066](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1066) | `PROPOSED` | Discovery-gate follow-up for empty SVG animated-gauge output; filed with bounded evidence and validation criteria. Deferred from this session. |
 
 ## 2026-09-24 — active follow-up batch (#747, #748, #788, #798–#808)
 

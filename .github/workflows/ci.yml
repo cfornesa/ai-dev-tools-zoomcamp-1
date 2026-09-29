@@ -331,13 +331,20 @@ jobs:
     strategy:
       fail-fast: false
       # Routine pushes keep one smoke shard. Manual/scheduled full runs use
-      # three isolated jobs, each with its own disposable database and
+      # sixteen isolated jobs, each with its own disposable database and
       # fixture lifecycle, so serial test semantics remain intact while
-      # wall-clock time falls roughly with the shard count.
+      # wall-clock time falls roughly with the shard count. Issue #1034:
+      # 3 shards each hit Playwright's 25-minute globalTimeout having
+      # completed only ~20% of their assigned tests (total serial suite
+      # time is ~327 minutes); 16 shards brings each shard to ~20 minutes,
+      # with headroom, well under GitHub's 256-concurrent-job matrix cap
+      # for a public repo. The literal "16" here and in this job's own
+      # `--shard=N/16` step below must be kept in sync by hand --
+      # `strategy.matrix` expressions can't reference this job's own `env`.
       matrix:
-        shard: ${{ fromJSON((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && '[1,2,3]' || '[1]') }}
+        shard: ${{ fromJSON((github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && '[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]' || '[1]') }}
     # A hung browser or server must release its isolated runner promptly.
-    timeout-minutes: 30
+    timeout-minutes: 35
     # The Playwright global setup creates disposable fixture users in this
     # service and removes them in global teardown. Never point this job at a
     # shared or production database.
@@ -479,7 +486,7 @@ jobs:
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:5000
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/16
 
       - name: Upload browser diagnostics
         if: ${{ failure() }}

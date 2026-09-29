@@ -169,6 +169,23 @@ def test_p5_ordinary_prompt_keeps_accepting_simple_source():
     assert _looks_like_requested_showcase(source, "a teal circle", "p5js")
 
 
+def test_c2js_fractal_showcase_rejects_empty_static_canvas_fallback():
+    source = "window.sketch = function (runtime) { runtime.startFrame(function () {}); };"
+    assert not _looks_like_requested_showcase(
+        source,
+        "recursive fractal tree with eight levels",
+        "c2js",
+    )
+
+
+def test_c2js_ordinary_prompt_keeps_accepting_simple_source():
+    source = (
+        "window.sketch = function (runtime) { runtime.startFrame(function () { "
+        "runtime.canvas.stroke(); }); };"
+    )
+    assert _looks_like_requested_showcase(source, "a teal procedural line", "c2js")
+
+
 def test_generate_appends_persona_as_a_second_system_message():
     client = _CapturingClient()
     provider = ArtPieceProvider(client=client, persona_prompt="Use bright solar colors.")

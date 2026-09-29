@@ -614,6 +614,20 @@ def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> b
         required_physics = any(marker in lowered for marker in ("dist(", "distance", "gravity"))
         required_stability = any(marker in lowered for marker in ("constrain", "clamp", "limit"))
         return required_state and required_loop and required_physics and required_stability
+    if library in {"c2js", "c2js-interactive"} and all(
+        word in prompt_words for word in ("recursive", "fractal", "tree")
+    ):
+        required_recursion = "function" in lowered and lowered.count("function") >= 1
+        required_self_call = any(
+            marker in lowered for marker in ("drawtree(", "branch(", "fractal(", "recursive(")
+        )
+        required_base_case = any(
+            marker in lowered for marker in ("depth <=", "depth<", "level <=", "level<")
+        )
+        required_render = "startframe" in lowered and any(
+            marker in lowered for marker in ("lineto", "stroke", "fill", "drawtree", "branch")
+        )
+        return required_recursion and required_self_call and required_base_case and required_render
     return True
 
 

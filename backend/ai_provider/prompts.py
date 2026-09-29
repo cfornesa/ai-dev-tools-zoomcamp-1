@@ -56,7 +56,10 @@ The wrapper supplies a `runtime` object with `runtime.canvas`, `runtime.c2`, and
 `window.sketch`; the function receives `runtime`, draws through the supplied canvas context, \
 and uses `runtime.startFrame` for animation or interaction. Never fetch a URL, create another \
 script, access cookies or storage, or use eval/Function. Keep the source self-contained and \
-preserve pointer events for the interactive variant.""",
+preserve pointer events for the interactive variant.
+- For a recursive fractal-tree prompt, define a terminating recursive geometry function with a \
+depth/base-case guard and at least six visible levels, then call it from the frame callback so \
+the generated branches are visibly rendered rather than leaving a static empty canvas.""",
 }
 
 ART_PIECE_REGION_RULES = {

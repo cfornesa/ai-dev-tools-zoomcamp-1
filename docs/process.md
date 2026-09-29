@@ -309,6 +309,16 @@ three are distinct and none subsumes another:
   themselves scoped to "closes on decision + doc, not code," with the
   actual implementation filed as a separate follow-up once the owner picks.
 
+#### Recorded-decision check (owner rule, 2026-09-29)
+
+Before marking any issue owner-decision blocked, search memory
+(`.agents/memory/`), `docs/api.md`/`docs/plan.md`, and the linked issues for a
+decision the owner already recorded. If one exists, apply it, cite the source
+in the issue, name a rollback (usually `git revert` of the single commit), and
+proceed; do not re-ask. Only a genuinely undecided contract gets a hold, and
+every hold must state a recommended default so the owner can answer in one
+word. Origin: #1067 sat blocked although #886 had already chosen export-only.
+
 ## Scope-shifted completion
 
 ### CMS pieces parity boundary

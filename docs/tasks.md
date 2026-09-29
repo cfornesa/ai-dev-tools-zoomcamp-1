@@ -100,9 +100,9 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 
 | Issue | Transaction | Result / next action |
 | --- | --- | --- |
-| [#1055](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1055) | `GROOMED → ENGINEERING → QA` | Product criteria pass on commit `5693128c`; focused tests, typecheck, build, and authenticated desktop/mobile browser evidence pass. Full `npm test` is red in unrelated `AdminSettings.test.tsx`; issue remains open pending #1059. |
-| [#1056](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1056) | `GROOMED → ENGINEERING → QA` | Product/focused criteria pass on commit `80a5df00`; prior QA recorded the same unrelated full-gate failure. Remains open pending #1059. |
-| [#1059](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1059) | `PROPOSED` | New discovery-gate follow-up for the reproducible AdminSettings grace-days regression (`expected 14, received 30`). Filed with focused/full verification commands; intentionally deferred from this session. |
+| [#1055](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1055) | `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Product criteria pass on commit `5693128c`; focused tests, typecheck, build, authenticated desktop/mobile browser evidence, and the full frontend gate pass after #1059. Closed with QA comment. |
+| [#1056](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1056) | `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Product/focused criteria pass on commit `80a5df00`; focused backend/frontend tests and full `make check` pass. Closed with QA comment after #1059 resolved the prior full-gate failure. |
+| [#1059](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1059) | `PROPOSED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `12ee91b4` stabilizes the AdminSettings loader effect on primitive auth dependencies. Focused test, typecheck, and full frontend suite pass (307 files / 3,168 tests). Closed with QA comment. |
 
 ## 2026-09-28 — live-provider QA follow-ups
 

@@ -41,7 +41,9 @@ not silently absorbed implementation work.
   Both #1060 and #1068 are now closed with comments and commits.
 - #1061–#1066 now have isolated implementation commits, focused regression
   coverage, green full local checks, and explicit issue comments. Their
-  real-provider/browser acceptance remains owner-run evidence where required.
+  real-provider/browser acceptance remains owner-run evidence where required;
+  a disposable local-account inspection confirmed `e2e_owner` has no Mistral
+  credential, and the created fixtures were cleaned up immediately.
 - #1036's Option B persistence implementation is complete and closed in
   `950999fc`/`0f395fc7`, with focused/full checks, migration drift validation,
   local Compose migration, and authenticated rendered save/reload evidence at

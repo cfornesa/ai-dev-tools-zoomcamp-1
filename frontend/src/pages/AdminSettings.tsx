@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import {
@@ -564,11 +564,14 @@ function UnpublishRetentionSettings({
   onSaved: (next: UnpublishRetentionPolicy) => void;
 }) {
   const [draft, setDraft] = useState(policy);
+  const draftDirty = useRef(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => setDraft(policy), [policy]);
+  useEffect(() => {
+    if (!draftDirty.current) setDraft(policy);
+  }, [policy]);
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -577,6 +580,7 @@ function UnpublishRetentionSettings({
     setError(null);
     try {
       const next = await updateUnpublishRetentionPolicy(draft);
+      draftDirty.current = false;
       onSaved(next);
       setMessage('Unpublish retention policy saved.');
     } catch (err) {
@@ -627,9 +631,10 @@ function UnpublishRetentionSettings({
         min={0}
         max={3650}
         value={draft.unpublished_grace_days}
-        onChange={(event) =>
-          setDraft({ ...draft, unpublished_grace_days: Number(event.target.value) })
-        }
+        onChange={(event) => {
+          draftDirty.current = true;
+          setDraft({ ...draft, unpublished_grace_days: Number(event.target.value) });
+        }}
         required
       />
       <div className="admin-settings-actions">

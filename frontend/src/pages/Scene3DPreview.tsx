@@ -60,6 +60,7 @@ import { useScene3DCameraState } from './useScene3DCameraState';
 import { resolveScene3DRenderer } from '../validation/scene3d';
 import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
 import { normalizeSonic } from '../audio/sonicContract';
+import { resolveAmbientSample } from '../audio/ambientSampleAsset';
 import { DEFAULT_SOUND_SETTINGS, SCENE3D_DEFAULT_KEYBOARD_SCALE } from '../audio/soundSettings';
 import { useSoundSettingsState } from '../audio/useSoundSettingsState';
 
@@ -350,6 +351,7 @@ function ThreeScenePreview({
   const sonicEngineRef = useRef<SonicEngine | null>(null);
   if (sonicEngineRef.current === null) sonicEngineRef.current = createSonicEngine();
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [ambientSampleUnavailable, setAmbientSampleUnavailable] = useState(false);
   const [soundControlsResetKey, setSoundControlsResetKey] = useState(0);
   const {
     soundVolume,
@@ -481,6 +483,26 @@ function ThreeScenePreview({
       Object.entries(effects).forEach(([name, settings]) => {
         engine.setEffect(name as SonicEffectName, settings);
       });
+      const ambientSampleId = normalizeSonic(scene.sonic)?.extras.ambient_sample;
+      if (ambientSampleId) {
+        // Issue #847: fail soft to the synthesized ambient walk if the
+        // sample can no longer be resolved locally (e.g. cleared browser
+        // storage) -- never block sound from enabling at all.
+        resolveAmbientSample(ambientSampleId)
+          .then((blob) => {
+            if (blob) {
+              engine.setAmbientSample(blob);
+              setAmbientSampleUnavailable(false);
+            } else {
+              engine.setAmbientSample(null);
+              setAmbientSampleUnavailable(true);
+            }
+          })
+          .catch(() => {
+            engine.setAmbientSample(null);
+            setAmbientSampleUnavailable(true);
+          });
+      }
       setSoundEnabled(true);
     }
   }
@@ -1298,23 +1320,45 @@ function ThreeScenePreview({
               )}
               {showSoundControl && soundEnabled && (
                 <div className="scene3d-sound-settings-inline">
-                  <div className="editor-camera-overlay-control">
-                    <label htmlFor="scene3d-ambient-bpm">Ambient BPM: {ambientBpm}</label>
-                    <input
-                      id="scene3d-ambient-bpm"
-                      type="range"
-                      min={40}
-                      max={220}
-                      step={1}
-                      value={ambientBpm}
-                      aria-valuetext={`${ambientBpm} BPM`}
-                      onChange={(event) => {
-                        const next = Number(event.target.value);
-                        setAmbientBpm(next);
-                        sonicEngineRef.current?.setTempo(next);
-                      }}
-                    />
-                  </div>
+                  {(() => {
+                    const ambientSampleId = normalizeSonic(scene.sonic)?.extras.ambient_sample;
+                    const ambientSampleActive =
+                      Boolean(ambientSampleId) && !ambientSampleUnavailable;
+                    return (
+                      <div className="editor-camera-overlay-control">
+                        <label htmlFor="scene3d-ambient-bpm">Ambient BPM: {ambientBpm}</label>
+                        <input
+                          id="scene3d-ambient-bpm"
+                          type="range"
+                          min={40}
+                          max={220}
+                          step={1}
+                          value={ambientBpm}
+                          aria-valuetext={`${ambientBpm} BPM`}
+                          disabled={ambientSampleActive}
+                          title={
+                            ambientSampleActive
+                              ? 'BPM has no effect while an ambient sample is playing.'
+                              : undefined
+                          }
+                          onChange={(event) => {
+                            const next = Number(event.target.value);
+                            setAmbientBpm(next);
+                            sonicEngineRef.current?.setTempo(next);
+                          }}
+                        />
+                        {ambientSampleActive && (
+                          <p role="status">BPM has no effect while an ambient sample is playing.</p>
+                        )}
+                        {ambientSampleId && ambientSampleUnavailable && (
+                          <p role="alert">
+                            The ambient sample could not be loaded; using the synthesized ambient
+                            walk instead.
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className="editor-camera-overlay-control">
                     <label htmlFor="scene3d-ambient-volume">Ambient volume: {ambientVolume}%</label>
                     <input

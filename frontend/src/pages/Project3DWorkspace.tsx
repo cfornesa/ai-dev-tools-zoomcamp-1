@@ -39,6 +39,7 @@ import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
 import SonicDefaultsPanel from './SonicDefaultsPanel';
 import { normalizeSonic } from '../audio/sonicContract';
+import { getAmbientSampleMetadata } from '../audio/ambientSampleAsset';
 import {
   DRAWING_PLANE_MAX_POINTS,
   DRAWING_PLANE_MAX_SHAPES,
@@ -205,6 +206,7 @@ function Project3DWorkspace({
   const [selectedOutlineItem, setSelectedOutlineItem] = useState<Outline3DSelection>(null);
   // #781: the drawing plane currently being drawn on (Draw mode), or null.
   const [drawObjectId, setDrawObjectId] = useState<string | null>(null);
+  const [ambientSampleFilename, setAmbientSampleFilename] = useState<string | undefined>(undefined);
   // #782: lets the stage (a click on an object, Escape) drive the outline selection.
   const [selectionRequest, setSelectionRequest] = useState<{
     selection: Outline3DSelection;
@@ -327,6 +329,21 @@ function Project3DWorkspace({
       cancelled = true;
     };
   }, [id, projectStorage]);
+
+  const ambientSampleId = normalizeSonic(workingScene?.sonic)?.extras.ambient_sample;
+  useEffect(() => {
+    if (!id || !ambientSampleId) {
+      setAmbientSampleFilename(undefined);
+      return;
+    }
+    let cancelled = false;
+    void getAmbientSampleMetadata(id, ambientSampleId).then((asset) => {
+      if (!cancelled) setAmbientSampleFilename(asset?.filename);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, ambientSampleId]);
 
   if (loadState === 'loading') {
     return (
@@ -1070,6 +1087,8 @@ function Project3DWorkspace({
                 <SonicDefaultsPanel
                   value={normalizeSonic(workingScene.sonic)}
                   onChange={(sonic) => updateWorkingScene({ ...workingScene, sonic })}
+                  pieceId={id}
+                  ambientSampleFilename={ambientSampleFilename}
                 />
               </div>
             </div>

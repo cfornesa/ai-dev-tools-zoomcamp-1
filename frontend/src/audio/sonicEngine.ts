@@ -197,6 +197,12 @@ export interface SonicEngine {
   setVoiceVolume(voice: SonicVoice, percent: number): void;
   /** Mutes one voice while preserving the other voice gains. */
   setVoiceMuted(voice: SonicVoice, muted: boolean): void;
+  /** Issue #847: replaces the synthesized ambient ticker with a looping
+   * playback of an owner-uploaded audio sample, through the same ambient
+   * voice bus (gain/mute controls keep working unchanged). `null` returns
+   * to the synthesized ambient walk. Safe to call before `enable()` --
+   * the sample is remembered and applied once the engine starts. */
+  setAmbientSample(blob: Blob | null): void;
   /** Updates the shared master filter without rebuilding the voice graph. */
   setFilter(settings: SonicFilterSettings): boolean;
   /** Enables one optional shared-bus effect without rebuilding voices. */
@@ -322,6 +328,9 @@ export function createSonicEngine(
     melodic: 'synth',
   };
   let ambientLoop: InstanceType<ToneModule['Loop']> | null = null;
+  let ambientPlayer: InstanceType<ToneModule['Player']> | null = null;
+  let ambientSampleBlob: Blob | null = null;
+  let ambientSampleObjectUrl: string | null = null;
   type NativeMicSource = {
     connect(destination: unknown): unknown;
     disconnect(): void;
@@ -402,16 +411,59 @@ export function createSonicEngine(
       tone.Transport.start();
 
       status = 'active';
+      if (ambientSampleBlob) applyAmbientSample(ambientSampleBlob);
     } catch {
       status = 'error';
       disposeResources();
     }
   }
 
+  /** Starts (or restarts) the ambient sample player against the current
+   * ambient bus, stopping the synthesized ambient loop while it plays.
+   * Assumes the engine is already `active`. */
+  function applyAmbientSample(blob: Blob): void {
+    if (!tone || !voiceBuses.ambient) return;
+    ambientLoop?.stop();
+    ambientPlayer?.dispose();
+    if (ambientSampleObjectUrl) URL.revokeObjectURL(ambientSampleObjectUrl);
+    ambientSampleObjectUrl = URL.createObjectURL(blob);
+    ambientPlayer = new tone.Player({
+      url: ambientSampleObjectUrl,
+      loop: true,
+      autostart: true,
+    }).connect(voiceBuses.ambient);
+  }
+
+  function setAmbientSample(blob: Blob | null): void {
+    ambientSampleBlob = blob;
+    if (status !== 'active') return; // applied on the next enable()
+    if (blob) {
+      applyAmbientSample(blob);
+      return;
+    }
+    ambientPlayer?.dispose();
+    ambientPlayer = null;
+    if (ambientSampleObjectUrl) {
+      URL.revokeObjectURL(ambientSampleObjectUrl);
+      ambientSampleObjectUrl = null;
+    }
+    // `.start()` with no time (= "now") rather than `.start(0)`: the
+    // transport is already well past time 0 by the time a sample is
+    // cleared, and re-scheduling at an already-elapsed transport time
+    // throws.
+    ambientLoop?.start();
+  }
+
   function disposeResources() {
     disconnectMic();
     stopCameraTheremin();
     ambientLoop?.dispose();
+    ambientPlayer?.dispose();
+    ambientPlayer = null;
+    if (ambientSampleObjectUrl) {
+      URL.revokeObjectURL(ambientSampleObjectUrl);
+      ambientSampleObjectUrl = null;
+    }
     ambientSynth?.dispose();
     movementSynth?.dispose();
     melodicSynth?.dispose();
@@ -873,6 +925,7 @@ export function createSonicEngine(
     setFollowKey,
     setVoiceVolume,
     setVoiceMuted,
+    setAmbientSample,
     setFilter,
     setEffect,
     setMelodicSynth,

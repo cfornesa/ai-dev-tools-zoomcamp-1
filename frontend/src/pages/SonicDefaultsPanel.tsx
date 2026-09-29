@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import type { SonicDefaults } from '../audio/sonicContract';
 import {
   SONIC_INSTRUMENTS,
@@ -5,11 +7,30 @@ import {
   SONIC_SCALES,
   normalizeSonic,
 } from '../audio/sonicContract';
+import { AmbientSampleUnsupportedType, uploadAmbientSample } from '../audio/ambientSampleAsset';
 
-type Props = { value: SonicDefaults | undefined; onChange: (value: SonicDefaults) => void };
+type Props = {
+  value: SonicDefaults | undefined;
+  onChange: (value: SonicDefaults) => void;
+  /** Issue #847: the owning piece's own id -- the ambient-sample asset is
+   * bound to it via the local-first media store, the same way a 2D
+   * project's media already is. `undefined` hides the upload control
+   * entirely (e.g. before the piece has been saved once). */
+  pieceId?: string;
+  /** The currently-selected sample's filename, for display -- `undefined`
+   * when no sample is selected or its metadata couldn't be resolved. */
+  ambientSampleFilename?: string;
+};
 
-export default function SonicDefaultsPanel({ value, onChange }: Props) {
+export default function SonicDefaultsPanel({
+  value,
+  onChange,
+  pieceId,
+  ambientSampleFilename,
+}: Props) {
   const current = value ?? normalizeSonic({})!;
+  const [sampleError, setSampleError] = useState<string | null>(null);
+  const [sampleBusy, setSampleBusy] = useState(false);
   const update = (patch: Partial<SonicDefaults>) => onChange({ ...current, ...patch });
   const updateExtras = (patch: Partial<SonicDefaults['extras']>) =>
     onChange({ ...current, extras: { ...current.extras, ...patch } });
@@ -17,6 +38,24 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
     updateExtras({ synth: { ...current.extras.synth, ...patch } });
   const updateEnvelope = (patch: Partial<SonicDefaults['extras']['synth']['envelope']>) =>
     updateSynth({ envelope: { ...current.extras.synth.envelope, ...patch } });
+
+  async function handleSampleUpload(file: File) {
+    if (!pieceId) return;
+    setSampleBusy(true);
+    setSampleError(null);
+    try {
+      const assetId = await uploadAmbientSample(pieceId, file);
+      updateExtras({ ambient_sample: assetId });
+    } catch (error) {
+      setSampleError(
+        error instanceof AmbientSampleUnsupportedType
+          ? error.message
+          : 'Could not upload the ambient sample. Please try again.',
+      );
+    } finally {
+      setSampleBusy(false);
+    }
+  }
 
   return (
     <div role="group" aria-label="Authored sound defaults" className="editor-sound-defaults-panel">
@@ -69,6 +108,37 @@ export default function SonicDefaultsPanel({ value, onChange }: Props) {
           />
           <span>{current.extras.default_volume}%</span>
         </label>
+        {pieceId && (
+          <div role="group" aria-label="Ambient sample upload">
+            <label htmlFor="project3d-sonic-ambient-sample">
+              Ambient sample (replaces the synthesized ambient walk when set)
+            </label>
+            <input
+              id="project3d-sonic-ambient-sample"
+              type="file"
+              accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4"
+              disabled={sampleBusy}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (file) void handleSampleUpload(file);
+              }}
+            />
+            {current.extras.ambient_sample && (
+              <>
+                <span>{ambientSampleFilename ?? 'Sample selected'}</span>
+                <button
+                  type="button"
+                  disabled={sampleBusy}
+                  onClick={() => updateExtras({ ambient_sample: undefined })}
+                >
+                  Clear ambient sample
+                </button>
+              </>
+            )}
+            {sampleError && <p role="alert">{sampleError}</p>}
+          </div>
+        )}
       </fieldset>
       <fieldset>
         <legend>Keyboard</legend>

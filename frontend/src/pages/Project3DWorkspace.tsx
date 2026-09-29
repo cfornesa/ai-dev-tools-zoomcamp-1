@@ -195,8 +195,7 @@ function Project3DWorkspace({
           project: await getProject3D(projectId),
           versions: await listSceneVersions3D(projectId),
         }),
-        saveVersion: (projectId, scene, sources) =>
-          saveSceneVersion3D(projectId, scene, sources),
+        saveVersion: (projectId, scene, sources) => saveSceneVersion3D(projectId, scene, sources),
         updateMetadata: updateProjectMetadata3D,
       },
     [storage],

@@ -170,7 +170,11 @@ function generateWorkspaceCode(scene: Scene3DDocument, sources?: SceneVersion3DS
   };
 }
 
-function Scene3DWorkspaceCodeEditor({ scene, sources, onChange }: Pick<Props, 'scene' | 'sources' | 'onChange'>) {
+function Scene3DWorkspaceCodeEditor({
+  scene,
+  sources,
+  onChange,
+}: Pick<Props, 'scene' | 'sources' | 'onChange'>) {
   const [tab, setTab] = useState<CodeTab>('json');
   const generated = generateWorkspaceCode(scene, sources);
   const [texts, setTexts] = useState(generated);

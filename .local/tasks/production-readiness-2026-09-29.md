@@ -23,10 +23,10 @@ CI/publication, browser-verification, and owner-run production work.
 
 ## Remaining open inventory
 
-The authenticated GitHub search returned exactly these 18 open issues:
+The authenticated GitHub search returned exactly these 17 open issues:
 
 `#788 #859 #926 #1040 #1041 #1042 #1043 #1044 #1045 #1046
-#1061 #1062 #1063 #1064 #1065 #1066 #1067 #1069`.
+#1061 #1062 #1063 #1064 #1065 #1066 #1067`.
 
 No open issue was silently omitted or duplicated. #1035 and #1036 were
 reconciled and closed after their child/implementation criteria completed.
@@ -62,10 +62,11 @@ closed generated-piece contracts. #859 remains open. Per the discovery gate,
 the new criterion-ready #1069 owns reproduction and stabilization of that
 regression cluster; no closed issue was reopened or edited. Its terminal CI
 run #1044 exposed #1070 for the parent-frame Tone/MediaStream microphone
-defect and #1071 for the non-microphone browser-matrix/cache failures. #1071
-is now closed on `76abe2b7`: the PostgreSQL cache race is fixed and the
-remaining CI diagnostics are retained under #1069/#859 and the already-closed
-feature contracts.
+defect and #1071 for the non-microphone browser-matrix/cache failures. #1069
+is now closed on `ab28ad58` after 19/19 local affected tests and two final-ref
+shard-5 passes. #1071 is now closed on `76abe2b7`: the PostgreSQL cache race is
+fixed and its remaining diagnostics were retained under #1069/#859 and the
+already-closed feature contracts.
 
 ## Routing audit
 

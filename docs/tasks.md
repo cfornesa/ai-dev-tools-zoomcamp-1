@@ -112,6 +112,10 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 | [#1041](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1041) | `GROOMED → ENGINEERING/QA` | Three bounded Three.js generations failed the rubric (blank, generic cube, blank). No artifact was published; issue remains open and is linked to #1061. |
 | [#1060](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1060) | `PROPOSED` | Discovery-gate follow-up for live AI target-scope enforcement; filed with reproduction, acceptance criteria, and exact full checks. Deferred from this session. |
 | [#1061](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1061) | `PROPOSED` | Discovery-gate follow-up for blank/generic Three.js showcase output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1042](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1042) | `GROOMED → ENGINEERING/QA` | Three bounded A-Frame generations produced an empty preview; no artifact was published. Linked implementation follow-up #1062. |
+| [#1043](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1043) | `GROOMED → ENGINEERING/QA` | Three bounded p5.js generations produced a generic single-circle fallback; no artifact was published. Linked implementation follow-up #1063. |
+| [#1062](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1062) | `PROPOSED` | Discovery-gate follow-up for empty/static-only A-Frame output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1063](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1063) | `PROPOSED` | Discovery-gate follow-up for generic p5.js fallback output; filed with bounded evidence and validation criteria. Deferred from this session. |
 
 ## 2026-09-24 — active follow-up batch (#747, #748, #788, #798–#808)
 

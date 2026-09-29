@@ -8,8 +8,11 @@ duration of the increment transaction.
 """
 
 import base64
+import datetime
 import pickle
 
+from django.conf import settings
+from django.core.cache.backends.base import DEFAULT_TIMEOUT
 from django.core.cache.backends.db import DatabaseCache
 from django.db import connections, router, transaction
 from django.utils.timezone import now as tz_now
@@ -17,6 +20,54 @@ from django.utils.timezone import now as tz_now
 
 class AtomicDatabaseCache(DatabaseCache):
     """PostgreSQL-safe ``DatabaseCache`` whose ``incr`` is row-atomic."""
+
+    def add(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
+        """Serialize first-use initialization for a key on PostgreSQL.
+
+        Django's ``DatabaseCache.add`` performs a read followed by an insert.
+        Its ``DatabaseError`` handling preserves the boolean cache contract,
+        but concurrent workers still make PostgreSQL log a unique-key error
+        for every losing initializer. These cache keys are used to seed
+        shared quota counters immediately before ``incr``; serialize only
+        that key's initialization so the loser observes the existing row
+        without generating a database error or slowing unrelated keys.
+        """
+        db = router.db_for_write(self.cache_model_class)
+        connection = connections[db]
+        if connection.vendor != "postgresql":
+            return super().add(key, value, timeout=timeout, version=version)
+
+        normalized_key = self.make_and_validate_key(key, version=version)
+        timeout = self.get_backend_timeout(timeout)
+        now = tz_now().replace(microsecond=0)
+        if timeout is None:
+            expires = datetime.datetime.max
+        else:
+            tz = datetime.UTC if settings.USE_TZ else None
+            expires = datetime.datetime.fromtimestamp(timeout, tz=tz)
+        expires = expires.replace(microsecond=0)
+        expires = connection.ops.adapt_datetimefield_value(expires)
+        encoded = base64.b64encode(pickle.dumps(value, self.pickle_protocol)).decode("latin1")
+        quote_name = connection.ops.quote_name
+        table = quote_name(self._table)
+
+        with transaction.atomic(using=db):
+            with connection.cursor() as cursor:
+                cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                count = cursor.fetchone()[0]
+                if count > self._max_entries:
+                    self._cull(db, cursor, now, count)
+                cursor.execute(
+                    f"INSERT INTO {table} AS cache_row "
+                    f"({quote_name('cache_key')}, {quote_name('value')}, "
+                    f"{quote_name('expires')}) VALUES (%s, %s, %s) "
+                    "ON CONFLICT (cache_key) DO UPDATE SET "
+                    f"{quote_name('value')} = EXCLUDED.{quote_name('value')}, "
+                    f"{quote_name('expires')} = EXCLUDED.{quote_name('expires')} "
+                    f"WHERE cache_row.{quote_name('expires')} < %s",
+                    [normalized_key, encoded, expires, now],
+                )
+                return cursor.rowcount > 0
 
     def incr(self, key, delta=1, version=None):
         original_key = key

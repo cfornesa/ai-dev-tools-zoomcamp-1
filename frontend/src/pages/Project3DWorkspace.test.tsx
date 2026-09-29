@@ -120,6 +120,24 @@ describe('Project3DWorkspace', () => {
     // toggles, not the Preview panel/section itself.
     expect(screen.getByRole('region', { name: 'Preview' })).toBeInTheDocument();
   });
+
+  it('exposes independent JSON, HTML, CSS, and JS code tabs', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject());
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByRole('region', { name: 'Preview' });
+    await user.click(screen.getByRole('radio', { name: 'Code' }));
+
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    const htmlTab = screen.getByRole('tab', { name: 'HTML' });
+    await user.click(htmlTab);
+    const html = screen.getByTestId('scene3d-code-html');
+    await user.type(html, ' edited');
+    await user.click(screen.getByRole('tab', { name: 'CSS' }));
+    await user.click(screen.getByRole('tab', { name: 'HTML' }));
+    expect((html as HTMLTextAreaElement).value).toContain(' edited');
+  });
 });
 
 describe('Project3DWorkspace inline title editing (issue #301)', () => {

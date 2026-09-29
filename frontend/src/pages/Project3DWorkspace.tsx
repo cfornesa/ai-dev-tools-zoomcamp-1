@@ -395,8 +395,8 @@ function Project3DWorkspace({
   if (!workingScene || !id) return null; // unreachable once loadState === 'ready'
   const currentScene = workingScene;
 
-  // Shared by both save paths in this editor (the Code tab's on-blur save,
-  // and #234's explicit outline/inspector Save button) -- syncs
+  // Shared by both save paths in this editor (the Code tab's working-scene
+  // edits and #234's explicit outline/inspector Save button) -- syncs
   // workingScene/persistedScene/project.current_version from the server's
   // exact response, matching the 2D editor's handleVersionSaved pattern.
   function handleVersionSaved(version: SceneVersion3D) {
@@ -851,7 +851,7 @@ function Project3DWorkspace({
           </div>
           {previewView === 'code' && !projectStorage.local && (
             <section aria-label="Code" role="region" data-panel="code">
-              <Scene3DCodeEditor projectId={id} scene={workingScene} onSaved={handleVersionSaved} />
+              <Scene3DCodeEditor scene={workingScene} onChange={updateWorkingScene} />
             </section>
           )}
           {drawTarget?.drawing && (

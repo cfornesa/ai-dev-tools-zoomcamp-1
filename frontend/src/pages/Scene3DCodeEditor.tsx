@@ -5,14 +5,24 @@ import { saveSceneVersion3D, type SceneVersion3D } from '../api/projects3d';
 import { validateScene3D } from '../validation/scene3d';
 import { codeDiagnostic } from './jsonCodeSync';
 import type { Scene3DDocument } from './scene3dTypes';
+import {
+  generateEditable3dCss,
+  generateEditable3dHtml,
+  generateEditable3dJs,
+  parseEditable3dCss,
+  parseEditable3dHtml,
+  parseEditable3dJs,
+} from '../export/codeGrammar3dTabs';
 
 type Props = {
-  projectId: string;
+  projectId?: string;
   scene: Scene3DDocument;
   /** Called only after a save actually persisted -- the caller updates its
    * own working scene/project state from the returned version, matching
    * `AiEditorWorkspace.tsx`'s `handleAccepted` convention. */
-  onSaved: (version: SceneVersion3D) => void;
+  onSaved?: (version: SceneVersion3D) => void;
+  /** Project3DWorkspace mode: apply parsed edits to its working scene. */
+  onChange?: (scene: Scene3DDocument) => void;
 };
 
 type SaveState = { pending: boolean; error: string | null };
@@ -29,7 +39,7 @@ const IDLE_SAVE_STATE: SaveState = { pending: false, error: null };
  * tab. Text resyncs from `scene` only while the tab has no unsaved edit
  * pending, mirroring jsonCodeSync.tsx's dirty-tracking strategy.
  */
-function Scene3DCodeEditor({ projectId, scene, onSaved }: Props) {
+function LegacyScene3DCodeEditor({ projectId, scene, onSaved }: Props) {
   const [text, setText] = useState(() => JSON.stringify(scene, null, 2));
   const [validationError, setValidationError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>(IDLE_SAVE_STATE);
@@ -78,6 +88,7 @@ function Scene3DCodeEditor({ projectId, scene, onSaved }: Props) {
     setValidationError(null);
     setSaveState({ pending: true, error: null });
     try {
+      if (!projectId || !onSaved) return;
       const version = await saveSceneVersion3D(projectId, parsed as Scene3DDocument);
       setSaveState(IDLE_SAVE_STATE);
       const canonical = JSON.stringify(version.scene_json, null, 2);
@@ -127,6 +138,167 @@ function Scene3DCodeEditor({ projectId, scene, onSaved }: Props) {
         </p>
       )}
     </div>
+  );
+}
+
+type CodeTab = 'json' | 'html' | 'css' | 'js';
+
+function generateWorkspaceCode(scene: Scene3DDocument) {
+  let css = '';
+  try {
+    css = generateEditable3dCss(scene);
+  } catch {
+    // Keep the code panel usable while an older/incomplete fixture is being
+    // replaced by the canonical validated scene. Saving still goes through
+    // the same validator and never accepts this fallback as a scene.
+  }
+  return {
+    json: JSON.stringify(scene, null, 2),
+    html: generateEditable3dHtml(scene),
+    css,
+    js: generateEditable3dJs(scene),
+  };
+}
+
+function Scene3DWorkspaceCodeEditor({ scene, onChange }: Pick<Props, 'scene' | 'onChange'>) {
+  const [tab, setTab] = useState<CodeTab>('json');
+  const generated = generateWorkspaceCode(scene);
+  const [texts, setTexts] = useState(generated);
+  const [baseline, setBaseline] = useState(generated);
+  const [externalChangePending, setExternalChangePending] = useState(false);
+  const [errors, setErrors] = useState<string[] | null>(null);
+  const lastSceneRef = useRef(scene);
+
+  useEffect(() => {
+    if (scene === lastSceneRef.current) return;
+    lastSceneRef.current = scene;
+    const next = generateWorkspaceCode(scene);
+    const dirty = (Object.keys(texts) as CodeTab[]).some((key) => texts[key] !== baseline[key]);
+    setTexts((current) => {
+      const updated = { ...current };
+      (Object.keys(updated) as CodeTab[]).forEach((key) => {
+        if (current[key] === baseline[key]) updated[key] = next[key];
+      });
+      return updated;
+    });
+    setBaseline((current) => {
+      const updated = { ...current };
+      (Object.keys(updated) as CodeTab[]).forEach((key) => {
+        if (texts[key] === baseline[key]) updated[key] = next[key];
+      });
+      return updated;
+    });
+    setExternalChangePending(dirty);
+  }, [scene, texts, baseline]);
+
+  function applyText(key: CodeTab, value: string) {
+    setTexts((current) => ({ ...current, [key]: value }));
+  }
+
+  function reload() {
+    const next = generateWorkspaceCode(scene);
+    setTexts(next);
+    setBaseline(next);
+    setExternalChangePending(false);
+    setErrors(null);
+  }
+
+  function save() {
+    let result: ReturnType<typeof parseEditable3dHtml> | ReturnType<typeof parseEditable3dJs>;
+    if (tab === 'json') {
+      try {
+        const parsed = JSON.parse(texts.json);
+        const validation = validateScene3D(parsed);
+        if (!validation.valid) {
+          setErrors(validation.errors.map((error) => `${error.path}: ${error.message}`));
+          return;
+        }
+        onChange?.(parsed as Scene3DDocument);
+        const next = generateWorkspaceCode(parsed as Scene3DDocument);
+        setTexts((current) => ({ ...current, json: next.json }));
+        setBaseline((current) => ({ ...current, json: next.json }));
+        setExternalChangePending(false);
+        setErrors(null);
+        return;
+      } catch (error) {
+        setErrors([
+          `Line 1: Invalid JSON: ${error instanceof Error ? error.message : 'could not parse this text.'}`,
+        ]);
+        return;
+      }
+    } else if (tab === 'html' || tab === 'css') {
+      result =
+        tab === 'html'
+          ? parseEditable3dHtml(texts.html, scene)
+          : parseEditable3dCss(texts.css, scene);
+    } else {
+      result = parseEditable3dJs(texts.js, scene);
+    }
+    if (!result.ok) {
+      setErrors(result.errors);
+      return;
+    }
+    onChange?.(result.scene);
+    const next = generateWorkspaceCode(result.scene);
+    setTexts((current) => ({ ...current, [tab]: next[tab] }));
+    setBaseline((current) => ({ ...current, [tab]: next[tab] }));
+    setExternalChangePending(false);
+    setErrors(null);
+  }
+
+  const value = texts[tab];
+  return (
+    <div className="editor-code-tab" data-testid="scene3d-code-editor">
+      <div role="tablist" aria-label="3D code sub-tabs">
+        {(['json', 'html', 'css', 'js'] as CodeTab[]).map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+          >
+            {key.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      <label htmlFor={`scene3d-code-${tab}`}>
+        {tab === 'json' ? 'Scene3D JSON' : `Scene3D ${tab.toUpperCase()}`}
+      </label>
+      <textarea
+        id={`scene3d-code-${tab}`}
+        data-testid={`scene3d-code-${tab}`}
+        spellCheck={false}
+        rows={24}
+        style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85em' }}
+        value={value}
+        onChange={(event) => applyText(tab, event.target.value)}
+      />
+      <button type="button" onClick={save}>
+        Apply {tab.toUpperCase()} changes
+      </button>
+      {externalChangePending && (
+        <p role="alert">
+          This tab&apos;s content changed elsewhere while you had an unsaved edit.{' '}
+          <button type="button" onClick={reload}>
+            Discard my edit and reload
+          </button>
+        </p>
+      )}
+      {errors && (
+        <p role="alert" aria-live="assertive">
+          Invalid {tab.toUpperCase()} — not applied: {errors.join('; ')}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Scene3DCodeEditor(props: Props) {
+  return props.onChange ? (
+    <Scene3DWorkspaceCodeEditor scene={props.scene} onChange={props.onChange} />
+  ) : (
+    <LegacyScene3DCodeEditor {...props} />
   );
 }
 

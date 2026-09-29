@@ -24554,3 +24554,25 @@ discovery gate, criterion-ready [#1069](https://github.com/cfornesa/ai-dev-tools
 was filed in Batch 11 for root-cause reproduction and deterministic CI
 stabilization. The full evidence and workflow verdict are recorded in the
 #859 QA comment; no production data or credentials were used.
+
+## 2026-09-29 — Phase 1 backlog session completion (#1073, #1074, #1075, #1072, #859)
+
+The requested ordered batch is terminalized. Each implementation issue was
+implemented in its routed surface, independently QA-reviewed, given a
+criterion-matrix GitHub QA comment, verified with `make check`, and closed
+before the next issue began. The rostered external implementation/review
+services were unavailable in this session; the required substitutions were
+recorded in each QA transaction and were not credited as fresh-eyes review.
+
+| Issue | Result | Commit / verification evidence |
+|---|---|---|
+| #1073 | CLOSED | `a9bd601a`; focused dev-account tests 5 passed; `make check` green; QA comment 5895492746. |
+| #1074 | CLOSED | `4027dc29`; focused dev-account/e2e-fixture tests 12 passed; `make check` green; QA comment 5895597736. |
+| #1075 | CLOSED | `bbeeccef`; live-provider workflow doc plus persistent-account memory decision; `make check` green; QA comment 5895700411. |
+| #1072 | CLOSED | `5b537b5e`; AccountSettings 401/400/500 tests 18 passed; `make check` green; QA comment 5895827449. |
+| #859 | CLOSED | Verification-only closure against existing six-engine local Compose Chromium evidence, re-verified in active Chrome; QA comment 5895870046. Current CI rerun 36557751947 was recorded as a browser-shard boundary, not closure evidence. |
+
+No production data, live Mistral provider, passwords, or API keys were used.
+Skipped owner-run/credential-gated issues remain intentionally untouched:
+#788, #926, #1040–#1046, and #1061–#1066. The next action is the owner-run
+Phase 2 live-provider setup documented in `docs/live-provider-testing.md`.

@@ -57,6 +57,8 @@ class Command(BaseCommand):
             self._status(username)
 
     def _create(self, username: str) -> None:
+        from scenes.entitlements import set_user_plan
+
         User = get_user_model()  # noqa: N806
         user, created = User.objects.get_or_create(
             username=username,
@@ -71,6 +73,11 @@ class Command(BaseCommand):
             password, generated = _password_for_new_account()
             user.set_password(password)
             user.save(update_fields=["password"])
+
+        # The existing paid plan is the repository's full remote-feature
+        # tier.  set_user_plan is transactional and one-to-one, so rerunning
+        # this command cannot duplicate or discard the account's entitlements.
+        set_user_plan(user, "paid")
 
         result = {"action": "create", "created": created, "username": user.username}
         if generated:

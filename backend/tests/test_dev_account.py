@@ -11,7 +11,7 @@ from django.db import connection
 from django.test import override_settings
 
 from scenes.management.commands.e2e_fixtures import E2E_USERS
-from scenes.models import Project, ProviderCredential
+from scenes.models import Project, ProviderCredential, UserEntitlementPlan
 
 
 def _run(action: str) -> dict:
@@ -66,6 +66,17 @@ def test_create_generated_password_is_printed_once(monkeypatch):
 
 
 @pytest.mark.django_db
+def test_create_grants_existing_paid_plan_without_duplicates(monkeypatch):
+    monkeypatch.setenv("DEV_ACCOUNT_PASSWORD", "local-only-password")
+
+    _run("create")
+    _run("create")
+
+    user = get_user_model().objects.get(username="dev_owner")
+    assert UserEntitlementPlan.objects.filter(user=user, plan_key="paid").count() == 1
+
+
+@pytest.mark.django_db
 def test_status_reports_credential_presence_without_key_material(monkeypatch):
     monkeypatch.setenv("DEV_ACCOUNT_PASSWORD", "secret-that-must-not-be-reported")
     _run("create")
@@ -82,6 +93,24 @@ def test_status_reports_credential_presence_without_key_material(monkeypatch):
     }
     assert "secret-that-must-not-be-reported" not in json.dumps(result)
     assert "key-bytes" not in json.dumps(result)
+
+
+@pytest.mark.django_db
+def test_fixture_cleanup_leaves_dev_account_and_owned_data(monkeypatch):
+    monkeypatch.setenv("DEV_ACCOUNT_PASSWORD", "local-only-password")
+    _run("create")
+    user = get_user_model().objects.get(username="dev_owner")
+    project = Project.objects.create(owner=user, title="Persistent local project")
+    credential = ProviderCredential.objects.create(
+        owner=user, vendor="mistral", encrypted_key=b"encrypted-test-value"
+    )
+
+    call_command("e2e_fixtures", "create", "--json")
+    call_command("e2e_fixtures", "cleanup", "--json")
+
+    assert get_user_model().objects.filter(pk=user.pk, username="dev_owner").exists()
+    assert Project.objects.filter(pk=project.pk).exists()
+    assert ProviderCredential.objects.filter(pk=credential.pk).exists()
 
 
 @pytest.mark.django_db

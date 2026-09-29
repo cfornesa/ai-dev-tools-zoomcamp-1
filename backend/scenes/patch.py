@@ -208,6 +208,7 @@ class PatchErrorReason:
     # check" section.
     UNREFERENCED_ELEMENT = "unreferenced_element"
     DELETE_INTENT_REQUIRED = "delete_intent_required"
+    TARGET_SCOPE_VIOLATION = "target_scope_violation"
 
 
 @dataclass(frozen=True)
@@ -474,7 +475,11 @@ def _touched_element_path(segments: list[str]) -> tuple[str, list[str]] | None:
 
 
 def validate_patch_operations(  # noqa: C901
-    patch: Any, *, scene: dict[str, Any] | None = None, prompt: str | None = None
+    patch: Any,
+    *,
+    scene: dict[str, Any] | None = None,
+    prompt: str | None = None,
+    selected_target_ids: tuple[str, ...] = (),
 ) -> list[PatchOperationError]:
     """Validate a proposed patch document against the allowlist, structure,
     and size bounds. Returns an empty list iff the patch is acceptable --
@@ -494,6 +499,13 @@ def validate_patch_operations(  # noqa: C901
     is about to apply the patch to it) should always pass it; omitting it
     only skips this one check, not the rest of allowlist validation.
 
+    `selected_target_ids` is the caller's expanded target selection. When
+    non-empty, every patch operation must address an existing element whose
+    id is in that selection; scene-wide settings and new/unselected elements
+    are rejected before application. This is the server-side boundary for
+    the editor's explicit target scope. An empty selection preserves the
+    existing prompt-reference behavior.
+
     `prompt` is the natural-language edit request the patch was generated
     from. When both `scene` and `prompt` are provided, a further check
     runs (issue #158, see this module's docstring's "Prompt-element
@@ -509,6 +521,7 @@ def validate_patch_operations(  # noqa: C901
     errors: list[PatchOperationError] = []
     bulk_scope = prompt is not None and _is_bulk_scope_prompt(prompt)
     prompt_lower = prompt.lower() if prompt is not None else ""
+    selected_targets = frozenset(selected_target_ids)
 
     if not isinstance(patch, list):
         return [
@@ -662,6 +675,34 @@ def validate_patch_operations(  # noqa: C901
                     )
                 )
 
+        if selected_targets:
+            touched = _touched_element_path(segments)
+            scope_violation = False
+            if touched is None:
+                scope_violation = True
+            else:
+                _root, element_segments = touched
+                found, item = (
+                    _get_at_path(scene, element_segments) if scene is not None else (False, None)
+                )
+                if (
+                    not found
+                    or not isinstance(item, dict)
+                    or item.get("id") not in selected_targets
+                ):
+                    scope_violation = True
+            if scope_violation:
+                errors.append(
+                    PatchOperationError(
+                        index=index,
+                        reason=PatchErrorReason.TARGET_SCOPE_VIOLATION,
+                        message=(
+                            f"path {path!r} falls outside the explicitly selected target scope; "
+                            "only selected existing elements may be changed."
+                        ),
+                    )
+                )
+
         # Issue #158: prompt-element reference check -- only runs when both
         # `scene` and `prompt` were supplied (see docstring above), and only
         # exempted entirely when the prompt is bulk/global in scope.
@@ -699,6 +740,7 @@ def validate_patch_operations(  # noqa: C901
 # violations are surfaced first since they're the most security-relevant.
 _REASON_PRIORITY = (
     PatchErrorReason.PROTECTED_FIELD,
+    PatchErrorReason.TARGET_SCOPE_VIOLATION,
     PatchErrorReason.DELETE_INTENT_REQUIRED,
     PatchErrorReason.UNREFERENCED_ELEMENT,
     PatchErrorReason.INVALID_PATH,

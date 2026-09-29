@@ -416,6 +416,10 @@ _PATCH_REASON_TO_RESPONSE: dict[str, tuple[int, str]] = {
         status.HTTP_422_UNPROCESSABLE_ENTITY,
         "delete_intent_required",
     ),
+    PatchErrorReason.TARGET_SCOPE_VIOLATION: (
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        "target_scope_violation",
+    ),
 }
 
 
@@ -795,6 +799,7 @@ class AIEditSceneView(APIView):
     | Empty patch (documented policy: rejected, not a no-op success) | 422 | `"empty_patch"` |
     | Patch touches a protected field (identity/version/seed/id)    | 422  | `"protected_field"`  |
     | Patch touches an element the prompt never names (#158) | 422 | `"unreferenced_element"` |
+    | Selected-target scope violation (#1060) | 422 | `"target_scope_violation"` |
     | Patch removes/replaces without delete intent (#812) | 422 | `"delete_intent_required"` |
     | Patch targets a path outside the documented allowlist | 422 | `"invalid_patch_path"` |
     | Patch is malformed (bad op/shape/missing value) | 422  | `"malformed_patch"`      |
@@ -864,6 +869,7 @@ class AIEditSceneView(APIView):
             AIEditSceneRequest(
                 prompt=_augment_prompt_with_target_ids(prompt, target_ids),
                 current_scene=current_scene,
+                selected_target_ids=tuple(target_ids),
             )
         )
         result = outcome.result

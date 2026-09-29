@@ -488,6 +488,29 @@ def test_selected_target_ids_are_added_to_provider_prompt(monkeypatch, owner_cli
 
 
 @pytest.mark.django_db
+def test_selected_target_scope_rejects_out_of_scope_provider_patch(
+    owner_client, project, monkeypatch
+):
+    scene = _scene_with_named_shapes()
+    patch = [{"op": "replace", "path": "/canvas/backgroundColor", "value": "#123456"}]
+    _use_provider(monkeypatch, _mistral_provider_returning(json.dumps(patch)))
+
+    response = owner_client.post(
+        _url(project),
+        _payload(
+            prompt="change only the selected Hills group",
+            scene=scene,
+            target_ids=["shape-sun"],
+        ),
+        format="json",
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"] == "target_scope_violation"
+    assert SceneVersion.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
 def test_bulk_scope_prompt_touching_every_shape_is_accepted(owner_client, project, monkeypatch):
     # False-positive risk: a legitimately broad/global prompt must not be
     # blocked just because it touches every shape in the scene.

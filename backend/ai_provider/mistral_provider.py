@@ -598,7 +598,10 @@ class MistralSceneProvider(AISceneProvider, AIScene3DProvider):
             )
 
         patch_errors = validate_patch_operations(
-            raw_patch, scene=request.current_scene, prompt=request.prompt
+            raw_patch,
+            scene=request.current_scene,
+            prompt=request.prompt,
+            selected_target_ids=request.selected_target_ids,
         )
         if patch_errors:
             reason = worst_reason(patch_errors)

@@ -9,8 +9,9 @@ image assets. #1032 was closed after authenticated admin checks at both
 1280x900 and 375x812. #859 remains open only because its six-engine thumbnail
 workflow revealed the missing 2D editor regeneration affordance; that concrete
 dependency is now tracked in #1047, alongside the matching-ref CI evidence
-requirement in #1034. #1035/#1036 remain untouched under the owner's explicit
-Claude Code scoping stop. #847 is now actionable after #941/#957 closed.
+requirement in #1034. #1035/#1036 were later re-opened by the owner with the
+explicit requirement that human-readable HTML/CSS/JS source remain persistent
+alongside JSON. #847 is now actionable after #941/#957 closed.
 
 ## 2026-09-28 — final backlog-session reconciliation
 
@@ -26,8 +27,8 @@ The final local `make check` passed: 1,778 backend tests passed / 39 skipped,
 3,111 frontend tests passed, and action-pin, lint, format, typecheck, build,
 and mypy checks passed. #1034's remote CI run is not admissible for this
 checkout because it executed a divergent remote SHA and failed independent
-frontend/backend/browser steps. #1035 and #1036 remain explicitly under
-Claude Code scoping and were not modified after the owner's stop instruction.
+frontend/backend/browser steps. #1035 and #1036 were subsequently authorized
+for implementation under the owner's settled HTML/CSS/JS + JSON contract.
 
 ## 2026-09-28 — owner-requested backlog goal final refresh
 
@@ -104,12 +105,19 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 | [#1056](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1056) | `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Product/focused criteria pass on commit `80a5df00`; focused backend/frontend tests and full `make check` pass. Closed with QA comment after #1059 resolved the prior full-gate failure. |
 | [#1059](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1059) | `PROPOSED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `12ee91b4` stabilizes the AdminSettings loader effect on primitive auth dependencies. Focused test, typecheck, and full frontend suite pass (307 files / 3,168 tests). Closed with QA comment. |
 
+## 2026-09-29 — 3D source persistence implementation
+
+| Issue | Transaction | Result / next action |
+| --- | --- | --- |
+| [#1035](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1035) | `OWNER DECISION → CHILDREN QA → RECONCILIATION → CLOSED` | Q1/Q2/Q3 are recorded; #1052–#1055 are all closed with implementation/QA evidence. Tracking parent closed as completed. |
+| [#1036](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1036) | `OWNER DECISION (Option B) → ENGINEERING → QA FOLLOW-UP` | Commits `950999fc` and `0f395fc7` add bounded persisted HTML/CSS/JS source fields, migration `0108`, owner-only API exposure, source parsing/live synchronization, and legacy JSON compatibility. Focused tests, `npm run build`, migration drift, full `make check`, Compose migration, and authenticated local browser save/reload evidence pass. Issue remains open only for the exact 1280x900 and 375x812 browser evidence required by its acceptance checklist; production verification is separate. |
+
 ## 2026-09-29 — readiness and completion reconciliation
 
 The dependency chain for #1059 → #1055/#1056 is now closed. The exact
 focused checks, full `make check`, Compose preflight, and local health result
 all pass. Production-readiness remains **BLOCKED / NOT PRODUCTION-READY**
-because 19 open issues remain: #788, #859, #926, #1035, #1036, #1040–#1046,
+because 18 open issues remain: #788, #859, #926, #1036, #1040–#1046,
 and #1061–#1067. The complete readiness assessment is recorded in
 `.local/tasks/production-readiness-2026-09-29.md`; the batch completion report
 is in `.local/tasks/session-completion-2026-09-29.md`.

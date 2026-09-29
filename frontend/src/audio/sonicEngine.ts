@@ -845,8 +845,38 @@ export function createSonicEngine(
     try {
       const context = tone.getContext();
       const rawContext = context.rawContext as AudioContext;
-      const source = rawContext.createMediaStreamSource(activeStream) as unknown as NativeMicSource;
-      source.connect((bus as unknown as { input: unknown }).input);
+      const mic = new tone.UserMedia();
+      const hasToneUserMediaInternals = 'context' in (mic as object) && 'output' in (mic as object);
+      let source: NativeMicSource;
+      if (hasToneUserMediaInternals) {
+        // Tone.UserMedia owns the standardized-audio-context registry and its
+        // internal connect helper. Feed it the stream already authorized by
+        // the parent-frame gesture so the browser is not prompted twice.
+        const mediaDevices = navigator.mediaDevices;
+        const originalGetUserMedia = mediaDevices.getUserMedia;
+        Object.defineProperty(mediaDevices, 'getUserMedia', {
+          configurable: true,
+          writable: true,
+          value: () => Promise.resolve(activeStream),
+        });
+        try {
+          mic.connect(bus);
+          await mic.open();
+        } finally {
+          Object.defineProperty(mediaDevices, 'getUserMedia', {
+            configurable: true,
+            writable: true,
+            value: originalGetUserMedia,
+          });
+        }
+        source = mic as unknown as NativeMicSource;
+        legacyUserMedia = mic;
+      } else {
+        // Keep the injectable unit-test seam for minimal Tone-like modules.
+        source = rawContext.createMediaStreamSource(activeStream) as unknown as NativeMicSource;
+        source.connect((bus as unknown as { input: unknown }).input);
+        mic.dispose();
+      }
       micSource = source;
       micStream = activeStream;
       audioSessionContext = context;
@@ -866,10 +896,14 @@ export function createSonicEngine(
 
   function disconnectMic() {
     if (legacyUserMedia) {
+      const connectedUserMedia = legacyUserMedia;
       legacyUserMedia.close();
       legacyUserMedia.disconnect();
       legacyUserMedia.dispose();
       legacyUserMedia = null;
+      if (micSource === (connectedUserMedia as unknown as NativeMicSource)) {
+        micSource = null;
+      }
     }
     if (audioSessionContext?.rawContext && audioSessionListener) {
       audioSessionContext.rawContext.removeEventListener('statechange', audioSessionListener);

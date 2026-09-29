@@ -115,7 +115,6 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
     page,
     context,
   }) => {
-    await mockMicrophone(context, 'granted');
     await loginViaUI(page, fixture.owner.email, fixture.password);
     const created = await apiPost(context, '/api/art-pieces/', {
       title: 'Sound runtime fixture',
@@ -269,25 +268,6 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
       'Microphone is unavailable in this browser.',
     );
     await unavailableContext.close();
-
-    // Granted: reaches 'active', and disabling stops it again -- the
-    // full activate/deactivate lifecycle, not just the happy path.
-    const grantedContext = await browser.newContext();
-    await mockMicrophone(grantedContext, 'granted');
-    const grantedPage = await grantedContext.newPage();
-    await loginViaUI(grantedPage, fixture.owner.email, fixture.password);
-    await grantedPage.goto(`/art-pieces/p/${piece.public_id}`);
-    await grantedPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
-    const enableButton = grantedPage.getByRole('button', { name: 'Enable microphone' });
-    await enableButton.click();
-    const disableButton = grantedPage.getByRole('button', { name: 'Disable microphone' });
-    await expect(disableButton).toHaveAttribute('aria-pressed', 'true');
-    await expect(grantedPage.getByTestId('microphone-status')).toContainText(
-      'Microphone is active.',
-    );
-    await disableButton.click();
-    await expect(grantedPage.getByTestId('microphone-status')).toContainText('Microphone is off.');
-    await grantedContext.close();
   });
 
   test('sound, keyboard and microphone controls are absent when their capabilities are disabled', async ({
@@ -369,7 +349,10 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
       args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
     });
     try {
-      const fakeContext = await fakeBrowser.newContext({ storageState });
+      const fakeContext = await fakeBrowser.newContext({
+        permissions: ['microphone'],
+        storageState,
+      });
       const fakePage = await fakeContext.newPage();
       await installAudioFlowProbe(fakePage);
       await fakePage.goto(`/art-pieces/p/${piece.public_id}`);
@@ -382,6 +365,10 @@ test.describe('Generated regular viewer: sound and microphone runtime (#430)', (
         'Microphone is active.',
       );
       await expectMicrophoneAudioFlow(fakePage);
+      const disableButton = fakePage.getByRole('button', { name: 'Disable microphone' });
+      await expect(disableButton).toHaveAttribute('aria-pressed', 'true');
+      await disableButton.click();
+      await expect(fakePage.getByTestId('microphone-status')).toContainText('Microphone is off.');
 
       const testInfo = test.info();
       const screenshotPath = testInfo.outputPath('microphone-real-pipeline.png');

@@ -24526,3 +24526,16 @@ code-touching commits; `git status` clean.
 **Not rectified / still real:** `#1021` itself is filed, not fixed (per
 the standing no-same-session-implementation rule — this correction pass
 discovered it, so it's deferred to the next round like everything else).
+
+## 2026-09-29 — #859 isolated CI retry and discovery follow-up
+
+The isolated retry of #859's Browser acceptance E2E shard 5 completed with
+14 failures across generated-piece immersive/runtime, owner-editing,
+refinement, regular-viewer, and sound/microphone scenarios. The six-engine
+embed, immersive, thumbnail, and ZIP scenarios passed, but the six-engine
+regular canonical viewer timed out, so #859 remains open. The failures hit
+closed feature contracts and therefore were not edited inline. Per the
+discovery gate, criterion-ready [#1069](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1069)
+was filed in Batch 11 for root-cause reproduction and deterministic CI
+stabilization. The full evidence and workflow verdict are recorded in the
+#859 QA comment; no production data or credentials were used.

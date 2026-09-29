@@ -23,10 +23,10 @@ CI/publication, browser-verification, and owner-run production work.
 
 ## Remaining open inventory
 
-The authenticated GitHub search returned exactly these 17 open issues:
+The authenticated GitHub search returned exactly these 18 open issues:
 
 `#788 #859 #926 #1040 #1041 #1042 #1043 #1044 #1045 #1046
-#1061 #1062 #1063 #1064 #1065 #1066 #1067`.
+#1061 #1062 #1063 #1064 #1065 #1066 #1067 #1069`.
 
 No open issue was silently omitted or duplicated. #1035 and #1036 were
 reconciled and closed after their child/implementation criteria completed.
@@ -55,6 +55,13 @@ are preserved during parent policy refreshes. Its focused suite, typecheck,
 and full frontend suite passed. #1060 then passed its follow-up full gate and
 is also closed; #1059 remains closed.
 
+The isolated #859 CI retry (job `109299764071`) passed the six-engine embed,
+immersive, thumbnail, and ZIP scenarios but failed the six-engine regular
+canonical viewer and exposed 13 additional failures/timeouts in already
+closed generated-piece contracts. #859 remains open. Per the discovery gate,
+the new criterion-ready #1069 owns reproduction and stabilization of that
+regression cluster; no closed issue was reopened or edited.
+
 ## Routing audit
 
 This gate ran as the owner-authorized Codex/GPT-5 medium-effort substitution
@@ -71,7 +78,7 @@ is inferred from local evidence.
    the issue marks it out of scope.
 2. Keep the source-contract implementation under regression coverage; #1035
    and #1036 are already reconciled and closed.
-3. Run #859's browser matrix after its fixture dependencies and generated
-   showcase follow-ups are resolved.
+3. Implement and verify #1069, then rerun #859's browser matrix after its
+   fixture dependencies and generated showcase follow-ups are resolved.
 4. Keep #788 and other production-data actions owner-run; do not use local
    Compose evidence as production evidence.

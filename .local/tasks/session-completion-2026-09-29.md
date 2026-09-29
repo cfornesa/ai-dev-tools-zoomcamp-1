@@ -36,16 +36,16 @@ not silently absorbed implementation work.
 
 - #1059, #1055, and #1056 have GitHub QA comments and completed state.
 - The prior full-gate failure is resolved by #1059; no issue was reopened.
-- #1060 reached QA with its scoped backend behavior passing, but the required
-  frontend full suite failed twice in the unrelated AdminSettings test; new
-  criterion-ready #1068 owns that regression and #1060 remains open.
+- #1060 reached QA with its scoped backend behavior passing, hit the unrelated
+  AdminSettings full-suite regression, then passed follow-up QA after #1068.
+  Both #1060 and #1068 are now closed with comments and commits.
 - #1061–#1066 are criterion-ready discovery-gate follow-ups and were not
   implemented in the same discovery transaction.
 - Readiness discovered the stale ambient-audio export-only contract and filed
   criterion-ready #1067; it is deferred and does not reopen #1056.
 - No production database, published deployment, or production credential was
   touched.
-- The project is not production-ready because the 21 open issues listed in
+- The project is not production-ready because the 19 open issues listed in
   the readiness report remain open.
 
 ## Routing audit
@@ -57,6 +57,5 @@ unrecorded production claim is being made.
 
 ## Next action
 
-Start the next backlog transaction at #1068, reconcile #1060 after its full
-gate passes, then process #1061–#1067 in order, preserving the one-issue
-implementation/test/QA/reconciliation loop.
+Start the next backlog transaction at #1061, then process #1062–#1067 in
+order, preserving the one-issue implementation/test/QA/reconciliation loop.

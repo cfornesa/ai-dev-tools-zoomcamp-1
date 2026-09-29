@@ -23,10 +23,10 @@ CI/publication, browser-verification, and owner-run production work.
 
 ## Remaining open inventory
 
-The authenticated GitHub search returned exactly these 21 open issues:
+The authenticated GitHub search returned exactly these 19 open issues:
 
 `#788 #859 #926 #1035 #1036 #1040 #1041 #1042 #1043 #1044 #1045 #1046
-#1060 #1061 #1062 #1063 #1064 #1065 #1066 #1067 #1068`.
+#1061 #1062 #1063 #1064 #1065 #1066 #1067`.
 
 No open issue was silently omitted or duplicated.
 
@@ -49,9 +49,10 @@ delivery contract discovered during this read-only audit. It owns the
 owner-selected policy and updates to `docs/api.md` and the durable memory
 topic. Closed #1056 is preserved as historical scoped completion.
 
-`#1068` is an `OPEN FOLLOW-UP` for the reproducible AdminSettings failure in
-the required frontend full suite. It blocks #1060 reconciliation until the
-full frontend gate is green; #1059 remains closed and is not reopened.
+The #1068 follow-up is closed on `bf980992`: dirty unpublished-retention edits
+are preserved during parent policy refreshes. Its focused suite, typecheck,
+and full frontend suite passed. #1060 then passed its follow-up full gate and
+is also closed; #1059 remains closed.
 
 ## Routing audit
 
@@ -64,8 +65,7 @@ is inferred from local evidence.
 
 ## Exact next actions
 
-1. Implement #1068, reconcile #1060 after its full gate is green, then
-   implement #1061–#1066 one at a time with focused tests
+1. Implement #1061–#1066 one at a time with focused tests
    and full checks; do not spend more live-provider quota than each issue's
    bounded contract permits.
 2. Continue the owner-directed #1035/#1036 source-persistence work only under

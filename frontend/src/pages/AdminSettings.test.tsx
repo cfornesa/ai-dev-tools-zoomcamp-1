@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -216,10 +216,13 @@ describe('Unpublish retention settings (#944)', () => {
 
     const input = await screen.findByLabelText('Unpublished grace days');
     fireEvent.change(input, { target: { value: '14' } });
+    await waitFor(() => expect(input).toHaveValue(14));
     await user.click(screen.getByRole('button', { name: 'Save unpublish retention policy' }));
 
-    expect(adminApi.updateUnpublishRetentionPolicy).toHaveBeenCalledWith(
-      expect.objectContaining({ unpublished_grace_days: 14 }),
+    await waitFor(() =>
+      expect(adminApi.updateUnpublishRetentionPolicy).toHaveBeenCalledWith(
+        expect.objectContaining({ unpublished_grace_days: 14 }),
+      ),
     );
     expect(await screen.findByText('Unpublish retention policy saved.')).toBeVisible();
   });

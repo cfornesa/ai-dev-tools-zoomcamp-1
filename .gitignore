@@ -16,4 +16,9 @@ db.sqlite3
 # npm/npx command accidentally ran from the wrong working directory.
 node_modules/
 
+# Issue #946: grandfather_accounts's default rollback-file path (when
+# --rollback-file isn't explicitly given) lands in the current working
+# directory; never commit one, it contains per-account prior state.
+grandfather_rollback_*.json
+
 LIGDOL_Creative_Continuity_Thesis.md

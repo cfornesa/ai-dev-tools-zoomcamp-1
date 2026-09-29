@@ -1131,6 +1131,11 @@ class CloudSyncPreference(models.Model):
     consent_version = models.CharField(max_length=64, blank=True)
     consent_text = models.TextField(blank=True)
     consented_at = models.DateTimeField(null=True, blank=True)
+    # Issue #946: distinguishes an owner-driven administrative grant (the
+    # one-time `grandfather_accounts` command) from ordinary user-given
+    # consent via `AccountCloudSyncView` above -- blank for every row that
+    # went through the normal user-facing consent flow.
+    consent_source = models.CharField(max_length=64, blank=True, default="")
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:

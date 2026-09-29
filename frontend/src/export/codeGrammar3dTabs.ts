@@ -417,3 +417,225 @@ export function parseEditable3dCss(
   }
   return { ok: true, scene: next };
 }
+
+const CAMERA_CONFIG_BEGIN = '/* CAMERA_CONFIG_BEGIN */';
+const CAMERA_CONFIG_END = '/* CAMERA_CONFIG_END */';
+const JS_HEADER = '// Scene3D camera and renderer configuration (safe editable literal)';
+const JS_FOOTER = '// End Scene3D camera and renderer configuration';
+
+type JsValue = number | string | boolean | null | { [key: string]: JsValue };
+
+class JsLiteralReader {
+  private index = 0;
+
+  constructor(private readonly source: string) {}
+
+  private skipWhitespace(): void {
+    while (/\s/.test(this.source[this.index] ?? '')) this.index += 1;
+  }
+
+  private error(message: string): Error {
+    return new Error(`${message} at offset ${this.index}`);
+  }
+
+  private readString(): string {
+    const quote = this.source[this.index++];
+    let value = '';
+    while (this.index < this.source.length) {
+      const character = this.source[this.index++];
+      if (character === quote) return value;
+      if (character === '\\') {
+        const escaped = this.source[this.index++];
+        if (escaped === 'n') value += '\n';
+        else if (escaped === 'r') value += '\r';
+        else if (escaped === 't') value += '\t';
+        else value += escaped;
+      } else value += character;
+    }
+    throw this.error('Unterminated string');
+  }
+
+  private readKey(): string {
+    this.skipWhitespace();
+    const character = this.source[this.index];
+    if (character === '"' || character === "'") return this.readString();
+    const match = /^[A-Za-z_$][A-Za-z0-9_$]*/.exec(this.source.slice(this.index));
+    if (!match) throw this.error('Expected an object property name');
+    this.index += match[0].length;
+    return match[0];
+  }
+
+  private readValue(): JsValue {
+    this.skipWhitespace();
+    const character = this.source[this.index];
+    if (character === '{') return this.readObject();
+    if (character === '"' || character === "'") return this.readString();
+    const number = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(
+      this.source.slice(this.index),
+    );
+    if (number) {
+      this.index += number[0].length;
+      return Number(number[0]);
+    }
+    for (const [literal, value] of [
+      ['true', true],
+      ['false', false],
+      ['null', null],
+    ] as const) {
+      if (this.source.startsWith(literal, this.index)) {
+        this.index += literal.length;
+        return value;
+      }
+    }
+    throw this.error('Expected a supported literal value');
+  }
+
+  private readObject(): { [key: string]: JsValue } {
+    const result: { [key: string]: JsValue } = {};
+    this.index += 1;
+    this.skipWhitespace();
+    if (this.source[this.index] === '}') {
+      this.index += 1;
+      return result;
+    }
+    while (this.index < this.source.length) {
+      const key = this.readKey();
+      this.skipWhitespace();
+      if (this.source[this.index++] !== ':') throw this.error('Expected a colon');
+      if (key in result) throw this.error(`Duplicate property "${key}"`);
+      result[key] = this.readValue();
+      this.skipWhitespace();
+      const separator = this.source[this.index++];
+      if (separator === '}') return result;
+      if (separator !== ',') throw this.error('Expected a comma or closing brace');
+      this.skipWhitespace();
+    }
+    throw this.error('Unterminated object literal');
+  }
+
+  read(): JsValue {
+    const value = this.readValue();
+    this.skipWhitespace();
+    if (this.index !== this.source.length) throw this.error('Unexpected content after literal');
+    return value;
+  }
+}
+
+function jsErrorLine(text: string, error: unknown): string {
+  const offset = error instanceof Error ? Number(/offset (\d+)$/.exec(error.message)?.[1] ?? 0) : 0;
+  return `Line ${lineNumber(text, offset)}: ${error instanceof Error ? error.message.replace(/ at offset \d+$/, '') : 'invalid JavaScript literal.'}`;
+}
+
+function renderJsVec(value: { x: number; y: number; z: number }): string {
+  return `{ x: ${cssNumber(value.x)}, y: ${cssNumber(value.y)}, z: ${cssNumber(value.z)} }`;
+}
+
+/** Generate the camera/renderer-only JS literal projection. */
+export function generateEditable3dJs(scene: Scene3DDocument | null): string {
+  if (!scene) return '';
+  const renderer = scene.renderer ? `, renderer: { preferred: '${scene.renderer.preferred}' }` : '';
+  return [
+    JS_HEADER,
+    CAMERA_CONFIG_BEGIN,
+    '{',
+    `  position: ${renderJsVec(scene.camera.position)},`,
+    `  target: ${renderJsVec(scene.camera.target)},`,
+    `  fov: ${cssNumber(scene.camera.fov)},`,
+    `  near: ${cssNumber(scene.camera.near)},`,
+    `  far: ${cssNumber(scene.camera.far)}${renderer}`,
+    '}',
+    CAMERA_CONFIG_END,
+    JS_FOOTER,
+  ].join('\n');
+}
+
+function isRecord(value: JsValue): value is { [key: string]: JsValue } {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readJsVec(
+  value: JsValue,
+  field: string,
+  errors: string[],
+): { x: number; y: number; z: number } | undefined {
+  if (
+    !isRecord(value) ||
+    typeof value.x !== 'number' ||
+    typeof value.y !== 'number' ||
+    typeof value.z !== 'number'
+  ) {
+    errors.push(`${field} must be an object with numeric x, y, and z fields.`);
+    return undefined;
+  }
+  return { x: value.x, y: value.y, z: value.z };
+}
+
+/** Parse the sentinel block without evaluating source text. */
+export function parseEditable3dJs(
+  text: string,
+  previousScene: Scene3DDocument,
+): GrammarParseResult<Scene3DDocument> {
+  const begin = text.indexOf(CAMERA_CONFIG_BEGIN);
+  const end = text.indexOf(CAMERA_CONFIG_END);
+  const prefix = `${JS_HEADER}\n${CAMERA_CONFIG_BEGIN}\n`;
+  const suffix = `\n${CAMERA_CONFIG_END}\n${JS_FOOTER}`;
+  if (
+    begin !== JS_HEADER.length + 1 ||
+    end < begin ||
+    !text.startsWith(prefix) ||
+    !text.endsWith(suffix)
+  ) {
+    return {
+      ok: false,
+      errors: ['Line 1: content outside the camera sentinel block is immutable.'],
+    };
+  }
+  const body = text.slice(prefix.length, end).trim();
+  let value: JsValue;
+  try {
+    value = new JsLiteralReader(body).read();
+  } catch (error) {
+    return { ok: false, errors: [jsErrorLine(text, error)] };
+  }
+  if (!isRecord(value))
+    return { ok: false, errors: ['Line 1: camera configuration must be an object.'] };
+  const errors: string[] = [];
+  const allowed = new Set(['position', 'target', 'fov', 'near', 'far', 'renderer']);
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) errors.push(`Line 1: unsupported camera configuration field "${key}".`);
+  }
+  const position = readJsVec(value.position, 'position', errors);
+  const target = readJsVec(value.target, 'target', errors);
+  if (typeof value.fov !== 'number' || value.fov < 1 || value.fov > 170)
+    errors.push('Line 1: fov must be between 1 and 170.');
+  if (typeof value.near !== 'number' || value.near <= 0)
+    errors.push('Line 1: near must be positive.');
+  if (typeof value.far !== 'number' || value.far <= 0) errors.push('Line 1: far must be positive.');
+  let preferred: 'threejs' | 'aframe' | undefined;
+  if (value.renderer !== undefined) {
+    if (
+      !isRecord(value.renderer) ||
+      (value.renderer.preferred !== 'threejs' && value.renderer.preferred !== 'aframe')
+    ) {
+      errors.push('Line 1: renderer.preferred must be "threejs" or "aframe".');
+    } else preferred = value.renderer.preferred;
+  }
+  if (errors.length > 0 || !position || !target) return { ok: false, errors };
+  const next = structuredClone(previousScene);
+  next.camera = {
+    position,
+    target,
+    fov: value.fov as number,
+    near: value.near as number,
+    far: value.far as number,
+  };
+  if (preferred === undefined) delete next.renderer;
+  else next.renderer = { preferred };
+  const validation = validateScene3D(next);
+  if (!validation.valid)
+    return {
+      ok: false,
+      errors: validation.errors.map((error) => `Line 1: ${error.path}: ${error.message}`),
+    };
+  return { ok: true, scene: next };
+}

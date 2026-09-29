@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   generateEditable3dCss,
   generateEditable3dHtml,
+  generateEditable3dJs,
   parseEditable3dCss,
   parseEditable3dHtml,
+  parseEditable3dJs,
 } from './codeGrammar3dTabs';
 import type { Scene3DDocument } from '../pages/scene3dTypes';
 
@@ -171,3 +173,47 @@ describe('3D CSS code grammar', () => {
     if (!result.ok) expect(result.errors.every((error) => error.startsWith('Line '))).toBe(true);
   });
 });
+
+describe('3D JS code grammar', () => {
+  it('round-trips camera and absent renderer configuration', () => {
+    const original = scene();
+    const result = parseEditable3dJs(generateEditable3dJs(original), original);
+    expect(result).toEqual({ ok: true, scene: original });
+  });
+
+  it('updates camera and renderer values without touching scene objects', () => {
+    const original = scene();
+    const source = generateEditable3dJs({ ...original, renderer: { preferred: 'threejs' } })
+      .replace('fov: 50', 'fov: 60')
+      .replace("preferred: 'threejs'", "preferred: 'aframe'");
+    const result = parseEditable3dJs(source, original);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.scene.camera.fov).toBe(60);
+      expect(result.scene.renderer).toEqual({ preferred: 'aframe' });
+      expect(result.scene.objects).toEqual(original.objects);
+      expect(result.scene.lights).toEqual(original.lights);
+      expect(result.scene.scene).toEqual(original.scene);
+    }
+  });
+
+  it('rejects out-of-bounds camera values and unsupported renderers', () => {
+    const original = scene();
+    const source = generateEditable3dJs(original)
+      .replace('fov: 50', 'fov: 180')
+      .replace('near: 0.1', 'near: 0')
+      .replace('far: 1000', "far: 1000, renderer: { preferred: 'babylon' }");
+    const result = parseEditable3dJs(source, original);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.every((error) => error.startsWith('Line '))).toBe(true);
+  });
+
+  it('rejects edits outside the sentinel block', () => {
+    const original = scene();
+    const source = generateEditable3dJs(original).replace(JS_FOOTER_FOR_TEST, 'changed');
+    const result = parseEditable3dJs(source, original);
+    expect(result.ok).toBe(false);
+  });
+});
+
+const JS_FOOTER_FOR_TEST = '// End Scene3D camera and renderer configuration';

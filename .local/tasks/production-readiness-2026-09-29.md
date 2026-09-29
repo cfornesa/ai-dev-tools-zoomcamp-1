@@ -23,13 +23,13 @@ CI/publication, browser-verification, and owner-run production work.
 
 ## Remaining open inventory
 
-The authenticated GitHub search returned exactly these 18 open issues:
+The authenticated GitHub search returned exactly these 17 open issues:
 
-`#788 #859 #926 #1036 #1040 #1041 #1042 #1043 #1044 #1045 #1046
+`#788 #859 #926 #1040 #1041 #1042 #1043 #1044 #1045 #1046
 #1061 #1062 #1063 #1064 #1065 #1066 #1067`.
 
-No open issue was silently omitted or duplicated. #1035 was reconciled and
-closed after its four children reached completed state.
+No open issue was silently omitted or duplicated. #1035 and #1036 were
+reconciled and closed after their child/implementation criteria completed.
 
 ## Readiness classifications
 
@@ -39,7 +39,7 @@ closed after its four children reached completed state.
 | Approved-browser verification | OPEN FOLLOW-UP | Complete #859's six-engine matrix; obtain owner-run live evidence for the implemented #1061–#1066 guards. |
 | CI verification | OPEN FOLLOW-UP | Obtain the matching-ref CI/browser evidence required by #859 and any parent release gate. |
 | Intended functionality | BLOCKED | Re-run the linked parent transactions after owner-run live evidence for #1061–#1066; deterministic guards and full local checks are complete. |
-| Source-contract work | OPEN FOLLOW-UP | #1036 Option B is implemented and locally/browser verified on the Compose stack; exact 1280x900 and 375x812 evidence remains before closure. #1035 is closed after its child/editor reconciliation. |
+| Source-contract work | PASS | #1035 and #1036 are closed with child/implementation QA, full checks, migration-backed local save/reload, and exact 1280x900 and 375x812 rendered browser evidence. |
 | Replit/publication | BLOCKED / OWNER-RUN | Keep #788 and any production writes on the explicitly authorized owner workflow. |
 | Production readiness | BLOCKED | Re-run this gate after the listed open issues reach terminal states. |
 
@@ -69,8 +69,8 @@ is inferred from local evidence.
 1. Run the owner-scoped live-provider/browser evidence for implemented #1061–#1066
    within each issue's bounded contract; do not spend additional quota where
    the issue marks it out of scope.
-2. Capture the exact 1280x900 and 375x812 authenticated browser evidence for
-   #1036; #1035 is already reconciled and closed.
+2. Keep the source-contract implementation under regression coverage; #1035
+   and #1036 are already reconciled and closed.
 3. Run #859's browser matrix after its fixture dependencies and generated
    showcase follow-ups are resolved.
 4. Keep #788 and other production-data actions owner-run; do not use local

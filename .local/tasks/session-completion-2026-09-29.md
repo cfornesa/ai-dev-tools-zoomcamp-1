@@ -16,7 +16,7 @@ not silently absorbed implementation work.
 | --- | --- | --- |
 | Completed/closed this continuation | #1059, #1055, #1056 | QA PASS comments, GitHub completed state, commits `12ee91b4`, `5693128c`, and `80a5df00`. |
 | Previously completed in the implementation batch | #1050–#1054, #1057–#1058 | Existing issue comments, issue-scoped commits, and prior ledger entries. |
-| Open follow-up / blocked | #788, #859, #926, #1036, #1040–#1046, #1061–#1067 | #1035 is closed after its four children completed. #1036 has implementation commits, green full checks, migration-backed local Compose/browser save-reload evidence, and a QA comment; it remains open only for its exact 1280x900 and 375x812 browser evidence. #1060 and #1068 are closed; #1061–#1066 have implementation commits and green local checks but still need owner-run live evidence, while #1067 needs an explicit contract decision. |
+| Open follow-up / blocked | #788, #859, #926, #1040–#1046, #1061–#1067 | #1035 and #1036 are closed after child/implementation QA, full checks, migration-backed local save/reload, and exact 1280x900/375x812 rendered evidence. #1060 and #1068 are closed; #1061–#1066 have implementation commits and green local checks but still need owner-run live evidence, while #1067 needs an explicit contract decision. |
 | Missing terminal classification | 0 for the processed batch | Every processed issue is closed or has an explicit open follow-up status. |
 
 ## Final verification
@@ -42,15 +42,15 @@ not silently absorbed implementation work.
 - #1061–#1066 now have isolated implementation commits, focused regression
   coverage, green full local checks, and explicit issue comments. Their
   real-provider/browser acceptance remains owner-run evidence where required.
-- #1036 now has its Option B persistence implementation committed in
+- #1036's Option B persistence implementation is complete and closed in
   `950999fc`/`0f395fc7`, with focused/full checks, migration drift validation,
-  local Compose migration, and authenticated rendered save/reload evidence.
-  Its exact 1280x900 and 375x812 browser matrix remains open.
+  local Compose migration, and authenticated rendered save/reload evidence at
+  both required viewports.
 - Readiness discovered the stale ambient-audio export-only contract and filed
   criterion-ready #1067; it is deferred and does not reopen #1056.
 - No production database, published deployment, or production credential was
   touched.
-- The project is not production-ready because the 18 open issues listed in
+- The project is not production-ready because the 17 open issues listed in
   the readiness report remain open.
 
 ## Routing audit

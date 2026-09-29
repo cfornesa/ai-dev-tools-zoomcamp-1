@@ -110,14 +110,14 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 | Issue | Transaction | Result / next action |
 | --- | --- | --- |
 | [#1035](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1035) | `OWNER DECISION → CHILDREN QA → RECONCILIATION → CLOSED` | Q1/Q2/Q3 are recorded; #1052–#1055 are all closed with implementation/QA evidence. Tracking parent closed as completed. |
-| [#1036](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1036) | `OWNER DECISION (Option B) → ENGINEERING → QA FOLLOW-UP` | Commits `950999fc` and `0f395fc7` add bounded persisted HTML/CSS/JS source fields, migration `0108`, owner-only API exposure, source parsing/live synchronization, and legacy JSON compatibility. Focused tests, `npm run build`, migration drift, full `make check`, Compose migration, and authenticated local browser save/reload evidence pass. Issue remains open only for the exact 1280x900 and 375x812 browser evidence required by its acceptance checklist; production verification is separate. |
+| [#1036](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1036) | `OWNER DECISION (Option B) → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commits `950999fc` and `0f395fc7` add bounded persisted HTML/CSS/JS source fields, migration `0108`, owner-only API exposure, source parsing/live synchronization, and legacy JSON compatibility. Focused tests, `npm run build`, migration drift, full `make check`, Compose migration, and authenticated rendered browser save/reload evidence at 1280x900 and 375x812 pass. Closed with QA comment. |
 
 ## 2026-09-29 — readiness and completion reconciliation
 
 The dependency chain for #1059 → #1055/#1056 is now closed. The exact
 focused checks, full `make check`, Compose preflight, and local health result
 all pass. Production-readiness remains **BLOCKED / NOT PRODUCTION-READY**
-because 18 open issues remain: #788, #859, #926, #1036, #1040–#1046,
+because 17 open issues remain: #788, #859, #926, #1040–#1046,
 and #1061–#1067. The complete readiness assessment is recorded in
 `.local/tasks/production-readiness-2026-09-29.md`; the batch completion report
 is in `.local/tasks/session-completion-2026-09-29.md`.

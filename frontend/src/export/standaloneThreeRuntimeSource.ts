@@ -212,6 +212,8 @@ ${ANIMATION_MATH_SOURCE}
     var soundEnabled = false;
     var keyboardEnabled = false;
     var ambientTimer = null;
+    var ambientSampleSource = null;
+    var ambientSampleUrl = window.__SCENE3D_AMBIENT_SAMPLE_URL__ || null;
     var volumePercent = 50;
     var ambientBpm = 90;
     var ambientVolume = 0.5;
@@ -279,9 +281,14 @@ ${ANIMATION_MATH_SOURCE}
         clearInterval(ambientTimer);
         ambientTimer = null;
       }
+      if (ambientSampleSource !== null) {
+        try { ambientSampleSource.stop(); } catch (_) { /* already stopped */ }
+        ambientSampleSource.disconnect();
+        ambientSampleSource = null;
+      }
     }
 
-    function startAmbient() {
+    function startSynthesizedAmbient() {
       stopAmbient();
       var ambientIndex = 0;
       ambientTimer = window.setInterval(function () {
@@ -289,6 +296,29 @@ ${ANIMATION_MATH_SOURCE}
         playTone(ambientNotes[ambientIndex % ambientNotes.length], 0.45, 'ambient', 'sine');
         ambientIndex += 1;
       }, 60000 / Math.max(40, Math.min(220, ambientBpm)));
+    }
+
+    function startAmbient() {
+      stopAmbient();
+      if (!ambientSampleUrl || !audioContext || !voiceGains.ambient) {
+        startSynthesizedAmbient();
+        return;
+      }
+      fetch(ambientSampleUrl).then(function (response) {
+        if (!response.ok) throw new Error('ambient sample request failed');
+        return response.arrayBuffer();
+      }).then(function (bytes) {
+        return audioContext.decodeAudioData(bytes);
+      }).then(function (buffer) {
+        if (!soundEnabled) return;
+        ambientSampleSource = audioContext.createBufferSource();
+        ambientSampleSource.buffer = buffer;
+        ambientSampleSource.loop = true;
+        ambientSampleSource.connect(voiceGains.ambient);
+        ambientSampleSource.start();
+      }).catch(function () {
+        if (soundEnabled) startSynthesizedAmbient();
+      });
     }
 
     function setSoundButton() {

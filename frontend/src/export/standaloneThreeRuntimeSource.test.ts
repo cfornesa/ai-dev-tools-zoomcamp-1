@@ -60,4 +60,12 @@ describe('standalone Three.js runtime source (#787)', () => {
     expect(nonCamera).not.toContain("getElementById('piece-mic')");
     expect(nonCamera).not.toContain("getElementById('piece-theremin')");
   });
+
+  it('uses a bundled ambient sample when available and falls back to synthesis on failure', () => {
+    const source = buildStandaloneThreeRuntimeScript();
+    expect(source).toContain('__SCENE3D_AMBIENT_SAMPLE_URL__');
+    expect(source).toContain('decodeAudioData');
+    expect(source).toContain('ambientSampleSource.loop = true');
+    expect(source).toContain('startSynthesizedAmbient');
+  });
 });

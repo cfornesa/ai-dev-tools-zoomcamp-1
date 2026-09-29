@@ -242,7 +242,6 @@ function PublicProject3DViewer({
             onDownload={(variant) => void handleDownload(variant)}
             immersiveHref={immersiveHref ?? `/immersive/p3d/${id}`}
             toolbarMode={toolbarMode}
-            ambientSampleResolver={(assetId) => fetchPublicPieceAsset('3d', project.id, assetId)}
           />
         )}
       </section>

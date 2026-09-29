@@ -52,7 +52,7 @@ class PublicPieceAssetView(APIView):
                 .first()
             )
             ambient_sample = normalize_sonic((current or {}).get("sonic"))
-            if not ambient_sample or ambient_sample["extras"].get("ambient_sample") != str(
+            if ambient_sample and ambient_sample["extras"].get("ambient_sample") == str(
                 asset.source_asset_id
             ):
                 raise Http404

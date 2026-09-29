@@ -6,7 +6,6 @@ import {
   SUPPORTED_MEDIA_MIME_TYPES,
   type LocalMediaAssetRecord,
 } from '../storage/localProjectRepository';
-import { uploadProject3DAmbientSample } from '../api/projects3d';
 
 /**
  * Issue #847/#1049: the ambient-sample audio asset is bound to a
@@ -30,16 +29,12 @@ const AUDIO_MIME_TYPES = new Set(
 );
 export const MAX_AMBIENT_SAMPLE_BYTES = 10 * 1024 * 1024;
 
-/** Uploads `file` as the piece's ambient-sample asset, returning the new
- * asset's id to store in `scene.sonic.extras.ambient_sample`. Throws
+/** Imports `file` as the piece's ambient-sample asset, returning the new
+ * local asset id to store in `scene.sonic.extras.ambient_sample`. Throws
  * `AmbientSampleUnsupportedType` for a non-audio file (checked before any
  * IndexedDB write) or whatever `importMediaAsset` itself throws for a
  * quota/storage failure. */
-export async function uploadAmbientSample(
-  pieceId: string,
-  file: File,
-  options: { syncToServer?: boolean } = {},
-): Promise<string> {
+export async function uploadAmbientSample(pieceId: string, file: File): Promise<string> {
   if (!AUDIO_MIME_TYPES.has(file.type)) {
     throw new AmbientSampleUnsupportedType(file.type);
   }
@@ -55,10 +50,6 @@ export async function uploadAmbientSample(
       filename: file.name,
       altText: '',
     });
-    // Server-backed 3D editors use the explicit sync step immediately after
-    // local selection. Local-first editors omit it and keep the asset local
-    // until their own transfer/package flow runs.
-    if (options.syncToServer) await uploadProject3DAmbientSample(pieceId, record.id, file);
     return record.id;
   } finally {
     db.close();
@@ -67,7 +58,8 @@ export async function uploadAmbientSample(
 
 /** Resolves an ambient-sample asset id to its blob, or `null` if the
  * asset no longer exists locally (fail-soft callers fall back to the
- * synthesized ambient walk rather than throwing). */
+ * synthesized ambient walk rather than throwing). Public viewers do not
+ * provide a remote resolver: ambient samples are export-only (#1067). */
 export async function resolveAmbientSample(
   assetId: string,
   remoteResolver?: (assetId: string) => Promise<Blob | null>,

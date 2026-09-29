@@ -134,21 +134,6 @@ export function publishProject3D(id: string): Promise<Project3D> {
   return apiFetch<Project3D>(`/api/projects3d/${id}/publish/`, { method: 'POST' });
 }
 
-/** #1056: sync the browser-local ambient sample before publishing. */
-export function uploadProject3DAmbientSample(
-  projectId: string,
-  assetId: string,
-  file: File,
-): Promise<{ asset_id: string; mime_type: string; byte_size: number }> {
-  const form = new FormData();
-  form.append('asset_id', assetId);
-  form.append('sample', file, file.name);
-  return apiFetch(`/api/projects3d/${encodeURIComponent(projectId)}/ambient-sample/`, {
-    method: 'POST',
-    body: form,
-  });
-}
-
 /** Issue #296: switch a project back to private, immediately -- owner-only;
  * mirrors the 2D `unpublishProject`. Never fails on content. */
 export function unpublishProject3D(id: string): Promise<Project3D> {

@@ -36,9 +36,13 @@ public server delivery contract**. The sample plays only in the authoring
 browser (from the existing local media asset, no new upload pipeline) and is
 bundled into the piece's downloaded ZIP export; public viewers, embeds, and
 immersive views fall back to the existing synthesized ambient voice with a
-status message. This is deliberate (owner decision, Option 1 of #886) — do
-not add a public asset endpoint for this audio without a new owner-decision
-issue. See `.agents/memory/ambient-audio-export-only-delivery.md`.
+status message. This is deliberate (owner decision, Option 1 of #886,
+reconciled by #1067) — do not add a public asset endpoint for this audio
+without a new owner-decision issue. The retired compatibility upload route
+returns `410 Gone` and does not write server data; the shared public asset
+route also rejects an ambient-sample reference while continuing to serve
+ordinary published piece media. See
+`.agents/memory/ambient-audio-export-only-delivery.md`.
 
 ## Authored per-piece sound contract (#833)
 

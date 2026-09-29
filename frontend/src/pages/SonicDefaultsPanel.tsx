@@ -20,8 +20,6 @@ type Props = {
   /** The currently-selected sample's filename, for display -- `undefined`
    * when no sample is selected or its metadata couldn't be resolved. */
   ambientSampleFilename?: string;
-  /** #1056: upload the selected local sample to the server asset boundary. */
-  syncToServer?: boolean;
 };
 
 export default function SonicDefaultsPanel({
@@ -29,7 +27,6 @@ export default function SonicDefaultsPanel({
   onChange,
   pieceId,
   ambientSampleFilename,
-  syncToServer = false,
 }: Props) {
   const current = value ?? normalizeSonic({})!;
   const [sampleError, setSampleError] = useState<string | null>(null);
@@ -47,7 +44,7 @@ export default function SonicDefaultsPanel({
     setSampleBusy(true);
     setSampleError(null);
     try {
-      const assetId = await uploadAmbientSample(pieceId, file, { syncToServer });
+      const assetId = await uploadAmbientSample(pieceId, file);
       updateExtras({ ambient_sample: assetId });
     } catch (error) {
       setSampleError(

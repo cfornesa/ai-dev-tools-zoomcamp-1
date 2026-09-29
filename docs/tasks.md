@@ -137,6 +137,15 @@ implements public server delivery. Criterion-ready follow-up
 the owner decision and contract/memory reconciliation; #1056 remains closed
 and is not reopened.
 
+[#1067](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1067) is now
+implemented under the owner-confirmed export-only decision: the legacy
+ambient upload route is a non-writing `410 Gone` compatibility shim, public
+viewers no longer resolve ambient samples remotely, and the shared public
+asset route rejects ambient-sample references while preserving ordinary
+published media. Owner re-confirmed export-only in chat on 2026-09-29.
+Focused checks and full `make check` pass. Rollback: `git revert` of the
+#1067 commit restores #1056 public delivery.
+
 The #1060 transaction reached QA with its scoped backend behavior passing, but
 the required full frontend gate reproduced an unrelated AdminSettings failure
 twice. Closed [#1068](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1068)
@@ -148,10 +157,8 @@ prompt now specifies the animated gauge contract and the provider rejects
 rubric-failing gauge fallbacks. Focused tests, lint/format, the full backend
 suite (1,818 passed / 39 skipped), frontend typecheck, and the full frontend
 suite (3,168 passed) are green. Its real-Mistral/public-browser rubric remains
-owner-run evidence, so #1066 stays open. #1067 remains an owner-decision hold
-because the durable export-only ambient contract conflicts with closed #1056's
-public-delivery implementation; neither #1056 nor the contract was silently
-rewritten.
+owner-run evidence, so #1066 stays open. #1067's owner-decision hold was resolved
+on 2026-09-29 (export-only confirmed); #1056 was not reopened.
 
 ## 2026-09-28 — live-provider QA follow-ups
 

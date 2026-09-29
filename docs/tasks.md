@@ -104,6 +104,15 @@ Milestones grouping the ~937 closed issues by the week they closed, added
 | [#1056](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1056) | `GROOMED → ENGINEERING → QA` | Product/focused criteria pass on commit `80a5df00`; prior QA recorded the same unrelated full-gate failure. Remains open pending #1059. |
 | [#1059](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1059) | `PROPOSED` | New discovery-gate follow-up for the reproducible AdminSettings grace-days regression (`expected 14, received 30`). Filed with focused/full verification commands; intentionally deferred from this session. |
 
+## 2026-09-28 — live-provider QA follow-ups
+
+| Issue | Transaction | Result / next action |
+| --- | --- | --- |
+| [#926](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/926) | `GROOMED → ENGINEERING/QA` | Local provider dependency cleared. Two bounded live Case-A attempts violated the selected `@Hills` scope; issue remains open and is linked to implementation defect #1060. Cases B/C were not started after the repeated scope failure. |
+| [#1041](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1041) | `GROOMED → ENGINEERING/QA` | Three bounded Three.js generations failed the rubric (blank, generic cube, blank). No artifact was published; issue remains open and is linked to #1061. |
+| [#1060](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1060) | `PROPOSED` | Discovery-gate follow-up for live AI target-scope enforcement; filed with reproduction, acceptance criteria, and exact full checks. Deferred from this session. |
+| [#1061](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1061) | `PROPOSED` | Discovery-gate follow-up for blank/generic Three.js showcase output; filed with bounded evidence and validation criteria. Deferred from this session. |
+
 ## 2026-09-24 — active follow-up batch (#747, #748, #788, #798–#808)
 
 The current authoritative transaction ledger is

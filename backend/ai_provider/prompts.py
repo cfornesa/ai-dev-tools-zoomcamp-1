@@ -59,7 +59,11 @@ script, access cookies or storage, or use eval/Function. Keep the source self-co
 preserve pointer events for the interactive variant.
 - For a recursive fractal-tree prompt, define a terminating recursive geometry function with a \
 depth/base-case guard and at least six visible levels, then call it from the frame callback so \
-the generated branches are visibly rendered rather than leaving a static empty canvas.""",
+the generated branches are visibly rendered rather than leaving a static empty canvas.
+- For a multi-stroke paint-tool prompt, keep a stroke collection with points and colors, wire \
+pointer/touch input to create distinct strokes, expose color plus Undo and Redo controls, and \
+redraw from the collection after every edit so overlapping colors blend instead of opaque \
+overpainting.""",
 }
 
 ART_PIECE_REGION_RULES = {

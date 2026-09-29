@@ -186,6 +186,20 @@ def test_c2js_ordinary_prompt_keeps_accepting_simple_source():
     assert _looks_like_requested_showcase(source, "a teal procedural line", "c2js")
 
 
+def test_c2js_interactive_paint_showcase_rejects_static_canvas_fallback():
+    source = "window.sketch = function (runtime) { runtime.startFrame(function () {}); };"
+    assert not _looks_like_requested_showcase(
+        source,
+        "interactive multi-stroke paint tool with color controls and undo redo",
+        "c2js-interactive",
+    )
+
+
+def test_c2js_interactive_ordinary_prompt_keeps_accepting_simple_source():
+    source = "window.sketch = function (runtime) { runtime.startFrame(function () {}); };"
+    assert _looks_like_requested_showcase(source, "an interactive teal line", "c2js-interactive")
+
+
 def test_generate_appends_persona_as_a_second_system_message():
     client = _CapturingClient()
     provider = ArtPieceProvider(client=client, persona_prompt="Use bright solar colors.")

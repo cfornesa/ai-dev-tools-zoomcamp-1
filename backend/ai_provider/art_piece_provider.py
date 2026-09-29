@@ -628,6 +628,18 @@ def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> b
             marker in lowered for marker in ("lineto", "stroke", "fill", "drawtree", "branch")
         )
         return required_recursion and required_self_call and required_base_case and required_render
+    if library == "c2js-interactive" and all(
+        word in prompt_words for word in ("paint", "stroke", "undo", "redo")
+    ):
+        required_state = all(marker in lowered for marker in ("strokes", "points", "color"))
+        required_input = any(
+            marker in lowered for marker in ("pointerdown", "pointermove", "touchstart")
+        )
+        required_history = "undo" in lowered and "redo" in lowered
+        required_blending = any(
+            marker in lowered for marker in ("globalcompositeoperation", "globalalpha", "alpha")
+        )
+        return required_state and required_input and required_history and required_blending
     return True
 
 

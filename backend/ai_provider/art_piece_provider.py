@@ -640,6 +640,36 @@ def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> b
             marker in lowered for marker in ("globalcompositeoperation", "globalalpha", "alpha")
         )
         return required_state and required_input and required_history and required_blending
+    if library == "svg" and (
+        "animated gauge" in prompt_words
+        or "progress-ring" in prompt_words
+        or "progress ring" in prompt_words
+    ):
+        required_structure = all(
+            marker in lowered
+            for marker in (
+                "<svg",
+                "viewbox",
+                "<circle",
+                "<clippath",
+                "<lineargradient",
+                "stroke-dasharray",
+                "stroke-dashoffset",
+            )
+        )
+        required_references = "clip-path" in lowered and "url(#" in lowered
+        required_animation = any(
+            marker in lowered for marker in ("<animate", "@keyframes", "animation:")
+        )
+        required_circumference = any(
+            marker in lowered for marker in ("circumference", "2π", "2*pi", "2 * pi", "2 * π")
+        )
+        return (
+            required_structure
+            and required_references
+            and required_animation
+            and required_circumference
+        )
     return True
 
 

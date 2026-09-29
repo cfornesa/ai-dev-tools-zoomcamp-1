@@ -200,6 +200,38 @@ def test_c2js_interactive_ordinary_prompt_keeps_accepting_simple_source():
     assert _looks_like_requested_showcase(source, "an interactive teal line", "c2js-interactive")
 
 
+def test_svg_gauge_showcase_rejects_blank_static_ring_fallback():
+    source = '<svg viewBox="0 0 100 100"><circle r="40" /></svg>'
+    assert not _looks_like_requested_showcase(
+        source,
+        "animated gauge or progress-ring with clipPath and gradient",
+        "svg",
+    )
+
+
+def test_svg_gauge_showcase_requires_animation_and_circumference_math():
+    source = """
+    <svg id="art-piece-svg" viewBox="0 0 100 100">
+      <defs>
+        <clipPath id="gauge-clip"><circle cx="50" cy="50" r="40" /></clipPath>
+        <linearGradient id="gauge-gradient">
+          <stop offset="0%" /><stop offset="100%" />
+        </linearGradient>
+      </defs>
+      <circle r="40" fill="url(#gauge-gradient)" clip-path="url(#gauge-clip)"
+        stroke-dasharray="2*pi*r" stroke-dashoffset="circumference * (1 - progress)">
+        <animate attributeName="stroke-dashoffset" values="0;251.2" dur="2s"
+          repeatCount="indefinite" />
+      </circle>
+    </svg>
+    """
+    assert _looks_like_requested_showcase(
+        source,
+        "animated gauge or progress-ring with clipPath and gradient",
+        "svg",
+    )
+
+
 def test_generate_appends_persona_as_a_second_system_message():
     client = _CapturingClient()
     provider = ArtPieceProvider(client=client, persona_prompt="Use bright solar colors.")

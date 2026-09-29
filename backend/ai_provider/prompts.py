@@ -39,7 +39,11 @@ and must render its content immediately with no user interaction required.
 a <script> element of any kind.
 - Never reference an external resource: no xlink:href/href to a URL, no <image> with a remote \
 src, no @import, no url(...) pointing outside the document. Every color/gradient/pattern must \
-be defined inline within the <svg> itself.""",
+be defined inline within the <svg> itself.
+- For an animated gauge or progress-ring prompt, include a visible circular ring with a filled \
+arc, an inline clipPath and gradient that are actually referenced by the artwork, and native SVG \
+animation for the arc. Derive stroke-dasharray/stroke-dashoffset from the circle's actual \
+circumference (2πr), preserving the relationship when the radius changes.""",
     "p5js": """You generate plain JavaScript for one p5.js generative-art piece. \
 The p5.js library is already loaded globally as `p5`; do not import it or write a script tag. \
 Respond with only JavaScript and assign an instance-mode sketch function to `window.sketch`. \

@@ -16,7 +16,7 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1083 | 8; none | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1084 | 9; none | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1085 | 10; none | 2b storage/data layer | CLOSED | completed and QA-reconciled |
-| #1086 | 11; #1085 | 2b storage/data layer | GROOMED | process after dependency |
+| #1086 | 11; #1085 | 2b storage/data layer | CLOSED | completed and QA-reconciled |
 | #1087 | 12; #1085/#1086 | 2a frontend | GROOMED | process after dependencies |
 | #1088 | 13; #1085 | 2a frontend | GROOMED | process after dependency |
 | #788 | owner-scoped production action | owner-run | OPEN / owner-run | use named production workflow and Chrome evidence |
@@ -160,3 +160,14 @@ The current transaction is terminal: #1084 is CLOSED before #1085 engineering be
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1085 is CLOSED before #1086 engineering begins.
+
+### #1086 — CLOSED
+
+- Commit: `b902b41b`.
+- Implementation: best-effort `ensureLocalThumbnail(project)` helper using existing 2D social capture and generated sandbox screenshot contracts, fixed 320x240 PNG downscaling, fire-and-forget hooks after local 2D and generated saves, and explicit 3D N/A behavior without storage mutation.
+- Focused checks: 3 files, 39 tests passed; canvas-mocked size/persistence tests plus LocalEditorWorkspace/repository regressions; typecheck, Prettier, and lint passed with existing warnings; committed diff passed `git show --check HEAD`.
+- QA: `## QA: PASS`, GitHub comment `5905621655`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1086 is CLOSED before #1087 engineering begins.

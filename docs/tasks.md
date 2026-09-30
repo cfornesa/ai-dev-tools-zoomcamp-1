@@ -24798,3 +24798,28 @@ Focused tests (4 files / 21 tests), frontend typecheck, full frontend suite
 (309 files / 3,183 tests), lint, Prettier, commit diff checks, and backend
 estimator tests (3 tests) passed after implementation. See the Batch 14 ledger
 for full stage provenance and evidence boundaries.
+
+### 2026-09-30 — Batch 14 #1099 sync implementation and QA
+
+[#1099](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099)
+consumes the #1098 shared expanded-content measurement for local sync offer
+preview and per-row upload preflight. Serialized UTF-8 scene/version payload
+bytes and included media blob bytes are counted once each; preview measures
+blob sizes without building the ZIP. Aggregate and per-row estimates now
+share this measure and matching file counts. Commit `8b0cd0ae` passed focused
+tests (2 files / 6 tests), frontend typecheck, the full frontend suite (310
+files / 3,186 tests), changed-file Prettier check, and commit diff check. QA
+passed and the issue was closed completed; QA comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099#issuecomment-5920683714.
+No memory change. Batch 14 readiness remains pending because #1096 and the
+handed-off #1100/#1101 work are unresolved.
+
+Final local `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed:
+backend lint/format/typecheck, 1,876 backend tests (39 environment-gated
+skips), frontend lint/format/typecheck, and 3,186 frontend tests across 310
+files. The batch currently has 4 completed issues and 3 handed-off issues
+(#1096, #1100, #1101), with no missing terminal statuses. Stage-5 readiness
+is blocked/not run while those issues remain unresolved; #1096's full Linux
+browser matrix still has residual unclassified failures beyond the two
+fixture causes tracked in #1100/#1101. The Batch 14 ledger records issue
+states, evidence, routing audit, and each remaining owner/next action.

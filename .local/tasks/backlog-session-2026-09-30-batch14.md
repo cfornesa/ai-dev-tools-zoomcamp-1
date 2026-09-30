@@ -9,13 +9,14 @@ distillation entry. Discovery-gate rule 4 waiver for #1095–#1099 is recorded
 in `DECISIONS.md`; it authorizes this session's Codex implementation
 substitution and does not waive dependency order.
 
-Execution profile: Codex / GPT-6 family / effort not exposed by runtime.
+Execution profile: Codex / GPT-6.1-sol / effort not exposed by runtime.
 Stage-1 scoping/grooming and orchestration are performed in this session.
 Stage 3 is not run unless an independent-family reviewer is available. The
-QA rostered service is unavailable, so Codex may perform stage 4 as a flagged
-substitution per the handoff contract. The rostered stage-5 model tier is not
-available in this session; no readiness pass is claimed unless valid owner-
-authorized substitution becomes available.
+QA rostered service is unavailable, so Codex performs stage 4 as a flagged
+substitution per the handoff contract. Stage 5 roster is Claude Opus 5 or
+Sonnet 5; actual owner: none (not run), effort: not applicable, substituted:
+no. The batch is incomplete and the stage-5 readiness gate remains blocked;
+no readiness pass is claimed and no GPT-5 substitution was authorized.
 
 ## Batch manifest
 
@@ -25,7 +26,7 @@ authorized substitution becomes available.
 | #1097 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097 | `docs/tasks.md`, Batch 14 CI follow-up | after #1095, before #1096 | named WebKit fullscreen/Escape workflow step | completed / CLOSED | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | impl: yes (owner waiver); QA: yes; stage 3 not run | Linux rerun belongs to #1096 | Reconciled; QA comment 5919537401; closed completed |
 | #1096 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 | `docs/tasks.md`, Batch 14 CI follow-up | after #1097 | tracking issue for full 16-shard Linux/PostgreSQL browser matrix and cause reconciliation | HANDED-OFF / QA FAIL, tracking incomplete | stage 1 Codex / GPT-6.1-sol (effort unavailable); stage 2 not applicable (no product changes authorized) / stage 3 not run / stage 4 Claude Sonnet 5 Medium roster, actual Codex GPT-6.1-sol (effort unavailable), substituted yes / gate pending | stage 4 substitution: yes | #1100 stale 2D/3D creation helpers; #1101 v4 IndexedDB fixtures; residual UI/API/timeout failures still need classification | Parent remains open; QA comment 5920587069; next operator implement #1100/#1101, rerun Linux matrix, classify every residual failure |
 | #1098 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 | `docs/tasks.md`, Batch 14 local-public quota follow-up | independent of CI; before #1099 | public-transfer preflight across the two `LocalEditorWorkspace` callers and `localPublicTransfer` | completed / CLOSED | Codex GPT-6 / Codex GPT-6 (substitution) / not run / Codex GPT-6 (substitution) / pending gate | impl: yes (owner waiver); QA: yes; stage 3 not run | none | QA comment 5920252275; closed completed |
-| #1099 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 | `docs/tasks.md`, Batch 14 local-sync quota follow-up | #1098 (closed) | private sync aggregate preview and per-row preflight | ENGINEERING | Codex GPT-6 / implementation-complex roster Ollama Cloud / optional Mistral Vibe / QA Claude Sonnet 5 / gate pending | stage 2 substitution authorized in `DECISIONS.md`; QA substitute if required | expanded stored-content semantics; use #1098 shared measurement | current issue; implementation agent to return scoped commit and exact checks |
+| #1099 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 | `docs/tasks.md`, Batch 14 local-sync quota follow-up | #1098 (closed) | private sync aggregate preview and per-row preflight | completed / CLOSED | Codex GPT-6.1-sol / implementation-complex roster Ollama Cloud, actual Codex GPT-6 family / optional Mistral Vibe / Claude Sonnet 5 Medium roster, actual Codex GPT-6.1-sol / gate pending | stage 2 and stage 4 substitutions; stage 2 authorized in `DECISIONS.md`; stage 3 not run | expanded stored-content semantics via #1098 shared measurement | QA comment 5920683714; closed completed; batch readiness gate remains pending |
 | #1100 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100 | Proposed from #1096 run 36778653929 | after #1096 handoff | E2E local-first and server-backed 2D/3D project creation helper fixtures | HANDED-OFF / new follow-up, not implemented this run | stage 1 Codex GPT-6.1-sol / stage 2a Opencode Go / optional Mistral Vibe / stage 4 Claude Sonnet 5 / gate pending | no implementation or QA stage in this run | covers confirmed Gallery/helper route mismatch | project owner / next backlog operator; preserve all caller assertions, run focused Linux specs, then full matrix |
 | #1101 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101 | Proposed from #1096 run 36778653929 | after #1096 handoff | four offline E2E fixtures requesting local IndexedDB v4 against application schema v5 | HANDED-OFF / new follow-up, not implemented this run | stage 1 Codex GPT-6.1-sol / stage 2a Opencode Go / optional Mistral Vibe / stage 4 Claude Sonnet 5 / gate pending | no implementation or QA stage in this run | covers ten setup failures across four specs | project owner / next backlog operator; retain all offline scenarios and verify against v5 before rerunning matrix |
 
@@ -199,6 +200,40 @@ No new follow-up has been discovered in #1095.
 - Memory: unchanged; this is a specific instance of the recorded E2E spec
   drift and remains scoped separately from the broad matrix issue.
 
+### #1099 — ENGINEERING → QA → RECONCILIATION → CLOSED
+
+- Live contract re-read: selected aggregate preview sums each selected row's
+  expanded `pieceBytes + mediaBytes`; upload preflight uses the same measure
+  and one piece plus included media file counts; media-bearing fitting rows
+  are allowed while over-quota rows remain blocked; no backend estimator/API
+  or unrelated quota caller changes.
+- Owner reaffirmed expanded stored-content semantics: UTF-8 serialized
+  piece/version payload bytes plus included media blob bytes once each,
+  excluding ZIP/manifest/container overhead. The sync path consumes the
+  shared local package helper; preview reads Blob sizes without copying blob
+  bytes or building ZIPs. Upload/build and preview derive measurements from
+  the same record/media loader.
+- Intake accepted. Scope is exactly four frontend helper/page/test files;
+  test assertions were inspected and no weakened, skipped, deleted, or
+  retargeted assertions were found. No API, schema, route, dependency, or
+  backend estimator change.
+- Stage 2b roster Ollama Cloud; actual owner separate Codex GPT-6-family task
+  agent, effort unavailable; substituted under the owner waiver in
+  `DECISIONS.md`. Stage 3 not run. Stage 4 roster Claude Sonnet 5 Medium;
+  actual Codex GPT-6.1-sol, effort unavailable; substituted. QA verdict PASS,
+  comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099#issuecomment-5920683714.
+- `npm test -- --run src/pages/LocalPieceSyncOffer.test.tsx
+  src/storage/localPiecePackage.test.ts` passed (2 files / 6 tests);
+  `npm run typecheck` passed; `npm test` passed (310 files / 3,186 tests);
+  changed-file Prettier check and `git diff --check 8b0cd0ae^ 8b0cd0ae`
+  passed. Evidence is local macOS automated checks; no deployment verification
+  claimed. Commit `8b0cd0ae`.
+- GitHub issue was updated with resolved criteria/evidence and closed
+  completed. No memory change. Batch 14 production-readiness gate remains
+  pending; #1096 and its #1100/#1101 handoffs remain unresolved as recorded
+  above.
+
 ## Remaining batch gates
 
 - Process #1096 next; #1097 is terminal. Re-run the full matrix at the
@@ -214,3 +249,36 @@ No new follow-up has been discovered in #1095.
 - Stage-5 production-readiness is not currently satisfiable on this Codex
   runtime under the shared contract; record a blocked gate with the exact
   owner/next action rather than claiming readiness.
+
+## Batch completion audit — 2026-09-30
+
+- Manifest reconciled against GitHub after #1099 closure. Seven discovered
+  issues: 4 completed (#1095, #1097, #1098, #1099), 0 blocked, 0 dependency-
+  blocked, 3 handed-off (#1096, #1100, #1101), and 0 missing terminal status.
+  Two follow-ups were discovered and created (#1100, #1101); none reused or
+  pending authorization. All seven remain in milestone 14, which stays open
+  while the three follow-ups are open.
+- Final local project check: `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make
+  check` exited 0. Backend lint/format/typecheck passed; backend tests:
+  1,876 passed / 39 skipped; frontend lint, format, typecheck, and tests
+  passed (310 files / 3,186 tests). Lint emitted existing warnings, and the
+  skipped backend tests are environment-gated. Batch includes separate CI
+  E2E evidence for #1096/#1097; local `make check` does not cover browser E2E.
+- Readiness result: **BLOCKED / not run**. Three required items remain
+  handed-off; #1096's full browser matrix failed and residual route/API,
+  locator, assertion, wait, and timeout failures still lack evidenced
+  first-cause classifications. Exact next action: implement #1100/#1101,
+  rerun the full Linux matrix, classify and link every remaining failure,
+  then request/run stage 5 on Claude Opus 5 or Sonnet 5 at the rostered effort
+  after issue reconciliation. Do not claim production readiness meanwhile.
+- Stage-5 routing audit for all manifest issues: roster Claude Opus 5 or
+  Sonnet 5; actual owner none (not run), effort not applicable, substituted
+  no. Gate is blocked by incomplete follow-up work; no authorized GPT-5
+  substitution exists. Other stage owners and substitutions are recorded
+  issue-by-issue above. Stage 3 is explicitly not run where applicable.
+- Final follow-up audit: #1096 remains the parent tracking handoff for
+  #1100/#1101 plus unresolved residual failures; no discovered actionable
+  item was left without an issue or owner/next action. Failed full-suite gate
+  is **not fully classified**: 2 evidenced fixture causes are linked to
+  #1100/#1101, while the remaining failure families need triage under #1096.
+- Memory topics unchanged; no new durable constraint emerged in #1099.

@@ -466,9 +466,7 @@ def test_add_layer_normalization_builds_canonical_pair_when_provider_omits_layer
     assert added_layer["id"] != BLANK_SCENE["layers"][0]["id"]
     assert added_shape["layerId"] == added_layer["id"]
     assert added_shape["mediaAssetId"] == asset["id"]
-    assert ai_runs._validate_candidate_scope(
-        {"scope": "add-layer"}, BLANK_SCENE, candidate
-    ) is None
+    assert ai_runs._validate_candidate_scope({"scope": "add-layer"}, BLANK_SCENE, candidate) is None
 
 
 def test_add_layer_normalization_rejects_provider_mutation_of_existing_layer():

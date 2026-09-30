@@ -481,9 +481,7 @@ def _normalize_add_layer_candidate(
     # unrelated shape.  This preserves the add-layer scope boundary even when
     # the provider response is malformed.
     after_layer_by_id = {
-        layer.get("id"): layer
-        for layer in after_layers
-        if isinstance(layer.get("id"), str)
+        layer.get("id"): layer for layer in after_layers if isinstance(layer.get("id"), str)
     }
     if any(
         layer_id not in after_layer_by_id or after_layer_by_id[layer_id] != layer
@@ -766,9 +764,7 @@ def _run_one_attempt(run: AIRun) -> _AttemptOutcome:
             candidate_scene, candidate_patch = _normalize_add_layer_candidate(
                 _target_scene_json(run), candidate_scene, patch, run.assets
             )
-        scope_error = _validate_candidate_scope(
-            run.plan, _target_scene_json(run), candidate_scene
-        )
+        scope_error = _validate_candidate_scope(run.plan, _target_scene_json(run), candidate_scene)
         if scope_error is not None:
             return _AttemptOutcome(
                 success=False,

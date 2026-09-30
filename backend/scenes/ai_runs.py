@@ -562,7 +562,7 @@ def _augmented_prompt(run: AIRun) -> str:
             "its new layer, do not modify any existing layer or shape, and do not treat the "
             "selected asset id as an existing scene element id."
         )
-    if run.scope in {AIRun.Scope.SELECTION, AIRun.Scope.ADD_LAYER} and run.selected_target_ids:
+    if run.scope == AIRun.Scope.SELECTION and run.selected_target_ids:
         ids = ", ".join(str(i) for i in run.selected_target_ids)
         parts.append(f"Only modify the following existing element id(s): {ids}.")
     if run.validation_summary:

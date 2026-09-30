@@ -64,3 +64,13 @@ The current transaction is terminal: #1076 is CLOSED before #1077 engineering be
 - Final status: CLOSED / completed on GitHub. No shifted work beyond #1078–#1080's declared validation/repair/corpus boundaries.
 
 The current transaction is terminal: #1077 is CLOSED before #1078 engineering begins.
+
+### #1081 — CLOSED
+
+- Commit: `c75352eb` (docs/process.md only; issue annotations are GitHub comments).
+- Focused checks: `git diff --check`; docs-only diff stat verified; active Chrome rendered inspection confirmed the #1040 annotation.
+- QA: `## QA: PASS`, GitHub comment `5905007941`; stage 3 not run because this was docs-only.
+- Evidence boundary: repository documentation plus rendered GitHub issue comments; live-provider generation remains child scope.
+- Final status: CLOSED / completed on GitHub. Closed-child bodies were not rewritten; additive annotations preserve history and satisfy the current prompt contract.
+
+The current transaction is terminal: #1081 is CLOSED before #1078 engineering begins.

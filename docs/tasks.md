@@ -24823,3 +24823,16 @@ is blocked/not run while those issues remain unresolved; #1096's full Linux
 browser matrix still has residual unclassified failures beyond the two
 fixture causes tracked in #1100/#1101. The Batch 14 ledger records issue
 states, evidence, routing audit, and each remaining owner/next action.
+
+### 2026-09-30 — distillation of Codex-filed #1100/#1101 (Batch 14)
+
+Verified against HEAD `ef5771b7` (run 36778653929): stale creation helpers
+(`createBlankProjectViaUI`/`createBlank3DProjectViaUI`, 22 spec files) and v4
+IndexedDB fixtures (5 sites in 4 offline specs; app `DB_VERSION = 5`, v5 adds
+the `versions` store). Refined/split: [#1100](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100)
+(helpers + 3D callers, 2a), [#1102](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1102) (single-purpose
+2D specs, 2a, after #1100), [#1103](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1103) (four multi-call
+2D specs, 2a, after #1100), [#1104](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1104) (lifecycle/publishing/
+responsive, 2b, after #1100, owner-decision point), [#1101](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101)
+(real-schema offline seeding, 2a, independent). Parent #1096 stays open for
+residual failure classification. Suggested next issue: #1100.

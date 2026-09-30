@@ -24873,3 +24873,9 @@ At this checkpoint, #1100 still awaits the owner's architecture choice;
 #1102–#1104 depend on #1100 and stay dependency-blocked. #1096 remains open
 until the creation-helper chain, the #1105 handoff, and residual full-matrix
 failure classification are reconciled.
+
+### 2026-09-30 — Batch 14 #1100 server-backed 3D helper and QA handoff
+
+The owner selected defer retirement for [#1100](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100): add server-backed helpers and migrate six 3D callers now; retain the old exports until #1102–#1104 migrate all remaining callers, then retire them in #1104. Commit `91a7a553` adds the typed 2D/3D server helper functions and changes only helper imports/setup calls in the six scoped specs. The API responses are status-checked, must contain the real id and canonical `editor_url`, and the page navigates to that editor URL. No application source or API contract changed.
+
+Typecheck, lint (existing warnings), formatting, and diff checks pass. Against local disposable PostgreSQL-backed Django/Vite, the exact six-spec Chromium command produced 3 passes and 4 failures. The three toolbar-locator failures and the 375x812 A-Frame drag failure were separately filed as criterion-ready [#1106](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1106) and [#1107](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1107) under parent #1096. Test/expect counts were unchanged in all six specs. QA comment 5921704822 is `## QA: FAIL`; #1100 remains open until those follow-ups are resolved and the required Linux Chromium command passes. Parent #1096 received comment 5921705496. The complete matrix after this change and Linux verification were not run; local Docker is unavailable and no workflow-dispatch tool is exposed. Production readiness and session completion remain pending.

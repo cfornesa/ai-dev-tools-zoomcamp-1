@@ -36,6 +36,17 @@
   the rostered Claude Sonnet 5 Medium service is unavailable. No stage-3
   review is claimed unless an independent model family performs it.
 
+## 2026-09-30 — Owner selects defer retirement for #1100
+
+- The owner approved adding server-backed project helpers and migrating the
+  six 3D specs while keeping the stale helper exports temporarily. Retire
+  those exports only after #1102–#1104 have migrated the remaining callers;
+  do not widen #1100 to all 2D callers or use staged renames.
+- Implementation commit: `91a7a553`. QA found downstream 3D toolbar and
+  mobile A-Frame failures; criterion-ready follow-ups #1106 and #1107 were
+  filed under #1096. #1100 remains open / QA FAIL pending their resolution
+  and the Linux Chromium gate.
+
 ## 2026-09-30 — Batch 14 #1096 stage-agent loop
 
 - Initiated the sequential stage-agent loop for #1096 required by

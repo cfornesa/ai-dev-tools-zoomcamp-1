@@ -317,6 +317,12 @@ non-reference `ArtPiece` rows, and is idempotent. The owner-only browser
 refresh flow may subsequently replace a fixture raster through the same
 version-bound upload contract.
 
+Production invocations must provide an explicit repeated `--source-id`
+allowlist; the production wrapper refuses to run without
+`REFERENCE_IMPORT_SOURCE_IDS`. This prevents a bounded owner-authorized
+refresh, such as #788's two C2 fixtures, from implicitly importing the full
+six-fixture matrix.
+
 ## Share-metadata diagnostic (`#717`)
 
 `GET /__share-metadata-status` is an anonymous, credential-free diagnostic

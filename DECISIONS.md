@@ -1,5 +1,17 @@
 # DECISIONS.md
 
+## 2026-09-30 — Explicit fixture selection for owner-scoped production imports (#788)
+
+- The owner selected the scoped-flag approach for #788: preserve one canonical
+  reference-fixture importer, add repeatable `--source-id` selection, and
+  require explicit fixture IDs for every production invocation. The production
+  wrapper will pass only `legacy-c2-default` and
+  `legacy-c2-interactive-default` for the approved C2 refresh.
+- The previous all-six production gate remains disabled until this change is
+  deployed and a no-write preview names exactly those two fixtures. Rollback
+  is to disable the gate and redeploy the prior revision; no production write
+  occurs before the preview is independently checked.
+
 ## 2026-09-19 — Production importer must execute in the production runtime
 
 - The authorized `import_reference_pieces --allow-production` workflow was

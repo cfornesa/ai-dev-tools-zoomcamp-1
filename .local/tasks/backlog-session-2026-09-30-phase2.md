@@ -17,7 +17,7 @@
 | #1065 | OPEN / RUBRIC-FAILED | Deterministic C2 Interactive guard present; linked #1045 produced no accepted artifact. |
 | #1066 | OPEN / RUBRIC-FAILED | Deterministic SVG guard present; linked #1046 output lacked a gradient. |
 | #926 | OPEN / IMPLEMENTATION-BLOCKED | Existing bounded local run failed Case A scope isolation; implementation follow-up #1060 is now closed, but the required live Case-B/C evidence remains unreached. |
-| #788 | OPEN / OWNER-RUN | Production data action; intentionally untouched. |
+| #788 | OPEN / OWNER-RUN | Scoped importer implementation complete locally; production preview, one bounded write, and live verification remain owner-run. |
 
 Closed follow-ups reconciled since the initial ledger: #1060 (target-scope
 enforcement) and #1069 (Chromium shard-5 reliability). Their QA comments and
@@ -55,3 +55,29 @@ state after the follow-up work is:
 The #926 failure is covered by the existing issue; no duplicate follow-up was
 created. No production data, credentials, or API-key values were used. The
 provider runs were local and disposable only.
+
+## 2026-09-30 — #788 scoped-import implementation
+
+The owner selected the sustainable scoped-flag approach. The canonical
+importer now accepts repeatable `--source-id` values, rejects missing,
+duplicate, and unknown IDs in production, and scopes preview/import/cleanup to
+the selected fixtures. The production wrapper refuses to run without
+`REFERENCE_IMPORT_SOURCE_IDS`; the approved #788 value is exactly
+`legacy-c2-default,legacy-c2-interactive-default`. No production database was
+read or changed by this implementation transaction.
+
+Verification:
+
+- Focused command tests: `35 passed, 6 warnings`.
+- Full `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`: backend `1832
+  passed, 39 skipped`; frontend `307 passed (3170 tests)`; exit code 0.
+- Implementation/QA service substitution: rostered Ollama Cloud Kimi was
+  unavailable, so Codex/GPT-5 Medium performed the implementation and
+  self-review; no independent stage-3 review was available.
+
+Terminal status remains `OWNER-RUN`: deploy the commit, run the no-write
+production preview and confirm it names exactly the two C2 source IDs, then
+perform the separately authorized one-write production invocation, verify the
+two live C2 routes at desktop/mobile sizes and version history, verify
+unrelated pieces are unchanged, and remove the startup trigger. Rollback is to
+disable the gate and redeploy the prior revision before any write.

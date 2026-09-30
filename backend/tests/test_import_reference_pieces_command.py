@@ -11,6 +11,16 @@ from django.test import override_settings
 from scenes.management.commands.import_reference_pieces import IMPORT_NAME
 from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion, PublicProfile
 
+ALL_SOURCE_IDS = [
+    "legacy-svg-default",
+    "legacy-p5-default",
+    "legacy-c2-default",
+    "legacy-c2-interactive-default",
+    "legacy-three-default",
+    "legacy-aframe-default",
+]
+C2_SOURCE_IDS = ["legacy-c2-default", "legacy-c2-interactive-default"]
+
 
 @pytest.mark.django_db
 @override_settings(DEBUG=True)
@@ -125,13 +135,17 @@ def test_production_dry_run_resolves_existing_owner_without_writing():
         "cfornesa@outlook.com",
         "--handle",
         "cfornesa",
+        "--source-id",
+        C2_SOURCE_IDS[0],
+        "--source-id",
+        C2_SOURCE_IDS[1],
         "--json",
         stdout=output,
     )
 
     assert '"dry_run": true' in output.getvalue()
     assert '"no_write": true' in output.getvalue()
-    assert '"planned_fixture_count": 6' in output.getvalue()
+    assert '"planned_fixture_count": 2' in output.getvalue()
     assert not ArtPiece.objects.filter(owner=owner).exists()
 
 
@@ -149,6 +163,7 @@ def test_production_import_is_existing_owner_scoped_and_idempotent():
         "email": "cfornesa@outlook.com",
         "handle": "cfornesa",
         "allow_production": True,
+        "source_ids": ALL_SOURCE_IDS,
     }
     call_command("import_reference_pieces", "import", **kwargs)
     first = list(
@@ -177,6 +192,7 @@ def test_production_import_reconciles_changed_source_without_mutating_history():
         "email": "cfornesa@outlook.com",
         "handle": "cfornesa",
         "allow_production": True,
+        "source_ids": ALL_SOURCE_IDS,
     }
 
     call_command("import_reference_pieces", "import", **kwargs)
@@ -213,6 +229,7 @@ def test_production_dry_run_reports_changed_source_update_without_writing():
         "email": "cfornesa@outlook.com",
         "handle": "cfornesa",
         "allow_production": True,
+        "source_ids": ALL_SOURCE_IDS,
     }
     call_command("import_reference_pieces", "import", **kwargs)
     piece = ArtPiece.objects.get(owner=owner, public_slug="reference-c2-study")
@@ -240,7 +257,7 @@ def test_production_import_reports_slug_conflict_and_keeps_existing_owner():
         username="christopher1", email="cfornesa@outlook.com", password="unused"
     )
     PublicProfile.objects.create(user=owner, handle="cfornesa", is_public=True)
-    ArtPiece.objects.create(owner=owner, title="Existing", public_slug="reference-svg-study")
+    ArtPiece.objects.create(owner=owner, title="Existing", public_slug="reference-c2-study")
 
     output = StringIO()
     call_command(
@@ -252,11 +269,15 @@ def test_production_import_reports_slug_conflict_and_keeps_existing_owner():
         "christopher1",
         "--handle",
         "cfornesa",
+        "--source-id",
+        C2_SOURCE_IDS[0],
+        "--source-id",
+        C2_SOURCE_IDS[1],
         "--json",
         stdout=output,
     )
 
-    assert "reference-svg-study" in output.getvalue()
+    assert "reference-c2-study" in output.getvalue()
     assert ArtPiece.objects.filter(owner=owner).count() == 1
 
 
@@ -286,3 +307,53 @@ def test_reference_import_leaves_non_reference_piece_untouched():
     assert ArtPiece.objects.filter(owner=owner).count() == 7
     assert unrelated.title == "Unrelated"
     assert unrelated.current_version_id is None
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=False)
+def test_production_import_requires_explicit_source_ids():
+    User = get_user_model()  # noqa: N806
+    owner = User.objects.create_user(
+        username="christopher1", email="cfornesa@outlook.com", password="unused"
+    )
+    PublicProfile.objects.create(user=owner, handle="cfornesa", is_public=True)
+
+    with pytest.raises(CommandError, match="explicit --source-id"):
+        call_command(
+            "import_reference_pieces",
+            "import",
+            "--allow-production",
+            "--username",
+            "christopher1",
+            "--handle",
+            "cfornesa",
+        )
+
+
+@pytest.mark.django_db
+@override_settings(DEBUG=False)
+def test_production_import_source_ids_bound_scope():
+    User = get_user_model()  # noqa: N806
+    owner = User.objects.create_user(
+        username="christopher1", email="cfornesa@outlook.com", password="unused"
+    )
+    PublicProfile.objects.create(user=owner, handle="cfornesa", is_public=True)
+
+    call_command(
+        "import_reference_pieces",
+        "import",
+        "--allow-production",
+        "--username",
+        "christopher1",
+        "--handle",
+        "cfornesa",
+        "--source-id",
+        C2_SOURCE_IDS[0],
+        "--source-id",
+        C2_SOURCE_IDS[1],
+    )
+
+    assert set(ArtPiece.objects.filter(owner=owner).values_list("public_slug", flat=True)) == {
+        "reference-c2-study",
+        "reference-c2-interactive-study",
+    }

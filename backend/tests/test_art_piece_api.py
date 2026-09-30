@@ -248,18 +248,24 @@ def test_svg_success_returns_the_generated_snippet(owner_client, monkeypatch):
 
 
 @pytest.mark.django_db
-def test_svg_output_containing_a_script_tag_is_rejected_with_422(owner_client, monkeypatch):
-    """Issue #199 (SVG extension): SVG is meant to be inert markup only --
-    a <script> tag anywhere means the model didn't follow the no-JavaScript
-    rule, so this is rejected the same as missing <svg> entirely, even
-    though the sandboxed iframe would still isolate any script safely."""
+def test_svg_output_with_inline_script_is_accepted(owner_client, monkeypatch):
     scripted = '<svg id="art-piece-svg"><script>alert(1)</script></svg>'
     _use_provider(monkeypatch, _mistral_provider_returning(scripted))
 
     response = owner_client.post(URL, {"library": "svg", "prompt": "anything"}, format="json")
 
+    assert response.status_code == 200
+    assert response.json()["code"] == scripted
+
+
+@pytest.mark.django_db
+def test_svg_output_with_external_script_is_rejected_with_422(owner_client, monkeypatch):
+    scripted = '<svg id="art-piece-svg"><script src="https://example.test/app.js"></script></svg>'
+    _use_provider(monkeypatch, _mistral_provider_returning(scripted))
+
+    response = owner_client.post(URL, {"library": "svg", "prompt": "anything"}, format="json")
+
     assert response.status_code == 422
-    assert response.json()["error"] == "invalid_structured_output"
 
 
 @pytest.mark.django_db
@@ -324,8 +330,23 @@ def test_aframe_success_returns_the_generated_snippet(owner_client, monkeypatch)
 
 
 @pytest.mark.django_db
-def test_aframe_output_containing_a_script_tag_is_rejected_with_422(owner_client, monkeypatch):
-    scripted = '<a-scene id="art-piece-scene"><script>alert(1)</script></a-scene>'
+def test_aframe_output_with_inline_script_is_accepted(owner_client, monkeypatch):
+    scripted = (
+        '<a-scene id="art-piece-scene"><script>'
+        "AFRAME.registerComponent('lamp-toggle', {});"
+        "</script></a-scene>"
+    )
+    _use_provider(monkeypatch, _mistral_provider_returning(scripted))
+
+    response = owner_client.post(URL, {"library": "aframe", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 200
+    assert response.json()["code"] == scripted
+
+
+@pytest.mark.django_db
+def test_aframe_output_with_external_script_is_rejected_with_422(owner_client, monkeypatch):
+    scripted = '<a-scene id="art-piece-scene"><script src="https://example.test/app.js"></script></a-scene>'
     _use_provider(monkeypatch, _mistral_provider_returning(scripted))
 
     response = owner_client.post(URL, {"library": "aframe", "prompt": "anything"}, format="json")

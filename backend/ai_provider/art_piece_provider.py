@@ -94,6 +94,11 @@ MAX_RAW_RESPONSE_BYTES = 200_000
 # being told not to.
 MAX_SNIPPET_CHARS = 150_000
 
+# Rollback switch for the inline-script contract. The frontend sandbox remains
+# the security boundary; this only controls whether the generator's shape
+# validator accepts the new source form.
+ART_PIECE_ALLOW_INLINE_SCRIPT = True
+
 _ESTIMATED_PROMPT_COST_PER_1K = 0.002
 _ESTIMATED_COMPLETION_COST_PER_1K = 0.006
 
@@ -137,19 +142,21 @@ both `castShadow` and `receiveShadow` on the visible meshes and the sun light.""
 
 # Issue #199 (A-Frame extension): like SVG, this is declarative markup
 # only -- A-Frame's own built-in geometry/material/animation components
-# cover most generative-art use cases without any custom JavaScript, and
-# skipping script execution entirely keeps this library's trust surface
-# as small as SVG's.
-_AFRAME_SYSTEM_PROMPT = """You generate the markup for a single generative-art piece using ONLY \
-A-Frame's declarative HTML (no custom JavaScript, no <script> tags). The A-Frame library is \
+# cover most generative-art use cases without custom JavaScript. Inline
+# component code is permitted where the prompt requires it; external scripts
+# remain forbidden.
+_AFRAME_SYSTEM_PROMPT = """You generate the markup for a single generative-art piece using \
+A-Frame's \
+HTML. One inline <script> is permitted for custom component lifecycle code and event listeners; \
+never use a script src attribute. The A-Frame library is \
 already loaded -- do not reference a version or write a <script src="..."> for it. Follow \
 these rules exactly:
 
 - Respond with ONLY the raw markup -- no prose, no explanation, no markdown code fences before \
 or after it.
 - Output exactly one <a-scene id="art-piece-scene" embedded> element and its children (entities, \
-primitives like <a-box>/<a-sphere>/<a-cylinder>/<a-plane>, lights, camera) and nothing else: no \
-<html>, <head>, <body>, <!DOCTYPE>, or <script> element of any kind.
+primitives like <a-box>/<a-sphere>/<a-cylinder>/<a-plane>, lights, camera, and at most one inline \
+<script>) and nothing else: no <html>, <head>, <body>, or <!DOCTYPE>.
 - Include an <a-camera> (or a camera-carrying <a-entity>) positioned so the generated geometry is \
 actually visible, and any lighting needed to see the geometry -- do not rely on A-Frame's default \
 lighting alone if the scene has custom materials.
@@ -171,14 +178,15 @@ positive-Z axis looking back toward the origin -- do not rotate it to lie flat u
 actually describes a floor, ground, or table the shape sits on, and if it does, tilt the camera \
 downward (e.g. rotation="-45 0 0" on the camera entity) so it looks down at the flat shape \
 instead of across it.
-- Any animation must use A-Frame's built-in `animation` component (e.g. \
-animation="property: rotation; to: 0 360 0; loop: true; dur: 4000") -- never JavaScript.
+- Any animation should use A-Frame's built-in `animation` component (e.g. \
+animation="property: rotation; to: 0 360 0; loop: true; dur: 4000") unless custom inline \
+JavaScript is required by the prompt.
 - Never reference an external resource: no `src` pointing at a URL for any asset, texture, or \
 model, no <a-assets> item loaded from a remote path. Every color/material must be defined \
 inline via A-Frame's own material/color attributes.
-- For a `light-switch` prompt, register the custom component with lifecycle code and an event \
-listener, attach it to the switch entity, and toggle the emissive material on at least two \
-separate lamp entities together on every trigger."""
+- For a custom interaction prompt, register the custom component with lifecycle code and an event \
+listener, attach it to the relevant entity, and update the named targets together on every \
+trigger."""
 
 
 @dataclass(frozen=True)
@@ -551,11 +559,7 @@ def _looks_like_snippet(snippet: str, library: str, prompt: str = "") -> bool:
     if library == "canvas2d":
         return "<canvas" in lowered and "<script" in lowered
     if library == "svg":
-        # Per the system prompt, this is inert markup only -- a "<script"
-        # anywhere means the model didn't follow the no-JavaScript rule,
-        # rejected the same as a missing "<svg" rather than passed through
-        # to the (still-safe, but not what was asked for) sandbox.
-        return "<svg" in lowered and "<script" not in lowered
+        return "<svg" in lowered and _allows_inline_script(lowered, prompt)
     if library == "threejs":
         # Plain JavaScript expected -- reject anything that looks like the
         # model wrapped its own markup/script tag around the code (the
@@ -570,18 +574,20 @@ def _looks_like_snippet(snippet: str, library: str, prompt: str = "") -> bool:
         return "window.sketch" in lowered and "startframe" in lowered
     if "<a-scene" not in lowered:
         return False
-    # Most A-Frame pieces remain declarative-only. The fixed light-switch
-    # showcase is the deliberate exception: its acceptance contract requires
-    # AFRAME.registerComponent lifecycle/event code, which must live in an
-    # inline script. The sandbox's opaque origin and CSP still contain that
-    # code; external script URLs remain rejected here.
+    # Inline component code is allowed for every A-Frame prompt. The sandbox's
+    # opaque origin and CSP still contain that code; external script URLs
+    # remain rejected here.
     if "<script" not in lowered:
         return True
-    return (
-        "light-switch" in prompt.casefold()
-        and "aframe.registercomponent" in lowered
-        and re.search(r"<script\b[^>]*\bsrc\s*=", lowered) is None
-    )
+    return _allows_inline_script(lowered, prompt)
+
+
+def _allows_inline_script(lowered: str, prompt: str) -> bool:
+    if re.search(r"<script\b[^>]*\bsrc\s*=", lowered) is not None:
+        return False
+    if ART_PIECE_ALLOW_INLINE_SCRIPT:
+        return True
+    return "light-switch" in prompt.casefold() and "aframe.registercomponent" in lowered
 
 
 def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> bool:

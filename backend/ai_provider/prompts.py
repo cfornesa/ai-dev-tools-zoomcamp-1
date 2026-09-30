@@ -25,18 +25,20 @@ eval()/Function()/setTimeout with a string argument.
 fixed reasonable size like 800x600) and begin drawing immediately without user interaction.
 - Prefer requestAnimationFrame for any animation, and make sure the loop is self-terminating \
 or bounded -- never an infinitely recursive synchronous call that could hang the page.""",
-    "svg": """You generate the markup for a single generative-art piece using ONLY \
-inert SVG markup -- no JavaScript at all. Follow these rules exactly:
+    "svg": """You generate the markup for a single generative-art piece using SVG markup. \
+One inline <script> is permitted when the artwork needs DOM-driven values; never use a \
+script src attribute. Follow these rules exactly:
 
 - Respond with ONLY the raw markup -- no prose, no explanation, no markdown code fences \
 before or after it.
 - Output exactly one <svg id="art-piece-svg" ...> root element and nothing else: no <html>, \
-<head>, <body>, <!DOCTYPE>, <script>, <foreignObject>, or any other top-level element.
+<head>, <body>, <!DOCTYPE>, <foreignObject>, or any other top-level element. If scripting is \
+needed, keep one inline <script> inside the SVG root.
 - The <svg> must declare a viewBox (e.g. viewBox="0 0 800 600") so it scales to its container, \
 and must render its content immediately with no user interaction required.
-- Any animation must use SVG's own native animation elements (<animate>, <animateTransform>, \
-<animateMotion>) or a <style> block with CSS @keyframes/animation -- never JavaScript, never \
-a <script> element of any kind.
+- Any animation may use SVG's own native animation elements (<animate>, <animateTransform>, \
+<animateMotion>), a <style> block with CSS @keyframes/animation, or one inline script for \
+DOM-driven values.
 - Never reference an external resource: no xlink:href/href to a URL, no <image> with a remote \
 src, no @import, no url(...) pointing outside the document. Every color/gradient/pattern must \
 be defined inline within the <svg> itself.

@@ -17,6 +17,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
+import ai_provider.art_piece_provider as art_piece_provider
 from ai_provider.art_piece_provider import (
     ArtPieceProvider,
     _looks_like_requested_showcase,
@@ -172,19 +173,34 @@ def test_aframe_light_switch_allows_required_inline_component_script():
     assert _looks_like_snippet(
         source,
         "aframe",
-        "light-switch custom component toggles two lamps",
+        "lamp toggle custom component toggles two lamps",
     )
 
 
-def test_aframe_non_showcase_script_and_external_script_are_rejected():
-    inline = "<a-scene><script>console.log('ordinary');</script></a-scene>"
+def test_svg_inline_script_is_allowed_but_external_script_is_rejected():
+    inline = '<svg id="art-piece-svg"><script>const value = 1;</script></svg>'
+    external = '<svg id="art-piece-svg"><script src="https://example.test/app.js"></script></svg>'
+    assert _looks_like_snippet(inline, "svg", "animated gauge")
+    assert not _looks_like_snippet(external, "svg", "animated gauge")
+
+
+def test_aframe_inline_script_is_prompt_wording_independent_but_external_is_rejected():
+    inline = "<a-scene><script>AFRAME.registerComponent('lamp-toggle', {});</script></a-scene>"
     external = '<a-scene><script src="https://example.test/app.js"></script></a-scene>'
-    assert not _looks_like_snippet(inline, "aframe", "a teal box")
+    assert _looks_like_snippet(inline, "aframe", "lamp toggle")
     assert not _looks_like_snippet(
         external,
         "aframe",
-        "light-switch custom component toggles two lamps",
+        "lamp toggle custom component toggles two lamps",
     )
+
+
+def test_inline_script_flag_restores_previous_aframe_showcase_boundary(monkeypatch):
+    source = "<a-scene><script>AFRAME.registerComponent('lamp-toggle', {});</script></a-scene>"
+    monkeypatch.setattr(art_piece_provider, "ART_PIECE_ALLOW_INLINE_SCRIPT", False)
+
+    assert not _looks_like_snippet(source, "aframe", "lamp toggle")
+    assert _looks_like_snippet(source, "aframe", "light-switch")
 
 
 def test_p5_n_body_showcase_rejects_generic_single_circle_fallback():

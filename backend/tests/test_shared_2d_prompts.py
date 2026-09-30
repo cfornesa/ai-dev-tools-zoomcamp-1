@@ -9,6 +9,7 @@ from ai_provider.deepseek_provider import DeepSeekSceneProvider
 from ai_provider.gemini_provider import GeminiResponse, GeminiSceneProvider
 from ai_provider.interface import AICreateSceneRequest, AIEditSceneRequest
 from ai_provider.mistral_provider import MistralSceneProvider
+from ai_provider.prompts import SCENE_2D_EDIT_PROMPT
 
 
 class _GeminiClient:
@@ -62,3 +63,18 @@ def test_2d_create_and_edit_prompts_are_byte_identical_across_vendors():
             mistral_prompt = mistral_client.calls[0]["messages"][0]["content"]
 
         assert gemini_prompt == deepseek_prompt == mistral_prompt
+
+
+def test_2d_edit_prompt_describes_canonical_image_add_layer_shape():
+    for fragment in (
+        '"layerId"',
+        '"groupId"',
+        '"transform"',
+        '"style"',
+        'mediaAssetId',
+        '"/layers/-"',
+        '"/shapes/-"',
+    ):
+        assert fragment in SCENE_2D_EDIT_PROMPT
+
+    assert 'Never generate a shape with "type": "image"' not in SCENE_2D_EDIT_PROMPT

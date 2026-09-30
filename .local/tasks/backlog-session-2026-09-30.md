@@ -245,6 +245,16 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - Current active-Chrome/Replit reconciliation: the Production Database remains read-only and the deployed importer still lacks `--source-id`; omitting it would violate the exact two-piece boundary. QA comment `5907499069` records this as FAIL with no new production mutation. Local scoped implementation remains verified at `f0f5ff95`.
 - Final status: OPEN / owner-run workflow boundary. Do not close on the direct-SQL evidence; closure requires the deployed owner-scoped importer and its before/after plus viewport evidence.
 
+### #788 — CLOSED / owner-scoped production importer
+
+- The reviewed candidate was published through Replit. The corrected admin settings route rendered with visible loading/error recovery before the data action; the production frontend build and focused implementation checks passed.
+- Active authenticated Chrome preview used exactly `@cfornesa`, `legacy-c2-default`, and `legacy-c2-interactive-default`. Preview JSON reported `dry_run: true`, `no_write: true`, `existing_reference_count: 2`, `planned_fixture_count: 2`, `would_create: 0`, `would_update: []`, and `slug_conflicts: []`. No direct SQL or broad database access was used for the final workflow.
+- The single explicit write was confirmed through the visible production Admin settings control. Read-only production API evidence recorded the exact before/after identifiers: C2 public id `b945eb03-79aa-4c9d-89c6-4d44cc1d486e`, version `5` sequence 1 -> version `9` sequence 2; C2 Interactive public id `53b5b0e8-16dc-4e18-aedf-4419231d7ea7`, version `6` sequence 1 -> version `10` sequence 2. Both new versions retain the exact `reference_import.source_id` markers.
+- Active Chrome inspected both public routes at exact `1440x900` and `375x812` viewport overrides. Both rendered the centered 1280x720-relative circle; the interactive route retained visitor-drawing controls. Both routes expose two published versions.
+- QA self-review: `## QA: PASS — #788 owner-scoped production importer`, GitHub comment `5909705889`. Stage 2 was a Codex/GPT-5 substitution because the rostered implementation service was unavailable; Stage 3 was not run; Stage 4 was a Codex/GPT-5 substitution with issue criteria re-read and production/API/browser evidence independently re-derived.
+- Full backend-suite note: the repository Compose run still has the documented unrelated missing `/app/scripts/check-github-action-pins.py` mount limitation; focused checks and the production frontend build passed.
+- Final status: CLOSED / completed on GitHub.
+
 ### #1091 — OPEN / live-provider follow-up
 
 - Discovery: #926's six bounded Mistral runs produced persisted invalid-output evidence exposing a shared 2D edit prompt/schema mismatch. Duplicate search found no existing implementation-defect issue.

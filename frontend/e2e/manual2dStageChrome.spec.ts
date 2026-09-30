@@ -1,6 +1,7 @@
 /** Issue #977: structured 2D editor control-row placement and responsive tools access. */
 import { expect, test, type Page } from '@playwright/test';
 
+import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { createBlankProjectViaUI } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -8,11 +9,15 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
-async function createLocalProjectViaUI(page: Page) {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new 2D project with p5.js' }).click();
-  await page.waitForURL(/\/local-projects\/[^/]+$/);
+async function openServerBackedManualEditor(page: Page) {
+  const created = await apiPost(page.context(), '/api/projects/blank/', { renderer: 'p5' });
+  if (!created.ok()) {
+    throw new Error(`Could not create the server-backed 2D editor fixture: ${created.status()}`);
+  }
+  const project = (await created.json()) as { editor_url?: string };
+  if (!project.editor_url) throw new Error('The 2D editor fixture did not include editor_url.');
+  await page.goto(project.editor_url);
+  await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
 }
 
 async function hasNativeFullscreenSupport(page: Page) {
@@ -101,7 +106,7 @@ test.describe('manual 2D editor shell', () => {
     browserName,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createLocalProjectViaUI(page);
+    await openServerBackedManualEditor(page);
 
     const stageToolbar = page.locator('.piece-stage-shell').getByRole('toolbar', {
       name: 'Piece actions',

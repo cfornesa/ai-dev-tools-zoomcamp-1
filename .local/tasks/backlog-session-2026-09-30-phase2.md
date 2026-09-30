@@ -16,8 +16,12 @@
 | #1064 | OPEN / RUBRIC-FAILED | Deterministic C2 guard present; linked #1044 rendered blank. |
 | #1065 | OPEN / RUBRIC-FAILED | Deterministic C2 Interactive guard present; linked #1045 produced no accepted artifact. |
 | #1066 | OPEN / RUBRIC-FAILED | Deterministic SVG guard present; linked #1046 output lacked a gradient. |
-| #926 | OPEN / IMPLEMENTATION-BLOCKED | Existing bounded local run failed Case A scope isolation and filed #1060; no additional live quota spent. |
+| #926 | OPEN / IMPLEMENTATION-BLOCKED | Existing bounded local run failed Case A scope isolation; implementation follow-up #1060 is now closed, but the required live Case-B/C evidence remains unreached. |
 | #788 | OPEN / OWNER-RUN | Production data action; intentionally untouched. |
+
+Closed follow-ups reconciled since the initial ledger: #1060 (target-scope
+enforcement) and #1069 (Chromium shard-5 reliability). Their QA comments and
+commits are authoritative; neither remains in the open inventory.
 
 ## Gate evidence
 

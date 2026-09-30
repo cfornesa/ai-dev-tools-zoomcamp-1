@@ -24584,8 +24584,9 @@ real-provider boundary. #1041 and deterministic follow-up #1061 closed with
 browser evidence. #1042–#1046 and follow-ups #1062–#1066 remain open with
 explicit dependency, rubric, or verification terminal status; exact matrices
 and next actions are in `.local/tasks/backlog-session-2026-09-30-phase2.md`.
-#926 remains blocked by the existing Case-A scope defect and #1060. #788 was
-not touched because it is a production-data owner-run action.
+#926 remains open for its unreached live cases despite the implementation fix
+in #1060. #1069's browser-shard follow-up is now closed. #788 was not touched
+because it is a production-data owner-run action.
 
 The full `make check` gate passed (backend 1830 passed / 39 skipped; frontend
 307 files / 3170 tests). The temporary live-provider backend container was

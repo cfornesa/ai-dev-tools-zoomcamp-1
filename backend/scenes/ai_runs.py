@@ -436,17 +436,24 @@ def _normalize_add_layer_candidate(
     patch: list[dict[str, Any]] | None,
     assets: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], list[dict[str, Any]] | None]:
-    """Repair the narrow provider failure of attaching a new image to base.
+    """Normalize a provider add-layer response to the canonical asset pair.
 
-    Mistral sometimes emits a valid new image shape but reuses the existing
-    layer instead of emitting the companion layer add.  Add-layer scope owns
-    that invariant, so normalize only this exact shape-only case into the
-    requested two-record candidate; all other scope violations remain hard
-    rejections.
+    The selected media descriptor is the authoritative input for this scope;
+    the model is only asked to choose an edit, not to invent a server-side
+    asset reference.  If the provider preserves the existing scene but emits
+    a shape-only or otherwise incomplete add-layer candidate, rebuild the
+    requested pair from the descriptor.  Any mutation/removal of pre-existing
+    layers or shapes, or any unrelated new shape, remains a hard rejection.
     """
+    before_scene = before or {}
     before_layers = {
         layer.get("id")
-        for layer in (before or {}).get("layers", [])
+        for layer in before_scene.get("layers", [])
+        if isinstance(layer, dict) and isinstance(layer.get("id"), str)
+    }
+    before_layer_by_id = {
+        layer.get("id"): layer
+        for layer in before_scene.get("layers", [])
         if isinstance(layer, dict) and isinstance(layer.get("id"), str)
     }
     after_layers = [
@@ -454,12 +461,13 @@ def _normalize_add_layer_candidate(
         for layer in after.get("layers", [])
         if isinstance(layer, dict) and isinstance(layer.get("id"), str)
     ]
-    if any(layer["id"] not in before_layers for layer in after_layers):
-        return after, patch
     before_shape_ids = {
-        shape.get("id")
-        for shape in (before or {}).get("shapes", [])
-        if isinstance(shape, dict)
+        shape.get("id") for shape in before_scene.get("shapes", []) if isinstance(shape, dict)
+    }
+    before_shape_by_id = {
+        shape.get("id"): shape
+        for shape in before_scene.get("shapes", [])
+        if isinstance(shape, dict) and isinstance(shape.get("id"), str)
     }
     added_images = [
         (index, shape)
@@ -468,29 +476,96 @@ def _normalize_add_layer_candidate(
         and shape.get("id") not in before_shape_ids
         and shape.get("type") == "image"
     ]
-    if len(added_images) != 1:
+
+    # Do not repair a candidate that changes the existing scene or adds an
+    # unrelated shape.  This preserves the add-layer scope boundary even when
+    # the provider response is malformed.
+    after_layer_by_id = {
+        layer.get("id"): layer
+        for layer in after_layers
+        if isinstance(layer.get("id"), str)
+    }
+    if any(
+        layer_id not in after_layer_by_id or after_layer_by_id[layer_id] != layer
+        for layer_id, layer in before_layer_by_id.items()
+    ):
         return after, patch
-    index, _ = added_images[0]
+    after_shape_by_id = {
+        shape.get("id"): shape
+        for shape in after.get("shapes", [])
+        if isinstance(shape, dict) and isinstance(shape.get("id"), str)
+    }
+    if any(
+        shape_id not in after_shape_by_id or after_shape_by_id[shape_id] != shape
+        for shape_id, shape in before_shape_by_id.items()
+    ):
+        return after, patch
+    if any(
+        shape.get("id") not in before_shape_ids and shape.get("type") != "image"
+        for shape in after.get("shapes", [])
+        if isinstance(shape, dict)
+    ):
+        return after, patch
+    if len(assets) != 1 or not isinstance(assets[0].get("id"), str):
+        return after, patch
+
+    # A correctly formed provider candidate is retained verbatim so its
+    # placement/style choices survive; only incomplete candidates use the
+    # deterministic server-owned pair below.
+    added_layers = [layer for layer in after_layers if layer["id"] not in before_layers]
+    if len(added_layers) == 1 and len(added_images) == 1:
+        return after, patch
+
     layer_id = f"ai-asset-layer-{uuid.uuid4().hex}"
-    asset_name = assets[0].get("name", "Imported asset") if assets else "Imported asset"
-    candidate = deepcopy(after)
-    candidate.setdefault("layers", []).append(
-        {
-            "id": layer_id,
-            "name": asset_name,
-            "order": len(before_layers),
-            "visible": True,
-            "locked": False,
-        }
-    )
-    candidate["shapes"][index]["layerId"] = layer_id
+    shape_id = f"ai-asset-image-{uuid.uuid4().hex}"
+    asset = assets[0]
+    canvas = before_scene.get("canvas", {})
+    canvas_width = canvas.get("width", 800) if isinstance(canvas, dict) else 800
+    canvas_height = canvas.get("height", 600) if isinstance(canvas, dict) else 600
+    asset_name = asset.get("name", "Imported asset")
+    layer = {
+        "id": layer_id,
+        "name": asset_name if isinstance(asset_name, str) and asset_name else "Imported asset",
+        "order": max(
+            (
+                layer.get("order", 0)
+                for layer in before_scene.get("layers", [])
+                if isinstance(layer, dict)
+            ),
+            default=-1,
+        )
+        + 1,
+        "visible": True,
+        "locked": False,
+    }
+    shape = {
+        "id": shape_id,
+        "type": "image",
+        "layerId": layer_id,
+        "groupId": None,
+        "transform": {
+            "x": canvas_width / 2,
+            "y": canvas_height / 2,
+            "scaleX": 1,
+            "scaleY": 1,
+            "rotation": 0,
+            "opacity": 1,
+        },
+        "style": {"fill": None, "stroke": None, "strokeWidth": 0},
+        "name": layer["name"],
+        "mediaAssetId": asset["id"],
+        "altText": layer["name"],
+    }
+    candidate = deepcopy(before_scene)
+    candidate.setdefault("layers", []).append(layer)
+    candidate.setdefault("shapes", []).append(shape)
     repaired_patch = list(patch or []) + [
         {
             "op": "add",
             "path": "/layers/-",
-            "value": candidate["layers"][-1],
+            "value": layer,
         },
-        {"op": "replace", "path": f"/shapes/{index}/layerId", "value": layer_id},
+        {"op": "add", "path": "/shapes/-", "value": shape},
     ]
     return candidate, repaired_patch
 

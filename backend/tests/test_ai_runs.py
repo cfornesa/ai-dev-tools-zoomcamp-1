@@ -422,6 +422,71 @@ def test_add_layer_scope_rejects_foreign_media_asset_id():
     assert error == "image mediaAssetId 'asset-foreign' is not in the submitted assets."
 
 
+def test_add_layer_normalization_builds_canonical_pair_when_provider_omits_layer():
+    asset = {
+        "id": "asset-local-1",
+        "name": "Reference",
+        "mime": "image/png",
+        "width": 320,
+        "height": 240,
+    }
+    provider_candidate = copy.deepcopy(BLANK_SCENE)
+    provider_candidate["shapes"].append(
+        {
+            "id": "provider-image-1",
+            "type": "image",
+            "layerId": "layer-1",
+            "groupId": None,
+            "transform": {
+                "x": 400,
+                "y": 300,
+                "scaleX": 1,
+                "scaleY": 1,
+                "rotation": 0,
+                "opacity": 1,
+            },
+            "style": {"fill": None, "stroke": None, "strokeWidth": 0},
+            "mediaAssetId": asset["id"],
+            "altText": asset["name"],
+        }
+    )
+
+    candidate, repaired_patch = ai_runs._normalize_add_layer_candidate(
+        BLANK_SCENE,
+        provider_candidate,
+        [],
+        [asset],
+    )
+
+    assert repaired_patch is not None
+    assert len(candidate["layers"]) == len(BLANK_SCENE["layers"]) + 1
+    assert len(candidate["shapes"]) == 1
+    added_layer = candidate["layers"][-1]
+    added_shape = candidate["shapes"][-1]
+    assert added_layer["id"] != BLANK_SCENE["layers"][0]["id"]
+    assert added_shape["layerId"] == added_layer["id"]
+    assert added_shape["mediaAssetId"] == asset["id"]
+    assert ai_runs._validate_candidate_scope(
+        {"scope": "add-layer"}, BLANK_SCENE, candidate
+    ) is None
+
+
+def test_add_layer_normalization_rejects_provider_mutation_of_existing_layer():
+    asset = {"id": "asset-local-1", "name": "Reference"}
+    provider_candidate = copy.deepcopy(BLANK_SCENE)
+    provider_candidate["layers"][0]["locked"] = True
+
+    candidate, patch = ai_runs._normalize_add_layer_candidate(
+        BLANK_SCENE,
+        provider_candidate,
+        [],
+        [asset],
+    )
+
+    assert candidate == provider_candidate
+    assert patch == []
+
+
 # --- Happy path: 2D and 3D create runs --------------------------------------
 
 

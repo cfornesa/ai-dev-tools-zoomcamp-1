@@ -23,6 +23,16 @@
   unaffected. Not yet encoded — `docs/process.md` rule 4 rewording is
   proposed in chat for approval, and `AGENTS.md` is unchanged (§11).
 
+## 2026-09-30 — Batch 14 #1096 stage-agent loop
+
+- Initiated the sequential stage-agent loop for #1096 required by
+  `docs/process.md`: a focused PM/grooming pass first, engineering only after
+  the pending fixture-architecture choice is settled, then QA after an
+  issue-scoped commit. No independent-family stage-3 reviewer is available in
+  this runtime; QA substitution provenance will be recorded. Full 16-shard CI
+  dispatch `36778653929` is running on fixed ref
+  `ef5771b77db4d4d07efe0ab0950ad0d740788a62`.
+
 ## 2026-09-30 — Dual-track dispatch approved (Track A normalized / Track B Claude scopes, Codex reviews)
 
 - The owner approved keeping both workflows as equally supported, for

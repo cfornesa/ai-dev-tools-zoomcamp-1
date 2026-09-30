@@ -23,7 +23,7 @@ authorized substitution becomes available.
 |---|---|---|---|---|---|---|---|---|---|
 | #1095 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095 | `docs/tasks.md`, Batch 14 transaction #1095 | none; first | Gallery local-card date assertion under timezone/locale variation | completed / CLOSED | Codex GPT-6 (effort not exposed) / Codex GPT-6 (effort not exposed) / not run / Codex GPT-6 (effort not exposed) / pending batch gate | impl: yes (owner waiver); QA: yes; scoping: no | none | Reconciled; QA comment 5919356495; closed completed |
 | #1097 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097 | `docs/tasks.md`, Batch 14 CI follow-up | after #1095, before #1096 | named WebKit fullscreen/Escape workflow step | completed / CLOSED | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | impl: yes (owner waiver); QA: yes; stage 3 not run | Linux rerun belongs to #1096 | Reconciled; QA comment 5919537401; closed completed |
-| #1096 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 | `docs/tasks.md`, Batch 14 CI follow-up | after #1097 | 16-shard browser acceptance workflow at commit `900fe968`; classify root causes, preserve assertions, rerun | GROOMED | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | pending actual execution | causes spanning shards must be fixed or linked atomically | process after #1097 |
+| #1096 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 | `docs/tasks.md`, Batch 14 CI follow-up | after #1097 | tracking issue for full 16-shard Linux/PostgreSQL browser matrix and cause reconciliation | HANDED-OFF / not ready for implementation | stage 1 Codex / actual Codex GPT-6.1-sol (effort unavailable); stage 2b Ollama Cloud / optional Mistral Vibe / QA Claude Sonnet 5 / gate Claude Opus 5 or Sonnet 5 | scoping: no; engineering and QA: not started | wait for completed run 36778653929, classify non-shared failures and file linked atomic Batch 14 children | PM handoff; resume diagnosis when dispatch logs complete |
 | #1098 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 | `docs/tasks.md`, Batch 14 local-public quota follow-up | independent of CI; before #1099 | public-transfer preflight across the two `LocalEditorWorkspace` callers and `localPublicTransfer` | GROOMED — expanded stored-content accounting contract on issue | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | pending actual execution | shared content-byte measurement and regressions | next after #1096 terminal |
 | #1099 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 | `docs/tasks.md`, Batch 14 local-sync quota follow-up | #1098 | private sync aggregate preview and per-row preflight | GROOMED / dependency-blocked until #1098 closes | Codex GPT-6 / stage 2a Opencode Go / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | pending actual execution | inherits expanded stored-content semantics; shared measurement | owner is this session; process after #1098 |
 
@@ -38,6 +38,64 @@ the named WebKit failure boundary, while #1096 owns the multi-shard browser
 matrix and must state how that specific failure relates to the broad run.
 #1099 is distinct from #1098 because it is the private cloud-sync upload path.
 No new follow-up has been discovered in #1095.
+
+## #1096 stage-1 handoff (2026-09-30)
+
+- Live GitHub issue was re-read. Its stale title/body estimate (~280 failed
+  specs), PROPOSED status, vague shard examples, and missing fixture/runner
+  contract were replaced. The issue remains open in milestone 14 (Batch 14).
+- Run 36765070532 is the authoritative baseline: all 16 isolated Linux
+  PostgreSQL browser jobs completed setup, migrations, quota verification,
+  Django/Vite startup, and health waits; each full browser step failed. Logs
+  contain 208 failed tests across 110 spec files. Workflow validation,
+  backend checks, and disposable published-routing smoke passed; frontend
+  Vitest had one failure of 3,180. Failure patterns include the Gallery route
+  helper's stale server-project wait, four v4 IndexedDB fixture opens against
+  app schema v5, stale UI/strict-locator assumptions, feature-specific
+  assertion mismatches, cascaded ended tests, and shard suite timeouts.
+- Exact entry/fixture: `.github/workflows/ci.yml` `e2e-browser` workflow,
+  `workflow_dispatch`, matrix shards `1/16` through `16/16`; each Ubuntu job
+  owns a disposable PostgreSQL database and Playwright fixture lifecycle.
+  The baseline is commit `900fe968` / run 36765070532. Current fixed-ref run
+  36778653929 is in progress and is the required next evidence source.
+- Latest run poll: workflow validation, backend checks, and disposable
+  published-routing smoke passed; shard 1's focused WebKit Escape step passed.
+  Shard 14's full suite failed four tests across
+  `publicPieceSurfaceContract744.spec.ts`, `publicProfiles.spec.ts`, and the
+  desktop/mobile cases in `publicShell.spec.ts`. Other full-suite shards and
+  frontend checks remain in progress; no final matrix result is claimed.
+- Exact local-equivalent runner command per shard:
+  `cd frontend && E2E_BASE_URL=http://localhost:5000 npm run test:e2e -- --shard=N/16`
+  with `N=1..16`; full collection command:
+  `cd frontend && E2E_BASE_URL=http://localhost:5000 npm run test:e2e`.
+  Acceptance is remote Linux/Compose CI evidence, because local macOS browser
+  launch was already shown to fail at the Mach-port/Playwright host boundary.
+- Proposed children (not filed per handoff instruction): (a) bring the four
+  offline E2E IndexedDB fixture users
+  (`offlineOwnershipRecovery.spec.ts`, `offlineMediaTransfer.spec.ts`,
+  `offlineConflictResolution.spec.ts`, `offlineSync.spec.ts`) to schema v5
+  and show each intended offline path still executes; (b) split the shared
+  `createBlankProjectViaUI` helper contract into explicit local-only and
+  server-backed setup entry points, migrate its affected test callers without
+  dropping scenarios, and run the focused caller set on Linux. Remaining
+  failure families (strict locators, interaction/assertion mismatches,
+  timeouts) need run 36778653929 logs before stable atomic criteria can be
+  recommended.
+- Duplicate search evidence: open GitHub searches for the repo terms
+  `createBlankProjectViaUI OR local-projects`, `IndexedDB VersionError v5`,
+  and `E2E browser matrix shard failures`; the first two returned no issues,
+  the third returned only #1096. Local duplicate check across `docs/tasks.md`,
+  `.local/tasks/`, and `.agents/memory/` found no existing #1096 child tickets
+  covering these exact causes. The source memory `.agents/memory/e2e-spec-
+  drift-outside-smoke-suite.md` gives the reusable failure class but is not a
+  duplicate task.
+- Readiness: `HANDED-OFF`, not ready for implementation. Fixed-ref logs are
+  incomplete and the 77 baseline failures classified as other assertion or
+  runtime failures have not been decomposed to smallest common causes. No
+  product code/test change and no child issue creation occurred in this PM
+  pass. Next: inspect completed 36778653929 logs; update child proposals;
+  file approved actionable children into open milestone 14; then return #1096
+  to the transaction sequence.
 
 ## Transaction ledger
 

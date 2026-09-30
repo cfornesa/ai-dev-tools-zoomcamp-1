@@ -24680,7 +24680,8 @@ smoke has been run. Next action: owner pushes the branch and confirms CI.
 Pushed `900fe968` and dispatched CI run 36765070532. **CI FAILED**: Backend
 checks, workflow validation and disposable published-routing smoke passed;
 Frontend checks failed (1 of 3,180 tests) and all 16 browser shards failed
-(~280 specs). Local `make check` and CI therefore disagree; readiness stays
+(208 failed tests across 110 spec files in the shard logs; the earlier
+~280-spec estimate was inaccurate). Local `make check` and CI therefore disagree; readiness stays
 **BLOCKED** (matching-ref CI boundary). Filed under Discovery gate rule 4
 (not implemented; the earlier waiver covered only #1092/#1093) in
 Batch 14: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095 (Gallery test timezone dependence), https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 (E2E matrix failure),
@@ -24748,3 +24749,52 @@ commands, and the constraint to keep the backend estimator unchanged.
 been re-groomed to consume that same shared measurement for both aggregate
 preview and per-row private-quota checks. It remains dependency-blocked until
 #1098 closes.
+
+### 2026-09-30 — Batch 14 #1096 grooming handoff
+
+[#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096)
+was re-read from GitHub and groomed against the full-matrix workflow contract.
+The original estimate of ~280 failed specs is replaced by the observed
+baseline: run 36765070532 ran all 16 isolated Linux/PostgreSQL browser shards;
+all completed their migrations, quota setup, Django/Vite startup, and health
+wait; the suite logs contain 208 failed tests across 110 spec files. Backend,
+workflow validation, and disposable published-routing smoke passed; frontend
+Vitest failed 1 of 3,180. The first-failure classes include a shared stale
+server-project route wait in `frontend/e2e/support/createProject.ts`, four
+offline specs opening the local-projects IndexedDB at v4 while the application
+schema is v5, stale UI assumptions/strict-locator failures, feature-specific
+assertion failures, cascaded test-ended timeouts, and shard-level suite
+timeouts. These are not one proven shared runtime failure.
+
+Run 36778653929 is the current fixed-ref 16-shard dispatch. Workflow
+validation, backend checks, and disposable published-routing smoke passed;
+shard 1's focused WebKit Escape step passed. Shard 14 completed its full
+suite with four failures in `publicPieceSurfaceContract744.spec.ts`,
+`publicProfiles.spec.ts`, and desktop/mobile cases in `publicShell.spec.ts`.
+The other full-suite jobs and frontend check have not completed. No final
+matrix result is claimed. These are distinct public-surface failures pending
+log diagnosis. The matrix must finish before remaining causes can be bounded.
+Relationship: this repeats the non-smoke E2E drift class described
+in `.agents/memory/e2e-spec-drift-outside-smoke-suite.md`; it does not reopen
+closed #1069 or #859. #1069 concerned microphone/generated-interaction
+reliability; #859's six-engine verification boundary was later closed.
+
+The issue is marked HANDED-OFF / not implementation-ready until the live
+dispatch has complete logs and the independent remaining failures are split.
+Recommended proposed children for owner/backlog reconciliation (not yet
+filed): (1) migrate the four files
+`offlineOwnershipRecovery.spec.ts`, `offlineMediaTransfer.spec.ts`,
+`offlineConflictResolution.spec.ts`, and `offlineSync.spec.ts` to the v5
+IndexedDB fixture/schema entry point and prove each targeted offline scenario
+still reaches its behavior; (2) reconcile `createBlankProjectViaUI` callers
+with local-only Gallery creation versus tests requiring the server-backed
+canonical editor, using distinct named fixture entry points and focused Linux
+coverage for every affected caller. Remaining assertion/locator/runtime
+failures and any repeatable runner timeout should be triaged from run
+36778653929 into additional atomic issues only after the logs identify their
+smallest common cause. Search of open GitHub issues for the route/helper,
+IndexedDB v4/v5, and browser-matrix terms returned no equivalent follow-up.
+No product code or test was changed in this PM pass; no child issue was
+created. Run 36778653929 and the unresolved classification are the blockers;
+next action is complete the dispatch evidence review, file linked children
+under open Batch 14, then schedule their engineering/QA transactions.

@@ -187,6 +187,8 @@ def test_output_missing_canvas_or_script_is_rejected_with_422(owner_client, monk
 
     assert response.status_code == 422
     assert response.json()["error"] == "invalid_structured_output"
+    assert response.json()["detail"] == "missing_canvas_root"
+    assert "anything" not in response.json()["detail"]
 
 
 @pytest.mark.django_db

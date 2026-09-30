@@ -99,6 +99,7 @@ MAX_SNIPPET_CHARS = 150_000
 # validator accepts the new source form.
 ART_PIECE_ALLOW_INLINE_SCRIPT = True
 ART_PIECE_EXTRACT = True
+ART_PIECE_RUBRIC = "structural"
 
 _ESTIMATED_PROMPT_COST_PER_1K = 0.002
 _ESTIMATED_COMPLETION_COST_PER_1K = 0.006
@@ -436,17 +437,15 @@ class ArtPieceProvider:
             )
 
         snippet = extract_snippet(text, library)
-        if (
-            not _looks_like_snippet(snippet, library, prompt)
-            or not _looks_like_requested_showcase(snippet, prompt, library)
-            or len(snippet) > MAX_SNIPPET_CHARS
-        ):
+        snippet_ok, snippet_reason = _looks_like_snippet(snippet, library, prompt)
+        showcase_ok, showcase_reason = _looks_like_requested_showcase(snippet, prompt, library)
+        if not snippet_ok or not showcase_ok or len(snippet) > MAX_SNIPPET_CHARS:
+            reason = snippet_reason or showcase_reason
+            if len(snippet) > MAX_SNIPPET_CHARS:
+                reason = "snippet_too_large"
             return ArtPieceResult(
                 usage=usage,
-                error=(
-                    f"{EMPTY_OR_MALFORMED_PREFIX}The generated output was empty or did not "
-                    f"look like a valid {library} snippet. Try rephrasing the prompt."
-                ),
+                error=(f"{EMPTY_OR_MALFORMED_PREFIX}{reason or 'invalid_snippet'}"),
             )
 
         regions = parse_regions(snippet, library)
@@ -585,7 +584,7 @@ def extract_snippet(text: str, library: str) -> str:
     return _strip_markdown_fence(text)
 
 
-def _looks_like_snippet(snippet: str, library: str, prompt: str = "") -> bool:
+def _legacy_looks_like_snippet(snippet: str, library: str, prompt: str = "") -> bool:
     if not snippet:
         return False
     lowered = snippet.lower()
@@ -623,7 +622,53 @@ def _allows_inline_script(lowered: str, prompt: str) -> bool:
     return "light-switch" in prompt.casefold() and "aframe.registercomponent" in lowered
 
 
-def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> bool:
+def _looks_like_snippet(  # noqa: C901
+    snippet: str, library: str, prompt: str = ""
+) -> tuple[bool, str | None]:
+    if ART_PIECE_RUBRIC == "legacy":
+        legacy_ok = _legacy_looks_like_snippet(snippet, library, prompt)
+        return (legacy_ok, None) if legacy_ok else (False, "invalid_snippet")
+    if not snippet:
+        return False, "empty_snippet"
+    lowered = snippet.lower()
+    if library == "canvas2d":
+        if "<canvas" not in lowered:
+            return False, "missing_canvas_root"
+        if "<script" not in lowered:
+            return False, "missing_canvas_script"
+        return True, None
+    if library == "svg":
+        if "<svg" not in lowered:
+            return False, "missing_svg_root"
+        if re.search(r"<script\b[^>]*\bsrc\s*=", lowered):
+            return False, "script_src_external"
+        return True, None
+    if library == "threejs":
+        if "three." not in lowered:
+            return False, "missing_threejs_marker"
+        if any(marker in lowered for marker in ("<script", "<html", "<canvas")):
+            return False, "threejs_wrapped_markup"
+        return True, None
+    if library == "p5js":
+        if "window.sketch" not in lowered:
+            return False, "missing_p5_sketch"
+        if "p.setup" not in lowered:
+            return False, "missing_p5_setup"
+        return True, None
+    if library in {"c2js", "c2js-interactive"}:
+        if "window.sketch" not in lowered:
+            return False, "missing_c2_sketch"
+        if "startframe" not in lowered:
+            return False, "missing_start_frame"
+        return True, None
+    if "<a-scene" not in lowered:
+        return False, "missing_aframe_root"
+    if "<script" in lowered and not _allows_inline_script(lowered, prompt):
+        return False, "script_src_external"
+    return True, None
+
+
+def _legacy_looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> bool:
     """Reject generic fallbacks for the two fixed showcase prompts only."""
 
     prompt_words = prompt.casefold()
@@ -721,6 +766,125 @@ def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> b
             and required_circumference
         )
     return True
+
+
+def _looks_like_requested_showcase(  # noqa: C901
+    snippet: str, prompt: str, library: str
+) -> tuple[bool, str | None]:
+    if ART_PIECE_RUBRIC == "legacy":
+        legacy_ok = _legacy_looks_like_requested_showcase(snippet, prompt, library)
+        return (legacy_ok, None) if legacy_ok else (False, "showcase_structure_mismatch")
+
+    prompt_words = prompt.casefold()
+    lowered = snippet.casefold()
+    checks: tuple[tuple[bool, str], ...]
+    if library == "threejs" and all(word in prompt_words for word in ("sun", "planet", "moon")):
+        checks = (
+            ("three.group" in lowered or "new three.group" in lowered, "missing_group_hierarchy"),
+            ("planet" in lowered and "moon" in lowered, "missing_orbital_entities"),
+            (
+                "getworldposition" in lowered or "planet.position" in lowered,
+                "missing_relative_orbit",
+            ),
+            (
+                all(marker in lowered for marker in ("shadowmap", "castshadow", "receiveshadow")),
+                "missing_shadows",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if library == "aframe" and any(word in prompt_words for word in ("click", "gaze", "switch")):
+        checks = (
+            ("aframe.registercomponent" in lowered, "missing_registerComponent"),
+            ("addeventlistener" in lowered, "missing_event_listener"),
+            (
+                any(
+                    marker in lowered
+                    for marker in ("emissive", "setattribute", "intensity", "material")
+                ),
+                "missing_light_mutation",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if (
+        library == "p5js"
+        and any(word in prompt_words for word in ("gravity", "attract"))
+        and any(word in prompt_words for word in ("collision", "bounce"))
+    ):
+        checks = (
+            (
+                all(marker in lowered for marker in ("particles", "mass", "radius", "velocity")),
+                "missing_particle_state",
+            ),
+            ("p.draw" in lowered and lowered.count("for") >= 2, "missing_particle_loop"),
+            (
+                any(marker in lowered for marker in ("dist(", "distance", "gravity")),
+                "missing_gravity",
+            ),
+            (
+                any(marker in lowered for marker in ("constrain", "clamp", "limit")),
+                "missing_stability_guard",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if library == "c2js" and "fractal" in prompt_words and "tree" in prompt_words:
+        checks = (
+            ("function" in lowered, "missing_recursive_function"),
+            (
+                any(marker in lowered for marker in ("drawtree(", "branch(", "fractal(")),
+                "missing_recursive_call",
+            ),
+            (
+                any(marker in lowered for marker in ("depth<", "depth <=", "level<", "level <=")),
+                "missing_recursion_base_case",
+            ),
+            (
+                "startframe" in lowered
+                and any(marker in lowered for marker in ("lineto", "stroke", "fill")),
+                "missing_fractal_render",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if library == "c2js-interactive" and all(
+        word in prompt_words for word in ("paint", "stroke", "undo", "redo")
+    ):
+        checks = (
+            (
+                all(marker in lowered for marker in ("strokes", "points", "color")),
+                "missing_stroke_state",
+            ),
+            (
+                any(marker in lowered for marker in ("pointerdown", "pointermove", "touchstart")),
+                "missing_paint_input",
+            ),
+            ("undo" in lowered and "redo" in lowered, "missing_history_controls"),
+            (
+                any(
+                    marker in lowered
+                    for marker in ("globalcompositeoperation", "globalalpha", "alpha")
+                ),
+                "missing_blending",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if library == "svg" and any(
+        word in prompt_words for word in ("gauge", "speedometer", "progress-ring", "progress ring")
+    ):
+        if "lineargradient" not in lowered and "radialgradient" not in lowered:
+            return False, "missing_gradient"
+        if "<clippath" not in lowered or "clip-path" not in lowered:
+            return False, "missing_clip_path"
+        if not any(marker in lowered for marker in ("<animate", "@keyframes", "animation:")):
+            return False, "missing_animation"
+        script_math = re.search(
+            r"<script\b.*?(getattribute\s*\(.*?['\"]r|gettotallength|2\s*\*\s*(?:math\.)?pi\s*\*)",
+            lowered,
+            flags=re.DOTALL,
+        )
+        if not script_math:
+            return False, "missing_runtime_circumference"
+        if re.search(r"stroke-dasharray\s*=\s*['\"]\s*\d+(?:\.\d+)?\s*['\"]", lowered):
+            return False, "hardcoded_dash_value"
+    return True, None
 
 
 def parse_regions(code: str, library: str) -> list[dict[str, int | str]]:

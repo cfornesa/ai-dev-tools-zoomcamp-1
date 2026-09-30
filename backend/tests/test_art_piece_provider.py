@@ -136,12 +136,12 @@ def test_threejs_orbital_showcase_rejects_generic_cube_fallback():
         source,
         "sun planet moon hierarchical orbital system with shadows",
         "threejs",
-    )
+    )[0]
 
 
 def test_threejs_ordinary_prompt_keeps_accepting_non_orbital_source():
     source = "const scene = new THREE.Scene(); const cube = new THREE.Mesh();"
-    assert _looks_like_requested_showcase(source, "a rotating teal cube", "threejs")
+    assert _looks_like_requested_showcase(source, "a rotating teal cube", "threejs")[0]
 
 
 def test_aframe_light_switch_showcase_rejects_empty_static_fallback():
@@ -150,12 +150,33 @@ def test_aframe_light_switch_showcase_rejects_empty_static_fallback():
         source,
         "light-switch custom component toggles two lamps",
         "aframe",
-    )
+    )[0]
+
+
+def test_aframe_light_switch_showcase_accepts_structural_component():
+    source = """
+    <a-scene>
+      <a-entity id="lamp-one"></a-entity>
+      <a-entity id="lamp-two"></a-entity>
+      <script>
+        AFRAME.registerComponent('light-switch', {
+          init: function () {
+            this.el.addEventListener('click', function () {
+              this.setAttribute('light', 'intensity', 0.5);
+            });
+          }
+        });
+      </script>
+    </a-scene>
+    """
+    assert _looks_like_requested_showcase(
+        source, "click light-switch to toggle the lamp", "aframe"
+    ) == (True, None)
 
 
 def test_aframe_ordinary_prompt_keeps_accepting_static_source():
     source = '<a-scene><a-box color="#2a9d8f"></a-box></a-scene>'
-    assert _looks_like_requested_showcase(source, "a teal box", "aframe")
+    assert _looks_like_requested_showcase(source, "a teal box", "aframe")[0]
 
 
 def test_aframe_light_switch_allows_required_inline_component_script():
@@ -175,33 +196,33 @@ def test_aframe_light_switch_allows_required_inline_component_script():
         source,
         "aframe",
         "lamp toggle custom component toggles two lamps",
-    )
+    )[0]
 
 
 def test_svg_inline_script_is_allowed_but_external_script_is_rejected():
     inline = '<svg id="art-piece-svg"><script>const value = 1;</script></svg>'
     external = '<svg id="art-piece-svg"><script src="https://example.test/app.js"></script></svg>'
-    assert _looks_like_snippet(inline, "svg", "animated gauge")
-    assert not _looks_like_snippet(external, "svg", "animated gauge")
+    assert _looks_like_snippet(inline, "svg", "animated gauge")[0]
+    assert not _looks_like_snippet(external, "svg", "animated gauge")[0]
 
 
 def test_aframe_inline_script_is_prompt_wording_independent_but_external_is_rejected():
     inline = "<a-scene><script>AFRAME.registerComponent('lamp-toggle', {});</script></a-scene>"
     external = '<a-scene><script src="https://example.test/app.js"></script></a-scene>'
-    assert _looks_like_snippet(inline, "aframe", "lamp toggle")
+    assert _looks_like_snippet(inline, "aframe", "lamp toggle")[0]
     assert not _looks_like_snippet(
         external,
         "aframe",
         "lamp toggle custom component toggles two lamps",
-    )
+    )[0]
 
 
 def test_inline_script_flag_restores_previous_aframe_showcase_boundary(monkeypatch):
     source = "<a-scene><script>AFRAME.registerComponent('lamp-toggle', {});</script></a-scene>"
     monkeypatch.setattr(art_piece_provider, "ART_PIECE_ALLOW_INLINE_SCRIPT", False)
 
-    assert not _looks_like_snippet(source, "aframe", "lamp toggle")
-    assert _looks_like_snippet(source, "aframe", "light-switch")
+    assert not _looks_like_snippet(source, "aframe", "lamp toggle")[0]
+    assert _looks_like_snippet(source, "aframe", "light-switch")[0]
 
 
 @pytest.mark.parametrize(
@@ -261,12 +282,12 @@ def test_p5_n_body_showcase_rejects_generic_single_circle_fallback():
         source,
         "eight particles with gravity and elastic collision response",
         "p5js",
-    )
+    )[0]
 
 
 def test_p5_ordinary_prompt_keeps_accepting_simple_source():
     source = "window.sketch = function (p) { p.setup = function () {}; p.draw = function () {}; };"
-    assert _looks_like_requested_showcase(source, "a teal circle", "p5js")
+    assert _looks_like_requested_showcase(source, "a teal circle", "p5js")[0]
 
 
 def test_c2js_fractal_showcase_rejects_empty_static_canvas_fallback():
@@ -275,7 +296,7 @@ def test_c2js_fractal_showcase_rejects_empty_static_canvas_fallback():
         source,
         "recursive fractal tree with eight levels",
         "c2js",
-    )
+    )[0]
 
 
 def test_c2js_ordinary_prompt_keeps_accepting_simple_source():
@@ -283,7 +304,7 @@ def test_c2js_ordinary_prompt_keeps_accepting_simple_source():
         "window.sketch = function (runtime) { runtime.startFrame(function () { "
         "runtime.canvas.stroke(); }); };"
     )
-    assert _looks_like_requested_showcase(source, "a teal procedural line", "c2js")
+    assert _looks_like_requested_showcase(source, "a teal procedural line", "c2js")[0]
 
 
 def test_c2js_interactive_paint_showcase_rejects_static_canvas_fallback():
@@ -292,12 +313,12 @@ def test_c2js_interactive_paint_showcase_rejects_static_canvas_fallback():
         source,
         "interactive multi-stroke paint tool with color controls and undo redo",
         "c2js-interactive",
-    )
+    )[0]
 
 
 def test_c2js_interactive_ordinary_prompt_keeps_accepting_simple_source():
     source = "window.sketch = function (runtime) { runtime.startFrame(function () {}); };"
-    assert _looks_like_requested_showcase(source, "an interactive teal line", "c2js-interactive")
+    assert _looks_like_requested_showcase(source, "an interactive teal line", "c2js-interactive")[0]
 
 
 def test_svg_gauge_showcase_rejects_blank_static_ring_fallback():
@@ -306,7 +327,7 @@ def test_svg_gauge_showcase_rejects_blank_static_ring_fallback():
         source,
         "animated gauge or progress-ring with clipPath and gradient",
         "svg",
-    )
+    )[0]
 
 
 def test_svg_gauge_showcase_requires_animation_and_circumference_math():
@@ -323,13 +344,61 @@ def test_svg_gauge_showcase_requires_animation_and_circumference_math():
         <animate attributeName="stroke-dashoffset" values="0;251.2" dur="2s"
           repeatCount="indefinite" />
       </circle>
+      <script>
+        const circle = document.querySelector('circle');
+        const radius = Number(circle.getAttribute('r'));
+        const circumference = 2 * Math.PI * radius;
+        circle.setAttribute('stroke-dasharray', circumference);
+      </script>
     </svg>
     """
     assert _looks_like_requested_showcase(
         source,
         "animated gauge or progress-ring with clipPath and gradient",
         "svg",
-    )
+    ) == (True, None)
+
+
+@pytest.mark.parametrize(
+    ("source", "library", "prompt", "reason"),
+    [
+        ("", "svg", "anything", "empty_snippet"),
+        ("<p>x</p>", "canvas2d", "anything", "missing_canvas_root"),
+        ("<canvas></canvas>", "canvas2d", "anything", "missing_canvas_script"),
+        ("<svg><script src='x'></script></svg>", "svg", "anything", "script_src_external"),
+        ("const x = 1;", "threejs", "anything", "missing_threejs_marker"),
+        (
+            "<script>THREE.Scene = THREE.Scene;</script>",
+            "threejs",
+            "anything",
+            "threejs_wrapped_markup",
+        ),
+        ("p.setup = function () {};", "p5js", "anything", "missing_p5_sketch"),
+        ("window.sketch = function () {};", "p5js", "anything", "missing_p5_setup"),
+        ("p.setup = function () {};", "c2js", "anything", "missing_c2_sketch"),
+        ("window.sketch = function () {};", "c2js", "anything", "missing_start_frame"),
+        ("<div></div>", "aframe", "anything", "missing_aframe_root"),
+    ],
+)
+def test_structural_snippet_rejections_have_distinct_reason_codes(source, library, prompt, reason):
+    assert _looks_like_snippet(source, library, prompt) == (False, reason)
+
+
+def test_legacy_rubric_remains_selectable(monkeypatch):
+    monkeypatch.setattr(art_piece_provider, "ART_PIECE_RUBRIC", "legacy")
+    source = """
+    <svg viewBox="0 0 100 100">
+      <defs><clipPath id="clip"><circle r="40" /></clipPath>
+      <linearGradient id="gradient"><stop offset="0%" /></linearGradient></defs>
+      <circle clip-path="url(#clip)" fill="url(#gradient)"
+        stroke-dasharray="2*pi*r" stroke-dashoffset="circumference">
+        <animate attributeName="stroke-dashoffset" />
+      </circle>
+    </svg>
+    """
+    assert _looks_like_requested_showcase(
+        source, "animated gauge or progress-ring with clipPath and gradient", "svg"
+    ) == (True, None)
 
 
 def test_generate_appends_persona_as_a_second_system_message():

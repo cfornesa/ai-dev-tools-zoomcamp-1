@@ -24610,3 +24610,31 @@ Final local gate: `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed
 remaining work is not production-ready: it requires owner/provider decisions
 or an owner-run production action. No production data, passwords, or API-key
 values were used.
+
+## Owner report 2026-09-30: generation reliability, studio/mobile UX, local-project parity
+
+Source: Codex live QA result for #1042/#1046 plus owner screenshots. Classified
+as implementation-defects (generator contract, layout, missing local
+metadata); the "terminal BLOCKED" status of #1042/#1046 is superseded — see
+their 2026-09-30 comments. All items `PROPOSED`, filed only (Discovery gate
+rule 4), not implemented in the discovering session. Plan file:
+`~/.claude/plans/linear-meandering-wombat.md`.
+
+| Issue | Milestone | Routing | Depends on |
+|---|---|---|---|
+| [#1076](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1076) allow inline script in SVG/A-Frame contract | Batch 11 | 2b | — |
+| [#1077](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1077) robust snippet extraction | Batch 11 | 2a | — |
+| [#1078](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1078) reason-coded structural validation | Batch 11 | 2b | #1076, #1077 |
+| [#1079](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1079) bounded repair loop + max_tokens | Batch 11 | 2b | #1078 |
+| [#1080](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1080) offline failing-output corpus | Batch 11 | 2a | #1077–#1079 |
+| [#1081](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1081) human-style QA prompt guideline | Batch 11 | docs | — |
+| [#1082](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1082) studio full-width form/textarea | Batch 12 | 2a | — |
+| [#1083](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1083) viewer stage size + controls at 375px | Batch 12 | 2a | — |
+| [#1084](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1084) wrap long prompt text at 375px | Batch 12 | 2a | — |
+| [#1085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1085) local description/thumbnail fields | Batch 12 | 2b | — |
+| [#1086](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1086) client-side local thumbnails | Batch 12 | 2b | #1085 |
+| [#1087](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1087) gallery local card parity | Batch 12 | 2a | #1085, #1086 |
+| [#1088](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1088) edit title/description locally | Batch 12 | 2a | #1085 |
+
+Re-scoped (not closed): #1042, #1046, #1040 now depend on #1076–#1080 and use
+a #1081 prompt. Untouched: #926, #788. Suggested next groomed issue: #1076.

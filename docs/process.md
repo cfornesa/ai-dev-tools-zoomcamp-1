@@ -171,22 +171,23 @@ or review:
 3. Put the issue link in the backlog entry and the backlog/task reference in
    the issue body. If issue creation is unavailable, record that pending
    linkage explicitly; never silently discard it.
-4. **Never implement a newly discovered/proposed item in the same session
-   that discovered it (owner-mandated, 2026-09-28).** File it — `PROPOSED`,
-   milestone-assigned per "Milestone assignment" below, linked from the
-   current issue's ledger — and stop there. Continue only with issues that
-   were already open and groomed before this session began. This applies
-   regardless of how small, obvious, or low-risk the newly found item looks;
-   there is no judgment-call exception. A prior session implementing
-   same-session discoveries immediately produced wasted tokens, broken
-   existing functionality, and inconsistent, unreviewed implementation
-   choices — the fix is procedural, not a matter of being more careful next
-   time. This rule binds every session and every substituted service
-   (Codex, Opencode, Ollama Cloud, or Claude) equally; a handoff prompt may
-   restate it, but may not loosen it.
+4. **Separation of duties (owner-mandated 2026-09-28; reworded 2026-09-30).**
+   An issue must not be scoped or distilled and then implemented by the same
+   agent in the same run. Distillation, scoping, review, QA, and readiness
+   runs are unrestricted: they may file issues (`PROPOSED`, milestone-assigned
+   per "Milestone assignment" below, linked from the current issue's ledger)
+   and are not blocked by this rule. An issue filed in one run may be
+   implemented in that run only by a *different* agent or service, recorded in
+   the per-issue provenance line (`docs/proposals/dispatch-dual-track-2026-09-30.md`).
+   The owner may waive this for named issues; every waiver is logged in
+   `DECISIONS.md`. The original rationale stands: same-agent, same-run
+   implementation of its own discoveries produced wasted tokens, broken
+   existing functionality, and unreviewed implementation choices. This
+   binds every agent and substituted service (Codex, Opencode, Ollama Cloud,
+   or Claude) equally; a handoff prompt may restate it, but may not loosen it.
 5. Before marking the current task complete, repeat the search for newly
    discovered actionable items and reconcile every item — "reconcile" means
-   confirmed filed-and-deferred per rule 4 above, or explicitly classified
+   confirmed filed and either deferred or handed to a different implementing agent per rule 4 above, or explicitly classified
    non-actionable; it does not mean implemented.
 6. When all intended tasks for a session are sufficiently complete, commit the changes as a single pull request, aptly named given the context of each session.
 

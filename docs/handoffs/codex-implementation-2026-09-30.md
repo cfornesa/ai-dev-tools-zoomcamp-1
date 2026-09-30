@@ -1,7 +1,7 @@
 # Codex implementation handoff — #1095, #1097, #1098, #1099 (then #1096)
 
-Owner waiver (2026-09-30): Discovery-gate rule 4 is waived for #1095–#1099 so
-they may be implemented now. Dependency order is NOT waivable:
+Rule 4 (reworded 2026-09-30) permits this batch: Claude scoped/distilled #1095–#1099 and
+Codex (a different agent) implements them; the earlier waiver is also on record. Dependency order is NOT waivable:
 #1095 → #1097 → (re-dispatch CI, then scope #1096) ; #1098 → #1099.
 Provenance: implementation = Codex (flagged substitution for stage 2); QA = Claude
 Sonnet 5 Medium; track: mixed. Codex must NOT act as stage-3 reviewer of its own diff.
@@ -53,3 +53,11 @@ piece near quota passes; genuinely oversize still blocked). Verify: focused vite
 Same bug in `frontend/src/pages/LocalPieceSyncOffer.tsx` (~117: `pieceBytes: built.bytes.byteLength,
 mediaBytes: row.mediaBytes`). Reuse #1098's semantics; confirm the aggregate preview (~86–94)
 and per-row preflight agree; add tests.
+
+## Issue 5 — independent stage-3 review of #1092/#1093 (review only, change nothing)
+Claude scoped, implemented, and QA'd these. Review commits 06860c75 (`style: ruff-format … #1092`)
+and 5fa828f5 (`test: align provider-matrix asset-layer prompt … #1093`) against the two issue bodies.
+Specifically confirm #1093's root cause: the matrix test's hand-written prompt was stale versus the real
+prompt at backend/scenes/ai_runs.py (~698), and the fake provider in backend/ai_provider/e2e_provider.py
+(`_asset_layer_patch`) is correct, so no coverage was weakened. Run `cd backend && uv run pytest tests/test_ai_provider_matrix.py tests/test_ai_runs.py`.
+Output per criterion PASS/FAIL/UNVERIFIABLE plus separately listed new defects.

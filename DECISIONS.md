@@ -1,5 +1,17 @@
 # DECISIONS.md
 
+## 2026-09-30 — Discovery-gate rule 4 reworded as separation of duties
+
+- Approved by the owner: rule 4 in `docs/process.md` now forbids the *same
+  agent* from scoping/distilling and then implementing an issue in the same
+  run; non-implementation runs are unrestricted, and a different agent may
+  implement a same-session issue. Waivers remain per-issue and logged here.
+  `AGENTS.md` is unchanged (§11); its §13 summary still describes the older,
+  stricter wording and awaits an owner-directed edit.
+- Known gap: #1092/#1093 were scoped, implemented, and QA'd by Claude under the
+  earlier waiver; an independent stage-3 review (commits 06860c75, 5fa828f5)
+  is added to the Codex handoff.
+
 ## 2026-09-30 — Owner waiver of Discovery-gate rule 4 for #1095–#1099; intent for rule 4
 
 - The owner waived rule 4 (no same-session implementation of newly filed

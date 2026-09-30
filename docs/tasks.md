@@ -24576,3 +24576,17 @@ No production data, live Mistral provider, passwords, or API keys were used.
 Skipped owner-run/credential-gated issues remain intentionally untouched:
 #788, #926, #1040–#1046, and #1061–#1066. The next action is the owner-run
 Phase 2 live-provider setup documented in `docs/live-provider-testing.md`.
+
+## 2026-09-30 — Phase 2 live-provider QA reconciliation
+
+The local disposable Compose run was completed within the owner-authorized
+real-provider boundary. #1041 and deterministic follow-up #1061 closed with
+browser evidence. #1042–#1046 and follow-ups #1062–#1066 remain open with
+explicit dependency, rubric, or verification terminal status; exact matrices
+and next actions are in `.local/tasks/backlog-session-2026-09-30-phase2.md`.
+#926 remains blocked by the existing Case-A scope defect and #1060. #788 was
+not touched because it is a production-data owner-run action.
+
+The full `make check` gate passed (backend 1830 passed / 39 skipped; frontend
+307 files / 3170 tests). The temporary live-provider backend container was
+removed after the run and the normal Compose backend was restored.

@@ -43,4 +43,13 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 - Stage 2b roster: Ollama Cloud; actual: Codex / GPT-5 / default effort / substituted: yes (dispatch unavailable).
 - Stage 3: not run (independent Mistral Vibe unavailable).
 - Stage 4 and stage 5 are pending.
-- Commit, focused checks, full checks, QA result, evidence boundary, GitHub comment, and terminal status will be appended before selecting #1077.
+- Commit: `e7271b93`.
+- Focused checks: provider/API tests 66 passed; full `tests -k art_piece` 181 passed; Ruff and mypy passed; frontend sandbox/CSP tests 36 passed; frontend typecheck passed; lint passed with existing warnings.
+- QA: `## QA: PASS`, GitHub comment `5904939035`, provenance and criterion matrix recorded; stage 3 not run.
+- Evidence boundary: local automated checks plus active Chrome inspection of the authenticated GitHub issue inventory; no deployed/live-provider criterion.
+- Stage 5 readiness: pending batch-level production-readiness assessment; GPT-5 substitution will be flagged if the rostered Claude tier is unavailable.
+- Final status: CLOSED / completed on GitHub. Shifted work: extraction, reason-coded validation, repair loop, and live showcase evidence remain in #1077–#1081 and #1042/#1046.
+
+## Reconciliation checkpoint
+
+The current transaction is terminal: #1076 is CLOSED before #1077 engineering begins. No new actionable follow-up was discovered; the existing dependency chain covers all shifted work.

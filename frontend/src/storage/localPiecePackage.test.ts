@@ -1,12 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildLocal2dPiecePackage, measureLocalPiecePackageContent } from './localPiecePackage';
+import {
+  buildLocal2dPiecePackage,
+  measureLocalPiecePackage,
+  measureLocalPiecePackageContent,
+} from './localPiecePackage';
 
 const repository = vi.hoisted(() => ({
   getMediaBlob: vi.fn(),
   getProject: vi.fn(),
   listMediaAssetsForProject: vi.fn(),
   listScenesForProject: vi.fn(),
+  listPieceVersions: vi.fn(),
 }));
 
 const packageModule = {
@@ -62,16 +67,13 @@ describe('local piece package export', () => {
 
   it('measures UTF-8 record payload bytes and each included media blob once', () => {
     const records = [{ data: { label: '雪' } }, { data: { count: 2 } }];
-    const mediaAssets = [
-      { bytes: new Uint8Array([1, 2, 3]) },
-      { bytes: new Uint8Array([4, 5, 6, 7, 8]) },
-    ];
+    const mediaByteSizes = [3, 5];
     const recordBytes = records.reduce(
       (total, record) => total + new TextEncoder().encode(JSON.stringify(record.data)).byteLength,
       0,
     );
 
-    expect(measureLocalPiecePackageContent(records, mediaAssets)).toEqual({
+    expect(measureLocalPiecePackageContent(records, mediaByteSizes)).toEqual({
       pieceBytes: recordBytes,
       mediaBytes: 8,
       mediaFiles: 2,
@@ -79,6 +81,30 @@ describe('local piece package export', () => {
     expect(recordBytes).toBeGreaterThan(
       records.reduce((sum, record) => sum + JSON.stringify(record.data).length, 0),
     );
+  });
+
+  it('measures local piece content without reading blob bytes or building a ZIP', async () => {
+    repository.getProject.mockResolvedValue({ id: 'p1', title: 'Measure only' });
+    repository.listScenesForProject.mockResolvedValue([
+      { id: 's1', name: 'Scene 1', position: 0, sceneJson: { label: '雪' } },
+    ]);
+    repository.listMediaAssetsForProject.mockResolvedValue([
+      { id: 'asset-1', filename: 'audio.wav', altText: '', mimeType: 'audio/wav' },
+    ]);
+    const blob = { size: 5, arrayBuffer: vi.fn() } as unknown as Blob;
+    repository.getMediaBlob.mockResolvedValue(blob);
+    packageModule.buildPiecePackage.mockClear();
+
+    const result = await measureLocalPiecePackage({} as IDBDatabase, 'alice', 'p1');
+
+    expect(result).toEqual({
+      pieceBytes: new TextEncoder().encode('{"label":"雪"}').byteLength,
+      mediaBytes: 5,
+      mediaFiles: 1,
+      missingAssets: [],
+    });
+    expect(blob.arrayBuffer).not.toHaveBeenCalled();
+    expect(packageModule.buildPiecePackage).not.toHaveBeenCalled();
   });
 
   it('reports missing media without mutating or hiding the rest of the package', async () => {

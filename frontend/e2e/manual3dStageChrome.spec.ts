@@ -10,7 +10,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
-import { createBlank3DProjectViaUI } from './support/createProject3d.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -25,7 +25,7 @@ test.describe('manual 3D editor stage chrome', () => {
 
   test('keeps authoring and publication actions in the shared stage toolbar', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlank3DProjectViaUI(page);
+    await createServerProject3D(page);
 
     await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
     const frame = page.getByTestId('scene3d-preview-canvas-frame');

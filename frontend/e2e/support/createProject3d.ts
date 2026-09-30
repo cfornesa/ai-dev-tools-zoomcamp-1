@@ -1,5 +1,29 @@
 import type { Page } from '@playwright/test';
 
+import { apiPost } from './api.js';
+
+type CreatedServerProject3D = { id: string; editor_url?: string | null };
+
+/**
+ * Creates a 3D project in server-backed PostgreSQL storage through the API,
+ * opens its canonical editor route, and returns the server project id.
+ */
+export async function createServerProject3D(page: Page): Promise<string> {
+  const response = await apiPost(page.context(), '/api/projects3d/');
+  if (!response.ok()) {
+    throw new Error(`Could not create a server-backed 3D project: HTTP ${response.status()}`);
+  }
+
+  const project = (await response.json()) as CreatedServerProject3D;
+  if (!project.id || !project.editor_url) {
+    throw new Error('The 3D project create response did not include an id and editor_url');
+  }
+
+  await page.goto(project.editor_url);
+  await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);
+  return project.id;
+}
+
 /**
  * Creates a blank 3D project through the Gallery's "More creation options" menu and waits for the
  * canonical `/users/@handle/edit/:slug` route, returning the project's real id (read from the create

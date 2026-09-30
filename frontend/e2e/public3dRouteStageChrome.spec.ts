@@ -11,7 +11,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
-import { createBlank3DProjectViaUI } from './support/createProject3d.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -77,7 +77,7 @@ test.describe('anonymous public 3D route stage chrome (#387/#388/#389)', () => {
       if (index === 0) {
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
       }
-      const projectId = await createBlank3DProjectViaUI(page);
+      const projectId = await createServerProject3D(page);
 
       await page.setViewportSize({ width: 1280, height: 900 });
       await page

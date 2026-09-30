@@ -1,5 +1,29 @@
 import type { Page } from '@playwright/test';
 
+import { apiPost } from './api.js';
+
+type CreatedServerProject2D = { id: string; editor_url?: string | null };
+
+/**
+ * Creates a blank 2D project in server-backed PostgreSQL storage through the
+ * API, opens its canonical editor route, and returns the server project id.
+ */
+export async function createServerProject2D(page: Page): Promise<string> {
+  const response = await apiPost(page.context(), '/api/projects/blank/');
+  if (!response.ok()) {
+    throw new Error(`Could not create a server-backed 2D project: HTTP ${response.status()}`);
+  }
+
+  const project = (await response.json()) as CreatedServerProject2D;
+  if (!project.id || !project.editor_url) {
+    throw new Error('The 2D project create response did not include an id and editor_url');
+  }
+
+  await page.goto(project.editor_url);
+  await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);
+  return project.id;
+}
+
 /**
  * Creates a blank 2D project through the Gallery's "More creation options"
  * menu and waits for the resulting canonical `/users/@handle/edit/:slug`

@@ -30,6 +30,12 @@ function LocalProjectCard({
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const kind = project.kind === '3d' ? '3D' : project.kind === 'generated' ? 'Generated' : '2D';
   const origin = originLabel(project.kind === 'generated' ? 'ai_create' : 'manual');
+  const editorPath =
+    project.kind === '3d'
+      ? `/local-projects-3d/${project.id}`
+      : project.kind === 'generated'
+        ? `/local-generated/${project.id}`
+        : `/local-projects/${project.id}`;
 
   useEffect(() => {
     let revokedUrl: string | null = null;
@@ -73,7 +79,7 @@ function LocalProjectCard({
       </p>
       <p>Last updated {formatDate(project.updatedAt)}</p>
       <p>
-        <Link className="shell-action" to={`/local-projects/${project.id}`}>
+        <Link className="shell-action" to={editorPath}>
           Open local editor
         </Link>
       </p>

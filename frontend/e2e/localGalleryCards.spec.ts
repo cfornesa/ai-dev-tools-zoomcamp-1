@@ -17,7 +17,12 @@ test.describe('Local project gallery cards (#1087)', () => {
         openLocalProjectDatabase(): Promise<IDBDatabase>;
         createProject(
           db: IDBDatabase,
-          input: { ownerId: string; title: string; description?: string; kind?: '2d' | '3d' },
+          input: {
+            ownerId: string;
+            title: string;
+            description?: string;
+            kind?: '2d' | '3d' | 'generated';
+          },
         ): Promise<{ id: string }>;
         createScene(
           db: IDBDatabase,
@@ -57,8 +62,17 @@ test.describe('Local project gallery cards (#1087)', () => {
         description: '',
         kind: '3d',
       });
+      const generated = await repository.createProject(db, {
+        ownerId: owner,
+        title: 'Local generated route',
+        kind: 'generated',
+      });
       db.close();
-      return { withThumbnail: withThumbnail.id, withoutThumbnail: withoutThumbnail.id };
+      return {
+        withThumbnail: withThumbnail.id,
+        withoutThumbnail: withoutThumbnail.id,
+        generated: generated.id,
+      };
     }, fixtures.owner.username);
 
     for (const viewport of [
@@ -81,6 +95,16 @@ test.describe('Local project gallery cards (#1087)', () => {
     await page.getByLabel('Renderer').selectOption('3d');
     await expect(page.getByRole('heading', { name: 'Local card without preview' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Local card with preview' })).not.toBeVisible();
-    void ids;
+    await expect(page.getByRole('link', { name: 'Open local editor' })).toHaveAttribute(
+      'href',
+      `/local-projects-3d/${ids.withoutThumbnail}`,
+    );
+    await page.getByLabel('Renderer').selectOption('all');
+    const generatedHeading = page.getByRole('heading', { name: 'Local generated route' });
+    await expect(generatedHeading).toBeVisible();
+    await expect(generatedHeading.locator('..').getByRole('link')).toHaveAttribute(
+      'href',
+      `/local-generated/${ids.generated}`,
+    );
   });
 });

@@ -183,6 +183,10 @@ describe('Gallery loading/error/empty/populated states', () => {
       screen.getByRole('img', { name: 'No preview available for Local empty piece' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Last updated Jan 1, 2026')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Open local editor' })[0]).toHaveAttribute(
+      'href',
+      '/local-generated/local-with-thumbnail',
+    );
     expect(mockedEnsureLocalThumbnail).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'local-without-thumbnail' }),
     );
@@ -209,6 +213,10 @@ describe('Gallery loading/error/empty/populated states', () => {
     await screen.findByRole('heading', { name: 'Local 3D project' });
     await userEvent.setup().selectOptions(screen.getByLabelText('Renderer'), '3d');
     expect(screen.getByRole('heading', { name: 'Local 3D project' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open local editor' })).toHaveAttribute(
+      'href',
+      '/local-projects-3d/local-3d',
+    );
   });
 
   it('shows a loading status while projects are being fetched', () => {

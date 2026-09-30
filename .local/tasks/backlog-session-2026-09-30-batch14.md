@@ -1,13 +1,13 @@
 # Backlog session — Batch 14 (2026-09-30)
 
 Project: `cfornesa/ai-dev-tools-zoomcamp-1` (one codebase, one Replit app).
-Worktree at start: clean `docs/backlog-reevaluation-2026-09-27`, tracking the
-same remote branch. All five open GitHub issues were enumerated through the
-authenticated GitHub connector; each is in milestone 14. No extra issue was
-found in GitHub beyond the five represented in the latest `docs/tasks.md`
-distillation entry. Discovery-gate rule 4 waiver for #1095–#1099 is recorded
-in `DECISIONS.md`; it authorizes this session's Codex implementation
-substitution and does not waive dependency order.
+Worktree at resumption: clean `docs/backlog-reevaluation-2026-09-27`, tracking
+the same remote branch. All six open GitHub issues (#1096, #1100–#1104) were
+enumerated through the authenticated GitHub connector; each was in milestone
+14. The independent #1101 transaction closed successfully; #1105 was filed
+after QA discovered a separate login flake. The user's resumption authorizes
+work on the current open set and Codex stage-2 substitutions; it does not waive
+dependency order or owner decision points.
 
 Execution profile: Codex / GPT-6.1-sol / effort not exposed by runtime.
 Stage-1 scoping/grooming and orchestration are performed in this session.
@@ -24,23 +24,30 @@ no readiness pass is claimed and no GPT-5 substitution was authorized.
 |---|---|---|---|---|---|---|---|---|---|
 | #1095 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095 | `docs/tasks.md`, Batch 14 transaction #1095 | none; first | Gallery local-card date assertion under timezone/locale variation | completed / CLOSED | Codex GPT-6 (effort not exposed) / Codex GPT-6 (effort not exposed) / not run / Codex GPT-6 (effort not exposed) / pending batch gate | impl: yes (owner waiver); QA: yes; scoping: no | none | Reconciled; QA comment 5919356495; closed completed |
 | #1097 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097 | `docs/tasks.md`, Batch 14 CI follow-up | after #1095, before #1096 | named WebKit fullscreen/Escape workflow step | completed / CLOSED | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | impl: yes (owner waiver); QA: yes; stage 3 not run | Linux rerun belongs to #1096 | Reconciled; QA comment 5919537401; closed completed |
-| #1096 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 | `docs/tasks.md`, Batch 14 CI follow-up | after #1097 | tracking issue for full 16-shard Linux/PostgreSQL browser matrix and cause reconciliation | HANDED-OFF / QA FAIL, tracking incomplete | stage 1 Codex / GPT-6.1-sol (effort unavailable); stage 2 not applicable (no product changes authorized) / stage 3 not run / stage 4 Claude Sonnet 5 Medium roster, actual Codex GPT-6.1-sol (effort unavailable), substituted yes / gate pending | stage 4 substitution: yes | #1100 stale 2D/3D creation helpers; #1101 v4 IndexedDB fixtures; residual UI/API/timeout failures still need classification | Parent remains open; QA comment 5920587069; next operator implement #1100/#1101, rerun Linux matrix, classify every residual failure |
+| #1096 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 | `docs/tasks.md`, Batch 14 CI follow-up | after #1097 | tracking issue for full 16-shard Linux/PostgreSQL browser matrix and cause reconciliation | HANDED-OFF / QA FAIL, tracking incomplete | stage 1 Codex / GPT-6.1-sol (effort unavailable); stage 2 not applicable (no product changes authorized) / stage 3 not run / stage 4 Claude Sonnet 5 Medium roster, actual Codex GPT-6.1-sol (effort unavailable), substituted yes / gate pending | stage 4 substitution: yes | #1100 + #1102–#1104 creation-helper migration; #1101 schema fixtures (closed); #1105 loginViaUI account-switch flake; residual UI/API/timeout failures still need classification | Parent remains open; QA comment 5920587069; after child work rerun Linux matrix and classify every residual failure |
 | #1098 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 | `docs/tasks.md`, Batch 14 local-public quota follow-up | independent of CI; before #1099 | public-transfer preflight across the two `LocalEditorWorkspace` callers and `localPublicTransfer` | completed / CLOSED | Codex GPT-6 / Codex GPT-6 (substitution) / not run / Codex GPT-6 (substitution) / pending gate | impl: yes (owner waiver); QA: yes; stage 3 not run | none | QA comment 5920252275; closed completed |
 | #1099 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 | `docs/tasks.md`, Batch 14 local-sync quota follow-up | #1098 (closed) | private sync aggregate preview and per-row preflight | completed / CLOSED | Codex GPT-6.1-sol / implementation-complex roster Ollama Cloud, actual Codex GPT-6 family / optional Mistral Vibe / Claude Sonnet 5 Medium roster, actual Codex GPT-6.1-sol / gate pending | stage 2 and stage 4 substitutions; stage 2 authorized in `DECISIONS.md`; stage 3 not run | expanded stored-content semantics via #1098 shared measurement | QA comment 5920683714; closed completed; batch readiness gate remains pending |
-| #1100 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100 | Proposed from #1096 run 36778653929 | after #1096 handoff | E2E local-first and server-backed 2D/3D project creation helper fixtures | HANDED-OFF / new follow-up, not implemented this run | stage 1 Codex GPT-6.1-sol / stage 2a Opencode Go / optional Mistral Vibe / stage 4 Claude Sonnet 5 / gate pending | no implementation or QA stage in this run | covers confirmed Gallery/helper route mismatch | project owner / next backlog operator; preserve all caller assertions, run focused Linux specs, then full matrix |
-| #1101 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101 | Proposed from #1096 run 36778653929 | after #1096 handoff | four offline E2E fixtures requesting local IndexedDB v4 against application schema v5 | HANDED-OFF / new follow-up, not implemented this run | stage 1 Codex GPT-6.1-sol / stage 2a Opencode Go / optional Mistral Vibe / stage 4 Claude Sonnet 5 / gate pending | no implementation or QA stage in this run | covers ten setup failures across four specs | project owner / next backlog operator; retain all offline scenarios and verify against v5 before rerunning matrix |
+| #1100 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100 | Proposed from #1096 run 36778653929 | owner architecture choice before implementation; prerequisite for #1102–#1104 | E2E local-first and server-backed 2D/3D project creation helper fixtures | BLOCKED / owner choice pending | stage 1 Codex GPT-6.1-sol / stage 2a Opencode Go (pending) / stage 3 optional (pending) / stage 4 Claude Sonnet 5 (pending) / gate pending | none yet | helper retirement is type-breaking while caller migrations are split into children | owner; answer staged rename / defer retirement / widen foundation choice, then implement #1100 |
+| #1101 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101 | Proposed from #1096 run 36778653929 | independent | four offline E2E fixtures requesting IndexedDB v4 against application schema v5 | completed / CLOSED | stage 1 Codex GPT-6.1-sol; stage 2a roster Opencode Go/Kimi K2.5, actual Codex GPT-6.1-sol; stage 3 not run; stage 4 roster Claude Sonnet 5 Medium, actual Codex GPT-6.1-sol; gate pending | stage 2a and stage 4: yes | #1105 captures separate post-logout login flake | commit `0e3640a5`; QA comment 5921248449; closed completed |
+| #1102 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1102 | Distilled from #1096 / #1100 | blocked by #1100 | single-purpose 2D E2E caller migration | DEPENDENCY-BLOCKED | stage 1 Codex; stage 2a Opencode Go (pending); stage 3 optional; stage 4 Claude Sonnet 5 (pending); gate pending | none yet | #1100 owner architecture choice and helper foundation | next operator after #1100 closes; preserve each caller's current assertions |
+| #1103 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1103 | Distilled from #1096 / #1100 | blocked by #1100 | multi-call 2D E2E caller migration | DEPENDENCY-BLOCKED | stage 1 Codex; stage 2a Opencode Go (pending); stage 3 optional; stage 4 Claude Sonnet 5 (pending); gate pending | none yet | #1100 owner architecture choice and helper foundation | next operator after #1100 closes; preserve each caller's current assertions |
+| #1104 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1104 | Distilled from #1096 / #1100 | blocked by #1100; owner decision within issue | lifecycle/publishing/responsive caller migration | DEPENDENCY-BLOCKED | stage 1 Codex; stage 2b Ollama Cloud (pending); stage 3 optional; stage 4 Claude Sonnet 5 (pending); gate pending | none yet | #1100 owner architecture choice; scenario-intent decision remains required | next operator after #1100 closes; halt at the embedded owner decision if any scenario cannot retain its intent |
+| #1105 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1105 | Proposed during #1101 QA | independent; handed to next session by discovery-gate rule | intermittent login form after logout during offline ownership account switch | HANDED-OFF / newly filed, not implemented this run | stage 1 Codex GPT-6.1-sol / stage 2a Opencode Go (pending) / stage 3 optional / stage 4 Claude Sonnet 5 (pending) / gate pending | no implementation or QA stage in this run | 20/20 repeated checks passed but root cause remains unexplained; no timeout widening | next backlog operator; investigate root cause per #1105 before any test/helper edits |
 
-Order: #1095 → #1097 → #1096, then #1098 → #1099. The CI items follow the
-prior distillation's explicit sequence. The media-accounting pair is
-independent of CI; #1099 began after #1098 closed. #1097 isolates the WebKit
-workflow step; #1096 remains open as the cross-shard matrix tracker and has
-handed off #1100/#1101. Residual run failures are not fully classified.
+Order: #1095 → #1097 → #1096, then #1098 → #1099; the resumed work handles
+independent #1101 before the dependent creation-helper chain. #1100 remains
+blocked on the user's architecture choice; #1102–#1104 depend on #1100. #1105
+is a new handoff from #1101 QA. #1096 remains open as the cross-shard matrix
+tracker; residual run failures are not fully classified.
 
-Duplicate report: no duplicate among the five current open issues. #1097 is
-the named WebKit failure boundary, while #1096 owns the multi-shard browser
-matrix and must state how that specific failure relates to the broad run.
-#1099 is distinct from #1098 because it is the private cloud-sync upload path.
-No new follow-up has been discovered in #1095.
+Duplicate report at resumption: no duplicate among the six open issues
+(#1096, #1100–#1104). #1097 is the named WebKit failure boundary, while
+#1096 owns the multi-shard browser matrix and must state how that specific
+failure relates to the broad run. #1099 is distinct from #1098 because it is
+the private cloud-sync upload path. During #1101 QA, duplicate search found
+no open match for the post-logout login-form failure; closed #549 covers a
+different login wait symptom, so criterion-ready issue #1105 was filed and
+linked.
 
 ## #1098 — GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED
 
@@ -236,6 +243,47 @@ No new follow-up has been discovered in #1095.
 
 ## Remaining batch gates
 
+### #1101 — GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED (resumed run)
+
+- PM correction recorded in live issue: six hard-coded v4 opens existed
+  across five fixture blocks plus one read-only outbox inspection. The
+  criterion now explicitly requires the shared helper to verify the v5
+  `versions` store and schema stamp. The helper must not navigate because
+  callers may already be on a route whose scenario depends on that location.
+- Stage provenance: stage 1 Codex / GPT-6.1-sol / effort unavailable,
+  substituted no. Stage 2a roster Opencode Go / Kimi K2.5; actual Codex /
+  GPT-6.1-sol / effort unavailable, substituted yes under the user's
+  authorization for the current open issues in `DECISIONS.md`. Stage 3 not
+  run (no independent-family reviewer). Stage 4 roster Claude Sonnet 5 /
+  Medium; actual Codex / GPT-6.1-sol / effort unavailable, substituted yes.
+- Commit `0e3640a5` adds the shared app-backed v5 fixture helper and replaces
+  all six old opens. It seeds projects/scenes through repository functions,
+  imports media through `importMediaAsset`, and uses generated media IDs for
+  the transfer routes. No app source, backend, schema, dependency, or
+  workflow changed.
+- Focused browser command passed 16/16 cases against local disposable
+  PostgreSQL `gesture_studio_test`, Django with `AI_PROVIDER=fake`, Vite, and
+  unsandboxed macOS Chromium. Initial sandbox browser startup was denied by
+  the macOS Mach-port boundary. The first unsandboxed attempt used the wrong
+  database for Playwright global fixtures; teardown left zero fixture users
+  in the default DB. The corrected run set `DATABASE_URL` for Django and the
+  Playwright parent process, so fixture setup and teardown used the disposable
+  test DB. No test fixture remained after teardown.
+- One intermediate 15/16 run exposed the separate post-logout `loginViaUI`
+  flake; new criterion-ready issue #1105 was created in milestone 14 per the
+  discovery gate. The account-switch test then passed a clean full run and
+  20/20 repetitions (10 per viewport); no timeout was widened. #1105 remains
+  open for root-cause investigation, which was not absorbed into #1101.
+- `npm run typecheck`, `npm run lint` (existing warnings only), `npm run
+  format:check`, and `git diff --check` passed. Before/after test/expect
+  counts were unchanged: ownership 4/16, media 2/4, conflict 1/4, sync 2/4.
+  Four temporary assertion inversions each made its selected browser scenario
+  fail on the inverted expectation; source files were restored. `rg
+  "creatrart-local-projects', [0-9]" frontend/e2e` returned no matches.
+- QA verdict `## QA: PASS`; comment
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101#issuecomment-5921248449.
+  Issue is CLOSED/completed. No durable memory change.
+
 - Process #1096 next; #1097 is terminal. Re-run the full matrix at the
   reconciled commit and link any newly discovered independent defects before
   making fixes outside #1096 scope.
@@ -277,8 +325,32 @@ No new follow-up has been discovered in #1095.
   substitution exists. Other stage owners and substitutions are recorded
   issue-by-issue above. Stage 3 is explicitly not run where applicable.
 - Final follow-up audit: #1096 remains the parent tracking handoff for
-  #1100/#1101 plus unresolved residual failures; no discovered actionable
-  item was left without an issue or owner/next action. Failed full-suite gate
-  is **not fully classified**: 2 evidenced fixture causes are linked to
-  #1100/#1101, while the remaining failure families need triage under #1096.
-- Memory topics unchanged; no new durable constraint emerged in #1099.
+  #1100/#1102–#1104 plus unresolved residual failures; #1101 is now closed,
+  and #1105 tracks the login failure found during its QA. No discovered
+  actionable item was left without an issue or owner/next action. The full
+  suite gate is **not fully classified**: creation-helper and IndexedDB
+  causes were filed; other failure families remain for #1096.
+- Open issues at this checkpoint: #1096 and #1100–#1105 except closed #1101.
+  #1100 awaits the user's architecture selection; #1102–#1104 are
+  dependency-blocked by #1100; #1105 is a new handoff that cannot be
+  implemented in this session under the discovery gate. The goal remains
+  active and batch reconciliation is not complete.
+- Memory topics unchanged; the new login flake is issue-scoped and no
+  durable cross-cutting constraint emerged.
+
+## Resumed goal checkpoint — 2026-09-30
+
+- Current manifest totals: 11 discovered across Batch 14; 5 completed
+  (#1095, #1097–#1099, #1101), 1 blocked (#1100), 3 dependency-blocked
+  (#1102–#1104), 2 handed-off (#1096, #1105), 0 missing terminal statuses.
+  One newly discovered follow-up (#1105) was created and assigned milestone 14.
+- Current open issues are #1096, #1100, #1102–#1105. #1100's owner choice
+  is pending; no dependent implementation can begin until that choice and
+  the resulting criterion-ready contract are recorded. #1105 is intentionally
+  handed off under the discovery-gate rule and is not implemented in this run.
+- Remaining independent actionable work is exhausted. Resume after the owner
+  selects an #1100 option; then process #1100 → #1102 → #1103 → #1104
+  sequentially, preserving #1104's embedded owner decision, and finally rerun
+  #1096's full Linux matrix and classify every residual failure. The overall
+  backlog goal remains active; production readiness and session completion
+  have not been run.

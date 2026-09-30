@@ -24836,3 +24836,40 @@ the `versions` store). Refined/split: [#1100](https://github.com/cfornesa/ai-dev
 responsive, 2b, after #1100, owner-decision point), [#1101](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101)
 (real-schema offline seeding, 2a, independent). Parent #1096 stays open for
 residual failure classification. Suggested next issue: #1100.
+
+### 2026-09-30 — Batch 14 #1101 IndexedDB v5 fixture implementation and QA
+
+[#1101](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101)
+replaced all six hard-coded v4 opens across the five setup blocks and one
+read-only outbox inspection helper with
+[`localProjectDb.ts`](../frontend/e2e/support/localProjectDb.ts). The shared
+helper uses the app's own repository module, asserts the `versions` store and
+`meta.schemaVersion === DB_VERSION`, seeds stable project IDs and scenes, and
+uses IDs returned by `importMediaAsset` for transfer fixtures. It does not
+navigate the active Playwright page. No product/API/schema/dependency/workflow
+files changed.
+
+Commit `0e3640a5` passed the focused offline Chromium suite (16/16) on local
+PostgreSQL-backed Django + Vite using disposable `gesture_studio_test`; the
+account-switch case also passed 20/20 repeats (10 per viewport). Typecheck,
+lint (existing warnings only), format check, and diff check passed. Test and
+expectation counts stayed at ownership 4/16, media 2/4, conflict 1/4, sync
+2/4. Four temporary assertion inversions failed on the expected assertion and
+were fully restored. QA PASS comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101#issuecomment-5921248449.
+Issue #1101 is CLOSED / completed.
+
+The initial intermediate 15/16 run exposed an intermittent post-logout
+`loginViaUI` timeout: the anonymous Public Gallery was shown instead of the
+login form. This is separate from the v5 fixture change and is tracked by new
+milestone-14 issue
+[#1105](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1105).
+It was not fixed by widening timeouts. The account-switch case passed in the
+subsequent full 16-case run and in 20 repeats, but #1105 remains open for a
+root-cause investigation. It is handed off to the next session per the
+discovery gate.
+
+At this checkpoint, #1100 still awaits the owner's architecture choice;
+#1102–#1104 depend on #1100 and stay dependency-blocked. #1096 remains open
+until the creation-helper chain, the #1105 handoff, and residual full-matrix
+failure classification are reconciled.

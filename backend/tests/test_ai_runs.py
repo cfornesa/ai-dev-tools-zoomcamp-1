@@ -330,6 +330,8 @@ def test_add_asset_layer_run_uses_descriptor_and_preserves_existing_scene(
     assert "two new records as JSON Patch operations" in augmented
     assert "one complete layer object at /layers/-" in augmented
     assert "one complete image shape object at /shapes/-" in augmented
+    assert "layer id must be fresh" in augmented
+    assert "do not reuse the existing base layer" in augmented
     assert "selected asset id as an existing scene element id" in augmented
     assert "Only modify the following existing element id(s)" not in augmented
     candidate = advanced.candidate_scene_json

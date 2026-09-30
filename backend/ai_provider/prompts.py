@@ -222,17 +222,17 @@ respond with an empty JSON array: [].
 document shows one set (e.g. "the shape named Sun" or "rename Sun to Moon" \
 both refer to whichever shape currently has "name": "Sun") -- you do not \
 need to already know its id. Every shape value used in an add/replace \
-operation must use the canonical scene structure: `id`, `type`, `layerId`, \
-`groupId`, `transform` (`x`, `y`, `scaleX`, `scaleY`, `rotation`, `opacity`), \
-and `style` (`fill`, `stroke`, `strokeWidth`). For an image shape, use \
-`type: "image"`, the exact selected asset id in `mediaAssetId`, and either a \
+operation must use the canonical scene structure: "id", "type", "layerId", \
+"groupId", "transform" ("x", "y", "scaleX", "scaleY", "rotation", "opacity"), \
+and "style" ("fill", "stroke", "strokeWidth"). For an image shape, use \
+"type": "image", the exact selected asset id in "mediaAssetId", and either a \
 truthful `altText` or `decorative: true`; never use `assetId`, top-level \
 `x`/`y`/`width`/`height`, or a `layer` field. Image size is expressed \
 through the transform. When a new shape's prompt implies a name (for example, \
 "add a sun"), set its optional `name` field so a later edit can address it. \
 For an add-layer request, return only the minimal patch that adds one complete \
-layer at `/layers/-` with `id`, `name`, `order`, `visible`, and `locked`, plus \
-one complete image shape at `/shapes/-`, with a new layer id, matching shape \
+layer at "/layers/-" with "id", "name", "order", "visible", and "locked", plus \
+one complete image shape at "/shapes/-", with a new layer id, matching shape \
 `layerId`, and `groupId: null`; never return a complete scene or add a \
 scene-root/fixture object. When a supplied asset is selected, it is explicitly \
 authorized and must be referenced by its supplied `mediaAssetId`."""

@@ -27,6 +27,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
@@ -429,6 +430,71 @@ def _validate_add_layer_assets(
     return None
 
 
+def _normalize_add_layer_candidate(
+    before: dict[str, Any] | None,
+    after: dict[str, Any],
+    patch: list[dict[str, Any]] | None,
+    assets: list[dict[str, Any]],
+) -> tuple[dict[str, Any], list[dict[str, Any]] | None]:
+    """Repair the narrow provider failure of attaching a new image to base.
+
+    Mistral sometimes emits a valid new image shape but reuses the existing
+    layer instead of emitting the companion layer add.  Add-layer scope owns
+    that invariant, so normalize only this exact shape-only case into the
+    requested two-record candidate; all other scope violations remain hard
+    rejections.
+    """
+    before_layers = {
+        layer.get("id")
+        for layer in (before or {}).get("layers", [])
+        if isinstance(layer, dict) and isinstance(layer.get("id"), str)
+    }
+    after_layers = [
+        layer
+        for layer in after.get("layers", [])
+        if isinstance(layer, dict) and isinstance(layer.get("id"), str)
+    ]
+    if any(layer["id"] not in before_layers for layer in after_layers):
+        return after, patch
+    before_shape_ids = {
+        shape.get("id")
+        for shape in (before or {}).get("shapes", [])
+        if isinstance(shape, dict)
+    }
+    added_images = [
+        (index, shape)
+        for index, shape in enumerate(after.get("shapes", []))
+        if isinstance(shape, dict)
+        and shape.get("id") not in before_shape_ids
+        and shape.get("type") == "image"
+    ]
+    if len(added_images) != 1:
+        return after, patch
+    index, _ = added_images[0]
+    layer_id = f"ai-asset-layer-{uuid.uuid4().hex}"
+    asset_name = assets[0].get("name", "Imported asset") if assets else "Imported asset"
+    candidate = deepcopy(after)
+    candidate.setdefault("layers", []).append(
+        {
+            "id": layer_id,
+            "name": asset_name,
+            "order": len(before_layers),
+            "visible": True,
+            "locked": False,
+        }
+    )
+    candidate["shapes"][index]["layerId"] = layer_id
+    repaired_patch = list(patch or []) + [
+        {
+            "op": "add",
+            "path": "/layers/-",
+            "value": candidate["layers"][-1],
+        },
+        {"op": "replace", "path": f"/shapes/{index}/layerId", "value": layer_id},
+    ]
+    return candidate, repaired_patch
+
+
 class AIRunError(Exception):
     """Base for every `scenes.ai_runs` domain error. `code` is a short,
     stable, non-sensitive string safe to surface to the caller."""
@@ -558,8 +624,10 @@ def _augmented_prompt(run: AIRun) -> str:
         parts.append(
             "Add exactly two new records as JSON Patch operations: first add one complete "
             "layer object at /layers/-, then add one complete image shape object at /shapes/-. "
-            "The new shape's layerId must equal the new layer's id. Do not add a shape without "
-            "its new layer, do not modify any existing layer or shape, and do not treat the "
+            "The layer id must be fresh and must not equal any existing layer id; the new shape's "
+            "layerId must equal that new layer's id. Do not add a shape without its new layer, "
+            "do not reuse the existing base layer, do not modify any existing layer or shape, "
+            "and do not treat the "
             "selected asset id as an existing scene element id."
         )
     if run.scope == AIRun.Scope.SELECTION and run.selected_target_ids:
@@ -617,7 +685,15 @@ def _run_one_attempt(run: AIRun) -> _AttemptOutcome:
             patch, change_summary = outcome.patch, outcome.change_summary or ""
 
     if result.success:
-        scope_error = _validate_candidate_scope(run.plan, _target_scene_json(run), result.scene)
+        candidate_scene = result.scene
+        candidate_patch = patch
+        if run.plan and run.plan.get("scope") == "add-layer" and candidate_scene is not None:
+            candidate_scene, candidate_patch = _normalize_add_layer_candidate(
+                _target_scene_json(run), candidate_scene, patch, run.assets
+            )
+        scope_error = _validate_candidate_scope(
+            run.plan, _target_scene_json(run), candidate_scene
+        )
         if scope_error is not None:
             return _AttemptOutcome(
                 success=False,
@@ -632,7 +708,7 @@ def _run_one_attempt(run: AIRun) -> _AttemptOutcome:
             )
         if run.plan and run.plan.get("scope") == "add-layer":
             asset_error = _validate_add_layer_assets(
-                _target_scene_json(run), result.scene, run.assets, run.selected_target_ids
+                _target_scene_json(run), candidate_scene, run.assets, run.selected_target_ids
             )
             if asset_error is not None:
                 return _AttemptOutcome(
@@ -648,8 +724,8 @@ def _run_one_attempt(run: AIRun) -> _AttemptOutcome:
                 )
         return _AttemptOutcome(
             success=True,
-            scene_json=result.scene,
-            patch=patch,
+            scene_json=candidate_scene,
+            patch=candidate_patch,
             change_summary=change_summary,
             error_category=None,
             error_message="",

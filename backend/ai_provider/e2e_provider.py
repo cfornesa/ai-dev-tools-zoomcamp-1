@@ -204,7 +204,7 @@ def _asset_layer_patch(user_content: str) -> list[dict[str, Any]]:
     try:
         scene = json.loads(user_content.split(marker, 1)[1].split(requested, 1)[0])
         descriptor_text = user_content.split(descriptor_marker, 1)[1].split(
-            " Create exactly one new layer", 1
+            " Add exactly two new records", 1
         )[0]
         descriptors = json.loads(descriptor_text)
     except (IndexError, json.JSONDecodeError):
@@ -213,9 +213,6 @@ def _asset_layer_patch(user_content: str) -> list[dict[str, Any]]:
         return []
     asset = descriptors[0]
     if not isinstance(asset, dict) or not isinstance(asset.get("id"), str):
-        return []
-    target_text = user_content.split("Only modify the following existing element id(s):", 1)
-    if len(target_text) != 2 or asset["id"] not in target_text[1]:
         return []
     layer_id = "ai-asset-layer-1"
     return [

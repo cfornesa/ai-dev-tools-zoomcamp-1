@@ -24697,3 +24697,19 @@ publish, 3 call sites) and https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/i
 in Batch 14, filed only (not implemented). Suggested order: #1095, #1097, then
 #1096 (re-run), with https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 -> https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 independent of CI. PR #1094 merge advice
 unchanged: wait.
+
+### 2026-09-30 — Batch 14 transaction #1095
+
+[#1095](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095) is
+CLOSED / completed with QA PASS. Commit `c7545b8f` replaces the Gallery test's
+host-timezone-specific date literal with the output of the shared
+`formatDate` utility; product rendering is unchanged. The focused test and the
+full 3,180-test frontend suite pass under both `TZ=UTC` and
+`TZ=America/Los_Angeles`. `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`
+also passes. The QA comment records the criterion matrix and provenance.
+
+Remaining Batch 14 order: #1097 → #1096, then #1098 → #1099. The owner
+selected expanded-content accounting for #1098: count the package's
+uncompressed piece/version content and media once, matching backend stored
+usage; #1099 inherits those semantics. Stage-5 readiness remains a batch
+gate and has not run.

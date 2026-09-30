@@ -17,7 +17,7 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1084 | 9; none | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1085 | 10; none | 2b storage/data layer | CLOSED | completed and QA-reconciled |
 | #1086 | 11; #1085 | 2b storage/data layer | CLOSED | completed and QA-reconciled |
-| #1087 | 12; #1085/#1086 | 2a frontend | GROOMED | process after dependencies |
+| #1087 | 12; #1085/#1086 | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1088 | 13; #1085 | 2a frontend | GROOMED | process after dependency |
 | #788 | owner-scoped production action | owner-run | OPEN / owner-run | use named production workflow and Chrome evidence |
 | #926 | #924/#925/#920 | live-provider Chrome | OPEN / live-provider | process after prerequisites |
@@ -171,3 +171,14 @@ The current transaction is terminal: #1085 is CLOSED before #1086 engineering be
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1086 is CLOSED before #1087 engineering begins.
+
+### #1087 — CLOSED
+
+- Commit: `c414b2c6`.
+- Implementation: local gallery cards now render stored/revived thumbnails with object-URL cleanup, fallback tiles, descriptions, shared date/origin helpers, origin/kind/local badges, and lazy thumbnail backfill; local 3D records participate in the 3D filter. Added responsive screenshot E2E coverage at 1280px and 375px.
+- Focused checks: Gallery/Gallery a11y/ProjectCard/Project3DCard suites passed (54 tests); typecheck and Prettier passed; lint passed with existing warnings; active Chrome measured no horizontal overflow at desktop/mobile and supplied both screenshots; committed diff passed `git show --check HEAD`.
+- QA: `## QA: PASS`, GitHub comment `5905709764`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1087 is CLOSED before #1088 engineering begins.

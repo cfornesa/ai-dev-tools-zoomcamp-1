@@ -10,7 +10,7 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1077 | 2; none | 2a mechanical/backend | GROOMED | process after #1076 |
 | #1081 | 3; none | docs | GROOMED | process after code prerequisites |
 | #1078 | 4; #1076/#1077 | 2b complex | CLOSED | completed and QA-reconciled |
-| #1079 | 5; #1078 | 2b complex | GROOMED | process after dependency |
+| #1079 | 5; #1078 | 2b complex | CLOSED | completed and QA-reconciled |
 | #1080 | 6; #1077–#1079 | 2a mechanical/backend | GROOMED | process after dependencies |
 | #1082 | 7; none | 2a frontend | GROOMED | process sequentially |
 | #1083 | 8; none | 2a frontend | GROOMED | process sequentially |
@@ -86,3 +86,15 @@ The current transaction is terminal: #1081 is CLOSED before #1078 engineering be
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1078 is CLOSED before #1079 engineering begins.
+
+### #1079 — CLOSED
+
+- Commit: `f5ae777b`.
+- Implementation: bounded validation repair loop, output budgets for all vendors, optional final-repair model escalation, configurable overall deadline, non-sensitive attempt evidence, and documented environment variables.
+- Focused checks: `tests -k art_piece` 208 passed; Ruff and mypy passed; `git show --check HEAD` passed.
+- QA: `## QA: PASS`, GitHub comment `5905183919`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Evidence boundary: local automated backend checks plus active Chrome/GitHub issue inspection; live-provider generation remains the declared owner/live scope.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1079 is CLOSED before #1080 engineering begins.

@@ -53,3 +53,14 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 ## Reconciliation checkpoint
 
 The current transaction is terminal: #1076 is CLOSED before #1077 engineering begins. No new actionable follow-up was discovered; the existing dependency chain covers all shifted work.
+
+### #1077 — CLOSED
+
+- Commit: `5ea001b1`.
+- Focused checks: 9 extraction tests passed; full art-piece regression 191 passed; Ruff and mypy passed.
+- QA: `## QA: PASS`, GitHub comment `5904969409`; untrusted-diff intake accepted; stage 3 not run.
+- Evidence boundary: local automated backend checks plus active Chrome inspection of the authenticated GitHub issue inventory.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub. No shifted work beyond #1078–#1080's declared validation/repair/corpus boundaries.
+
+The current transaction is terminal: #1077 is CLOSED before #1078 engineering begins.

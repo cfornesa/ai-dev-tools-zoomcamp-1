@@ -24674,3 +24674,14 @@ passes (backend 1,876 passed / 39 skipped; frontend 3,180 passed). Batch 13
 is closed. Local gate is now **PASS**; readiness remains **BOUNDED**: the
 branch is unpushed (no matching-ref CI run) and only the anonymous production
 smoke has been run. Next action: owner pushes the branch and confirms CI.
+
+### 2026-09-30 — matching-ref CI result (owner-requested push)
+
+Pushed `900fe968` and dispatched CI run 36765070532. **CI FAILED**: Backend
+checks, workflow validation and disposable published-routing smoke passed;
+Frontend checks failed (1 of 3,180 tests) and all 16 browser shards failed
+(~280 specs). Local `make check` and CI therefore disagree; readiness stays
+**BLOCKED** (matching-ref CI boundary). Filed under Discovery gate rule 4
+(not implemented; the earlier waiver covered only #1092/#1093) in
+Batch 14: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095 (Gallery test timezone dependence), https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 (E2E matrix failure),
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097 (WebKit fullscreen step). Next action: engineer them, redispatch CI.

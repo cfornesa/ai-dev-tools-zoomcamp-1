@@ -223,7 +223,7 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - QA: committed-diff QA was N/A because this was a live-only confirmation; Chrome/source/public-route evidence was recorded in the closing GitHub comment. Stage 3 was not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
 - Final status: CLOSED / completed on GitHub.
 
-### #926 — OPEN / verification-boundary
+### #926 — CLOSED / verification-boundary
 
 - Active Chrome live-provider evidence: the user explicitly authorized sending the selected local scene and prompts to Mistral. The normal local Compose stack was temporarily run with the real provider and restored afterward; no production endpoint or credential was used.
 - Case A (`shape-hills`, scope `selection`): AIRun ids 79 and 80, vendor `mistral`, model `mistral-small-latest`, both approved plans correctly targeted `shape-hills`, both ended `repeated_invalid_output`, and no candidate/version mutation resulted.
@@ -232,7 +232,7 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - Run timestamps and request IDs are persisted in the local `AIRun` records; the live stack returned healthy before and after the run. Temporary same-origin QA fixture content was removed before restoring the normal stack.
 - Implementation follow-up: the persisted failures exposed a shared edit-prompt/schema mismatch: Mistral was not taught the canonical image shape fields and sometimes returned legacy `assetId`/top-level geometry or a full fixture. Commit `5933443d` updates the shared edit prompt with canonical shape/layer requirements and adds regression assertions; `ruff check` and the focused provider/prompt suite pass (20 tests).
 - QA: committed-diff review is PASS for the prompt fix (GitHub comment `5907191751`). Focused checks pass; the full backend suite reaches 1,893 collected tests but stops at collection because the Compose container lacks `/app/scripts/check-github-action-pins.py`, an existing container-mount issue outside the changed files. The issue's bounded live-provider verification budget is exhausted, and no additional Mistral calls were made after the fix.
-- Final status: CLOSED / completed on GitHub as a bounded failure demonstration. Follow-up #1091 tracks the prompt/schema defect and any post-fix live verification.
+- Final status: CLOSED / completed on GitHub as a bounded failure demonstration. Follow-up #1091 tracks the prompt/schema defect and post-fix live verification.
 
 ### #788 — OPEN / owner-run production action
 
@@ -251,8 +251,10 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - Linked issue: GitHub #1091, `implementation-defect`, linked back to #926. Commit `5933443d` implements the shared edit-prompt/schema alignment and focused regression coverage; this transaction adds an explicit add-layer JSON-Patch contract and assertions.
 - Focused verification after the hardened contract: `ruff check` plus the AI-run/provider/prompt suites passed (55 passed, 1 skipped). Commit `65ac8886` adds explicit fresh-layer prompt invariants, removes the contradictory add-layer target clause, updates the deterministic fixture provider, and guards the narrow shape-only/base-layer reuse case.
 - Fresh bounded Chrome/Mistral verification: selection scope succeeded as AIRun 86 with one accepted candidate and version 3; add-layer scope remained `failed` through AIRuns 87, 88, 89, 90, 91, and 92, each with `repeated_invalid_output` and `add-layer scope must add exactly one new layer.` No candidate or version mutation occurred; the selected local `qa-live-sun.svg` asset remained available in Chrome. AIRuns 87–89 used the stale container before rebuild; AIRuns 90–92 used rebuilt code, with AIRun 92 confirming the hardened path still does not receive a usable provider candidate.
-- Remaining acceptance: add-layer live verification is still unmet despite the implementation, rebuilt-container verification, and bounded retries. Record the exact persisted failures in QA; do not claim #1091 complete.
-- Final status: OPEN / implementation landed, add-layer provider behavior remains unverified-failing.
+- Follow-up implementation: commit `0a8dc0c6` makes the selected asset descriptor authoritative for add-layer normalization. Provider candidates that preserve the existing scene but omit or misattach the companion layer are rebuilt into one canonical new layer and one image shape referencing the selected `mediaAssetId`; mutations of existing elements and unrelated additions remain hard failures. Focused Ruff and tests pass (57 passed, 1 skipped).
+- Fresh rebuilt-container Chrome/Mistral verification: AIRun 93, vendor `mistral`, model `mistral-small-latest`, scope `add-layer`, completed in one attempt and was accepted as version 2. The persisted candidate contains exactly two layers, one new image shape, a fresh `layerId`, and `mediaAssetId` `qa-live-svg-374f8581-0d71-4bac-b375-96853f0781f4`; Chrome showed the new `qa-live-sun.svg` layer/shape and Image primitive. The original layer remained present and unchanged; no production data or secrets were used.
+- QA: `## QA: PASS` is recorded on GitHub after the final implementation commit; the full backend suite remains an unrelated container-mount failure at `/app/scripts/check-github-action-pins.py`.
+- Final status: CLOSED / completed on GitHub.
 
 ### #1040 — CLOSED
 

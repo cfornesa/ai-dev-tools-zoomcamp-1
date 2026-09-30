@@ -20,6 +20,11 @@ assignment is additive metadata, not a rewrite of what happened.
 | [Batch 6](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/6) | #527–#636 | 108 | Canonical user-facing piece routes; CI feedback-time reduction; Replit Vitest security gate. |
 | [Batch 7](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/7) | #637–#971 | 315 | The largest and most active week: full backlog reconciliation, cross-surface (regular/embed/immersive/ZIP) parity across six render engines, piece-package intake, editor toolbar/menu regressions. |
 | [Batch 8](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/8) | #860–#978 | 6 | Public media follow-up verification and the first code-health finding (superseded, see below). |
+| [Batch 9](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/9) | — | 37 | CONVENTIONS.md rollout (code quality, accessibility, security, design-UX). Closed 2026-09-30. |
+| [Batch 10](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/10) | — | 40 | 2D/3D editor and collections parity. Closed 2026-09-30. |
+| [Batch 11](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/11) | #1040–#1081 | 24 | AI generation quality evaluation, repair loop, showcase pieces. Closed 2026-09-30. |
+| [Batch 12](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/12) | #1082–#1088 | 7 | Studio/mobile UX and local-project parity. Closed 2026-09-30. |
+| [Batch 13](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/13) | back-filled #788–#1091, plus #1092–#1093 | 26 + 2 open | Live-provider QA closure (#788, #926, #859…) and the 2026-09-30 readiness audit follow-ups. **Open** until #1092/#1093 close. |
 
 Each milestone's own description on GitHub repeats its issue range and a
 few sample titles. For the exact criteria, evidence, and verification each

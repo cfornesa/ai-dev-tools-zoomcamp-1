@@ -24638,3 +24638,30 @@ rule 4), not implemented in the discovering session. Plan file:
 
 Re-scoped (not closed): #1042, #1046, #1040 now depend on #1076–#1080 and use
 a #1081 prompt. Untouched: #926, #788. Suggested next groomed issue: #1076.
+
+## 2026-09-30 — Production-readiness audit and session-completion (GitHub backlog empty)
+
+Result: **NOT PRODUCTION-READY / BLOCKED**, even though the pre-audit inventory
+showed 0 open issues (1,071 closed). Stage owner for this gate: Claude Sonnet
+5.5 (rostered Sonnet 5 tier), no substitution. Earlier ledger lines that say
+17 open issues remain (#788, #859, #926, #1040–#1046, #1061–#1066) are
+superseded: all were closed by 2026-09-30 (#788 with production evidence,
+#926/#859 with bounded live/local evidence).
+
+| Dimension | Evidence | Result |
+|---|---|---|
+| Published (production) | `PUBLISHED_APP_URL=https://animate.creatrweb.com scripts/smoke-published.sh`: health ok, `/`, anonymous whoami 401, login form all PASS | PASS (anonymous smoke only) |
+| Local checks at HEAD 8c9d9298 | `make -k check`: frontend lint/typecheck/build + 308 files / 3,180 tests pass; action-pin, backend lint, mypy pass; **backend-format-check FAIL** (`scenes/ai_runs.py`, `tests/test_ai_runs.py`); **backend 3 failed / 1,873 passed / 39 skipped** (`test_fake_asset_layer_replay_is_vendor_neutral[mistral|gemini|deepseek]`, `empty_patch`) | FAIL |
+| CI | Branch is 59+ commits ahead of origin; last remote runs (2026-09-29, e.g. 36557751947) predate HEAD and failed. No CI evidence exists for HEAD | VERIFICATION BOUNDARY (push is owner-authorized; not done) |
+
+Follow-ups (filed only, per Discovery gate rule 4; not implemented):
+[#1092](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1092)
+backend format-check failure; [#1093](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1093)
+provider-matrix asset-layer replay regression. Both are in Batch 13.
+
+Session-completion housekeeping: 26 closed issues lacking a milestone
+(#788, #847, #859, #906, #911–#916, #926, #941, #942, #944–#946, #973–#977,
+#1070, #1071, #1089–#1091) were back-filled into new Batch 13; Batches 9–12
+(0 open issues each) were closed; `docs/tasks-index.md` updated. Next action:
+engineer #1092 and #1093, re-run `make check`, push the branch for a matching-ref
+CI run, then re-run this readiness gate.

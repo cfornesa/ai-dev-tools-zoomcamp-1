@@ -1,5 +1,16 @@
 # DECISIONS.md
 
+## 2026-09-30 — Owner waiver of Discovery-gate rule 4 for #1095–#1099; intent for rule 4
+
+- The owner waived rule 4 (no same-session implementation of newly filed
+  issues) for #1095–#1099 and authorized Codex to implement them as a flagged
+  stage-2 substitution (track: mixed); Claude performs QA. Dependency order
+  (#1095 → #1097 → #1096; #1098 → #1099) is not waived.
+- Stated intent: the blocker should bind only when an agent is performing an
+  implementation run; distillation, review, QA, and readiness runs are
+  unaffected. Not yet encoded — `docs/process.md` rule 4 rewording is
+  proposed in chat for approval, and `AGENTS.md` is unchanged (§11).
+
 ## 2026-09-30 — Dual-track dispatch approved (Track A normalized / Track B Claude scopes, Codex reviews)
 
 - The owner approved keeping both workflows as equally supported, for

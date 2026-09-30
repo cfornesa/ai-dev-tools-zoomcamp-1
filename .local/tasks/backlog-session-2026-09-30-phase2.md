@@ -81,3 +81,23 @@ perform the separately authorized one-write production invocation, verify the
 two live C2 routes at desktop/mobile sizes and version history, verify
 unrelated pieces are unchanged, and remove the startup trigger. Rollback is to
 disable the gate and redeploy the prior revision before any write.
+
+## 2026-09-30 — bounded real-provider retry evidence
+
+The active local browser session was authenticated and the disposable backend
+was temporarily run with the real provider. The normal fake-provider stack was
+restored after the runs.
+
+- **#1042:** three authorized A-Frame attempts reached the provider but were
+  rejected as empty/invalid A-Frame output. No piece was saved or published.
+  QA comment `5904552823`. Terminal status: `BLOCKED / provider-quality
+  failure`; next action is a separately scoped generation/validator follow-up
+  before more quota.
+- **#1046:** three authorized SVG attempts were run. One rendered and was
+  inspected, but used a hard-coded circumference and therefore failed the
+  rubric; the final explicit runtime-computation attempt was rejected as
+  invalid SVG. No passing artifact was created. QA comment `5904554891`.
+  Terminal status: `BLOCKED / provider-quality failure`; next action is a
+  separately scoped generation/validator follow-up before more quota.
+
+No credentials were entered or exposed, and no production data was modified.

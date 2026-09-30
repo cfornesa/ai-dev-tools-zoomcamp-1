@@ -633,6 +633,22 @@ def _strip_markdown_fence(text: str) -> str:
     return stripped.strip()
 
 
+def _with_leading_layer_markers(text: str, match: re.Match[str]) -> str:
+    """Keep contiguous layer annotations immediately before an extracted span."""
+
+    lines = text[: match.start()].splitlines(keepends=True)
+    first_marker = len(lines)
+    while first_marker > 0:
+        line = lines[first_marker - 1]
+        if re.fullmatch(r"[ \t]*(?://[ \t]*@layer[^\n]*|<!--[ \t]*@layer.*?-->)[ \t\r\n]*", line):
+            first_marker -= 1
+            continue
+        break
+    if first_marker == len(lines):
+        return match.group(1).strip()
+    return ("".join(lines[first_marker:]) + match.group(1)).strip()
+
+
 def extract_snippet(text: str, library: str) -> str:
     """Recover the first plausible generated snippet from model wrapper prose."""
 
@@ -651,16 +667,16 @@ def extract_snippet(text: str, library: str) -> str:
     if pair:
         match = re.search(f"({pair[0]}.*?{pair[1]})", text, flags=re.IGNORECASE | re.DOTALL)
         if match:
-            return match.group(1).strip()
+            return _with_leading_layer_markers(text, match)
 
     if library == "canvas2d":
         match = re.search(r"(<canvas\b.*?</script>)", text, flags=re.IGNORECASE | re.DOTALL)
         if match:
-            return match.group(1).strip()
+            return _with_leading_layer_markers(text, match)
     elif library in {"p5js", "c2js", "c2js-interactive"}:
         match = re.search(r"(window\.sketch\s*=.*)", text, flags=re.IGNORECASE | re.DOTALL)
         if match:
-            return match.group(1).strip()
+            return _with_leading_layer_markers(text, match)
 
     return _strip_markdown_fence(text)
 

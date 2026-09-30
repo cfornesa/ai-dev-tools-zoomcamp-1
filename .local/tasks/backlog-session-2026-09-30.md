@@ -233,3 +233,9 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - All six child issues (#1041–#1046) are terminal; #1042 and #1046 were closed from fresh active-Chrome live-provider confirmations in this session.
 - QA: `## QA: PASS`, GitHub comment `5906123230`; parent closed after the child closure condition was satisfied.
 - Final status: CLOSED / completed on GitHub.
+
+### #1090 — IN PROGRESS
+
+- Discovery gate: no duplicate issue found; created GitHub #1090 after the batch readiness run exposed six generated-art corpus failures caused by #1077 extraction dropping contiguous `@layer` markers.
+- Implementation: `extract_snippet` now retains contiguous leading `// @layer ...` and `<!-- @layer ... -->` annotations for bare p5/C2/canvas/A-Frame spans; focused regression cases cover p5 and A-Frame.
+- Verification: focused provider/corpus suites passed (65 tests); Ruff check/format and `git diff --check` passed. Full `make check` rerun pending.

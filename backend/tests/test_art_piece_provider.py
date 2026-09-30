@@ -257,6 +257,25 @@ def test_extract_snippet_handles_script_based_libraries():
     )
 
 
+@pytest.mark.parametrize(
+    ("text", "library", "expected"),
+    [
+        (
+            "// @layer Background\n// @layer Subject\nwindow.sketch = function () {};",
+            "p5js",
+            "// @layer Background\n// @layer Subject\nwindow.sketch = function () {};",
+        ),
+        (
+            "<!-- @layer Background --><!-- @layer Subject --><a-scene></a-scene>",
+            "aframe",
+            "<!-- @layer Background --><!-- @layer Subject --><a-scene></a-scene>",
+        ),
+    ],
+)
+def test_extract_snippet_preserves_leading_layer_markers(text, library, expected):
+    assert extract_snippet(text, library) == expected
+
+
 def test_extract_snippet_preserves_a_snippet_at_the_validated_size_cap():
     body = "x" * (150_000 - len("<svg></svg>"))
     snippet = f"Model response:\n<svg>{body}</svg>"

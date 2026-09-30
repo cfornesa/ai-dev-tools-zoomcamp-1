@@ -18,7 +18,8 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1085 | 10; none | 2b storage/data layer | CLOSED | completed and QA-reconciled |
 | #1086 | 11; #1085 | 2b storage/data layer | CLOSED | completed and QA-reconciled |
 | #1087 | 12; #1085/#1086 | 2a frontend | CLOSED | completed and QA-reconciled |
-| #1088 | 13; #1085 | 2a frontend | GROOMED | process after dependency |
+| #1088 | 13; #1085 | 2a frontend | CLOSED | completed and QA-reconciled |
+| #1089 | discovery follow-up to #1087 | 2a frontend | PROPOSED | groom and process after current transaction |
 | #788 | owner-scoped production action | owner-run | OPEN / owner-run | use named production workflow and Chrome evidence |
 | #926 | #924/#925/#920 | live-provider Chrome | OPEN / live-provider | process after prerequisites |
 | #1040 | tracking parent | children #1041–#1046 | OPEN / reconciliation container | close only after children terminal |
@@ -32,6 +33,8 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 - #788 is a narrowly authorized production-data workflow and must not be replaced by local evidence.
 - #926, #1042, and #1046 require bounded live-provider/browser evidence; they remain in the ordered manifest and are not silently omitted.
 - No new follow-up issue was discovered during distillation; newly discovered actionable work will be filed before leaving the current issue.
+
+- Discovery update: active Chrome verification of #1087 found a generated/3D local-card route mismatch; GitHub duplicate search found no owner, so #1089 was filed as a proposed follow-up before continuing.
 
 ## Current transaction ledger
 
@@ -182,3 +185,14 @@ The current transaction is terminal: #1086 is CLOSED before #1087 engineering be
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1087 is CLOSED before #1088 engineering begins.
+
+### #1088 — CLOSED
+
+- Commit: `be4626ab`.
+- Implementation: additive local 2D project details control for title/description, local-save validation that rejects blank/placeholder titles while permitting empty descriptions, `updateProject` persistence, make-public description prefill, and persisted Gallery reflection.
+- Focused checks: LocalEditorWorkspace, project metadata, and Gallery suites passed (44 tests); typecheck, Prettier, and lint passed with existing warnings; active Chrome edit/save/reload/Gallery evidence passed; committed diff passed `git show --check HEAD`.
+- QA: `## QA: PASS`, GitHub comment `5905798018`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1088 is CLOSED before #1089 grooming.

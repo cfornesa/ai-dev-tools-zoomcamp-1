@@ -24,9 +24,11 @@
 | 0a | Backlog definition — discover, dedupe, groom, order | Claude | Sonnet 5 | Medium | skill `task-distillation` |
 | 0b | Loop orchestration — ledger, manifest, reconciliation | Claude | Sonnet 5 | Medium | skill `backlog-session` |
 | 1 | Issue scoping / spec drafting | Codex (ChatGPT Plus) | GPT-5.6 Luna | Medium | skill `issue-scoping` |
+|   | *Track B alternative* | Claude | Sonnet 5 | Medium | skill `issue-scoping` (not a substitution) |
 | 2a | Implementation — mechanical / boilerplate | Opencode Desktop via native Opencode Go | kimi-k2.7-code (frontend) / qwen3.6-plus (backend) | — | skill `implementation-mechanical` |
 | 2b | Implementation — complex logic | Opencode Desktop (`/connect` to Ollama Cloud) | kimi-k3 | — | skill `implementation-complex` |
 | 3 | Second-opinion patch review (optional) | Mistral Vibe | devstral-2 | — | skill `second-opinion-review` |
+|   | *Track B alternative* | Codex (ChatGPT Plus) | GPT-5.x | Medium | skill `second-opinion-review` (not a substitution; never the diff's author) |
 | 4 | QA self-review | Claude | Sonnet 5 | Medium | skill `qa-self-review` |
 | 5 | Production-readiness gate | Claude | **Opus 5 or Sonnet 5 (rostered tier); GPT-5 is an owner-authorized substitute when explicitly recorded** | Low (Opus 5) / Medium (Sonnet 5) / owner-recorded GPT-5 effort | skill `production-readiness` |
 | 6 | Batch reconciliation and handoff | Claude | Sonnet 5 | Medium | skill `session-completion` |
@@ -50,6 +52,13 @@ Record the actual platform/model/effort for provenance. The Stage 1 restriction
 against Luna applies only to `issue-scoping`; it does not apply to
 `task-distillation` or `backlog-session`.
 
+**Dual-track dispatch (owner-approved 2026-09-30):** Track A is the roster
+above; Track B is Claude scopes (stage 1) and Codex reviews (stage 3). Either
+may be chosen per issue or batch and tracks may be mixed, for redundancy when a
+service hits a usage limit. Record `track: A|B|mixed` with the per-issue
+provenance line; findings from any reviewer are verified in code before they
+become issues. See `docs/proposals/dispatch-dual-track-2026-09-30.md`.
+
 Stage 3 cannot be satisfied by the model that wrote the diff. Stage 5 remains
 rostered to the Opus 5/Sonnet 5 Claude tier, but the owner may explicitly
 authorize GPT-5 as a session substitution when that tier is unavailable. The
@@ -62,9 +71,9 @@ rostered Claude run.
 ## Stage 1 — Issue scoping / spec drafting
 
 **Service:** Codex, via ChatGPT Plus or Claude Code, via Claude Pro.
-**Model:** `GPT-5.6 Luna` at `Medium` reasoning effort — the owner-authorized
-default for scoping. Claude Sonnet may run this as an explicitly flagged
-substitution.
+**Model:** `GPT-5.6 Luna` at `Medium` reasoning effort (Track A) or Claude
+Sonnet 5 at `Medium` (Track B); both are owner-approved (2026-09-30) and
+neither is a substitution. Record the actual platform/model/effort.
 **Escalation:** `GPT-6 Astra` or `Claude Opus` at `Low` or `Medium`, if your
 plan has it, only for unusually ambiguous or high-stakes scoping.
 
@@ -122,9 +131,10 @@ with fresh eyes, looking for the assumptions the diff's own author carried
 into its self-review. Findings only; it fixes nothing.
 **Invoke:** skill `second-opinion-review`
 **Hands off:** findings, which stage 4 must disposition explicitly.
-**Not substitutable:** if Mistral Vibe did not run, stage 3 is recorded as
-`not run` — never "covered by QA". A Claude review of a Claude-authored diff
-does not satisfy it.
+**Reviewer options:** Mistral Vibe (Track A) or Codex (Track B). Stage 3 is
+recorded `not run` if neither ran — never "covered by QA". Neither a Claude
+review of a Claude-authored diff nor a Codex review of a Codex-authored diff
+satisfies it.
 
 ---
 

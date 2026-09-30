@@ -1,4 +1,4 @@
-# Proposal: dual-track dispatch (status: PROPOSED — awaiting owner approval)
+# Proposal: dual-track dispatch (status: APPROVED 2026-09-30; DISPATCH.md applied; AGENTS.md §9 sentence not applied)
 
 Nothing here is applied. `DISPATCH.md` and `AGENTS.md` are unchanged; per
 `AGENTS.md` §11 any edit is a marked diff, approved first, then logged in

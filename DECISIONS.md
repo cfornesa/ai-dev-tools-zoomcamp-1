@@ -1,5 +1,15 @@
 # DECISIONS.md
 
+## 2026-09-30 — Dual-track dispatch approved (Track A normalized / Track B Claude scopes, Codex reviews)
+
+- The owner approved keeping both workflows as equally supported, for
+  redundancy when usage limits bite. Track B is Claude Sonnet 5 at stage 1 and
+  Codex at stage 3; neither is a substitution. `DISPATCH.md` was updated.
+- Guardrails: stage-3 reviewer must differ in model family from the diff's
+  author; reviewer findings are verified in code before filing; per-issue
+  provenance records `track: A|B|mixed`. `AGENTS.md` was not edited (§11); the
+  optional §9 sentence awaits explicit instruction.
+
 ## 2026-09-30 — Explicit fixture selection for owner-scoped production imports (#788)
 
 - The owner selected the scoped-flag approach for #788: preserve one canonical

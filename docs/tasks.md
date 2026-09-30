@@ -24591,3 +24591,22 @@ because it is a production-data owner-run action.
 The full `make check` gate passed (backend 1830 passed / 39 skipped; frontend
 307 files / 3170 tests). The temporary live-provider backend container was
 removed after the run and the normal Compose backend was restored.
+
+## 2026-09-30 — Phase 2 terminal reconciliation
+
+The live-provider batch was reconciled after the deterministic follow-ups and
+the natural-language C2 Interactive publication. The completed issues are
+#1041, #1043, #1044, #1045, #1061, #1062, #1063, #1064, #1065, and #1066;
+their issue comments contain criterion matrices and exact verification
+evidence. #1042 and #1046 remain **blocked** after fresh bounded local runs
+again failed at the provider-output boundary. #926 remains **blocked** after
+two local Chrome agent-workflow runs reached a correctly scoped `shape-hills`
+plan but both ended with `repeated_invalid_output`; its criterion matrix and
+next action are in QA comment 5903417419. #788 remains **owner-run** because
+it requires a production-only data action and was intentionally untouched.
+
+Final local gate: `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed
+(backend 1830 passed / 39 skipped; frontend 307 files / 3170 tests). The
+remaining work is not production-ready: it requires owner/provider decisions
+or an owner-run production action. No production data, passwords, or API-key
+values were used.

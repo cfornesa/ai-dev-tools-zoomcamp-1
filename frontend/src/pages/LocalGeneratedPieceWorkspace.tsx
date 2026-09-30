@@ -35,6 +35,7 @@ import {
   type LocalPieceVersionRecord,
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
+import { ensureLocalThumbnail } from '../storage/localThumbnail';
 
 function payloadOf(version: LocalPieceVersionRecord | null) {
   return (version?.payload ?? {}) as {
@@ -116,6 +117,7 @@ export default function LocalGeneratedPieceWorkspace() {
       });
       const updated = await updateProject(db, owner!, id!, { title: project!.title });
       setProject(updated);
+      void ensureLocalThumbnail(updated).catch(() => undefined);
       setVersions((items) => [...items, version]);
       setCurrent(version);
       setMessage('Saved locally. Nothing was sent to the server.');

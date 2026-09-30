@@ -23,6 +23,7 @@ import {
   type LocalPiecePackageResult,
 } from '../storage/localPiecePackage';
 import { getFolderBridgeStatus, writeArchiveFile } from '../storage/folderArchiveBridge';
+import { ensureLocalThumbnail } from '../storage/localThumbnail';
 import { appendRecoveryDraft, getLatestRecoveryDraft } from '../storage/localRecovery';
 import {
   getProject,
@@ -701,6 +702,7 @@ function LocalEditorWorkspace() {
         // remains authoritative even when snapshot storage is unavailable.
       }
       setScenes((current) => current.map((scene) => (scene.id === updated.id ? updated : scene)));
+      if (project) void ensureLocalThumbnail(project).catch(() => undefined);
       setSceneName(updated.name);
       setDirty(false);
       if (recoveryId) setRecoveryDraftId(recoveryId);

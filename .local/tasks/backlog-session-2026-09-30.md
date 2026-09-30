@@ -14,7 +14,7 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1080 | 6; #1077–#1079 | 2a mechanical/backend | CLOSED | completed and QA-reconciled |
 | #1082 | 7; none | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1083 | 8; none | 2a frontend | CLOSED | completed and QA-reconciled |
-| #1084 | 9; none | 2a frontend | GROOMED | process sequentially |
+| #1084 | 9; none | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1085 | 10; none | 2b storage/data layer | GROOMED | process sequentially |
 | #1086 | 11; #1085 | 2b storage/data layer | GROOMED | process after dependency |
 | #1087 | 12; #1085/#1086 | 2a frontend | GROOMED | process after dependencies |
@@ -136,3 +136,16 @@ The current transaction is terminal: #1082 is CLOSED before #1083 engineering be
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1083 is CLOSED before #1084 engineering begins.
+
+### #1084 — CLOSED
+
+- Commit: `705a555a`.
+- Implementation: scoped responsive wrapping for public generated-piece version context values, rows, summaries, details, and timestamps using `min-width: 0`, `overflow-wrap: anywhere`, and bounded definition margins; added a 375px browser regression fixture with a 2,400-character unbroken prompt and screenshot capture.
+- Focused checks: PublicArtPieceViewer tests 5 passed; typecheck and Prettier passed; lint passed with existing warnings; Playwright list found the new scenario; committed diff passed `git show --check HEAD`.
+- Active Chrome evidence: 375px measured `scrollWidth=360` and `clientWidth=360`, 326px context width, and computed `min-width: 0` / `overflow-wrap: anywhere`; 1280px measured no overflow and retained the two-column layout.
+- QA: `## QA: PASS`, GitHub comment `5905494421`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Evidence boundary: active Chrome rendered verification is authoritative for this local UI; full Playwright execution remains subject to the host E2E login/browser setup.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1084 is CLOSED before #1085 engineering begins.

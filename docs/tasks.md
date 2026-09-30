@@ -24717,17 +24717,34 @@ gate and has not run.
 ### 2026-09-30 — Batch 14 transaction #1097
 
 [#1097](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097) is
-CLOSED / completed with QA PASS under the issue's host-boundary alternative.
-The cause was test fixture drift: the focused fullscreen spec used the
-canonical server-project helper, while the selected Gallery action now
-creates a local-only project and routes to `/local-projects/:id`. Commit
-`8d0d50e4` changes only that spec's setup; fullscreen/Escape assertions and
-shared helpers are unchanged. `git diff --check` passed. The exact focused
-Playwright command reached setup but macOS WebKit aborted before test start
-(`Abort trap: 6`); this is not recorded as a pass. The isolated QA DB was
-dropped. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097#issuecomment-5919537401.
+CLOSED / completed with QA PASS. The cause was test fixture drift: the
+focused fullscreen spec used a server-project response wait after the
+Gallery's p5 action had switched to a local-only route. Commit `8d0d50e4`
+corrected that mismatch and exposed a second setup mismatch in CI: the local
+workspace has no fullscreen toolbar. Commit `ef5771b7` uses the existing
+`apiPost('/api/projects/blank/')` helper and opens the canonical editor route.
+The focused WebKit step passed on Linux in PR CI run 36776824640, job
+110096727130. Fullscreen/Escape assertions and shared helpers are unchanged.
+Local Mac browser launches fail at the host Mach-port boundary and are not
+used as pass evidence. `npx prettier --check`, `npm run typecheck`, and
+`git diff --check` pass; the isolated QA DB was dropped. QA comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097#issuecomment-5919537401.
 
-Continue with #1096; its Linux matrix rerun should also exercise this corrected
-spec. A local feature-branch push does not trigger this repository's `push`
-workflow, which is configured for `main`; no matching-ref run for `8d0d50e4`
-is claimed.
+Continue with #1096; the later 16-shard run must still reconcile every other
+browser failure. PR run 36776824640 only verifies the named WebKit step plus
+its PR gate; it is not claimed as full-matrix evidence.
+
+### 2026-09-30 — Batch 14 quota contract grooming (#1098 → #1099)
+
+The owner selected expanded stored-content accounting for
+[#1098](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098):
+`pieceBytes` counts expanded UTF-8 serialized piece/version payloads while
+excluding media and ZIP/manifest/container overhead; `mediaBytes` counts
+the included media blob bytes once; total is their sum. File counts remain
+one piece plus each included media asset. The #1098 issue now records this
+contract, affected call sites, acceptance fixtures, exact verification
+commands, and the constraint to keep the backend estimator unchanged.
+[#1099](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099) has
+been re-groomed to consume that same shared measurement for both aggregate
+preview and per-row private-quota checks. It remains dependency-blocked until
+#1098 closes.

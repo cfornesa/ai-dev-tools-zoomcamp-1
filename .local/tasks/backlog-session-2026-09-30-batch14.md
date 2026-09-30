@@ -24,8 +24,8 @@ authorized substitution becomes available.
 | #1095 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095 | `docs/tasks.md`, Batch 14 transaction #1095 | none; first | Gallery local-card date assertion under timezone/locale variation | completed / CLOSED | Codex GPT-6 (effort not exposed) / Codex GPT-6 (effort not exposed) / not run / Codex GPT-6 (effort not exposed) / pending batch gate | impl: yes (owner waiver); QA: yes; scoping: no | none | Reconciled; QA comment 5919356495; closed completed |
 | #1097 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097 | `docs/tasks.md`, Batch 14 CI follow-up | after #1095, before #1096 | named WebKit fullscreen/Escape workflow step | completed / CLOSED | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | impl: yes (owner waiver); QA: yes; stage 3 not run | Linux rerun belongs to #1096 | Reconciled; QA comment 5919537401; closed completed |
 | #1096 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 | `docs/tasks.md`, Batch 14 CI follow-up | after #1097 | 16-shard browser acceptance workflow at commit `900fe968`; classify root causes, preserve assertions, rerun | GROOMED | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | pending actual execution | causes spanning shards must be fixed or linked atomically | process after #1097 |
-| #1098 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 | `docs/tasks.md`, Batch 14 local-public quota follow-up | independent of CI; before #1099 | public-transfer preflight across the two `LocalEditorWorkspace` callers and `localPublicTransfer` | GROOMED — owner selected expanded-content accounting | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | pending actual execution | contract clarification must be added to issue body before engineering | record selected byte semantics and exact checks, then implement |
-| #1099 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 | `docs/tasks.md`, Batch 14 local-sync quota follow-up | #1098 | private sync aggregate preview and per-row preflight | dependency-blocked until #1098 closes | Codex GPT-6 / stage 2a Opencode Go / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | pending actual execution | inherits #1098's selected byte semantics | owner is this session; process after #1098 |
+| #1098 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 | `docs/tasks.md`, Batch 14 local-public quota follow-up | independent of CI; before #1099 | public-transfer preflight across the two `LocalEditorWorkspace` callers and `localPublicTransfer` | GROOMED — expanded stored-content accounting contract on issue | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | pending actual execution | shared content-byte measurement and regressions | next after #1096 terminal |
+| #1099 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 | `docs/tasks.md`, Batch 14 local-sync quota follow-up | #1098 | private sync aggregate preview and per-row preflight | GROOMED / dependency-blocked until #1098 closes | Codex GPT-6 / stage 2a Opencode Go / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | pending actual execution | inherits expanded stored-content semantics; shared measurement | owner is this session; process after #1098 |
 
 Order: #1095 → #1097 → #1096, then #1098 → #1099. The CI items follow the
 prior distillation's explicit sequence. The media-accounting pair is
@@ -96,21 +96,26 @@ No new follow-up has been discovered in #1095.
   effort unavailable under the owner waiver in `DECISIONS.md`; stage 3 not
   run; stage 4 roster Claude Sonnet 5 Medium, actual Codex / GPT-6 family /
   effort unavailable as a QA substitution. Intake ACCEPTED.
-- Commit: `8d0d50e4` (`test: create local project in WebKit fullscreen spec
-  (#1097)`), pushed to `docs/backlog-reevaluation-2026-09-27`.
+- Commits: `8d0d50e4` (replace the stale local-project route wait) and
+  `ef5771b7` (create the canonical server-backed editor fixture for the
+  fullscreen toolbar), pushed to `docs/backlog-reevaluation-2026-09-27`.
 - `git diff --check` passed.
 - Focused command:
   `npx playwright test e2e/manual2dStageChrome.spec.ts --project=webkit --grep "keeps the fullscreen command synchronized after browser Escape"`.
   Test setup reached `/health/` against a migrated, isolated PostgreSQL DB;
   macOS WebKit aborted at browser launch (`Abort trap: 6`, exit 134) before
-  the test body. This is recorded as runner-host boundary evidence, not as a
-  pass or assertion failure. Prior Linux CI failures identify the stale
-  route wait; the supported Linux rerun is part of #1096.
-- QA verdict: `## QA: PASS` with host-boundary evidence; GitHub comment
+  the test body. A local Chromium launch failed at the macOS Mach-port
+  boundary too. The supported Linux CI run 36776824640 passed its exact
+  `Run WebKit fullscreen Escape regression` step (job 110096727130) at
+  `ef5771b7`; this is the pass evidence. The intervening Linux run
+  36775617289 exposed that a local project has no fullscreen toolbar, so the
+  final fix uses `apiPost('/api/projects/blank/')` and its canonical
+  `editor_url`.
+- `npx prettier --check e2e/manual2dStageChrome.spec.ts`,
+  `npm run typecheck`, and `git diff --check` passed.
+- QA verdict: `## QA: PASS`; GitHub comment
   https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097#issuecomment-5919537401.
-- GitHub status: CLOSED / completed, verified through connector. No CI run
-  for the pushed commit is claimed; feature-branch push does not trigger the
-  repository's `push` workflow (configured for `main`).
+- GitHub status: CLOSED / completed, verified through connector.
 - The isolated DB `codex_qa_20260930_1097` was dropped after Playwright
   global teardown; Django and Vite servers were stopped.
 - Memory: unchanged; this is a specific instance of the recorded E2E spec
@@ -122,9 +127,11 @@ No new follow-up has been discovered in #1095.
   reconciled commit and link any newly discovered independent defects before
   making fixes outside #1096 scope.
 - For #1098, owner selected the expanded-content model: estimate uncompressed
-  piece/version content and media once, consistent with the backend's stored
-  usage model. Update its issue contract with exact fields, fixtures, and
-  commands before engineering. Then #1099 inherits that definition.
+  piece/version payload content and media once. Its issue now defines
+  `pieceBytes` as UTF-8 serialized content excluding media and container
+  overhead, `mediaBytes` as the included blobs exactly once, and file counts
+  as one piece plus media assets. #1099's groomed contract inherits the same
+  measurement for both preview and upload.
 - Run session-completion after every manifest item has a terminal status.
 - Stage-5 production-readiness is not currently satisfiable on this Codex
   runtime under the shared contract; record a blocked gate with the exact

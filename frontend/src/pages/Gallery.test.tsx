@@ -8,6 +8,7 @@ import * as projectsApi from '../api/projects';
 import * as projects3dApi from '../api/projects3d';
 import * as profileApi from '../api/profile';
 import * as authModule from '../auth/useAuth';
+import { formatDate } from '../components/formatDate';
 import * as repository from '../storage/localProjectRepository';
 import * as localThumbnail from '../storage/localThumbnail';
 import Gallery from './Gallery';
@@ -182,7 +183,9 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(
       screen.getByRole('img', { name: 'No preview available for Local empty piece' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Last updated Jan 1, 2026')).toBeInTheDocument();
+    expect(
+      screen.getByText(`Last updated ${formatDate('2026-01-02T00:00:00Z')}`),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Open local editor' })[0]).toHaveAttribute(
       'href',
       '/local-generated/local-with-thumbnail',

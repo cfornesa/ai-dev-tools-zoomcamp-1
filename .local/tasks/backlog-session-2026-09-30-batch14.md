@@ -74,63 +74,41 @@ No new follow-up has been discovered in #1095.
 - Memory unchanged. #1099 is now eligible to begin its own transaction using
   the same shared accounting contract.
 
-## #1096 stage-1 handoff (2026-09-30)
+## #1096 — HANDED-OFF (tracking incomplete; 2026-09-30)
 
-- Live GitHub issue was re-read. Its stale title/body estimate (~280 failed
-  specs), PROPOSED status, vague shard examples, and missing fixture/runner
-  contract were replaced. The issue remains open in milestone 14 (Batch 14).
-- Run 36765070532 is the authoritative baseline: all 16 isolated Linux
-  PostgreSQL browser jobs completed setup, migrations, quota verification,
-  Django/Vite startup, and health waits; each full browser step failed. Logs
-  contain 208 failed tests across 110 spec files. Workflow validation,
-  backend checks, and disposable published-routing smoke passed; frontend
-  Vitest had one failure of 3,180. Failure patterns include the Gallery route
-  helper's stale server-project wait, four v4 IndexedDB fixture opens against
-  app schema v5, stale UI/strict-locator assumptions, feature-specific
-  assertion mismatches, cascaded ended tests, and shard suite timeouts.
-- Exact entry/fixture: `.github/workflows/ci.yml` `e2e-browser` workflow,
-  `workflow_dispatch`, matrix shards `1/16` through `16/16`; each Ubuntu job
-  owns a disposable PostgreSQL database and Playwright fixture lifecycle.
-  The baseline is commit `900fe968` / run 36765070532. Current fixed-ref run
-  36778653929 is in progress and is the required next evidence source.
-- Latest run poll: workflow validation, backend checks, and disposable
-  published-routing smoke passed; shard 1's focused WebKit Escape step passed.
-  Shard 14's full suite failed four tests across
-  `publicPieceSurfaceContract744.spec.ts`, `publicProfiles.spec.ts`, and the
-  desktop/mobile cases in `publicShell.spec.ts`. Other full-suite shards and
-  frontend checks remain in progress; no final matrix result is claimed.
-- Exact local-equivalent runner command per shard:
-  `cd frontend && E2E_BASE_URL=http://localhost:5000 npm run test:e2e -- --shard=N/16`
-  with `N=1..16`; full collection command:
-  `cd frontend && E2E_BASE_URL=http://localhost:5000 npm run test:e2e`.
-  Acceptance is remote Linux/Compose CI evidence, because local macOS browser
-  launch was already shown to fail at the Mach-port/Playwright host boundary.
-- Proposed children (not filed per handoff instruction): (a) bring the four
-  offline E2E IndexedDB fixture users
-  (`offlineOwnershipRecovery.spec.ts`, `offlineMediaTransfer.spec.ts`,
-  `offlineConflictResolution.spec.ts`, `offlineSync.spec.ts`) to schema v5
-  and show each intended offline path still executes; (b) split the shared
-  `createBlankProjectViaUI` helper contract into explicit local-only and
-  server-backed setup entry points, migrate its affected test callers without
-  dropping scenarios, and run the focused caller set on Linux. Remaining
-  failure families (strict locators, interaction/assertion mismatches,
-  timeouts) need run 36778653929 logs before stable atomic criteria can be
-  recommended.
-- Duplicate search evidence: open GitHub searches for the repo terms
-  `createBlankProjectViaUI OR local-projects`, `IndexedDB VersionError v5`,
-  and `E2E browser matrix shard failures`; the first two returned no issues,
-  the third returned only #1096. Local duplicate check across `docs/tasks.md`,
-  `.local/tasks/`, and `.agents/memory/` found no existing #1096 child tickets
-  covering these exact causes. The source memory `.agents/memory/e2e-spec-
-  drift-outside-smoke-suite.md` gives the reusable failure class but is not a
-  duplicate task.
-- Readiness: `HANDED-OFF`, not ready for implementation. Fixed-ref logs are
-  incomplete and the 77 baseline failures classified as other assertion or
-  runtime failures have not been decomposed to smallest common causes. No
-  product code/test change and no child issue creation occurred in this PM
-  pass. Next: inspect completed 36778653929 logs; update child proposals;
-  file approved actionable children into open milestone 14; then return #1096
-  to the transaction sequence.
+- Contract: re-read live #1096 and kept its prohibition on product changes or
+  weakening assertions. Baseline run 36765070532: 208 failed tests across 110
+  spec files; CI workflow validation, backend, and published-routing smoke
+  passed; frontend Vitest had 1 failure of 3,180.
+- Fixed-ref evidence: run 36778653929 at
+  `ef5771b77db4d4d07efe0ab0950ad0d740788a62`. All 16 Linux E2E shards reached
+  the full suite and failed: 205 failed cases across 111 spec files, 270
+  passed. Workflow validation, backend, frontend, and disposable routing
+  checks passed. Shard 1 WebKit Escape and public-media steps passed. Shard 7
+  reached its 1500-second suite/teardown limit and reported 16 tests not run.
+- Confirmed actionable fixture causes: #1100 covers stale 2D/3D server-backed
+  project creation helpers; #1101 covers four offline specs making ten v4
+  IndexedDB opens against application schema v5. Duplicate searches returned
+  no equivalent open issue. Other route/API, locator, UI assertion, and wait
+  failures remain without evidenced first-cause classification; the logs do
+  not establish one common runtime defect. Parent #1096 remains open and is
+  not ready to close.
+- Scope: no product code or tests changed. Commit `cdedfc9f` reconciles this
+  handoff in `docs/tasks.md`, `DECISIONS.md`, and this ledger. `git diff
+  --check` passed. Local E2E was not run; the exact full-matrix evidence is
+  GitHub Actions on Linux/PostgreSQL, while local macOS browser launch has a
+  known host Mach-port boundary.
+- GitHub reconciliation: updated #1096 body with final evidence and links to
+  #1100/#1101. No standalone issue comment was posted; the available comment
+  connector is PR-only. Issue remains open, status HANDED-OFF.
+- Stage provenance: stage 1 roster Codex / actual Codex GPT-6.1-sol, effort
+  unavailable, substituted no. Product stage 2 and QA stage 4 are not
+  applicable to this tracking-only handoff; stage 3 was not run. Batch gate
+  pending.
+- Next action: project owner / next backlog operator implements #1100 and
+  #1101 without changing or dropping scenarios, reruns the full Linux matrix,
+  then maps each residual failure to an evidenced cause and linked criterion-
+  ready issue. Keep #1096 open until this is done or the matrix passes.
 
 ## Transaction ledger
 

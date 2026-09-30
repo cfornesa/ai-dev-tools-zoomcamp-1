@@ -6647,6 +6647,32 @@ select.ai-proposal-field-full-width {
 }
 
 @media (max-width: 700px) {
+  /* Public regular pieces keep their toolbar and visitor-drawing controls in
+     document flow on phones. The stage remains tall enough to draw in, while
+     desktop retains the overlay presentation below this breakpoint. */
+  .public-art-piece-stage {
+    min-height: min(70vh, 26rem);
+    height: auto;
+    aspect-ratio: auto;
+  }
+
+  .public-art-piece-stage > iframe {
+    height: min(70vh, 26rem) !important;
+  }
+
+  .public-art-piece-toolbar-row {
+    position: static;
+    inset: auto;
+    display: block;
+    padding: 0.5rem 0;
+    pointer-events: auto;
+  }
+
+  .public-art-piece-toolbar-row .piece-stage-toolbar {
+    position: static;
+    max-width: 100%;
+  }
+
   /* Hover labels are a desktop affordance: on a phone-width stage a label centred under an icon near the
      right edge would push the page wider than the viewport (a horizontal scrollbar). */
   .piece-stage-toolbar .piece-stage-tooltip {

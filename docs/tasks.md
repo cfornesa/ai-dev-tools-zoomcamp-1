@@ -24782,7 +24782,9 @@ the underlying suite. No product code changed. Next owner action: implement
 continue classifying residual failures. #1096 is HANDED-OFF, not closed.
 This repeats the non-smoke E2E drift class in
 `.agents/memory/e2e-spec-drift-outside-smoke-suite.md`; it does not reopen
-#1069 or #859.
+#1069 or #859. Stage-4 review is QA FAIL because residual failures remain
+unclassified; QA comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5920587069.
 
 ### 2026-09-30 — Batch 14 #1098 implementation handoff
 

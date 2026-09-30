@@ -21,7 +21,8 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1088 | 13; #1085 | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1089 | discovery follow-up to #1087 | 2a frontend | CLOSED | completed and QA-reconciled |
 | #788 | owner-scoped production action | owner-run | OPEN / owner-run | use named production workflow and Chrome evidence |
-| #926 | #924/#925/#920 | live-provider Chrome | OPEN / live-provider | process after prerequisites |
+| #926 | #924/#925/#920 | live-provider Chrome | CLOSED | bounded failure recorded; #1091 tracks the implementation defect |
+| #1091 | #926 | 2b complex | OPEN / live-provider follow-up | fresh bounded authorization required for post-fix Mistral verification |
 | #1040 | tracking parent | children #1041–#1046 | OPEN / reconciliation container | close only after children terminal |
 | #1042 | live-provider / #1076–#1080 | owner-run QA | OPEN | revisit after generator contract |
 | #1046 | live-provider / #1076–#1080 | owner-run QA | OPEN | revisit after generator contract |
@@ -231,7 +232,7 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - Run timestamps and request IDs are persisted in the local `AIRun` records; the live stack returned healthy before and after the run. Temporary same-origin QA fixture content was removed before restoring the normal stack.
 - Implementation follow-up: the persisted failures exposed a shared edit-prompt/schema mismatch: Mistral was not taught the canonical image shape fields and sometimes returned legacy `assetId`/top-level geometry or a full fixture. Commit `5933443d` updates the shared edit prompt with canonical shape/layer requirements and adds regression assertions; `ruff check` and the focused provider/prompt suite pass (20 tests).
 - QA: committed-diff review is PASS for the prompt fix (GitHub comment `5907191751`). Focused checks pass; the full backend suite reaches 1,893 collected tests but stops at collection because the Compose container lacks `/app/scripts/check-github-action-pins.py`, an existing container-mount issue outside the changed files. The issue's bounded live-provider verification budget is exhausted, and no additional Mistral calls were made after the fix.
-- Final status: OPEN / verification-boundary. A new explicitly authorized bounded live-provider verification is still required before closure; do not claim the prompt fix alone proves live Mistral success.
+- Final status: CLOSED / completed on GitHub as a bounded failure demonstration. Follow-up #1091 tracks the prompt/schema defect and any post-fix live verification.
 
 ### #788 — OPEN / owner-run production action
 
@@ -242,6 +243,13 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - Active Chrome verified both live routes at desktop and a mobile-sized browser session. Both rendered centered circles; the interactive route also exposed its visitor-drawing controls. Those rendering/data observations remain valid, but the prior `## QA: PASS` comment was corrected and withdrawn because the production database SQL console was used instead of the issue's fixed owner-scoped importer entry point.
 - GitHub comment `5907056205` now records the correction; issue #788 was reopened with `state_reason=reopened`. The production rows are changed, but the required workflow-path criterion remains unverified.
 - Final status: OPEN / owner-run workflow boundary. Do not close on the direct-SQL evidence; closure requires the deployed owner-scoped importer and its before/after plus viewport evidence.
+
+### #1091 — OPEN / live-provider follow-up
+
+- Discovery: #926's six bounded Mistral runs produced persisted invalid-output evidence exposing a shared 2D edit prompt/schema mismatch. Duplicate search found no existing implementation-defect issue.
+- Linked issue: GitHub #1091, `implementation-defect`, linked back to #926. Commit `5933443d` implements the prompt/schema alignment and focused regression coverage; QA evidence is comment `5907191751`.
+- Remaining acceptance: a fresh bounded Mistral verification is needed for post-fix behavior. The prior #926 budget is exhausted, so no additional provider call was made in this transaction.
+- Final status: OPEN / fresh live-provider authorization boundary.
 
 ### #1040 — CLOSED
 

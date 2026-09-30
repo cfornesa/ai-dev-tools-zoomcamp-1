@@ -13,7 +13,7 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1079 | 5; #1078 | 2b complex | CLOSED | completed and QA-reconciled |
 | #1080 | 6; #1077–#1079 | 2a mechanical/backend | CLOSED | completed and QA-reconciled |
 | #1082 | 7; none | 2a frontend | CLOSED | completed and QA-reconciled |
-| #1083 | 8; none | 2a frontend | GROOMED | process sequentially |
+| #1083 | 8; none | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1084 | 9; none | 2a frontend | GROOMED | process sequentially |
 | #1085 | 10; none | 2b storage/data layer | GROOMED | process sequentially |
 | #1086 | 11; #1085 | 2b storage/data layer | GROOMED | process after dependency |
@@ -123,3 +123,16 @@ The current transaction is terminal: #1080 is CLOSED before #1082 engineering be
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1082 is CLOSED before #1083 engineering begins.
+
+### #1083 — CLOSED
+
+- Commit: `64b03f53`.
+- Implementation: mobile-only normal-flow stage toolbar/drawing controls, 416px responsive iframe height at 375px, unchanged desktop overlay/fullscreen behavior, and mobile geometry E2E coverage with screenshot artifact capture.
+- Focused checks: PublicArtPieceViewer tests 5 passed; typecheck and Prettier passed; lint passed with existing warnings; Playwright list found the new scenario.
+- Active Chrome evidence: 375px public C2 interactive fixture measured iframe 416px, controls below without intersection, and no horizontal overflow; 1280px retained absolute overlay toolbar; screenshot captured.
+- QA: `## QA: PASS`, GitHub comment `5905427046`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Evidence boundary: active Chrome rendered verification is authoritative for this local UI; full Playwright execution remains subject to the host E2E login/browser setup.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1083 is CLOSED before #1084 engineering begins.

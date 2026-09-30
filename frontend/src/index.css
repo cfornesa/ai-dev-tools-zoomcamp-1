@@ -2072,6 +2072,13 @@ code {
   font-size: 18px;
 }
 
+.project-card-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 .project-card-thumbnail,
 .project-card-thumbnail-fallback {
   width: 100%;

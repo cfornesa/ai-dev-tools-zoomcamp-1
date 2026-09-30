@@ -5,14 +5,7 @@ import { deleteProject, getSceneVersion, type Project } from '../api/projects';
 import { saveNowBeforeClearing } from '../storage/cloudSnapshot';
 import { ConfirmDialog } from './ConfirmDialog';
 import { originLabel } from './originLabel';
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+import { formatDate } from './formatDate';
 
 /**
  * Issue #135: "Your projects" cards had no thumbnail at all even though

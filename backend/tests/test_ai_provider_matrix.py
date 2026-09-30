@@ -296,7 +296,7 @@ def test_fake_asset_layer_replay_is_vendor_neutral(vendor):
         "Requested edit:\nadd this media asset as a new layer\n"
         "The following are the only assets you may reference (JSON): "
         f"{json.dumps([asset], separators=(',', ':'))} "
-        "Create exactly one new layer with exactly one image shape. "
+        "Add exactly two new records as JSON Patch operations: one layer, then one image shape. "
         "Only modify the following existing element id(s): asset-matrix-1."
     )
 

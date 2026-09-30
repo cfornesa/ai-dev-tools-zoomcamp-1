@@ -24685,3 +24685,15 @@ Frontend checks failed (1 of 3,180 tests) and all 16 browser shards failed
 (not implemented; the earlier waiver covered only #1092/#1093) in
 Batch 14: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095 (Gallery test timezone dependence), https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 (E2E matrix failure),
 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097 (WebKit fullscreen step). Next action: engineer them, redispatch CI.
+
+### 2026-09-30 — task-distillation pass after PR #1094 CI and Codex review
+
+PR #1094 run 36768736784 (head ebaf6637): Backend/workflow/smoke pass; Frontend
+fails only #1095; browser shard 1 fails only the WebKit step (#1097), which
+skips the smoke and full browser suites, so the PR run hides the ~280 failures
+(#1096) seen in dispatched run 36765070532. Codex review found a verified
+double-count of local media in storage-estimate preflight: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 (public
+publish, 3 call sites) and https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 (sync upload, depends on the former). Both are
+in Batch 14, filed only (not implemented). Suggested order: #1095, #1097, then
+#1096 (re-run), with https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 -> https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 independent of CI. PR #1094 merge advice
+unchanged: wait.

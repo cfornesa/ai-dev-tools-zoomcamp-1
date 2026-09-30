@@ -479,6 +479,7 @@ class ArtPieceGenerateView(APIView):
                     {
                         "error": "invalid_structured_output",
                         "detail": error_text[len(EMPTY_OR_MALFORMED_PREFIX) :],
+                        "attempts": result.warnings or [],
                     },
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )

@@ -16,7 +16,15 @@ class DeepSeekHttpClient:
         self.timeout_seconds = timeout_seconds
         self.native_schema = native_schema
 
-    def generate(self, *, model: str, system_instruction: str, prompt: str, response_schema: dict):
+    def generate(
+        self,
+        *,
+        model: str,
+        system_instruction: str,
+        prompt: str,
+        response_schema: dict,
+        max_output_tokens: int | None = None,
+    ):
         body = {
             "model": model,
             "messages": [
@@ -25,6 +33,8 @@ class DeepSeekHttpClient:
             ],
             "temperature": 0.2,
         }
+        if max_output_tokens is not None:
+            body["max_tokens"] = max_output_tokens
         if self.native_schema:
             body["response_format"] = {"type": "json_object"}
         request = Request(

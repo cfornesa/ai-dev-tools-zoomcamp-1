@@ -180,6 +180,28 @@ def test_response_stripped_of_a_stray_markdown_fence(owner_client, monkeypatch):
 
 
 @pytest.mark.django_db
+def test_repair_attempts_count_as_one_art_generation_quota_unit(owner, owner_client, monkeypatch):
+    responses = iter(["<p>bad</p>", _VALID_SNIPPET])
+    calls = []
+
+    def handler(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1),
+            choices=[SimpleNamespace(message=SimpleNamespace(content=next(responses)))],
+        )
+
+    provider = ArtPieceProvider(client=_FakeClient(handler))
+    _use_provider(monkeypatch, provider)
+
+    response = owner_client.post(URL, {"library": "canvas2d", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 200
+    assert len(calls) == 2
+    assert cache.get(art_piece_api._quota_cache_key(owner.id)) == 1
+
+
+@pytest.mark.django_db
 def test_output_missing_canvas_or_script_is_rejected_with_422(owner_client, monkeypatch):
     _use_provider(monkeypatch, _mistral_provider_returning("<p>not a canvas piece</p>"))
 

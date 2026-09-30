@@ -449,6 +449,79 @@ class _ProviderClient:
         self.chat = _RaisingChat(exc)
 
 
+class _ScriptedChat:
+    def __init__(self, contents):
+        self.contents = iter(contents)
+        self.calls = []
+
+    def complete(self, **kwargs):
+        self.calls.append(kwargs)
+        content = next(self.contents)
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=2, completion_tokens=3),
+            choices=[SimpleNamespace(message=SimpleNamespace(content=content))],
+        )
+
+
+class _ScriptedClient:
+    def __init__(self, contents):
+        self.chat = _ScriptedChat(contents)
+
+
+_VALID_CANVAS = "<canvas></canvas><script>const ctx = 1;</script>"
+
+
+def test_generate_repairs_invalid_output_and_sends_max_tokens(monkeypatch):
+    client = _ScriptedClient(["<p>bad</p>", _VALID_CANVAS])
+    provider = ArtPieceProvider(client=client)
+
+    result = provider.generate("a calm field", "canvas2d")
+
+    assert result.code == _VALID_CANVAS
+    assert len(client.chat.calls) == 2
+    assert all(
+        call["max_tokens"] == art_piece_provider.ART_PIECE_MAX_TOKENS for call in client.chat.calls
+    )
+    assert "missing_canvas_root" in client.chat.calls[1]["messages"][-1]["content"]
+    assert result.warnings == [
+        "attempt=1 reason=missing_canvas_root model=mistral-small-latest",
+        "missing_layer_markers",
+    ]
+
+
+def test_generate_exhausts_repairs_with_reason_evidence_and_escalates(monkeypatch):
+    client = _ScriptedClient(["<p>bad</p>", "<p>still bad</p>", "<p>last bad</p>"])
+    monkeypatch.setenv("ART_PIECE_ESCALATION_MODEL", "mistral-large-latest")
+    provider = ArtPieceProvider(client=client)
+
+    result = provider.generate("a calm field", "canvas2d")
+
+    assert result.code is None
+    assert result.error == "empty_or_malformed:missing_canvas_root"
+    assert len(client.chat.calls) == 3
+    assert [call["model"] for call in client.chat.calls] == [
+        "mistral-small-latest",
+        "mistral-small-latest",
+        "mistral-large-latest",
+    ]
+    assert result.warnings == [
+        "attempt=1 reason=missing_canvas_root model=mistral-small-latest",
+        "attempt=2 reason=missing_canvas_root model=mistral-small-latest",
+        "attempt=3 reason=missing_canvas_root model=mistral-large-latest",
+    ]
+
+
+def test_generate_zero_repairs_restores_single_call(monkeypatch):
+    client = _ScriptedClient(["<p>bad</p>", _VALID_CANVAS])
+    monkeypatch.setenv("ART_PIECE_MAX_REPAIRS", "0")
+    provider = ArtPieceProvider(client=client)
+
+    result = provider.generate("a calm field", "canvas2d")
+
+    assert result.error == "empty_or_malformed:missing_canvas_root"
+    assert len(client.chat.calls) == 1
+
+
 @pytest.mark.parametrize(
     ("status_code", "expected_message_fragment"),
     [

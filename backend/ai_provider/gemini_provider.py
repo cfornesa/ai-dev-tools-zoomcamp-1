@@ -86,7 +86,13 @@ class GeminiHttpClient:
         self.timeout_seconds = timeout_seconds
 
     def generate(
-        self, *, model: str, system_instruction: str, prompt: str, response_schema: dict | None
+        self,
+        *,
+        model: str,
+        system_instruction: str,
+        prompt: str,
+        response_schema: dict | None,
+        max_output_tokens: int | None = None,
     ) -> GeminiResponse:
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -97,6 +103,8 @@ class GeminiHttpClient:
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {"responseMimeType": "application/json"},
         }
+        if max_output_tokens is not None:
+            body["generationConfig"]["maxOutputTokens"] = max_output_tokens
         if response_schema is not None:
             body["generationConfig"]["responseSchema"] = response_schema
         request = Request(

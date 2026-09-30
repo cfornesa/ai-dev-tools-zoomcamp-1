@@ -33,7 +33,9 @@ result *likely*; it is not a security control.
 from __future__ import annotations
 
 import json
+import os
 import re
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -83,6 +85,9 @@ AFRAME_CDN_URL = f"https://cdn.jsdelivr.net/npm/aframe@{AFRAME_VERSION}/dist/afr
 
 DEFAULT_MODEL = "mistral-small-latest"
 REQUEST_TIMEOUT_MS = 20_000
+ART_PIECE_MAX_REPAIRS = 2
+ART_PIECE_ESCALATION_MODEL = ""
+ART_PIECE_DEADLINE_MS = 60_000
 
 # A self-contained art-piece snippet is expected to be far smaller than a
 # full scene JSON document; this is a raw pre-parse safety net (independent
@@ -93,6 +98,7 @@ MAX_RAW_RESPONSE_BYTES = 200_000
 # any stray markdown fence/whitespace the model might still emit despite
 # being told not to.
 MAX_SNIPPET_CHARS = 150_000
+ART_PIECE_MAX_TOKENS = MAX_SNIPPET_CHARS // 4
 
 # Rollback switch for the inline-script contract. The frontend sandbox remains
 # the security boundary; this only controls whether the generator's shape
@@ -207,7 +213,7 @@ class ArtPieceResult:
     def __post_init__(self) -> None:
         if (self.code is None) == (self.error is None):
             raise ValueError("ArtPieceResult must carry exactly one of `code` or `error`.")
-        if self.code is None and (self.regions or self.warnings):
+        if self.code is None and self.regions:
             raise ValueError("ArtPieceResult errors cannot carry region metadata.")
 
 
@@ -269,20 +275,23 @@ class ArtPieceProvider:
         prompt: str,
         temperature: float,
         messages: list[dict[str, str]] | None = None,
+        max_tokens: int = ART_PIECE_MAX_TOKENS,
+        model: str | None = None,
     ):
         if self.vendor == "mistral":
             return self.client.chat.complete(
-                model=self.model,
+                model=model or self.model,
                 messages=messages
                 or [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=temperature,
+                max_tokens=max_tokens,
                 timeout_ms=self.timeout_ms,
             )
         return self.client.generate(
-            model=self.model,
+            model=model or self.model,
             system_instruction=(
                 "\n\n".join(
                     message["content"]
@@ -293,6 +302,7 @@ class ArtPieceProvider:
             ),
             prompt=prompt,
             response_schema={"type": "string"},
+            max_output_tokens=max_tokens,
         )
 
     @staticmethod
@@ -362,95 +372,122 @@ class ArtPieceProvider:
             messages.append({"role": "system", "content": self.persona_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        try:
-            response = self._complete(
-                system_prompt=system_prompt,
-                prompt=prompt,
-                temperature=0.7,
-                messages=messages,
-            )
-        except httpx.TimeoutException:
-            return self._error_result(
-                zero_usage,
-                AIProviderTimeoutError(f"Mistral did not respond within {self.timeout_ms}ms."),
-            )
-        except httpx.HTTPError:
-            return self._error_result(
-                zero_usage,
-                AIProviderRejectionError(
-                    f"{self.vendor.title()} request failed (network/connection error)."
-                ),
-            )
-        except (
-            AIProviderTimeoutError,
-            AIProviderCancelledError,
-            AIProviderQuotaError,
-            AIProviderRejectionError,
-        ) as exc:
-            return self._error_result(zero_usage, exc)
-        except Exception as exc:  # Mistral SDK error types (lazy-imported below)
-            if self.vendor != "mistral":
-                raise
-            from mistralai.client.errors import MistralError
+        max_repairs = _bounded_int_env("ART_PIECE_MAX_REPAIRS", ART_PIECE_MAX_REPAIRS, minimum=0)
+        deadline_ms = _bounded_int_env("ART_PIECE_DEADLINE_MS", ART_PIECE_DEADLINE_MS, minimum=1)
+        escalation_model = os.environ.get(
+            "ART_PIECE_ESCALATION_MODEL", ART_PIECE_ESCALATION_MODEL
+        ).strip()
+        deadline = time.monotonic() + deadline_ms / 1000
+        attempt_evidence: list[str] = []
+        total_usage = zero_usage
+        repair_prompt = prompt
 
-            if not isinstance(exc, MistralError):
-                raise  # a genuine bug, not a documented provider condition
-
-            status = getattr(exc, "status_code", None)
-            if status == 429:
+        for attempt in range(max_repairs + 1):
+            if time.monotonic() >= deadline:
+                return self._timeout_result(total_usage, attempt_evidence, deadline_ms=deadline_ms)
+            model = (
+                escalation_model
+                if attempt == max_repairs and attempt > 0 and escalation_model
+                else self.model
+            )
+            try:
+                response = self._complete(
+                    system_prompt=system_prompt,
+                    prompt=repair_prompt,
+                    temperature=0.7,
+                    messages=messages[:-1] + [{"role": "user", "content": repair_prompt}],
+                    model=model,
+                )
+            except httpx.TimeoutException:
+                return self._timeout_result(total_usage, attempt_evidence, deadline_ms=deadline_ms)
+            except httpx.HTTPError:
                 return self._error_result(
-                    zero_usage,
-                    AIProviderQuotaError(
-                        "Mistral reported its account/API rate limit or quota was exceeded."
+                    total_usage,
+                    AIProviderRejectionError(
+                        f"{self.vendor.title()} request failed (network/connection error)."
                     ),
                 )
-            if status in (408, 504):
+            except (
+                AIProviderTimeoutError,
+                AIProviderCancelledError,
+                AIProviderQuotaError,
+                AIProviderRejectionError,
+            ) as exc:
+                return self._error_result(total_usage, exc)
+            except Exception as exc:  # Mistral SDK error types (lazy-imported below)
+                if self.vendor != "mistral":
+                    raise
+                from mistralai.client.errors import MistralError
+
+                if not isinstance(exc, MistralError):
+                    raise
+                status = getattr(exc, "status_code", None)
+                if status == 429:
+                    return self._error_result(
+                        total_usage,
+                        AIProviderQuotaError(
+                            "Mistral reported its account/API rate limit or quota was exceeded."
+                        ),
+                    )
+                if status in (408, 504):
+                    return self._timeout_result(
+                        total_usage,
+                        attempt_evidence,
+                        f"Mistral reported a request timeout (status {status}).",
+                    )
                 return self._error_result(
-                    zero_usage,
-                    AIProviderTimeoutError(
-                        f"Mistral reported a request timeout (status {status})."
-                    ),
+                    total_usage,
+                    AIProviderRejectionError(f"Mistral provider request failed (status {status})."),
                 )
-            return self._error_result(
-                zero_usage,
-                AIProviderRejectionError(f"Mistral provider request failed (status {status})."),
-            )
 
-        usage = self._response_usage(response)
+            usage = self._response_usage(response)
+            total_usage = _sum_usage(total_usage, usage)
+            try:
+                content = self._response_content(
+                    response, unwrap_json_string=self.vendor != "mistral"
+                )
+            except (AttributeError, IndexError, TypeError):
+                return self._error_result(
+                    total_usage,
+                    AIProviderRejectionError("Mistral response contained no message content."),
+                )
 
-        try:
-            content = self._response_content(response, unwrap_json_string=self.vendor != "mistral")
-        except (AttributeError, IndexError, TypeError):
-            return self._error_result(
-                usage, AIProviderRejectionError("Mistral response contained no message content.")
-            )
+            text = content if isinstance(content, str) else str(content)
+            raw_bytes = len(text.encode("utf-8"))
+            if raw_bytes > MAX_RAW_RESPONSE_BYTES:
+                return ArtPieceResult(
+                    usage=total_usage,
+                    error=(
+                        f"{RESPONSE_TOO_LARGE_PREFIX}Mistral's response was {raw_bytes} bytes, "
+                        f"exceeding the {MAX_RAW_RESPONSE_BYTES}-byte limit."
+                    ),
+                    warnings=attempt_evidence,
+                )
 
-        text = content if isinstance(content, str) else str(content)
-        raw_bytes = len(text.encode("utf-8"))
-        if raw_bytes > MAX_RAW_RESPONSE_BYTES:
-            return ArtPieceResult(
-                usage=usage,
-                error=(
-                    f"{RESPONSE_TOO_LARGE_PREFIX}Mistral's response was {raw_bytes} bytes, "
-                    f"exceeding the {MAX_RAW_RESPONSE_BYTES}-byte limit."
-                ),
-            )
-
-        snippet = extract_snippet(text, library)
-        snippet_ok, snippet_reason = _looks_like_snippet(snippet, library, prompt)
-        showcase_ok, showcase_reason = _looks_like_requested_showcase(snippet, prompt, library)
-        if not snippet_ok or not showcase_ok or len(snippet) > MAX_SNIPPET_CHARS:
+            snippet = extract_snippet(text, library)
+            snippet_ok, snippet_reason = _looks_like_snippet(snippet, library, prompt)
+            showcase_ok, showcase_reason = _looks_like_requested_showcase(snippet, prompt, library)
             reason = snippet_reason or showcase_reason
             if len(snippet) > MAX_SNIPPET_CHARS:
                 reason = "snippet_too_large"
-            return ArtPieceResult(
-                usage=usage,
-                error=(f"{EMPTY_OR_MALFORMED_PREFIX}{reason or 'invalid_snippet'}"),
-            )
+            if snippet_ok and showcase_ok and not reason:
+                regions = parse_regions(snippet, library)
+                warnings = attempt_evidence + ([] if regions else ["missing_layer_markers"])
+                return ArtPieceResult(
+                    usage=total_usage, code=snippet, regions=regions, warnings=warnings
+                )
 
-        regions = parse_regions(snippet, library)
-        warnings = [] if regions else ["missing_layer_markers"]
-        return ArtPieceResult(usage=usage, code=snippet, regions=regions, warnings=warnings)
+            reason = reason or "invalid_snippet"
+            attempt_evidence.append(f"attempt={attempt + 1} reason={reason} model={model}")
+            if attempt >= max_repairs:
+                return ArtPieceResult(
+                    usage=total_usage,
+                    error=f"{EMPTY_OR_MALFORMED_PREFIX}{reason}",
+                    warnings=attempt_evidence,
+                )
+            repair_prompt = _repair_prompt(prompt, library, snippet, reason)
+
+        return self._timeout_result(total_usage, attempt_evidence, deadline_ms=deadline_ms)
 
     def refine(  # noqa: C901
         self,
@@ -536,6 +573,50 @@ class ArtPieceProvider:
     @staticmethod
     def _error_result(usage: AIUsageMetadata, exc: Exception) -> ArtPieceResult:
         return ArtPieceResult(usage=usage, error=str(exc))
+
+    @staticmethod
+    def _timeout_result(
+        usage: AIUsageMetadata,
+        evidence: list[str],
+        message: str | None = None,
+        deadline_ms: int = ART_PIECE_DEADLINE_MS,
+    ) -> ArtPieceResult:
+        return ArtPieceResult(
+            usage=usage,
+            error=message or f"Mistral did not respond within {deadline_ms}ms.",
+            warnings=evidence,
+        )
+
+
+def _bounded_int_env(name: str, default: int, *, minimum: int) -> int:
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+    return max(minimum, value)
+
+
+def _sum_usage(first: AIUsageMetadata, second: AIUsageMetadata) -> AIUsageMetadata:
+    prompt_tokens = first.prompt_tokens + second.prompt_tokens
+    completion_tokens = first.completion_tokens + second.completion_tokens
+    return AIUsageMetadata(
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        estimated_cost_usd=(
+            (prompt_tokens / 1000) * _ESTIMATED_PROMPT_COST_PER_1K
+            + (completion_tokens / 1000) * _ESTIMATED_COMPLETION_COST_PER_1K
+        ),
+    )
+
+
+def _repair_prompt(original_prompt: str, library: str, previous_output: str, reason: str) -> str:
+    return (
+        f"Repair the previous {library} art-piece output for this request: {original_prompt}\n\n"
+        f"Validation reason code: {reason}\n"
+        "Fix only that structural problem. Return only the complete corrected raw snippet; "
+        "do not add prose or markdown fences. Previous output:\n"
+        f"{previous_output}"
+    )
 
 
 def _strip_markdown_fence(text: str) -> str:

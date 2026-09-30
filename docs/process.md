@@ -70,6 +70,17 @@ Roles
 - Engineer - implements one groomed task, follows docs/team/software-engineer.md
 - QA - checks the result against the acceptance criteria, follows docs/team/qa-engineer.md
 
+### Live-QA prompt guideline
+
+Prompts used for live generation-quality checks should read like something a
+person could plausibly type: human-style, well-specified, and demanding enough
+to exercise the intended behavior. State the visible outcome and the important
+constraints, but do not paste implementation code, dictate literal function or
+keyword names, or forbid JavaScript when the behavior naturally needs it. The
+rubric should inspect observable behavior (for example, renders, animates,
+toggles, blends, or derives a value at runtime) and may use source inspection
+only to confirm the mechanism that cannot be established visually.
+
 
 Orchestrator
 

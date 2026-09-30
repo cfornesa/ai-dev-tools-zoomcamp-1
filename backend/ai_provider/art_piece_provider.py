@@ -98,6 +98,7 @@ MAX_SNIPPET_CHARS = 150_000
 # the security boundary; this only controls whether the generator's shape
 # validator accepts the new source form.
 ART_PIECE_ALLOW_INLINE_SCRIPT = True
+ART_PIECE_EXTRACT = True
 
 _ESTIMATED_PROMPT_COST_PER_1K = 0.002
 _ESTIMATED_COMPLETION_COST_PER_1K = 0.006
@@ -434,7 +435,7 @@ class ArtPieceProvider:
                 ),
             )
 
-        snippet = _strip_markdown_fence(text).strip()
+        snippet = extract_snippet(text, library)
         if (
             not _looks_like_snippet(snippet, library, prompt)
             or not _looks_like_requested_showcase(snippet, prompt, library)
@@ -550,6 +551,38 @@ def _strip_markdown_fence(text: str) -> str:
         if stripped.endswith("```"):
             stripped = stripped[:-3]
     return stripped.strip()
+
+
+def extract_snippet(text: str, library: str) -> str:
+    """Recover the first plausible generated snippet from model wrapper prose."""
+
+    if not ART_PIECE_EXTRACT:
+        return _strip_markdown_fence(text)
+
+    fenced = re.search(r"```[^\n`]*\n(.*?)```", text, flags=re.DOTALL)
+    if fenced:
+        return fenced.group(1).strip()
+
+    tag_pairs = {
+        "svg": (r"<svg\b", r"</svg>"),
+        "aframe": (r"<a-scene\b", r"</a-scene>"),
+    }
+    pair = tag_pairs.get(library)
+    if pair:
+        match = re.search(f"({pair[0]}.*?{pair[1]})", text, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            return match.group(1).strip()
+
+    if library == "canvas2d":
+        match = re.search(r"(<canvas\b.*?</script>)", text, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            return match.group(1).strip()
+    elif library in {"p5js", "c2js", "c2js-interactive"}:
+        match = re.search(r"(window\.sketch\s*=.*)", text, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            return match.group(1).strip()
+
+    return _strip_markdown_fence(text)
 
 
 def _looks_like_snippet(snippet: str, library: str, prompt: str = "") -> bool:

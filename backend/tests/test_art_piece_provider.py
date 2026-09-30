@@ -22,6 +22,7 @@ from ai_provider.art_piece_provider import (
     ArtPieceProvider,
     _looks_like_requested_showcase,
     _looks_like_snippet,
+    extract_snippet,
 )
 
 
@@ -201,6 +202,54 @@ def test_inline_script_flag_restores_previous_aframe_showcase_boundary(monkeypat
 
     assert not _looks_like_snippet(source, "aframe", "lamp toggle")
     assert _looks_like_snippet(source, "aframe", "light-switch")
+
+
+@pytest.mark.parametrize(
+    ("text", "library", "expected"),
+    [
+        ("```svg\n<svg id='one'></svg>\n```", "svg", "<svg id='one'></svg>"),
+        (
+            "Here is the result:\n```html\n<a-scene></a-scene>\n```\nDone.",
+            "aframe",
+            "<a-scene></a-scene>",
+        ),
+        ("Prose <svg id='bare'></svg> after", "svg", "<svg id='bare'></svg>"),
+        (
+            "```svg\n<svg id='first'></svg>\n```\n```svg\n<svg id='second'></svg>\n```",
+            "svg",
+            "<svg id='first'></svg>",
+        ),
+        ("<svg id='truncated'>", "svg", "<svg id='truncated'>"),
+        ("", "svg", ""),
+    ],
+)
+def test_extract_snippet_table(text, library, expected):
+    assert extract_snippet(text, library) == expected
+
+
+def test_extract_snippet_handles_script_based_libraries():
+    assert extract_snippet("Result: <canvas></canvas><script>draw()</script>", "canvas2d") == (
+        "<canvas></canvas><script>draw()</script>"
+    )
+    assert extract_snippet("Result: window.sketch = function () {};", "p5js") == (
+        "window.sketch = function () {};"
+    )
+
+
+def test_extract_snippet_preserves_a_snippet_at_the_validated_size_cap():
+    body = "x" * (150_000 - len("<svg></svg>"))
+    snippet = f"Model response:\n<svg>{body}</svg>"
+
+    extracted = extract_snippet(snippet, "svg")
+
+    assert extracted == f"<svg>{body}</svg>"
+    assert len(extracted) == 150_000
+
+
+def test_extract_snippet_flag_off_matches_existing_fence_strip(monkeypatch):
+    monkeypatch.setattr(art_piece_provider, "ART_PIECE_EXTRACT", False)
+    text = "Prose ```svg\n<svg id='one'></svg>\n``` trailing"
+    assert extract_snippet(text, "svg") == text.strip()
 
 
 def test_p5_n_body_showcase_rejects_generic_single_circle_fallback():

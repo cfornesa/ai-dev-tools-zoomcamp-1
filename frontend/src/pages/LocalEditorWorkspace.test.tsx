@@ -25,7 +25,6 @@ vi.mock('../storage/localProjectRepository', async () => {
     listMediaAssetsForProject: vi.fn(),
     updateScene: vi.fn(),
     updateProject: vi.fn(),
-    getProjectStorageUsage: vi.fn(),
   };
 });
 vi.mock('../storage/localPiecePackage', async () => {
@@ -47,7 +46,6 @@ const mockedListScenes = vi.mocked(repository.listScenesForProject);
 const mockedListAssets = vi.mocked(repository.listMediaAssetsForProject);
 const mockedUpdateScene = vi.mocked(repository.updateScene);
 const mockedUpdateProject = vi.mocked(repository.updateProject);
-const mockedGetUsage = vi.mocked(repository.getProjectStorageUsage);
 const mockedListMutationOutbox = vi.spyOn(mutationOutbox, 'listMutationOutbox');
 const mockedListMediaTransfers = vi.spyOn(mediaTransferRepository, 'listMediaTransfersForProject');
 const mockedBuildPackage = vi.mocked(localPiecePackage.buildLocal2dPiecePackage);
@@ -118,13 +116,11 @@ beforeEach(() => {
   mockedUpdateProject.mockImplementation((_db, _ownerId, _id, patch) =>
     Promise.resolve({ ...project, ...patch }),
   );
-  mockedGetUsage.mockResolvedValue({
-    versionBytesUsed: 100,
-    bytesUsed: 200,
-    fileCount: 1,
-  });
   mockedBuildPackage.mockResolvedValue({
     bytes: new Uint8Array([1, 2, 3]),
+    pieceBytes: 47,
+    mediaBytes: 8,
+    mediaFiles: 1,
     missingAssets: [],
   });
   mockedEstimate.mockResolvedValue({
@@ -305,6 +301,12 @@ describe('LocalEditorWorkspace', () => {
         'A short description.',
       );
       expect(mockedIntake).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), expect.any(String));
+      expect(mockedEstimate).toHaveBeenCalledWith({
+        pieceBytes: 47,
+        mediaBytes: 8,
+        pieceFiles: 1,
+        mediaFiles: 1,
+      });
       expect(mockedPublish).toHaveBeenCalledWith('server-p1');
       expect(mockedUpdateProject).toHaveBeenCalledWith(db, 'alice', 'p1', {
         cloudSyncState: 'synced',
@@ -326,6 +328,12 @@ describe('LocalEditorWorkspace', () => {
       await user.click(screen.getByRole('button', { name: 'Publish' }));
 
       expect(await screen.findByText(/over quota/i)).toBeVisible();
+      expect(mockedEstimate).toHaveBeenCalledWith({
+        pieceBytes: 47,
+        mediaBytes: 8,
+        pieceFiles: 1,
+        mediaFiles: 1,
+      });
       expect(mockedIntake).not.toHaveBeenCalled();
       expect(mockedPublish).not.toHaveBeenCalled();
     });
@@ -382,6 +390,12 @@ describe('LocalEditorWorkspace', () => {
       await user.click(confirm);
 
       expect(await screen.findByText(/updated the public copy to version 2/i)).toBeVisible();
+      expect(mockedEstimate).toHaveBeenCalledWith({
+        pieceBytes: 47,
+        mediaBytes: 8,
+        pieceFiles: 1,
+        mediaFiles: 1,
+      });
       expect(mockedIntake).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]), expect.any(String), {
         pieceId: 'server-p1',
         expectedRevision: 1,

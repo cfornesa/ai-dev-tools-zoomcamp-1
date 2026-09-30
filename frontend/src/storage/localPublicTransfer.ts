@@ -6,7 +6,6 @@ import { publishProject3D, type Project3D } from '../api/projects3d';
 import { fetchStorageEstimate } from '../api/storageUsage';
 import {
   getProject,
-  getProjectStorageUsage,
   listPieceVersions,
   updateProject,
   type LocalPieceKind,
@@ -82,12 +81,11 @@ export async function publishLocalPiece(
       'Missing local media; export or repair it before publishing.',
     );
   }
-  const usage = await getProjectStorageUsage(db, projectId);
   const estimate = await fetchStorageEstimate({
-    pieceBytes: built.bytes.byteLength,
-    mediaBytes: usage.bytesUsed,
+    pieceBytes: built.pieceBytes,
+    mediaBytes: built.mediaBytes,
     pieceFiles: 1,
-    mediaFiles: usage.fileCount,
+    mediaFiles: built.mediaFiles,
   });
   if (!estimate.fits.public) {
     throw new LocalPublicTransferError(

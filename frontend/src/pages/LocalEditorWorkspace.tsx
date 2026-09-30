@@ -31,7 +31,6 @@ import { ensureLocalThumbnail } from '../storage/localThumbnail';
 import { appendRecoveryDraft, getLatestRecoveryDraft } from '../storage/localRecovery';
 import {
   getProject,
-  getProjectStorageUsage,
   listMediaAssetsForProject,
   listScenesForProject,
   openLocalProjectDatabase,
@@ -497,12 +496,11 @@ function LocalEditorWorkspace() {
         });
         return;
       }
-      const usage = await getProjectStorageUsage(db, id);
       const estimate = await fetchStorageEstimate({
-        pieceBytes: built.bytes.byteLength,
-        mediaBytes: usage.bytesUsed,
+        pieceBytes: built.pieceBytes,
+        mediaBytes: built.mediaBytes,
         pieceFiles: 1,
-        mediaFiles: usage.fileCount,
+        mediaFiles: built.mediaFiles,
       });
       if (!estimate.fits.public) {
         setMakePublicResult({
@@ -573,12 +571,11 @@ function LocalEditorWorkspace() {
         });
         return;
       }
-      const usage = await getProjectStorageUsage(db, id);
       const estimate = await fetchStorageEstimate({
-        pieceBytes: built.bytes.byteLength,
-        mediaBytes: usage.bytesUsed,
+        pieceBytes: built.pieceBytes,
+        mediaBytes: built.mediaBytes,
         pieceFiles: 1,
-        mediaFiles: usage.fileCount,
+        mediaFiles: built.mediaFiles,
       });
       if (!estimate.fits.public) {
         setMakePublicResult({

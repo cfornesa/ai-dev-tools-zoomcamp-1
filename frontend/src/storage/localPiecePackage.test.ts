@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildLocal2dPiecePackage } from './localPiecePackage';
+import { buildLocal2dPiecePackage, measureLocalPiecePackageContent } from './localPiecePackage';
 
 const repository = vi.hoisted(() => ({
   getMediaBlob: vi.fn(),
@@ -51,10 +51,34 @@ describe('local piece package export', () => {
     const result = await buildLocal2dPiecePackage({} as IDBDatabase, 'alice', 'p1', packageModule);
 
     expect(result.missingAssets).toEqual([]);
+    expect(result.pieceBytes).toBe(new TextEncoder().encode(JSON.stringify(scene)).byteLength);
+    expect(result.mediaBytes).toBe(3);
+    expect(result.mediaFiles).toBe(1);
     expect(packageModule.buildPiecePackage).toHaveBeenCalledWith(
       expect.objectContaining({ kind: '2d', title: 'My / Piece' }),
     );
     expect(packageModule.parsePiecePackage).toHaveBeenCalledWith(result.bytes);
+  });
+
+  it('measures UTF-8 record payload bytes and each included media blob once', () => {
+    const records = [{ data: { label: '雪' } }, { data: { count: 2 } }];
+    const mediaAssets = [
+      { bytes: new Uint8Array([1, 2, 3]) },
+      { bytes: new Uint8Array([4, 5, 6, 7, 8]) },
+    ];
+    const recordBytes = records.reduce(
+      (total, record) => total + new TextEncoder().encode(JSON.stringify(record.data)).byteLength,
+      0,
+    );
+
+    expect(measureLocalPiecePackageContent(records, mediaAssets)).toEqual({
+      pieceBytes: recordBytes,
+      mediaBytes: 8,
+      mediaFiles: 2,
+    });
+    expect(recordBytes).toBeGreaterThan(
+      records.reduce((sum, record) => sum + JSON.stringify(record.data).length, 0),
+    );
   });
 
   it('reports missing media without mutating or hiding the rest of the package', async () => {

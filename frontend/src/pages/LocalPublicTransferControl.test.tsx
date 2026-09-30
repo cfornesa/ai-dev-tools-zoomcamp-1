@@ -22,7 +22,6 @@ vi.mock('../storage/localProjectRepository', async () => {
     getProject: vi.fn(),
     listPieceVersions: vi.fn(),
     updateProject: vi.fn(),
-    getProjectStorageUsage: vi.fn(),
     openLocalProjectDatabase: vi.fn(),
   };
 });
@@ -46,7 +45,6 @@ vi.mock('../api/projects3d', async () => {
 const mockedGetProject = vi.mocked(repository.getProject);
 const mockedVersions = vi.mocked(repository.listPieceVersions);
 const mockedUpdateProject = vi.mocked(repository.updateProject);
-const mockedUsage = vi.mocked(repository.getProjectStorageUsage);
 const mockedOpen = vi.mocked(repository.openLocalProjectDatabase);
 const mockedBuild = vi.mocked(localPackage.buildLocalPiecePackage);
 const mockedIntake = vi.mocked(pieceIntake.intakePiecePackage);
@@ -107,8 +105,13 @@ beforeEach(() => {
       createdAt: '2026-01-01T00:00:00Z',
     },
   ]);
-  mockedBuild.mockResolvedValue({ bytes: new Uint8Array([1, 2]), missingAssets: [] });
-  mockedUsage.mockResolvedValue({ bytesUsed: 10, fileCount: 1, versionBytesUsed: 20 });
+  mockedBuild.mockResolvedValue({
+    bytes: new Uint8Array([1, 2]),
+    pieceBytes: 13,
+    mediaBytes: 9,
+    mediaFiles: 2,
+    missingAssets: [],
+  });
   mockedEstimate.mockResolvedValue({
     remaining_after: { private: { bytes: 100, files: 10 }, public: { bytes: 100, files: 10 } },
     fits: { private: true, public: true },
@@ -147,6 +150,12 @@ describe('LocalPublicTransferControl', () => {
       expect(mockedBuild).toHaveBeenCalledWith(db, 'alice', 'local-1', {
         title: 'Local piece',
         description: 'A public piece.',
+      });
+      expect(mockedEstimate).toHaveBeenCalledWith({
+        pieceBytes: 13,
+        mediaBytes: 9,
+        pieceFiles: 1,
+        mediaFiles: 2,
       });
       if (kind === '3d') {
         expect(mockedPublish3d).toHaveBeenCalledWith('remote-1');

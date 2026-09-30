@@ -24798,3 +24798,15 @@ No product code or test was changed in this PM pass; no child issue was
 created. Run 36778653929 and the unresolved classification are the blockers;
 next action is complete the dispatch evidence review, file linked children
 under open Batch 14, then schedule their engineering/QA transactions.
+
+### 2026-09-30 — Batch 14 #1098 implementation handoff
+
+The owner-selected expanded-content contract is implemented in the shared
+local package measurement and the three public-publish preflight paths. The
+measurement separates UTF-8 serialized record bytes from included media blob
+bytes and counts media files from blobs actually included. The issue remains
+open pending independent QA and reconciliation. Focused tests (3 files / 18
+tests), frontend typecheck, full frontend suite (309 files / 3,183 tests),
+Prettier, and `git diff --check` passed during implementation; QA must rerun
+these commands after the issue-scoped commit. See the Batch 14 ledger for stage
+provenance and the pending disposition.

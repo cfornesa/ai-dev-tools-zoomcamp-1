@@ -33,6 +33,14 @@
   dispatch `36778653929` is running on fixed ref
   `ef5771b77db4d4d07efe0ab0950ad0d740788a62`.
 
+## 2026-09-30 — Batch 14 #1098 implementation dispatch
+
+- Stage 2b was delegated to a separate Codex task agent because the rostered
+  Ollama Cloud service is unavailable; the owner waiver authorizes this
+  substitution for #1098. The expanded stored-content definition selected by
+  the owner is the implementation contract. Stage 3 is not run because no
+  independent-family reviewer is available. Stage 4 remains pending.
+
 ## 2026-09-30 — Dual-track dispatch approved (Track A normalized / Track B Claude scopes, Codex reviews)
 
 - The owner approved keeping both workflows as equally supported, for

@@ -62,6 +62,7 @@ const project = {
   id: 'p1',
   ownerId: 'alice',
   title: 'Local project',
+  description: 'Stored local description.',
   sceneOrder: ['s1'],
   activeSceneId: 's1',
   createdAt: '2026-01-01T00:00:00Z',
@@ -162,6 +163,54 @@ beforeEach(() => {
 });
 
 describe('LocalEditorWorkspace', () => {
+  it('edits and persists local title and description through the details control', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Edit project details' }));
+    const title = screen.getByLabelText('Title');
+    const description = screen.getByLabelText('Description');
+    await user.clear(title);
+    await user.type(title, 'Renamed local project');
+    await user.clear(description);
+    await user.type(description, 'A new local description.');
+    await user.click(screen.getByRole('button', { name: 'Save project details' }));
+
+    expect(mockedUpdateProject).toHaveBeenCalledWith(db, 'alice', 'p1', {
+      title: 'Renamed local project',
+      description: 'A new local description.',
+    });
+    expect(await screen.findByRole('heading', { name: 'Renamed local project' })).toBeVisible();
+    expect(screen.getByRole('status')).toHaveTextContent(/saved local project details/i);
+  });
+
+  it('rejects the placeholder title with an accessible validation error', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Edit project details' }));
+    const title = screen.getByLabelText('Title');
+    await user.clear(title);
+    await user.type(title, 'Untitled animation');
+    await user.click(screen.getByRole('button', { name: 'Save project details' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/choose a title/i);
+    expect(mockedUpdateProject).not.toHaveBeenCalledWith(
+      db,
+      'alice',
+      'p1',
+      expect.objectContaining({ title: 'Untitled animation' }),
+    );
+  });
+
+  it('prefills the make-public description from local storage', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: 'Make public' }));
+    expect(screen.getByLabelText('Description')).toHaveValue('Stored local description.');
+  });
+
   it('loads a local project, scene, and media reference for the current owner', async () => {
     renderPage();
 
@@ -226,6 +275,7 @@ describe('LocalEditorWorkspace', () => {
 
       await user.click(await screen.findByRole('button', { name: 'Make public' }));
       const publishButton = screen.getByRole('button', { name: 'Publish' });
+      await user.clear(screen.getByLabelText('Description'));
       expect(publishButton).toBeDisabled();
       expect(screen.getByText(/add a description before publishing/i)).toBeVisible();
 
@@ -242,6 +292,7 @@ describe('LocalEditorWorkspace', () => {
       renderPage();
 
       await user.click(await screen.findByRole('button', { name: 'Make public' }));
+      await user.clear(screen.getByLabelText('Description'));
       await user.type(screen.getByLabelText('Description'), 'A short description.');
       await user.click(screen.getByRole('button', { name: 'Publish' }));
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
@@ -13,7 +13,11 @@ import {
   type Project,
 } from '../api/projects';
 import { fetchStorageEstimate } from '../api/storageUsage';
-import { validateProjectMetadataForPublish, type FieldErrors } from '../validation/projectMetadata';
+import {
+  validateProjectMetadataForPublish,
+  validateProjectMetadataForLocalSave,
+  type FieldErrors,
+} from '../validation/projectMetadata';
 import { ConflictResolutionPanel } from '../components/ConflictResolutionPanel';
 import { MutationRecoveryPanel } from '../components/MutationRecoveryPanel';
 import { MediaTransferRecoveryPanel } from '../components/MediaTransferRecoveryPanel';
@@ -82,6 +86,77 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function LocalProjectDetailsPanel({
+  project,
+  onSaved,
+}: {
+  project: LocalProjectRecord;
+  onSaved: (project: LocalProjectRecord) => void;
+}) {
+  const [title, setTitle] = useState(project.title);
+  const [description, setDescription] = useState(project.description ?? '');
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [saving, setSaving] = useState(false);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextErrors = validateProjectMetadataForLocalSave({ title });
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    setSaving(true);
+    try {
+      const db = await openLocalProjectDatabase();
+      const updated = await updateProject(db, project.ownerId, project.id, {
+        title: title.trim(),
+        description,
+      });
+      db.close();
+      onSaved(updated);
+    } catch {
+      setErrors({ form: ['Could not save local project details. Please try again.'] });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form
+      className="editor-details-form"
+      aria-label="Local project details"
+      onSubmit={(event) => void save(event)}
+      noValidate
+    >
+      <div>
+        <label htmlFor="local-project-title">Title</label>
+        <input
+          id="local-project-title"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          aria-invalid={errors.title ? true : undefined}
+          aria-describedby={errors.title ? 'local-project-title-error' : undefined}
+        />
+        {errors.title && (
+          <p id="local-project-title-error" role="alert">
+            {errors.title.join(' ')}
+          </p>
+        )}
+      </div>
+      <div>
+        <label htmlFor="local-project-description">Description</label>
+        <textarea
+          id="local-project-description"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+        />
+      </div>
+      {errors.form && <p role="alert">{errors.form.join(' ')}</p>}
+      <button type="submit" disabled={saving}>
+        {saving ? 'Saving…' : 'Save project details'}
+      </button>
+    </form>
+  );
 }
 
 /**
@@ -203,6 +278,7 @@ function LocalEditorWorkspace() {
   const [syncRecovery, setSyncRecovery] = useState<MutationOutboxRecord | null>(null);
   const [pausedMediaTransfers, setPausedMediaTransfers] = useState<MediaTransferRecord[]>([]);
   const [showMakePublic, setShowMakePublic] = useState(false);
+  const [showProjectDetails, setShowProjectDetails] = useState(false);
   const [makePublicBusy, setMakePublicBusy] = useState(false);
   const [makePublicResult, setMakePublicResult] = useState<{
     state: 'over-quota' | 'error';
@@ -480,12 +556,9 @@ function LocalEditorWorkspace() {
       db = await openLocalProjectDatabase();
       const withTitle = await updateProject(db, auth.user.username, id, {
         title: titleValue,
+        description: descriptionValue,
       });
       setProject(withTitle);
-      // `LocalProjectRecord` has no persisted description field (2D-only
-      // scope; see the module doc on `buildLocal2dPiecePackage`) — the
-      // typed description reaches the server only through the outgoing
-      // package's metadata, not local storage.
       const built = await buildLocal2dPiecePackage(
         db,
         auth.user.username,
@@ -884,6 +957,26 @@ function LocalEditorWorkspace() {
       </p>
       <h2>{project.title}</h2>
       <p>Local editor — this project is loaded from this browser&apos;s IndexedDB.</p>
+      <p>
+        <button
+          type="button"
+          className="shell-action"
+          aria-expanded={showProjectDetails}
+          onClick={() => setShowProjectDetails((current) => !current)}
+        >
+          {showProjectDetails ? 'Hide project details' : 'Edit project details'}
+        </button>
+      </p>
+      {showProjectDetails && (
+        <LocalProjectDetailsPanel
+          project={project}
+          onSaved={(updated) => {
+            setProject(updated);
+            setShowProjectDetails(false);
+            setMessage('Saved local project details.');
+          }}
+        />
+      )}
       {!project.remotePublicId && (
         <p>
           <button type="button" className="shell-action" onClick={() => setShowMakePublic(true)}>
@@ -906,7 +999,7 @@ function LocalEditorWorkspace() {
       {showMakePublic && (
         <MakePublicDialog
           initialTitle={project.title}
-          initialDescription=""
+          initialDescription={project.description ?? ''}
           busy={makePublicBusy}
           onConfirm={(titleValue, descriptionValue) =>
             void handleMakePublicConfirm(titleValue, descriptionValue)

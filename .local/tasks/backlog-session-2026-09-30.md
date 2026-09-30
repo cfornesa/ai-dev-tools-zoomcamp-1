@@ -228,6 +228,13 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - Cases B/C were not run after the two-per-case Case A budget was exhausted by the prior bounded evidence plus this confirmation; no production call or secret handling occurred.
 - Final status: OPEN / verification-boundary; do not claim completion or close without a new authorized run budget or a separately scoped provider-output resolution.
 
+### #788 — OPEN / owner-run production boundary
+
+- Active Chrome Replit preflight: the approved source set was confirmed as exactly `legacy-c2-default` and `legacy-c2-interactive-default`.
+- The production startup gate `RUN_REFERENCE_IMPORT_ON_START` is exposed only as an existing secret; Replit could not safely report whether its value is disabled, so the startup wrapper was not invoked.
+- Replit's publish schema preview reports a destructive `TRUNCATE scenes_plan` while adding two non-null storage-quota columns to two existing rows. No publish, importer run, secret change, or production data mutation was performed.
+- Re-evaluated implementation path: prepare the two missing columns additively with idempotent SQL, verify row count and existing plan values, then run the exact two-source dry run followed by one explicit production write and live route verification. This remains OPEN until those production checks are completed.
+
 ### #1040 — CLOSED
 
 - All six child issues (#1041–#1046) are terminal; #1042 and #1046 were closed from fresh active-Chrome live-provider confirmations in this session.

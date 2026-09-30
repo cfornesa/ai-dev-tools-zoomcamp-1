@@ -207,3 +207,29 @@ The current transaction is terminal: #1088 is CLOSED before #1089 grooming.
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1089 is CLOSED before the remaining owner/live issues.
+
+### #1042 — CLOSED
+
+- Implementation prerequisite: #1062 closed before this confirmation run; no repository code changed in this transaction.
+- Active Chrome live-provider evidence: one fresh local Compose run with Mistral Small accepted a human-style A-Frame lamp-room prompt. The generated source was 41,520 bytes and contained `AFRAME.registerComponent('toggle-lamp')`, `lamp-base`, `lamp`, `bulb`, `lamp-shade`, and click handling. Desktop and 375x812 mobile previews were visibly non-empty; the saved piece `A-Frame Lamp Room` was published and appeared at `/users/@dev_owner/pieces/a-frame-lamp-room` with one current published version. The public route was reloaded at 375x812 and rendered the room.
+- QA: committed-diff QA was N/A because this was a live-only confirmation; Chrome/source/public-route evidence was recorded in the closing GitHub comment. Stage 3 was not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Final status: CLOSED / completed on GitHub.
+
+### #1046 — CLOSED
+
+- Implementation prerequisite: #1066 closed before this confirmation run; no repository code changed in this transaction.
+- Active Chrome live-provider evidence: three bounded local Compose runs were used. Attempts 1 and 2 were rejected by the validator; attempt 3 accepted the human-style speedometer prompt. The accepted 43,827-byte source contained `clipPath`, `linearGradient` applied to the arc, `stroke-dasharray`, runtime `getAttribute("r")`, three circumference references, and animation. Desktop and 375x812 mobile previews were visibly populated; the saved piece `SVG Speedometer Gauge` was published and appeared at `/users/@dev_owner/pieces/svg-speedometer-gauge` with one current published version. The public route exposed the gauge and target value at both viewport sizes.
+- QA: committed-diff QA was N/A because this was a live-only confirmation; Chrome/source/public-route evidence was recorded in the closing GitHub comment. Stage 3 was not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Final status: CLOSED / completed on GitHub.
+
+### #926 — OPEN / verification-boundary
+
+- Active Chrome live-provider evidence: two fresh local Compose agent runs for Case A (`shape-hills`, scope `selection`) reached the approved plan and both terminated as `repeated_invalid_output`; no candidate or version mutation resulted. Read-only local metadata recorded AIRun ids 79 and 80, vendor `mistral`, model `mistral-small-latest`, selected target `shape-hills`, attempts 1, and timestamps.
+- Cases B/C were not run after the two-per-case Case A budget was exhausted by the prior bounded evidence plus this confirmation; no production call or secret handling occurred.
+- Final status: OPEN / verification-boundary; do not claim completion or close without a new authorized run budget or a separately scoped provider-output resolution.
+
+### #1040 — CLOSED
+
+- All six child issues (#1041–#1046) are terminal; #1042 and #1046 were closed from fresh active-Chrome live-provider confirmations in this session.
+- QA: `## QA: PASS`, GitHub comment `5906123230`; parent closed after the child closure condition was satisfied.
+- Final status: CLOSED / completed on GitHub.

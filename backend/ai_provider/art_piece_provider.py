@@ -428,7 +428,7 @@ class ArtPieceProvider:
 
         snippet = _strip_markdown_fence(text).strip()
         if (
-            not _looks_like_snippet(snippet, library)
+            not _looks_like_snippet(snippet, library, prompt)
             or not _looks_like_requested_showcase(snippet, prompt, library)
             or len(snippet) > MAX_SNIPPET_CHARS
         ):
@@ -544,7 +544,7 @@ def _strip_markdown_fence(text: str) -> str:
     return stripped.strip()
 
 
-def _looks_like_snippet(snippet: str, library: str) -> bool:
+def _looks_like_snippet(snippet: str, library: str, prompt: str = "") -> bool:
     if not snippet:
         return False
     lowered = snippet.lower()
@@ -568,9 +568,20 @@ def _looks_like_snippet(snippet: str, library: str) -> bool:
         return "window.sketch" in lowered and "p.setup" in lowered
     if library in {"c2js", "c2js-interactive"}:
         return "window.sketch" in lowered and "startframe" in lowered
-    # aframe: declarative markup only, matching SVG's inert-markup
-    # rejection of any "<script" tag.
-    return "<a-scene" in lowered and "<script" not in lowered
+    if "<a-scene" not in lowered:
+        return False
+    # Most A-Frame pieces remain declarative-only. The fixed light-switch
+    # showcase is the deliberate exception: its acceptance contract requires
+    # AFRAME.registerComponent lifecycle/event code, which must live in an
+    # inline script. The sandbox's opaque origin and CSP still contain that
+    # code; external script URLs remain rejected here.
+    if "<script" not in lowered:
+        return True
+    return (
+        "light-switch" in prompt.casefold()
+        and "aframe.registercomponent" in lowered
+        and re.search(r"<script\b[^>]*\bsrc\s*=", lowered) is None
+    )
 
 
 def _looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> bool:

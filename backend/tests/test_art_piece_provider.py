@@ -17,7 +17,11 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from ai_provider.art_piece_provider import ArtPieceProvider, _looks_like_requested_showcase
+from ai_provider.art_piece_provider import (
+    ArtPieceProvider,
+    _looks_like_requested_showcase,
+    _looks_like_snippet,
+)
 
 
 class _CapturingChat:
@@ -150,6 +154,37 @@ def test_aframe_light_switch_showcase_rejects_empty_static_fallback():
 def test_aframe_ordinary_prompt_keeps_accepting_static_source():
     source = '<a-scene><a-box color="#2a9d8f"></a-box></a-scene>'
     assert _looks_like_requested_showcase(source, "a teal box", "aframe")
+
+
+def test_aframe_light_switch_allows_required_inline_component_script():
+    source = """
+    <a-scene>
+      <a-entity id="lamp-one"></a-entity>
+      <a-entity id="lamp-two"></a-entity>
+      <a-entity light-switch></a-entity>
+      <script>
+        AFRAME.registerComponent('light-switch', {
+          init: function () { this.el.addEventListener('click', function () {}); }
+        });
+      </script>
+    </a-scene>
+    """
+    assert _looks_like_snippet(
+        source,
+        "aframe",
+        "light-switch custom component toggles two lamps",
+    )
+
+
+def test_aframe_non_showcase_script_and_external_script_are_rejected():
+    inline = "<a-scene><script>console.log('ordinary');</script></a-scene>"
+    external = '<a-scene><script src="https://example.test/app.js"></script></a-scene>'
+    assert not _looks_like_snippet(inline, "aframe", "a teal box")
+    assert not _looks_like_snippet(
+        external,
+        "aframe",
+        "light-switch custom component toggles two lamps",
+    )
 
 
 def test_p5_n_body_showcase_rejects_generic_single_circle_fallback():

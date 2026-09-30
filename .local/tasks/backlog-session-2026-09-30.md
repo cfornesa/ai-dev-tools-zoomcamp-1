@@ -19,7 +19,7 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1086 | 11; #1085 | 2b storage/data layer | CLOSED | completed and QA-reconciled |
 | #1087 | 12; #1085/#1086 | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1088 | 13; #1085 | 2a frontend | CLOSED | completed and QA-reconciled |
-| #1089 | discovery follow-up to #1087 | 2a frontend | PROPOSED | groom and process after current transaction |
+| #1089 | discovery follow-up to #1087 | 2a frontend | CLOSED | completed and QA-reconciled |
 | #788 | owner-scoped production action | owner-run | OPEN / owner-run | use named production workflow and Chrome evidence |
 | #926 | #924/#925/#920 | live-provider Chrome | OPEN / live-provider | process after prerequisites |
 | #1040 | tracking parent | children #1041–#1046 | OPEN / reconciliation container | close only after children terminal |
@@ -196,3 +196,14 @@ The current transaction is terminal: #1087 is CLOSED before #1088 engineering be
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1088 is CLOSED before #1089 grooming.
+
+### #1089 — CLOSED
+
+- Commit: `860b995a`.
+- Implementation: local gallery card links now select `/local-projects/:id`, `/local-generated/:id`, or `/local-projects-3d/:id` from the stored project kind; Gallery unit/E2E coverage asserts generated and 3D destinations.
+- Focused checks: Gallery/Gallery a11y suites passed (25 tests); typecheck, Prettier, and lint passed with existing warnings; active Chrome confirmed the generated route and retained 2D routes; committed diff passed `git show --check HEAD`.
+- QA: `## QA: PASS`, GitHub comment `5905847575`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1089 is CLOSED before the remaining owner/live issues.

@@ -9,7 +9,7 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1076 | 1; none | 2b complex/security boundary | GROOMED | implement, focused checks, QA, reconcile |
 | #1077 | 2; none | 2a mechanical/backend | GROOMED | process after #1076 |
 | #1081 | 3; none | docs | GROOMED | process after code prerequisites |
-| #1078 | 4; #1076/#1077 | 2b complex | GROOMED | process after dependencies |
+| #1078 | 4; #1076/#1077 | 2b complex | CLOSED | completed and QA-reconciled |
 | #1079 | 5; #1078 | 2b complex | GROOMED | process after dependency |
 | #1080 | 6; #1077–#1079 | 2a mechanical/backend | GROOMED | process after dependencies |
 | #1082 | 7; none | 2a frontend | GROOMED | process sequentially |
@@ -74,3 +74,15 @@ The current transaction is terminal: #1077 is CLOSED before #1078 engineering be
 - Final status: CLOSED / completed on GitHub. Closed-child bodies were not rewritten; additive annotations preserve history and satisfy the current prompt contract.
 
 The current transaction is terminal: #1081 is CLOSED before #1078 engineering begins.
+
+### #1078 — CLOSED
+
+- Commit: `a10bc0a6`.
+- Implementation: structural tuple validators with reason codes, safe API detail propagation, selectable `ART_PIECE_RUBRIC=structural|legacy`, and SVG/A-Frame structural showcase checks.
+- Focused checks: `tests -k art_piece` 204 passed; Ruff and mypy passed; `git diff --check` passed.
+- QA: `## QA: PASS`, GitHub comment `5905095164`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Evidence boundary: local automated backend checks plus active Chrome/GitHub issue inspection; live-provider generation remains the declared owner/live scope.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1078 is CLOSED before #1079 engineering begins.

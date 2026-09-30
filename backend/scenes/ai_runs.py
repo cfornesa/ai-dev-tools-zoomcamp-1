@@ -555,7 +555,13 @@ def _augmented_prompt(run: AIRun) -> str:
             "The following are the only assets you may reference (JSON): "
             + json.dumps(run.assets, separators=(",", ":"))
         )
-        parts.append("Create exactly one new layer with exactly one image shape.")
+        parts.append(
+            "Add exactly two new records as JSON Patch operations: first add one complete "
+            "layer object at /layers/-, then add one complete image shape object at /shapes/-. "
+            "The new shape's layerId must equal the new layer's id. Do not add a shape without "
+            "its new layer, do not modify any existing layer or shape, and do not treat the "
+            "selected asset id as an existing scene element id."
+        )
     if run.scope in {AIRun.Scope.SELECTION, AIRun.Scope.ADD_LAYER} and run.selected_target_ids:
         ids = ", ".join(str(i) for i in run.selected_target_ids)
         parts.append(f"Only modify the following existing element id(s): {ids}.")

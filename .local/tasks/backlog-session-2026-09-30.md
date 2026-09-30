@@ -23,9 +23,9 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #788 | owner-scoped production action | owner-run | OPEN / owner-run | use named production workflow and Chrome evidence |
 | #926 | #924/#925/#920 | live-provider Chrome | CLOSED | bounded failure recorded; #1091 tracks the implementation defect |
 | #1091 | #926 | 2b complex | OPEN / live-provider follow-up | fresh bounded authorization required for post-fix Mistral verification |
-| #1040 | tracking parent | children #1041–#1046 | OPEN / reconciliation container | close only after children terminal |
-| #1042 | live-provider / #1076–#1080 | owner-run QA | OPEN | revisit after generator contract |
-| #1046 | live-provider / #1076–#1080 | owner-run QA | OPEN | revisit after generator contract |
+| #1040 | tracking parent | children #1041–#1046 | CLOSED | children reconciled and parent closed |
+| #1042 | live-provider / #1076–#1080 | owner-run QA | CLOSED | completed and QA-reconciled |
+| #1046 | live-provider / #1076–#1080 | owner-run QA | CLOSED | completed and QA-reconciled |
 
 ## Duplicate and blocker report
 
@@ -247,9 +247,11 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 ### #1091 — OPEN / live-provider follow-up
 
 - Discovery: #926's six bounded Mistral runs produced persisted invalid-output evidence exposing a shared 2D edit prompt/schema mismatch. Duplicate search found no existing implementation-defect issue.
-- Linked issue: GitHub #1091, `implementation-defect`, linked back to #926. Commit `5933443d` implements the prompt/schema alignment and focused regression coverage; QA evidence is comment `5907191751`.
-- Remaining acceptance: a fresh bounded Mistral verification is needed for post-fix behavior. The prior #926 budget is exhausted, so no additional provider call was made in this transaction.
-- Final status: OPEN / fresh live-provider authorization boundary.
+- Linked issue: GitHub #1091, `implementation-defect`, linked back to #926. Commit `5933443d` implements the shared edit-prompt/schema alignment and focused regression coverage; this transaction adds an explicit add-layer JSON-Patch contract and assertions.
+- Focused verification: `ruff check scenes/ai_runs.py tests/test_ai_runs.py` plus the AI-run/provider/prompt suites passed (54 passed, 1 skipped).
+- Fresh bounded Chrome/Mistral verification: selection scope succeeded as AIRun 86 with one accepted candidate and version 3; add-layer scope was retried twice after the prompt tightening as AIRuns 87 and 88, both persisted `failed` with `repeated_invalid_output` and `add-layer scope must add exactly one new layer.` No candidate or version mutation occurred for either failure; the selected local `qa-live-sun.svg` asset remained available in Chrome.
+- Remaining acceptance: add-layer live verification is still unmet despite the implementation and two bounded retries. Record the exact persisted failures in QA; do not claim #1091 complete.
+- Final status: OPEN / implementation landed, add-layer provider behavior remains unverified-failing.
 
 ### #1040 — CLOSED
 

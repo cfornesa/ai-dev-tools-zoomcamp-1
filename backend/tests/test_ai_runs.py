@@ -326,6 +326,11 @@ def test_add_asset_layer_run_uses_descriptor_and_preserves_existing_scene(
     )
     assert advanced.plan["scope"] == "add-layer"
     assert "only assets you may reference" in ai_runs._augmented_prompt(advanced)
+    augmented = ai_runs._augmented_prompt(advanced)
+    assert "two new records as JSON Patch operations" in augmented
+    assert "one complete layer object at /layers/-" in augmented
+    assert "one complete image shape object at /shapes/-" in augmented
+    assert "selected asset id as an existing scene element id" in augmented
     candidate = advanced.candidate_scene_json
     assert candidate is not None
     assert candidate["layers"][:-1] == BLANK_SCENE["layers"]

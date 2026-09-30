@@ -24665,3 +24665,12 @@ Session-completion housekeeping: 26 closed issues lacking a milestone
 (0 open issues each) were closed; `docs/tasks-index.md` updated. Next action:
 engineer #1092 and #1093, re-run `make check`, push the branch for a matching-ref
 CI run, then re-run this readiness gate.
+
+### 2026-09-30 addendum — #1092/#1093 closed under owner waiver
+
+The owner explicitly waived Discovery-gate rule 4 for these two issues only.
+Both are CLOSED with QA PASS comments; `make check` at the resulting HEAD
+passes (backend 1,876 passed / 39 skipped; frontend 3,180 passed). Batch 13
+is closed. Local gate is now **PASS**; readiness remains **BOUNDED**: the
+branch is unpushed (no matching-ref CI run) and only the anonymous production
+smoke has been run. Next action: owner pushes the branch and confirms CI.

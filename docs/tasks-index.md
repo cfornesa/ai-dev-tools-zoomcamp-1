@@ -24,7 +24,7 @@ assignment is additive metadata, not a rewrite of what happened.
 | [Batch 10](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/10) | — | 40 | 2D/3D editor and collections parity. Closed 2026-09-30. |
 | [Batch 11](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/11) | #1040–#1081 | 24 | AI generation quality evaluation, repair loop, showcase pieces. Closed 2026-09-30. |
 | [Batch 12](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/12) | #1082–#1088 | 7 | Studio/mobile UX and local-project parity. Closed 2026-09-30. |
-| [Batch 13](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/13) | back-filled #788–#1091, plus #1092–#1093 | 26 + 2 open | Live-provider QA closure (#788, #926, #859…) and the 2026-09-30 readiness audit follow-ups. **Open** until #1092/#1093 close. |
+| [Batch 13](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/milestone/13) | back-filled #788–#1091, plus #1092–#1093 | 26 + 2 open | Live-provider QA closure (#788, #926, #859…) and the 2026-09-30 readiness audit follow-ups. Closed 2026-09-30. |
 
 Each milestone's own description on GitHub repeats its issue range and a
 few sample titles. For the exact criteria, evidence, and verification each

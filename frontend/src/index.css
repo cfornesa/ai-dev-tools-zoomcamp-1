@@ -4103,6 +4103,26 @@ textarea:disabled {
   box-sizing: border-box;
 }
 
+.art-piece-studio {
+  width: calc(100% - 48px);
+  max-width: 960px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.art-piece-studio .behavior-card-field select,
+.art-piece-studio .behavior-card-field input,
+.art-piece-studio .behavior-card-field textarea {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.art-piece-studio .behavior-card-field textarea {
+  min-height: 10rem;
+  resize: vertical;
+}
+
 .art-piece-editor-revise-panel {
   display: flex;
   flex-direction: column;

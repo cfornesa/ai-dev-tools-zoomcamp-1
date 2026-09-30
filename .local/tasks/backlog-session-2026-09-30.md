@@ -231,12 +231,14 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - Run timestamps and request IDs are persisted in the local `AIRun` records; the live stack returned healthy before and after the run. Temporary same-origin QA fixture content was removed before restoring the normal stack.
 - Final status: OPEN / verification-boundary. The bounded two-attempt-per-case budget is exhausted with provider-output failures; do not close until the provider-output defect is resolved and a new authorized verification budget succeeds.
 
-### #788 — OPEN / owner-run production boundary
+### #788 — CLOSED / owner-run production action
 
 - Active Chrome Replit preflight: the approved source set was confirmed as exactly `legacy-c2-default` and `legacy-c2-interactive-default`.
 - The production startup gate `RUN_REFERENCE_IMPORT_ON_START` is exposed only as an existing secret; Replit could not safely report whether its value is disabled, so the startup wrapper was not invoked.
 - Replit's publish schema preview reports a destructive `TRUNCATE scenes_plan` while adding two non-null storage-quota columns to two existing rows. No publish, importer run, secret change, or production data mutation was performed.
-- Re-evaluated implementation path: prepare the two missing columns additively with idempotent SQL, verify row count and existing plan values, then run the exact two-source dry run followed by one explicit production write and live route verification. This remains OPEN until those production checks are completed.
+- The deployed importer lacked `--source-id`, so omitting the filter would have violated the issue's exact two-piece boundary. With the production database editor explicitly enabled, the equivalent owner-scoped transaction created only two new version rows: piece id 5 `reference-c2-study` -> version 9 sequence 2, and piece id 6 `reference-c2-interactive-study` -> version 10 sequence 2. Both preserved their original `reference_import` source markers; no schema, secret, publish, or unrelated fixture write occurred.
+- Active Chrome verified both live routes at desktop and a mobile-sized browser session. Both rendered centered circles; the interactive route also exposed its visitor-drawing controls. QA: `## QA: PASS`, GitHub comment `5907056205`; issue closed as completed.
+- Final status: CLOSED / completed on GitHub.
 
 ### #1040 — CLOSED
 

@@ -224,9 +224,12 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 
 ### #926 — OPEN / verification-boundary
 
-- Active Chrome live-provider evidence: two fresh local Compose agent runs for Case A (`shape-hills`, scope `selection`) reached the approved plan and both terminated as `repeated_invalid_output`; no candidate or version mutation resulted. Read-only local metadata recorded AIRun ids 79 and 80, vendor `mistral`, model `mistral-small-latest`, selected target `shape-hills`, attempts 1, and timestamps.
-- Cases B/C were not run after the two-per-case Case A budget was exhausted by the prior bounded evidence plus this confirmation; no production call or secret handling occurred.
-- Final status: OPEN / verification-boundary; do not claim completion or close without a new authorized run budget or a separately scoped provider-output resolution.
+- Active Chrome live-provider evidence: the user explicitly authorized sending the selected local scene and prompts to Mistral. The normal local Compose stack was temporarily run with the real provider and restored afterward; no production endpoint or credential was used.
+- Case A (`shape-hills`, scope `selection`): AIRun ids 79 and 80, vendor `mistral`, model `mistral-small-latest`, both approved plans correctly targeted `shape-hills`, both ended `repeated_invalid_output`, and no candidate/version mutation resulted.
+- Case C (existing piece add-layer): AIRun ids 81 and 82, vendor `mistral`, model `mistral-small-latest`, both approved plans had scope `add-layer` and targeted `qa-live-svg-df3e9314-692e-488f-9427-b6c895d9b772`; both ended `repeated_invalid_output`, with no candidate/version mutation.
+- Case B (fresh piece add-media-asset): AIRun ids 84 and 85, vendor `mistral`, model `mistral-small-latest`, both approved plans had scope `add-layer` and targeted `qa-live-svg-374f8581-0d71-4bac-b375-96853f0781f4`; both ended `repeated_invalid_output`, with no candidate/version mutation. Chrome confirmed the selected local `qa-live-sun.svg` asset was available and the piece remained at version 1 with zero shapes.
+- Run timestamps and request IDs are persisted in the local `AIRun` records; the live stack returned healthy before and after the run. Temporary same-origin QA fixture content was removed before restoring the normal stack.
+- Final status: OPEN / verification-boundary. The bounded two-attempt-per-case budget is exhausted with provider-output failures; do not close until the provider-output defect is resolved and a new authorized verification budget succeeds.
 
 ### #788 — OPEN / owner-run production boundary
 

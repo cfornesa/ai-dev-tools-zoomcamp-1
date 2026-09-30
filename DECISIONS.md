@@ -33,6 +33,31 @@
   dispatch `36778653929` is running on fixed ref
   `ef5771b77db4d4d07efe0ab0950ad0d740788a62`.
 
+## 2026-09-30 — Batch 14 #1096 full-matrix handoff
+
+- Run `36778653929` completed with all 16 E2E shards failing (205 failed
+  cases / 111 spec files, 270 passed); backend, frontend, workflow-validation,
+  and disposable routing checks passed. Shard 7 hit its 1500-second limit and
+  left 16 tests not run.
+- Filed criterion-ready follow-ups #1100 (stale 2D/3D creation fixture helpers)
+  and #1101 (four offline specs opening IndexedDB v4 instead of app schema v5).
+  Other UI/API/locator/wait failures remain unclassified. #1096 stays open as
+  HANDED-OFF pending implementation of those children and evidence-based
+  classification of residual failures.
+
+## 2026-09-30 — Batch 14 #1099 implementation dispatch
+
+- #1099 became eligible after #1098 closed. Its row measurement reads
+  browser-local project, scene/version, and media records, so stage 2 is routed
+  to implementation-complex (rostered Ollama Cloud). That service is
+  unavailable here; the owner's #1095–#1099 waiver authorizes flagged Codex
+  substitution. Stage 2 was delegated to a separate Codex task agent.
+- The owner reaffirmed expanded stored-content accounting: UTF-8 serialized
+  payload bytes plus included media bytes once, with no archive/container
+  overhead. The stage-2 handoff requires consuming #1098's shared measurement,
+  leaving API/schema/dependency behavior unchanged, and returning an
+  issue-scoped commit and exact test results for stage 4.
+
 ## 2026-09-30 — Batch 14 #1098 implementation dispatch
 
 - Stage 2b was delegated to a separate Codex task agent because the rostered

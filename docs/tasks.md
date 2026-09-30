@@ -24747,57 +24747,42 @@ contract, affected call sites, acceptance fixtures, exact verification
 commands, and the constraint to keep the backend estimator unchanged.
 [#1099](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099) has
 been re-groomed to consume that same shared measurement for both aggregate
-preview and per-row private-quota checks. It remains dependency-blocked until
-#1098 closes.
+preview and per-row private-quota checks. It became eligible when #1098
+closed and is the current engineering transaction. The owner reaffirmed
+expanded stored-content accounting; the private sync path must use the shared
+record-plus-media measurement without ZIP/container bytes or media
+double-counting.
 
-### 2026-09-30 — Batch 14 #1096 grooming handoff
+### 2026-09-30 — Batch 14 #1096 full-matrix handoff
 
 [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096)
-was re-read from GitHub and groomed against the full-matrix workflow contract.
-The original estimate of ~280 failed specs is replaced by the observed
-baseline: run 36765070532 ran all 16 isolated Linux/PostgreSQL browser shards;
-all completed their migrations, quota setup, Django/Vite startup, and health
-wait; the suite logs contain 208 failed tests across 110 spec files. Backend,
-workflow validation, and disposable published-routing smoke passed; frontend
-Vitest failed 1 of 3,180. The first-failure classes include a shared stale
-server-project route wait in `frontend/e2e/support/createProject.ts`, four
-offline specs opening the local-projects IndexedDB at v4 while the application
-schema is v5, stale UI assumptions/strict-locator failures, feature-specific
-assertion failures, cascaded test-ended timeouts, and shard-level suite
-timeouts. These are not one proven shared runtime failure.
+remains open as a tracking issue. Baseline run 36765070532 recorded 208
+failed tests across 110 spec files, with backend/workflow/published-routing
+smoke passing and one frontend test failure. The current fixed-ref run
+36778653929 completed on `ef5771b77db4d4d07efe0ab0950ad0d740788a62`: all 16
+Linux browser full-suite steps failed, with 205 failed tests across 111 spec
+files and 270 passed. Workflow validation, backend checks, frontend checks,
+and disposable published-routing smoke passed. Shard 1's targeted WebKit
+Escape and public-media steps passed. Shard 7 hit the 1500-second suite/
+teardown limit; 16 tests did not run.
 
-Run 36778653929 is the current fixed-ref 16-shard dispatch. Workflow
-validation, backend checks, and disposable published-routing smoke passed;
-shard 1's focused WebKit Escape step passed. Shard 14 completed its full
-suite with four failures in `publicPieceSurfaceContract744.spec.ts`,
-`publicProfiles.spec.ts`, and desktop/mobile cases in `publicShell.spec.ts`.
-The other full-suite jobs and frontend check have not completed. No final
-matrix result is claimed. These are distinct public-surface failures pending
-log diagnosis. The matrix must finish before remaining causes can be bounded.
-Relationship: this repeats the non-smoke E2E drift class described
-in `.agents/memory/e2e-spec-drift-outside-smoke-suite.md`; it does not reopen
-closed #1069 or #859. #1069 concerned microphone/generated-interaction
-reliability; #859's six-engine verification boundary was later closed.
-
-The issue is marked HANDED-OFF / not implementation-ready until the live
-dispatch has complete logs and the independent remaining failures are split.
-Recommended proposed children for owner/backlog reconciliation (not yet
-filed): (1) migrate the four files
-`offlineOwnershipRecovery.spec.ts`, `offlineMediaTransfer.spec.ts`,
-`offlineConflictResolution.spec.ts`, and `offlineSync.spec.ts` to the v5
-IndexedDB fixture/schema entry point and prove each targeted offline scenario
-still reaches its behavior; (2) reconcile `createBlankProjectViaUI` callers
-with local-only Gallery creation versus tests requiring the server-backed
-canonical editor, using distinct named fixture entry points and focused Linux
-coverage for every affected caller. Remaining assertion/locator/runtime
-failures and any repeatable runner timeout should be triaged from run
-36778653929 into additional atomic issues only after the logs identify their
-smallest common cause. Search of open GitHub issues for the route/helper,
-IndexedDB v4/v5, and browser-matrix terms returned no equivalent follow-up.
-No product code or test was changed in this PM pass; no child issue was
-created. Run 36778653929 and the unresolved classification are the blockers;
-next action is complete the dispatch evidence review, file linked children
-under open Batch 14, then schedule their engineering/QA transactions.
+Two actionable fixture causes were evidenced and filed in milestone 14:
+[#1100](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100)
+covers the stale 2D/3D server-backed creation helpers after Gallery creation
+moved local-first;
+[#1101](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101)
+covers ten offline cases in four specs that request IndexedDB v4 while the
+application schema is v5. No open duplicates were found. Other route/API,
+UI assertion, strict-locator, wait, and timeout failures remain without
+evidence-backed first-cause classification; logs do not support treating all
+of them as one defect. The 1500-second timeout is directly evidenced for
+shard 7, but this pass did not prove that increasing the CI limit would fix
+the underlying suite. No product code changed. Next owner action: implement
+#1100 and #1101 while preserving assertions, rerun the full Linux matrix, and
+continue classifying residual failures. #1096 is HANDED-OFF, not closed.
+This repeats the non-smoke E2E drift class in
+`.agents/memory/e2e-spec-drift-outside-smoke-suite.md`; it does not reopen
+#1069 or #859.
 
 ### 2026-09-30 — Batch 14 #1098 implementation handoff
 

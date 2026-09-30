@@ -8,6 +8,13 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+async function createLocalProjectViaUI(page: Page) {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'More creation options' }).click();
+  await page.getByRole('menuitem', { name: 'Create a new 2D project with p5.js' }).click();
+  await page.waitForURL(/\/local-projects\/[^/]+$/);
+}
+
 async function hasNativeFullscreenSupport(page: Page) {
   return page.evaluate(
     () =>
@@ -94,7 +101,7 @@ test.describe('manual 2D editor shell', () => {
     browserName,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
+    await createLocalProjectViaUI(page);
 
     const stageToolbar = page.locator('.piece-stage-shell').getByRole('toolbar', {
       name: 'Piece actions',

@@ -42,7 +42,11 @@ describe('exportDatabaseArchive', () => {
   it('exports every project for the owner with real scene/media files at safe paths', async () => {
     const db = await openLocalProjectDatabase();
     const ownerId = 'alice';
-    const projectA = await createProject(db, { ownerId, title: 'Project A' });
+    const projectA = await createProject(db, {
+      ownerId,
+      title: 'Project A',
+      description: 'Archive description',
+    });
     await createScene(db, ownerId, {
       projectId: projectA.id,
       name: 'Scene 1',
@@ -87,6 +91,7 @@ describe('exportDatabaseArchive', () => {
       (p: { mediaAssets: unknown[] }) => p.mediaAssets.length > 0,
     );
     expect(withMedia.title).toBe('Project A');
+    expect(withMedia.description).toBe('Archive description');
   });
 
   it('exports only the selected projects when projectIds is given', async () => {

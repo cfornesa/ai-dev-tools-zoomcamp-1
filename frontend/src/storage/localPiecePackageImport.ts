@@ -167,6 +167,7 @@ export async function importLocalPiecePackage(
     id: projectId,
     ownerId,
     title: pkg.title,
+    description: pkg.description,
     sceneOrder: scenes.map((scene) => scene.id),
     activeSceneId: scenes[0]?.id ?? null,
     createdAt: now,

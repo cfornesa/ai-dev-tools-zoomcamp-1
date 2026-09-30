@@ -12,7 +12,7 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1078 | 4; #1076/#1077 | 2b complex | CLOSED | completed and QA-reconciled |
 | #1079 | 5; #1078 | 2b complex | CLOSED | completed and QA-reconciled |
 | #1080 | 6; #1077–#1079 | 2a mechanical/backend | CLOSED | completed and QA-reconciled |
-| #1082 | 7; none | 2a frontend | GROOMED | process sequentially |
+| #1082 | 7; none | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1083 | 8; none | 2a frontend | GROOMED | process sequentially |
 | #1084 | 9; none | 2a frontend | GROOMED | process sequentially |
 | #1085 | 10; none | 2b storage/data layer | GROOMED | process sequentially |
@@ -110,3 +110,16 @@ The current transaction is terminal: #1079 is CLOSED before #1080 engineering be
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1080 is CLOSED before #1082 engineering begins.
+
+### #1082 — CLOSED
+
+- Commit: `9a8f7731`.
+- Implementation: scoped full-width ArtPieceStudio container/controls, eight-row 10rem+ resizable prompt, and two-viewport Playwright coverage on the current `/art-pieces` route.
+- Focused checks: ArtPieceStudio tests 14 passed; typecheck and Prettier passed; lint passed with existing warnings; Playwright list found both viewport scenarios.
+- Active Chrome evidence: rebuilt local Compose frontend measured desktop controls/form at 960px and mobile controls/form at 310px, with textarea heights 201px/180px and no horizontal overflow; screenshots captured.
+- QA: `## QA: PASS`, GitHub comment `5905356446`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Evidence boundary: active Chrome rendered verification is authoritative for this local UI; Playwright host launch/login setup remained unavailable and is recorded in the QA comment.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1082 is CLOSED before #1083 engineering begins.

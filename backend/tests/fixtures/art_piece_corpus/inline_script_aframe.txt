@@ -1,0 +1,1 @@
+<a-scene><a-entity id="lamp-one"></a-entity><a-entity id="lamp-two"></a-entity><script>AFRAME.registerComponent('switch', { init: function () { this.el.addEventListener('click', function () { this.setAttribute('light', 'intensity', 0.5); }); } });</script></a-scene>

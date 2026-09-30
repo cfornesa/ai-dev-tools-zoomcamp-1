@@ -1,0 +1,2 @@
+Here is the generated piece:
+<canvas id="art-piece-canvas"></canvas><script>const ctx = document.querySelector('canvas').getContext('2d'); ctx.fillRect(0, 0, 10, 10);</script>

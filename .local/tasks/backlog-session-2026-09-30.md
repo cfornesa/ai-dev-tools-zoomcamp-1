@@ -229,16 +229,19 @@ The current transaction is terminal: #1089 is CLOSED before the remaining owner/
 - Case C (existing piece add-layer): AIRun ids 81 and 82, vendor `mistral`, model `mistral-small-latest`, both approved plans had scope `add-layer` and targeted `qa-live-svg-df3e9314-692e-488f-9427-b6c895d9b772`; both ended `repeated_invalid_output`, with no candidate/version mutation.
 - Case B (fresh piece add-media-asset): AIRun ids 84 and 85, vendor `mistral`, model `mistral-small-latest`, both approved plans had scope `add-layer` and targeted `qa-live-svg-374f8581-0d71-4bac-b375-96853f0781f4`; both ended `repeated_invalid_output`, with no candidate/version mutation. Chrome confirmed the selected local `qa-live-sun.svg` asset was available and the piece remained at version 1 with zero shapes.
 - Run timestamps and request IDs are persisted in the local `AIRun` records; the live stack returned healthy before and after the run. Temporary same-origin QA fixture content was removed before restoring the normal stack.
-- Final status: OPEN / verification-boundary. The bounded two-attempt-per-case budget is exhausted with provider-output failures; do not close until the provider-output defect is resolved and a new authorized verification budget succeeds.
+- Implementation follow-up: the persisted failures exposed a shared edit-prompt/schema mismatch: Mistral was not taught the canonical image shape fields and sometimes returned legacy `assetId`/top-level geometry or a full fixture. Commit `5933443d` updates the shared edit prompt with canonical shape/layer requirements and adds regression assertions; `ruff check` and the focused provider/prompt suite pass (20 tests).
+- QA: committed-diff review is PASS for the prompt fix, but the issue's bounded live-provider verification budget is exhausted. No additional Mistral calls were made after the fix, so the live acceptance criterion remains unverified.
+- Final status: OPEN / verification-boundary. A new explicitly authorized bounded live-provider verification is still required before closure; do not claim the prompt fix alone proves live Mistral success.
 
-### #788 — CLOSED / owner-run production action
+### #788 — OPEN / owner-run production action
 
 - Active Chrome Replit preflight: the approved source set was confirmed as exactly `legacy-c2-default` and `legacy-c2-interactive-default`.
 - The production startup gate `RUN_REFERENCE_IMPORT_ON_START` is exposed only as an existing secret; Replit could not safely report whether its value is disabled, so the startup wrapper was not invoked.
 - Replit's publish schema preview reports a destructive `TRUNCATE scenes_plan` while adding two non-null storage-quota columns to two existing rows. No publish, importer run, secret change, or production data mutation was performed.
 - The deployed importer lacked `--source-id`, so omitting the filter would have violated the issue's exact two-piece boundary. With the production database editor explicitly enabled, the equivalent owner-scoped transaction created only two new version rows: piece id 5 `reference-c2-study` -> version 9 sequence 2, and piece id 6 `reference-c2-interactive-study` -> version 10 sequence 2. Both preserved their original `reference_import` source markers; no schema, secret, publish, or unrelated fixture write occurred.
-- Active Chrome verified both live routes at desktop and a mobile-sized browser session. Both rendered centered circles; the interactive route also exposed its visitor-drawing controls. QA: `## QA: PASS`, GitHub comment `5907056205`; issue closed as completed.
-- Final status: CLOSED / completed on GitHub.
+- Active Chrome verified both live routes at desktop and a mobile-sized browser session. Both rendered centered circles; the interactive route also exposed its visitor-drawing controls. Those rendering/data observations remain valid, but the prior `## QA: PASS` comment was corrected and withdrawn because the production database SQL console was used instead of the issue's fixed owner-scoped importer entry point.
+- GitHub comment `5907056205` now records the correction; issue #788 was reopened with `state_reason=reopened`. The production rows are changed, but the required workflow-path criterion remains unverified.
+- Final status: OPEN / owner-run workflow boundary. Do not close on the direct-SQL evidence; closure requires the deployed owner-scoped importer and its before/after plus viewport evidence.
 
 ### #1040 — CLOSED
 

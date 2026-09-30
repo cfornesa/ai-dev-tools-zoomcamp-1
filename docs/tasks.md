@@ -24804,9 +24804,10 @@ under open Batch 14, then schedule their engineering/QA transactions.
 The owner-selected expanded-content contract is implemented in the shared
 local package measurement and the three public-publish preflight paths. The
 measurement separates UTF-8 serialized record bytes from included media blob
-bytes and counts media files from blobs actually included. The issue remains
-open pending independent QA and reconciliation. Focused tests (3 files / 18
-tests), frontend typecheck, full frontend suite (309 files / 3,183 tests),
-Prettier, and `git diff --check` passed during implementation; QA must rerun
-these commands after the issue-scoped commit. See the Batch 14 ledger for stage
-provenance and the pending disposition.
+bytes and counts media files from blobs actually included. #1098 passed QA and
+was closed completed at `61eae5bf`; the QA comment is
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098#issuecomment-5920252275.
+Focused tests (4 files / 21 tests), frontend typecheck, full frontend suite
+(309 files / 3,183 tests), lint, Prettier, commit diff checks, and backend
+estimator tests (3 tests) passed after implementation. See the Batch 14 ledger
+for full stage provenance and evidence boundaries.

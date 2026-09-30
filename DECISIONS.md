@@ -41,6 +41,16 @@
   the owner is the implementation contract. Stage 3 is not run because no
   independent-family reviewer is available. Stage 4 remains pending.
 
+## 2026-09-30 — Batch 14 #1098 QA and closure
+
+- The issue-scoped implementation at `61eae5bf` passed independent stage-4
+  verification of all acceptance criteria. The QA roster Claude Sonnet 5
+  Medium was unavailable; Codex/GPT-6 ran stage 4 as an explicitly flagged
+  substitution. QA comment 5920252275 was posted and #1098 closed completed.
+- No backend, API, schema, dependency, or #931 caller was changed. Local tests
+  establish the frontend measurement and the unchanged backend estimator's
+  `piece_bytes + media_bytes` semantics; no live deployment claim is made.
+
 ## 2026-09-30 — Dual-track dispatch approved (Track A normalized / Track B Claude scopes, Codex reviews)
 
 - The owner approved keeping both workflows as equally supported, for

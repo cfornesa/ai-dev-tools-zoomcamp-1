@@ -24,7 +24,7 @@ authorized substitution becomes available.
 | #1095 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095 | `docs/tasks.md`, Batch 14 transaction #1095 | none; first | Gallery local-card date assertion under timezone/locale variation | completed / CLOSED | Codex GPT-6 (effort not exposed) / Codex GPT-6 (effort not exposed) / not run / Codex GPT-6 (effort not exposed) / pending batch gate | impl: yes (owner waiver); QA: yes; scoping: no | none | Reconciled; QA comment 5919356495; closed completed |
 | #1097 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097 | `docs/tasks.md`, Batch 14 CI follow-up | after #1095, before #1096 | named WebKit fullscreen/Escape workflow step | completed / CLOSED | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | impl: yes (owner waiver); QA: yes; stage 3 not run | Linux rerun belongs to #1096 | Reconciled; QA comment 5919537401; closed completed |
 | #1096 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 | `docs/tasks.md`, Batch 14 CI follow-up | after #1097 | tracking issue for full 16-shard Linux/PostgreSQL browser matrix and cause reconciliation | HANDED-OFF / not ready for implementation | stage 1 Codex / actual Codex GPT-6.1-sol (effort unavailable); stage 2b Ollama Cloud / optional Mistral Vibe / QA Claude Sonnet 5 / gate Claude Opus 5 or Sonnet 5 | scoping: no; engineering and QA: not started | wait for completed run 36778653929, classify non-shared failures and file linked atomic Batch 14 children | PM handoff; resume diagnosis when dispatch logs complete |
-| #1098 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 | `docs/tasks.md`, Batch 14 local-public quota follow-up | independent of CI; before #1099 | public-transfer preflight across the two `LocalEditorWorkspace` callers and `localPublicTransfer` | ENGINEERING — expanded stored-content accounting | Codex GPT-6 / Codex GPT-6 (substitution) / not run / pending QA / pending gate | stage 2: yes (owner waiver); others pending | shared content-byte measurement and regressions | orchestrator to inspect, commit, then QA |
+| #1098 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 | `docs/tasks.md`, Batch 14 local-public quota follow-up | independent of CI; before #1099 | public-transfer preflight across the two `LocalEditorWorkspace` callers and `localPublicTransfer` | completed / CLOSED | Codex GPT-6 / Codex GPT-6 (substitution) / not run / Codex GPT-6 (substitution) / pending gate | impl: yes (owner waiver); QA: yes; stage 3 not run | none | QA comment 5920252275; closed completed |
 | #1099 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 | `docs/tasks.md`, Batch 14 local-sync quota follow-up | #1098 | private sync aggregate preview and per-row preflight | GROOMED / dependency-blocked until #1098 closes | Codex GPT-6 / stage 2a Opencode Go / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | pending actual execution | inherits expanded stored-content semantics; shared measurement | owner is this session; process after #1098 |
 
 Order: #1095 → #1097 → #1096, then #1098 → #1099. The CI items follow the
@@ -39,7 +39,7 @@ matrix and must state how that specific failure relates to the broad run.
 #1099 is distinct from #1098 because it is the private cloud-sync upload path.
 No new follow-up has been discovered in #1095.
 
-## #1098 Stage 2b handoff (implementation complete, QA pending)
+## #1098 — GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED
 
 - Owner-selected expanded stored-content semantics remain authoritative. The
   shared package-content measure returns UTF-8 serialized record bytes,
@@ -58,9 +58,19 @@ No new follow-up has been discovered in #1095.
   src/pages/LocalEditorWorkspace.test.tsx` (3 files, 18 tests). `npm run
   typecheck` passed; `npm test` passed (309 files, 3,183 tests); Prettier and
   `git diff --check` passed.
-- QA intake, independent diff/test audit, issue-scoped commit, QA-rerun results,
-  criterion reconciliation, and GitHub disposition are pending. #1099 remains
-  dependency-blocked until this transaction is terminal.
+- Commit: `61eae5bf` (`fix: account for expanded local publish payloads
+  (#1098)`). QA intake: ACCEPTED; test audit found no weakened, skipped,
+  deleted, or retargeted assertions. Criterion matrix passed for all five
+  acceptance criteria. Focused four-file run passed (21 tests), frontend
+  typecheck passed, full suite passed (309 files / 3,183 tests), lint/Prettier/
+  commit diff checks passed, and backend estimator tests passed (3 tests).
+- QA roster Claude Sonnet 5 Medium; actual Codex / GPT-6 family / effort
+  unavailable, substituted. QA comment:
+  https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098#issuecomment-5920252275.
+  Evidence boundary is local macOS automation plus backend unit tests; no
+  production verification is claimed. GitHub issue is CLOSED / completed.
+- Memory unchanged. #1099 is now eligible to begin its own transaction using
+  the same shared accounting contract.
 
 ## #1096 stage-1 handoff (2026-09-30)
 

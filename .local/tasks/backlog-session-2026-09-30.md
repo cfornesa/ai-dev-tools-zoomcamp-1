@@ -15,7 +15,7 @@ Execution profile: Codex / GPT-5 / default effort. Stage 2 external dispatch was
 | #1082 | 7; none | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1083 | 8; none | 2a frontend | CLOSED | completed and QA-reconciled |
 | #1084 | 9; none | 2a frontend | CLOSED | completed and QA-reconciled |
-| #1085 | 10; none | 2b storage/data layer | GROOMED | process sequentially |
+| #1085 | 10; none | 2b storage/data layer | CLOSED | completed and QA-reconciled |
 | #1086 | 11; #1085 | 2b storage/data layer | GROOMED | process after dependency |
 | #1087 | 12; #1085/#1086 | 2a frontend | GROOMED | process after dependencies |
 | #1088 | 13; #1085 | 2a frontend | GROOMED | process after dependency |
@@ -149,3 +149,14 @@ The current transaction is terminal: #1083 is CLOSED before #1084 engineering be
 - Final status: CLOSED / completed on GitHub.
 
 The current transaction is terminal: #1084 is CLOSED before #1085 engineering begins.
+
+### #1085 — CLOSED
+
+- Commit: `18613175`.
+- Implementation: additive optional description, thumbnail, and thumbnail timestamp fields on local project records; description-aware project creation/update; thumbnail-only timestamp preservation; JSON export/import, ZIP archive/restore, and portable piece-package description round-trips. Database version remains 5; thumbnails are intentionally omitted as derived browser data and documented for regeneration.
+- Focused checks: 5 storage test files, 52 tests passed; typecheck, Prettier, and lint passed with existing warnings; committed diff passed `git show --check HEAD`.
+- QA: `## QA: PASS`, GitHub comment `5905557783`; stage 3 not run; stage 4 was a Codex substitution because the delegated QA service/tool is unavailable.
+- Stage 5 readiness: pending batch-level production-readiness assessment.
+- Final status: CLOSED / completed on GitHub.
+
+The current transaction is terminal: #1085 is CLOSED before #1086 engineering begins.

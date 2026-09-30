@@ -24713,3 +24713,21 @@ selected expanded-content accounting for #1098: count the package's
 uncompressed piece/version content and media once, matching backend stored
 usage; #1099 inherits those semantics. Stage-5 readiness remains a batch
 gate and has not run.
+
+### 2026-09-30 — Batch 14 transaction #1097
+
+[#1097](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097) is
+CLOSED / completed with QA PASS under the issue's host-boundary alternative.
+The cause was test fixture drift: the focused fullscreen spec used the
+canonical server-project helper, while the selected Gallery action now
+creates a local-only project and routes to `/local-projects/:id`. Commit
+`8d0d50e4` changes only that spec's setup; fullscreen/Escape assertions and
+shared helpers are unchanged. `git diff --check` passed. The exact focused
+Playwright command reached setup but macOS WebKit aborted before test start
+(`Abort trap: 6`); this is not recorded as a pass. The isolated QA DB was
+dropped. QA comment: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097#issuecomment-5919537401.
+
+Continue with #1096; its Linux matrix rerun should also exercise this corrected
+spec. A local feature-branch push does not trigger this repository's `push`
+workflow, which is configured for `main`; no matching-ref run for `8d0d50e4`
+is claimed.

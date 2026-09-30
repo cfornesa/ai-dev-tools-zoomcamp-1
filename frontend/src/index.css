@@ -5383,6 +5383,29 @@ select.ai-proposal-field-full-width {
   color: var(--text-h);
 }
 
+.public-piece-version-context > section,
+.public-piece-version-context dl,
+.public-piece-version-context ol,
+.public-piece-version-context li,
+.public-piece-version-context details {
+  min-width: 0;
+}
+
+.public-piece-version-context dt,
+.public-piece-version-context dd,
+.public-piece-version-context li,
+.public-piece-version-context summary,
+.public-piece-version-context p,
+.public-piece-version-context time {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.public-piece-version-context dd {
+  margin-inline-start: 0;
+}
+
 .public-piece-version-context h2 {
   margin: 0 0 8px;
   font-family: var(--heading);

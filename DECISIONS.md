@@ -23,6 +23,19 @@
   unaffected. Not yet encoded — `docs/process.md` rule 4 rewording is
   proposed in chat for approval, and `AGENTS.md` is unchanged (§11).
 
+## 2026-09-30 — Owner authorization for current open Batch 14 issues
+
+- The owner resumed the backlog goal and explicitly authorized work on all
+  currently open issues after Claude Code re-scoped them: #1096, #1100–#1104.
+  Codex may implement the criterion-ready children as flagged stage-2
+  substitutions when their rostered implementation service is unavailable.
+  This extends implementation authorization only to this current open set;
+  dependency order and each issue's owner decision points remain binding.
+- Stage 2a for #1101 is Codex / GPT-6.1-sol, substituted for Opencode Go /
+  Kimi K2.5. Stage 4 remains a separate QA pass, flagged as a substitution if
+  the rostered Claude Sonnet 5 Medium service is unavailable. No stage-3
+  review is claimed unless an independent model family performs it.
+
 ## 2026-09-30 — Batch 14 #1096 stage-agent loop
 
 - Initiated the sequential stage-agent loop for #1096 required by

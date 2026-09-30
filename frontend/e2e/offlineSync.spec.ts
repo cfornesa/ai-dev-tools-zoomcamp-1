@@ -7,129 +7,32 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { localProjectDb } from './support/localProjectDb.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
 const PROJECT_ID = '7e4c9d1a-6f5e-4b1d-9f52-3c9d7a8e1b04';
-const SCENE_ID = '9f8e7d6c-5b4a-3210-9abc-def012345678';
 
 async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
-  await page.evaluate(
-    ({ ownerId, projectId, sceneId }) =>
-      new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open('creatrart-local-projects', 4);
-        request.onerror = () => reject(request.error);
-        request.onblocked = () => reject(new Error('IndexedDB fixture upgrade was blocked.'));
-        request.onupgradeneeded = () => {
-          const db = request.result;
-          if (!db.objectStoreNames.contains('projects')) {
-            const projects = db.createObjectStore('projects', { keyPath: 'id' });
-            projects.createIndex('by_owner', 'ownerId');
-          }
-          if (!db.objectStoreNames.contains('scenes')) {
-            const scenes = db.createObjectStore('scenes', { keyPath: 'id' });
-            scenes.createIndex('by_project', 'projectId');
-          }
-          if (!db.objectStoreNames.contains('mediaAssets')) {
-            const mediaAssets = db.createObjectStore('mediaAssets', { keyPath: 'id' });
-            mediaAssets.createIndex('by_project', 'projectId');
-          }
-          if (!db.objectStoreNames.contains('mediaBlobs')) {
-            db.createObjectStore('mediaBlobs', { keyPath: 'assetId' });
-          }
-          if (!db.objectStoreNames.contains('meta'))
-            db.createObjectStore('meta', { keyPath: 'key' });
-          if (!db.objectStoreNames.contains('recoveryDrafts')) {
-            const drafts = db.createObjectStore('recoveryDrafts', { keyPath: 'id' });
-            drafts.createIndex('by_project_saved_at', ['projectId', 'savedAt']);
-          }
-          if (!db.objectStoreNames.contains('mutationOutbox')) {
-            const outbox = db.createObjectStore('mutationOutbox', { keyPath: 'operationId' });
-            outbox.createIndex('by_owner_project', ['ownerId', 'projectId']);
-            outbox.createIndex('by_owner_project_sequence', [
-              'ownerId',
-              'projectId',
-              'clientSequence',
-            ]);
-          }
-          if (!db.objectStoreNames.contains('mediaTransfers')) {
-            const transfers = db.createObjectStore('mediaTransfers', { keyPath: 'transferId' });
-            transfers.createIndex('by_owner_project', ['ownerId', 'projectId']);
-            transfers.createIndex('by_owner_asset', ['ownerId', 'assetId']);
-          }
-        };
-        request.onsuccess = () => {
-          const db = request.result;
-          const transaction = db.transaction(
-            [
-              'projects',
-              'scenes',
-              'mediaAssets',
-              'mediaBlobs',
-              'meta',
-              'recoveryDrafts',
-              'mutationOutbox',
-              'mediaTransfers',
-            ],
-            'readwrite',
-          );
-          transaction.objectStore('projects').put({
-            id: projectId,
-            ownerId,
-            title: 'Offline Sync Fixture',
-            sceneOrder: [sceneId],
-            activeSceneId: sceneId,
-            createdAt: '2026-09-15T19:30:00.000Z',
-            updatedAt: '2026-09-15T19:30:00.000Z',
-          });
-          transaction.objectStore('scenes').put({
-            id: sceneId,
-            projectId,
-            name: 'Initial scene',
-            position: 0,
-            sceneJson: { shapes: [] },
-            updatedAt: '2026-09-15T19:30:00.000Z',
-          });
-          transaction.objectStore('meta').put({ key: 'schemaVersion', value: 4 });
-          transaction.oncomplete = () => {
-            db.close();
-            resolve();
-          };
-          transaction.onerror = () => reject(transaction.error);
-        };
-      }),
-    { ownerId, projectId: PROJECT_ID, sceneId: SCENE_ID },
-  );
+  await localProjectDb(page, {
+    kind: 'seed',
+    input: {
+      ownerId,
+      projectId: PROJECT_ID,
+      title: 'Offline Sync Fixture',
+      scene: { name: 'Initial scene', sceneJson: { shapes: [] } },
+    },
+  });
 }
 
 async function readOutboxStates(page: Page): Promise<string[]> {
-  return page.evaluate(
-    ({ projectId }) =>
-      new Promise<string[]>((resolve, reject) => {
-        const request = indexedDB.open('creatrart-local-projects', 4);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-          const db = request.result;
-          const read = db
-            .transaction('mutationOutbox', 'readonly')
-            .objectStore('mutationOutbox')
-            .index('by_owner_project');
-          const get = read.getAll();
-          get.onsuccess = () => {
-            db.close();
-            resolve(
-              (get.result as Array<{ projectId: string; state: string }>)
-                .filter((row) => row.projectId === projectId)
-                .map((row) => row.state),
-            );
-          };
-          get.onerror = () => reject(get.error);
-        };
-      }),
-    { projectId: PROJECT_ID },
-  );
+  const rows = await localProjectDb<Array<{ state: string }>>(page, {
+    kind: 'read-outbox',
+    projectId: PROJECT_ID,
+  });
+  return rows.map((row) => row.state);
 }
 
 async function runOfflineReplay(page: Page, fixtures: Fixtures): Promise<void> {

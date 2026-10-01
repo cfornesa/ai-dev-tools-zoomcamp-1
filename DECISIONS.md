@@ -2498,3 +2498,12 @@ updates. The remaining open backlog was not silently claimed complete.
 - This is a corrective separation-of-duties audit under `docs/process.md`;
   implementation commit `b11971c0` remains provisional until subsequent
   engineering and independent QA stages finish.
+
+## 2026-10-01 — #1131 stage 2b engineer audit delegated
+
+- Initiated a separate complex-logic engineer pass against the refined #1131
+  issue and provisional implementation commit `b11971c0`. Rostered owner is
+  Ollama Cloud / Kimi K3; actual owner is a Codex subagent / GPT-6.1-sol with
+  effort unavailable, substituted: yes. Scope is limited to the version
+  lifecycle endpoints and their focused tests; the agent may make and commit
+  only issue-scoped corrections and must not close the issue or perform QA.

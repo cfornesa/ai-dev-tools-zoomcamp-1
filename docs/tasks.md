@@ -25273,3 +25273,30 @@ Independent starters: A1, A2, B1, C1. Duplicate check: no existing open or close
 project activity wiring, a history UI, version comparison, intent notes, or related pieces
 (searched titles for activity/timeline/brief/memory/compare/related/recommend/process).
 Also recorded: #1124 design decision (option 1). Batch 15's #1124 is ready to implement.
+
+### 2026-10-01 — #1114 QA reconciliation
+
+The #1114 implementation is locally correct for its 3D-specific criteria, but
+the full QA verdict is **FAIL / dependency-blocked** because the required 2D
+regression batch is 2/8: `manual2dStageChrome` passes 2/2, while all three
+`interactionRuntime` and all three `layersPanel` scenarios time out before
+their feature assertions. The shared `createBlankProjectViaUI` setup waits at
+`frontend/e2e/support/createProject.ts:54` for the canonical editor request,
+but the current local-first flow lands on `/studio`. This is the stale 2D
+fixture migration tracked by #1103 (prerequisite #1100), not a 3D CSS failure.
+
+All #1114-specific gates pass: selected-plane geometry 2/2 at 375x812 and
+1280x900 (16:9 stage, mobile rail below, no overflow/overlap, controls hit-test
+correctly); #796 repeat 3 passes 6/6; unchanged #782 transform spec passes
+2/2; `manual3dStageChrome` 1/1; EditorWorkspace component tests 37/37; and
+typecheck/lint/format/diff checks pass. Focused screenshots were inspected at
+both sizes. Local macOS Chromium used disposable PostgreSQL, Django :8001, and
+Vite :5001; no Linux or deployment result is claimed. The new mobile Delete
+menu assertion is in `inlineStageToolbarGeometry.spec.ts`, and
+`drawingPlaneTransform782.spec.ts` is restored byte-identical to the pre-`04a5b1ff`
+version. The adjustment is commit `9c42f60b`.
+
+Keep #1114 open. Next: complete #1100's Linux six-spec gate, then #1103's
+server-backed multi-call 2D setup migration; rerun #1114's exact grouped 2D
+command and full matrix. QA evidence was appended to the issue body because
+the available issue-comment connector only targets pull requests.

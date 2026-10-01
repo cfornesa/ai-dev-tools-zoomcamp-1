@@ -15,17 +15,30 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.db.models import Prefetch
+
 from scenes.account_entitlements import get_entitlement_summary
 from scenes.account_identities import list_identities
 from scenes.models import (
     ArtPiece,
     Project,
     Project3D,
+    ProjectActivity,
     ProviderCredential,
     Subscription,
 )
 
 EXPORT_SCHEMA_VERSION = 1
+_ACTIVITY_DETAIL_KEYS = (
+    "sequence",
+    "origin",
+    "restored_from_sequence",
+    "run_id",
+    "scope",
+    "operation",
+    "change_summary",
+    "reason",
+)
 
 
 def _isoformat(value) -> str | None:
@@ -43,7 +56,22 @@ def _serialize_scene_version(version) -> dict[str, Any]:
     }
 
 
+def _serialize_project_activity(activity: ProjectActivity) -> dict[str, Any]:
+    """Apply the owner-safe event projection shared with #1133's activity API."""
+    metadata = activity.metadata if isinstance(activity.metadata, dict) else {}
+    actor = activity.actor
+    return {
+        "id": activity.pk,
+        "action_type": activity.action_type,
+        "label": activity.get_action_type_display(),
+        "actor_display": actor.username if actor is not None else None,
+        "created_at": _isoformat(activity.created_at),
+        "details": {key: metadata[key] for key in _ACTIVITY_DETAIL_KEYS if key in metadata},
+    }
+
+
 def _serialize_project(project: Project) -> dict[str, Any]:
+    activity = getattr(project, "_export_activity", [])
     return {
         "public_id": str(project.public_id),
         "title": project.title,
@@ -56,6 +84,7 @@ def _serialize_project(project: Project) -> dict[str, Any]:
         "versions": [
             _serialize_scene_version(version) for version in project.versions.order_by("sequence")
         ],
+        "activity": [_serialize_project_activity(event) for event in activity],
     }
 
 
@@ -149,7 +178,17 @@ def build_account_export(user) -> dict[str, Any]:
         "ai_credentials": _serialize_ai_credentials(user),
         "projects": [
             _serialize_project(project)
-            for project in Project.all_objects.filter(owner=user).order_by("id")
+            for project in Project.all_objects.filter(owner=user)
+            .prefetch_related(
+                Prefetch(
+                    "activity",
+                    queryset=ProjectActivity.objects.select_related("actor").order_by(
+                        "-created_at", "-id"
+                    ),
+                    to_attr="_export_activity",
+                )
+            )
+            .order_by("id")
         ],
         "projects_3d": [
             _serialize_project_3d(project)

@@ -222,7 +222,22 @@ and piece-package serializers do not include activity. The event query is
 supported by an index on `(project_id, created_at DESC, id DESC)`. Activity
 for a soft-deleted project remains readable by its owner until the existing
 retention policy hard-purges the project and its cascading activity rows.
-Account export remains a separate contract in #1148.
+### Activity in the owner JSON account export (#1148)
+
+`GET /api/account/export/` adds an `activity` array to each owned 2D
+project. The rows use the #1133 projection: exactly `id`, `action_type`,
+`label`, `actor_display`, `created_at`, and `details`. Events are newest-first
+by `created_at DESC, id DESC`; `actor_display` is the actor username or `null`.
+`details` contains only present `sequence`, `origin`,
+`restored_from_sequence`, `run_id`, `scope`, `operation`,
+`change_summary`, and `reason` fields. The export remains owner-scoped and
+repeatable. Activity is included for soft-deleted projects during their
+existing retention period and disappears with the existing hard-purge
+cascade. This is an additive JSON export field only; it does not change the
+#945 ZIP/package export, other export sections, or existing credential
+redaction.
+
+
 
 ## Art-piece ink layer (#776)
 

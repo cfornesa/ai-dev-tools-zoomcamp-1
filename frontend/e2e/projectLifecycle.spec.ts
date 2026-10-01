@@ -56,7 +56,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
+import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -79,8 +79,8 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * overlay left open over the Preview panel. Callers that do add/save a
  * shape call `openEditScene`/`closeEditScene` themselves around that
  * block; see `openEditScene.ts`. */
-async function createBlankProjectViaUI(page: Page): Promise<string> {
-  const projectId = await createBlankProjectViaUIBase(page);
+async function createServerProject2DWithExpandedSections(page: Page): Promise<string> {
+  const projectId = await createServerProject2DBase(page);
   await expandAllCollapsibleSections(page);
   return projectId;
 }
@@ -134,7 +134,7 @@ test.describe('Project lifecycle', () => {
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
-      await createBlankProjectViaUI(page);
+      await createServerProject2DWithExpandedSections(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
 
       // Add one shape (a blank-canvas project starts with none — see
@@ -186,7 +186,7 @@ test.describe('Project lifecycle', () => {
         // user after the desktop iteration.
         await page.context().clearCookies();
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
-        await createBlankProjectViaUI(page);
+        await createServerProject2DWithExpandedSections(page);
         await openEditScene(page);
         await page.getByRole('button', { name: 'Add circle' }).click();
 
@@ -280,7 +280,7 @@ test.describe('Project lifecycle', () => {
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page); // version 1
+    await createServerProject2DWithExpandedSections(page); // version 1
 
     async function addShapeAndSave() {
       await openEditScene(page);
@@ -339,7 +339,7 @@ test.describe('Project lifecycle', () => {
     browser,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
+    const projectId = await createServerProject2DWithExpandedSections(page);
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Untitled animation');
 
     // Owner succeeds, from a completely independent context too (proves
@@ -464,7 +464,7 @@ test.describe('Project lifecycle', () => {
     await loginViaUI(pageA, fixtures.owner.email, fixtures.password);
     await loginViaUI(pageB, fixtures.owner.email, fixtures.password);
 
-    const projectId = await createBlankProjectViaUI(pageA); // version 1
+    const projectId = await createServerProject2DWithExpandedSections(pageA); // version 1
     await pageB.goto(`/projects/${projectId}`);
 
     // version 1's primary key is a global auto-increment shared across every

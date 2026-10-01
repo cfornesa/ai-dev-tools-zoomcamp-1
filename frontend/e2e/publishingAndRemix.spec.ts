@@ -99,7 +99,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
+import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { openEditScene, openPieceControlsMenu } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -137,8 +137,8 @@ async function loginViaCurrentUI(page: Page, email: string, password: string): P
  * Unlike `interactionRuntime.spec.ts`, nothing here ever drives
  * `BehaviorCardsPanel`'s `followHand`/`reactToPinch` target select (see
  * issue #116), so there's no mount-order trap to avoid by deferring this. */
-async function createBlankProjectViaUI(page: Page): Promise<string> {
-  const projectId = await createBlankProjectViaUIBase(page);
+async function createServerProject2DWithExpandedSections(page: Page): Promise<string> {
+  const projectId = await createServerProject2DBase(page);
   await expandAllCollapsibleSections(page);
   return projectId;
 }
@@ -307,7 +307,7 @@ test.describe('Publishing', () => {
     context,
   }) => {
     await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page); // version 1, still-default title/description
+    const projectId = await createServerProject2DWithExpandedSections(page); // version 1, still-default title/description
 
     // Add a distinguishing shape and save version 2, so "the current
     // saved version" is something concrete to check for publicly.
@@ -388,7 +388,7 @@ test.describe('Publishing', () => {
     context,
   }) => {
     await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page); // version 1, still-default title/description
+    const projectId = await createServerProject2DWithExpandedSections(page); // version 1, still-default title/description
 
     // Type a meaningful title through the header's inline editor and a
     // meaningful description through the Details panel -- exactly the
@@ -456,7 +456,7 @@ test.describe('Publishing', () => {
     context,
   }) => {
     await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
+    const projectId = await createServerProject2DWithExpandedSections(page);
     await saveMeaningfulMetadata(page, projectId, {
       title: 'Unpublish-me project',
       description: 'This project will be published, then unpublished.',
@@ -668,7 +668,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const page = await context.newPage();
     await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
 
-    publicProjectId = await createBlankProjectViaUI(page);
+    publicProjectId = await createServerProject2DWithExpandedSections(page);
     // Task 113 (issue #144): a circle and a rectangle, each with a
     // distinct, deliberately unusual fill color unlikely to collide with
     // the canvas background/any other default color -- this is what the
@@ -694,7 +694,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     // A second, deliberately empty-scene project (still version 1, the
     // untouched blank canvas) for the "renders an empty scene cleanly"
     // criterion.
-    emptyScenePublicProjectId = await createBlankProjectViaUI(page);
+    emptyScenePublicProjectId = await createServerProject2DWithExpandedSections(page);
     await saveMeaningfulMetadata(page, emptyScenePublicProjectId, {
       title: 'Anonymous viewer empty-scene fixture project',
       description: 'Used by the empty-scene rendering scenario.',
@@ -1318,7 +1318,7 @@ test.describe('Remix and fork', () => {
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const sourceId = await createBlankProjectViaUI(ownerPage); // version 1
+    const sourceId = await createServerProject2DWithExpandedSections(ownerPage); // version 1
 
     await openEditScene(ownerPage);
     await ownerPage.getByRole('button', { name: 'Add circle' }).click();
@@ -1462,7 +1462,7 @@ test.describe('Remix and fork', () => {
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const sourceId = await createBlankProjectViaUI(ownerPage);
+    const sourceId = await createServerProject2DWithExpandedSections(ownerPage);
     await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Remix-disabled source project',
       description: 'Publicly viewable, but remixing is off.',
@@ -1503,7 +1503,7 @@ test.describe('Remix and fork', () => {
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
     // Never published -- stays private for this whole test.
-    const privateId = await createBlankProjectViaUI(ownerPage);
+    const privateId = await createServerProject2DWithExpandedSections(ownerPage);
 
     const visitorContext = await browser.newContext();
     const visitorPage = await visitorContext.newPage();
@@ -1555,7 +1555,7 @@ test.describe('Fork concurrency (PostgreSQL)', () => {
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const sourceId = await createBlankProjectViaUI(ownerPage);
+    const sourceId = await createServerProject2DWithExpandedSections(ownerPage);
     await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Concurrency source project',
       description: 'Raced by two overlapping fork requests.',
@@ -1616,7 +1616,7 @@ test.describe('Fork concurrency (PostgreSQL)', () => {
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const sourceId = await createBlankProjectViaUI(ownerPage);
+    const sourceId = await createServerProject2DWithExpandedSections(ownerPage);
     await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Concurrency source project (no request id)',
       description: 'Raced by two overlapping fork requests without a shared idempotency key.',
@@ -1662,7 +1662,7 @@ test.describe('Authorization boundaries', () => {
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(ownerPage);
+    const projectId = await createServerProject2DWithExpandedSections(ownerPage);
     await saveMeaningfulMetadata(ownerPage, projectId, {
       title: 'Authorization boundary project',
       description: 'Only its owner may publish or unpublish it.',

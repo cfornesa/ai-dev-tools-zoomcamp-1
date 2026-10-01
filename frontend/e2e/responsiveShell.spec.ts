@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
+import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { openPieceControlsMenu } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -12,8 +12,8 @@ type Fixtures = Extract<E2EState, { available: true }>;
 /** Mirrors `projectLifecycle.spec.ts`'s/`publishingAndRemix.spec.ts`'s own
  * identically-named helper (each spec file keeps its own copy rather than
  * sharing one, per this suite's existing convention). */
-async function createBlankProjectViaUI(page: Page): Promise<string> {
-  const projectId = await createBlankProjectViaUIBase(page);
+async function createServerProject2DWithExpandedSections(page: Page): Promise<string> {
+  const projectId = await createServerProject2DBase(page);
   await expandAllCollapsibleSections(page);
   return projectId;
 }
@@ -425,7 +425,7 @@ test.describe('Responsive app shell', () => {
         const context = await browser.newContext();
         const page = await context.newPage();
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
-        await createBlankProjectViaUI(page);
+        await createServerProject2DWithExpandedSections(page);
 
         await page.setViewportSize(NARROW_VIEWPORT);
         await page.goto('/');
@@ -450,7 +450,7 @@ test.describe('Responsive app shell', () => {
         const context = await browser.newContext();
         const page = await context.newPage();
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
-        const projectId = await createBlankProjectViaUI(page);
+        const projectId = await createServerProject2DWithExpandedSections(page);
         await publishProjectViaUI(
           page,
           projectId,

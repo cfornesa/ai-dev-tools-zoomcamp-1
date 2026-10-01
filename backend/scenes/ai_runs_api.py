@@ -11,6 +11,8 @@ whatever `scenes.ai_runs.advance_run` already checkpointed.
 
 from __future__ import annotations
 
+import unicodedata
+
 from django.http import Http404
 from rest_framework import serializers, status
 from rest_framework.response import Response
@@ -156,6 +158,45 @@ class AIRunStartRequestSerializer(serializers.Serializer):
         return data
 
 
+class _StrictStringField(serializers.CharField):
+    def __init__(self, **kwargs):
+        kwargs.setdefault("trim_whitespace", False)
+        super().__init__(**kwargs)
+
+    def to_internal_value(self, data):
+        if not isinstance(data, str):
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+    def run_validators(self, value):
+        # CharField's default null-byte validator would reject a control
+        # character before the endpoint can apply the specified Cc cleanup.
+        return
+
+
+class AIRunDecisionRequestSerializer(serializers.Serializer):
+    reason = _StrictStringField(required=False, allow_null=True, allow_blank=True)
+
+    def validate_reason(self, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if len(value) > 280:
+            raise serializers.ValidationError("Ensure this field has no more than 280 characters.")
+        without_controls = "".join(char for char in value if unicodedata.category(char) != "Cc")
+        normalized = without_controls.strip()
+        return normalized or None
+
+
+def _decision_reason_or_error(request) -> tuple[str | None, Response | None]:
+    serializer = AIRunDecisionRequestSerializer(data=request.data)
+    if not serializer.is_valid():
+        return None, Response(
+            {"error": "request_invalid", "detail": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    return serializer.validated_data.get("reason"), None
+
+
 class AIRunListCreateView(APIView):
     def post(self, request):
         if not request.user.is_authenticated:
@@ -234,8 +275,11 @@ class AIRunCancelView(APIView):
     def post(self, request, pk: int):
         if not request.user.is_authenticated:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+        reason, error = _decision_reason_or_error(request)
+        if error is not None:
+            return error
         run = _get_owned_run_or_404(request, pk)
-        run = ai_runs.cancel_run(run)
+        run = ai_runs.cancel_run(run, reason=reason)
         return Response(_serialize_run(run))
 
 
@@ -243,9 +287,12 @@ class AIRunAcceptView(APIView):
     def post(self, request, pk: int):
         if not request.user.is_authenticated:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
+        reason, error = _decision_reason_or_error(request)
+        if error is not None:
+            return error
         run = _get_owned_run_or_404(request, pk)
         try:
-            run, version = ai_runs.accept_run(run)
+            run, version = ai_runs.accept_run(run, reason=reason)
         except ai_runs.AIRunError as exc:
             return _error_response(exc)
         if version is None:

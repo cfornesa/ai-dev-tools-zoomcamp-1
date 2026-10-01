@@ -66,6 +66,7 @@ from scenes.models import (
     AIRun,
     Project,
     Project3D,
+    ProjectActivity,
     SceneVersion,
     SceneVersion3D,
 )
@@ -1075,11 +1076,33 @@ def advance_run(run: AIRun) -> AIRun:  # noqa: C901
         return locked
 
 
-def cancel_run(run: AIRun) -> AIRun:
+def _record_decision_activity(run: AIRun, action_type: str, reason: str | None) -> None:
+    assert run.project_id is not None
+    metadata = {
+        "run_id": run.pk,
+        "scope": run.scope,
+        "operation": run.operation,
+        "change_summary": run.change_summary[:200],
+    }
+    if reason:
+        metadata["reason"] = reason
+    ProjectActivity(
+        project_id=run.project_id,
+        actor=run.owner,
+        action_type=action_type,
+        metadata=metadata,
+    ).save()
+
+
+def cancel_run(run: AIRun, *, reason: str | None = None) -> AIRun:
     with transaction.atomic():
         locked = AIRun.objects.select_for_update().get(pk=run.pk)
         if locked.is_terminal:
             return locked
+        records_discard = (
+            locked.status == AIRun.Status.AWAITING_REVIEW
+            and locked.target_type == AIRun.TargetType.PROJECT
+        )
         locked.status = AIRun.Status.CANCELLED
         locked.cancelled_at = timezone.now()
         # Deliberately does NOT clear advance_lease_token: an in-flight
@@ -1087,10 +1110,18 @@ def cancel_run(run: AIRun) -> AIRun:
         # first and will discard its result once it sees `cancelled`,
         # regardless of whether it still believes it holds the lease.
         locked.save(update_fields=["status", "cancelled_at"])
+        if records_discard:
+            _record_decision_activity(
+                locked,
+                ProjectActivity.ActionType.AI_PROPOSAL_REJECTED,
+                reason,
+            )
         return locked
 
 
-def accept_run(run: AIRun) -> tuple[AIRun, SceneVersion | SceneVersion3D]:  # noqa: C901
+def accept_run(  # noqa: C901
+    run: AIRun, *, reason: str | None = None
+) -> tuple[AIRun, SceneVersion | SceneVersion3D]:
     if run.status == AIRun.Status.ACCEPTED and run.accepted_version_id is not None:
         version_model = (
             SceneVersion if run.target_type == AIRun.TargetType.PROJECT else SceneVersion3D
@@ -1132,7 +1163,8 @@ def accept_run(run: AIRun) -> tuple[AIRun, SceneVersion | SceneVersion3D]:  # no
                 locked_2d = Project.objects.select_for_update().get(pk=run.project_id)
                 existing_2d = locked_2d.versions.filter(ai_request_id=ai_request_id).first()
                 if existing_2d is not None:
-                    _finalize_accept(run, existing_2d.id)
+                    _finalize_accept(run, existing_2d.id, reason=reason)
+                    run.refresh_from_db()
                     return run, existing_2d
                 if run.base_version_id != locked_2d.current_version_id:
                     raise StaleBase
@@ -1156,7 +1188,8 @@ def accept_run(run: AIRun) -> tuple[AIRun, SceneVersion | SceneVersion3D]:  # no
                 locked_3d = Project3D.objects.select_for_update().get(pk=run.project3d_id)
                 existing_3d = locked_3d.versions.filter(ai_request_id=ai_request_id).first()
                 if existing_3d is not None:
-                    _finalize_accept(run, existing_3d.id)
+                    _finalize_accept(run, existing_3d.id, reason=reason)
+                    run.refresh_from_db()
                     return run, existing_3d
                 if run.base_version_id != locked_3d.current_version_id:
                     raise StaleBase
@@ -1177,7 +1210,7 @@ def accept_run(run: AIRun) -> tuple[AIRun, SceneVersion | SceneVersion3D]:  # no
                 )
                 locked_3d.current_version = version
                 locked_3d.save(update_fields=["current_version", "updated_at"])
-            _finalize_accept(run, version.id)
+            _finalize_accept(run, version.id, reason=reason)
     except IntegrityError:
         existing: SceneVersion | SceneVersion3D | None
         if run.target_type == AIRun.TargetType.PROJECT:
@@ -1191,7 +1224,8 @@ def accept_run(run: AIRun) -> tuple[AIRun, SceneVersion | SceneVersion3D]:  # no
                 project_id=run.project3d_id, ai_request_id=ai_request_id
             ).first()
         if existing is not None:
-            _finalize_accept(run, existing.id)
+            _finalize_accept(run, existing.id, reason=reason)
+            run.refresh_from_db()
             return run, existing
         raise
     except StaleBase:
@@ -1207,7 +1241,23 @@ def accept_run(run: AIRun) -> tuple[AIRun, SceneVersion | SceneVersion3D]:  # no
     return run, version
 
 
-def _finalize_accept(run: AIRun, version_id: int) -> None:
-    AIRun.objects.filter(pk=run.pk).update(
-        status=AIRun.Status.ACCEPTED, accepted_version_id=version_id
-    )
+def _finalize_accept(run: AIRun, version_id: int, *, reason: str | None = None) -> None:
+    with transaction.atomic():
+        locked = AIRun.objects.select_for_update().get(pk=run.pk)
+        if locked.status == AIRun.Status.ACCEPTED and locked.accepted_version_id == version_id:
+            return
+        if locked.status != AIRun.Status.AWAITING_REVIEW:
+            raise NotAwaitingReview(f"Run is '{locked.status}', not awaiting review.")
+        record_accept = (
+            locked.status == AIRun.Status.AWAITING_REVIEW
+            and locked.target_type == AIRun.TargetType.PROJECT
+        )
+        locked.status = AIRun.Status.ACCEPTED
+        locked.accepted_version_id = version_id
+        locked.save(update_fields=["status", "accepted_version_id"])
+        if record_accept:
+            _record_decision_activity(
+                locked,
+                ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED,
+                reason,
+            )

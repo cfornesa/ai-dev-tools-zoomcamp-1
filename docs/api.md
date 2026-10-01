@@ -564,6 +564,33 @@ fully passing attempt can be accepted. Cancellation and exhausted retry
 budgets are terminal. The run quota counter is charged once for every provider
 call, including failed and automatically retried calls.
 
+## 2D AI-run acceptance and discard history (#1132)
+
+The owner may include an optional `reason` in
+`POST /api/ai/runs/<id>/accept/` or `POST /api/ai/runs/<id>/cancel/`:
+
+```json
+{"reason":"The proposal matches the intended update."}
+```
+
+The value must be a string of at most 280 Unicode code points as submitted.
+The server removes Unicode control characters (General Category `Cc`), trims
+surrounding whitespace, preserves other Unicode, and omits a normalized empty
+value. Missing, `null`, empty, or whitespace-only values are also absent. A
+non-string or overlong value returns HTTP 400 with the standard field-error
+shape; overlong values are rejected rather than truncated. Omitting `reason`
+keeps the endpoint's existing response JSON and status behavior unchanged.
+
+Successful acceptance of a 2D proposal records one `ai_proposal_accepted`
+project activity. The first explicit cancel while a 2D run is awaiting review
+records one `ai_proposal_rejected` activity. Both entries identify the
+authenticated owner and contain only `run_id`, `scope`, `operation`, a
+`change_summary` capped at 200 characters, and optional normalized `reason`.
+Running/terminal cancellation, internal cancellation/failure, failed or stale
+acceptance, and all 3D runs do not create these events. Event creation is
+atomic with the corresponding run/version transition and retries do not
+duplicate events.
+
 ## Generated art-piece refinement (#658)
 
 `POST /api/art-pieces/<public_id>/refine/` is owner-only and accepts an

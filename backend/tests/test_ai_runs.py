@@ -17,12 +17,14 @@ from __future__ import annotations
 import copy
 import json
 import threading
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 import scenes.ai_api as ai_api
@@ -43,7 +45,16 @@ from ai_provider.interface3d import (
 )
 from ai_provider.mistral_provider import AIEditScene3DPatchResult, AIEditScenePatchResult
 from scenes import ai_runs
-from scenes.models import AIRetryPreference, AIRun, Project, Project3D, SceneVersion, SceneVersion3D
+from scenes.models import (
+    AIRetryPreference,
+    AIRun,
+    Project,
+    Project3D,
+    ProjectActivity,
+    SceneVersion,
+    SceneVersion3D,
+    validate_activity_metadata,
+)
 from tests._postgres_routing import close_thread_connections, route_default_to_postgres_test
 
 _BLANK_SCENE_PATH = (
@@ -219,6 +230,14 @@ def _start_create_run(owner, project) -> AIRun:
         operation=AIRun.Operation.CREATE,
         prompt="a red square",
     )
+
+
+def _awaiting_review_2d_run(monkeypatch, owner, project) -> AIRun:
+    _install_fake_provider(monkeypatch, [BLANK_SCENE])
+    run = _start_create_run(owner, project)
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    return run
 
 
 def _enable_retries(owner, max_retries: int = 2) -> None:
@@ -1047,6 +1066,275 @@ def test_full_api_lifecycle_start_advance_accept(monkeypatch, owner_client, proj
 
 
 @pytest.mark.django_db
+def test_accept_api_records_exact_2d_activity_and_is_idempotent(
+    monkeypatch, owner, owner_client, project
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    run.change_summary = "s" * 250
+    run.save(update_fields=["change_summary"])
+
+    first = owner_client.post(
+        f"/api/ai/runs/{run.pk}/accept/", {"reason": "  Keep the blue shape.  "}, format="json"
+    )
+    second = owner_client.post(
+        f"/api/ai/runs/{run.pk}/accept/", {"reason": "retry reason is ignored"}, format="json"
+    )
+
+    assert first.status_code == second.status_code == 200
+    assert first.json()["accepted_version_id"] == second.json()["accepted_version_id"]
+    assert first.json()["status"] == second.json()["status"] == AIRun.Status.ACCEPTED
+    run.refresh_from_db()
+    activity = ProjectActivity.objects.get(project=project)
+    assert run.status == AIRun.Status.ACCEPTED
+    assert activity.actor_id == owner.id
+    assert activity.action_type == ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED
+    assert activity.metadata == {
+        "run_id": run.pk,
+        "scope": run.scope,
+        "operation": run.operation,
+        "change_summary": "s" * 200,
+        "reason": "Keep the blue shape.",
+    }
+    validate_activity_metadata(activity.metadata)
+    assert SceneVersion.objects.filter(project=project).count() == 1
+    assert ProjectActivity.objects.filter(project=project).count() == 1
+
+
+@pytest.mark.django_db
+def test_cancel_api_records_only_first_awaiting_review_2d_discard(
+    monkeypatch, owner, owner_client, project
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    first = owner_client.post(
+        f"/api/ai/runs/{run.pk}/cancel/", {"reason": "  Not what I asked for.  "}, format="json"
+    )
+    second = owner_client.post(f"/api/ai/runs/{run.pk}/cancel/", format="json")
+
+    assert first.status_code == second.status_code == 200
+    assert first.json()["status"] == second.json()["status"] == AIRun.Status.CANCELLED
+    run.refresh_from_db()
+    activity = ProjectActivity.objects.get(project=project)
+    assert run.status == AIRun.Status.CANCELLED
+    assert activity.actor_id == owner.id
+    assert activity.action_type == ProjectActivity.ActionType.AI_PROPOSAL_REJECTED
+    assert activity.metadata == {
+        "run_id": run.pk,
+        "scope": run.scope,
+        "operation": run.operation,
+        "change_summary": run.change_summary[:200],
+        "reason": "Not what I asked for.",
+    }
+    validate_activity_metadata(activity.metadata)
+    assert ProjectActivity.objects.filter(project=project).count() == 1
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({}, None),
+        ({"reason": None}, None),
+        ({"reason": ""}, None),
+        ({"reason": " \t\n "}, None),
+        ({"reason": "r" * 280}, "r" * 280),
+        ({"reason": "\u2003🙂\u2003"}, "🙂"),
+        ({"reason": "a\x00b\x7fc\u0085é"}, "abcé"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("endpoint", "action"),
+    [
+        ("accept", ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED),
+        ("cancel", ProjectActivity.ActionType.AI_PROPOSAL_REJECTED),
+    ],
+)
+@pytest.mark.django_db
+def test_ai_run_decision_reason_normalization_and_omitted_response_shape(
+    monkeypatch, owner, owner_client, project, payload, expected, endpoint, action
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    body = owner_client.post(f"/api/ai/runs/{run.pk}/{endpoint}/", payload, format="json")
+
+    assert body.status_code == 200
+    assert set(body.json()) == {
+        "id",
+        "status",
+        "target_type",
+        "project_id",
+        "project3d_id",
+        "operation",
+        "scope",
+        "selected_target_ids",
+        "assets",
+        "attempts",
+        "repairs",
+        "candidate_scene",
+        "candidate_patch",
+        "change_summary",
+        "plan_summary",
+        "plan",
+        "auto_retry_enabled",
+        "max_retries",
+        "retries_remaining",
+        "criterion_results",
+        "validation_summary",
+        "error_reason",
+        "usage",
+        "accepted_version_id",
+        "created_at",
+        "updated_at",
+        "deadline_at",
+        "cancelled_at",
+    }
+    activity = ProjectActivity.objects.get(project=project)
+    assert activity.action_type == action
+    assert activity.metadata.get("reason") == expected
+    assert ("reason" in activity.metadata) is (expected is not None)
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [123, True, [], {}, "🙂" * 281],
+)
+@pytest.mark.parametrize("endpoint", ["accept", "cancel"])
+@pytest.mark.django_db
+def test_ai_run_decision_rejects_non_string_and_overlong_reason(
+    monkeypatch, owner, owner_client, project, reason, endpoint
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    response = owner_client.post(
+        f"/api/ai/runs/{run.pk}/{endpoint}/", {"reason": reason}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "request_invalid"
+    assert "reason" in response.json()["detail"]
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+    run.refresh_from_db()
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+
+
+@pytest.mark.django_db
+def test_running_and_terminal_cancel_do_not_record_discard_activity(
+    monkeypatch, owner_client, owner, project
+):
+    running = _start_create_run(owner, project)
+    response = owner_client.post(f"/api/ai/runs/{running.pk}/cancel/", format="json")
+    assert response.status_code == 200
+    assert response.json()["status"] == AIRun.Status.CANCELLED
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+
+    failed = _start_create_run(owner, project)
+    failed.status = AIRun.Status.FAILED
+    failed.save(update_fields=["status"])
+    response = owner_client.post(f"/api/ai/runs/{failed.pk}/cancel/", format="json")
+    assert response.status_code == 200
+    assert response.json()["status"] == AIRun.Status.FAILED
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
+def test_invalid_and_stale_2d_acceptance_do_not_record_activity(
+    monkeypatch, owner_client, owner, project
+):
+    invalid = _start_create_run(owner, project)
+    invalid.status = AIRun.Status.AWAITING_REVIEW
+    invalid.candidate_scene_json = {"not": "a valid scene"}
+    invalid.save(update_fields=["status", "candidate_scene_json"])
+    invalid_response = owner_client.post(f"/api/ai/runs/{invalid.pk}/accept/", format="json")
+    assert invalid_response.status_code == 409
+    invalid.refresh_from_db()
+    assert invalid.status == AIRun.Status.FAILED
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+
+    base = SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=BLANK_SCENE,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project.current_version = base
+    project.save(update_fields=["current_version"])
+    stale = _start_create_run(owner, project)
+    stale.status = AIRun.Status.AWAITING_REVIEW
+    stale.candidate_scene_json = BLANK_SCENE
+    stale.save(update_fields=["status", "candidate_scene_json"])
+    newer = SceneVersion.objects.create(
+        project=project,
+        sequence=2,
+        scene_json=BLANK_SCENE,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+        parent=base,
+    )
+    project.current_version = newer
+    project.save(update_fields=["current_version"])
+
+    stale_response = owner_client.post(f"/api/ai/runs/{stale.pk}/accept/", format="json")
+    assert stale_response.status_code == 409
+    stale.refresh_from_db()
+    assert stale.status == AIRun.Status.FAILED
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
+def test_3d_accept_and_discard_never_write_2d_project_activity(
+    monkeypatch, owner_client, owner, project3d
+):
+    _install_fake_provider(monkeypatch, [MINIMAL_SCENE_3D, MINIMAL_SCENE_3D])
+    accepted = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT3D,
+        target=project3d,
+        operation=AIRun.Operation.CREATE,
+        prompt="create a cube",
+    )
+    accepted = ai_runs.advance_run(accepted)
+    assert accepted.status == AIRun.Status.AWAITING_REVIEW
+    accepted_response = owner_client.post(
+        f"/api/ai/runs/{accepted.pk}/accept/", {"reason": "Keep it."}, format="json"
+    )
+    assert accepted_response.status_code == 200
+
+    discarded = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT3D,
+        target=project3d,
+        operation=AIRun.Operation.CREATE,
+        prompt="create another cube",
+    )
+    discarded = ai_runs.advance_run(discarded)
+    assert discarded.status == AIRun.Status.AWAITING_REVIEW
+    discard_response = owner_client.post(
+        f"/api/ai/runs/{discarded.pk}/cancel/", {"reason": "Discard it."}, format="json"
+    )
+    assert discard_response.status_code == 200
+    assert not ProjectActivity.objects.exists()
+
+
+@pytest.mark.parametrize("endpoint", ["accept", "cancel"])
+@pytest.mark.django_db
+def test_activity_insert_rollback_keeps_decision_transition_atomic(
+    monkeypatch, owner, owner_client, project, endpoint
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    original_save = ProjectActivity.save
+
+    def save_then_fail(self, *args, **kwargs):
+        original_save(self, *args, **kwargs)
+        raise RuntimeError("simulated activity insert failure")
+
+    monkeypatch.setattr(ProjectActivity, "save", save_then_fail)
+    with pytest.raises(RuntimeError, match="simulated activity insert failure"):
+        owner_client.post(f"/api/ai/runs/{run.pk}/{endpoint}/", format="json")
+
+    run.refresh_from_db()
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+    assert SceneVersion.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
 def test_add_asset_layer_api_persists_descriptors_and_returns_candidate(
     monkeypatch, owner_client, owner, project
 ):
@@ -1213,3 +1501,79 @@ def test_postgres_concurrent_advance_calls_never_double_attempt(django_db_blocke
         assert call_count["n"] == 1
         run.refresh_from_db(using="postgres_test")
         assert run.status == AIRun.Status.AWAITING_REVIEW
+
+
+@pytest.mark.parametrize("endpoint", ["accept", "cancel"])
+@pytestmark_postgres
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
+def test_postgres_concurrent_ai_run_decisions_write_at_most_one_activity(
+    endpoint, django_db_blocker
+):
+    with django_db_blocker.unblock():
+        user = (
+            get_user_model()
+            .objects.db_manager("postgres_test")
+            .create_user(username=f"ai-run-decision-{endpoint}")
+        )
+        project = Project.objects.using("postgres_test").create(owner=user)
+        run = AIRun.objects.using("postgres_test").create(
+            owner=user,
+            target_type=AIRun.TargetType.PROJECT,
+            project=project,
+            operation=AIRun.Operation.CREATE,
+            scope=AIRun.Scope.WHOLE_SCENE,
+            prompt="deterministic test proposal",
+            status=AIRun.Status.AWAITING_REVIEW,
+            input_digest="0" * 64,
+            candidate_scene_json=BLANK_SCENE,
+            change_summary="Concurrent proposal",
+            deadline_at=timezone.now() + timedelta(minutes=5),
+        )
+        barrier = threading.Barrier(2)
+        responses: list[tuple[int, dict]] = []
+        errors: list[BaseException] = []
+        result_lock = threading.Lock()
+
+        def decide():
+            try:
+                barrier.wait()
+                client = APIClient()
+                client.force_authenticate(user)
+                response = client.post(f"/api/ai/runs/{run.pk}/{endpoint}/", format="json")
+                with result_lock:
+                    responses.append((response.status_code, response.json()))
+            except BaseException as exc:  # preserve worker failures for the main test thread
+                with result_lock:
+                    errors.append(exc)
+            finally:
+                close_thread_connections()
+
+        with route_default_to_postgres_test():
+            workers = [threading.Thread(target=decide) for _ in range(2)]
+            for worker in workers:
+                worker.start()
+            for worker in workers:
+                worker.join(timeout=15)
+
+        assert all(not worker.is_alive() for worker in workers)
+        assert errors == []
+        assert sorted(status for status, _ in responses) == [200, 200]
+        expected_status = AIRun.Status.ACCEPTED if endpoint == "accept" else AIRun.Status.CANCELLED
+        assert all(body["status"] == expected_status for _, body in responses)
+        if endpoint == "accept":
+            assert len({body["accepted_version_id"] for _, body in responses}) == 1
+        activities = ProjectActivity.objects.using("postgres_test").filter(project_id=project.pk)
+        assert activities.count() == 1
+        activity = activities.get()
+        expected_action = (
+            ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED
+            if endpoint == "accept"
+            else ProjectActivity.ActionType.AI_PROPOSAL_REJECTED
+        )
+        assert activity.action_type == expected_action
+        assert activity.actor_id == user.pk
+        if endpoint == "accept":
+            accepted_versions = SceneVersion.objects.using("postgres_test").filter(
+                project_id=project.pk
+            )
+            assert accepted_versions.count() == 1

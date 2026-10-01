@@ -2,6 +2,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -19,13 +20,8 @@ test.describe('anonymous public 3D proportions', () => {
     browser,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
-    expect(projectId).toBeTruthy();
-    if (!projectId) return;
+    const projectId = await createServerProject3D(page);
+    await expect(page).toHaveURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);
 
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
     await page.getByRole('button', { name: 'Edit title' }).click();
@@ -54,9 +50,10 @@ test.describe('anonymous public 3D proportions', () => {
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
     await anonymousPage.goto(`/p3d/${projectId}`);
+    await anonymousPage.waitForURL(/\/users\/@[^/]+\/pieces\/[^/]+$/);
     const frame = anonymousPage.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
-    await expect(toolbar.getByRole('button', { name: 'Open piece controls menu' })).toBeVisible();
+    await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
 
     for (const viewport of [
       { width: 1280, height: 900 },
@@ -80,7 +77,6 @@ test.describe('anonymous public 3D proportions', () => {
       expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
     }
 
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     await expect(

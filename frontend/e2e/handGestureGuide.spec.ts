@@ -2,6 +2,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -16,13 +17,8 @@ test.describe('3D hand gesture guide', () => {
 
   test('presents five named slides without requesting camera permission', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
-    expect(projectId).toBeTruthy();
-    if (!projectId) return;
+    const projectId = await createServerProject3D(page);
+    await expect(page).toHaveURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);
 
     await page.getByRole('button', { name: 'Edit title' }).click();
     const titleForm = page.locator('.editor-title-edit');
@@ -44,13 +40,11 @@ test.describe('3D hand gesture guide', () => {
     await expect(page.getByTestId('visibility-status-3d')).toContainText('Public');
 
     await page.goto(`/p3d/${projectId}`);
+    await page.waitForURL(/\/users\/@[^/]+\/pieces\/[^/]+$/);
 
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
-    // Issue #444: every action in this toolbar (including "Show hand
-    // gesture guide") is nested behind "Open piece controls menu" --
-    // matches immersive3dRouteParity.spec.ts's own working sequence.
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    // The canonical public piece page renders the toolbar actions inline.
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
     await expect(page.getByText('Camera permission')).toHaveCount(0);
 

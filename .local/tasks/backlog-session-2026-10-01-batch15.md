@@ -27,11 +27,11 @@ items advance only after the current transaction is terminal.
 | #1112 | After #1100; drawing-plane E2E | DEPENDENCY-BLOCKED | Migrate its setup after helper foundation. |
 | #1114 | Depends on 3D toolbar/mobile regression lane | DEPENDENCY-BLOCKED | User selected 16:9 stage and outer rail under stage; finish required regression lane. |
 | #1124 | Batch 15 theme/token foundation | CLOSED | QA comment 5930214077; closed completed 2026-10-01. |
-| #1125 | After #1124 | GROOMED | Next transaction: implement shared account component styling. |
-| #1126 | After #1124 | GROOMED | Implement shared shell/header/navigation/toggles after current issue. |
-| #1127 | Independent Batch 15 copy/provider order | GROOMED | Next eligible after #1125, by backlog order. |
+| #1125 | After #1124 | CLOSED | Completed locally in `e2460057`; QA PASS comment 5931636109. |
+| #1126 | After #1124 | GROOMED | Next transaction: implement shared shell/header/navigation/toggles. |
+| #1127 | Independent Batch 15 copy/provider order | GROOMED | Process after #1126 by backlog order. |
 | #1128 | After #1124–#1126 | DEPENDENCY-BLOCKED | Add route-level theme/viewport/contrast coverage after parents. |
-| #1146 | Discovered during #1125 QA; Batch 15 | PROPOSED | Align SPA `.content-panel` soft-shadow behavior with the `--shadow` token; defer implementation to its own issue transaction. |
+| #1146 | Discovered during #1125 QA; Batch 15 | HANDED-OFF | Filed/milestoned as new follow-up; implementation deferred to a later issue transaction per discovery-gate rule. |
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | GROOMED | Implement after Batch 15. |
@@ -118,8 +118,9 @@ closed; retain strict one-issue-at-a-time implementation and QA. Do not push.
 ### #1125 — Account page component styles (current)
 
 **State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
-**Result:** completed locally; GitHub issue closed 2026-10-01. QA comment:
-pending connector post. New related follow-up #1146 records the SPA
+**Result:** completed locally; GitHub issue closed 2026-10-01.
+**QA comment:** https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1125#issuecomment-5931636109.
+New related follow-up #1146 records the SPA
 `.content-panel` soft-shadow/token mismatch discovered in computed-style QA;
 that out-of-scope panel change is deferred to its own transaction.
 
@@ -143,7 +144,7 @@ mentioned by older project notes are absent; their current equivalents,
 or open `REVIEW REQUIRED` gate. Relevant browser/account and local PostgreSQL
 memory topics were read.
 
-**Implementation commit:** pending. Product files: account base/login/signup
+**Implementation commit:** `e2460057`. Product files: account base/login/signup
 templates; focused Django template test; Playwright visual and form-contract
 test. No dependency/API/schema change.
 
@@ -160,7 +161,7 @@ test. No dependency/API/schema change.
 - `UV_CACHE_DIR=/tmp/codex-uv-cache make check` — 1,879 backend tests passed,
   39 skipped; 310 frontend files / 3,187 tests passed; workflow pin, lint,
   format, mypy, and typecheck gates passed.
-- `git diff --check` — pending final issue commit.
+- `git diff --check` — passed before commit.
 
 **QA criterion matrix:** all #1125 criteria pass after final primary-button
 correction to the site accent-tinted action token. Account card consumes its

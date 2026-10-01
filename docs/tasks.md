@@ -25063,5 +25063,17 @@ passed; typecheck, lint (existing warnings), format check, and diff check
 passed. Fixture, publish transition, screenshots, equality checks, editor
 checks, and test/assertion counts were preserved. QA evidence is issue comment
 [#5925025517](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1116#issuecomment-5925025517);
-#1116 is closed completed. The separate private 2D setup issue #1117 remains
-open.
+#1116 is closed completed.
+
+### 2026-10-01 — #1117 private 2D editor toolbar setup
+
+Commit `07229189` switches the private structured 2D stage test to the
+existing server-backed fixture helper and its canonical editor route. The
+current editor uses a visible inline `Piece actions` group; the old hidden
+menu shim is a no-op, so the test now checks visibility of the real toolbar
+and group while retaining the Screenshot-first / Fullscreen-last assertions.
+The focused PostgreSQL/Chromium scenario passed for its 3D and 2D stages.
+Test/expect counts remain 3/20; typecheck, lint (existing warnings), format
+check, and diff check passed. QA evidence is issue comment
+[#5925076078](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1117#issuecomment-5925076078);
+#1117 is closed completed.

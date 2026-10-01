@@ -25327,3 +25327,53 @@ therefore PASS for #1120's mobile product criterion and #1111's 2D compatibility
 criterion, while #1111 remains QA-blocked pending the complete 2D regression
 gate in #1103. Screenshots are retained under ignored
 `frontend/test-results/`.
+
+### 2026-10-01 — Proposed #1144: public 3D E2E fixture migration
+
+During the #1108 locator inventory, the public 3D hand-gesture guide and
+proportions specs were confirmed to navigate to `/local-projects/:id` while
+waiting for the retired `/projects3d/:id` route. Their public-viewer menu
+locator is valid (`PublicProject3DViewer` defaults to menu mode); both tests
+fail before reaching that route. Filed [#1144](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1144)
+as a setup-only follow-up, dependent on #1100's server-helper contract. It is
+PROPOSED and awaits external refinement; no product tests or source files were
+changed for this follow-up.
+
+### 2026-10-01 — Proposed #1145: 3D ink cancel loses mobile selection
+
+The full #1108 Chromium/PostgreSQL batch captured a mismatch in the unchanged
+`drawingPlaneDraw3d.spec.ts` cancel assertion at 375x812: before entering Draw
+mode, the stage screenshot shows the drawing plane selected with transform
+handles; after cancel, the plane handles are absent, so exact screenshot
+equality fails. The desktop scenario passes. This may be a mobile selection
+state defect or a test expectation that should compare durable scene state;
+verify current behavior and preserve the unconfirmed-drawing cancellation
+contract before changing either. Duplicate search covered `docs/tasks.md`,
+`.local/tasks/`, and open GitHub issue search. Filed
+[#1145](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1145),
+milestone Batch 14, as PROPOSED and linked to parent #1096. Per separation of
+duties, hand to another agent after external refinement; no implementation in
+this discovery run.
+
+### 2026-10-01 — #1108 QA rerun and remaining blockers
+
+The earlier nine-spec PostgreSQL-backed Chromium run on the current
+implementation reported 17 passed and 3 failed. `aiDrawingPlane784` had a
+strict-mode ambiguity because `scene3d-preview-canvas-frame` matched the
+original and proposal preview, and its 375x812 accepted-proposal case timed
+out when `Precise values` was intercepted by the open 3D authoring close
+control. `drawingPlaneDraw3d` passed desktop but its 375x812 cancel screenshot
+differed: selected handles visible before Draw were gone after Cancel. The
+selection finding is #1145; the mobile toolbar interception belongs to #1114.
+The stale manual-editor hit `project3dLifecycle.spec.ts:54` remains unreachable
+due to obsolete/local-first creation setup; the public 3D guide/proportions
+setup gap is tracked by #1144.
+
+A fresh `npx playwright test e2e/aiDrawingPlane784.spec.ts --project=chromium`
+attempt failed before test setup because bundled macOS headless Chromium was
+denied `bootstrap_check_in` (permission 1100). This is an environment boundary
+and does not erase the earlier test failures. QA remains FAIL; see issue
+comment [#5928938966](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5928938966).
+The issue remains open. Rerun its full gate on Linux Chromium/PostgreSQL after
+#1114 and fixture follow-ups reconcile. Stage 2a and stage 4 were Codex
+substitutions; stage 3 not run; no Linux/deployment evidence is claimed.

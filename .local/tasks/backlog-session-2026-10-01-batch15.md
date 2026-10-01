@@ -37,8 +37,8 @@ items advance only after the current transaction is terminal.
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
-| #1133 | Activity read API | RECONCILIATION | Implementation `b1796a7f`; independent Stage 4 QA PASS; comment operation unavailable, full evidence recorded locally per process fallback. Close via typed issue update. |
-| #1134 | History UI | ELIGIBLE after #1133 closure | Refresh and groom before Stage 2a. |
+| #1133 | Activity read API | COMPLETED | Implementation `b1796a7f`; independent Stage 4 QA PASS; reconciliation `ca7c5c9c`; closed completed after typed issue update. No QA comment URL; process fallback evidence in ledger. |
+| #1134 | History UI | GROOMED | #1133 closed completed; PM refresh required before Stage 2a. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
 | #1137 | Compare-versions UI | DEPENDENCY-BLOCKED | Requires #1136. |
@@ -50,7 +50,7 @@ items advance only after the current transaction is terminal.
 | #1143 | Owner continuity metrics | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
 | #1144 | Public 3D viewer E2E setup | DEPENDENCY-BLOCKED | Requires #1100. |
 | #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
-| #1148 | Activity in JSON account export | PROPOSED / DEPENDENCY-BLOCKED | Newly filed after duplicate checks; eligible when #1133 closes. |
+| #1148 | Activity in JSON account export | GROOMED / ELIGIBLE | #1133 closed; PM refresh required before Stage 2b. |
 
 ## Transaction ledger
 
@@ -95,7 +95,9 @@ The Batch 16 issues #1131 and #1132 are completed. #1133 is now eligible after
 both writer dependencies closed; #1136 and #1141 remain independent. New
 follow-up #1148 was filed for account JSON export after the duplicate check; it
 depends on #1133's shared activity projection. No unlinked discovery remains.
-**Current issue:** #1133 passed the independent Stage 4 QA review and is in reconciliation. The issue-comment connector exposes only a PR-shaped `pr_number` operation; its attempted use was rejected by automatic review as an unsafe issue target and was not retried. Per `docs/process.md`'s "Closure evidence when GitHub comment tooling is unavailable" rule, the complete verdict/evidence is retained locally and the correctly typed GitHub issue update will close this finite contract. After verified closure, #1134 and #1148 become eligible; next by Batch 16 dependency order is #1134.
+**#1133 reconciliation:** GitHub returned issue #1133 closed with reason `completed` at 2026-10-01T17:08:13Z. The prior transaction docs commit is `ca7c5c9c`. Read-after-write state confirms closure. The comment limitation and local evidence fallback are recorded above.
+
+**Current issue:** #1134, Project history timeline in the 2D editor. Refresh its contract and current worktree before grooming/implementation. #1148 is also now eligible after #1133 but remains queued behind the per-issue transaction gate.
 
 ### #1131 — 2D version lifecycle activity events
 

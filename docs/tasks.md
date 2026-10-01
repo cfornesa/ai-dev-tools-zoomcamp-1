@@ -25656,3 +25656,65 @@ tree. QA cleaned its database, services, fixtures, and task-created Chrome tabs.
 not run. GitHub #1142 is `closed/completed`, confirmed with a post-update fetch at
 2026-10-01 21:51:22Z. #1102's separate Linux CI gate remains unverified; no Linux evidence is
 claimed for #1142.
+
+### 2026-10-01 — #1103 multi-call E2E setup migration and QA
+
+Commit `f98a564d` migrates the four named multi-call specs to #1100's explicit
+server-backed 2D helper. All helper calls/imports/definitions in
+`aiAndRecovery.spec.ts`, `layersPanel.spec.ts`, `interactionRuntime.spec.ts`,
+and `exportConfigDialog.spec.ts` now use the server-backed helper; the export
+setup wrapper preserves its section expansion. Diff is limited to fixture
+setup and helper references. Per-file `test()`/`expect()` counts are unchanged:
+9/101, 4/55, 4/66, 4/26.
+
+Static checks pass: typecheck; lint exits 0 with existing repository warnings;
+format check; Playwright lists all 17 focused Chromium tests; `git diff
+--check`. A local disposable PostgreSQL/Django/Vite run used `AI_PROVIDER=fake`
+and executed all cases without skips: **11 passed, 6 failed, 0 skipped**.
+Failures reached contracts outside #1103's setup-only scope:
+
+- [#1150](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1150):
+  AI recovery and export tests seek an exact `Save` button; rendered editor
+  exposes `Save scene` in Primary editor actions.
+- [#1151](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1151):
+  interaction-runtime scenarios seek a hidden `Reduced` radio after closing
+  its control menu and a `Piece actions` / `Edit scene` trigger no longer
+  exposed on the canonical manual-editor route.
+- [#1152](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1152):
+  Layers panel keyboard reorder did not restore canvas z-order after pointer
+  reordering two top-level shapes on the same layer; this is a follow-up to
+  closed #127/#194, which remain unchanged.
+
+All three new issues use open milestone 14 and are linked from parent #1096.
+Per the discovery separation rule, they are handed to a later transaction and
+are not implemented here. #1103 remains open / QA FAIL. Linux Chromium and the
+full 16-shard matrix were not run; Docker is unavailable and no remote dispatch
+or push was authorized. GitHub #1103 and #1096 bodies were refreshed and
+read-after-write verified; both remain open. The focused test server used a
+new loopback-only database `codex_qa_batch17_1103`; cleanup is recorded in the
+session ledger.
+
+The #1143 time-window discussion is also reconciled: the owner rejects a
+90-day cutoff because quiet projects must retain full historical context.
+Keep lifetime activity visible. The bounded lifetime computation versus
+rollup architecture choice remains open; #1143 must stay in grooming until
+that contract is resolved.
+
+### 2026-10-01 — #1104 lifecycle/publishing fixture migration and GitHub state audit
+
+Commit `ddd46cde` migrates project lifecycle, publishing/remix and populated
+responsive-gallery setup to the server-backed 2D fixture. Test and expectation
+counts are unchanged. Local PostgreSQL Chromium result: **7 passed, 12 failed,
+3 did not run** (the anonymous-viewer dependent tests did not run after their
+shared `beforeAll` failed). Current Save-control failures are tracked by #1150;
+the publication-status locator failures are tracked by #1153. Static checks
+and test discovery pass, but the issue remains open / QA FAIL pending the
+follow-up fixes and Linux gate.
+
+Read-after-write GitHub audit on 2026-10-01 fetched all 21 active Batch 17
+issues (#1096, #1100, #1102–#1104, #1110–#1112, #1114, #1129–#1130,
+#1138–#1140, #1143–#1144, #1149–#1153): all report `open`, with no closed
+timestamp. The previous closure references for #1118–#1123, #1136–#1137,
+#1141–#1142, #1148, #127 and #194 were separately fetched and do report
+`closed`. Local implementation commits and QA notes are not GitHub issue
+closures; keep these state categories explicit in all future rollups.

@@ -37,7 +37,7 @@ items advance only after the current transaction is terminal.
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
-| #1133 | Activity read API | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
+| #1133 | Activity read API | GROOMING | #1131 and #1132 are closed; PM review is active. |
 | #1134 | History UI | DEPENDENCY-BLOCKED | Requires #1133. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |

@@ -32,6 +32,17 @@
   are expected to skip without `POSTGRES_TEST_DATABASE_URL`; the reviewer
   must confirm the evidence boundary and must not close the issue.
 
+## 2026-10-01 — Backlog-session agent loop for #1133
+
+- #1132 is reconciled and closed. A fresh authenticated GitHub open-issue
+  search returned 24 open issues and confirms #1133 is eligible after #1131
+  and #1132. Started its separate PM/groom pass before engineering. The PM
+  must check endpoint/fixture specificity, permission masking, pagination and
+  allowlist behavior, export/deletion coverage, bounded query requirements,
+  exact checks, dependencies, and the local evidence boundary. Stage 2b is
+  rostered to Ollama Cloud / Kimi K3 and will be a separate Codex substitution
+  if unavailable; Stage 4 must be separate.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

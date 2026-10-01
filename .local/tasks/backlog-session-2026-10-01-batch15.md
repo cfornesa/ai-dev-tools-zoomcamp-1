@@ -39,7 +39,7 @@ items advance only after the current transaction is terminal.
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
 | #1133 | Activity read API | COMPLETED | Implementation `b1796a7f`; independent Stage 4 QA PASS; reconciliation `ca7c5c9c`; closed completed after typed issue update. No QA comment URL; process fallback evidence in ledger. |
 | #1134 | History UI | COMPLETED | Corrective commit `f4bd4a30`; independent Stage 4 PASS; GitHub closed completed 2026-10-01T18:28:20Z; read-after-write confirmed. |
-| #1135 | AI proposal reason UI | ENGINEERING | PM refreshed contract; Stage 2a Codex/GPT-6.1-sol substitution active. |
+| #1135 | AI proposal reason UI | COMPLETED | `43cf61e3`; final Stage 4 PASS; GitHub closed completed 2026-10-01T19:50:55Z; read-after-write confirmed. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
 | #1137 | Compare-versions UI | DEPENDENCY-BLOCKED | Requires #1136. |
 | #1138 | Intent note storage/API | DEPENDENCY-BLOCKED | Requires owner decision #1129. |
@@ -50,8 +50,8 @@ items advance only after the current transaction is terminal.
 | #1143 | Owner continuity metrics | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
 | #1144 | Public 3D viewer E2E setup | DEPENDENCY-BLOCKED | Requires #1100. |
 | #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
-| #1148 | Activity in JSON account export | GROOMED / ELIGIBLE | #1133 closed; remains queued behind #1135 transaction. |
-| [#1149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1149) | #1100 server-backed fixture contract; parent #1096 | PROPOSED / HANDED-OFF | Discovered during #1135 QA; retarget the separate 2D and 3D AI Agent E2E specs to their canonical manual-editor routes after #1100 is reconciled. |
+| #1148 | Activity in JSON account export | GROOMED / ELIGIBLE | #1133 closed; implementation can be batched with related activity/export work. |
+| #1149 | AI Agent E2E route migration; parent #1096 | GROOMED / DEPENDENCY-BLOCKED | Discovered during #1135 QA; retarget both AI Agent specs after #1100 is reconciled. |
 
 ## Transaction ledger
 
@@ -100,12 +100,12 @@ depends on #1133's shared activity projection. No unlinked discovery remains.
 
 **#1134 reconciliation:** GitHub returned issue #1134 closed with reason `completed` at 2026-10-01T18:28:20Z after corrective Stage 4 PASS; read-after-write confirms closure. Reconciliation commit `36060300` contains the full criteria evidence and provenance. The backlog may now select the next eligible issue after refreshing the complete open inventory.
 
-**Fresh open-issue inventory (2026-10-01):** authenticated GitHub search
-returned 22 open issues: #1096, #1100, #1102–#1104, #1110–#1112, #1114,
-#1129–#1130, #1135–#1144, and #1148. #1135 is selected next because both
-dependencies (#1132 and #1134) are complete; it remains in PM refresh before
-engineering. The other eligible independent issues remain queued per the
-single-transaction gate.
+**Fresh open-issue inventory after #1134 closure (2026-10-01):** 22 issues:
+#1096, #1100, #1102–#1104, #1110–#1112, #1114, #1129–#1130, #1135–#1144,
+and #1148. #1135 has since closed and discovery added #1149, so the open set
+remains 22: #1096, #1100, #1102–#1104, #1110–#1112, #1114, #1129–#1130,
+#1136–#1144, and #1148–#1149. Refresh authenticated GitHub before the next
+batch.
 
 ### #1135 — 2D AI Agent review reason (PM complete; engineering active)
 
@@ -128,20 +128,39 @@ rostered Opencode Go/Kimi K2.7-code; actual separate Codex engineer/GPT-6.1-sol
 Stage 4 rostered Claude/Sonnet 5/Medium; will use a separate Codex QA agent if
 Claude is unavailable, recording the substitution.
 
-**Current transaction:** #1135 ENGINEERING. No product commit or verification
-claim yet. QA, reconcile and close this issue before starting another issue.
+**Final #1135 transaction:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+Implementation `43cf61e3`; focused 4 files/38 tests passed on docs-only
+descendant `d1a9dbe9`; `make frontend-check` passed with 312 files/3,202 tests;
+dedicated fake-provider E2E passed at desktop/mobile sizes with inspected
+screenshots. Final Stage 4 PASS under the narrowed contract. Legacy AI Agent
+route failures are assigned to #1149 and are not claimed as passing. QA's
+invalid proxy control reached existing :8000 only for two login-page GETs and
+one unsuccessful login POST; no identity/project/AI decision request followed.
+It was excluded; no persistent DB query or cleanup occurred. The prevention
+lesson is recorded in `.agents/memory/local-postgres-browser-verification.md`.
+GitHub closed #1135 completed at 2026-10-01T19:50:55Z; read-after-write
+confirmed.
 
-**Stage 4 contract reconciliation:** QA found `aiAgent2d.spec.ts` and
-`aiAgent3d.spec.ts` fail on their retired routes on both the #1135 parent and
-target; #1149 owns their canonical-route retargeting. #1135's final QA must
-preserve those specs' assertions, reproduce and record the same failures on
-both revisions, and classify the legacy route issue as a verification
-boundary assigned to #1149. It is not a pass claim or a reason to change
-those specs in #1135. Valid non-regression evidence remains the dedicated
-#1135 fake-provider 2D reason E2E and inspected screenshots, focused tests
-showing the 3D caller/request remains unchanged, plus passing frontend
-static/unit checks. The live #1135 contract now records the exact baseline
-and dedicated E2E commands.
+**Owner's batching direction (2026-10-01):** implement and QA the remaining
+issues in dependency-aware batches that share code/context, rather than paying
+a full per-issue setup and context switch each time. Preserve separate
+acceptance matrices/evidence per issue, isolate conflicting file edits, and
+respect real dependency/environment gates. This session instruction overrides
+the default per-issue serial engineering/QA cadence in `docs/process.md` for
+the remaining batch. Do not push or publish.
+
+**Stage 4 contract reconciliation:** the `aiAgent2d.spec.ts` and
+`aiAgent3d.spec.ts` retired-route failures are pre-existing and recorded as
+the baseline boundary; #1149 owns their canonical-route retargeting. The
+controlled parent comparison was invalid; details are recorded in
+DECISIONS.md. Per the owner's instruction, do not retry parent/target runs or
+require their outcome parity.
+Preserve both legacy specs and all assertions unchanged; do not call them
+passing. #1135's behavior gate is the dedicated fake-provider 2D reason E2E
+with inspected screenshots, focused component/API regressions showing the 3D
+caller/request behavior unchanged, and passing frontend static/unit checks.
+The live #1135 contract records these gates and defers legacy route repair to
+#1149.
 
 **Discovery during #1135 QA:** both existing AI Agent E2E specs still use
 retired routes (`/ai-projects/:id` and `/ai-projects3d/:id`) whose redirects
@@ -154,7 +173,8 @@ follow-up [#1149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/114
 in Batch 16, linked to #1096, with separate preserved 2D/3D fixtures and an
 exact Linux Chromium/PostgreSQL command. It depends on #1100's helper contract
 and is handed to a later transaction under the discovery gate; no code was
-changed for it here.
+changed for it here. The recorded baseline, rather than another parent/target
+comparison, is the #1135 legacy-spec evidence boundary per owner direction.
 
 ### #1131 — 2D version lifecycle activity events
 

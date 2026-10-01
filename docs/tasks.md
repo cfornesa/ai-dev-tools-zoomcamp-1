@@ -25271,7 +25271,7 @@ Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed
 | [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | COMPLETE (local QA PASS) |
 | [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API | 2b | A1, A2 | COMPLETE (local QA PASS; issue comment unavailable) |
 | [#1134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1134) | A4 Project history UI | 2a | A3 | COMPLETE (QA PASS; issue closed completed 2026-10-01) |
-| [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | ENGINEERING (2D Agent review flow; legacy E2E route failures baseline-owned by #1149) |
+| [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | COMPLETE (QA PASS; closed completed 2026-10-01; #1149 owns legacy route retargeting) |
 | [#1136](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1136) | B1 scene diff summary function | 2a | — | GROOMED |
 | [#1137](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1137) | B2 Compare versions UI | 2a | B1 | DEPENDENCY-BLOCKED |
 | [#1138](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138) | M1 intent note field/API/export | 2b | D1 | DEPENDENCY-BLOCKED |
@@ -25595,7 +25595,7 @@ per-issue model would have discovered after closure:
 | `manual2dStageChrome.spec.ts`, `layersPanel.spec.ts`, `interactionRuntime.spec.ts`, `public2dRouteStageChrome.spec.ts` | #1102, #1103, #1110, #1111, #1114, #1142 | #1102/#1103 first (setup), then product CSS issues re-verify these specs; #1142 touches the public spec after #1102 |
 | `AIProposalPanel.tsx` | #1135 (reason UI) and #1140 (intent-note disclosure) | #1135 before #1140; #1135 leaves a clean extension point |
 | `docs/api.md`, `ProjectActivity` / export | #1138, #1141, #1143, #1148, #1130 | `docs/api.md` edits serialized; #1148 before #1143 |
-| `e2e/aiAgent2d.spec.ts`, `aiAgent3d.spec.ts` | #1135, #1149 | #1149 (retarget) before #1135's E2E |
+| `e2e/aiAgent2d.spec.ts`, `aiAgent3d.spec.ts` | #1135, #1149 | #1149 owns legacy-route retargeting; #1135 uses its dedicated reason E2E and does not rerun the recorded failing specs |
 
 Proposed waves (milestones recorded per issue, not bounding): **Wave 1** (3D toolbar + 3D
 E2E, Batch 14): #1111, #1114, #1110, #1112, #1144, then the #1100 gate. **Wave 2** (2D E2E

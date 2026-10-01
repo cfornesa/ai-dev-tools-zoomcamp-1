@@ -196,6 +196,34 @@
   substitution for Opencode Go/Kimi K2.7-code. Stage 3 was not requested;
   Stage 4 remains separate and required.
 
+## 2026-10-01 — QA proxy misconfiguration and #1135 baseline boundary
+
+- During an attempted controlled parent comparison for #1135, QA set
+  `VITE_BACKEND_URL` instead of Vite's actual `BROWSER_QA_BACKEND_URL`.
+  The isolated Vite server consequently used its default proxy target
+  `127.0.0.1:8000`. The retained trace confirms two GETs and one POST to
+  `/accounts/login/` returned HTTP 200; no `/api/whoami/`, project, or AI
+  decision request occurred. The login did not complete. The POST may have
+  affected the existing backend's failed-login/rate-limit state; no persistent
+  backend/database query or cleanup was performed. QA immediately stopped
+  the servers and all retries. The attempted parent comparison is invalid.
+- Durable prevention is recorded in
+  `.agents/memory/local-postgres-browser-verification.md`: verify the exact
+  `BROWSER_QA_BACKEND_URL` target and disposable health route before browser
+  launch. No credential or connection detail is recorded.
+- #1135's first QA pass succeeded for its feature-specific checks. The old
+  `aiAgent2d`/`aiAgent3d` specs use retired routes; a parent run showed the
+  same root cause, but outcome counts differed (7 failed/1 skipped vs. 8
+  failed). PM filed #1149 for route retargeting. Do not claim these specs
+  pass. PM narrowed #1135 to the dedicated 2D reason flow plus focused 3D
+  no-field/request coverage; #1149 owns route maintenance. Separate Stage 4
+  re-read the final contract and confirmed the existing evidence satisfied
+  it. GitHub closed #1135 completed at 2026-10-01T19:50:55Z.
+- Owner clarified that remaining issues should be implemented and QA'd in
+  dependency-aware batches to reduce repeated context/setup overhead. Keep
+  per-issue acceptance matrices and evidence; this session instruction
+  overrides the default one-issue engineering/QA cadence. Do not push/publish.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

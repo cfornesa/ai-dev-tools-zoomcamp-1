@@ -273,6 +273,7 @@ test.describe('AI drawing-plane proposals (#784)', () => {
       await expect(undo).toBeEnabled();
       await undo.click();
       await expect(page.getByTestId('plane-selection-overlay')).toBeVisible();
+      await toolbar.getByRole('button', { name: 'Close 3d authoring' }).click();
       await page
         .getByRole('toolbar', { name: /Drawing plane 1 actions/ })
         .getByRole('button', { name: 'Precise values' })

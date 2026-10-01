@@ -21,7 +21,7 @@ from django.contrib.auth import get_user_model
 from django.db import connections
 from rest_framework.test import APIClient
 
-from scenes.models import Project, SceneVersion
+from scenes.models import Project, ProjectActivity, SceneVersion
 
 BLANK_SCENE = json.loads(
     (
@@ -139,6 +139,53 @@ def test_first_save_assigns_sequence_one_with_no_parent(owner_client, project, o
 
     project.refresh_from_db()
     assert project.current_version_id == SceneVersion.objects.get().id
+
+
+@pytest.mark.django_db
+def test_save_records_version_activity_with_only_safe_version_metadata(
+    owner_client, project, owner
+):
+    response = owner_client.post(
+        _versions_url(project), {"scene_json": BLANK_SCENE, "origin": "manual"}, format="json"
+    )
+
+    assert response.status_code == 201
+    saved = response.json()
+    activity = ProjectActivity.objects.get(project=project)
+    assert activity.actor_id == owner.id
+    assert activity.action_type == ProjectActivity.ActionType.VERSION_SAVED
+    assert activity.created_at is not None
+    assert activity.metadata == {
+        "version_id": saved["id"],
+        "sequence": saved["sequence"],
+        "origin": saved["origin"],
+    }
+
+
+@pytest.mark.django_db
+def test_save_rolls_back_version_and_activity_when_transaction_fails(
+    owner_client, project, monkeypatch
+):
+    class InjectedFailure(Exception):  # noqa: N818
+        pass
+
+    original_create = ProjectActivity.objects.create
+
+    def create_then_fail(**kwargs):
+        original_create(**kwargs)
+        raise InjectedFailure("simulated failure after activity insert")
+
+    monkeypatch.setattr(ProjectActivity.objects, "create", create_then_fail)
+
+    with pytest.raises(InjectedFailure):
+        owner_client.post(
+            _versions_url(project), {"scene_json": BLANK_SCENE, "origin": "manual"}, format="json"
+        )
+
+    project.refresh_from_db()
+    assert project.current_version_id is None
+    assert SceneVersion.objects.filter(project=project).count() == 0
+    assert ProjectActivity.objects.filter(project=project).count() == 0
 
 
 @pytest.mark.django_db

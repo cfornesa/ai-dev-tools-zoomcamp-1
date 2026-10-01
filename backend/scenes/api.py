@@ -941,6 +941,16 @@ class SceneVersionListCreateView(APIView):
                     origin=input_serializer.validated_data["origin"],
                     change_label=input_serializer.validated_data.get("change_label", ""),
                 )
+                ProjectActivity.objects.create(
+                    project=locked_project,
+                    actor=request.user if request.user.is_authenticated else None,
+                    action_type=ProjectActivity.ActionType.VERSION_SAVED,
+                    metadata={
+                        "version_id": version.pk,
+                        "sequence": version.sequence,
+                        "origin": version.origin,
+                    },
+                )
                 active_scene.current_version = version
                 active_scene.save(update_fields=["current_version", "updated_at"])
                 locked_project.current_version = version
@@ -1003,15 +1013,30 @@ class SceneVersionDetailView(APIView):
                 # check-then-act sequence -- the lock itself is the point;
                 # nothing below needs to read the locked row's fields.
                 Project.objects.select_for_update().get(pk=project.pk)
+                # Another DELETE may have completed while this request was
+                # waiting on the project lock. Re-read the version under the
+                # same lock ordering so retries observe the committed state.
+                version = SceneVersion.objects.select_for_update().get(pk=version.pk)
                 # Issue #510: a version is protected from soft-delete by
                 # being its *own scene's* current version -- not just by
                 # being the project-wide mirrored `current_version` -- so
                 # this also protects a non-active scene's current version.
                 if version.scene_id is not None and version.scene.current_version_id == version.pk:
                     raise CannotModifyCurrentVersion
-                version.is_deleted = True
-                version.deleted_at = timezone.now()
-                version.save()
+                if not version.is_deleted:
+                    version.is_deleted = True
+                    version.deleted_at = timezone.now()
+                    version.save()
+                    ProjectActivity.objects.create(
+                        project=project,
+                        actor=request.user if request.user.is_authenticated else None,
+                        action_type=ProjectActivity.ActionType.VERSION_DELETED,
+                        metadata={
+                            "version_id": version.pk,
+                            "sequence": version.sequence,
+                            "origin": version.origin,
+                        },
+                    )
         except CannotModifyCurrentVersion:
             return Response(
                 {"detail": "The current version cannot be soft-deleted."},
@@ -1066,6 +1091,17 @@ class SceneVersionRestoreView(APIView):
                     parent=source,
                     origin=SceneVersion.Origin.RESTORE,
                     change_label=f"Restored from version {source.sequence}",
+                )
+                ProjectActivity.objects.create(
+                    project=locked_project,
+                    actor=request.user if request.user.is_authenticated else None,
+                    action_type=ProjectActivity.ActionType.VERSION_RESTORED,
+                    metadata={
+                        "version_id": new_version.pk,
+                        "sequence": new_version.sequence,
+                        "origin": new_version.origin,
+                        "restored_from_sequence": source.sequence,
+                    },
                 )
                 target_scene.current_version = new_version
                 target_scene.save(update_fields=["current_version", "updated_at"])

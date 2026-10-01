@@ -97,7 +97,20 @@ test.describe('3D drawing plane Draw mode (#781)', () => {
       await expect(page.getByText('Drawing plane 1').first()).toBeVisible();
       await frame.scrollIntoViewIfNeeded();
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
-      const before = await frame.screenshot({ path: testInfo.outputPath('stage-before.png') });
+      const stage = page.getByTestId('scene3d-preview');
+      const pageScrollBefore = await page.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
+      await page.screenshot({ path: testInfo.outputPath('stage-before.png') });
+      const stageBefore = await stage.boundingBox();
+      const moveHandleBefore = await page.getByTestId('plane-handle-move').boundingBox();
+      expect(stageBefore).not.toBeNull();
+      expect(moveHandleBefore).not.toBeNull();
+      const moveHandlePositionBefore = {
+        x: moveHandleBefore!.x - stageBefore!.x,
+        y: moveHandleBefore!.y - stageBefore!.y,
+        width: moveHandleBefore!.width,
+        height: moveHandleBefore!.height,
+      };
+      const savedBeforeDraw = await savedObjects(page, projectId);
 
       // Enter Draw mode: stage frozen/hidden, ink editor face-on at the documented resolution.
       toolbar = await openAuthoringPanel(page);
@@ -139,12 +152,36 @@ test.describe('3D drawing plane Draw mode (#781)', () => {
       await page.getByTestId('ink-cancel').click();
       await expect(page.getByTestId('ink-editor')).toHaveCount(0);
       await expect(frame).toBeVisible();
+      await expect(page.getByTestId('plane-handle-move')).toBeVisible();
+      await expect(page.getByTestId('plane-selection-toolbar')).toBeVisible();
       await closeAuthoringPanel(page);
-      await frame.scrollIntoViewIfNeeded();
-      const afterCancel = await frame.screenshot({
-        path: testInfo.outputPath('stage-after-cancel.png'),
-      });
-      expect(afterCancel.equals(before)).toBe(true);
+      await page.evaluate(({ x, y }) => window.scrollTo(x, y), pageScrollBefore);
+      await expect
+        .poll(() => page.evaluate(() => ({ x: window.scrollX, y: window.scrollY })))
+        .toEqual(pageScrollBefore);
+      const stageAfterCancel = await stage.screenshot();
+      await page.screenshot({ path: testInfo.outputPath('stage-after-cancel.png') });
+      const moveHandleAfter = await page.getByTestId('plane-handle-move').boundingBox();
+      const stageAfter = await stage.boundingBox();
+      expect(stageAfter).not.toBeNull();
+      expect(moveHandleAfter).not.toBeNull();
+      expect({
+        x: moveHandleAfter!.x - stageAfter!.x,
+        y: moveHandleAfter!.y - stageAfter!.y,
+        width: moveHandleAfter!.width,
+        height: moveHandleAfter!.height,
+      }).toEqual(moveHandlePositionBefore);
+      expect(await savedObjects(page, projectId)).toEqual(savedBeforeDraw);
+      if (viewport.width === 375) {
+        const layout = await page.evaluate(() => ({
+          viewportWidth: document.documentElement.clientWidth,
+          documentWidth: document.documentElement.scrollWidth,
+          stage: document.querySelector('[data-testid="scene3d-preview"]')!.getBoundingClientRect(),
+        }));
+        expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
+        expect(layout.stage.left).toBeGreaterThanOrEqual(0);
+        expect(layout.stage.right).toBeLessThanOrEqual(layout.viewportWidth);
+      }
 
       // Draw again and Confirm: the shapes land in the plane and show on the stage.
       toolbar = await openAuthoringPanel(page);
@@ -158,8 +195,8 @@ test.describe('3D drawing plane Draw mode (#781)', () => {
       await expect(frame).toBeVisible();
       await closeAuthoringPanel(page);
       await frame.scrollIntoViewIfNeeded();
-      const after = await frame.screenshot({ path: testInfo.outputPath('stage-with-drawing.png') });
-      expect(after.equals(before)).toBe(false);
+      const after = await stage.screenshot({ path: testInfo.outputPath('stage-with-drawing.png') });
+      expect(after.equals(stageAfterCancel)).toBe(false);
 
       // Save and round-trip.
       toolbar = await openAuthoringPanel(page);

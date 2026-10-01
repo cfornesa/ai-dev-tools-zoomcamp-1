@@ -1,5 +1,31 @@
 # DECISIONS.md
 
+## 2026-10-01 — Owner resumes all open Batch 14 issues after Claude Code refinement
+
+- The owner stated that all currently open issues are workable because the
+  latest issues this run filed were further refined and expanded by Claude
+  Code, and authorized work on the currently open set. This supersedes earlier
+  same-run deferrals for the re-refined #1118–#1122 issues; service provenance
+  and each issue's current scope/dependency order remain binding.
+- Current open set at authorization: #1096, #1100, #1102–#1104, #1108,
+  #1110–#1112, #1114, and #1118–#1122. Codex stage-2 work is recorded as a
+  substitution when the rostered implementation service is unavailable.
+- #1118 was scoped by Codex, refined by Claude Code, then corrected during PM
+  review; its implementation is therefore recorded with both actual stage-1
+  contributors. No stage-3 review is claimed unless an independent-family
+  reviewer actually runs.
+
+## 2026-10-01 — #1119 public 2D toolbar QA and closure
+
+- Owner editor publication controls are in the primary-actions File menu's
+  Publication status group. Canonical `/p/:id` uses inline toolbar mode and
+  retains a screen-reader-only no-op menu shim; tests should assert
+  `data-toolbar-mode="inline"` rather than require that shim to be absent.
+- `/embed/p/:id` remains menu mode. Commit `e102ca19` preserves its menu and
+  privacy assertions. Independent QA passed and closed #1119; stage 3 was not
+  run, and local macOS Chromium/PostgreSQL evidence does not satisfy separate
+  Linux matrix gates owned by #1100/#1102.
+
 ## 2026-10-01 — Reconciliation: #1109 test-side work is permitted; #1109 closure is gated on #1111
 
 - The entry above that says #1109's implementation is "handed-off to the next

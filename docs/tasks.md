@@ -25145,3 +25145,33 @@ New defect found (recorded on #1111, not a new issue): an **unscoped**
 ~6737 (inside `@media (max-width:700px)`) contradicts #1111's "2D unchanged"
 criterion. Order: #1118/#1119/#1121 and #1114/#1120 in two lanes (tests vs
 CSS, never two runs on the same files); then #1112, #1102, #1110, #1111, #1096.
+
+### 2026-10-01 — resumed Batch 14 after Claude Code refinement
+
+The owner authorized work on all currently open issues after Claude Code
+refined and expanded the latest follow-ups. The live open set at resumption is
+#1096, #1100, #1102–#1104, #1108, #1110–#1112, #1114, and #1118–#1122.
+Implementation provenance and issue dependency order remain recorded in
+`DECISIONS.md` and `.local/tasks/backlog-session-2026-09-30-batch14.md`.
+
+The latest six-spec #1100 rerun passed 7/7 locally on macOS Chromium against
+disposable PostgreSQL; counts, scope, typecheck, lint, format, and diff checks
+also pass. #1100 remains open / QA FAIL only because its Linux Chromium
+acceptance gate is still required (QA comment 5925601911); #1102–#1104 remain
+blocked on that gate.
+
+For #1118, PM review corrected the Claude refinement's mistaken StageChrome
+test ordinal. The private 2D editor fixes are committed as `533a3ce2`; the
+focused three-spec batch passed 4/4, desktop ink passed 1/1, and full frontend
+Vitest passed 310 files / 3,186 tests. Test titles/counts remain unchanged.
+The 375px ink hit-target remains assigned to #1120. The #692 publication and
+anonymous-route scenario in `legacy2dToolset.spec.ts` is not private-editor
+coverage and has been moved to the existing #1119 public-route transaction.
+QA comment 5925639191 records #1118 as PASS and the issue is closed. For
+#1119, commit `e102ca19` retargets owner publication through File → Publication
+status, validates canonical public inline mode via `data-toolbar-mode`, and
+keeps the embed menu path unchanged. The focused Chromium/PostgreSQL run passed
+3/3, a responsive rerun passed 1/1, and independent full Vitest passed 310
+files / 3,186 tests. Test/expect counts remain 1/10, 1/12, and 1/24. QA comment
+5925829513 records PASS; issue #1119 is closed. Next independent test-lane work
+is #1121; product CSS issues #1114/#1120 remain a separate lane.

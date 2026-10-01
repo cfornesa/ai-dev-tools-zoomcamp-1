@@ -150,6 +150,23 @@
   the connector's PR-shaped comment operation. Typed issue update closed
   #1134 completed at 2026-10-01T18:28:20Z and read-after-write confirmed it.
 
+## 2026-10-01 — #1135 PM correction and Stage 2a dispatch
+
+- PM refreshed #1135 after #1132/#1134 closed. The old contract's one-shot
+  AI proposal controls do not use the event-writing run endpoints, so their
+  reasons could not appear in #1134 Activity. The refined scope targets the
+  2D Agent `awaiting_review` controls and enables them only from the 2D
+  caller, preserving the shared 3D workflow.
+- The issue is now finite and criterion-ready: transient optional reason,
+  trimmed/omitted request field, Unicode-aware 280-code-point boundary,
+  accessible keyboard behavior, focused tests, and disposable fake-provider
+  owner E2E through the #1134 Activity panel at desktop/mobile sizes. No
+  backend/schema/API contract or provider prompt change.
+- Stage 1 was a separate Codex/GPT-6.1-sol PM subagent (substituted: no).
+  Stage 2a was delegated to a separate Codex/GPT-6.1-sol engineer as a
+  substitution for Opencode Go/Kimi K2.7-code. Stage 3 was not requested;
+  Stage 4 remains separate and required.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

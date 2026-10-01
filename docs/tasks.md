@@ -25271,7 +25271,7 @@ Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed
 | [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | COMPLETE (local QA PASS) |
 | [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API | 2b | A1, A2 | COMPLETE (local QA PASS; issue comment unavailable) |
 | [#1134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1134) | A4 Project history UI | 2a | A3 | COMPLETE (QA PASS; issue closed completed 2026-10-01) |
-| [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | GROOMING (dependencies complete; PM refresh next) |
+| [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | ENGINEERING (refined scope: 2D Agent review flow; PM complete) |
 | [#1136](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1136) | B1 scene diff summary function | 2a | — | GROOMED |
 | [#1137](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1137) | B2 Compare versions UI | 2a | B1 | DEPENDENCY-BLOCKED |
 | [#1138](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138) | M1 intent note field/API/export | 2b | D1 | DEPENDENCY-BLOCKED |

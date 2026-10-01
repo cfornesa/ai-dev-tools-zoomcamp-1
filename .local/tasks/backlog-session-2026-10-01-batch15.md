@@ -39,7 +39,7 @@ items advance only after the current transaction is terminal.
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
 | #1133 | Activity read API | COMPLETED | Implementation `b1796a7f`; independent Stage 4 QA PASS; reconciliation `ca7c5c9c`; closed completed after typed issue update. No QA comment URL; process fallback evidence in ledger. |
 | #1134 | History UI | COMPLETED | Corrective commit `f4bd4a30`; independent Stage 4 PASS; GitHub closed completed 2026-10-01T18:28:20Z; read-after-write confirmed. |
-| #1135 | AI proposal reason UI | GROOMING | Dependencies #1132/#1134 are closed; PM refresh required before Stage 2a. |
+| #1135 | AI proposal reason UI | ENGINEERING | PM refreshed contract; Stage 2a Codex/GPT-6.1-sol substitution active. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
 | #1137 | Compare-versions UI | DEPENDENCY-BLOCKED | Requires #1136. |
 | #1138 | Intent note storage/API | DEPENDENCY-BLOCKED | Requires owner decision #1129. |
@@ -105,6 +105,30 @@ returned 22 open issues: #1096, #1100, #1102–#1104, #1110–#1112, #1114,
 dependencies (#1132 and #1134) are complete; it remains in PM refresh before
 engineering. The other eligible independent issues remain queued per the
 single-transaction gate.
+
+### #1135 — 2D AI Agent review reason (PM complete; engineering active)
+
+PM refresh confirmed #1132 and #1134 are closed and found no duplicate. It
+corrected a functional contract mismatch: the old issue referenced one-shot
+AIProposalPanel Accept/Reject controls that do not call #1132's event-writing
+endpoints. The refined scope is the persisted 2D Agent `awaiting_review`
+candidate controls in `AIRunPanel`, enabled only by its 2D caller; 3D remains
+unchanged. Exact contract covers transient optional reason state, trimming and
+whitespace omission, Unicode code-point counter/input cap (280), Enter not
+submitting, accessible label/description, matching accept/cancel request
+payloads, tests, and a real PostgreSQL/fake-provider E2E that writes distinct
+accepted/rejected reasons and reads them from #1134 Activity at 1280x900 and
+375x812. No backend/schema/API-contract change or live provider call.
+
+**Stage 1 provenance:** rostered Codex/GPT-5.6 Luna/Medium; actual PM agent
+Codex/GPT-6.1-sol/effort unavailable; substituted: no. **Stage 2a owner:**
+rostered Opencode Go/Kimi K2.7-code; actual separate Codex engineer/GPT-6.1-sol
+/effort unavailable; substituted: yes. Stage 3 explicitly not requested.
+Stage 4 rostered Claude/Sonnet 5/Medium; will use a separate Codex QA agent if
+Claude is unavailable, recording the substitution.
+
+**Current transaction:** #1135 ENGINEERING. No product commit or verification
+claim yet. QA, reconcile and close this issue before starting another issue.
 
 ### #1131 — 2D version lifecycle activity events
 

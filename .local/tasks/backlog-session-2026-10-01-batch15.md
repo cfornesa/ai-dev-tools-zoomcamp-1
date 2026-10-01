@@ -39,7 +39,7 @@ items advance only after the current transaction is terminal.
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
 | #1133 | Activity read API | COMPLETED | Implementation `b1796a7f`; independent Stage 4 QA PASS; reconciliation `ca7c5c9c`; closed completed after typed issue update. No QA comment URL; process fallback evidence in ledger. |
 | #1134 | History UI | COMPLETED | Corrective commit `f4bd4a30`; independent Stage 4 PASS; GitHub closed completed 2026-10-01T18:28:20Z; read-after-write confirmed. |
-| #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
+| #1135 | AI proposal reason UI | GROOMING | Dependencies #1132/#1134 are closed; PM refresh required before Stage 2a. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
 | #1137 | Compare-versions UI | DEPENDENCY-BLOCKED | Requires #1136. |
 | #1138 | Intent note storage/API | DEPENDENCY-BLOCKED | Requires owner decision #1129. |
@@ -50,7 +50,7 @@ items advance only after the current transaction is terminal.
 | #1143 | Owner continuity metrics | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
 | #1144 | Public 3D viewer E2E setup | DEPENDENCY-BLOCKED | Requires #1100. |
 | #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
-| #1148 | Activity in JSON account export | GROOMED / ELIGIBLE | #1133 closed; PM refresh required before Stage 2b. |
+| #1148 | Activity in JSON account export | GROOMED / ELIGIBLE | #1133 closed; remains queued behind #1135 transaction. |
 
 ## Transaction ledger
 
@@ -98,6 +98,13 @@ depends on #1133's shared activity projection. No unlinked discovery remains.
 **#1133 reconciliation:** GitHub returned issue #1133 closed with reason `completed` at 2026-10-01T17:08:13Z. The prior transaction docs commit is `ca7c5c9c`. Read-after-write state confirms closure. The comment limitation and local evidence fallback are recorded above.
 
 **#1134 reconciliation:** GitHub returned issue #1134 closed with reason `completed` at 2026-10-01T18:28:20Z after corrective Stage 4 PASS; read-after-write confirms closure. Reconciliation commit `36060300` contains the full criteria evidence and provenance. The backlog may now select the next eligible issue after refreshing the complete open inventory.
+
+**Fresh open-issue inventory (2026-10-01):** authenticated GitHub search
+returned 22 open issues: #1096, #1100, #1102–#1104, #1110–#1112, #1114,
+#1129–#1130, #1135–#1144, and #1148. #1135 is selected next because both
+dependencies (#1132 and #1134) are complete; it remains in PM refresh before
+engineering. The other eligible independent issues remain queued per the
+single-transaction gate.
 
 ### #1131 — 2D version lifecycle activity events
 

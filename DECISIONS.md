@@ -2292,3 +2292,18 @@ updates. The remaining open backlog was not silently claimed complete.
   health prerequisites and the local Docker daemon. QA therefore records
   `FAIL/BLOCKED` for evidence, not a product failure; no browser claim is
   substituted from unit tests.
+
+## 2026-10-01 — Owner authorizes #1111, #1110, and #1109 rerun
+
+- The owner explicitly authorized implementation of #1111 and #1110 after
+  issue refinement, followed by another #1109 run. This supersedes earlier
+  deferral/handoff wording for those two issue implementations in this run.
+- #1112 was discovered during #1110 verification and filed through the
+  discovery gate; it was not included in the owner's implementation scope.
+  Keep it handed off pending a later authorization/session.
+- #1109's rerun exposed real mobile authoring-panel overflow (113x714 scroll
+  extent vs 42x518 client extent at 375x812). Its issue's decision rule
+  requires owner direction before changing the UI contract or filing a
+  product/test-contract child. Keep #1109 and its dependents open meanwhile.
+- Memory-file session checkpoint remains unresolved: propose durable lessons
+  to the owner before updating MEMORY.md.

@@ -148,12 +148,15 @@ test.describe('manual 3D editor stage chrome', () => {
               height: Number.parseFloat(iconStyle.height),
             };
           }),
-          overflow: getComputedStyle(panel).overflow,
           scrollWidth: panel.scrollWidth,
           clientWidth: panel.clientWidth,
           scrollHeight: panel.scrollHeight,
           clientHeight: panel.clientHeight,
-          scrollable: ['auto', 'scroll'].includes(getComputedStyle(panel).overflowY),
+          scrollable:
+            (['auto', 'scroll'].includes(getComputedStyle(panel).overflowX) &&
+              panel.scrollWidth > panel.clientWidth) ||
+            (['auto', 'scroll'].includes(getComputedStyle(panel).overflowY) &&
+              panel.scrollHeight > panel.clientHeight),
         };
       });
     expect(mobileCommandLayout.columns.split(' ')).toHaveLength(1);
@@ -162,8 +165,8 @@ test.describe('manual 3D editor stage chrome', () => {
       expect(icon.width).toBeLessThanOrEqual(20);
       expect(icon.height).toBeLessThanOrEqual(20);
     }
-    expect(mobileCommandLayout.overflow).toBe('visible');
     expect(mobileCommandLayout.scrollWidth).toBe(mobileCommandLayout.clientWidth);
+    expect(mobileCommandLayout.scrollHeight).toBe(mobileCommandLayout.clientHeight);
     expect(mobileCommandLayout.scrollable).toBe(false);
     await toolbar.getByRole('button', { name: /close 3d authoring/i }).click();
     await page.setViewportSize({ width: 1280, height: 900 });

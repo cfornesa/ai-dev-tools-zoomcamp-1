@@ -25159,6 +25159,17 @@ activated the generated-piece description panel, its focused scenario passed
 comment [#5926038646](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121#issuecomment-5926038646)
 records PASS; #1121 is closed. Evidence is local macOS Chromium/PostgreSQL.
 
+### 2026-10-01 — #1122 private owner-view fixture migration (CLOSED)
+
+Commit `977746de` replaces the local-first Gallery creation step in the #790
+private owner-view test with existing server-backed 3D and 2D helpers. The
+focused Chromium/PostgreSQL scenario passed 1/1, exercising both owner routes
+and anonymous privacy checks at 1280x900 and 375x812; test/expect counts remain
+3/20. Typecheck, lint (existing warnings), format, and diff checks passed.
+Independent QA comment
+[#5926110585](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1122#issuecomment-5926110585)
+records PASS; #1122 is closed. Evidence is local macOS Chromium/PostgreSQL.
+
 ### 2026-10-01 — distillation of Codex-filed #1114, #1118–#1121 (Batch 14)
 
 Refinement sections were appended to each body (original text preserved).

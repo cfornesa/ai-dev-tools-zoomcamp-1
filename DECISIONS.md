@@ -1,5 +1,27 @@
 # DECISIONS.md
 
+## 2026-10-01 — LIGDOL thesis revised from two architecture diagrams; login-page design parity filed
+
+- The owner supplied two LIGDOL diagrams (a layered *System Architecture* view
+  and an *orchestration* view) and directed that they carefully override the
+  existing plan. `LIGDOL_Creative_Continuity_Thesis.md` (local, gitignored per
+  `.gitignore`) was revised in place: Section 5 replaced with a layered view,
+  an orchestration view, a Mermaid diagram, a reconciliation with the old
+  five-layer model and infrastructure principles; Sections 3, 6, 7, 9, 10, 12,
+  13 amended; Appendix A logs every override. Key overrides: Canvas is now a
+  capability rather than a layer; the Project Graph is the enumerated source of
+  truth; the Intelligence layer is decomposed into an orchestrator, Discovery /
+  Creative / Judgment agents and Creative Memory; calls are demoted to a later
+  extension. Items marked "interpretation" or "working implication" are the
+  agent's reading of the diagrams, not owner statements.
+- This does **not** change the app's scope: the 2026-09-27 LIGDOL scoping
+  decision (only two compatible ideas imported; the rest deferred as a separate
+  deliberate initiative) stands. No app issues were filed from the thesis.
+- Login-page style mismatch (owner screenshot) was verified on the local stack
+  (hard-coded dark stylesheet in `backend/templates/account/base.html`, no
+  site tokens, nav, or toggles; provider buttons inconsistent because only
+  `.google` is styled) and filed as Batch 15 issues #1124-#1128.
+
 ## 2026-10-01 — Owner resumes all open Batch 14 issues after Claude Code refinement
 
 - The owner stated that all currently open issues are workable because the

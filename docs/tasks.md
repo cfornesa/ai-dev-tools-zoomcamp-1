@@ -25229,3 +25229,19 @@ keeps the embed menu path unchanged. The focused Chromium/PostgreSQL run passed
 files / 3,186 tests. Test/expect counts remain 1/10, 1/12, and 1/24. QA comment
 5925829513 records PASS; issue #1119 is closed. Next independent test-lane work
 is #1121; product CSS issues #1114/#1120 remain a separate lane.
+
+### 2026-10-01 — Batch 15: account-page (allauth) design parity
+
+Owner reported that `/accounts/login/` does not match the rest of the site.
+Verified on the local stack (computed styles, side by side with `/gallery`):
+the page is a server-rendered allauth template with a hard-coded dark
+stylesheet, so it ignores the light/dark/system preference and the admin site
+palette/presentation; it has no navigation, theme or motion toggle, or skip
+link; and provider buttons are inconsistent (only `.google` has the secondary
+style). Filed, in dependency order, milestone Batch 15 (open):
+[#1124](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1124) theme/token plumbing (stage 2b, design options with
+recommendation); [#1125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1125) component styles (after #1124);
+[#1126](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1126) header/nav/footer/toggles (after #1124);
+[#1127](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1127) provider-neutral copy and divider (independent);
+[#1128](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1128) regression coverage (after #1124-#1126). All
+guard the `loginViaUI` selectors and the allauth POST forms. Not implemented.

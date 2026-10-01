@@ -25450,3 +25450,16 @@ proportions setup is separately tracked by #1144. Those unverified setup routes
 were left untouched rather than counted as passing. Typecheck, lint, format,
 and all 3,187 frontend unit tests pass. Evidence is local macOS Chromium and
 disposable PostgreSQL; no Linux or deployment result is claimed.
+# 2026-10-01 — #1127 login provider guidance closed
+
+Issue #1127 closed completed after QA PASS comment
+[#5932906647](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1127#issuecomment-5932906647).
+Commit `7efd8596` adds provider-neutral login and closed-signup guidance, an
+accessible divider and named provider group, deterministic alphabetical
+provider ordering, and mobile/desktop light/dark Playwright coverage. The
+focused authentication tests passed 42 cases; the backend suite passed 1,883
+with 39 skips. Frontend lint, Prettier, typecheck, and 3,187 tests passed after
+temporarily moving the ignored generated `frontend/.pytest_cache/README.md`
+that causes the aggregate `make check` formatting step to fail. Visual
+screenshots and the Chrome accessibility tree were inspected locally. Signup
+behavior, form fields, actions, CSRF, and provider POST flows were preserved.

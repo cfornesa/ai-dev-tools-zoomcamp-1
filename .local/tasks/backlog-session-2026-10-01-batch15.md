@@ -29,7 +29,7 @@ items advance only after the current transaction is terminal.
 | #1124 | Batch 15 theme/token foundation | CLOSED | QA comment 5930214077; closed completed 2026-10-01. |
 | #1125 | After #1124 | CLOSED | Completed locally in `e2460057`; QA PASS comment 5931636109. |
 | #1126 | After #1124 | CLOSED | QA PASS; implementation commit `f8630dc5`; GitHub closed completed 2026-10-01. |
-| #1127 | Independent Batch 15 copy/provider order | GROOMED | Process after #1126 by backlog order. |
+| #1127 | Independent Batch 15 copy/provider order | CLOSED | QA PASS comment 5932906647; implementation `7efd8596`; closed completed 2026-10-01. |
 | #1128 | After #1124–#1126 | GROOMED | Eligible now that #1124–#1126 are closed; next eligible after #1127. |
 | #1146 | Discovered during #1125 QA; Batch 15 | HANDED-OFF | Filed/milestoned as new follow-up; implementation deferred to a later issue transaction per discovery-gate rule. |
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
@@ -51,6 +51,38 @@ items advance only after the current transaction is terminal.
 | #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
 
 ## Transaction ledger
+
+### #1127 — Login guidance, provider divider, and order
+
+**State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`. Completed
+2026-10-01; QA PASS comment
+[#5932906647](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1127#issuecomment-5932906647).
+
+| Stage | Rostered owner | Actual owner | Substituted |
+|---|---|---|---|
+| PM/grooming | Codex / GPT-6.1-sol | Codex / GPT-6.1-sol / effort unavailable | no |
+| Implementation / stage 2a | Opencode Go / Kimi K2.5 | Codex / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / stage 3 | Mistral Vibe | Not requested / not run | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
+
+Implementation commit: `7efd8596`. Login copy is provider-neutral; the closed
+signup page clarifies that password signup is unavailable while enabled social
+providers can create accounts following consent. Provider forms sort by
+alphabetical display name, and the visible divider and named provider group
+appear in the accessibility tree. Login fields, labels, actions, CSRF, and
+provider POST forms remain unchanged. Google and GitHub account creation after
+consent are covered by OAuth tests; LinkedIn is optional and requires an email.
+
+Focused auth suite: 42 passed. Full backend suite: 1,883 passed, 39 skipped.
+Full frontend suite: 310 files / 3,187 tests passed; lint (existing warnings),
+Prettier, and typecheck passed. The initial `make check` stopped at Prettier
+because it scanned ignored generated `frontend/.pytest_cache/README.md`; after
+temporarily moving/restoring that file, `make frontend-check` passed all
+frontend gates. Login Playwright regression passed at 375px/1280px in light and
+dark themes, with no horizontal overflow; screenshots were inspected and the
+active Chrome accessibility tree exposed the separator and provider group.
+Evidence is local disposable PostgreSQL + macOS Chromium; no CI/Linux or
+deployment evidence claimed. No memory update required.
 
 ### #1108 — Inline 3D toolbar locator audit
 

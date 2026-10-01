@@ -9,14 +9,14 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiPatch } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
 async function createPublishedProject(page: Page): Promise<string> {
-  const projectId = await createBlankProjectViaUI(page);
+  const projectId = await createServerProject2D(page);
 
   const metadata = await apiPatch(page.context(), `/api/projects/${projectId}/`, {
     title: 'Legacy 2D compatibility study',

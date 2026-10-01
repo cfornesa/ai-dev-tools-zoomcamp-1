@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -38,7 +38,7 @@ test.describe('manual 2D editor shell', () => {
 
   test('keeps primary actions in panel order and reveals tools responsively', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
+    await createServerProject2D(page);
 
     const preview = page.getByRole('region', { name: 'Preview' });
     const controlPanel = page.getByTestId('editor-control-panel');

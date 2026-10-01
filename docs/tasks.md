@@ -25501,3 +25501,20 @@ logout assertions remain unchanged. The focused local Chromium scenario passed
 3,187 tests). Screenshots at 375×812 and 1280×900 were inspected. Evidence is
 local disposable PostgreSQL + macOS Chromium; no Linux or deployment result is
 claimed. Stage 2a and stage 4 were Codex substitutions; stage 3 was not run.
+
+### 2026-10-01 — #1146 groomed for implementation
+
+[#1146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146) was
+discovered while verifying #1125. PM review found that its original issue
+named the CSS selector and variants but not one route/fixture or a screenshot
+matrix. A refined closure contract is now appended to the issue: authenticated
+`/admin/content`, seeded application-admin fixture, first visible
+`.content-panel`, and computed-style/screenshot checks for none/soft/offset/
+default across light/dark and 1280×900/375×812. The test must snapshot and
+restore presentation settings in `finally` using the disposable local test
+database; no published/shared database or deployment evidence applies.
+The change is limited to `frontend/src/index.css` and a focused
+`frontend/e2e/contentPanelShadow.spec.ts`; Stage 2a. #1125 is already closed
+and no dependency or duplicate was found. Next action: implement #1146, run
+its focused browser regression and `UV_CACHE_DIR=/tmp/codex-uv-cache make
+check`, then perform a separate QA pass.

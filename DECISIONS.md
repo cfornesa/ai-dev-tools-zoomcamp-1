@@ -9,6 +9,15 @@
   substitution for Claude Sonnet 5/Medium and will be recorded in the
   transaction ledger. No independent-family stage 3 is planned.
 
+## 2026-10-01 — Backlog-session agent loop for #1146
+
+- The Codex orchestrator delegated #1146 grooming to a separate Codex agent.
+  The initial issue lacked a fixed browser route and fixture; before
+  implementation its contract was extended to name authenticated
+  `/admin/content`, the seeded admin fixture, safe presentation-state restore,
+  and the 16-cell computed-style/screenshot matrix. Stage 2a remains
+  substituted by Codex for Opencode Go; stage 4 will be a separate QA pass.
+
 ## 2026-10-01 — #1124 design chosen; LIGDOL adaptation plan distilled (Batch 16)
 
 - **#1124:** the owner chose option 1 — server-injected site presentation plus

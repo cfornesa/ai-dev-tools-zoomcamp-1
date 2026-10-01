@@ -31,7 +31,7 @@ items advance only after the current transaction is terminal.
 | #1126 | After #1124 | CLOSED | QA PASS; implementation commit `f8630dc5`; GitHub closed completed 2026-10-01. |
 | #1127 | Independent Batch 15 copy/provider order | CLOSED | QA PASS comment 5932906647; implementation `7efd8596`; closed completed 2026-10-01. |
 | #1128 | After #1124–#1126 | CLOSED | QA PASS comment 5933282991; implementation `19f9411b`; closed completed 2026-10-01. Existing `accountShell.spec.ts` stale copy failure was shifted to #1147. |
-| #1146 | Discovered during #1125 QA; Batch 15 | HANDED-OFF | Filed/milestoned as new follow-up; implementation deferred to a later issue transaction per discovery-gate rule. |
+| #1146 | Discovered during #1125 QA; Batch 15 | GROOMED | Exact browser route/fixture and 16-cell screenshot/computed-style matrix appended to issue; independent Stage 2a work, ready after #1147. |
 | #1147 | Discovered during #1128 regression batch; test maintenance | CLOSED | Commit `1ca91017`; QA PASS comment 5933568932; closed completed 2026-10-01. |
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |

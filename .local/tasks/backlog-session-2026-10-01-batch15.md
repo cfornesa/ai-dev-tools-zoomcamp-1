@@ -30,8 +30,9 @@ items advance only after the current transaction is terminal.
 | #1125 | After #1124 | CLOSED | Completed locally in `e2460057`; QA PASS comment 5931636109. |
 | #1126 | After #1124 | CLOSED | QA PASS; implementation commit `f8630dc5`; GitHub closed completed 2026-10-01. |
 | #1127 | Independent Batch 15 copy/provider order | CLOSED | QA PASS comment 5932906647; implementation `7efd8596`; closed completed 2026-10-01. |
-| #1128 | After #1124–#1126 | GROOMED | Eligible now that #1124–#1126 are closed; next eligible after #1127. |
+| #1128 | After #1124–#1126 | CLOSED | QA PASS comment 5933282991; implementation `19f9411b`; closed completed 2026-10-01. Existing `accountShell.spec.ts` stale copy failure was shifted to #1147. |
 | #1146 | Discovered during #1125 QA; Batch 15 | HANDED-OFF | Filed/milestoned as new follow-up; implementation deferred to a later issue transaction per discovery-gate rule. |
+| #1147 | Discovered during #1128 regression batch; test maintenance | HANDED-OFF | Criterion-ready follow-up filed after `accountShell.spec.ts` failed on #1127's removed “New here?” copy; implementation deferred to a later transaction. |
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | GROOMED | Implement after Batch 15. |
@@ -83,6 +84,42 @@ dark themes, with no horizontal overflow; screenshots were inspected and the
 active Chrome accessibility tree exposed the separator and provider group.
 Evidence is local disposable PostgreSQL + macOS Chromium; no CI/Linux or
 deployment evidence claimed. No memory update required.
+
+### #1128 — Account pages design parity regression coverage
+
+**State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`. Completed
+2026-10-01; QA PASS comment
+[#5933282991](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1128#issuecomment-5933282991).
+
+| Stage | Rostered owner | Actual owner | Substituted |
+|---|---|---|---|
+| PM/grooming | Codex / GPT-6.1-sol | Codex / GPT-6.1-sol / effort unavailable | no |
+| Implementation / stage 2a | Opencode Go / Kimi K2.5 | Codex / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / stage 3 | Mistral Vibe | Not requested / not run | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
+
+Implementation commit: `19f9411b` (Playwright test only). The new
+`frontend/e2e/accountPagesDesignParity.spec.ts` covers login and the reachable
+closed-signup page at 375×812 and 1280×900 under light, dark, system/light, and
+system/dark preferences. All 16 screenshot cells are attached to test results,
+saved, and visually inspected. Theme attributes and CSS variables match the
+SPA gallery; there is no horizontal overflow. Computed contrast checks cover
+body/intro text, labels, placeholders, validation error text, buttons, and the
+actual 3px input focus ring against both adjacent surfaces. Keyboard checks
+cover first-focus skip link and theme persistence to `/gallery`. A temporary
+`.google`-only style mutation caused the new test to fail on provider-token
+parity, then the original template was restored.
+
+Focused matrix: 1 passed (16 route/viewport/theme cells). `make frontend-check`
+passed lint (pre-existing warnings only), Prettier, typecheck, and 310 files /
+3,187 tests. `npx playwright test --list` lists the new spec; the scheduled and
+manual CI 16-shard full-suite command auto-discovers it under Playwright's
+`testDir`. The related four-spec account regression batch had 4 passes and one
+failure: existing #1126 `accountShell.spec.ts` still expects the “New here?”
+copy removed by #1127. Filed as [#1147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1147)
+and deferred per the discovery rule; it does not change #1128's finite
+test-only acceptance. Evidence is a local disposable PostgreSQL-backed stack
+and macOS Chromium; no Linux or deployment result claimed.
 
 ### #1108 — Inline 3D toolbar locator audit
 

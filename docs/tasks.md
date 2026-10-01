@@ -25463,3 +25463,27 @@ temporarily moving the ignored generated `frontend/.pytest_cache/README.md`
 that causes the aggregate `make check` formatting step to fail. Visual
 screenshots and the Chrome accessibility tree were inspected locally. Signup
 behavior, form fields, actions, CSRF, and provider POST flows were preserved.
+
+## 2026-10-01 — Follow-up #1147 proposed from #1128 regression QA
+
+During the #1128 account browser regression batch,
+`frontend/e2e/accountShell.spec.ts` failed because its helper-copy assertion
+still expects “New here?” after #1127 changed the login copy. The page itself
+renders, and #1128's new login/signup route matrix passes; this is an existing
+test-contract mismatch outside #1128's new-spec scope. Filed and linked
+[#1147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1147) as a
+criterion-ready test-only follow-up. The backlog discovery rule defers its
+implementation to a later transaction.
+
+## 2026-10-01 — #1128 account design parity coverage closed
+
+Issue #1128 closed completed after QA PASS comment
+[#5933282991](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1128#issuecomment-5933282991).
+Test-only implementation `19f9411b` adds a 16-cell login/closed-signup route,
+viewport, and theme-preference matrix with contrast, style-token, overflow,
+keyboard, and preference-persistence checks. All 16 screenshots were attached
+to test results and visually inspected. The new focused Chromium spec passes;
+`make frontend-check` passes lint, formatting, typecheck, and 3,187 tests.
+The broader related account batch had one stale #1126 shell-copy assertion
+failure from #1127's new wording; criterion-ready test follow-up #1147 owns
+that correction and is deferred to a later transaction.

@@ -151,15 +151,10 @@ test.describe('owner (private) vs public regular view toolbar (#773)', () => {
     const { handle } = (await profileResponse.json()) as { handle: string };
     const urls: Record<string, string> = {};
 
-    for (const [menuItem, kind] of [
-      ['Create a new 3D project', '3d'],
-      ['Create a new 2D project with p5.js', '2d'],
-    ] as const) {
+    for (const kind of ['3d', '2d'] as const) {
       await page.setViewportSize({ width: 1280, height: 900 });
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      await page.getByRole('menuitem', { name: menuItem }).click();
-      await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
+      if (kind === '3d') await createServerProject3D(page);
+      else await createServerProject2D(page);
       const slug = new URL(page.url()).pathname.split('/').pop()!;
       urls[kind] = `/users/@${handle}/pieces/${slug}`;
 

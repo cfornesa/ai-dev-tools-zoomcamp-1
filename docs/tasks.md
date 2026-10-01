@@ -25244,7 +25244,12 @@ recommendation); [#1125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/iss
 [#1126](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1126) header/nav/footer/toggles (after #1124);
 [#1127](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1127) provider-neutral copy and divider (independent);
 [#1128](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1128) regression coverage (after #1124-#1126). All
-guard the `loginViaUI` selectors and the allauth POST forms. Not implemented.
+guard the `loginViaUI` selectors and the allauth POST forms. #1124 is implemented
+on commits `2c3056d7`, `8cdeb84f`, and `3646959e`; its local QA matrix and full
+`make check` pass. GitHub QA comment 5930214077 records PASS and #1124 is closed
+as completed. The transaction and remaining open-issue manifest are recorded
+in `.local/tasks/backlog-session-2026-10-01-batch15.md`. #1125 and #1126 are
+now eligible; #1127 remains independent, and #1128 waits for #1125/#1126.
 
 ### 2026-10-01 — Task distillation: LIGDOL adaptation (Batch 16)
 

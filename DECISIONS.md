@@ -26,6 +26,15 @@
   run, and local macOS Chromium/PostgreSQL evidence does not satisfy separate
   Linux matrix gates owned by #1100/#1102.
 
+## 2026-10-01 — Owner choice for #1114 mobile drawing-plane controls
+
+- The owner selected the outer-rail layout after gallery review: keep the
+  rendered 3D stage at 16:9 at 375x812 and 1280x900, and place selected-plane
+  actions in a separate row below the stage on phone widths. The surrounding
+  page may grow to make room; the scene canvas must not become taller than its
+  16:9 frame. Preserve the desktop floating layout and keep rules scoped to the
+  3D editor. This supersedes the issue refinement's taller-stage option.
+
 ## 2026-10-01 — Reconciliation: #1109 test-side work is permitted; #1109 closure is gated on #1111
 
 - The entry above that says #1109's implementation is "handed-off to the next

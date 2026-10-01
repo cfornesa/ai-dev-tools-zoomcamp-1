@@ -25035,8 +25035,10 @@ and gates #1112 plus #1110's final verification. The issue now defines
 cross-group geometry scope (selected-plane toolbar vs. inline 3D editor
 toolbar) and lists exact commands for its new geometry spec, repeated #796,
 #782, existing 2D specs/component tests, 3D stage geometry, and static checks.
-Implementation is waiting on the owner's answer about retaining 16:9 or
-allowing a taller 375px stage.
+The owner selected the outer-rail approach: keep the measured scene frame at
+16:9 at 375x812 and 1280x900, put the selected-plane action toolbar in a
+separate row below the frame on narrow stages, and keep the desktop floating
+layout. The selection is recorded in `DECISIONS.md` and the issue body.
 
 ### 2026-10-01 — #1108 inline-toolbar audit QA and follow-ups
 

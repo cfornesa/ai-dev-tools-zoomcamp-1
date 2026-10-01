@@ -6514,6 +6514,10 @@ select.ai-proposal-field-full-width {
   pointer-events: auto;
 }
 
+.project3d-workspace .editor-piece-stage-toolbar-host > .editor-piece-stage-toolbar {
+  pointer-events: none;
+}
+
 .editor-piece-stage-toolbar > * {
   pointer-events: auto;
 }
@@ -6521,21 +6525,28 @@ select.ai-proposal-field-full-width {
 /* The editor action group and the lower text actions occupy separate overlay
    regions. Keep the named authoring trigger above the lower action rail on
    narrow stages so a disabled Save button cannot intercept its tap target. */
-.editor-piece-stage-toolbar [aria-label='Editor actions'] {
+.project3d-workspace .editor-piece-stage-toolbar [aria-label='Editor actions'] {
   position: relative;
   z-index: 3;
+  pointer-events: none;
 }
 
-.editor-piece-stage-toolbar [aria-label='Editor actions'] > .piece-stage-controls {
+.project3d-workspace
+  .editor-piece-stage-toolbar
+  [aria-label='Editor actions']
+  > .piece-stage-controls {
   position: relative;
   z-index: 4;
+  pointer-events: auto;
 }
 
-.editor-piece-stage-toolbar
+.project3d-workspace
+  .editor-piece-stage-toolbar
   [aria-label='Editor actions']
   > .piece-stage-icon-button:not([data-testid='project3d-save-button']) {
   position: relative;
   z-index: 4;
+  pointer-events: auto;
 }
 
 .editor-piece-stage-toolbar .editor-stage-text-actions {
@@ -6715,7 +6726,7 @@ select.ai-proposal-field-full-width {
   }
 
   .piece-stage-toolbar-group,
-  .editor-piece-stage-toolbar {
+  .project3d-workspace .editor-piece-stage-toolbar {
     gap: 0.4rem;
   }
 
@@ -6726,9 +6737,18 @@ select.ai-proposal-field-full-width {
     max-width: calc(100% - 3.5rem);
   }
 
-  .editor-piece-stage-toolbar > button[aria-label='Expand piece to fullscreen'],
-  .editor-piece-stage-toolbar > button[aria-label='Exit fullscreen'] {
+  .project3d-workspace
+    .editor-piece-stage-toolbar
+    > button[aria-label='Expand piece to fullscreen'],
+  .project3d-workspace .editor-piece-stage-toolbar > button[aria-label='Exit fullscreen'] {
     right: -2.75rem;
+  }
+
+  .project3d-workspace .editor-piece-stage-toolbar [aria-label='Editor actions'] {
+    display: flex;
+    flex: 0 0 100%;
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
 
   .piece-stage-toolbar .piece-stage-icon-button {

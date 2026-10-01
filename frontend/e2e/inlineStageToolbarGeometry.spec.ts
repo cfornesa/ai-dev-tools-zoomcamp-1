@@ -1,6 +1,7 @@
 /** Issue #1111: inline 3D stage controls remain distinct and operable. */
 import { expect, test } from '@playwright/test';
 
+import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -8,11 +9,270 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+const DRAWING_PLANE_SCENE = {
+  schemaVersion: 1,
+  documentType: 'scene3d',
+  id: 'scene3d-mobile-plane-hit-target',
+  scene: { backgroundColor: '#0b1020' },
+  renderer: { preferred: 'aframe' },
+  camera: {
+    position: { x: 0, y: 0, z: 8 },
+    target: { x: 0, y: 0, z: 0 },
+    fov: 50,
+    near: 0.1,
+    far: 1000,
+  },
+  lights: [{ id: 'amb', type: 'ambient', color: '#ffffff', intensity: 1 }],
+  groups: [],
+  objects: [
+    {
+      id: 'drawing-plane-1',
+      name: 'Drawing plane 1',
+      type: 'drawingPlane',
+      groupId: null,
+      transform: {
+        position: { x: 0, y: 0, z: 0 },
+        rotation: { x: 0, y: 0, z: 0 },
+        scale: { x: 1, y: 1, z: 1 },
+        opacity: 1,
+      },
+      material: { color: '#ffffff' },
+      visible: true,
+      width: 4,
+      height: 3,
+      drawing: {
+        width: 1024,
+        height: 768,
+        background: null,
+        shapes: [
+          {
+            id: 'g',
+            type: 'rect',
+            x: 0,
+            y: 0,
+            width: 1024,
+            height: 768,
+            fill: '#22c55e',
+            stroke: null,
+          },
+        ],
+      },
+    },
+  ],
+  randomness: { seed: 0, enabled: false },
+};
+
 test.describe('inline 3D stage toolbar geometry (#1111)', () => {
   let fixtures: Fixtures;
 
   test.beforeAll(() => {
     fixtures = requireE2EFixtures();
+  });
+
+  test('keeps the selected A-Frame move handle and inline buttons hit-testable', async ({
+    page,
+  }, testInfo) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    for (const viewport of [
+      { width: 375, height: 812 },
+      { width: 1280, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      const id = await createServerProject3D(page);
+      expect(
+        (
+          await apiPost(page.context(), `/api/projects3d/${id}/versions/`, {
+            scene_json: DRAWING_PLANE_SCENE,
+            origin: 'manual',
+          })
+        ).status(),
+      ).toBe(201);
+      await page.reload();
+      await expect(page.locator('iframe[title="A-Frame scene preview"]')).toBeVisible({
+        timeout: 45_000,
+      });
+      await page.waitForTimeout(3000);
+      const frame = page.getByTestId('scene3d-preview-canvas-frame');
+      const overlay = page.getByTestId('plane-selection-overlay');
+      await page.getByRole('button', { name: 'Drawing plane 1', exact: true }).first().click();
+      await expect(overlay).toBeVisible({ timeout: 20_000 });
+      const handle = page.getByTestId('plane-handle-move');
+      await expect(handle).toBeVisible();
+      await frame.scrollIntoViewIfNeeded();
+      const hitTargets = await page.evaluate(() => {
+        const handleElement = document.querySelector<HTMLElement>(
+          '[data-testid="plane-handle-move"]',
+        );
+        const toolbarHost = document.querySelector<HTMLElement>(
+          '[role="toolbar"][aria-label="Preview actions"]',
+        );
+        const frame = document.querySelector<HTMLElement>(
+          '[data-testid="scene3d-preview-canvas-frame"]',
+        );
+        const toolbarActions = toolbarHost?.querySelector<HTMLElement>(
+          '[role="group"][aria-label="Preview actions"]',
+        );
+        const editorActions = document.querySelector<HTMLElement>('[aria-label="Editor actions"]');
+        const overlayElement = handleElement?.closest<HTMLElement>('.plane-selection-overlay');
+        if (
+          !handleElement ||
+          !toolbarHost ||
+          !toolbarActions ||
+          !editorActions ||
+          !overlayElement ||
+          !frame
+        ) {
+          return {
+            matches: Array.from(
+              document.querySelectorAll<HTMLElement>(
+                '.editor-piece-stage-toolbar, .scene3d-preview-actions, .piece-stage-toolbar, [aria-label="Editor actions"], .plane-selection-overlay',
+              ),
+            ).map((element) => ({
+              className: element.className,
+              role: element.getAttribute('role'),
+              ariaLabel: element.getAttribute('aria-label'),
+              box: (() => {
+                const rect = element.getBoundingClientRect();
+                return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom };
+              })(),
+            })),
+            handleAncestors: handleElement
+              ? Array.from(
+                  (function* () {
+                    let current: HTMLElement | null = handleElement;
+                    for (let depth = 0; current && depth < 8; depth += 1) {
+                      yield current;
+                      current = current.parentElement;
+                    }
+                  })(),
+                ).map((element) => ({
+                  tag: element.tagName,
+                  className: element.className,
+                  role: element.getAttribute('role'),
+                  ariaLabel: element.getAttribute('aria-label'),
+                }))
+              : [],
+            missing: {
+              handle: !handleElement,
+              toolbarHost: !toolbarHost,
+              toolbarActions: !toolbarActions,
+              editorActions: !editorActions,
+              overlay: !overlayElement,
+              frame: !frame,
+            },
+            handleBox: null,
+            handleStack: [],
+            handleHit: false,
+            editorActionsBox: null,
+            editorActionsStyle: null,
+            toolbarHostBox: null,
+            toolbarHostStyle: null,
+            toolbarActionsBox: null,
+            toolbarActionsStyle: null,
+            frameBox: null,
+            overlayBox: null,
+            overlayStyle: null,
+            controls: [],
+          };
+        }
+        const box = (element: Element) => {
+          const rect = element.getBoundingClientRect();
+          return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom };
+        };
+        const handleBox = handleElement.getBoundingClientRect();
+        const x = handleBox.left + handleBox.width / 2;
+        const y = handleBox.top + handleBox.height / 2;
+        const stack = document.elementsFromPoint(x, y);
+        const style = (element: Element) => {
+          const computed = getComputedStyle(element);
+          return {
+            position: computed.position,
+            pointerEvents: computed.pointerEvents,
+            zIndex: computed.zIndex,
+            top: computed.top,
+            right: computed.right,
+            maxWidth: computed.maxWidth,
+          };
+        };
+        const controls = Array.from(toolbarHost.querySelectorAll<HTMLElement>('button, a')).filter(
+          (element) => {
+            const computed = getComputedStyle(element);
+            return (
+              element.getClientRects().length > 0 &&
+              computed.visibility !== 'hidden' &&
+              computed.display !== 'none' &&
+              !element.classList.contains('sr-only') &&
+              !element.closest('[hidden]')
+            );
+          },
+        );
+        return {
+          handleBox: box(handleElement),
+          handleStack: stack.slice(0, 6).map((element) => ({
+            tag: element.tagName,
+            className: (element as HTMLElement).className,
+            ariaLabel: element.getAttribute('aria-label'),
+            testId: element.getAttribute('data-testid'),
+          })),
+          handleHit: Boolean(
+            stack[0] && (stack[0] === handleElement || handleElement.contains(stack[0])),
+          ),
+          editorActionsBox: box(editorActions),
+          editorActionsStyle: style(editorActions),
+          toolbarHostBox: box(toolbarHost),
+          toolbarHostStyle: style(toolbarHost),
+          toolbarActionsBox: box(toolbarActions),
+          toolbarActionsStyle: style(toolbarActions),
+          frameBox: box(frame),
+          overlayBox: box(overlayElement),
+          overlayStyle: style(overlayElement),
+          controls: controls.map((element) => {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const target = document.elementFromPoint(centerX, centerY);
+            return {
+              name: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? '',
+              hit: Boolean(target && (target === element || element.contains(target))),
+              box: box(element),
+            };
+          }),
+        };
+      });
+      expect(hitTargets, `missing selection elements at ${viewport.width}px`).not.toBeNull();
+      await page.screenshot({
+        path: testInfo.outputPath(`plane-handle-hit-target-${viewport.width}.png`),
+      });
+      const evidence = JSON.stringify({ viewport, ...hitTargets });
+      expect(hitTargets!.handleHit, `move handle centre must hit the handle: ${evidence}`).toBe(
+        true,
+      );
+      for (const control of hitTargets!.controls) {
+        expect(control.hit, `${control.name} centre must hit its control: ${evidence}`).toBe(true);
+        expect(control.box.x, `${control.name} left edge: ${evidence}`).toBeGreaterThanOrEqual(
+          hitTargets!.frameBox!.x,
+        );
+        expect(control.box.right, `${control.name} right edge: ${evidence}`).toBeLessThanOrEqual(
+          hitTargets!.frameBox!.right,
+        );
+        expect(control.box.y, `${control.name} top edge: ${evidence}`).toBeGreaterThanOrEqual(
+          hitTargets!.frameBox!.y,
+        );
+        expect(control.box.bottom, `${control.name} bottom edge: ${evidence}`).toBeLessThanOrEqual(
+          hitTargets!.frameBox!.bottom,
+        );
+      }
+      for (const [index, control] of hitTargets!.controls.entries()) {
+        for (const other of hitTargets!.controls.slice(index + 1)) {
+          const overlaps =
+            control.box.x < other.box.right &&
+            control.box.right > other.box.x &&
+            control.box.y < other.box.bottom &&
+            control.box.bottom > other.box.y;
+          expect(overlaps, `${control.name} overlaps ${other.name}: ${evidence}`).toBe(false);
+        }
+      }
+    }
   });
 
   test('keeps every inline stage action visible, separate, and operable', async ({

@@ -3,7 +3,6 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { loginViaUI } from './support/auth.js';
 import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
-import { openPieceControlsMenu } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -41,20 +40,10 @@ async function publishProjectViaUI(
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Saved.')).toBeVisible();
 
-  // Issue #450: mirrors publishingAndRemix.spec.ts's own `choosePublished`
-  // -- the "Publish" action moved behind the stage's "Publication status"
-  // disclosure, itself nested behind "Open piece controls menu" (#444).
-  // An anchored, case-insensitive regex matches the trigger's closed
-  // ("Publication status: Draft") and open ("Hide publication status:
-  // draft") accessible names while excluding the popover's own "Close
-  // publication status: draft" button, which an unanchored substring
-  // match would otherwise also hit.
-  await openPieceControlsMenu(page);
-  const toolbar = page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
-  const trigger = toolbar.getByRole('button', {
-    name: /^(publication status: draft|hide publication status: draft)$/i,
-  });
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  // Publication status is a primary editor action in the current editor.
+  const toolbar = page.getByRole('group', { name: 'Primary editor actions' });
+  const fileMenu = toolbar.getByRole('button', { name: 'File', exact: true });
+  if ((await fileMenu.getAttribute('aria-expanded')) !== 'true') await fileMenu.click();
   await toolbar
     .getByRole('group', { name: 'Publication status', exact: true })
     .getByRole('button', { name: 'Published', exact: true })

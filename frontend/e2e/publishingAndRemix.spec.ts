@@ -172,8 +172,7 @@ async function expectPublicStageChrome(page: Page) {
   await expect(toolbar).toBeVisible();
   // The public 2D stage shows its icon row inline (no hamburger since #692/#693); menu-mode shells still
   // put the same actions in a "Piece actions" dialog. Cover whichever this surface uses.
-  const inline =
-    (await toolbar.getByRole('button', { name: 'Open piece controls menu' }).count()) === 0;
+  const inline = (await toolbar.getAttribute('data-toolbar-mode')) === 'inline';
   if (!inline) await openPieceControlsMenu(page);
   await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
@@ -183,7 +182,7 @@ async function expectPublicStageChrome(page: Page) {
   await toolbar.getByRole('button', { name: 'Open download menu' }).click();
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
   const group = inline
-    ? toolbar.locator('.piece-stage-toolbar-group').first()
+    ? toolbar.getByRole('group', { name: 'Piece actions', exact: true })
     : toolbar
         .getByRole('dialog', { name: 'Piece actions' })
         .locator(".piece-stage-command-card > [role='group']");
@@ -208,25 +207,25 @@ async function expectPublicStageChrome(page: Page) {
 }
 
 function pieceActionsToolbar(page: Page) {
-  return page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
+  return page.getByRole('group', { name: 'Primary editor actions' });
+}
+
+async function openPublicationStatus(page: Page) {
+  const actions = pieceActionsToolbar(page);
+  const fileMenu = actions.getByRole('button', { name: 'File', exact: true });
+  if ((await fileMenu.getAttribute('aria-expanded')) !== 'true') await fileMenu.click();
+  return actions;
+}
+
+async function closePublicationStatus(
+  actions: ReturnType<typeof pieceActionsToolbar>,
+): Promise<void> {
+  const fileMenu = actions.getByRole('button', { name: 'File', exact: true });
+  if ((await fileMenu.getAttribute('aria-expanded')) === 'true') await fileMenu.click();
 }
 
 async function choosePublished(page: Page): Promise<void> {
-  // Issue #444: the "Publication status" disclosure (PublishControl.tsx)
-  // is itself nested behind the stage's "Open piece controls menu", same
-  // as Edit scene -- open it first or the trigger below is never visible.
-  await openPieceControlsMenu(page);
-  const toolbar = pieceActionsToolbar(page);
-  // Issue #444: StageControlsPopover's trigger toggles its own accessible
-  // name between "Publication status: Draft" (closed) and "Hide
-  // publication status: draft" (open) -- an anchored, case-insensitive
-  // regex matches exactly one of those two states while excluding the
-  // panel's own "Close publication status: draft" button (an unanchored
-  // substring match would hit that button too, a strict-mode violation).
-  const trigger = toolbar.getByRole('button', {
-    name: /^(publication status: draft|hide publication status: draft)$/i,
-  });
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  const toolbar = await openPublicationStatus(page);
   await toolbar
     .getByRole('group', { name: 'Publication status', exact: true })
     .getByRole('button', { name: 'Published', exact: true })
@@ -234,16 +233,12 @@ async function choosePublished(page: Page): Promise<void> {
 }
 
 async function chooseDraft(page: Page): Promise<void> {
-  await openPieceControlsMenu(page);
-  const toolbar = pieceActionsToolbar(page);
-  const trigger = toolbar.getByRole('button', {
-    name: /^(publication status: published|hide publication status: published)$/i,
-  });
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  const toolbar = await openPublicationStatus(page);
   await toolbar
     .getByRole('group', { name: 'Publication status', exact: true })
     .getByRole('button', { name: 'Draft', exact: true })
     .click();
+  await closePublicationStatus(toolbar);
 }
 
 /** Navigates to the given project's editor and fills in meaningful
@@ -294,6 +289,7 @@ async function confirmPublish(page: Page): Promise<void> {
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
   await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
+  await closePublicationStatus(pieceActionsToolbar(page));
 }
 
 test.describe('Publishing', () => {
@@ -329,6 +325,7 @@ test.describe('Publishing', () => {
     await expect(page.getByTestId('publish-description-error')).toBeVisible();
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
     await expect(page.getByTestId('visibility-status')).toContainText('Draft (private)');
+    await closePublicationStatus(pieceActionsToolbar(page));
 
     // 2. Fix metadata, then Publish requires an explicit confirmation --
     //    the dialog names the project and only *its own* Publish button
@@ -352,6 +349,7 @@ test.describe('Publishing', () => {
       .getByRole('button', { name: 'Publish', exact: true })
       .click();
     await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
+    await closePublicationStatus(pieceActionsToolbar(page));
 
     // 3. Now reachable in the public gallery, anonymously.
     const anonContext = await context.browser()!.newContext();
@@ -422,6 +420,7 @@ test.describe('Publishing', () => {
 
     await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
     await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
+    await closePublicationStatus(pieceActionsToolbar(page));
 
     // The Details panel itself now reflects the auto-persisted value (the
     // same PATCH "Save changes" would have sent), and the public surface
@@ -479,7 +478,9 @@ test.describe('Publishing', () => {
     expect((await apiGet(anonContext, `/api/public/projects/${projectId}/`)).status()).toBe(200);
 
     await chooseDraft(page);
+    await openPublicationStatus(page);
     await expect(page.getByTestId('visibility-status')).toContainText('Draft (private)');
+    await closePublicationStatus(pieceActionsToolbar(page));
 
     // The very next request to either public surface must already
     // reflect the change -- no caching/staleness window.
@@ -1445,7 +1446,9 @@ test.describe('Remix and fork', () => {
     // must never remove the fork's attribution -- only drop the link.
     await ownerPage.goto(`/projects/${sourceId}`);
     await chooseDraft(ownerPage);
+    await openPublicationStatus(ownerPage);
     await expect(ownerPage.getByTestId('visibility-status')).toContainText('Draft (private)');
+    await closePublicationStatus(pieceActionsToolbar(ownerPage));
 
     await anonPage.reload();
     const provenanceAfterUnpublish = anonPage.getByTestId('provenance');

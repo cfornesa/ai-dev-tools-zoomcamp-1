@@ -79,6 +79,25 @@
 - Stage 3 was not run. No production or PostgreSQL concurrency evidence is
   claimed. After closure, resume the refreshed backlog at #1134.
 
+## 2026-10-01 — #1134 activity navigation and PM refinement
+
+- The separate PM pass confirmed #1133 is closed, found no duplicate, and
+  narrowed UI work to the existing `VersionHistoryPanel` and #1133's typed
+  owner API. It found that pagination should be tested with a controlled
+  second page in unit tests rather than forcing 26 real fixture mutations.
+- Gallery considered three approaches: **Tabs** (separate peer views with
+  standard tab semantics), **Segmented control** (compact switch requiring
+  radio/button semantics), and **Inline disclosure** (no mode switch but
+  lengthens/crowds the mobile panel). Reframe: a combined chronological stream
+  would remove the current separation, but could replace the familiar version
+  list rather than add activity alongside it.
+- Owner selected Tabs. Keep Versions initially selected so opening the
+  existing panel retains current behavior. The live issue contract was
+  refined before implementation. No new dependency or API change is in scope.
+- Stage 2a is rostered to Opencode Go / Kimi K2.5; a Codex subagent is a
+  substitution if Opencode is unavailable. Independent Stage 4 remains
+  required after implementation.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

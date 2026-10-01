@@ -247,6 +247,37 @@ RECONCILIATION → CLOSED` pending typed issue update and read-after-write
 confirmation, under the documented fallback for unavailable issue-comment
 tooling.
 
+### #1134 — Project history timeline (PM complete; owner choice recorded)
+
+GitHub confirms #1133 closed completed before this issue was selected. The
+separate Codex/GPT-6.1-sol PM pass checked the live contract, dependency,
+local task records, and GitHub duplicate candidates. No duplicate exists:
+#1131/#1133 provide event writing/reading, #1148 is the separate account JSON
+export, and #1135 is the AI reason form. Existing UI is
+`frontend/src/pages/VersionHistoryPanel.tsx`; #1133's endpoint is already
+documented and implemented, so Stage 2a can remain frontend-only.
+
+Owner selected **tabs**, with Versions initially selected, on 2026-10-01.
+The issue body was refined before implementation to add exact WAI-ARIA tab
+semantics and keyboard behavior, labels/times/reason safety, async/pagination
+states, the existing real API fixture and fake-provider boundary, responsive
+measurement/screenshot evidence, exact commands, and quality/regression
+constraints. Pagination is unit-tested with a controlled second page; the
+real E2E fixture requires the four distinct activity types only, avoiding
+26 setup mutations solely to expose the 25-row cursor.
+
+**Stage 1 / PM provenance:** rostered Codex / GPT-6.1-sol; actual Codex
+subagent / GPT-6.1-sol / effort unavailable; substituted: no. Stage 2a is
+rostered Opencode Go / Kimi K2.5; actual Codex subagent / GPT-6.1-sol / effort
+unavailable; substituted: yes. Stage 3 optional and not requested. Stage 4 is
+rostered Claude / Sonnet 5 / Medium and must be separate; use a separate Codex
+QA substitution only if Claude is unavailable and record it.
+
+**Next:** implement the refined #1134 contract, add focused feature-slice
+coverage plus the real owner E2E, run exact commands, and produce an
+issue-scoped commit. Do not start #1148 or another transaction until #1134 is
+closed or terminally handed off.
+
 **New follow-up #1148:** add the same allowlisted event envelope to the
 existing authenticated JSON account export only. Duplicate check found no
 equivalent open issue; #945 is the distinct ZIP/browser-only package export.

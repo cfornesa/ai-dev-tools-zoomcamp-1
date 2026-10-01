@@ -24940,3 +24940,14 @@ hit-tests), single implementer, separate commits. Order: #1109 (test-side, in
 progress by Codex) -> #1111 -> #1110 -> rerun #1109 spec -> #1106/#1108 ->
 #1107 -> #1100 six-spec gate. #1111's body was left untouched (Codex may be
 editing it); the analysis was added as a comment.
+
+### 2026-09-30 — refinement of #1111 after Codex finished filing
+
+[#1111](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1111) refined to criterion-ready. The reported
+rectangles match `.editor-piece-stage-toolbar > button[aria-label='Expand
+piece to fullscreen']{position:absolute; top:.75rem; right:.75rem}` (icon row
+y=384, fullscreen y=396, i.e. exactly 12 px), and the row's `max-width:
+calc(100vw - 5rem)` is viewport- not stage-relative. Regression test goes in a
+new spec (`inlineStageToolbarGeometry.spec.ts`) to avoid colliding with
+#1109's in-progress edits to `manual3dStageChrome.spec.ts`. Order unchanged:
+#1109 test-side -> #1111 -> #1110 -> rerun #1109 -> #1106/#1108 -> #1107 -> #1100.

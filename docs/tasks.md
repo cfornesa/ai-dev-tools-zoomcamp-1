@@ -25029,6 +25029,15 @@ filed in Batch 14 as a separate product hit-target issue, dependent on the
 #1108 audit and #1112 setup migration. Preserve #1112's transform assertions;
 #1114 owns the layout fix and a before/after mobile route regression.
 
+PM readiness update: the #1108 audit is reconciled and #1112's server-backed
+fixture is already committed, so #1114 has no remaining dependency on #1108
+and gates #1112 plus #1110's final verification. The issue now defines
+cross-group geometry scope (selected-plane toolbar vs. inline 3D editor
+toolbar) and lists exact commands for its new geometry spec, repeated #796,
+#782, existing 2D specs/component tests, 3D stage geometry, and static checks.
+Implementation is waiting on the owner's answer about retaining 16:9 or
+allowing a taller 375px stage.
+
 ### 2026-10-01 — #1108 inline-toolbar audit QA and follow-ups
 
 Commit `006ca3b2` migrates confirmed 3D editor toolbar interactions to direct

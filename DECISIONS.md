@@ -2517,3 +2517,14 @@ updates. The remaining open backlog was not silently claimed complete.
   inspect `b11971c0` as untrusted, rerun focused and full backend checks, and
   post a criterion-matrix `## QA: PASS` or `## QA: FAIL` comment. It must not
   modify product code or close the issue.
+
+## 2026-10-01 — #1131 returned for latency evidence
+
+- Stage 4 comment [5934945703](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131#issuecomment-5934945703)
+  passed functional criteria but failed the regression-risk check because
+  version-save latency had not been measured. Three paired 100-sample runs on
+  pytest's disposable SQLite database measured median incremental latency of
+  0.117, 0.113, and 0.109 ms; corresponding baseline-to-baseline p95 timing
+  noise was 0.502, 0.413, and 0.434 ms. These are evidence for re-review, not a
+  QA verdict. Re-enter Stage 2b for an independent protocol/evidence audit,
+  then repeat Stage 4 before closing #1131.

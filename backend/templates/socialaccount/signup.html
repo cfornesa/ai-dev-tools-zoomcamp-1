@@ -2,9 +2,9 @@
 {% block title %}Create your account · AugmentrART{% endblock %}
 {% block head %}
 <style>
-  fieldset.cloud-sync-consent, fieldset.persistent-storage-consent { border: 1px solid #2e303a; border-radius: 8px; padding: 16px; margin: 20px 0 0; }
-  fieldset.cloud-sync-consent legend, fieldset.persistent-storage-consent legend { padding: 0 6px; font-weight: 700; color: #f3f4f6; }
-  label.cloud-sync-choice, label.persistent-storage-choice { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-weight: 400; }
+  fieldset.cloud-sync-consent, fieldset.persistent-storage-consent { border: 1px var(--site-border-style) var(--border); border-radius: var(--site-radius); padding: var(--site-density); margin: var(--site-density) 0 0; }
+  fieldset.cloud-sync-consent legend, fieldset.persistent-storage-consent legend { padding: 0 6px; font-weight: 700; color: var(--text-h); }
+  label.cloud-sync-choice, label.persistent-storage-choice { display: flex; align-items: center; gap: calc(var(--site-density) / 2); margin: calc(var(--site-density) / 2) 0; font-weight: 400; }
   label.cloud-sync-choice input[type="radio"], label.persistent-storage-choice input[type="checkbox"] { width: auto; padding: 0; }
 </style>
 {% endblock %}

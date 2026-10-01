@@ -32,7 +32,7 @@ items advance only after the current transaction is terminal.
 | #1127 | Independent Batch 15 copy/provider order | CLOSED | QA PASS comment 5932906647; implementation `7efd8596`; closed completed 2026-10-01. |
 | #1128 | After #1124–#1126 | CLOSED | QA PASS comment 5933282991; implementation `19f9411b`; closed completed 2026-10-01. Existing `accountShell.spec.ts` stale copy failure was shifted to #1147. |
 | #1146 | Discovered during #1125 QA; Batch 15 | HANDED-OFF | Filed/milestoned as new follow-up; implementation deferred to a later issue transaction per discovery-gate rule. |
-| #1147 | Discovered during #1128 regression batch; test maintenance | HANDED-OFF | Criterion-ready follow-up filed after `accountShell.spec.ts` failed on #1127's removed “New here?” copy; implementation deferred to a later transaction. |
+| #1147 | Discovered during #1128 regression batch; test maintenance | CLOSED | Commit `1ca91017`; QA PASS comment 5933568932; closed completed 2026-10-01. |
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | GROOMED | Implement after Batch 15. |
@@ -52,6 +52,38 @@ items advance only after the current transaction is terminal.
 | #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
 
 ## Transaction ledger
+
+### #1147 — Account shell copy assertion
+
+**State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+Completed and closed 2026-10-01; QA PASS comment
+[#5933568932](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1147#issuecomment-5933568932).
+
+| Stage | Rostered owner | Actual owner | Substituted |
+|---|---|---|---|
+| PM/grooming | Codex / GPT-6.1-sol | Codex / GPT-6.1-sol / effort unavailable | no |
+| Issue scoping | Codex (via ChatGPT Plus) | Not separately invoked in this transaction; the prior discovery transaction did not record the original stage owner, so it is not inferred | — |
+| Implementation / stage 2a | Opencode Go / Kimi K2.5 | Codex / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / stage 3 | Mistral Vibe | Not run (optional) | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
+
+**Implementation commit:** `1ca91017`. Only the stale login-copy assertion
+in `frontend/e2e/accountShell.spec.ts` changed; `DECISIONS.md` records the
+agent-loop provenance. No existing assertion was removed, weakened, or
+skipped. The replacement checks the exact provider-neutral sentence rendered
+by the login page.
+
+**Focused verification:** the exact account shell Playwright scenario passed
+1/1 on local macOS Chromium against the disposable PostgreSQL-backed stack.
+The first sandboxed launch was denied at macOS `bootstrap_check_in` before
+test setup; the same command passed on an approved unsandboxed retry.
+Typecheck, lint (existing warnings only), and the focused Prettier check passed.
+The full `UV_CACHE_DIR=/tmp/codex-uv-cache make frontend-check` passed with
+310 files and 3,187 tests. QA inspected the generated 375×812 and 1280×900
+screenshots.
+
+**Evidence boundary:** local disposable PostgreSQL + macOS Chromium only; no
+Linux or deployment claim. **New gaps:** none.
 
 ### #1127 — Login guidance, provider divider, and order
 

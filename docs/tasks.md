@@ -25487,3 +25487,17 @@ to test results and visually inspected. The new focused Chromium spec passes;
 The broader related account batch had one stale #1126 shell-copy assertion
 failure from #1127's new wording; criterion-ready test follow-up #1147 owns
 that correction and is deferred to a later transaction.
+
+### 2026-10-01 — #1147 account shell copy assertion closed
+
+Issue [#1147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1147)
+closed completed after QA PASS comment
+[#5933568932](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1147#issuecomment-5933568932).
+Commit `1ca91017` replaces only the obsolete “New here?” Playwright locator
+with an exact-text assertion for the provider-neutral login guidance. The
+account shell's mobile layout, navigation, login, theme persistence, and
+logout assertions remain unchanged. The focused local Chromium scenario passed
+1/1; typecheck, lint, Prettier, and `make frontend-check` passed (310 files /
+3,187 tests). Screenshots at 375×812 and 1280×900 were inspected. Evidence is
+local disposable PostgreSQL + macOS Chromium; no Linux or deployment result is
+claimed. Stage 2a and stage 4 were Codex substitutions; stage 3 was not run.

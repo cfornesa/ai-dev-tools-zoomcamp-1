@@ -294,9 +294,21 @@ test.describe('inline 3D stage toolbar geometry (#1111)', () => {
       );
       if (viewport.width === 375) {
         expect(
+          hitTargets!.planeToolbarBox!.x,
+          `phone plane toolbar stays inside the scene frame on the left: ${evidence}`,
+        ).toBeGreaterThanOrEqual(hitTargets!.frameBox!.x);
+        expect(
+          hitTargets!.planeToolbarBox!.right,
+          `phone plane toolbar stays inside the scene frame on the right: ${evidence}`,
+        ).toBeLessThanOrEqual(hitTargets!.frameBox!.right);
+        expect(
           hitTargets!.planeToolbarBox!.y,
           `phone plane toolbar starts below the scene frame: ${evidence}`,
         ).toBeGreaterThanOrEqual(hitTargets!.frameBox!.bottom);
+        expect(
+          hitTargets!.planeToolbarBox!.bottom,
+          `phone plane toolbar stays within its reserved rail below the frame: ${evidence}`,
+        ).toBeLessThanOrEqual(hitTargets!.frameBox!.bottom + 56);
       }
       for (const planeControl of hitTargets!.planeControls) {
         expect(

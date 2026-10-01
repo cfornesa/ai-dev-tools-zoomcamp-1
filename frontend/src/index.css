@@ -5662,6 +5662,7 @@ select.ai-proposal-field-full-width {
 .project3d-workspace
   .scene3d-preview:has(.plane-selection-toolbar[data-dock='rail'])
   .scene3d-preview-canvas-frame {
+  min-height: 0;
   margin-bottom: 56px;
 }
 

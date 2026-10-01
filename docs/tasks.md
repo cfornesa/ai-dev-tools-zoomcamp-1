@@ -25518,3 +25518,22 @@ The change is limited to `frontend/src/index.css` and a focused
 and no dependency or duplicate was found. Next action: implement #1146, run
 its focused browser regression and `UV_CACHE_DIR=/tmp/codex-uv-cache make
 check`, then perform a separate QA pass.
+
+### 2026-10-01 — #1146 SPA content panel shadow token closed
+
+Issue [#1146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146)
+was implemented in `e68aaac5` and closed completed after QA PASS comment
+[#5934137286](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146#issuecomment-5934137286).
+The CSS applies `box-shadow: var(--shadow)` to the base `.content-panel`; the
+existing `none` token and `offset` override continue to determine their own
+treatments. The focused browser regression checked all 16 presentation,
+theme, and viewport states at `/admin/content`, restored admin settings in a
+`finally` block, and passed on local host Chromium. Screenshots showed no
+visible border, radius, layout, or horizontal-clipping regression.
+
+`UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed: backend 1,883 passed / 39
+skipped, frontend 310 files / 3,187 tests passed, plus lint/format/type checks.
+The QA reviewer independently repeated the browser test and full check. Stage
+2a and stage 4 were Codex substitutions; stage 3 was not run. Evidence is
+local only; no deployment claim applies. Next backlog issue selection follows
+the refreshed dependency order in `.local/tasks/backlog-session-2026-10-01-batch15.md`.

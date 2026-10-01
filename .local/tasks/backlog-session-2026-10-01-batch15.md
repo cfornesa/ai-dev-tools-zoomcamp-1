@@ -31,7 +31,7 @@ items advance only after the current transaction is terminal.
 | #1126 | After #1124 | CLOSED | QA PASS; implementation commit `f8630dc5`; GitHub closed completed 2026-10-01. |
 | #1127 | Independent Batch 15 copy/provider order | CLOSED | QA PASS comment 5932906647; implementation `7efd8596`; closed completed 2026-10-01. |
 | #1128 | After #1124–#1126 | CLOSED | QA PASS comment 5933282991; implementation `19f9411b`; closed completed 2026-10-01. Existing `accountShell.spec.ts` stale copy failure was shifted to #1147. |
-| #1146 | Discovered during #1125 QA; Batch 15 | GROOMED | Exact browser route/fixture and 16-cell screenshot/computed-style matrix appended to issue; independent Stage 2a work, ready after #1147. |
+| #1146 | Discovered during #1125 QA; Batch 15 | CLOSED | Implementation `e68aaac5`; QA PASS comment 5934137286; closed completed 2026-10-01. |
 | #1147 | Discovered during #1128 regression batch; test maintenance | CLOSED | Commit `1ca91017`; QA PASS comment 5933568932; closed completed 2026-10-01. |
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
@@ -84,6 +84,40 @@ screenshots.
 
 **Evidence boundary:** local disposable PostgreSQL + macOS Chromium only; no
 Linux or deployment claim. **New gaps:** none.
+
+### #1146 — SPA content panel shadow token
+
+**State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+Implementation `e68aaac5`; QA PASS comment
+[#5934137286](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146#issuecomment-5934137286);
+closed completed 2026-10-01.
+
+| Stage | Rostered owner | Actual owner | Substituted |
+| --- | --- | --- | --- |
+| PM/grooming | Codex / GPT-6.1-sol | Codex / GPT-6.1-sol / effort unavailable | no |
+| Issue scoping | Codex (via ChatGPT Plus) | Not separately invoked in this transaction; refinement was performed in PM pass | — |
+| Implementation / stage 2a | Opencode Go / Kimi K2.5 | Codex / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / stage 3 | Mistral Vibe | Not run (optional) | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
+
+**Focused verification:** the content panel browser regression passed 1/1 on
+host Chromium against the disposable local fixture, exercising all 16
+presentation/theme/viewport states. All screenshots were inspected; the soft
+shadow appeared, none stayed clear, offset remained intact, and no clipping or
+layout regression was visible. The initial sandboxed browser attempt was
+blocked by macOS Chromium `bootstrap_check_in`; the same test passed on the
+host runner.
+
+**Full verification:** `UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed:
+backend 1,883 passed and 39 skipped; backend lint, format, and mypy passed;
+frontend lint, format, and typecheck passed; Vitest 310 files / 3,187 tests
+passed. Existing lint warnings only. QA independently repeated both the
+focused browser run and full check.
+
+**Scope:** only `frontend/src/index.css` and the new
+`frontend/e2e/contentPanelShadow.spec.ts` changed. No API, dependency,
+migration, or route changes. **Evidence boundary:** local disposable fixture
+and macOS Chromium; no deployment criterion. **New gaps:** none.
 
 ### #1127 — Login guidance, provider divider, and order
 

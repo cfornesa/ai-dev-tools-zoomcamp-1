@@ -18,6 +18,16 @@
   and the 16-cell computed-style/screenshot matrix. Stage 2a remains
   substituted by Codex for Opencode Go; stage 4 will be a separate QA pass.
 
+## 2026-10-01 — #1146 implementation and QA provenance
+
+- Implemented the groomed CSS/E2E issue in one issue-scoped commit,
+  `e68aaac5`; a separate QA pass was completed by another Codex agent.
+- Codex substituted for Opencode Go at stage 2a and Claude Sonnet 5 Medium at
+  stage 4; no independent stage 3 review ran.
+- The focused Chromium matrix and full `make check` passed. The initial
+  sandboxed Chromium launch hit the host's macOS bootstrap restriction; both
+  implementation and independent QA runs passed on the host runner.
+
 ## 2026-10-01 — #1124 design chosen; LIGDOL adaptation plan distilled (Batch 16)
 
 - **#1124:** the owner chose option 1 — server-injected site presentation plus

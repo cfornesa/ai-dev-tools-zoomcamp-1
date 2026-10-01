@@ -3,9 +3,11 @@
 import base64
 import binascii
 from datetime import datetime
+from urllib.parse import quote
 
 from django.db.models import Count, Prefetch, Q, Value
 from django.db.models.functions import Coalesce
+from django.http import Http404
 from django.utils.dateparse import parse_datetime
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,7 +21,9 @@ from scenes.gallery import (
     eligible_projects,
     eligible_projects3d,
 )
-from scenes.models import Collection, CollectionItem, PublicProfile
+from scenes.models import Collection, CollectionItem, Project, PublicProfile
+from scenes.permissions import Action, can
+from scenes.piece_engine import resolve_scene2d_engine
 from scenes.public_identity import public_author_handle, public_author_name
 from scenes.serializers import PublicGalleryItemSerializer
 
@@ -294,5 +298,95 @@ class PublicGallerySearchView(APIView):
                 "results": PublicGalleryItemSerializer(
                     [(kind, record) for _, kind, record in candidates[:50]], many=True
                 ).data,
+            }
+        )
+
+
+class _RelatedProjectCardSerializer(PublicGalleryItemSerializer):
+    """Reuse gallery fields with batched identity and canonical URL lookups."""
+
+    def _profile(self, obj):
+        _, project = self._entry(obj)
+        return self.context["profiles"].get(project.owner_id)
+
+    def get_owner(self, obj) -> str:
+        _, project = self._entry(obj)
+        profile = self._profile(obj)
+        if profile is not None:
+            display_name = (profile.display_name or "").strip()
+            if display_name:
+                return display_name
+            handle = (profile.handle or "").strip().lstrip("@")
+            if handle:
+                return handle
+        return project.owner.get_username()
+
+    def get_owner_handle(self, obj) -> str | None:
+        profile = self._profile(obj)
+        handle = (profile.handle or "").strip().lstrip("@") if profile else ""
+        return handle or None
+
+    def get_viewer_url(self, obj) -> str:
+        _, project = self._entry(obj)
+        if not isinstance(project, Project):
+            raise TypeError("Related public card must be a 2D project.")
+        profile = self._profile(obj)
+        if profile and profile.is_public and profile.handle and project.public_slug:
+            return (
+                f"/users/@{quote(profile.handle, safe='@')}/pieces/"
+                f"{quote(project.public_slug, safe='-')}"
+            )
+        return f"/p/{project.public_id}"
+
+
+class PublicProjectRelatedListView(APIView):
+    """Return a bounded metadata-ranked set of related published 2D pieces (#1141)."""
+
+    def get(self, request, public_id):
+        source = eligible_projects().filter(public_id=public_id).first()
+        if source is None or not can(request.user, Action.PROJECT_READ, source):
+            raise Http404
+
+        def tags_for(project: Project) -> set[str]:
+            tags = project.tags if isinstance(project.tags, list) else []
+            return {tag for tag in tags if isinstance(tag, str)}
+
+        source_tags = tags_for(source)
+        source_renderer = resolve_scene2d_engine(source.current_version.scene_json)
+        # The gallery queryset already enforces published/current/non-deleted
+        # eligibility. Its recency order plus this slice makes the candidate
+        # cap portable across PostgreSQL and SQLite without JSON contains.
+        candidates = list(eligible_projects().exclude(pk=source.pk)[:200])
+        profiles_by_owner = {
+            profile.user_id: profile
+            for profile in PublicProfile.objects.filter(
+                user_id__in={project.owner_id for project in candidates}
+            ).only("user_id", "handle", "display_name", "is_public")
+        }
+        # Tags are capped at 10 per project; with 200 candidates, scoring is
+        # bounded by 2,000 candidate tag checks plus a 200-item sort.
+        ranked = []
+        for candidate in candidates:
+            shared_tags = len(source_tags & tags_for(candidate))
+            renderer_match = (
+                resolve_scene2d_engine(candidate.current_version.scene_json) == source_renderer
+            )
+            if shared_tags or renderer_match:
+                ranked.append(
+                    (
+                        shared_tags,
+                        renderer_match,
+                        candidate.published_at,
+                        str(candidate.public_id),
+                        candidate,
+                    )
+                )
+        ranked.sort(key=lambda item: item[:4], reverse=True)
+        results = [("2d", item[4]) for item in ranked[:6]]
+        return Response(
+            {
+                "results": _RelatedProjectCardSerializer(
+                    results, many=True, context={"profiles": profiles_by_owner}
+                ).data
             }
         )

@@ -128,7 +128,11 @@ from scenes.profile_api import (
 from scenes.profile_styles_api import AdminProfileStyleDetailView, AdminProfileStyleListCreateView
 from scenes.provider_credentials_api import ProviderCredentialView
 from scenes.public_asset_api import PublicPieceAssetView
-from scenes.public_search_api import PublicCollectionListView, PublicGallerySearchView
+from scenes.public_search_api import (
+    PublicCollectionListView,
+    PublicGallerySearchView,
+    PublicProjectRelatedListView,
+)
 from scenes.scene_conversion_api import (
     SceneConversionAcceptView,
     SceneConversionAdvanceView,
@@ -467,6 +471,11 @@ urlpatterns = [
         "public/projects/<uuid:public_id>/",
         PublicProjectDetailView.as_view(),
         name="public-project-detail",
+    ),
+    path(
+        "public/projects/<uuid:public_id>/related/",
+        PublicProjectRelatedListView.as_view(),
+        name="public-project-related",
     ),
     path(
         "public/projects/<uuid:public_id>/thumbnail.png",

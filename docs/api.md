@@ -996,6 +996,26 @@ surfaces use the runtime adapters; embed and editor consumers remain
 capability-gated until their dependent contracts are implemented. Existing
 four-engine rows and identifier-based routes remain compatible.
 
+### Related published 2D pieces (#1141)
+
+`GET /api/public/projects/<public_id>/related/` returns
+`{"results": [...]}` with at most six anonymous public gallery cards for
+other eligible, published 2D projects. The source must itself be currently
+published, have a current version, and not be soft-deleted; otherwise the
+route returns the same `404` boundary as public project detail. Candidates
+come from the 200 newest eligible 2D projects (excluding the source), which
+bounds the portable Python-side scoring without database-specific JSON
+containment. A candidate qualifies when it shares at least one tag or its
+current scene uses the same renderer as the source. Results sort by shared
+tag count descending, renderer match first, publication time descending, then
+public project id descending. No match yields `{"results": []}`. Each item
+uses the unified public gallery card projection (`id`, `kind`, `title`,
+`owner`, `owner_handle`, `published_at`, `thumbnail_url`, `viewer_url`, and
+applicable engine metadata); private project fields, owner email, activity,
+drafts, intent notes, and scene data are excluded. Candidate loading uses one
+bounded query with related owner/version records preloaded, avoiding N+1
+queries.
+
 ### Public gallery search (#581)
 
 `GET /api/public/gallery/search/?q=<term>&scope=accounts|content` searches

@@ -109,3 +109,4 @@
 - [Contextual, focused workspace UX](contextual-focused-workspace-ux.md) — owner wants contextual, progressively disclosed editor controls in familiar menus; add a "no unrelated controls" screenshot check to editor issues.
 - [Ink, drawing planes, standalone-runtime hazards](structured-ink-and-drawing-planes.md) — ZIP runtime template-literal/regex trap, WebGL capture, e2e drift, ink model
 - 2026-09-28 CONSTRAINT Never regress an established feature or surface while implementing a new one; preserve existing specifications and add explicit regression coverage before release.
+- [LIGDOL adaptation guardrails](ligdol-adaptation-guardrails.md) — additive, deployment-light, user-controlled adoption of LIGDOL ideas (Batch 16, #1129-#1143); non-goals and deferrals.

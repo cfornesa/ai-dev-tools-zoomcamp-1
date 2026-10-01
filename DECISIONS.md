@@ -1,5 +1,32 @@
 # DECISIONS.md
 
+## 2026-10-01 — #1124 design chosen; LIGDOL adaptation plan distilled (Batch 16)
+
+- **#1124:** the owner chose option 1 — server-injected site presentation plus
+  a tiny inline theme script for the allauth pages. Options 2 (client fetch of
+  `/api/site-theme/`) and 3 (serve login from the React app) are rejected.
+  #1125/#1126 stay dependency-blocked on #1124.
+- **LIGDOL adaptation:** the owner asked for the best, deployment-light parts of
+  LIGDOL to be adapted without losing features or the app's character. Plan:
+  `docs/ligdol-adaptation.md`; milestone Batch 16, issues #1129-#1143. Findings
+  that shaped it: most of the "Project Graph" already exists (versions, AIRun,
+  ForkProvenance, media, ProjectActivity), but `ProjectActivity` defines 11
+  event types, writes only 3, and has no read API or UI; `AIPersona` already
+  provides account-level prompt context; there is no per-project intent, no
+  compare view, and no related-work discovery.
+- **Guardrails recorded:** additive only; no new package, vector DB, service or
+  worker; Replit schema-diff-safe changes; permissions.py for every endpoint;
+  user-controlled memory covered by export/deletion and excluded from public
+  APIs and piece packages; AI context bounded, disclosed, optional, and
+  byte-identical when empty; local-first creation unchanged.
+- **Explicit non-goals for this app:** DMs/communities/notifications/calls,
+  Context APIs, vector database, multi-agent orchestration, third-party tool
+  routing. **Deferred:** "talk to a piece" (AI quota), references-as-links (waits
+  on D2), public process sharing (waits on Slice A evidence).
+- **Pending owner decisions:** #1129 (where intent notes live; recommended:
+  per-project server field) and #1130 (history beyond 2D; recommended: 2D only
+  for now). M1-M3 (#1138-#1140) are blocked on #1129.
+
 ## 2026-10-01 — LIGDOL thesis revised from two architecture diagrams; login-page design parity filed
 
 - The owner supplied two LIGDOL diagrams (a layered *System Architecture* view

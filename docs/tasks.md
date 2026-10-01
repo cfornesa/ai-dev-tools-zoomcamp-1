@@ -25245,3 +25245,31 @@ recommendation); [#1125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/iss
 [#1127](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1127) provider-neutral copy and divider (independent);
 [#1128](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1128) regression coverage (after #1124-#1126). All
 guard the `loginViaUI` selectors and the allauth POST forms. Not implemented.
+
+### 2026-10-01 — Task distillation: LIGDOL adaptation (Batch 16)
+
+Manifest and rationale: [docs/ligdol-adaptation.md](ligdol-adaptation.md). Distilled by Claude
+Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed.
+
+| Issue | Slice | Routing | Depends on | Status |
+|---|---|---|---|---|
+| [#1129](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1129) | D1 owner decision: where intent notes live | owner | — | OWNER-DECISION-PENDING |
+| [#1130](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1130) | D2 owner decision: history beyond 2D | owner | — | OWNER-DECISION-PENDING |
+| [#1131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131) | A1 write version lifecycle events | 2a | — | GROOMED |
+| [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | GROOMED |
+| [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API + export | 2b | A1, A2 (soft) | GROOMED |
+| [#1134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1134) | A4 Project history UI | 2a | A3 | DEPENDENCY-BLOCKED |
+| [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | DEPENDENCY-BLOCKED |
+| [#1136](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1136) | B1 scene diff summary function | 2a | — | GROOMED |
+| [#1137](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1137) | B2 Compare versions UI | 2a | B1 | DEPENDENCY-BLOCKED |
+| [#1138](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138) | M1 intent note field/API/export | 2b | D1 | DEPENDENCY-BLOCKED |
+| [#1139](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1139) | M2 intent note editor UI | 2a | M1 | DEPENDENCY-BLOCKED |
+| [#1140](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1140) | M3 bounded, disclosed AI context | 2b | M1 | DEPENDENCY-BLOCKED |
+| [#1141](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1141) | C1 related-pieces query | 2a | — | GROOMED |
+| [#1142](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1142) | C2 "More like this" row | 2a | C1 | DEPENDENCY-BLOCKED |
+| [#1143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1143) | E1 owner-only continuity metrics (P3) | 2b | A1, A2 | DEPENDENCY-BLOCKED |
+
+Independent starters: A1, A2, B1, C1. Duplicate check: no existing open or closed issue covers
+project activity wiring, a history UI, version comparison, intent notes, or related pieces
+(searched titles for activity/timeline/brief/memory/compare/related/recommend/process).
+Also recorded: #1124 design decision (option 1). Batch 15's #1124 is ready to implement.

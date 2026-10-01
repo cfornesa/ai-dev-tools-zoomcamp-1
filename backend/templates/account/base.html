@@ -72,8 +72,11 @@
     :root[data-site-backdrop="cosmic"] body { background: radial-gradient(ellipse at top, color-mix(in srgb, var(--accent) 16%, var(--bg)), var(--bg) 68%); }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--text-h); font: 1rem/1.5 var(--site-font); }
-    header { padding: var(--space-xl) var(--site-density); border-bottom: 1px var(--site-border-style) var(--border); background: var(--bg); text-align: center; }
-    header a { color: var(--text-h); text-decoration: none; font-family: var(--heading); font-weight: 700; font-size: 2rem; }
+    .account-header { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px; border-bottom: 1px solid var(--border); text-align: center; }
+    .account-brand { color: var(--text-h); font-family: var(--heading); font-size: clamp(1.6rem, 3vw, 2.25rem); font-weight: 700; line-height: 1; text-decoration: none; }
+    .account-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    .shell-action { display: inline-flex; align-items: center; justify-content: center; max-width: 100%; min-height: 44px; box-sizing: border-box; padding: 8px 16px; border: 1px solid var(--accent-border); border-radius: 6px; background: var(--accent-bg); color: var(--text-h); font: inherit; line-height: 1.3; text-decoration: none; overflow-wrap: anywhere; cursor: pointer; }
+    .shell-action:hover { background: var(--accent-border); }
     main { width: min(calc(100% - var(--site-density) - var(--site-density)), 480px); margin: auto; padding: var(--space-xl) 0; flex: 1; display: flex; align-items: center; }
     .card { width: 100%; background: var(--code-bg); border: 1px var(--site-border-style) var(--border); border-radius: var(--site-radius); padding: var(--site-density); box-shadow: var(--shadow); }
     :root[data-site-shadow="offset"] .card { border-width: 2px; border-radius: 2px; box-shadow: 4px 4px 0 var(--border); }
@@ -97,14 +100,101 @@
     .errorlist { padding: var(--space-sm) var(--site-density); margin: var(--space-sm) 0; border: 1px var(--site-border-style) var(--accent-border); border-radius: var(--site-radius); background: var(--accent-bg); color: var(--text-h); }
     .messages { color: var(--text-h); }
     footer { padding: var(--site-density); text-align: center; border-top: 1px var(--site-border-style) var(--border); color: var(--text); font-size: 14px; }
-    @media (max-width: 520px) { header { padding: var(--site-density); } header a { font-size: clamp(1.25rem, 8vw, 2rem); } .card { padding: var(--site-density); } main { padding: var(--site-density) 0; } }
-    @media (prefers-reduced-motion: no-preference) { .auth-submit, .auth-provider, a { transition: background-color .15s ease, color .15s ease, transform .15s ease; } }
+    .skip-link { position: absolute; top: -100px; left: 0; z-index: 1000; padding: 8px 16px; border: 2px solid var(--accent); border-radius: 4px; background: var(--bg); color: var(--text-h); }
+    .skip-link:focus { top: 8px; left: 8px; }
+    .shell-display-toggles { position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 120; display: flex; gap: .5rem; }
+    .shell-display-toggles button { width: 2.75rem; height: 2.75rem; padding: 0; }
+    :root[data-reduced-motion="true"] *, :root[data-reduced-motion="true"] *::before, :root[data-reduced-motion="true"] *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--text-h); outline-offset: 2px; }
+    @media (max-width: 767px) { .account-header { gap: 16px; padding: 32px 16px; } .account-brand { max-width: 100%; overflow-wrap: anywhere; white-space: normal; } .account-nav { width: 100%; } .shell-display-toggles { position: static; justify-content: center; margin: var(--site-density) auto; } }
+    @media (max-width: 520px) { .account-header { padding: var(--site-density); } .card { padding: var(--site-density); } main { padding: var(--site-density) 0; } }
+    @media (prefers-reduced-motion: no-preference) { .auth-submit, .auth-provider, a, button { transition: background-color .15s ease, color .15s ease, transform .15s ease; } }
   </style>
   {% block head %}{% endblock %}
 </head>
 <body>
-  <header><a href="/">AugmentrART</a></header>
-  <main><section class="card">{% block content %}{% endblock %}</section></main>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <header class="account-header">
+    <a class="account-brand" href="/">{{ site_title }}</a>
+    <nav class="account-nav" aria-label="Primary navigation">
+      <a class="shell-action" href="/gallery">Public gallery</a>
+    </nav>
+  </header>
+  <main id="main-content" tabindex="-1"><section class="card">{% block content %}{% endblock %}</section></main>
+  <aside class="shell-display-toggles" aria-label="Display settings">
+    <button class="shell-action" id="motion-toggle" type="button" aria-label="Use reduced motion" title="Use reduced motion"><span aria-hidden="true">✦</span></button>
+    <button class="shell-action" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><span aria-hidden="true">☾</span></button>
+  </aside>
   <footer>Christopher Fornesa © {% now "Y" %}</footer>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var themeKey = 'augmentrart:theme-preference:v1';
+      var motionKey = 'gesture-studio:reduced-motion-override';
+      var systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+      var systemReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+      function watchMedia(query, callback) {
+        if (query.addEventListener) query.addEventListener('change', callback);
+        else if (query.addListener) query.addListener(callback);
+      }
+      function stored(key, allowed, fallback) {
+        try { var value = window.localStorage.getItem(key); return allowed.indexOf(value) >= 0 ? value : fallback; }
+        catch (_) { return fallback; }
+      }
+      var theme = stored(themeKey, ['light', 'dark', 'system'], 'system');
+      function applyTheme() {
+        var dark = theme === 'dark' || (theme === 'system' && systemDark.matches);
+        root.dataset.theme = dark ? 'dark' : 'light';
+        root.dataset.themePreference = theme;
+        root.style.colorScheme = dark ? 'dark' : 'light';
+        var label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+        document.getElementById('theme-toggle').setAttribute('aria-label', label);
+        document.getElementById('theme-toggle').title = label;
+        document.querySelector('#theme-toggle span').textContent = dark ? '☀' : '☾';
+      }
+      function applyMotion() {
+        var override = stored(motionKey, ['reduced', 'full'], 'system');
+        var reduced = override === 'reduced' || (override === 'system' && systemReduced.matches);
+        root.dataset.reducedMotion = reduced ? 'true' : 'false';
+        var label = reduced ? 'Use full motion' : 'Use reduced motion';
+        var button = document.getElementById('motion-toggle');
+        button.setAttribute('aria-label', label);
+        button.title = label;
+        if (override === 'system') button.removeAttribute('aria-pressed');
+        else button.setAttribute('aria-pressed', String(reduced));
+        button.querySelector('span').textContent = reduced ? '◌' : '✦';
+      }
+      document.getElementById('theme-toggle').addEventListener('click', function () {
+        var dark = root.dataset.theme === 'dark';
+        theme = dark ? 'light' : 'dark';
+        try { window.localStorage.setItem(themeKey, theme); } catch (_) {}
+        applyTheme();
+      });
+      document.getElementById('motion-toggle').addEventListener('click', function () {
+        var override = stored(motionKey, ['reduced', 'full'], 'system');
+        var currentlyReduced = override === 'reduced' || (override === 'system' && systemReduced.matches);
+        var next = currentlyReduced ? 'full' : 'reduced';
+        try { if (next === 'system') window.localStorage.removeItem(motionKey); else window.localStorage.setItem(motionKey, next); } catch (_) {}
+        applyMotion();
+      });
+      watchMedia(systemDark, function () { if (theme === 'system') applyTheme(); });
+      watchMedia(systemReduced, applyMotion);
+      fetch('/api/pages/', { credentials: 'same-origin' }).then(function (response) {
+        if (!response.ok) throw new Error('Public navigation unavailable');
+        return response.json();
+      }).then(function (pages) {
+        var nav = document.querySelector('.account-nav');
+        pages.forEach(function (page) {
+          var link = document.createElement('a');
+          link.className = 'shell-action';
+          link.href = '/pages/' + encodeURIComponent(page.slug);
+          link.textContent = page.nav_label || page.title;
+          nav.appendChild(link);
+        });
+      }).catch(function () {});
+      applyTheme();
+      applyMotion();
+    })();
+  </script>
 </body>
 </html>

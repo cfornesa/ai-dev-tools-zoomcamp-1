@@ -71,6 +71,28 @@ def test_login_shell_injects_palette_and_presentation_from_site_settings(client)
 
 
 @pytest.mark.django_db
+def test_account_shell_uses_site_brand_and_shared_navigation_contract(client):
+    from scenes.models import SiteSettings
+
+    SiteSettings.get_solo()  # Ensure the singleton exists before updating it.
+    SiteSettings.objects.filter(pk=1).update(site_title="Configured Studio")
+    response = client.get(reverse("account_login"))
+
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert '<a class="account-brand" href="/">Configured Studio</a>' in body
+    assert '<nav class="account-nav" aria-label="Primary navigation">' in body
+    assert 'href="/gallery">Public gallery</a>' in body
+    assert body.index('class="skip-link"') < body.index('class="account-header"')
+    assert '<main id="main-content" tabindex="-1">' in body
+    assert '<footer>Christopher Fornesa © ' in body
+    assert 'augmentrart:theme-preference:v1' in body
+    assert 'gesture-studio:reduced-motion-override' in body
+    assert 'aria-label="Switch to dark mode"' in body
+    assert 'aria-label="Use reduced motion"' in body
+
+
+@pytest.mark.django_db
 def test_allauth_account_and_social_templates_render_from_the_shared_shell():
     template_names = (
         "account/base.html",

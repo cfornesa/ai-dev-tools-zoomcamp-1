@@ -26,6 +26,7 @@ def site_theme(request: HttpRequest) -> dict[str, Any]:
         {**(style.presentation if style else {}), **row.presentation_overrides}
     )
     return {
+        "site_title": row.site_title,
         "site_theme_palettes": palettes,
         "site_design_palettes": design,
         "site_presentation": presentation,

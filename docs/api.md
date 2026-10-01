@@ -192,6 +192,38 @@ columns; because that rollback discards saved source text, a deployment must
 retain a database backup/export before applying it. No public payload or
 existing JSON snapshot is changed by the migration.
 
+## Owner-only 2D project activity (#1133)
+
+`GET /api/projects/<public_id>/activity/` returns one server-backed 2D
+project's activity to its owner, including when the project is public or
+soft-deleted within its existing retention period. `public_id` is the
+project's public UUID; internal project IDs are never returned. Anonymous and
+non-owner requests receive the same `404` response as an unknown UUID.
+
+The response is `{ "results": [...], "next_cursor": <opaque string|null> }`.
+Each result contains only `id`, `action_type`, `label`, `actor_display`,
+`created_at`, and `details`. `label` is the declared action's display label;
+`actor_display` is the actor username or `null`. Details project only the
+present `sequence`, `origin`, `restored_from_sequence`, `run_id`, `scope`,
+`operation`, `change_summary`, and `reason` metadata fields. Email, actor
+IDs, internal project IDs, unknown metadata, and arbitrary metadata values
+are not exposed.
+
+Results are ordered by `created_at DESC, id DESC`. `limit` defaults to 25 and
+must be an integer from 1 through 100. A page reads at most `limit + 1`
+activity rows. `next_cursor` is an opaque continuation bound to that
+project's public UUID and the last returned row's timestamp and ID; malformed
+or cross-project cursors return `400` with `{"errors":{"cursor":["Invalid
+cursor."]}}`. Invalid limits return `400` with
+`{"errors":{"limit":["Must be an integer from 1 to 100."]}}`.
+
+This is a private owner API only. Public project responses, piece payloads,
+and piece-package serializers do not include activity. The event query is
+supported by an index on `(project_id, created_at DESC, id DESC)`. Activity
+for a soft-deleted project remains readable by its owner until the existing
+retention policy hard-purges the project and its cascading activity rows.
+Account export remains a separate contract in #1148.
+
 ## Art-piece ink layer (#776)
 
 `ArtPieceVersion` responses (owner, public, and canonical projections) include the additive

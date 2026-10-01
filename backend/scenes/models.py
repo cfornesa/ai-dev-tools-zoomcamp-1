@@ -1732,6 +1732,12 @@ class ProjectActivity(models.Model):
     class Meta:
         ordering = ["-created_at"]
         verbose_name_plural = "project activity"
+        indexes = [
+            models.Index(
+                fields=["project", "-created_at", "-id"],
+                name="sc_pa_project_created_id_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.project_id}: {self.action_type}"

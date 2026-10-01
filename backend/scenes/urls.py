@@ -9,6 +9,7 @@ from scenes.account_identities_api import (
     AccountIdentityUnlinkView,
 )
 from scenes.account_sessions_api import AccountSessionRevokeView, AccountSessionsView
+from scenes.activity_api import ProjectActivityListView
 from scenes.admin_content_api import (
     AdminContentAccessView,
     AdminContentActionView,
@@ -408,6 +409,11 @@ urlpatterns = [
         name="template-clone",
     ),
     path("projects/<uuid:public_id>/", ProjectDetailView.as_view(), name="project-detail"),
+    path(
+        "projects/<uuid:public_id>/activity/",
+        ProjectActivityListView.as_view(),
+        name="project-activity-list",
+    ),
     path("projects/<uuid:public_id>/cloud-backup/", CloudBackupView.as_view(), name="cloud-backup"),
     path(
         "projects/<uuid:public_id>/sync/mutations/",

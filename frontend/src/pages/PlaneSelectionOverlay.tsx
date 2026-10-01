@@ -350,7 +350,7 @@ export default function PlaneSelectionOverlay(props: PlaneSelectionOverlayProps)
         role="toolbar"
         aria-label={`${label} actions`}
         className="plane-selection-toolbar"
-        data-dock={narrow ? 'bottom' : 'float'}
+        data-dock={narrow ? 'rail' : 'float'}
         data-dragging={dragging ? 'true' : undefined}
         data-testid="plane-selection-toolbar"
         style={toolbarStyle}

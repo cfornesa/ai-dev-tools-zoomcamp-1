@@ -5657,6 +5657,14 @@ select.ai-proposal-field-full-width {
   height: 100%;
 }
 
+/* Issue #1114: keep the responsive canvas 16:9 while reserving a sibling row
+   for selected-plane actions that visually sit just below the frame. */
+.project3d-workspace
+  .scene3d-preview:has(.plane-selection-toolbar[data-dock='rail'])
+  .scene3d-preview-canvas-frame {
+  margin-bottom: 56px;
+}
+
 .scene3d-stage-toolbar {
   position: absolute;
   left: 12px;
@@ -7664,7 +7672,7 @@ select.ai-proposal-field-full-width {
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 }
 .plane-selection-outline {
   position: absolute;
@@ -7761,10 +7769,10 @@ select.ai-proposal-field-full-width {
   opacity: 0.2;
   pointer-events: none;
 }
-.plane-selection-toolbar[data-dock='bottom'] {
+.plane-selection-toolbar[data-dock='rail'] {
   left: 8px;
   right: 8px;
-  bottom: 8px;
+  bottom: -56px;
   top: auto;
   transform: none;
   justify-content: space-between;
@@ -7785,22 +7793,22 @@ select.ai-proposal-field-full-width {
   font-size: 1rem;
   cursor: pointer;
 }
-.plane-selection-toolbar[data-dock='bottom'] {
+.plane-selection-toolbar[data-dock='rail'] {
   gap: 2px;
   padding: 2px;
 }
-.plane-selection-toolbar[data-dock='bottom'] > button,
-.plane-selection-toolbar[data-dock='bottom'] .plane-more > button {
+.plane-selection-toolbar[data-dock='rail'] > button,
+.plane-selection-toolbar[data-dock='rail'] .plane-more > button {
   flex: 1 1 0;
   min-width: 0;
   min-height: 44px;
   padding: 0;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-more {
+.plane-selection-toolbar[data-dock='rail'] .plane-more {
   flex: 1 1 0;
   min-width: 0;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-more > button {
+.plane-selection-toolbar[data-dock='rail'] .plane-more > button {
   width: 100%;
 }
 .plane-selection-toolbar button[aria-pressed='true'] {
@@ -7830,7 +7838,7 @@ select.ai-proposal-field-full-width {
 .plane-selection-toolbar button:focus-visible > .plane-toolbar-label {
   opacity: 1;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-toolbar-label {
+.plane-selection-toolbar[data-dock='rail'] .plane-toolbar-label {
   display: none;
 }
 .plane-more {
@@ -7850,7 +7858,7 @@ select.ai-proposal-field-full-width {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   z-index: 5;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-more-menu {
+.plane-selection-toolbar[data-dock='rail'] .plane-more-menu {
   /* Phone: a small bottom sheet over the docked toolbar (the stage itself is too short for a popover). */
   position: fixed;
   z-index: 61;
@@ -7862,7 +7870,7 @@ select.ai-proposal-field-full-width {
   gap: 4px;
   padding: 6px;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-more-menu button {
+.plane-selection-toolbar[data-dock='rail'] .plane-more-menu button {
   flex: 1 1 0;
   min-height: 44px;
   justify-content: center;

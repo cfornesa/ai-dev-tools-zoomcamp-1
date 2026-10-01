@@ -113,12 +113,16 @@ test.describe('inline 3D stage toolbar geometry (#1111)', () => {
           '[role="group"][aria-label="Preview actions"]',
         );
         const editorActions = document.querySelector<HTMLElement>('[aria-label="Editor actions"]');
+        const planeToolbar = document.querySelector<HTMLElement>(
+          '[data-testid="plane-selection-toolbar"]',
+        );
         const overlayElement = handleElement?.closest<HTMLElement>('.plane-selection-overlay');
         if (
           !handleElement ||
           !toolbarHost ||
           !toolbarActions ||
           !editorActions ||
+          !planeToolbar ||
           !overlayElement ||
           !frame
         ) {
@@ -157,6 +161,7 @@ test.describe('inline 3D stage toolbar geometry (#1111)', () => {
               toolbarHost: !toolbarHost,
               toolbarActions: !toolbarActions,
               editorActions: !editorActions,
+              planeToolbar: !planeToolbar,
               overlay: !overlayElement,
               frame: !frame,
             },
@@ -170,6 +175,11 @@ test.describe('inline 3D stage toolbar geometry (#1111)', () => {
             toolbarActionsBox: null,
             toolbarActionsStyle: null,
             frameBox: null,
+            frameAspect: null,
+            documentWidth: null,
+            viewportWidth: window.innerWidth,
+            planeToolbarBox: null,
+            planeControls: [],
             overlayBox: null,
             overlayStyle: null,
             controls: [],
@@ -206,6 +216,21 @@ test.describe('inline 3D stage toolbar geometry (#1111)', () => {
             );
           },
         );
+        const planeControls = Array.from(
+          planeToolbar.querySelectorAll<HTMLElement>('button, a'),
+        ).filter((element) => {
+          const computed = getComputedStyle(element);
+          return (
+            element.getClientRects().length > 0 &&
+            computed.visibility !== 'hidden' &&
+            computed.display !== 'none' &&
+            !element.closest('[hidden]')
+          );
+        });
+        const boxRecord = (element: Element) => {
+          const rect = element.getBoundingClientRect();
+          return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom };
+        };
         return {
           handleBox: box(handleElement),
           handleStack: stack.slice(0, 6).map((element) => ({
@@ -224,6 +249,22 @@ test.describe('inline 3D stage toolbar geometry (#1111)', () => {
           toolbarActionsBox: box(toolbarActions),
           toolbarActionsStyle: style(toolbarActions),
           frameBox: box(frame),
+          frameAspect: frame.getBoundingClientRect().width / frame.getBoundingClientRect().height,
+          documentWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+          planeToolbarBox: box(planeToolbar),
+          planeControls: planeControls.map((element) => {
+            const rect = element.getBoundingClientRect();
+            const target = document.elementFromPoint(
+              rect.left + rect.width / 2,
+              rect.top + rect.height / 2,
+            );
+            return {
+              name: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? '',
+              hit: Boolean(target && (target === element || element.contains(target))),
+              box: boxRecord(element),
+            };
+          }),
           overlayBox: box(overlayElement),
           overlayStyle: style(overlayElement),
           controls: controls.map((element) => {
@@ -247,6 +288,33 @@ test.describe('inline 3D stage toolbar geometry (#1111)', () => {
       expect(hitTargets!.handleHit, `move handle centre must hit the handle: ${evidence}`).toBe(
         true,
       );
+      expect(hitTargets!.frameAspect, `stage remains 16:9: ${evidence}`).toBeCloseTo(16 / 9, 2);
+      expect(hitTargets!.documentWidth, `no horizontal document overflow: ${evidence}`).toBe(
+        hitTargets!.viewportWidth,
+      );
+      if (viewport.width === 375) {
+        expect(
+          hitTargets!.planeToolbarBox!.y,
+          `phone plane toolbar starts below the scene frame: ${evidence}`,
+        ).toBeGreaterThanOrEqual(hitTargets!.frameBox!.bottom);
+      }
+      for (const planeControl of hitTargets!.planeControls) {
+        expect(
+          planeControl.hit,
+          `${planeControl.name} centre must hit its control: ${evidence}`,
+        ).toBe(true);
+        for (const inlineControl of hitTargets!.controls) {
+          const overlaps =
+            planeControl.box.x < inlineControl.box.right &&
+            planeControl.box.right > inlineControl.box.x &&
+            planeControl.box.y < inlineControl.box.bottom &&
+            planeControl.box.bottom > inlineControl.box.y;
+          expect(
+            overlaps,
+            `${planeControl.name} overlaps inline action ${inlineControl.name}: ${evidence}`,
+          ).toBe(false);
+        }
+      }
       for (const control of hitTargets!.controls) {
         expect(control.hit, `${control.name} centre must hit its control: ${evidence}`).toBe(true);
         expect(control.box.x, `${control.name} left edge: ${evidence}`).toBeGreaterThanOrEqual(

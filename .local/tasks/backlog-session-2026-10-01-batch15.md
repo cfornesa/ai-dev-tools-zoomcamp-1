@@ -38,7 +38,7 @@ items advance only after the current transaction is terminal.
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
 | #1133 | Activity read API | COMPLETED | Implementation `b1796a7f`; independent Stage 4 QA PASS; reconciliation `ca7c5c9c`; closed completed after typed issue update. No QA comment URL; process fallback evidence in ledger. |
-| #1134 | History UI | COMPLETED | Corrective commit `f4bd4a30`; independent Stage 4 PASS; closure pending typed GitHub state update. |
+| #1134 | History UI | COMPLETED | Corrective commit `f4bd4a30`; independent Stage 4 PASS; GitHub closed completed 2026-10-01T18:28:20Z; read-after-write confirmed. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
 | #1137 | Compare-versions UI | DEPENDENCY-BLOCKED | Requires #1136. |
@@ -97,7 +97,7 @@ follow-up #1148 was filed for account JSON export after the duplicate check; it
 depends on #1133's shared activity projection. No unlinked discovery remains.
 **#1133 reconciliation:** GitHub returned issue #1133 closed with reason `completed` at 2026-10-01T17:08:13Z. The prior transaction docs commit is `ca7c5c9c`. Read-after-write state confirms closure. The comment limitation and local evidence fallback are recorded above.
 
-**Current issue:** #1134 has passed corrective Stage 4 and is ready for reconciliation/closure. #1148 is eligible after #1133; it remains queued until #1134's GitHub closure is read back.
+**#1134 reconciliation:** GitHub returned issue #1134 closed with reason `completed` at 2026-10-01T18:28:20Z after corrective Stage 4 PASS; read-after-write confirms closure. Reconciliation commit `36060300` contains the full criteria evidence and provenance. The backlog may now select the next eligible issue after refreshing the complete open inventory.
 
 ### #1131 — 2D version lifecycle activity events
 

@@ -147,8 +147,8 @@
 - Stage 4 returned PASS. Evidence is local macOS/disposable PostgreSQL only;
   no Linux, CI, or deployed claim. QA is a separate Codex substitution for
   Claude/Sonnet5/Medium; Stage 3 was not run. No issue comment was posted due
-  the connector's PR-shaped comment operation. Typed issue closure and
-  read-after-write remain for reconciliation.
+  the connector's PR-shaped comment operation. Typed issue update closed
+  #1134 completed at 2026-10-01T18:28:20Z and read-after-write confirmed it.
 
 ## 2026-10-01 — Backlog-session agent loop for #1147
 

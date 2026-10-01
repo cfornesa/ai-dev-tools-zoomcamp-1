@@ -379,44 +379,45 @@ function VersionHistoryPanel({
 
   return (
     <div className="version-history-panel">
-      <h4>Version history</h4>
+      <h4 aria-label="Version history" className="version-history-title">
+        Version history
+        <span role="tablist" aria-label="Project history views" className="version-history-tabs">
+          <button
+            ref={versionTabRef}
+            type="button"
+            role="tab"
+            id="version-history-tab-versions"
+            aria-selected={activeTab === 'versions'}
+            aria-controls="version-history-panel-versions"
+            tabIndex={activeTab === 'versions' ? 0 : -1}
+            className="editor-panel-tab"
+            onClick={() => setActiveTab('versions')}
+            onKeyDown={handleTabKeyDown}
+          >
+            Versions
+          </button>
+          <button
+            ref={activityTabRef}
+            type="button"
+            role="tab"
+            id="version-history-tab-activity"
+            aria-selected={activeTab === 'activity'}
+            aria-controls="version-history-panel-activity"
+            tabIndex={activeTab === 'activity' ? 0 : -1}
+            className="editor-panel-tab"
+            onClick={() => setActiveTab('activity')}
+            onKeyDown={handleTabKeyDown}
+          >
+            Activity
+          </button>
+        </span>
+      </h4>
 
       <p role="status" aria-live="polite" data-testid="working-state-status">
         {isDirty
           ? 'Unsaved changes'
           : `Saved${persistedVersion ? ` as version ${persistedVersion.sequence}` : ''}`}
       </p>
-
-      <div role="tablist" aria-label="Project history views" className="editor-panel-switcher">
-        <button
-          ref={versionTabRef}
-          type="button"
-          role="tab"
-          id="version-history-tab-versions"
-          aria-selected={activeTab === 'versions'}
-          aria-controls="version-history-panel-versions"
-          tabIndex={activeTab === 'versions' ? 0 : -1}
-          className="editor-panel-tab"
-          onClick={() => setActiveTab('versions')}
-          onKeyDown={handleTabKeyDown}
-        >
-          Versions
-        </button>
-        <button
-          ref={activityTabRef}
-          type="button"
-          role="tab"
-          id="version-history-tab-activity"
-          aria-selected={activeTab === 'activity'}
-          aria-controls="version-history-panel-activity"
-          tabIndex={activeTab === 'activity' ? 0 : -1}
-          className="editor-panel-tab"
-          onClick={() => setActiveTab('activity')}
-          onKeyDown={handleTabKeyDown}
-        >
-          Activity
-        </button>
-      </div>
 
       <section
         role="tabpanel"

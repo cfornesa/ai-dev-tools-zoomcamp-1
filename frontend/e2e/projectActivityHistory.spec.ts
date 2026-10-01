@@ -133,6 +133,48 @@ test.describe('2D project activity history (#1134)', () => {
       await expectHistoryRowsFitViewport(page);
     }
 
+    // Preserve the existing owner-facing delete confirmation semantics as
+    // well as Restore. The restored latest version is intentionally
+    // non-deletable, so target the first row with an enabled Delete control.
+    const rows = page.locator('.version-history-item');
+    let deletableRow = rows.first();
+    for (let index = 0; index < (await rows.count()); index += 1) {
+      const candidate = rows.nth(index);
+      if (await candidate.getByRole('button', { name: 'Delete', exact: true }).isEnabled()) {
+        deletableRow = candidate;
+        break;
+      }
+    }
+    const deleteTrigger = deletableRow.getByRole('button', { name: 'Delete', exact: true });
+    const deletedSequence = (await deletableRow.getByText(/^Version \d+$/).innerText()).match(
+      /\d+/,
+    )?.[0];
+    expect(deletedSequence, 'Expected a deletable version row').toBeTruthy();
+    if (!deletedSequence) throw new Error('Expected a deletable version row');
+    await deleteTrigger.click();
+    const confirmation = page.getByRole('alertdialog', {
+      name: `Delete version ${deletedSequence}?`,
+    });
+    await expect(confirmation).toBeVisible();
+    await expect(
+      confirmation.getByRole('button', { name: 'Delete version', exact: true }),
+    ).toBeVisible();
+    await expect(confirmation.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+
+    // Cancel keeps the saved version and returns focus to its accessible
+    // trigger, matching the established keyboard and confirmation behavior.
+    await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(confirmation).toHaveCount(0);
+    await expect(deleteTrigger).toBeFocused();
+    await deleteTrigger.click();
+    await expect(confirmation).toBeVisible();
+    await confirmation.getByRole('button', { name: 'Delete version', exact: true }).click();
+    await expect(
+      page.locator('.version-history-item').filter({
+        has: page.getByText(new RegExp(`^Version ${deletedSequence}$`)),
+      }),
+    ).toHaveCount(0);
+
     await activityTab.click();
     await expect(activityTab).toHaveAttribute('aria-selected', 'true');
     const activity = page.getByRole('list', { name: 'Project activity' });

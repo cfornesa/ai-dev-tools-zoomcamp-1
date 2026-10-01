@@ -2,6 +2,7 @@ import { expect, test, type Locator } from '@playwright/test';
 
 import { apiGet, apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject2D } from './support/createProject.js';
 import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
@@ -119,17 +120,11 @@ test.describe('owner (private) vs public regular view toolbar (#773)', () => {
         });
         actions = toolbar.getByRole('group', { name: 'Preview actions' });
       } else {
-        await page.goto('/');
-        await page.getByRole('button', { name: 'More creation options' }).click();
-        await page.getByRole('menuitem', { name: menuItem }).click();
-        await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
-        // The 2D Piece actions toolbar still exposes its menu-mode shim.
-        const menu = page.getByRole('button', { name: 'Open piece controls menu' }).first();
-        await expect(menu).toBeVisible({ timeout: 20_000 });
-        await menu.click();
-        const dialog = page.getByRole('dialog', { name: /Piece actions|Preview actions/ }).first();
-        await expect(dialog).toBeVisible();
-        actions = dialog.locator('[role="group"]').first();
+        await createServerProject2D(page);
+        const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
+        await expect(toolbar).toBeVisible();
+        actions = toolbar.getByRole('group', { name: 'Piece actions' });
+        await expect(actions).toBeVisible();
       }
       const labels = await actions.evaluate((group) =>
         Array.from(group.querySelectorAll(':scope > button, :scope > a, :scope > div > button'))

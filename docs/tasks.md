@@ -25390,3 +25390,18 @@ warnings), format check, and diff check pass. QA comment
 [#5929141148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5929141148)
 supersedes the interim 17/20 matrix. #1108 remains open / QA FAIL, dependent on
 #1145 and lifecycle fixture migration #1104.
+
+### 2026-10-01 — #1100 six-spec local QA rerun
+
+Re-ran #1100's exact six-file Chromium command on the disposable PostgreSQL
+stack (Django `AI_PROVIDER=fake`, Vite :5003, local macOS Chromium): **7/7
+passed**, including A-Frame drag at both viewports and immersive/public route
+parity. Static checks (`npm run typecheck`, `npm run lint` with existing
+warnings, `npm run format:check`, `git diff --check`) pass on the current
+tree. The setup-only change from `91a7a553` remains within the named E2E files
+and helpers. QA is still FAIL / verification-boundary blocked because #1100
+explicitly requires Linux Chromium/PostgreSQL; this local result does not
+replace that evidence. QA comment
+[#5929203583](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100#issuecomment-5929203583)
+records provenance and the next action. Keep #1100 open; #1102–#1104 remain
+blocked until the exact Linux command passes.

@@ -25268,7 +25268,7 @@ Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed
 | [#1129](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1129) | D1 owner decision: where intent notes live | owner | — | OWNER-DECISION-PENDING |
 | [#1130](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1130) | D2 owner decision: history beyond 2D | owner | — | OWNER-DECISION-PENDING |
 | [#1131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131) | A1 write version lifecycle events | 2b | — | COMPLETE (local QA PASS) |
-| [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | GROOMED |
+| [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | ENGINEERING |
 | [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API + export | 2b | A1, A2 (soft) | GROOMED |
 | [#1134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1134) | A4 Project history UI | 2a | A3 | DEPENDENCY-BLOCKED |
 | [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | DEPENDENCY-BLOCKED |

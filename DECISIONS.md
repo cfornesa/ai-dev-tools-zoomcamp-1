@@ -1,5 +1,26 @@
 # DECISIONS.md
 
+## 2026-10-01 — Backlog-session agent loop for #1132
+
+- #1131 is reconciled and closed after the latest QA PASS. Started the
+  required separate PM/groom pass for #1132 before engineering. The review
+  must validate the current acceptance contract for accept/discard events,
+  optional reason sanitization, running versus awaiting-review cancellation,
+  replay/idempotency, transactional writes, 2D-only scope, API docs, exact
+  test fixture, and local evidence boundary. Stage 2b remains substituted by
+  Codex for Ollama Cloud; stage 4 will be a separate QA pass. No stage-3
+  review is claimed unless an independent model family performs it.
+
+## 2026-10-01 — #1132 stage 2b engineer pass delegated
+
+- The separate PM subagent groomed the live issue and the orchestrator
+  re-fetched it as closure-ready. Started the separate implementation-complex
+  pass against exact accept/discard/reason criteria. Rostered owner is Ollama
+  Cloud / Kimi K3; actual owner is a Codex subagent / GPT-6.1-sol, substituted.
+  Scope includes only `ai_runs_api.py`/`ai_runs.py` behavior, its named backend
+  tests, and `docs/api.md`. Engineer must not close or perform QA; separate
+  Stage 4 is required.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

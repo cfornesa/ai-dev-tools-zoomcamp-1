@@ -36,7 +36,7 @@ items advance only after the current transaction is terminal.
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
-| #1132 | Independent 2D AI accept/discard history writer A2 | GROOMED | Implement after Batch 15. |
+| #1132 | Independent 2D AI accept/discard history writer A2 | ENGINEERING | Groomed 2026-10-01; implement exact 2D lifecycle contract, then separate QA. |
 | #1133 | Activity read API | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
 | #1134 | History UI | DEPENDENCY-BLOCKED | Requires #1133. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
@@ -139,6 +139,36 @@ is `QA: PASS`, supersedes the earlier FAIL, and accepts the implementation.
 | QA / stage 4 | Claude / Sonnet 5 / Medium | Separate Codex subagent / GPT-6.1-sol / effort unavailable | yes |
 
 No new actionable issue was discovered. No durable memory update was needed.
+
+### #1132 — AI proposal accept/discard history writer
+
+**State:** `GROOMED → ENGINEERING`; current owner is a separate engineer
+subagent. Issue #1132 was fetched after PM grooming and remains open. The PM
+updated the live contract with a fixed owner/project/run fixture matrix, exact
+reason validation/normalization, locked pre-transition discard semantics,
+transaction and replay rules, API documentation requirements, and explicit
+2D-only boundaries (#1130, #1133, #1135 out of scope). Entry points are
+`AIRunAcceptView` and `AIRunCancelView` in `backend/scenes/ai_runs_api.py`;
+focused coverage is `backend/tests/test_ai_runs.py`; documentation target is
+`docs/api.md`. Exact checks: `cd backend && uv run pytest
+tests/test_ai_runs.py -q` and `make backend-check`. Evidence is local automated
+backend testing; production and PostgreSQL concurrency claims are excluded.
+
+The fixture matrix covers valid accepted and discarded 2D `awaiting_review`
+runs; running cancellation; an awaiting-review 3D control; invalid-candidate
+and stale-base accept negatives. Reason tests cover omitted/null/empty/blank,
+non-string and >280 submitted Unicode code points, Cc stripping, normalization
+to empty, and preserved non-ASCII. Only the first locked awaiting-review to
+cancelled explicit transition writes rejection; accepted replay reuses its
+version and does not duplicate activity. Exact safe metadata is passed through
+`ProjectActivity.save()` and `validate_activity_metadata()`.
+
+| Stage | Rostered owner | Actual owner | Substituted |
+| --- | --- | --- | --- |
+| PM/grooming | Codex / GPT-6.1-sol | Separate Codex subagent / GPT-6.1-sol / effort unavailable | no |
+| Implementation / stage 2b | Ollama Cloud / Kimi K3 | Pending | pending |
+| Independent review / stage 3 | Mistral Vibe | Not requested / pending | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Pending separate pass | pending |
 
 ### #1147 — Account shell copy assertion
 

@@ -3,7 +3,11 @@ import re
 from pathlib import Path
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
+from django.contrib.messages.storage.fallback import FallbackStorage
+from django.contrib.sessions.backends.base import SessionBase
 from django.template.loader import get_template
+from django.test import RequestFactory
 from django.urls import reverse
 
 from backend.context_processors import palette_css_tokens, presentation_css_tokens
@@ -66,7 +70,8 @@ def test_login_shell_injects_palette_and_presentation_from_site_settings(client)
     assert b"csrfmiddlewaretoken" in response.content
 
 
-def test_allauth_account_and_social_templates_compile_from_the_shared_shell():
+@pytest.mark.django_db
+def test_allauth_account_and_social_templates_render_from_the_shared_shell():
     template_names = (
         "account/base.html",
         "account/base_entrance.html",
@@ -79,8 +84,14 @@ def test_allauth_account_and_social_templates_compile_from_the_shared_shell():
         "socialaccount/social_identity_conflict.html",
         "socialaccount/social_identity_email_required.html",
     )
+    request = RequestFactory().get("/")
+    request.user = AnonymousUser()
+    request.session = SessionBase()
+    request._messages = FallbackStorage(request)
     for name in template_names:
-        assert get_template(name), name
+        rendered = get_template(name).render({}, request=request)
+        assert '<html lang="en"' in rendered, name
+        assert "--bg:" in rendered, name
 
     social_signup = (ROOT / "backend/templates/socialaccount/signup.html").read_text()
     social_signup_styles = social_signup.split("{% block head %}", 1)[1].split("{% endblock %}", 1)[

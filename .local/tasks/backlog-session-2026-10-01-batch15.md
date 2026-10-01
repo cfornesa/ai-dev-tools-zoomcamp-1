@@ -38,7 +38,7 @@ items advance only after the current transaction is terminal.
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
 | #1133 | Activity read API | COMPLETED | Implementation `b1796a7f`; independent Stage 4 QA PASS; reconciliation `ca7c5c9c`; closed completed after typed issue update. No QA comment URL; process fallback evidence in ledger. |
-| #1134 | History UI | ENGINEERING | Stage 2a commit `b8359ec4`; Stage 4 FAIL: pre-change Versions panel sizing/scroll comparison absent. Return to Stage 2a to add reproducible baseline assertion/artifact; no closure. |
+| #1134 | History UI | COMPLETED | Corrective commit `f4bd4a30`; independent Stage 4 PASS; closure pending typed GitHub state update. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
 | #1137 | Compare-versions UI | DEPENDENCY-BLOCKED | Requires #1136. |
@@ -97,7 +97,7 @@ follow-up #1148 was filed for account JSON export after the duplicate check; it
 depends on #1133's shared activity projection. No unlinked discovery remains.
 **#1133 reconciliation:** GitHub returned issue #1133 closed with reason `completed` at 2026-10-01T17:08:13Z. The prior transaction docs commit is `ca7c5c9c`. Read-after-write state confirms closure. The comment limitation and local evidence fallback are recorded above.
 
-**Current issue:** #1134, Project history timeline in the 2D editor. Refresh its contract and current worktree before grooming/implementation. #1148 is also now eligible after #1133 but remains queued behind the per-issue transaction gate.
+**Current issue:** #1134 has passed corrective Stage 4 and is ready for reconciliation/closure. #1148 is eligible after #1133; it remains queued until #1134's GitHub closure is read back.
 
 ### #1131 — 2D version lifecycle activity events
 
@@ -247,7 +247,7 @@ RECONCILIATION → CLOSED` pending typed issue update and read-after-write
 confirmation, under the documented fallback for unavailable issue-comment
 tooling.
 
-### #1134 — Project history timeline (PM complete; owner choice recorded)
+### #1134 — Project history timeline (closed after corrective QA)
 
 GitHub confirms #1133 closed completed before this issue was selected. The
 separate Codex/GPT-6.1-sol PM pass checked the live contract, dependency,
@@ -273,10 +273,10 @@ unavailable; substituted: yes. Stage 3 optional and not requested. Stage 4 is
 rostered Claude / Sonnet 5 / Medium and must be separate; use a separate Codex
 QA substitution only if Claude is unavailable and record it.
 
-**Next:** implement the refined #1134 contract, add focused feature-slice
-coverage plus the real owner E2E, run exact commands, and produce an
-issue-scoped commit. Do not start #1148 or another transaction until #1134 is
-closed or terminally handed off.
+**Initial implementation:** commit `b8359ec4cc4c85d1c58ebeae937bd1a5d2d6e79f`
+added the typed frontend activity wrapper, tabbed history panel, tests, and
+owner-route E2E. Stage 4 returned it because it lacked actual baseline geometry
+and scroll comparison evidence and browser delete coverage.
 
 **Stage 2a engineer handoff:** accepted diff commit
 `b8359ec4cc4c85d1c58ebeae937bd1a5d2d6e79f`
@@ -301,37 +301,46 @@ full relevant checks, and visually inspect rendered UI before verdict.
 | Independent review / 3 | Mistral Vibe | Not requested / not run | — |
 | QA / 4 | Claude / Sonnet 5 / Medium | Codex subagent / GPT-6.1-sol / effort unavailable | yes |
 
-**Stage 4 result:** separate Codex/GPT-6.1-sol QA substitution for Claude /
-Sonnet 5 / Medium returned FAIL. PASS: tabs/ARIA/keyboard, focused behavior,
-typed wrapper, pagination and labels, reason-as-text/time semantics, async
-states, axe, real owner route, saved/restored/accepted/discarded events,
-reason text, restore, no external/API/schema/dependency change, current
-desktop/mobile no-clipping. Focused three-file unit suite: 23/23; full
-`npm test`: 311 files / 3,193 tests passed; `npm run typecheck`, lint (exit 0,
-warnings), and `npm run format:check` passed. The exact Chromium owner E2E
-passed 1/1 against fresh isolated PostgreSQL with fake AI via approved
-unsandboxed local runner. Initial Docker and sandboxed browser launches failed
-for documented environment reasons; they were resolved by the local-Postgres
-fallback and approved unsandboxed retry. QA preserved existing :5000/:8000
-app/database, removed the task-specific database and servers, and ran fixture
-cleanup.
+**Corrective Stage 2a:** commit
+`f4bd4a300d8c1fe186fbf50b192bbd195a339c39`
+(`fix(activity): preserve version panel baseline`) moved tabs into the
+existing title row with a 24px minimum target and added browser-level Delete
+confirmation, Cancel/focus restoration, and confirm coverage. The parent
+baseline is `67daa279955adcfc81b69202a5bf462d69844a4e` (`b8359ec4^`), served
+against the same fixture. Reproduction script, geometry JSON, and
+baseline/current screenshots are retained under
+`/private/tmp/issue-1134-baseline-evidence-20261001/`. Desktop panel/list/
+inspector/document/bottom-scroll geometry matches exactly. At 375x812 the
+list matches; panel is +0.8 CSS px and document/bottom-scroll +1 px from
+fractional layout rounding. Visual inspection found no clipping or material
+shift.
 
-**Failing criterion:** acceptance requires comparing Versions panel sizing and
-scroll behavior to the pre-change baseline at 1280x900 and 375x812. The E2E
-only proves current document/row overflow and edges; there is no baseline
-artifact/assertion or panel-height/vertical-scroll comparison. Current visual
-screenshots alone do not prove unchanged baseline behavior. Additionally the
-new browser E2E exercises Restore but not Delete; delete remains covered by
-the unchanged component test. Stage 2a must add a reproducible baseline
-comparison and directly prove unchanged Versions scroll/restore/delete
-behavior, then rerun all original checks. No code was changed during QA.
-Evidence boundary: local macOS Chromium + isolated PostgreSQL only; no Linux,
-CI, or deployed claim. Issue comment was not posted because the only comment
-operation is PR-shaped and auto-review previously rejected unsafe targeting;
-no indirect API was attempted. Complete verdict and matrix remain here.
+**Final Stage 4:** separate Codex/GPT-6.1-sol QA substitution for Claude /
+Sonnet 5 / Medium returned PASS. Focused Vitest: 23 passed. Full frontend:
+311 files / 3,193 tests passed; typecheck, lint (existing warnings), format
+check, and build passed (existing chunk-size/dynamic-import warnings). Exact
+owner-route Chromium E2E with fresh disposable PostgreSQL and `AI_PROVIDER=fake`
+passed 1/1, including lifecycle and Delete behavior. Sandboxed Chromium failed
+at macOS Mach-port startup; approved unsandboxed retry passed. QA captured and
+inspected both tabs at 1280x900 and 375x812. Captures:
+`/private/tmp/qa-1134-{versions,activity}-{1280,375}.png`. QA dropped its
+disposable databases and stopped ports 5005/8005; existing :5000/:8000 remain
+live. Evidence is local macOS/disposable PostgreSQL only; no CI, Linux, or
+deployed claim. Stage 3 was not run. No issue comment was posted because the
+connector only exposes the unsafe PR-shaped comment operation; this matrix is
+the local evidence fallback.
 
-The issue remains open and current; return to Stage 2a. Do not select #1148 or
-another issue until #1134 reaches a terminal state.
+| Stage | Rostered owner | Actual owner | Substituted |
+|---|---|---|---|
+| PM/grooming | Codex / GPT-6.1-sol | Codex subagent / GPT-6.1-sol / effort unavailable | no |
+| Implementation / initial + correction | Opencode Go / Kimi K2.5 | Codex subagent / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / 3 | Mistral Vibe | Not requested / not run | — |
+| QA / initial + correction | Claude / Sonnet 5 / Medium | Separate Codex QA subagent / GPT-6.1-sol / effort unavailable | yes |
+
+No new actionable issue or durable-memory constraint was found. Issue #1134
+is ready for typed GitHub closure. After read-after-write confirmation,
+refresh the full open-issue inventory and select the next eligible issue;
+#1148 now meets its #1133 dependency, subject to PM contract refresh.
 
 **New follow-up #1148:** add the same allowlisted event envelope to the
 existing authenticated JSON account export only. Duplicate check found no

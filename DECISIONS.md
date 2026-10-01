@@ -134,6 +134,22 @@
   comparison at both viewports and exercise unchanged restore/delete behavior,
   then repeat the exact gates and separate QA.
 
+## 2026-10-01 — #1134 corrective Stage 4 PASS
+
+- Correction commit `f4bd4a300d8c1fe186fbf50b192bbd195a339c39` places the
+  tabs in the existing title row and adds browser-level Delete confirmation,
+  cancel/focus restoration, and confirm coverage.
+- Independent QA reproduced parent `67daa279` with the same fixture, measured
+  desktop equality and mobile subpixel/1px rounding, and inspected both tabs
+  at desktop/mobile sizes. Focused tests, all 3,193 frontend tests, typecheck,
+  lint, format, build, and disposable-PostgreSQL owner-route Chromium E2E
+  passed. Lint/build emitted existing unrelated warnings.
+- Stage 4 returned PASS. Evidence is local macOS/disposable PostgreSQL only;
+  no Linux, CI, or deployed claim. QA is a separate Codex substitution for
+  Claude/Sonnet5/Medium; Stage 3 was not run. No issue comment was posted due
+  the connector's PR-shaped comment operation. Typed issue closure and
+  read-after-write remain for reconciliation.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

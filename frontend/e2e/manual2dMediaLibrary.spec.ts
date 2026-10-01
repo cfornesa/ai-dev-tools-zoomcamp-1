@@ -20,29 +20,26 @@ test.describe('manual 2D media library (#513)', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await createServerProject2D(page);
 
-    const stage = page.locator('.piece-stage-shell');
-    await stage.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await stage.getByRole('button', { name: 'Edit scene' }).click();
-
-    const fileMenu = stage.getByRole('button', { name: 'File' });
+    const preview = page.getByRole('region', { name: 'Preview' });
+    const fileMenu = preview.getByRole('button', { name: 'File', exact: true });
     await fileMenu.click();
-    await expect(stage.getByRole('menu', { name: 'File menu' })).toBeVisible();
-    await stage.getByRole('menuitem', { name: 'Import media' }).click();
-    await stage.locator('input[aria-label="Import media file"]').setInputFiles({
+    await expect(preview.getByRole('menu', { name: 'File menu' })).toBeVisible();
+    await preview.getByRole('menuitem', { name: 'Import media' }).click();
+    await preview.locator('input[aria-label="Import media file"]').setInputFiles({
       name: 'sunset.png',
       mimeType: 'image/png',
       buffer: Buffer.from('not-a-real-png-but-a-valid-test-blob'),
     });
 
-    const importDialog = stage.getByRole('dialog', { name: 'Describe this image' });
+    const importDialog = page.getByRole('dialog', { name: 'Describe this media' });
     await expect(importDialog).toBeVisible();
-    await importDialog.getByLabel('Meaningful alt text').fill('A sunset over water');
-    await importDialog.getByRole('button', { name: 'Import image' }).click();
+    await importDialog.getByLabel('Descriptive label').fill('A sunset over water');
+    await importDialog.getByRole('button', { name: 'Import media' }).click();
 
-    const library = stage.getByRole('region', { name: 'Project media library' });
+    const library = page.getByRole('region', { name: 'Project media library' });
     await expect(library).toBeVisible();
     const asset = library.getByRole('listitem').filter({ hasText: 'sunset.png' });
-    await expect(asset).toContainText('Alt text set');
+    await expect(asset).toContainText('Descriptive label set');
     await asset.getByRole('button', { name: 'Insert into active scene' }).click();
     await expect(page.getByRole('list', { name: 'Scene outline' })).toContainText('Image 1');
     await expect(asset.getByRole('button', { name: 'Delete asset' })).toBeDisabled();

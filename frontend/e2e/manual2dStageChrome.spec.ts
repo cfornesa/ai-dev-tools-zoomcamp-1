@@ -57,12 +57,15 @@ test.describe('manual 2D editor shell', () => {
     const toolsToggle = controlPanel.getByRole('button', { name: 'Editor tools' });
 
     await expect(primary).toBeVisible();
-    await expect(primary.locator('button')).toHaveCount(3);
+    await expect(primary.locator('button')).toHaveCount(9);
     expect(
       await primary
         .locator('button')
         .evaluateAll((buttons) =>
-          buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent?.trim()),
+          buttons.map(
+            (button) =>
+              button.getAttribute('aria-label') ?? button.textContent?.trim()?.replace(/^▤\s*/, ''),
+          ),
         ),
     ).toEqual([
       'File',

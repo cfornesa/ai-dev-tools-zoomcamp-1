@@ -133,7 +133,7 @@ test.describe('structured 2D ink layer (#775)', () => {
 
       // Save, then the saved scene has ONE ink group with the strokes.
       await openEditScene(page);
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await page.getByRole('button', { name: 'Save scene', exact: true }).click();
       await closePieceControlsMenu(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version/);
       const scene = await savedScene(page, projectId);

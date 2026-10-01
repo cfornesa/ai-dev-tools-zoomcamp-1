@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 import { apiPatch } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { createServerProject2D } from './support/createProject.js';
+import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -81,16 +82,15 @@ test.describe('manual 2D canvas containment', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Preview' })).toBeVisible();
 
-    // The add-shape toolbar lives behind the stage's own "Open piece
-    // controls menu" -> "Edit scene" popover, not inline on the canvas.
-    const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await toolbar.getByRole('button', { name: 'Edit scene' }).click();
+    // The authoring controls now live in the Editor actions toolbar. Use the
+    // shared helper to expose them on narrow viewports without opening the
+    // screen-reader-only Piece actions compatibility shim.
+    await openEditScene(page);
+    const toolbar = page.getByRole('toolbar', { name: 'Editor actions' });
     await toolbar.getByRole('button', { name: 'Add circle' }).click();
     await toolbar.getByRole('button', { name: 'Add rectangle' }).click();
     await toolbar.getByRole('button', { name: 'Add line' }).click();
-    await toolbar.getByRole('button', { name: /close edit scene/i }).click();
-    await page.keyboard.press('Escape');
+    await closeEditScene(page);
 
     for (const viewport of [
       { width: 1280, height: 900 },

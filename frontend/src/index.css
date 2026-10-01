@@ -7412,6 +7412,42 @@ select.ai-proposal-field-full-width {
   }
 }
 
+/* The manual 3D editor keeps its authoring trigger in a 44px control group.
+   While that disclosure is open, let its popover use the wider Editor actions
+   row as its containing block instead of inheriting the trigger's width. */
+@media (max-width: 700px) {
+  .project3d-workspace
+    .editor-piece-stage-toolbar
+    [aria-label='Editor actions']
+    > .piece-stage-controls:has(> .editor-authoring-controls-panel:not([hidden])) {
+    position: static;
+  }
+
+  .project3d-workspace
+    .editor-piece-stage-toolbar
+    [aria-label='Editor actions']
+    > .piece-stage-controls
+    > .editor-authoring-controls-panel {
+    top: 100%;
+    left: 0;
+    right: auto;
+    width: min(320px, calc(100vw - 48px));
+    max-width: calc(100vw - 48px);
+  }
+}
+
+.editor-authoring-controls-panel > .piece-stage-submenu-close {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  order: -1;
+  align-self: flex-end;
+  border-radius: 0.45rem;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+}
+
 /* Issues #775/#781: shared ink editor (frozen drawing surface + contextual tool bar). */
 .ink-editor {
   display: flex;

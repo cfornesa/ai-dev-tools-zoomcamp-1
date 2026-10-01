@@ -25267,7 +25267,7 @@ Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed
 |---|---|---|---|---|
 | [#1129](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1129) | D1 owner decision: where intent notes live | owner | — | OWNER-DECISION-PENDING |
 | [#1130](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1130) | D2 owner decision: history beyond 2D | owner | — | OWNER-DECISION-PENDING |
-| [#1131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131) | A1 write version lifecycle events | 2a | — | GROOMED |
+| [#1131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131) | A1 write version lifecycle events | 2b | — | COMPLETE (local QA PASS) |
 | [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | GROOMED |
 | [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API + export | 2b | A1, A2 (soft) | GROOMED |
 | [#1134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1134) | A4 Project history UI | 2a | A3 | DEPENDENCY-BLOCKED |
@@ -25281,7 +25281,7 @@ Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed
 | [#1142](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1142) | C2 "More like this" row | 2a | C1 | DEPENDENCY-BLOCKED |
 | [#1143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1143) | E1 owner-only continuity metrics (P3) | 2b | A1, A2 | DEPENDENCY-BLOCKED |
 
-Independent starters: A1, A2, B1, C1. Duplicate check: no existing open or closed issue covers
+Independent starters: A2, B1, C1; A1 (#1131) is complete. Duplicate check: no existing open or closed issue covers
 project activity wiring, a history UI, version comparison, intent notes, or related pieces
 (searched titles for activity/timeline/brief/memory/compare/related/recommend/process).
 Also recorded: #1124 design decision (option 1). Batch 15's #1124 is ready to implement.

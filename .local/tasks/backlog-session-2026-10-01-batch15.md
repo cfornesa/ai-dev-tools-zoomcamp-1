@@ -35,7 +35,7 @@ items advance only after the current transaction is terminal.
 | #1147 | Discovered during #1128 regression batch; test maintenance | CLOSED | Commit `1ca91017`; QA PASS comment 5933568932; closed completed 2026-10-01. |
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
-| #1131 | Independent 2D history event writer A1 | GROOMED | Implement after Batch 15. |
+| #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
 | #1132 | Independent 2D AI accept/discard history writer A2 | GROOMED | Implement after Batch 15. |
 | #1133 | Activity read API | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
 | #1134 | History UI | DEPENDENCY-BLOCKED | Requires #1133. |
@@ -90,10 +90,55 @@ wait for their stated mobile and 2D compatibility prerequisites. #1129 and
 #1130 remain owner-decision gates only for their own dependent LIGDOL slices;
 no current conversation response unambiguously chooses their listed options.
 The independent Batch 16 items #1131, #1132, #1136, and #1141 remain eligible.
-No duplicates or new issue gaps were found in this refresh. **Next issue:**
-#1131, a criterion-ready Stage 2a event-writer change using the existing
-`ProjectActivity` model, exact three version lifecycle actions, transaction/
-rollback and idempotency tests, and `make backend-check`.
+No duplicates or new issue gaps were found in this refresh. #1131 is now
+completed and closed after the transaction below. **Next issue:** #1132, the
+independent 2D AI accept/discard activity writer.
+
+### #1131 — 2D version lifecycle activity events
+
+**State:** `GROOMED → ENGINEERING → QA FAIL (returned) → ENGINEERING AUDIT → QA PASS → RECONCILIATION → CLOSED`.
+Closed completed on 2026-10-01 after the refined issue criteria, implementation,
+performance evidence, and independent QA were reconciled.
+
+The PM audit found and corrected the issue's missing fixture, actor, repeat-POST,
+DELETE retry, regression-evidence, and routing detail before closure. It names
+the owner-authenticated two-version project fixture and the three existing 2D
+version endpoints; it preserves successful save/restore POST non-idempotency,
+requires one activity per created version, and requires idempotent soft-delete
+retries. The issue explicitly bounds evidence to local automated tests and
+requires no production claim. `docs/tasks.md` now records this Stage 2b route.
+
+**Implementation:** commit `b11971c0` adds transactional
+`VERSION_SAVED`, `VERSION_RESTORED`, and first-transition `VERSION_DELETED`
+events in the existing endpoints, with owner actor and safe version-only
+metadata. Repeated DELETE stays 204 without a duplicate event or timestamp
+change. Focused rollback/retry/metadata tests were added; 3D/generated-piece
+paths, routes, response shapes, schema, dependencies, and secrets are untouched.
+
+The initial Stage 4 comment [5934945703](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131#issuecomment-5934945703)
+passed functional criteria but returned the issue because it lacked the
+specified save-latency evidence. After a separate Stage 2b protocol audit,
+three independently rerun interleaved SQLite probes measured median signed
+effects of 0.141, 0.111, and 0.114 ms, each below that run's p95 control noise
+(0.670, 0.713, and 0.554 ms). The temporary probe was removed and is not in
+the product diff. The evidence is host- and SQLite-test-database-specific; it
+does not establish PostgreSQL or deployed performance.
+
+**Verification:** focused `pytest tests -k "version or activity"` passed
+217 tests, skipped 11, deselected 1701 (the temporary probe was present and
+selected); final `make backend-check` passed Ruff, formatting, mypy, and the
+full backend suite (1889 passed, 39 skipped). No temporary probe remains.
+Latest Stage 4 comment [5935229510](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131#issuecomment-5935229510)
+is `QA: PASS`, supersedes the earlier FAIL, and accepts the implementation.
+
+| Stage | Rostered owner | Actual owner | Substituted |
+| --- | --- | --- | --- |
+| PM/grooming | Codex / GPT-6.1-sol | Codex subagent / GPT-6.1-sol / effort unavailable | no |
+| Implementation / stage 2b | Ollama Cloud / Kimi K3 | Repository owner / Codex GPT-6.1-sol / effort unavailable | yes |
+| Independent review / stage 3 | Mistral Vibe | Not run | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Separate Codex subagent / GPT-6.1-sol / effort unavailable | yes |
+
+No new actionable issue was discovered. No durable memory update was needed.
 
 ### #1147 — Account shell copy assertion
 

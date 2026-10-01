@@ -25267,22 +25267,26 @@ Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed
 |---|---|---|---|---|
 | [#1129](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1129) | D1 owner decision: where intent notes live | owner | — | OWNER-DECISION-PENDING |
 | [#1130](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1130) | D2 owner decision: history beyond 2D | owner | — | OWNER-DECISION-PENDING |
-| [#1131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131) | A1 write version lifecycle events | 2b | — | COMPLETE (local QA PASS) |
-| [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | COMPLETE (local QA PASS) |
-| [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API | 2b | A1, A2 | COMPLETE (local QA PASS; issue comment unavailable) |
-| [#1134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1134) | A4 Project history UI | 2a | A3 | COMPLETE (QA PASS; issue closed completed 2026-10-01) |
-| [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | COMPLETE (QA PASS; closed completed 2026-10-01; #1149 owns legacy route retargeting) |
-| [#1136](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1136) | B1 scene diff summary function | 2a | — | GROOMED |
-| [#1137](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1137) | B2 Compare versions UI | 2a | B1 | DEPENDENCY-BLOCKED |
+| [#1131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131) | A1 write version lifecycle events | 2b | — | CLOSED / completed (GitHub verified 2026-10-01 16:03:04Z) |
+| [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | CLOSED / completed (GitHub verified 2026-10-01 16:30:32Z) |
+| [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API | 2b | A1, A2 | CLOSED / completed (GitHub verified 2026-10-01 17:08:13Z; issue-comment connector unavailable) |
+| [#1134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1134) | A4 Project history UI | 2a | A3 | CLOSED / completed (GitHub verified 2026-10-01 18:28:20Z) |
+| [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | CLOSED / completed (GitHub verified 2026-10-01 19:50:55Z; #1149 owns legacy route retargeting) |
+| [#1136](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1136) | B1 scene diff summary function | 2a | — | CLOSED / completed (GitHub verified 2026-10-01 21:14:55Z) |
+| [#1137](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1137) | B2 Compare versions UI | 2a | B1 | CLOSED / completed (GitHub verified 2026-10-01 21:14:58Z) |
 | [#1138](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138) | M1 intent note field/API/export | 2b | D1 | DEPENDENCY-BLOCKED |
 | [#1139](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1139) | M2 intent note editor UI | 2a | M1 | DEPENDENCY-BLOCKED |
 | [#1140](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1140) | M3 bounded, disclosed AI context | 2b | M1 | DEPENDENCY-BLOCKED |
-| [#1141](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1141) | C1 related-pieces query | 2a | — | GROOMED |
-| [#1142](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1142) | C2 "More like this" row | 2a | C1 | DEPENDENCY-BLOCKED |
-| [#1143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1143) | E1 owner-only continuity metrics (P3) | 2b | A1, A2 | DEPENDENCY-BLOCKED |
-| [#1148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1148) | Add project activity to owner JSON export | 2b | #1133 | PROPOSED / DEPENDENCY-BLOCKED until #1133 closes |
+| [#1141](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1141) | C1 related-pieces query | 2a | — | CLOSED / completed (GitHub verified 2026-10-01 21:15:01Z) |
+| [#1142](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1142) | C2 "More like this" row | 2a | C1 | CLOSED / completed (GitHub verified 2026-10-01 21:51:22Z) |
+| [#1143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1143) | E1 owner-only continuity metrics (P3) | 2b | A1, A2, A3 | PM GROOMING REQUIRED (A1–A3 verified closed; metric definition and bounded aggregate contract still need refinement) |
+| [#1148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1148) | Add project activity to owner JSON export | 2b | #1133 | CLOSED / completed (GitHub verified 2026-10-01 21:15:04Z) |
 
-Independent starters: B1, C1; A1 (#1131) and A2 (#1132) are complete; A3 (#1133) is unblocked. Duplicate check: no existing open or closed issue covers
+Current live-state reconciliation (authenticated GitHub fetch, 2026-10-01):
+#1131–#1137 and #1141–#1142, #1148 are closed/completed; #1129–#1130 and
+#1138–#1140, #1143–#1144, #1149 remain open. #1143's implementation
+dependencies (#1131–#1133) are closed; its contract still needs PM grooming.
+Independent starters: A1/A2/A3, B1, and C1 are complete. Duplicate check: no existing open or closed issue covers
 project activity wiring, a history UI, version comparison, intent notes, or related pieces
 (searched titles for activity/timeline/brief/memory/compare/related/recommend/process).
 The activity export extension is filed as #1148 after checking #442, #443,

@@ -268,12 +268,13 @@ test.describe('AI drawing-plane proposals (#784)', () => {
       }
       await expect(undo).toBeEnabled();
       await undo.click();
-      await page.keyboard.press('Escape');
+      await expect(page.getByTestId('plane-selection-overlay')).toBeVisible();
       await page
         .getByRole('toolbar', { name: /Drawing plane 1 actions/ })
         .getByRole('button', { name: 'Precise values' })
         .click();
       await expect(page.getByLabel('Width', { exact: true })).toHaveValue('4');
+      await expect(page.getByLabel('Height', { exact: true })).toHaveValue('3');
     });
   }
 });

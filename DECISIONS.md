@@ -2537,3 +2537,12 @@ updates. The remaining open backlog was not silently claimed complete.
   measurements are not final QA evidence. Re-enter Stage 2b to correct the
   one-off probe, interleave control and treatment pairs, and repeat the three
   runs before Stage 4 resumes.
+
+## 2026-10-01 — #1131 Stage 4 re-review initiated
+
+- The separate Stage 2b audit validated the corrected, interleaved
+  disposable-SQLite probe in three runs: median signed effects 0.098, 0.097,
+  and 0.123 ms, each below its interleaved control p95 noise of 0.604, 0.643,
+  and 0.333 ms. The evidence is local to this test setup and is not a
+  PostgreSQL/deployment claim. Re-enter Stage 4 for a full acceptance review,
+  fresh exact backend checks, and an updated QA verdict.

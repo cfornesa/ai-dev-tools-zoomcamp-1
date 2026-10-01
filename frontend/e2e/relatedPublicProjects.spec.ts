@@ -54,6 +54,10 @@ test.describe('canonical related public 2D pieces (#1142)', () => {
 
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
+    let relatedRequestCount = 0;
+    anonymousPage.on('request', (request) => {
+      if (request.url().includes('/related/')) relatedRequestCount += 1;
+    });
     let releaseRelated!: () => void;
     const relatedGate = new Promise<void>((resolve) => {
       releaseRelated = resolve;
@@ -92,6 +96,8 @@ test.describe('canonical related public 2D pieces (#1142)', () => {
         .boundingBox();
       expect(detailsBox).not.toBeNull();
       expect(relatedBox?.y).toBeGreaterThan((detailsBox?.y ?? 0) + (detailsBox?.height ?? 0));
+      const canonicalRelatedRequestCount = relatedRequestCount;
+      expect(canonicalRelatedRequestCount).toBeGreaterThan(0);
 
       for (const viewport of [
         { width: 1280, height: 900 },
@@ -109,12 +115,17 @@ test.describe('canonical related public 2D pieces (#1142)', () => {
       await anonymousPage.goto(`/embed/p/${source.id}`);
       await expect(anonymousPage.locator('.piece-stage-shell')).toBeVisible();
       await expect(anonymousPage.getByRole('heading', { name: 'More like this' })).toHaveCount(0);
+      expect(relatedRequestCount).toBe(canonicalRelatedRequestCount);
 
       const immersiveUrl = publicPiece.viewer_url.replace('/pieces/', '/immersive/');
       await anonymousPage.goto(immersiveUrl);
+      await expect(anonymousPage.locator('.public-project-viewer')).toBeVisible();
       await expect(anonymousPage.getByRole('heading', { name: 'More like this' })).toHaveCount(0);
+      expect(relatedRequestCount).toBe(canonicalRelatedRequestCount);
 
       await page.goto(`/projects/${source.id}`);
+      await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
+      await expect(page.locator('.editor-workspace')).toBeVisible();
       await expect(page.getByRole('heading', { name: 'More like this' })).toHaveCount(0);
     } finally {
       releaseRelated();

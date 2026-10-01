@@ -126,6 +126,7 @@ function PublicProjectViewer({
   authorDisplayName,
   authorHandle,
   canonicalRoute = false,
+  showRelatedProjects = false,
   regularHref,
 }: {
   initialProject?: PublicProject;
@@ -133,6 +134,8 @@ function PublicProjectViewer({
   authorDisplayName?: string;
   authorHandle?: string | null;
   canonicalRoute?: boolean;
+  /** #1142 recommendations belong to the regular canonical 2D page only. */
+  showRelatedProjects?: boolean;
   /** #976: regular canonical view for the chrome-less immersive surface. */
   regularHref?: string;
 } = {}) {
@@ -829,7 +832,7 @@ function PublicProjectViewer({
           </ul>
         </aside>
       )}
-      {isCanonicalRoute && !isEmbedRoute && (
+      {showRelatedProjects && isCanonicalRoute && !isEmbedRoute && (
         <RelatedPublicProjects projectId={project.id} ready={loadState === 'ready'} />
       )}
     </div>

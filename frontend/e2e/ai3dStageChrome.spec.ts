@@ -1,4 +1,4 @@
-/** Issue #339: independently verify AI-assisted 3D editor stage chrome. */
+/** The legacy AI 3D entry redirects to the canonical manual editor. */
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
@@ -8,16 +8,14 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
-test.describe('AI-assisted 3D editor stage chrome', () => {
+test.describe('legacy AI 3D entry stage chrome', () => {
   let fixtures: Fixtures;
 
   test.beforeAll(() => {
     fixtures = requireE2EFixtures();
   });
 
-  test('keeps AI authoring and publication actions in the shared stage toolbar', async ({
-    page,
-  }) => {
+  test('retains stage chrome and AI/publication controls after redirect', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createServerProject3D(page);
     await page.goto(`/ai-projects3d/${projectId}`);

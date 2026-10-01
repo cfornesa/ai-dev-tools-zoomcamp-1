@@ -2368,3 +2368,11 @@ updates. The remaining open backlog was not silently claimed complete.
 - Stage 4 verified the exact spec, typecheck, lint, format, scope, screenshots,
   and test-count inventory. QA comment 5923875615 records the matrix. #1109 is
   closed; proceed to #1106's three-spec gate.
+
+## 2026-10-01 — #1108 AI 3D stage test retargeted to canonical manual editor
+
+- The owner chose to retarget `ai3dStageChrome.spec.ts` from the retired
+  `/ai-projects3d/:id` workspace to the canonical manual editor reached by that
+  legacy route, preserving checks for stage actions and moving AI/publication
+  assertions to Project settings/editor header. The focused Chromium test
+  passes; the separate AI proposal Undo failure is tracked by #1115.

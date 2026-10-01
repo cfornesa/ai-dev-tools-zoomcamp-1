@@ -25028,3 +25028,27 @@ pixels. At 1280x900, the transform scenario passes. Criterion-ready
 filed in Batch 14 as a separate product hit-target issue, dependent on the
 #1108 audit and #1112 setup migration. Preserve #1112's transform assertions;
 #1114 owns the layout fix and a before/after mobile route regression.
+
+### 2026-10-01 — #1108 inline-toolbar audit QA and follow-ups
+
+Commit `006ca3b2` migrates confirmed 3D editor toolbar interactions to direct
+inline controls, updates the AI stage test to the canonical manual editor per
+the owner's choice, and preserves every changed file's base test/expect
+counts. Frontend typecheck, lint (exit 0 with existing warnings), format
+check, and `git diff --check` pass. The focused local PostgreSQL/Chromium
+scenarios pass for #1108's AI stage redirect, Draw3d, ZIP, public material
+warnings, sound, and unified editor cases. #1108 remains open / QA FAIL:
+`drawingPlaneTransform782` still has a mobile pointer collision tracked by
+[#1114](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1114),
+`aiDrawingPlane784` reaches a later Undo/Precise-values failure now tracked by
+[#1115](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1115), and
+`privatePieceToolbar773` exposes an outdated generated-art icon list
+[#1116](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1116) plus
+a local-first 2D setup gap [#1117](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1117).
+Its full current 45 textual locator hits, mode classification, QA matrix,
+commands, and provenance are in issue comment
+[#5924809184](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5924809184).
+Evidence is local macOS Chromium/PostgreSQL only; no Linux or deployment
+evidence is claimed. #1110 and #1111 remain open: their remaining acceptance
+gates depend on the 2D fixture work (#1102/#1103) and #1112/#1114 transform
+verification, so local implementation alone is not closure evidence.

@@ -2528,3 +2528,12 @@ updates. The remaining open backlog was not silently claimed complete.
   noise was 0.502, 0.413, and 0.434 ms. These are evidence for re-review, not a
   QA verdict. Re-enter Stage 2b for an independent protocol/evidence audit,
   then repeat Stage 4 before closing #1131.
+
+## 2026-10-01 — #1131 latency probe method tightened
+
+- Stage 2b's independent measurement audit found that the temporary probe
+  collected all baseline control pairs before event-enabled treatment pairs
+  and mislabeled the signed median delta as an absolute delta. The first
+  measurements are not final QA evidence. Re-enter Stage 2b to correct the
+  one-off probe, interleave control and treatment pairs, and repeat the three
+  runs before Stage 4 resumes.

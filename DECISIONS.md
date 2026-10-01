@@ -2333,3 +2333,14 @@ updates. The remaining open backlog was not silently claimed complete.
   clipping for #1109's authoring disclosure. Revise acceptance to allow usable
   vertical scrolling on short viewports; do not treat the current 42px panel
   rendering as acceptable.
+
+## 2026-10-01 — #1109 product follow-up #1113
+
+- Filed criterion-ready #1113 in Batch 14 for the confirmed 3D authoring
+  panel usability defect: a minimum usable width, no horizontal overflow, and
+  vertical access to the full control list. #1109's measured 44px panel cannot
+  satisfy the owner's selected contract.
+- The owner chose the product outcome; the responsive presentation approach
+  remains subject to the repo's options-before-design checkpoint. #1113 is
+  staged but no implementation has begun. #1109, #1106, and #1108 remain
+  dependent on that implementation and subsequent QA.

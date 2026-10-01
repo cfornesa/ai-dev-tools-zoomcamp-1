@@ -104,7 +104,7 @@ async function assertContrast(page: Page) {
   });
   expect(ratios.body).toBeGreaterThanOrEqual(4.5);
   expect(ratios.muted).toBeGreaterThanOrEqual(4.5);
-  expect(Math.min(...ratios.buttons), JSON.stringify(ratios)).toBeGreaterThanOrEqual(3);
+  expect(Math.min(...ratios.buttons), JSON.stringify(ratios)).toBeGreaterThanOrEqual(4.5);
 }
 
 test('allauth login matches SPA theme and remains readable across preferences and palettes (#1124)', async ({

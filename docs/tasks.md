@@ -24927,3 +24927,16 @@ with a confirm-first evidence step, narrow-fix constraints (2D toolbar shares
 the CSS; earlier tap-target regressions documented in index.css), a
 fail-before/pass-after regression test, and explicit verification commands.
 Order: #1110 → rerun #1107's spec (closes #1107).
+
+### 2026-09-30 — sequencing correction: #1111 collides with #1110
+
+Codex filed [#1111](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1111) (inline `Preview actions`
+buttons overlap at 375px; likely the absolute fullscreen rule at `index.css`
+~6589 over the wrapped icon row). It shares the `.editor-piece-stage-toolbar`
+CSS region with [#1110](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1110), and #1109's geometry
+assertions need #1111. #1110 was reworked: dependency-blocked by #1111, evidence
+re-run after #1111, combined contract (no rectangle overlap AND handle
+hit-tests), single implementer, separate commits. Order: #1109 (test-side, in
+progress by Codex) -> #1111 -> #1110 -> rerun #1109 spec -> #1106/#1108 ->
+#1107 -> #1100 six-spec gate. #1111's body was left untouched (Codex may be
+editing it); the analysis was added as a comment.

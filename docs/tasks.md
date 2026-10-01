@@ -24890,3 +24890,15 @@ in `drawingPlaneAframe796.spec.ts`; reframed as investigation-first with four
 ranked hypotheses and a stop-and-file rule for product defects. New
 [#1108](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108): audit remaining stale locators
 (`unifiedEditor3d.spec.ts:34` suspected). #1100 remains QA-FAIL/HANDED-OFF until #1106/#1107 land.
+
+### 2026-09-30 — distillation of Codex-filed #1109 (Batch 14)
+
+[#1109](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1109) verified and refined. Save scene
+(header, `project3d-save-button`, disabled until dirty) and Ask AI (Project
+settings accordion trigger, server-backed projects only) are each asserted in
+two places in `manual3dStageChrome.spec.ts`, not one; the downstream geometry
+assertions use menu-mode `piece-stage-command-card` markup that the inline 3D
+toolbar does not render and have never executed since #1106, so the issue now
+requires running to completion, re-homing with intent preserved, and an
+owner-decision stop rule for layouts with no inline equivalent. Order:
+#1109 → #1106 closure → #1108 → six-spec gate → #1100.

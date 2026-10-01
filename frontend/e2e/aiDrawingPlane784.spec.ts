@@ -9,6 +9,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { apiGet, apiPost } from './support/api.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const PLANE = {
@@ -74,19 +75,11 @@ type Obj = {
 };
 
 /**
- * Creates a project through the gallery's creation menu (which gives it the canonical slug route the
- * legacy `/projects3d/:id` redirects need), then saves the fixture scene as its current version and
- * reloads the editor onto it.
+ * Creates a server-backed project and saves the fixture scene as its current
+ * version before reloading the canonical editor route.
  */
 async function createProject(page: Page, context: BrowserContext): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  const created = page.waitForResponse(
-    (res) =>
-      res.request().method() === 'POST' && new URL(res.url()).pathname === '/api/projects3d/',
-  );
-  await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-  const { id } = (await (await created).json()) as { id: string };
+  const id = await createServerProject3D(page);
   await page.waitForURL(/\/users\/@[^/]+\/edit\//);
   const saved = await apiPost(context, `/api/projects3d/${id}/versions/`, {
     scene_json: SCENE,
@@ -100,10 +93,8 @@ async function createProject(page: Page, context: BrowserContext): Promise<strin
 
 /** Opens the AI panel from the stage's piece-controls menu (the single 3D editor's "Ask AI" entry). */
 async function openAiPanel(page: Page) {
-  const toolbar = page.getByRole('toolbar', { name: 'Preview actions' });
-  await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-  await toolbar.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
-  await page.keyboard.press('Escape');
+  const settings = page.getByRole('region', { name: 'Project settings' });
+  await settings.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
   await expect(page.getByRole('region', { name: 'Ask AI to improve this scene' })).toBeVisible();
 }
 
@@ -271,7 +262,6 @@ test.describe('AI drawing-plane proposals (#784)', () => {
       expect((await planes(context, id))[0]!.width).toBeGreaterThan(4);
 
       // Undo returns the working copy to the pre-proposal scene.
-      await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
       const undo = toolbar.getByRole('button', { name: 'Undo', exact: true });
       if (!(await undo.isVisible().catch(() => false))) {
         await toolbar.getByRole('button', { name: '3D authoring', exact: true }).click();

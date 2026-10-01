@@ -11,18 +11,20 @@ import { loginViaUI } from './support/auth.js';
 import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
-async function openMenu(page: Page) {
+async function openAuthoringPanel(page: Page) {
   const toolbar = page.getByRole('toolbar', { name: 'Preview actions' });
-  const trigger = toolbar.getByRole('button', { name: 'Open piece controls menu' });
-  if (await trigger.isVisible().catch(() => false)) await trigger.click();
+  const authoringActions = toolbar.getByRole('group', { name: '3D authoring actions' });
+  if (!(await authoringActions.isVisible().catch(() => false))) {
+    await toolbar.getByRole('button', { name: '3D authoring', exact: true }).click();
+  }
   return toolbar;
 }
 
-async function closeMenu(page: Page) {
-  const dialog = page.getByRole('dialog', { name: 'Preview actions' });
-  if (await dialog.isVisible().catch(() => false)) {
-    await page.keyboard.press('Escape');
-    await expect(dialog).toBeHidden();
+async function closeAuthoringPanel(page: Page) {
+  const close = page.getByRole('button', { name: 'Close 3d authoring', exact: true });
+  if (await close.isVisible().catch(() => false)) {
+    await close.click();
+    await expect(page.getByRole('group', { name: '3D authoring actions' })).toBeHidden();
   }
 }
 
@@ -90,10 +92,9 @@ test.describe('drawing plane selection chrome (#782)', () => {
       await page.screenshot({ path: testInfo.outputPath('1-nothing-selected.png') });
 
       // Add a drawing plane: it is selected, so handles + the floating toolbar appear.
-      let toolbar = await openMenu(page);
-      await toolbar.getByRole('button', { name: '3D authoring', exact: true }).click();
+      let toolbar = await openAuthoringPanel(page);
       await toolbar.getByRole('button', { name: 'Add drawing plane' }).click();
-      await closeMenu(page);
+      await closeAuthoringPanel(page);
       await expect(overlay).toBeVisible();
       const floating = page
         .getByRole('toolbar', { name: /actions$/ })
@@ -190,14 +191,10 @@ test.describe('drawing plane selection chrome (#782)', () => {
       await panel.getByRole('button', { name: 'Close precise values' }).click();
 
       // One drag == one undo step: undoing restores the pre-drag width exactly.
-      toolbar = await openMenu(page);
+      toolbar = await openAuthoringPanel(page);
       const undoButton = toolbar.getByRole('button', { name: 'Undo', exact: true });
-      // The authoring popover may still be open from the earlier "Add drawing plane".
-      if (!(await undoButton.isVisible().catch(() => false))) {
-        await toolbar.getByRole('button', { name: '3D authoring', exact: true }).click();
-      }
       await undoButton.click();
-      await closeMenu(page);
+      await closeAuthoringPanel(page);
       await floating.getByRole('button', { name: 'Precise values' }).click();
       expect(await field(page, 'Width')).toBeCloseTo(afterCorner.w, 1);
       await panel.getByRole('button', { name: 'Close precise values' }).click();
@@ -242,9 +239,9 @@ test.describe('drawing plane selection chrome (#782)', () => {
       await expect(overlay).toHaveCount(0);
 
       // Persisted through save.
-      toolbar = await openMenu(page);
-      await toolbar.getByTestId('project3d-save-button').click();
-      await closeMenu(page);
+      toolbar = await openAuthoringPanel(page);
+      await page.getByTestId('project3d-save-button').click();
+      await closeAuthoringPanel(page);
       await expect
         .poll(async () => {
           const project = (await (

@@ -28,15 +28,9 @@ test.describe('unified 3D editor (#665)', () => {
       await expect(page).toHaveURL(new RegExp(`${project.editor_url}$`));
       await expect(page.getByRole('region', { name: 'Preview' })).toBeVisible();
       await expect(page.getByTestId('scene3d-preview-canvas-frame')).toBeVisible();
-      const toolbar = page
-        .getByTestId('scene3d-preview-canvas-frame')
-        .getByRole('toolbar', { name: 'Preview actions' });
-      await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-      const actions = toolbar.getByRole('dialog', { name: 'Preview actions' });
-      await expect(
-        actions.getByRole('button', { name: /ask ai to improve this scene/i }),
-      ).toBeVisible();
-      await actions.getByRole('button', { name: /ask ai to improve this scene/i }).click();
+      const askAi = page.getByRole('button', { name: /ask ai to improve this scene/i });
+      await expect(askAi).toBeVisible();
+      await askAi.click();
       await expect(page.getByTestId('project3d-ai-improve-panel')).toBeVisible();
       await page.screenshot({
         path: testInfo.outputPath(`unified-3d-${viewport.width}.png`),

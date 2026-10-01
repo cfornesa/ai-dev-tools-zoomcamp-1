@@ -25014,3 +25014,17 @@ the fix pattern (`/close 3d authoring/i` toggle). If the mobile
 `Export piece package` pointer intercept survives a closed popover, file a new
 product issue of #1110's class instead of editing this setup-only issue.
 Order: #1108 -> rerun #1112's unchanged spec -> close #1112.
+
+### 2026-10-01 — Batch 14 #1114 mobile drawing-plane action hit target
+
+During the #1108/#1112 browser audit, the 375x812 Three.js transform scenario
+still times out after the inline 3D authoring popover is closed. At the
+Rotate horizontal button center (`x=60.35`, `y=524`),
+`document.elementFromPoint` returns Export piece package. The Rotate
+horizontal rectangle is `{x:40,y:502,w:40.7,h:44}`; Export piece package is
+`{x:30,y:502.9,w:44,h:40,z-index:4}`; the intersection is about 34x40 CSS
+pixels. At 1280x900, the transform scenario passes. Criterion-ready
+[#1114](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1114) is
+filed in Batch 14 as a separate product hit-target issue, dependent on the
+#1108 audit and #1112 setup migration. Preserve #1112's transform assertions;
+#1114 owns the layout fix and a before/after mobile route regression.

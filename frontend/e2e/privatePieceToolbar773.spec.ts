@@ -1,7 +1,8 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 
 import { apiGet, apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const SOURCE =
@@ -108,32 +109,38 @@ test.describe('owner (private) vs public regular view toolbar (#773)', () => {
       ['Create a new 3D project', 'private-3d-editor-1280.png'],
       ['Create a new 2D project with p5.js', 'private-2d-editor-1280.png'],
     ] as const) {
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      await page.getByRole('menuitem', { name: menuItem }).click();
-      await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
-      // Structured editors keep the compact menu shell (legacy menu mode); open it and read the
-      // ordered group. The shared component owns the order, so Fullscreen is last here too.
-      const menu = page.getByRole('button', { name: 'Open piece controls menu' }).first();
-      await expect(menu).toBeVisible({ timeout: 20_000 });
-      await menu.click();
-      const dialog = page.getByRole('dialog', { name: /Piece actions|Preview actions/ }).first();
-      await expect(dialog).toBeVisible();
-      const labels = await dialog
-        .locator('[role="group"]')
-        .first()
-        .evaluate((group) =>
-          Array.from(group.querySelectorAll(':scope > button, :scope > a, :scope > div > button'))
-            .filter((node) => !node.closest('[data-piece-stage-download-menu]'))
-            .map((node) => node.getAttribute('aria-label') ?? ''),
-        );
+      let actions: Locator;
+      if (menuItem === 'Create a new 3D project') {
+        await createServerProject3D(page);
+        const toolbar = page.getByTestId('scene3d-preview-canvas-frame').getByRole('toolbar', {
+          name: 'Preview actions',
+        });
+        actions = toolbar.getByRole('group', { name: 'Preview actions' });
+      } else {
+        await page.goto('/');
+        await page.getByRole('button', { name: 'More creation options' }).click();
+        await page.getByRole('menuitem', { name: menuItem }).click();
+        await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
+        // The 2D Piece actions toolbar still exposes its menu-mode shim.
+        const menu = page.getByRole('button', { name: 'Open piece controls menu' }).first();
+        await expect(menu).toBeVisible({ timeout: 20_000 });
+        await menu.click();
+        const dialog = page.getByRole('dialog', { name: /Piece actions|Preview actions/ }).first();
+        await expect(dialog).toBeVisible();
+        actions = dialog.locator('[role="group"]').first();
+      }
+      const labels = await actions.evaluate((group) =>
+        Array.from(group.querySelectorAll(':scope > button, :scope > a, :scope > div > button'))
+          .filter((node) => !node.closest('[data-piece-stage-download-menu]'))
+          .map((node) => node.getAttribute('aria-label') ?? ''),
+      );
       expect(labels[0]).toBe('Take screenshot');
       expect(labels).toContain('Expand piece to fullscreen');
       expect(labels.indexOf('Expand piece to fullscreen')).toBeGreaterThan(
         labels.indexOf('Open download menu'),
       );
       await page.screenshot({ path: testInfo.outputPath(screenshotName) });
-      await page.keyboard.press('Escape');
+      if (menuItem !== 'Create a new 3D project') await page.keyboard.press('Escape');
     }
   });
 

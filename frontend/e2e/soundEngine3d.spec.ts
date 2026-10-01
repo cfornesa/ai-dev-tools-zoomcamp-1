@@ -2,6 +2,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -16,20 +17,10 @@ test.describe('3D sound engine', () => {
 
   test('enables sound, exposes shared volume, and mutes cleanly', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    // The canonical editor route is slug-based; keep the legacy route in the
-    // matcher for disposable stacks that still expose it during migration.
-    await page.waitForURL(/\/(?:projects3d\/[^/]+|users\/@[^/]+\/edit\/[^/]+)$/);
+    await createServerProject3D(page);
 
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
-    // Older bundles nested actions behind a hamburger. The current parity
-    // contract renders stage actions directly; accept the legacy menu only
-    // for a migration-era disposable stack.
-    const legacyMenu = toolbar.getByRole('button', { name: 'Open piece controls menu' });
-    if (await legacyMenu.count()) await legacyMenu.click();
     const enable = toolbar.getByRole('button', { name: 'Enable sound' });
     await expect(enable).toHaveAttribute('aria-pressed', 'false');
     await enable.click();

@@ -21,7 +21,7 @@ items advance only after the current transaction is terminal.
 | #1102 | After #1100 | DEPENDENCY-BLOCKED | Wait for #1100, then migrate single-purpose 2D specs. |
 | #1103 | After #1100 | DEPENDENCY-BLOCKED | Wait for #1100, then migrate multi-call 2D specs. |
 | #1104 | After #1100 | DEPENDENCY-BLOCKED | Wait for #1100, then migrate lifecycle/publication/responsive specs. |
-| #1108 | 3D inline toolbar locator audit | GROOMED | Audit stale locators; reconcile concrete findings. |
+| #1108 | 3D inline toolbar locator audit | CLOSED | QA PASS after 20/20 exact nine-spec rerun; comment 5932612079; closed completed 2026-10-01. #1104-owned lifecycle setup remains explicitly unverified and untouched. |
 | #1110 | 3D mobile move handle | GROOMED | Verify current implementation against its exact issue criteria. |
 | #1111 | 3D inline control overlap | GROOMED | Verify current implementation against its exact issue criteria. |
 | #1112 | After #1100; drawing-plane E2E | DEPENDENCY-BLOCKED | Migrate its setup after helper foundation. |
@@ -51,6 +51,38 @@ items advance only after the current transaction is terminal.
 | #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
 
 ## Transaction ledger
+
+### #1108 — Inline 3D toolbar locator audit
+
+**State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`. **Result:**
+completed and closed 2026-10-01; QA PASS comment
+[#5932612079](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5932612079).
+
+**Stage provenance**
+
+| Stage | Rostered owner | Actual owner | Substituted |
+|---|---|---|---|
+| PM/grooming | Codex / GPT-6.1-sol | Codex / GPT-6.1-sol / effort unavailable | no |
+| Implementation / stage 2a | Opencode Go / Kimi K2.5 | Codex / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / stage 3 | Mistral Vibe | Not requested / not run | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
+
+**Commits:** primary implementation `006ca3b2`; later in-scope corrections
+`5e0cc907`/`15a5a86f`; related child issue commits #1115 and #1145 are accounted
+for separately. The issue implementation commit preserved each of its nine
+files' test/expect counts versus its parent. Later child transactions added
+assertions but removed none. The current locator audit is in the linked GitHub
+inventory comment; current `rg` inventory contains 35 textual hits. Unverified
+manual-editor lifecycle hits remain in #1104's stale route setup; menu-mode
+public/2D/artifact uses remain untouched, as permitted by the criteria.
+
+**Verification:** exact nine-spec PostgreSQL-backed Chromium batch passed 20/20
+at 127.0.0.1:5003; typecheck, lint (exit 0 with existing warnings), format,
+and diff checks passed; full frontend Vitest passed 310 files / 3,187 tests.
+Mobile viewport screenshots for #782, #784, and drawing Cancel were inspected.
+Evidence is local disposable PostgreSQL + Chromium on macOS; no Linux or
+deployment evidence claimed. #1104/#1144 remain open for their separate setup
+scope and were not reported as passing. No memory change required.
 
 ### #1145 — 3D drawing-plane cancel regression
 

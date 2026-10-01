@@ -24786,6 +24786,21 @@ This repeats the non-smoke E2E drift class in
 unclassified; QA comment:
 https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5920587069.
 
+### 2026-10-01 — #1096 failed-spec child reconciliation
+
+Re-read the per-shard logs for run 36778653929 and matched the failed-test
+summary entries to the open child issues. In addition to #1100/#1101 and the
+helper-migration series (#1102–#1104), `public3dProportions.spec.ts` is owned
+by [#1144](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1144),
+and the `aiAgent2d.spec.ts` / `aiAgent3d.spec.ts` legacy-route cases are owned
+by [#1149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1149).
+The exact run reports 205 failed tests across 111 specs and 270 passed; these
+later child assignments do not cover all remaining failures. The #1096 issue
+body was updated to list both child assignments and remains open. Authenticated
+GitHub fetches on 2026-10-01 confirmed #1096, #1144, and #1149 are open. The
+local host has no Docker daemon, and no push/CI dispatch was performed; a new
+Linux/PostgreSQL matrix is still required after child work is implemented.
+
 ### 2026-09-30 — Batch 14 #1098 implementation handoff
 
 The owner-selected expanded-content contract is implemented in the shared

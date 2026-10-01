@@ -2344,3 +2344,18 @@ updates. The remaining open backlog was not silently claimed complete.
   remains subject to the repo's options-before-design checkpoint. #1113 is
   staged but no implementation has begun. #1109, #1106, and #1108 remain
   dependent on that implementation and subsequent QA.
+
+## 2026-10-01 — #1113 completed; resume #1109
+
+- The owner had already selected the 3D authoring panel outcome: minimum usable
+  mobile width, no horizontal clipping, and usable vertical scrolling. Applied
+  the existing compact popover pattern by anchoring the open panel to the wider
+  editor-actions row on phones. Kept the fix scoped to the 3D authoring panel.
+- Commit `db01d47d` passed its new three-viewport route regression, full frontend
+  unit suite (3,186 tests), typecheck, lint, formatting, and production build.
+  QA comment 5923798247 records rendered inspection and local evidence limits;
+  #1113 is closed.
+- The subsequent #1109 run reached a stale `Steer the piece` assertion after
+  closing Piece controls. The control now lives inside that popover in inline
+  mode; re-home the assertion there without removing its intent, then finish
+  the remaining #1109 scenario.

@@ -119,6 +119,7 @@ test.describe('independent piece slug (#750)', () => {
     const piece = (await created.json()) as { public_slug: string };
     await page.goto(`/users/@${profile.handle}/edit/${piece.public_slug}`);
     const genSlug = `gen-new-${Date.now().toString(36)}`;
+    await page.getByRole('button', { name: 'Toggle description panel' }).click();
     await expect(page.getByTestId('piece-slug-field')).toBeVisible();
     await editSlug(page, genSlug);
     await page.waitForURL(new RegExp(`/users/@[^/]+/edit/${genSlug}$`));

@@ -113,7 +113,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { apiGet, apiPost, apiPut } from './support/api.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { createServerProject2D } from './support/createProject.js';
 import {
   readLocalDraft,
   readSessionId,
@@ -130,7 +130,7 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
  * defaults closed, so a scenario that needs one open must call
  * `expandAllCollapsibleSections` explicitly at its own call site --
- * deliberately NOT baked into `createBlankProjectViaUI` itself. This
+ * deliberately NOT baked into `createServerProject2D` itself. This
  * suite's "Draft recovery" scenarios seed a local IndexedDB draft right
  * after creating the project, with no fake clock installed yet, racing
  * the app's own real (uncontrolled) ~1.5s "no changes since last save"
@@ -177,7 +177,7 @@ function versionRow(page: Page, sequence: number) {
  * this call instead of returning `200`, which is exactly the actionable
  * signal used to skip. */
 async function probeFakeAIProviderMode(context: BrowserContext, page: Page): Promise<boolean> {
-  const projectId = await createBlankProjectViaUI(page);
+  const projectId = await createServerProject2D(page);
   const response = await apiPost(
     context,
     `/api/projects/${projectId}/ai/create-scene/`,
@@ -236,7 +236,7 @@ test.describe('AI create/edit proposals', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page); // version 1
+      await createServerProject2D(page); // version 1
       await expandAllCollapsibleSections(page);
       await setAIScenario(page, 'success');
 
@@ -294,7 +294,7 @@ test.describe('AI create/edit proposals', () => {
           ]),
         }),
       );
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       await setAIScenario(page, 'success');
 
@@ -329,7 +329,7 @@ test.describe('AI create/edit proposals', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page); // version 1
+      await createServerProject2D(page); // version 1
       await expandAllCollapsibleSections(page);
 
       async function attemptAndExpectError(
@@ -366,7 +366,7 @@ test.describe('AI create/edit proposals', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page); // version 1
+      await createServerProject2D(page); // version 1
       await expandAllCollapsibleSections(page);
       await setAIScenario(page, 'success');
 
@@ -388,7 +388,7 @@ test.describe('AI create/edit proposals', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page); // version 1
+      await createServerProject2D(page); // version 1
       await expandAllCollapsibleSections(page);
 
       await page.getByRole('radio', { name: 'Edit' }).click();
@@ -460,7 +460,7 @@ test.describe('Concurrency (PostgreSQL)', () => {
       // concurrency proof silently skip on rate limiting.
       await loginViaUI(page, fixtures.other.email, fixtures.password);
 
-      const projectId = await createBlankProjectViaUI(page); // version 1
+      const projectId = await createServerProject2D(page); // version 1
 
       const projectBefore = (await (
         await apiGet(context, `/api/projects/${projectId}/`)
@@ -523,7 +523,7 @@ test.describe('Concurrency (PostgreSQL)', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
@@ -607,7 +607,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
 
       await page.clock.install();
@@ -632,7 +632,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
@@ -661,7 +661,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
@@ -695,7 +695,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       const editorUrl = page.url();
       await expandAllCollapsibleSections(page);
 
@@ -737,7 +737,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
@@ -788,7 +788,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
@@ -839,7 +839,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
 
       await page.clock.install();
@@ -871,7 +871,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
 
       await page.clock.install();
@@ -944,7 +944,7 @@ test.describe('beforeunload guard', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
 
       const dialogPromise = page.waitForEvent('dialog', { timeout: 5_000 });
@@ -964,7 +964,7 @@ test.describe('beforeunload guard', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved/);
 
       let dialogSeen = false;
@@ -1010,7 +1010,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
 
       await seedLocalDraft(page, {
         projectId,
@@ -1042,7 +1042,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
@@ -1084,7 +1084,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
 
       await seedLocalDraft(page, {
         projectId,
@@ -1120,7 +1120,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
 
       const twentyFiveHoursAgo = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
       await seedLocalDraft(page, {
@@ -1146,7 +1146,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
 
       await seedCorruptLocalDraft(page, projectId);
 
@@ -1162,7 +1162,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       // No real session-expiry path exists to reach a 401/403 for the
       // caller's own draft mid-check (DraftDetailView.get scopes strictly
@@ -1192,7 +1192,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
@@ -1211,7 +1211,7 @@ test.describe('Draft recovery', () => {
       // PUT issued after the local seed above is unambiguously newer in time.
       //
       // Issue #193 root cause (confirmed by live reproduction, not just
-      // static analysis): `createBlankProjectViaUI` above already mounts a
+      // static analysis): `createServerProject2D` above already mounts a
       // real editor for this project, whose `useDraftServerSync` periodic
       // timer (`DEFAULT_SYNC_INTERVAL_MS`, storage/draftServerSync.ts) syncs
       // the pristine, untouched blank scene to the server the moment

@@ -87,7 +87,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { createServerProject2D } from './support/createProject.js';
 import {
   expandAllCollapsibleSections,
   expandSection,
@@ -198,7 +198,7 @@ async function connectNodes(
 
 async function openLogicPanel(page: Page): Promise<void> {
   // "Show logic" lives inside "Behaviors" (EditorWorkspace.tsx), alongside
-  // BehaviorCardsPanel -- see createBlankProjectViaUI's own comment on
+  // BehaviorCardsPanel -- see createServerProject2D's own comment on
   // why that section isn't opened any earlier than each scenario needs.
   await expandSection(page, 'Behaviors');
   const toggle = page.getByRole('button', { name: /^(Show logic|Hide logic)$/ });
@@ -239,7 +239,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       await openPieceControls(page);
 
@@ -287,7 +287,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       await openPieceControls(page);
 
@@ -339,7 +339,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       await openPieceControls(page);
 
@@ -393,13 +393,13 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
       // Issue #113/#116: open "Behaviors" only after the shape exists --
       // BehaviorCardsPanel.tsx's target select otherwise mounts with no
-      // options and never recovers (see createBlankProjectViaUI's comment).
+      // options and never recovers (see createServerProject2D's comment).
       await expandAllCollapsibleSections(page);
 
       // Two "Follow hand" cards on the same target but different axes
@@ -472,7 +472,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
@@ -575,7 +575,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
@@ -626,7 +626,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);

@@ -42,19 +42,11 @@ import { expect, test, type Browser, type Locator, type Page } from '@playwright
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
+import { createServerProject2D } from './support/createProject.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
-
-// Issue #131: "Add circle/rectangle/line/polygon" moved from the Tools
-// panel's (formerly collapsed) "Add & edit shapes" section into the
-// always-visible LayersPanel toolbar, so no section needs expanding to
-// reach them anymore.
-async function createBlankProjectViaUI(page: Page): Promise<void> {
-  await createBlankProjectViaUIBase(page);
-}
 
 function outlineList(page: Page): Locator {
   return page.getByRole('list', { name: 'Scene outline' });
@@ -176,7 +168,7 @@ test.describe('Layers panel', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       const layersRegion = page.getByRole('region', { name: 'Layers' });
       await expect(layersRegion).toBeVisible();
@@ -193,7 +185,7 @@ test.describe('Layers panel', () => {
       const page = await context.newPage();
       await page.setViewportSize({ width: 1280, height: 900 });
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       const layersRegion = page.getByRole('region', { name: 'Layers' });
       for (const panelName of ['Canvas', 'Details', 'Tools', 'Layers', 'Inspector']) {
@@ -243,7 +235,7 @@ test.describe('Layers panel', () => {
       const page = await context.newPage();
       await page.setViewportSize({ width: 1024, height: 900 });
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       const layersRegion = page.getByRole('region', { name: 'Layers' });
       const row = layersRegion.locator('.editor-outline-row-layer').first();
@@ -302,7 +294,7 @@ test.describe('Layers panel', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
@@ -332,7 +324,7 @@ test.describe('Layers panel', () => {
       const page = await context.newPage();
       await page.setViewportSize({ width: 375, height: 900 });
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
@@ -363,7 +355,7 @@ test.describe('Layers panel', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       // Three shapes across a group and a second layer (this task's own
       // "creates at least three shapes across layers/groups" criterion).
@@ -494,7 +486,7 @@ test.describe('Layers panel', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add layer' }).click(); // Layer 2

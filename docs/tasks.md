@@ -25603,3 +25603,16 @@ creation, Batch 14/16): #1102, #1103, #1104, #1149, parent #1096. **Wave 3** (pr
 history/compare/discovery, Batch 16): #1148, #1135, #1136 → #1137, #1141 → #1142.
 Skipped and listed: #1129, #1130 (owner decisions), #1138-#1140 (blocked by #1129), #1143
 (depends on activity data). Each wave ends with the full batch gate before any issue closes.
+
+### 2026-10-01 — Wave C implementation and independent QA
+
+Implemented #1136 (`93dfe777`), #1141 (`a1050763`), #1148 (`db102898`), and dependent #1137
+(`cb164ecc`) in issue-scoped commits. The shared Stage 4 QA passed all four: focused frontend
+18 tests, backend 5 + 9 tests, compare/activity Chromium E2E 2/2 on a disposable PostgreSQL
+stack, and one `UV_CACHE_DIR=/tmp/uv-cache-wavec make check` (backend 1,942 passed / 41
+skipped; frontend 314 files / 3,212 tests; lint, format, and typecheck passed with existing
+Oxlint warnings). Active Chrome inspection at 1280×900 and 375×812 found no horizontal overflow
+and verified internal scrolling for long comparison results. Disposable fixtures and services
+were removed. Stage 3 was not run. GitHub closure and read-after-write verification are pending;
+see `.local/tasks/backlog-session-2026-10-01-wave-c-transaction.md`. #1142 remains blocked on
+#1141, and #1143 remains in grooming.

@@ -1,0 +1,38 @@
+# Backlog session transaction — Wave C — 2026-10-01
+
+Project: `cfornesa/ai-dev-tools-zoomcamp-1`  
+Branch: `docs/backlog-reevaluation-2026-09-27`  
+Batch record: [live backlog and impact refresh](backlog-session-2026-10-01-batch16-impact-refresh.md)
+
+## Batch record
+
+- **Ordered issues (milestone):** #1136 (Batch 16) → #1137 (Batch 16); #1141 (Batch 16); #1148 (Batch 16).
+- **Impact matrix:** Batch 16 refresh, especially the VersionHistoryPanel, `.version-comparison*`, API/export, public related-project, and full-browser-matrix rows.
+- **Full-suite result / batch gate:** Stage 4 PASS for the combined batch. `UV_CACHE_DIR=/tmp/uv-cache-wavec make check` passed once: backend 1,942 passed / 41 skipped; frontend 314 files / 3,212 tests; lint, format, and typecheck passed (existing Oxlint warnings only).
+- **Environment and fixtures:** local macOS; unit tests use repository test DB. Browser QA used a disposable native PostgreSQL cluster (:55432), Django (:8011), Vite (:5011), and `AI_PROVIDER=fake`; active Chrome only. Fixture data and services were removed. Existing :5000/:8000 services were not used.
+- **Stage 3:** not run.
+- **GitHub state:** pending closure operations and typed read-after-write confirmation. No issue should be described as closed until the response/read confirms `closed`.
+
+## Issue rows
+
+| Issue | Phase | Implementation commit | Acceptance / QA result | GitHub status |
+|---|---|---|---|---|
+| #1136 | RECONCILIATION | `93dfe777` | PASS. Deterministic, schema-validated bounded 2D scene diff; covers nested paths, reorder/add/remove, omitted counts, invalid input, immutability, and <50 ms schema-limit assertion. | Closure pending |
+| #1137 | RECONCILIATION | `cb164ecc` | PASS. Pairwise “Compare with…” UI within Versions tab; non-mutating, loading/empty/error states; active Chrome 1280×900 and 375×812, no horizontal overflow, internal long-list scrolling. | Closure pending |
+| #1141 | RECONCILIATION | `a1050763` | PASS. Related public projects endpoint enforces public eligibility, caps candidate work and response, deterministic ranking, expected card shape, and three-query bound. | Closure pending |
+| #1148 | RECONCILIATION | `db102898` | PASS. Owner JSON export adds only allowlisted activity, newest-first with ID tie-break, owner scoped, includes retained soft-deleted projects; ZIP and other payloads unchanged. | Closure pending |
+
+## Verification evidence
+
+- Focused frontend: `cd frontend && npm test -- --run src/pages/sceneDiff.test.ts src/pages/VersionHistoryPanel.compare.test.tsx src/pages/VersionHistoryPanel.activity.test.tsx src/pages/VersionHistoryPanel.a11y.test.tsx` — 18 passed.
+- Focused backend: `UV_CACHE_DIR=/tmp/uv-cache-wavec uv run pytest tests/test_public_related_projects_api.py -q` — 5 passed; `UV_CACHE_DIR=/tmp/uv-cache-wavec uv run pytest tests/test_account_export.py -q` — 9 passed.
+- Playwright: `E2E_BASE_URL=http://127.0.0.1:5011 E2E_ENV_FILE=/tmp/codex-wave-c-qa/backend.env UV_CACHE_DIR=/tmp/uv-cache-wavec npm run test:e2e -- --project=chromium e2e/versionHistoryCompare.spec.ts e2e/projectActivityHistory.spec.ts` — 2 passed.
+- Full gate: `UV_CACHE_DIR=/tmp/uv-cache-wavec make check` — PASS, exactly once for this batch.
+- `git diff --check 93dfe777^..HEAD` — PASS.
+- Independent Stage 4 found no acceptance-criteria failures or cross-issue regressions and made no product/test changes.
+
+## Residuals and next actions
+
+- Apply completed closure state to #1136, #1137, #1141, and #1148 only after the above QA pass, then re-read every updated GitHub issue and replace each “Closure pending” row with the confirmed result.
+- #1142 remains blocked on #1141's API; #1143 needs product-manager contract tightening. The #1096 Linux/PostgreSQL matrix and #1100 dependent helper issues remain outside this Wave C QA evidence.
+- No external service or deployment was used; no push or publish was performed.

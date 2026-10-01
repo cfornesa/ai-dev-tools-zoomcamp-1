@@ -36,7 +36,7 @@ items advance only after the current transaction is terminal.
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
-| #1132 | Independent 2D AI accept/discard history writer A2 | QA | Implementation `f205906b`; separate Stage 4 review in progress. |
+| #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
 | #1133 | Activity read API | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
 | #1134 | History UI | DEPENDENCY-BLOCKED | Requires #1133. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
@@ -142,8 +142,9 @@ No new actionable issue was discovered. No durable memory update was needed.
 
 ### #1132 — AI proposal accept/discard history writer
 
-**State:** `GROOMED → ENGINEERING`; current owner is a separate engineer
-subagent. Issue #1132 was fetched after PM grooming and remains open. The PM
+**State:** `GROOMED → ENGINEERING → QA PASS → RECONCILIATION → CLOSED`.
+Closed completed on 2026-10-01 after a separate Stage 4 review. Issue #1132
+was fetched after PM grooming and again before QA. The PM
 updated the live contract with a fixed owner/project/run fixture matrix, exact
 reason validation/normalization, locked pre-transition discard semantics,
 transaction and replay rules, API documentation requirements, and explicit
@@ -180,8 +181,18 @@ passed 67 tests with 3 PostgreSQL-only skips; `make backend-check` passed
 Ruff, format check (288 files), mypy (396 files), and backend tests (1920
 passed, 41 skipped). The PostgreSQL-specific concurrency tests are present but
 skipped because no disposable `POSTGRES_TEST_DATABASE_URL` is configured.
-Stage 4 must independently re-run the exact issue commands and inspect the
-implementation and tests before reconciliation.
+The independent QA PASS comment is
+[#5935797610](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132#issuecomment-5935797610).
+QA verified each criterion, the exact four-file diff, and test scope, and
+independently reran both required commands. Exact results: focused suite 67
+passed/3 skipped; full backend check 1,920 passed/41 skipped after Ruff,
+format, and mypy. The skipped tests include PostgreSQL two-worker concurrency;
+the current result is not PostgreSQL concurrency evidence. Tests cover
+concurrent replay code paths, but actual PostgreSQL row-lock behavior remains
+an explicitly bounded verification limitation, not a claimed deployment pass.
+There were no second-opinion findings, no new issue gaps, and no durable-memory
+update. GitHub issue #1132 was closed as completed after this reconciliation.
+The newly eligible dependent issue is #1133 (owner-only activity read API).
 
 ### #1147 — Account shell copy assertion
 

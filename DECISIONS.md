@@ -66,6 +66,19 @@
   entire diff/tests as untrusted, and independently rerun focused and full
   backend checks. No production migration/publish is part of this task.
 
+## 2026-10-01 — #1133 QA reconciliation and issue-comment tooling boundary
+
+- The independent Stage 4 reviewer passed every refined criterion and
+  independently reran the exact focused test, full backend checks, migration
+  consistency check, and diff hygiene check. Evidence and the criterion matrix
+  are in `.local/tasks/backlog-session-2026-10-01-batch15.md`.
+- The GitHub comment connector is PR-shaped (`pr_number`) and its attempted
+  targeting of issue #1133 was rejected by automatic review as unsafe. Per
+  `docs/process.md`, do not retry through PR-shaped APIs; retain the complete
+  evidence locally and close through the correctly typed issue update.
+- Stage 3 was not run. No production or PostgreSQL concurrency evidence is
+  claimed. After closure, resume the refreshed backlog at #1134.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

@@ -37,8 +37,8 @@ items advance only after the current transaction is terminal.
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
-| #1133 | Activity read API | QA | Implementation `b1796a7f`; independent Stage 4 review in progress. |
-| #1134 | History UI | DEPENDENCY-BLOCKED | Requires #1133. |
+| #1133 | Activity read API | RECONCILIATION | Implementation `b1796a7f`; independent Stage 4 QA PASS; comment operation unavailable, full evidence recorded locally per process fallback. Close via typed issue update. |
+| #1134 | History UI | ELIGIBLE after #1133 closure | Refresh and groom before Stage 2a. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
 | #1137 | Compare-versions UI | DEPENDENCY-BLOCKED | Requires #1136. |
@@ -50,7 +50,7 @@ items advance only after the current transaction is terminal.
 | #1143 | Owner continuity metrics | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
 | #1144 | Public 3D viewer E2E setup | DEPENDENCY-BLOCKED | Requires #1100. |
 | #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
-| #1148 | Activity in JSON account export | PROPOSED / DEPENDENCY-BLOCKED | Newly filed after duplicate checks; implement only after #1133 defines the shared projection. |
+| #1148 | Activity in JSON account export | PROPOSED / DEPENDENCY-BLOCKED | Newly filed after duplicate checks; eligible when #1133 closes. |
 
 ## Transaction ledger
 
@@ -95,7 +95,7 @@ The Batch 16 issues #1131 and #1132 are completed. #1133 is now eligible after
 both writer dependencies closed; #1136 and #1141 remain independent. New
 follow-up #1148 was filed for account JSON export after the duplicate check; it
 depends on #1133's shared activity projection. No unlinked discovery remains.
-**Next issue:** #1133, the owner-only 2D project activity read API.
+**Current issue:** #1133 passed the independent Stage 4 QA review and is in reconciliation. The issue-comment connector exposes only a PR-shaped `pr_number` operation; its attempted use was rejected by automatic review as an unsafe issue target and was not retried. Per `docs/process.md`'s "Closure evidence when GitHub comment tooling is unavailable" rule, the complete verdict/evidence is retained locally and the correctly typed GitHub issue update will close this finite contract. After verified closure, #1134 and #1148 become eligible; next by Batch 16 dependency order is #1134.
 
 ### #1131 — 2D version lifecycle activity events
 
@@ -217,7 +217,7 @@ cursor pagination and bounds, a composite query-order index/migration, and a
 10,000-event query proof (at most 100 returned, two application SELECTs, and
 LIMIT 101; no timing promise). Exact checks are the named backend test module
 and `make backend-check`; evidence is local automated tests, no deployment
-claim. #1133 is closure-ready for Stage 2b and is the next transaction.
+claim. #1133 is closure-ready for Stage 2b.
 
 Stage 2b implementation commit `b1796a7f` changes the issue-named activity
 view, route, permission action, model index/additive migration, tests, and
@@ -225,8 +225,25 @@ view, route, permission action, model index/additive migration, tests, and
 passed Ruff, format (290 files), mypy (399 files), and backend pytest
 (1,936 passed, 41 skipped); migration check reports no changes. `git diff
 --check` passed. No production/shared database was written or published.
-Stage 4 must independently rerun the focused and full checks and inspect the
-migration, cursor privacy/order, permission behavior, and the 10k query proof.
+Stage 4 independently re-fetched the live contract, treated the diff and
+reported checks as untrusted, and inspected route/auth masking, cursor binding
+and tie ordering, metadata projection, soft-deleted owner access, public
+response isolation, the 10,000-event query bound, and the additive migration.
+Verdict: PASS; no defects or undispositioned findings. It reran the exact
+focused module (16 passed), `UV_CACHE_DIR=/tmp/codex-uv-cache make
+backend-check` (Ruff, formatting, mypy; 1,936 passed, 41 skipped), migration
+consistency check (no changes), and `git diff --check` (clean). Evidence is
+local test DB only; PostgreSQL concurrency and deployment are not claimed.
+Stage 3 was not run. Stage 4 owner was Codex subagent / GPT-6.1-sol
+substituted for Claude / Sonnet 5 / Medium. Criterion matrix: response
+envelope/labels/nullable actor/privacy PASS; metadata allowlist PASS; stable
+cursor ordering/binding PASS; limit bounds/fetch cap PASS; owner access and 404
+masking PASS; public response isolation PASS; index/migration PASS; 10k query
+proof PASS; existing response compatibility PASS; focused/full/migration/diff
+checks PASS. No QA comment URL exists. State is `GROOMED → ENGINEERING → QA →
+RECONCILIATION → CLOSED` pending typed issue update and read-after-write
+confirmation, under the documented fallback for unavailable issue-comment
+tooling.
 
 **New follow-up #1148:** add the same allowlisted event envelope to the
 existing authenticated JSON account export only. Duplicate check found no

@@ -39,7 +39,14 @@ test('allauth pages share site shell navigation and cross-route display preferen
   expect(navLayout.pageWidth).toBe(375);
   expect(navLayout.links.every((link) => link.left >= 0 && link.right <= 375)).toBe(true);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expect(page.getByText(/New here\?/)).toBeVisible();
+  await expect(
+    page.getByText(
+      'New accounts can be created with an enabled social sign-in provider after you consent.',
+      {
+        exact: true,
+      },
+    ),
+  ).toBeVisible();
   const mobileBottomControls = await page
     .locator('.shell-display-toggles')
     .evaluate((controls) => ({

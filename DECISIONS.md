@@ -1,5 +1,13 @@
 # DECISIONS.md
 
+## 2026-10-01 — Backlog-session agent loop for #1147
+
+- The Codex orchestrator delegated the #1147 PM/groom pass to a separate
+  Codex agent. The issue is criterion-ready, test-only Stage 2a work, with
+  #1127 closed as its sole dependency. Stage 2 remains substituted by Codex
+  for Opencode Go; stage 4 will be performed separately and recorded in the
+  transaction ledger. No independent-family stage 3 is planned.
+
 ## 2026-10-01 — #1124 design chosen; LIGDOL adaptation plan distilled (Batch 16)
 
 - **#1124:** the owner chose option 1 — server-injected site presentation plus

@@ -142,11 +142,14 @@ satisfies it.
 
 **Service:** Claude.
 **Model:** `Claude Sonnet 5` at `Medium` effort — Anthropic's recommended
-default, and the right balance for routine per-issue verification.
+default, and the right balance for routine batch verification.
 
-**Function:** verify one issue's diff against its acceptance criteria, re-run
-every check its author claimed, audit the arriving tests as adversarially as
-the code, and post the `## QA: PASS` / `## QA: FAIL` comment.
+**Function:** at the session batch gate, verify each issue's diff against its
+acceptance criteria, re-run every check its author claimed, audit the arriving
+tests as adversarially as the code, post one `## QA: PASS` / `## QA: FAIL`
+comment per issue, and run the batch-level checks (union of focused commands,
+one full-suite run, impact-matrix re-verification across all open issues,
+cross-issue review). Issues close only after the gate passes.
 **Invoke:** skill `qa-self-review`
 **Key rule:** any diff produced outside the current session is **untrusted by
 default**. Claims in diffs, commit messages, and PR bodies are never evidence;

@@ -565,7 +565,7 @@ Loop skills, added by this repo's multi-service adaptation
 | Skill | Load when |
 |---|---|
 | `task-distillation` | Turning a request, review, failure, or readiness finding into a reconciled backlog; before any engineering pass begins |
-| `backlog-session` | Working through the project backlog and its GitHub issues; orchestrates the per-issue loop and owns the transaction ledger |
+| `backlog-session` | Working through the project backlog and its GitHub issues; orchestrates the batch loop (atomic issues, batched implementation and QA) and owns the batch ledger |
 | `issue-scoping` | Stage 1 — drafting one criterion-ready issue from a groomed backlog item |
 | `implementation-mechanical` | Stage 2a — implementing an issue routed as mechanical/boilerplate |
 | `implementation-complex` | Stage 2b — implementing auth, data-layer, migration, or schema/business-logic work |
@@ -706,3 +706,11 @@ addition to this one, not instead of it.
   live behind a switch, or an equivalent — and QA must verify that path
   actually restores prior behavior before the issue can close. An issue with
   regression risk and no stated restoration path is not criterion-ready.
+- **Batch implementation and QA (owner-mandated, 2026-10-01):** Issues are
+  still created and groomed atomically, but implementation and QA run in
+  session batches by default, with a batch impact analysis that covers every
+  open issue (not only the one being worked) and a batch gate before any issue
+  in the batch closes. Batches form per session regardless of milestone, with
+  milestone recorded per issue; each issue keeps its own commit and QA matrix.
+  Single-issue transactions are the documented exceptions. Full rules in
+  `docs/process.md` ("Canonical batch transaction").

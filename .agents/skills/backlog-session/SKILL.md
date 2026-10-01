@@ -1,15 +1,19 @@
 ---
 name: backlog-session
-description: Process every remaining open backlog issue for one project sequentially, with explicit PM, engineering, QA, reconciliation, evidence, and handoff gates.
+description: Process the open backlog of one project as a session batch — atomic issues, batched implementation and QA, an impact analysis across all open issues, and explicit reconciliation, evidence, and handoff gates.
 ---
 
 # Backlog session
 
-Use this skill when the user asks to work through a project backlog and its GitHub issues. A session is a complete run for one project: discover every remaining open backlog issue, process issues one at a time in dependency order, and leave every issue with a terminal status. Never claim the project batch is complete when a required gate was skipped.
+Use this skill when the user asks to work through a project backlog and its GitHub issues. A session is a complete run for one project: discover every remaining open backlog issue, process the ready set as a **batch** in dependency order, and leave every issue with a terminal status. Never claim the project batch is complete when a required gate was skipped.
 
-## Transaction ledger (mandatory)
+**Issues are atomic; implementation and QA are batched (owner-mandated, 2026-10-01).** Each issue is still created, groomed and committed as one closure-sized slice. But engineering and QA run over the whole ready set of the session, with an impact analysis that considers every code addition, change and deletion against **all open issues** — not only the issue being worked. The earlier per-issue transaction closed issues against only their own criteria, and later work then collided with, invalidated, or left gaps against other open issues. The batch gate exists to catch that before closure, the same way production-readiness and session-completion already operate on the whole batch. The canonical statement is `docs/process.md` ("Canonical batch transaction").
 
-Maintain one explicit current-issue record with exactly one state:
+## Batch ledger (mandatory)
+
+Maintain one **batch record** and one row per issue. The batch record carries: batch id (session date plus project), wave number (waves are optional, see "Batch formation"), the ordered issue list with each issue's **milestone**, the impact matrix link, the batch gate result, and the environment/fixtures used.
+
+Each issue row has exactly one state:
 
 `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`
 
@@ -17,17 +21,9 @@ or
 
 `GROOMED → ENGINEERING/QA → BLOCKED|DEPENDENCY-BLOCKED|HANDED-OFF`.
 
-The record must contain the issue number, commit, focused checks, full checks,
-QA result, evidence boundary, GitHub comment, final status, and, for every
-stage, the stage owner actually used (`service / model / effort`) plus a
-`substituted: yes|no` flag when Claude ran a stage rostered to another
-service. See "Multi-service stage routing" below. The
-orchestrator may select the next issue only after the current record reaches
-`CLOSED` or a documented terminal blocked/handoff state. A code commit, green
-focused test, QA PASS, or deployment publication is never itself a terminal
-state.
+The row contains the issue number, milestone, commit, focused checks, QA result, evidence boundary, GitHub comment, final status, and, for every stage, the stage owner actually used (`service / model / effort`) plus a `substituted: yes|no` flag when Claude ran a stage rostered to another service. See "Multi-service stage routing" below. The batch record additionally carries the full-suite result and the impact-matrix result. The orchestrator ends a batch (or wave) only after **every** row is `CLOSED` or in a documented terminal blocked/handoff state. A code commit, green focused test, QA PASS on one issue, or deployment publication is never itself a terminal state, and no issue closes before the batch gate has passed.
 
-New work discovered during engineering or QA is handled before advancing:
+New work discovered during engineering or the batch gate is handled before the batch ends:
 classify it as in-scope (fix and retest this issue) or out-of-scope (reuse or
 create/link a criterion-ready issue, record the dependency, and keep the
 current issue's own finite criteria separate). Do not absorb an unrelated gap
@@ -109,18 +105,15 @@ owner, blocker class, and next action.
 
 - Work in exactly one project per session. If the project is unclear, ask before changing files.
 - At session start, discover and reconcile every open GitHub issue associated with that project against its `tasks.md`. Do not silently omit, duplicate, or invent an issue.
-- Process issues sequentially, never in parallel. A blocker on one issue does not stop independent issues; dependency-blocked issues receive a documented handoff and are not implemented prematurely.
+- Implement the batch's issues in dependency order, one issue-scoped commit each, and never let two runs edit the same files concurrently. A blocker on one issue does not stop independent issues; dependency-blocked issues receive a documented handoff and are not implemented prematurely.
 - A blocked issue is not a session or goal stop. After recording its blocker class, owner/context, exact next action, and GitHub status, skip only issues that depend on it and select the next independent closure-ready issue. Halt the goal only when no independent actionable work remains or every remaining issue requires the same unavailable external state.
 - If the blocker is a dependency or environment problem unrelated to the user's
   judgment or decision, run and record a fresh task-distillation
-  reconciliation at the end of that issue before selecting the next issue.
+  reconciliation at the end of the batch (or wave) before selecting the next batch.
   Recheck duplicates, dependency order, closure criteria, blocker ownership,
   and follow-up issue coverage.
-- Batch only the PM/distillation work. Engineering and testing are a strict
-  per-issue transaction: finish implementation, focused tests, required full
-  checks, browser QA, evidence reconciliation, and the GitHub status decision
-  for issue N before starting engineering or testing issue N+1. Never build a
-  queue of implementations and postpone their tests or closures.
+- **Batch the work, keep the issues atomic.** By default, PM grooming, engineering, and QA run over the session's whole ready set, with the impact analysis and batch gate below. Each issue still gets its own commit, its own criterion matrix, and its own `## QA` comment. What is deliberately *not* allowed is closing issue N on its own criteria alone while sibling or other open issues are affected by the same change. Postponing tests indefinitely is also not allowed: the batch gate runs as soon as the batch's commits are complete, and any `FAIL` returns the issue to engineering inside the batch.
+- **Exceptions (single-issue transaction permitted, reason recorded in the ledger):** a production-down hotfix; an issue whose impact matrix shows no overlap with any other open issue and whose environment cannot be shared with the rest of the batch; an explicit owner request; or an environment boundary that makes a batch gate impossible. Everything else is batched.
 - Build an issue manifest before implementation. Every manifest item must end as `completed`, `blocked`, `dependency-blocked`, or `handed-off`.
 
 Closure integrity after owner review:
@@ -147,9 +140,9 @@ Closure integrity after owner review:
 - Treat a blocker as a triage decision, not an automatic new issue: classify it as an implementation defect, verification boundary, workflow/infrastructure defect, dependency blocker, or non-actionable limitation. Any distinct actionable repository/workflow defect must be linked to an existing issue or created immediately when issue creation is authorized.
 - Enforce closure-sized work: a parent/epic is not an implementation unit. Split
   distinct routes, editor modes, embeds, immersive query variants, and
-  downloaded artifacts into separate issues before implementation. Process one
-  such issue at a time and reconcile its GitHub state immediately after QA;
-  never defer several issue closures until the end of a long batch.
+  downloaded artifacts into separate issues before implementation. Each such
+  issue is committed and QA'd on its own criteria and then closed after the
+  batch gate; do not defer closures past the gate, and do not close before it.
 - Enforce closure-ready contracts, not just small titles: every active issue
   must name one entry point and fixture, enumerate finite observable pass/fail
   outcomes, specify exact commands/evidence, and state what is explicitly not
@@ -167,19 +160,40 @@ Closure integrity after owner review:
 
 Record this manifest in the working notes and final handoff:
 
-| Issue | URL | Backlog entry | Dependencies | Scope | Status | Stage owners (scoping / impl / review / QA / gate) | Substituted? | Blocker class / follow-up issue | Owner / next action |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Issue | URL | Milestone | Wave | Backlog entry | Dependencies | Scope | Status | Stage owners (scoping / impl / review / QA / gate) | Substituted? | Blocker class / follow-up issue | Owner / next action |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 Record each stage owner as `service / model` using the routing table above,
 or `Claude (substituted for <rostered owner>)` when Claude ran it instead.
 
 Order by explicit dependencies, then project backlog order, then priority. If GitHub and `tasks.md` disagree, reconcile the records before implementation. Existing issues must be updated or reused; create a new issue only for genuinely new work authorized by the user.
 
-## Per-issue loop
+### Batch formation and milestone awareness
 
-Run these passes for every manifest issue, labeling artifacts with the issue number. If delegation is unavailable, perform the passes yourself in sequence and say so; never imply another agent ran. Record the stage owner for each pass in the ledger as it runs, not retroactively at the end of the batch.
+- The batch is the **session's ready set**: every closure-ready open issue for the project at session start. Dependency-blocked and owner-decision-pending issues are listed and skipped, not silently dropped. Formation is per session, **regardless of milestone**; a batch may span milestones.
+- Milestone awareness is built in: the manifest records each issue's milestone; ordering ties are broken by milestone, oldest first; a milestone is closed only by the session-completion pass once every issue in it is terminal (`docs/process.md`, "Milestone assignment").
+- There is no fixed size cap. When the set is large, or an issue's acceptance needs a sibling's behavior to be merged first, the orchestrator may split it into **waves**. Every wave runs the full batch gate; session-completion covers all waves.
 
-### PM pass — groom
+### Batch impact analysis (mandatory, built in the PM pass, updated while engineering)
+
+Before any code is written, build a matrix for the batch and keep it current:
+
+| Change (file / selector / route / API / schema / spec / fixture / helper) | Kind (add / change / delete / rename) | Issue(s) in batch | Open issues that reference it (in or out of the batch) | Collision / invalidation? | Required re-verification |
+| --- | --- | --- | --- | --- | --- |
+
+Rules:
+
+1. Search every file, CSS region, selector, helper, fixture, route, API and schema element an issue will touch against **all** open issues: the GitHub open list, `docs/tasks.md`, and `rg` on paths, selectors and routes in issue bodies. Record the hits.
+2. Resolve a collision or an invalidated premise in the PM pass — reorder, deliver in one commit series by one implementer, amend a criterion by comment, or file a linked atomic issue — never after closure. Two issues editing the same CSS region or shared helper are delivered serially by one implementer.
+3. For every deletion or rename, list every consumer, including specs and fixtures.
+4. During engineering, any newly touched shared file or surface is added to the matrix immediately, with the affected open issues named.
+5. Link the matrix from each affected issue.
+
+## Batch loop
+
+Run these passes over the manifest, labeling artifacts with the issue number and the wave. If delegation is unavailable, perform the passes yourself in sequence and say so; never imply another agent ran. Record the stage owner for each pass in the ledger as it runs, not retroactively at the end of the batch.
+
+### PM pass — groom and analyze impact
 
 Scoping itself is stage 1 ([issue-scoping](../issue-scoping/SKILL.md), Codex);
 this pass grooms the issue it produced and validates that its contract is
@@ -197,7 +211,10 @@ guidance. Confirm or update:
   separately and do not make it a local development prerequisite;
 - backlog entry and GitHub issue URL;
 - the routing hint (stage 2a mechanical vs. 2b complex logic) and whether
-  stage 3 second-opinion review is wanted for this issue.
+  stage 3 second-opinion review is wanted for this issue;
+- the issue's rows in the batch impact matrix, with every other open issue
+  that references the same files, selectors, routes, helpers, fixtures or
+  specs, and the resolution of each collision.
 
 If the issue is not implementable because a dependency is unresolved, record `dependency-blocked`, its exact prerequisite, and its next action. Continue to the next independent issue. If the issue spans multiple independently observable surfaces, stop grooming it as a unit and create/reuse one criterion-ready child per surface before engineering.
 
@@ -205,7 +222,7 @@ If grooming discovers distinct actionable work outside the current issue, reuse 
 
 Any issue created this way gets a milestone before it's left — reuse the current issue's open milestone (it's a direct follow-up), or create a new one if none fits. Never leave a newly filed issue unmilestoned; see `docs/process.md`'s "Milestone assignment" section.
 
-### Engineer pass — implement
+### Engineer pass — implement (ordered, one commit per issue)
 
 Delegated to stage 2. Select by the issue's routing hint: the
 [implementation-mechanical](../implementation-mechanical/SKILL.md) skill
@@ -217,9 +234,13 @@ The orchestrator's responsibilities around this pass:
 
 - Read `docs/team/software-engineer.md`; before tests, `docs/testing-guidelines.md`,
   and for UI work `docs/design-system.md`, where those files exist.
-- Require an issue-scoped commit before advancing. Do not start another
-  issue's engineering while this issue lacks its own implementation commit and
-  test result. Do not close the issue here.
+- Require an issue-scoped commit per issue, in manifest order, each with its
+  focused test result. The next issue's engineering may start once the
+  previous issue has its own commit and focused result; QA and closure wait
+  for the batch gate. Do not close any issue in this pass.
+- Before editing a shared file or surface, read the impact matrix, do not undo
+  or contradict a sibling issue's criteria, and add newly touched shared
+  surfaces to the matrix with the affected open issues named.
 - If implementation is blocked, do not modify unrelated code. Record the
   attempted command or tool, exact failure, impact, and next action; mark the
   issue `blocked` or `handed-off` and continue with independent issues.
@@ -228,35 +249,41 @@ The orchestrator's responsibilities around this pass:
   routing event, not a blocker, and the issue stays current.
 - When engineering discovers a new defect, decide whether it belongs to the
   current acceptance criteria. Fix and retest it within this issue if so;
-  otherwise create or reuse a follow-up issue before advancing, link the
+  otherwise create or reuse a follow-up issue before the batch ends, link the
   dependency, and mark the current issue `handed-off` or `dependency-blocked`.
-  A code change does not complete an issue until its verification is rerun.
-- Optional stage 3 runs here, before QA:
+  A code change does not complete an issue until its verification is rerun at
+  the batch gate.
+- Optional stage 3 runs here, before the batch gate (per issue, or over the batch's diff range when the same reviewer covers several issues):
   [second-opinion-review](../second-opinion-review/SKILL.md). Record it as run
   (with the service and model) or `not run`. It cannot be satisfied by the
   model that wrote the diff.
 
-### QA pass — verify
+### Batch gate — verify (stage 4, over the whole batch)
 
 Delegated to the [qa-self-review](../qa-self-review/SKILL.md) skill (stage 4,
 Claude Sonnet 5 at Medium effort), which owns intake of untrusted external
-diffs, verification, and the `## QA: PASS`/`## QA: FAIL` comment.
+diffs, verification, and the `## QA: PASS`/`## QA: FAIL` comment per issue.
+
+The gate has six parts, run after the batch's commits are complete:
+
+1. each issue's own criterion matrix and `## QA` comment, in the existing format;
+2. the **union** of every issue's focused commands;
+3. the full required suite (`make check`) once for the batch, plus the browser or integration suites the criteria name;
+4. every impact-matrix row: re-run its re-verification command, or record "not affected" with the search evidence — including open issues *outside* the batch;
+5. a cross-issue review that no issue's criteria were made false or unreachable by a sibling's change;
+6. rendered evidence at the named viewports where criteria require it.
 
 The orchestrator's responsibilities around this pass:
 
-- QA is part of the same issue transaction as engineering and must run before
-  the next issue begins. Never build a queue of implementations and postpone
-  their verification.
-- On `FAIL`, keep the issue current, return it to its implementation stage,
-  and re-enter QA. Do not advance to a later issue's engineering to work
-  around it.
-- Carry the verdict's provenance block and intake outcome into the ledger.
-- The QA skill does not set terminal status or close issues; that is the issue
-  handoff below.
+- The gate runs as soon as the batch's commits exist; never build a queue of implementations and postpone verification.
+- On `FAIL`, return the failing issue to its implementation stage inside the batch and re-run the affected parts of the gate. Do not close the failing issue or any issue that depends on it. Independent passing issues close after the gate is green.
+- A failure in the full suite or a matrix row is classified before any issue closes; a failure attributable to a specific issue returns that issue, an unattributable one blocks closure of the whole batch until classified.
+- Carry each verdict's provenance block and intake outcome into the ledger.
+- The QA skill does not set terminal status or close issues; that is the batch handoff below.
 
-### Issue handoff
+### Batch handoff
 
-Set the manifest status and reconcile the backlog entry, issue comment, commits, memory links, and next action immediately after that issue's QA pass. An issue is `completed` only when every acceptance criterion and required check passes. Otherwise use `blocked`, `dependency-blocked`, or `handed-off` with evidence. If the criteria are complete, close the GitHub issue in the same reconciliation step; do not leave a verified closure-sized issue open merely because its parent batch is unfinished.
+Set each manifest row's status and reconcile its backlog entry, issue comment, commits, memory links, and next action immediately after the batch gate, issue by issue. An issue is `completed` only when every acceptance criterion and required check passes. Otherwise use `blocked`, `dependency-blocked`, or `handed-off` with evidence. If the criteria are complete and the batch gate passed, close the GitHub issue in the same reconciliation step; do not leave a verified closure-sized issue open merely because its parent feature is unfinished, and do not close it before the gate.
 
 Before assigning a terminal status, verify that every blocker has a class, owner/context, exact next action, and an existing/new follow-up issue or an explicit non-actionable/verification-boundary rationale. `handed-off` requires a linked owner issue unless issue creation is pending authorization.
 
@@ -269,7 +296,7 @@ evidence.
 
 ## Batch completion pass
 
-After the per-issue loop, run [session-completion](../session-completion/SKILL.md) with the complete manifest. It must reconcile all issues, memory topics, decisions, lessons, constraints, blockers, verification boundaries, and the final verification boundary. Run [task-distillation](../task-distillation/SKILL.md) for newly discovered work or context changes, and [production-readiness](../production-readiness/SKILL.md) when its conditions require it.
+After the batch loop (all waves), run [session-completion](../session-completion/SKILL.md) with the complete manifest. It must reconcile all issues, memory topics, decisions, lessons, constraints, blockers, verification boundaries, and the final verification boundary. Run [task-distillation](../task-distillation/SKILL.md) for newly discovered work or context changes, and [production-readiness](../production-readiness/SKILL.md) when its conditions require it.
 
 Do not create a PR while any required issue is incomplete, unverified, or missing a terminal status. A PR may be created or updated only after the batch completion pass confirms that all intended issues pass and no required follow-up remains.
 
@@ -281,10 +308,12 @@ Include per issue and as a batch rollup:
 | --- | --- |
 | Routing | Rostered owner and actual owner (`service / model / effort`) per stage, every substitution flagged, and the readiness-gate model/effort named explicitly |
 | Scope | Project, complete issue manifest, ordering, worktree classification |
-| PM | Grooming result, issue URL, acceptance matrix, plan |
+| PM | Grooming result, issue URL, milestone, acceptance matrix, plan |
+| Batch impact matrix | Rows for every changed or deleted shared surface, the open issues (in and out of the batch) that reference it, each collision and its resolution, and the re-verification result |
 | Engineer | Changed files, focused tests, commits, dependency decisions, originating service/model for any externally produced diff |
 | Second opinion | Whether an independent-family review ran, by which service/model, and how its findings were dispositioned (or an explicit “not run”) |
 | Automation | Repository runner/CI ownership of local and browser verification, disposable-service setup, cleanup, and retained failure artifacts |
+| Batch gate | Union of focused commands, the single full-suite run, matrix re-verification, and the cross-issue review result |
 | QA | Exact automated focused/full commands, runner/CI environment, results, criterion verdicts, GitHub comment; any Replit-only manual evidence is explicitly labeled |
 | Memory | Updated or explicitly unchanged topics, linked to issues |
 | Session completion | Batch reconciliation result and remaining-item audit |
@@ -303,7 +332,7 @@ The project batch may be reported complete only when:
 - all local and CI verification is executable by the agent or CI without a
   user-operated terminal/browser session; any remaining manual step is
   explicitly limited to Replit deployment acceptance;
-- QA results are recorded on every processed issue;
+- QA results are recorded on every processed issue, and the batch gate (including the impact matrix) passed before any issue closed;
 - changes are committed without unrelated files;
 - backlog, GitHub, and memory links are reconciled;
 - every stage of every processed issue has a recorded owner, with each

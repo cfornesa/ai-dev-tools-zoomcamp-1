@@ -59,14 +59,33 @@ an accessible pattern, a security-relevant boundary, or a UI surface)
 - **Durable memory link:** Link only when this task depends on a non-obvious
   reusable constraint recorded in `.agents/memory/`
 
-## Transaction ledger
+## Batch ledger
+
+Implementation and QA run in a session batch (`docs/process.md`, "Canonical
+batch transaction"). Keep one batch record and one row per issue. This issue's
+template section below is its row.
+
+**Batch record** (shared by every issue in the batch)
+
+- **Batch id / wave:** session date and project; wave number if split
+- **Ordered issues (with milestone):** the manifest, in dependency order
+- **Impact matrix:** link to the table (change, kind, issue(s) in batch, open
+  issues in and out of the batch that reference it, collision/invalidation,
+  required re-verification)
+- **Full-suite result / batch gate result:** exact command and outcome
+- **Environment and fixtures used:** stack, database, flags, `AI_PROVIDER`
+
+**Issue row**
 
 - **Phase:** DISTILL | GROOMED | ENGINEERING | QA | RECONCILIATION | CLOSED |
   BLOCKED | DEPENDENCY-BLOCKED | HANDED-OFF
-- **Issue owner / current transaction:** One issue only; do not begin another
-  issue before this entry reaches a terminal status
-- **Implementation commit:** Required before QA advances
-- **Focused checks / full checks:** Exact commands and results
+- **Issue owner / milestone / wave:** one atomic issue; it closes only after
+  the batch gate passes
+- **Implementation commit:** One issue-scoped commit; required before the
+  batch gate
+- **Focused checks:** Exact commands and results (unioned at the batch gate)
+- **Impact-matrix rows owned / affected open issues:** rows this issue added
+  or changed, with the issues named in each
 - **QA matrix:** Criterion-by-criterion PASS/FAIL with route, fixture,
   viewport, browser state, and published revision where applicable
 - **GitHub closure evidence:** Comment URL/ID and close timestamp, or blocker

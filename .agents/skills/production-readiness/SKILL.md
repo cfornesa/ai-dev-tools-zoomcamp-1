@@ -9,8 +9,8 @@ Evaluate the whole selected project and its issue manifest, not only the latest 
 
 ## No-loop handoff rule
 
-Run production-readiness only after the per-issue backlog-session
-transactions have been reconciled. Treat it as a read-only assessment of
+Run production-readiness only after the backlog-session batch gate(s) have
+passed and the batch's issues have been reconciled. Treat it as a read-only assessment of
 release evidence, not a second engineering pass. For each finding, choose one
 of these outcomes exactly once: `PASS`, `OPEN FOLLOW-UP`, `BLOCKED`, or
 `NON-ACTIONABLE`. Link an `OPEN FOLLOW-UP` to an existing/new criterion-ready

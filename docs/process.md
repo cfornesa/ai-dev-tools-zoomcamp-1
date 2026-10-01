@@ -1,4 +1,4 @@
-- Tasks are GitHub issues, one at a time
+- Tasks are atomic GitHub issues; implementation and QA run in session batches whose impact analysis covers all open issues ("Canonical batch transaction" below)
 - Read the acceptance criteria before starting and before closing
 - Commit regularly
 
@@ -40,17 +40,20 @@ Phase gate
   Distillation may inspect failures and write backlog, issue, manifest, and
   durable-memory records, but it must not change product source or product
   tests to make an observed failure pass.
-- Distillation and grooming may be batched across the complete backlog. Once
-  engineering starts, work is transactional per issue: implementation,
-  focused tests, required full checks, browser QA, reconciliation, and the
-  issue status decision for issue N must finish before issue N+1 begins.
-- The handoff must name exactly one next groomed issue and include the complete
+- Distillation and grooming are batched across the complete backlog and issues
+  stay atomic. Engineering and QA then run as a batch over the session's ready
+  set: one issue-scoped commit per issue, then a single batch gate (union of
+  focused checks, full suite, impact-matrix re-verification, cross-issue
+  review) before any issue in the batch closes. See "Canonical batch
+  transaction" below for the single-issue exceptions.
+- The handoff must name the ordered batch (and waves, if any) of groomed
+  issues and include the complete
   manifest, duplicate/already-covered report, dependency order, blocker
   triage, verification boundaries, and a closure contract for every
   actionable item. If any criterion is still broad, subjective, route-spanning,
   or dependent on an unprovisioned environment, the work remains in
   distillation/blocked status.
-- Backlog-session may implement only the named issue. A test failure found
+- Backlog-session may implement only the issues named in the batch manifest. A test failure found
   while distilling or grooming is captured and classified first; it is not an
   implicit authorization to fix it.
 - A blocked issue is not a session or goal stop. Record its blocker class,
@@ -60,7 +63,7 @@ Phase gate
   issue requires the same unavailable external state.
 - If the blocker is a dependency or environment problem unrelated to the user's
   judgment or decision, complete a fresh task-distillation reconciliation at
-  the end of that issue before selecting the next issue. Recheck duplicates,
+  the end of the batch (or wave) before selecting the next batch. Recheck duplicates,
   dependency order, closure criteria, ownership, and follow-up issue coverage;
   record the result before continuing.
 
@@ -217,6 +220,11 @@ milestone of the work that surfaced them.
   rather than let one milestone balloon past what a milestone view can
   usefully summarize.
 
+**Session batches and milestones:** implementation/QA batches are formed per
+session regardless of milestone (see "Canonical batch transaction"); the
+milestone is recorded per issue in the batch manifest and does not bound a
+batch.
+
 **Naming convention:** `Batch N: <short theme> (<date or date range>)`,
 numbered sequentially from whatever the highest existing batch number is
 (retroactive history starts at Batch 1; do not renumber it). The description
@@ -246,36 +254,116 @@ states the issue-number range and a few representative titles.
 | Agent-wide entry point | `AGENTS.md` | How agents discover and use the loop |
 | Replit-specific operating reminder | `replit.md` | Short pointer to the canonical loop and environment boundaries |
 
-## Canonical issue transaction and anti-loop rules
+## Canonical batch transaction and anti-loop rules
+
+*Owner-mandated 2026-10-01.* Issues are always created and groomed atomically.
+Implementation and QA, however, run in **batches by default**, the same way
+production-readiness and session-completion already do. Closing each issue on
+only its own criteria repeatedly left later work colliding with, invalidating,
+or leaving gaps against other open issues, which produced a chain of
+follow-up issues. A batch considers the ramifications of every code addition,
+change and deletion on **all open issues**, not only the one being worked.
+
+**Terminology:** a *session batch* (this section) is the set of issues implemented
+and QA'd together in one backlog session. It is unrelated to the milestone
+naming convention `Batch N: <theme>` (a historical label for a milestone;
+see "Milestone assignment"). A session batch may span several milestones,
+and a milestone may be worked across several session batches.
 
 The project has one normal direction of travel:
 
-`distillation → grooming → engineering → testing/QA → reconciliation → GitHub closure`
+`distillation → grooming → impact analysis → engineering (ordered, one commit per issue) → batch gate (QA) → reconciliation → GitHub closure`
 
-Distillation and grooming may be batched. Engineering and testing/QA may not:
-they are one transaction for one issue, and the next issue is not selected
-until the current issue is closed or has a documented terminal blocked,
-dependency-blocked, or handed-off status.
+### Batch formation and milestone awareness
 
-At the start of a transaction, create a ledger entry containing the issue,
-fixed entry point/fixture, finite criteria, dependencies, evidence boundary,
-and exact checks. During engineering, each discovered item is classified before
+- A batch is the **session's ready set**: every closure-ready open issue for
+  the project at session start, ordered by dependency, then backlog order,
+  then priority. Dependency-blocked and owner-decision-pending issues are
+  listed and skipped, never silently dropped.
+- Batches are formed **per session regardless of milestone**; a batch may span
+  milestones. Milestone awareness is built in: the manifest records each
+  issue's milestone, ordering ties break by oldest milestone, and a milestone
+  is closed only by the session-completion pass once all its issues are
+  terminal (see "Milestone assignment" above).
+- There is no fixed size cap. When the set is large, or an issue's acceptance
+  depends on a sibling's merged behavior, the orchestrator may split it into
+  **waves**. Every wave runs the full batch gate; session-completion covers
+  all waves.
+
+### Batch impact analysis (mandatory)
+
+Built in the PM pass before any code and kept current by the engineer pass:
+
+| Change (file / selector / route / API / schema / spec / fixture / helper) | Kind | Issue(s) in batch | Open issues that reference it (in or out of the batch) | Collision / invalidation? | Required re-verification |
+| --- | --- | --- | --- | --- | --- |
+
+1. Search every surface an issue will touch against **all** open issues: the
+   GitHub open list, `docs/tasks.md`, and `rg` on paths, selectors and routes
+   in issue bodies. Record the hits.
+2. Resolve collisions and invalidated premises in the PM pass: reorder,
+   deliver in one commit series by one implementer, amend a criterion by
+   comment, or file a linked atomic issue. Two issues that edit the same CSS
+   region, helper, fixture or route are delivered serially by one implementer.
+3. For every deletion or rename, list every consumer (including specs and
+   fixtures).
+4. While engineering, add any newly touched shared surface to the matrix
+   immediately, naming the affected open issues. Link the matrix from each
+   affected issue.
+
+### Batch gate and closure
+
+After the batch's commits are complete, QA runs once over the batch:
+
+1. each issue's own criterion matrix and `## QA` comment (format unchanged);
+2. the union of every issue's focused commands;
+3. the full required suite (`make check`) once, plus the browser/integration
+   suites the criteria name;
+4. every impact-matrix row re-verified, or recorded as "not affected" with the
+   search evidence — including open issues outside the batch;
+5. a cross-issue review that no issue's criteria were made false or
+   unreachable by a sibling's change;
+6. rendered evidence at the named viewports where criteria require it.
+
+Closure follows the gate: **an issue closes only after the batch gate passes.**
+A failing issue, and every issue that depends on it, stays open and returns to
+engineering inside the batch; independent passing issues close once the gate
+is green. A suite or matrix failure is classified before any issue closes; an
+unattributable failure holds the whole batch. Each issue keeps its own commit
+(its revert is its restoration path), criterion matrix, QA comment, and
+provenance record.
+
+### Exceptions
+
+A single-issue transaction is allowed only with the reason recorded in the
+ledger: a production-down hotfix; an issue whose impact matrix shows no
+overlap with any other open issue and whose environment cannot be shared with
+the rest of the batch; an explicit owner request; or an environment boundary
+that makes a batch gate impossible.
+
+### Ledger and discovery
+
+At the start of a batch, create a **batch ledger** (`docs/task-template.md`):
+the ordered issues with milestone and wave, fixed entry points/fixtures,
+finite criteria, dependencies, evidence boundaries, exact checks, and the
+impact matrix. During engineering, each discovered item is classified before
 work continues:
 
 - in-scope criterion failure: fix within the current issue and rerun its checks;
 - independent actionable gap: reuse or create a criterion-ready issue and link
-  it, without expanding the current issue;
+  it, without expanding the current issue (rule 4 of the Discovery gate still
+  applies);
 - blocker: record class, owner/context, exact failed command/evidence, and next
   action; skip only dependent issues;
 - non-actionable or verification boundary: record the reason and the required
   external evidence.
 
 The final reconciliation is a required state transition, not a summary. It
-must record the commit, focused/full results, QA matrix, evidence location,
-backlog status, memory links, GitHub comment, and close action. “Implemented,”
-“tests pass,” “published,” and “QA PASS” are intermediate states.
+must record each issue's commit, focused results, the batch's full-suite and
+matrix results, QA matrices, evidence location, backlog status, memory links,
+GitHub comment, and close action. “Implemented,” “tests pass,” “published,”
+and “QA PASS” are intermediate states.
 
-Production-readiness runs after the child transactions as an assessment. It
+Production-readiness runs after the batch gate(s) as an assessment. It
 does not start a hidden repair loop. It creates or links follow-up work when a
 finding is outside a child contract. Closed issues remain closed by default;
 reopening is allowed only when the owner explicitly authorizes reopening that
@@ -284,10 +372,10 @@ contradictory evidence becomes a new criterion-ready task, linked to the
 closed issue for history. The same issue must never alternate between open and
 closed as a substitute for backlog distillation.
 
-Before selecting the next issue, the orchestrator must answer “closed or
-terminally handed off?” for the current ledger entry. If the answer is no, it
-must continue that issue or record its blocker; it may not advance merely to
-make progress appear elsewhere.
+Before ending a batch or wave, the orchestrator must answer “closed or
+terminally handed off?” for every ledger row. If the answer is no for any row,
+it must continue that issue or record its blocker; it may not end the batch
+merely to make progress appear elsewhere.
 
 ### The three non-closed terminal statuses
 

@@ -25580,3 +25580,26 @@ and 3D cube/sphere AI Agent fixtures and scenarios, requires unchanged
 test/expect counts, and provides an exact Linux Chromium/PostgreSQL command.
 Status is PROPOSED and handed off for a later transaction; no product or test
 code was changed in this discovery pass.
+
+### 2026-10-01 — Process change: batched implementation and QA (dry run on the open backlog)
+
+Rules: `docs/process.md` "Canonical batch transaction" (owner-mandated 2026-10-01;
+`DECISIONS.md`). Dry run of the new impact analysis on the 23 open issues
+(search of paths, selectors, specs and docs in issue bodies; proposal only, to be
+rebuilt by the PM pass of the next session). It surfaced these collisions that the
+per-issue model would have discovered after closure:
+
+| Shared surface | Open issues | PM-pass resolution |
+|---|---|---|
+| `frontend/src/index.css` inline-toolbar region, `drawingPlaneAframe796` / `drawingPlaneTransform782` / `manual3dStageChrome` / `inlineStageToolbarGeometry` specs | #1110, #1111, #1114 (and #1100, #1112 as spec consumers) | One implementer, serial commits: #1111 → #1114 → #1110; re-verify the 2D shared-toolbar specs for the unscoped `max-width` rule flagged on #1111 |
+| `manual2dStageChrome.spec.ts`, `layersPanel.spec.ts`, `interactionRuntime.spec.ts`, `public2dRouteStageChrome.spec.ts` | #1102, #1103, #1110, #1111, #1114, #1142 | #1102/#1103 first (setup), then product CSS issues re-verify these specs; #1142 touches the public spec after #1102 |
+| `AIProposalPanel.tsx` | #1135 (reason UI) and #1140 (intent-note disclosure) | #1135 before #1140; #1135 leaves a clean extension point |
+| `docs/api.md`, `ProjectActivity` / export | #1138, #1141, #1143, #1148, #1130 | `docs/api.md` edits serialized; #1148 before #1143 |
+| `e2e/aiAgent2d.spec.ts`, `aiAgent3d.spec.ts` | #1135, #1149 | #1149 (retarget) before #1135's E2E |
+
+Proposed waves (milestones recorded per issue, not bounding): **Wave 1** (3D toolbar + 3D
+E2E, Batch 14): #1111, #1114, #1110, #1112, #1144, then the #1100 gate. **Wave 2** (2D E2E
+creation, Batch 14/16): #1102, #1103, #1104, #1149, parent #1096. **Wave 3** (project
+history/compare/discovery, Batch 16): #1148, #1135, #1136 → #1137, #1141 → #1142.
+Skipped and listed: #1129, #1130 (owner decisions), #1138-#1140 (blocked by #1129), #1143
+(depends on activity data). Each wave ends with the full batch gate before any issue closes.

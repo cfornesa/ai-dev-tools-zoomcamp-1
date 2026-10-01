@@ -1,5 +1,34 @@
 # DECISIONS.md
 
+## 2026-10-01 — Implementation and QA move to session batches (issues stay atomic)
+
+- **Decision (owner):** issues are still created and groomed atomically, but
+  implementation and QA run in **session batches by default**, with a
+  mandatory batch impact analysis across **all open issues** and a **batch
+  gate** before any issue in the batch closes. This is the same posture
+  production-readiness and session-completion already take.
+- **Why:** closing each issue on its own criteria repeatedly produced follow-up
+  issues (shared CSS region edited by #1110/#1111/#1114/#1120, an unscoped rule
+  contradicting #1111's own "2D unchanged" criterion, #1119's wrong embed
+  premise, #1112 waiting on #1108 then #1114).
+- **Owner choices:** (1) batches form **per session regardless of milestone**,
+  milestone recorded per issue; (2) issues close **after the batch gate
+  passes**, with failing issues and their dependents staying open; (3) **one
+  commit per issue**; (4) minimal marked `AGENTS.md` edit (skills-table row and
+  one §13 bullet).
+- **Exceptions (single-issue transaction, reason recorded):** production-down
+  hotfix; a no-overlap issue that cannot share the batch environment; explicit
+  owner request; environment boundary that makes a gate impossible.
+- **Changed:** `docs/process.md` (canonical batch transaction, formation,
+  impact analysis, gate, exceptions), `docs/task-template.md` (batch ledger),
+  `docs/team/*`, `DISPATCH.md` (stage 4), `AGENTS.md`, and the `backlog-session`,
+  `qa-self-review`, `task-distillation`, `session-completion`,
+  `production-readiness`, implementation, second-opinion and scoping skills
+  (both `.claude/skills` and the `.agents/skills` mirror), plus the shared
+  handoff contract. **Unchanged:** atomic issue creation, the discovery gate,
+  separation of duties (rule 4), closed-issue immutability, stage routing and
+  provenance. **Restoration:** revert the documentation commit.
+
 ## 2026-10-01 — Backlog-session agent loop for #1132
 
 - #1131 is reconciled and closed after the latest QA PASS. Started the

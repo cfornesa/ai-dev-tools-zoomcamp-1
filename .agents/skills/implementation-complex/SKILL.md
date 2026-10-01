@@ -65,3 +65,7 @@ attempted command, the exact failure, the impact, and the next action.
 Hand the diff and its command output to stage 3 (`second-opinion-review`) if
 that stage was requested for this issue, otherwise to stage 4
 (`qa-self-review`).
+
+## Batch context
+
+This stage runs inside a `backlog-session` batch (`docs/process.md`, "Canonical batch transaction"). Before starting, read the batch manifest and the **batch impact matrix** (the rows for this issue and every other open issue that references the same files, selectors, routes, helpers, fixtures or specs). Do not undo or contradict a sibling issue's criteria. Add any newly touched shared surface to the matrix, naming the affected open issues. The unit of your deliverable is still one atomic issue; the batch only widens what you must check, not what you may change.

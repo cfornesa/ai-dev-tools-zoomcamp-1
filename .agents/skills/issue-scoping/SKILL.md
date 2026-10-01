@@ -74,3 +74,7 @@ at anything in the `LOOP-AGENTS.md` Section 3 Irreversible Decisions table.
 Hand the finished issue to the `backlog-session` PM pass for grooming. The
 issue is the handoff artifact; the receiving stage validates that its contract
 is complete and returns it here if not.
+
+## Batch context
+
+Scoping still produces exactly one atomic issue. Because implementation and QA run in a `backlog-session` batch (`docs/process.md`, "Canonical batch transaction"), the issue body must name the files, selectors, routes, APIs, fixtures, helpers and specs the work is expected to touch or delete, and any other open issue that references them, so the batch impact matrix can be built from it. Search the open issues before filing; a collision with an open issue is resolved in the issue text (dependency, shared implementer, or amended criteria), not left for the QA stage to discover.

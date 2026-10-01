@@ -57,6 +57,15 @@
   No account export or deletion-policy behavior belongs in this transaction.
   Stage 4 must be separate; the engineer must not close the issue.
 
+## 2026-10-01 — #1133 stage 4 QA pass delegated
+
+- Implementation commit `b1796a7f` is clean and the author reports focused,
+  full backend, and migration-consistency checks passed. A separate Codex
+  subagent / GPT-6.1-sol now performs Stage 4 as a substitution for Claude /
+  Sonnet 5 / Medium. It must re-fetch #1133, inspect the index migration and
+  entire diff/tests as untrusted, and independently rerun focused and full
+  backend checks. No production migration/publish is part of this task.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

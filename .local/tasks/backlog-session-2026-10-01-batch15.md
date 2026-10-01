@@ -37,7 +37,7 @@ items advance only after the current transaction is terminal.
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
-| #1133 | Activity read API | ENGINEERING | #1131/#1132 closed; API-only contract groomed; implementing now. |
+| #1133 | Activity read API | QA | Implementation `b1796a7f`; independent Stage 4 review in progress. |
 | #1134 | History UI | DEPENDENCY-BLOCKED | Requires #1133. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
@@ -218,6 +218,15 @@ cursor pagination and bounds, a composite query-order index/migration, and a
 LIMIT 101; no timing promise). Exact checks are the named backend test module
 and `make backend-check`; evidence is local automated tests, no deployment
 claim. #1133 is closure-ready for Stage 2b and is the next transaction.
+
+Stage 2b implementation commit `b1796a7f` changes the issue-named activity
+view, route, permission action, model index/additive migration, tests, and
+`docs/api.md`. Engineer reports focused tests 16 passed; `make backend-check`
+passed Ruff, format (290 files), mypy (399 files), and backend pytest
+(1,936 passed, 41 skipped); migration check reports no changes. `git diff
+--check` passed. No production/shared database was written or published.
+Stage 4 must independently rerun the focused and full checks and inspect the
+migration, cursor privacy/order, permission behavior, and the 10k query proof.
 
 **New follow-up #1148:** add the same allowlisted event envelope to the
 existing authenticated JSON account export only. Duplicate check found no

@@ -2488,3 +2488,13 @@ updates. The remaining open backlog was not silently claimed complete.
   legacy route, preserving checks for stage actions and moving AI/publication
   assertions to Project settings/editor header. The focused Chromium test
   passes; the separate AI proposal Undo failure is tracked by #1115.
+
+## 2026-10-01 — #1131 stage 1 PM audit delegated
+
+- Initiated the required separate PM subagent pass for issue #1131 after the
+  first implementation draft had been written and committed. The PM agent must
+  verify the current GitHub acceptance contract, scope, dependencies, route
+  boundaries, and verification requirements without changing product files.
+- This is a corrective separation-of-duties audit under `docs/process.md`;
+  implementation commit `b11971c0` remains provisional until subsequent
+  engineering and independent QA stages finish.

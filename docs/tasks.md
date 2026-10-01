@@ -25269,7 +25269,7 @@ Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed
 | [#1130](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1130) | D2 owner decision: history beyond 2D | owner | — | OWNER-DECISION-PENDING |
 | [#1131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131) | A1 write version lifecycle events | 2b | — | COMPLETE (local QA PASS) |
 | [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | COMPLETE (local QA PASS) |
-| [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API + export | 2b | A1, A2 (soft) | GROOMING |
+| [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API | 2b | A1, A2 | ENGINEERING |
 | [#1134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1134) | A4 Project history UI | 2a | A3 | DEPENDENCY-BLOCKED |
 | [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | DEPENDENCY-BLOCKED |
 | [#1136](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1136) | B1 scene diff summary function | 2a | — | GROOMED |
@@ -25280,10 +25280,13 @@ Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed
 | [#1141](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1141) | C1 related-pieces query | 2a | — | GROOMED |
 | [#1142](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1142) | C2 "More like this" row | 2a | C1 | DEPENDENCY-BLOCKED |
 | [#1143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1143) | E1 owner-only continuity metrics (P3) | 2b | A1, A2 | DEPENDENCY-BLOCKED |
+| [#1148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1148) | Add project activity to owner JSON export | 2b | #1133 | PROPOSED / DEPENDENCY-BLOCKED |
 
-Independent starters: A2, B1, C1; A1 (#1131) is complete. Duplicate check: no existing open or closed issue covers
+Independent starters: B1, C1; A1 (#1131) and A2 (#1132) are complete; A3 (#1133) is unblocked. Duplicate check: no existing open or closed issue covers
 project activity wiring, a history UI, version comparison, intent notes, or related pieces
 (searched titles for activity/timeline/brief/memory/compare/related/recommend/process).
+The activity export extension is filed as #1148 after checking #442, #443,
+#945, repository task files, and GitHub issue search; it depends on #1133.
 Also recorded: #1124 design decision (option 1). Batch 15's #1124 is ready to implement.
 
 ### 2026-10-01 — #1114 QA reconciliation

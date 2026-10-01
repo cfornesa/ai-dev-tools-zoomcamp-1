@@ -42,6 +42,20 @@
   exact checks, dependencies, and the local evidence boundary. Stage 2b is
   rostered to Ollama Cloud / Kimi K3 and will be a separate Codex substitution
   if unavailable; Stage 4 must be separate.
+- PM narrowed #1133 to the read API after finding a scope split and a conflict
+  with #443's retention policy. Duplicate checks verified #1148 is new; it is
+  a separate JSON-export follow-up dependent on #1133. The exact issue bodies
+  were fetched and confirmed open in Batch 16 before engineering begins.
+
+## 2026-10-01 — #1133 stage 2b engineer pass delegated
+
+- The separate PM pass narrowed #1133 to the private activity-read endpoint;
+  the orchestrator re-fetched the refined issue and linked follow-up #1148.
+  Began its separate implementation-complex pass. Rostered owner is Ollama
+  Cloud / Kimi K3; actual owner is a Codex subagent / GPT-6.1-sol, substituted.
+  Scope is the named API/permission/model index/migration/tests and `docs/api.md`.
+  No account export or deletion-policy behavior belongs in this transaction.
+  Stage 4 must be separate; the engineer must not close the issue.
 
 ## 2026-10-01 — Backlog-session agent loop for #1147
 

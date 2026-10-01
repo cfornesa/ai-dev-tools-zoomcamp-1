@@ -3791,6 +3791,39 @@ textarea:disabled {
   gap: 4px;
 }
 
+.version-comparison {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 12px;
+}
+
+.version-comparison select {
+  max-width: 100%;
+}
+
+.version-comparison-results {
+  box-sizing: border-box;
+  max-height: 320px;
+  min-width: 0;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.version-comparison-group ul {
+  margin: 4px 0 8px;
+  padding-inline-start: 20px;
+  overflow-wrap: anywhere;
+}
+
+.version-comparison-group li {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .version-delete-confirm {
   border: 1px solid var(--border);
   border-radius: 6px;

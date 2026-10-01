@@ -2,9 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
+import { getSceneVersion } from '../api/projects';
 import type { Project, SceneVersion, SceneVersionSummary } from '../api/projects';
 import { listProjectActivity } from '../api/projectActivity';
 import type { ProjectActivityItem } from '../api/projectActivity';
+import { summarizeSceneDiff } from './sceneDiff';
+import type { SceneDiffSummary } from './sceneDiff';
 import { useVersionHistory, type VersionActionError } from './useVersionHistory';
 
 const ORIGIN_LABELS: Record<string, string> = {
@@ -103,6 +106,88 @@ type VersionHistoryPanelProps = {
 };
 
 type ActivityLoadState = 'loading' | 'ready' | 'error';
+type VersionComparisonState =
+  | { kind: 'idle' }
+  | { kind: 'loading' }
+  | {
+      kind: 'ready';
+      summary: SceneDiffSummary;
+      left: SceneVersionSummary;
+      right: SceneVersionSummary;
+    }
+  | { kind: 'empty' }
+  | { kind: 'error' };
+
+function EntityDiffList({
+  label,
+  added,
+  removed,
+  changed,
+}: {
+  label: string;
+  added: SceneDiffSummary['shapes']['added'];
+  removed: SceneDiffSummary['shapes']['removed'];
+  changed: SceneDiffSummary['shapes']['changed'];
+}) {
+  const entries = [
+    ...added.items.map((item) => `Added: ${item.id}`),
+    ...removed.items.map((item) => `Removed: ${item.id}`),
+    ...changed.items.map((item) => `Changed: ${item.id} (${item.properties.join(', ')})`),
+  ];
+  const total = added.count + removed.count + changed.count;
+  return (
+    <section className="version-comparison-group">
+      <h6>
+        {label} ({total})
+      </h6>
+      {entries.length ? (
+        <ul>
+          {entries.map((entry) => (
+            <li key={entry}>{entry}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>No changes</p>
+      )}
+      {added.omitted + removed.omitted + changed.omitted > 0 && (
+        <p>Some details are omitted from this summary.</p>
+      )}
+    </section>
+  );
+}
+
+function LayerDiffList({ summary }: { summary: SceneDiffSummary }) {
+  const layers = summary.layers;
+  const entries = [
+    ...layers.added.items.map((item) => `Added: ${item.id}`),
+    ...layers.removed.items.map((item) => `Removed: ${item.id}`),
+    ...layers.reordered.items.map(
+      (item) => `Reordered: ${item.id} (${item.from + 1} → ${item.to + 1})`,
+    ),
+    ...layers.renamed.items.map((item) => `Renamed: ${item.from} → ${item.to}`),
+  ];
+  const total =
+    layers.added.count + layers.removed.count + layers.reordered.count + layers.renamed.count;
+  return (
+    <section className="version-comparison-group">
+      <h6>Layers ({total})</h6>
+      {entries.length ? (
+        <ul>
+          {entries.map((entry) => (
+            <li key={entry}>{entry}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>No changes</p>
+      )}
+      {layers.added.omitted +
+        layers.removed.omitted +
+        layers.reordered.omitted +
+        layers.renamed.omitted >
+        0 && <p>Some details are omitted from this summary.</p>}
+    </section>
+  );
+}
 
 function activityLabel(item: ProjectActivityItem): string {
   const sequence = item.details.sequence;
@@ -316,6 +401,10 @@ function VersionHistoryPanel({
 
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'versions' | 'activity'>('versions');
+  const [compareFromId, setCompareFromId] = useState<number | null>(null);
+  const [compareToId, setCompareToId] = useState('');
+  const [comparison, setComparison] = useState<VersionComparisonState>({ kind: 'idle' });
+  const comparisonRequestId = useRef(0);
   const versionTabRef = useRef<HTMLButtonElement>(null);
   const activityTabRef = useRef<HTMLButtonElement>(null);
 
@@ -355,6 +444,55 @@ function VersionHistoryPanel({
     const deleted = await remove(versionId);
     if (deleted) {
       setPendingDeleteId(null);
+    }
+  }
+
+  function beginComparison(versionId: number) {
+    comparisonRequestId.current += 1;
+    setCompareFromId(versionId);
+    setCompareToId('');
+    setComparison({ kind: 'idle' });
+  }
+
+  async function handleCompare() {
+    const fromId = compareFromId;
+    const toId = Number(compareToId);
+    if (fromId == null || !Number.isInteger(toId) || fromId === toId) return;
+    const requestId = ++comparisonRequestId.current;
+    setComparison({ kind: 'loading' });
+    try {
+      const [fromVersion, toVersion] = await Promise.all([
+        getSceneVersion(projectId, fromId),
+        getSceneVersion(projectId, toId),
+      ]);
+      if (requestId !== comparisonRequestId.current) return;
+      const [left, right] = [fromVersion, toVersion].sort((a, b) => a.sequence - b.sequence);
+      const result = summarizeSceneDiff(left.scene_json, right.scene_json);
+      if (!result.ok) {
+        setComparison({ kind: 'error' });
+      } else if (
+        result.shapes.added.count +
+          result.shapes.removed.count +
+          result.shapes.changed.count +
+          result.layers.added.count +
+          result.layers.removed.count +
+          result.layers.reordered.count +
+          result.layers.renamed.count +
+          result.groups.added.count +
+          result.groups.removed.count +
+          result.groups.changed.count +
+          result.bindings.added.count +
+          result.bindings.removed.count +
+          result.bindings.changed.count ===
+          0 &&
+        !result.canvas.changed
+      ) {
+        setComparison({ kind: 'empty' });
+      } else {
+        setComparison({ kind: 'ready', summary: result, left, right });
+      }
+    } catch {
+      if (requestId === comparisonRequestId.current) setComparison({ kind: 'error' });
     }
   }
 
@@ -479,6 +617,9 @@ function VersionHistoryPanel({
                     <p>{version.change_label || 'No change label'}</p>
                   </div>
                   <div className="version-history-actions">
+                    <button type="button" onClick={() => beginComparison(version.id)}>
+                      Compare with…
+                    </button>
                     <button
                       type="button"
                       disabled={isCurrent || isRestoringThis}
@@ -520,6 +661,100 @@ function VersionHistoryPanel({
               );
             })}
           </ul>
+        )}
+        {compareFromId != null && (
+          <section className="version-comparison" aria-label="Compare saved versions">
+            <h5>
+              Compare version{' '}
+              {sortedVersions.find((version) => version.id === compareFromId)?.sequence ?? ''}
+            </h5>
+            <label htmlFor="version-comparison-target">Compare with</label>
+            <select
+              id="version-comparison-target"
+              value={compareToId}
+              onChange={(event) => {
+                setCompareToId(event.target.value);
+                setComparison({ kind: 'idle' });
+              }}
+            >
+              <option value="">Choose a version</option>
+              {sortedVersions
+                .filter((version) => version.id !== compareFromId)
+                .map((version) => (
+                  <option key={version.id} value={version.id}>
+                    Version {version.sequence}
+                  </option>
+                ))}
+            </select>
+            <button
+              type="button"
+              disabled={!compareToId || comparison.kind === 'loading'}
+              onClick={() => void handleCompare()}
+            >
+              Compare versions
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                comparisonRequestId.current += 1;
+                setCompareFromId(null);
+                setComparison({ kind: 'idle' });
+              }}
+            >
+              Close comparison picker
+            </button>
+            {comparison.kind === 'loading' && (
+              <p role="status" aria-live="polite">
+                Loading versions to compare…
+              </p>
+            )}
+            {comparison.kind === 'error' && (
+              <p role="alert">
+                Could not compare these versions. One may have been deleted or is unavailable.
+                Refresh history and try again.
+              </p>
+            )}
+            {comparison.kind === 'empty' && (
+              <p role="status" aria-live="polite">
+                No differences
+              </p>
+            )}
+            {comparison.kind === 'ready' && (
+              <div
+                className="version-comparison-results"
+                aria-label={`Differences between versions ${comparison.left.sequence} and ${comparison.right.sequence}`}
+              >
+                <h5>
+                  Version {comparison.left.sequence} → Version {comparison.right.sequence}
+                </h5>
+                <EntityDiffList label="Shapes" {...comparison.summary.shapes} />
+                <LayerDiffList summary={comparison.summary} />
+                <section className="version-comparison-group">
+                  <h6>
+                    Canvas (
+                    {comparison.summary.canvas.changed
+                      ? comparison.summary.canvas.properties.length
+                      : 0}
+                    )
+                  </h6>
+                  {comparison.summary.canvas.changed ? (
+                    <ul>
+                      {comparison.summary.canvas.properties.map((property) => (
+                        <li key={property}>{property} changed</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No changes</p>
+                  )}
+                </section>
+                <EntityDiffList label="Groups" {...comparison.summary.groups} />
+                <EntityDiffList label="Bindings" {...comparison.summary.bindings} />
+                <button type="button" onClick={() => setComparison({ kind: 'idle' })}>
+                  Close comparison
+                </button>
+              </div>
+            )}
+          </section>
         )}
       </section>
       <section

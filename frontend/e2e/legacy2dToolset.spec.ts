@@ -25,10 +25,10 @@ async function createPublishedProject(page: Page): Promise<string> {
   expect(metadata.ok()).toBe(true);
   await page.reload();
 
-  const toolbar = page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
-  await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-  await toolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
-  await toolbar.getByRole('button', { name: 'Published', exact: true }).click();
+  const preview = page.getByRole('region', { name: 'Preview' });
+  await preview.getByRole('button', { name: 'File', exact: true }).click();
+  const publicationStatus = preview.getByRole('group', { name: 'Publication status' });
+  await publicationStatus.getByRole('button', { name: 'Published', exact: true }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Publish', exact: true }).click();
   await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
   return projectId;
@@ -63,9 +63,7 @@ test.describe('legacy 2D compatibility route (#692)', () => {
       await expect(
         toolbar.getByRole('button', { name: 'Expand piece to fullscreen' }),
       ).toBeVisible();
-      await expect(toolbar.getByRole('button', { name: 'Open piece controls menu' })).toHaveCount(
-        0,
-      );
+      await expect(toolbar).toHaveAttribute('data-toolbar-mode', 'inline');
       await expect(anonymousPage.getByRole('button', { name: 'Embed', exact: true })).toBeVisible();
       // Structured 2D's capability matrix does not advertise VR, sound, or
       // hand-tracking controls, so those unsupported actions stay absent.

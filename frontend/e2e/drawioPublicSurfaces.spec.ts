@@ -74,12 +74,10 @@ test.describe('draw.io public surfaces', () => {
     expect(metadataResponse.ok()).toBe(true);
     await page.reload();
 
-    const ownerToolbar = page.locator(
-      '.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]',
-    );
-    await ownerToolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await ownerToolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
-    await ownerToolbar.getByRole('button', { name: 'Published', exact: true }).click();
+    const preview = page.getByRole('region', { name: 'Preview' });
+    await preview.getByRole('button', { name: 'File', exact: true }).click();
+    const publicationStatus = preview.getByRole('group', { name: 'Publication status' });
+    await publicationStatus.getByRole('button', { name: 'Published', exact: true }).click();
     await page
       .getByRole('alertdialog')
       .getByRole('button', { name: 'Publish', exact: true })
@@ -97,9 +95,7 @@ test.describe('draw.io public surfaces', () => {
     const publicToolbar = anonymousPage.locator(
       '.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]',
     );
-    await expect(
-      publicToolbar.getByRole('button', { name: 'Open piece controls menu' }),
-    ).toHaveCount(0);
+    await expect(publicToolbar).toHaveAttribute('data-toolbar-mode', 'inline');
     await expect(publicToolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     const download = anonymousPage.waitForEvent('download');
     await publicToolbar.getByRole('button', { name: 'Open download menu' }).click();

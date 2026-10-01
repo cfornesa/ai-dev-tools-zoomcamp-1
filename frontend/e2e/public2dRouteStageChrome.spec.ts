@@ -42,12 +42,10 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
       expect(metadata.ok()).toBe(true);
       await page.reload();
 
-      const ownerToolbar = page.locator(
-        '.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]',
-      );
-      await ownerToolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-      await ownerToolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
-      await ownerToolbar.getByRole('button', { name: 'Published', exact: true }).click();
+      const preview = page.getByRole('region', { name: 'Preview' });
+      await preview.getByRole('button', { name: 'File', exact: true }).click();
+      const publicationStatus = preview.getByRole('group', { name: 'Publication status' });
+      await publicationStatus.getByRole('button', { name: 'Published', exact: true }).click();
       await page
         .getByRole('alertdialog')
         .getByRole('button', { name: 'Publish', exact: true })
@@ -81,9 +79,7 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
           await expect(
             toolbar.getByRole('button', { name: 'Expand piece to fullscreen' }),
           ).toBeVisible();
-          await expect(
-            toolbar.getByRole('button', { name: 'Open piece controls menu' }),
-          ).toHaveCount(0);
+          await expect(toolbar).toHaveAttribute('data-toolbar-mode', 'inline');
         }
         await toolbar.getByRole('button', { name: 'Open download menu' }).click();
         await expect(toolbar.getByRole('menuitem', { name: 'Download Full' })).toBeVisible();
@@ -138,13 +134,11 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
       await anonymousContext.close();
 
       await page.goto(`/projects/${projectId}`);
-      const ownerMenu = page.locator(
-        '.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]',
-      );
-      await ownerMenu.getByRole('button', { name: 'Open piece controls menu' }).click();
-      await ownerMenu.getByRole('button', { name: /Publication status: Published/ }).click();
-      await ownerMenu
-        .locator('.publication-status-controls-panel')
+      const fileMenu = page.getByRole('button', { name: 'File', exact: true });
+      await fileMenu.click();
+      const filePopover = page.getByRole('menu', { name: 'File menu' });
+      await filePopover
+        .getByRole('group', { name: 'Publication status' })
         .getByRole('button', { name: 'Draft', exact: true })
         .click();
       await expect(page.getByTestId('visibility-status')).toContainText('Draft (private)');

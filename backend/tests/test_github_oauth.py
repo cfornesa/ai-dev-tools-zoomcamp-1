@@ -66,7 +66,7 @@ def test_login_page_shows_github_only_when_enabled(client):
     response = client.get(reverse("account_login"))
 
     assert b"Continue with GitHub" in response.content
-    assert b"Continue with Google" in response.content
+    assert b"Continue with Google" not in response.content
 
 
 @pytest.mark.django_db

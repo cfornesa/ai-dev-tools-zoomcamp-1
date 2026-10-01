@@ -4,11 +4,12 @@ from django.urls import reverse
 
 
 @pytest.mark.django_db
-def test_local_signup_is_closed_with_explicit_google_only_message(client):
+def test_local_signup_is_closed_and_social_signup_remains_available(client):
     response = client.get(reverse("account_signup"))
 
     assert response.status_code == 200
-    assert b"uses Google sign-in for new accounts" in response.content
+    assert b"Password sign-up is unavailable" in response.content
+    assert b"enabled social sign-in provider after you consent" in response.content
     assert b"id=\"signup-form\"" not in response.content
 
 
@@ -28,11 +29,15 @@ def test_local_signup_post_cannot_create_password_account(client):
 
 
 @pytest.mark.django_db
-def test_login_page_has_google_creation_copy_without_local_signup_link(client):
+def test_login_page_explains_provider_neutral_social_account_creation(client):
     response = client.get(reverse("account_login"))
 
     assert response.status_code == 200
-    assert b"Continue with Google to create your account" in response.content
+    assert (
+        b"New accounts can be created with an enabled social sign-in provider after you consent."
+        in response.content
+    )
+    assert b"Continue with Google" in response.content
     assert b'href="/accounts/signup/"' not in response.content
     assert b'data-site-font="' in response.content
     assert b'--bg:' in response.content

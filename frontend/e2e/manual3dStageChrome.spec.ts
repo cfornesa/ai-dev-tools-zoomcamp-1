@@ -182,6 +182,13 @@ test.describe('manual 3D editor stage chrome', () => {
     ).toBeVisible();
     await toolbar.getByRole('button', { name: 'Enable sound' }).click();
     await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+    // Inline mode moved steering into the Piece controls disclosure. Keep the
+    // original visibility intent attached to its current rendered surface.
+    await expect(
+      toolbar
+        .getByRole('group', { name: 'Piece controls' })
+        .getByRole('button', { name: 'Steer the piece' }),
+    ).toBeVisible();
     await expect(toolbar.getByLabel('Ambient instrument')).toHaveValue('synth');
     await expect(toolbar.getByLabel('Movement instrument')).toHaveValue('synth');
     await expect(toolbar.getByLabel('Melodic instrument')).toHaveValue('synth');
@@ -194,12 +201,18 @@ test.describe('manual 3D editor stage chrome', () => {
     await expect(toolbar.getByLabel('Ambient instrument')).toHaveValue('synth');
     await expect(toolbar.getByLabel('Melodic instrument')).toHaveValue('synth');
     await toolbar.getByRole('button', { name: 'Hide piece controls' }).click();
-    await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
-    await expect(toolbar.getByRole('link', { name: 'View immersive piece' })).toHaveAttribute(
-      'href',
-      /\/immersive\/p3d\/.+/,
-    );
+    // Inline mode exposes immersive navigation as a button that opens the
+    // destination in a new tab rather than the menu-mode anchor.
+    const immersiveAction = toolbar.getByRole('button', {
+      name: 'View immersive piece',
+      exact: true,
+    });
+    const popupPromise = page.waitForEvent('popup');
+    await immersiveAction.click();
+    const immersivePage = await popupPromise;
+    await expect(immersivePage).toHaveURL(/\/immersive\/p3d\/.+/);
+    await immersivePage.close();
     await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
     expect(await buttonPresentation(askAi)).toEqual({
       visible: true,
@@ -230,8 +243,10 @@ test.describe('manual 3D editor stage chrome', () => {
       };
     });
     expect(chrome).toMatchObject({
-      top: '13.5px',
-      left: '13.5px',
+      // Inline editor mode uses a full-stage overlay host (inset: 0); the
+      // buttons themselves are checked against the stage bounds below.
+      top: '0px',
+      left: '0px',
       buttonHeight: '49.5px',
       buttonRadius: '13.5px',
     });

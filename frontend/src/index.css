@@ -7860,13 +7860,13 @@ select.ai-proposal-field-full-width {
   z-index: 5;
 }
 .plane-selection-toolbar[data-dock='rail'] .plane-more-menu {
-  /* Phone: a small bottom sheet over the docked toolbar (the stage itself is too short for a popover). */
+  /* Phone: a small bottom sheet above the fixed display controls, with the same safe-area clearance. */
   position: fixed;
   z-index: 61;
   top: auto;
   left: 8px;
   right: 8px;
-  bottom: 8px;
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 2.75rem + 0.5rem);
   flex-direction: row;
   gap: 4px;
   padding: 6px;

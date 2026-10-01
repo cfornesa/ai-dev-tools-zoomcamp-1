@@ -225,7 +225,56 @@ test.describe('drawing plane selection chrome (#782)', () => {
       await page.getByRole('menuitem', { name: 'Duplicate' }).click();
       await expect(page.getByText(/copy/).first()).toBeVisible();
       await floating.getByRole('button', { name: 'More actions' }).click();
-      await page.getByRole('menuitem', { name: 'Delete' }).click();
+      const deleteMenuItem = page.getByRole('menuitem', { name: 'Delete' });
+      if (viewport.width === 375) {
+        const hitTarget = await deleteMenuItem.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          const x = rect.left + rect.width / 2;
+          const y = rect.top + rect.height / 2;
+          const target = document.elementFromPoint(x, y);
+          const toggles = document.querySelector<HTMLElement>('.shell-display-toggles');
+          const togglesRect = toggles?.getBoundingClientRect();
+          return {
+            menuItem: {
+              x: rect.x,
+              y: rect.y,
+              right: rect.right,
+              bottom: rect.bottom,
+              height: rect.height,
+            },
+            hit: Boolean(target && (target === element || element.contains(target))),
+            aboveDisplayToggles: Boolean(togglesRect && rect.bottom <= togglesRect.top),
+            target: target
+              ? {
+                  tag: target.tagName,
+                  className: (target as HTMLElement).className,
+                  ariaLabel: target.getAttribute('aria-label'),
+                }
+              : null,
+            displayToggles: togglesRect
+              ? {
+                  x: togglesRect.x,
+                  y: togglesRect.y,
+                  right: togglesRect.right,
+                  bottom: togglesRect.bottom,
+                }
+              : null,
+          };
+        });
+        expect(
+          hitTarget.hit,
+          `Delete menuitem center must be unobstructed: ${JSON.stringify(hitTarget)}`,
+        ).toBe(true);
+        expect(
+          hitTarget.menuItem.height,
+          `Delete keeps a 44px mobile target: ${JSON.stringify(hitTarget)}`,
+        ).toBeGreaterThanOrEqual(44);
+        expect(
+          hitTarget.aboveDisplayToggles,
+          `More sheet sits above the fixed display controls: ${JSON.stringify(hitTarget)}`,
+        ).toBe(true);
+      }
+      await deleteMenuItem.click();
       await expect(overlay).toHaveCount(0);
 
       // Click the original plane in the stage to select it again; Escape dismisses everything.

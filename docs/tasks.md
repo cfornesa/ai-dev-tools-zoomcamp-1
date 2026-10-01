@@ -25077,3 +25077,16 @@ Test/expect counts remain 3/20; typecheck, lint (existing warnings), format
 check, and diff check passed. QA evidence is issue comment
 [#5925076078](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1117#issuecomment-5925076078);
 #1117 is closed completed.
+
+### 2026-10-01 — #1115 AI drawing-plane Undo and selection regression
+
+Commit `b73e0ada` removes the E2E scenario's Escape press after Undo, which
+had deselected the drawing plane before the test tried to open Precise values.
+The test now verifies selection remains and the editor's unsaved working copy
+shows Width 4 and Height 3 after Undo. The pre-change timeout was reproduced
+at 1280x900 and 375x812; the complete fake-AI Chromium/PostgreSQL spec passes
+4/4. Test count remains 3 and expect count increases from 17 to 19. Typecheck,
+lint (existing warnings), format check, and diff check passed. QA evidence is
+issue comment
+[#5925178093](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1115#issuecomment-5925178093);
+#1115 is closed completed.

@@ -98,7 +98,10 @@ test.describe('3D drawing plane Draw mode (#781)', () => {
       await frame.scrollIntoViewIfNeeded();
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
       const stage = page.getByTestId('scene3d-preview');
-      const pageScrollBefore = await page.evaluate(() => ({ x: window.scrollX, y: window.scrollY }));
+      const pageScrollBefore = await page.evaluate(() => ({
+        x: window.scrollX,
+        y: window.scrollY,
+      }));
       await page.screenshot({ path: testInfo.outputPath('stage-before.png') });
       const stageBefore = await stage.boundingBox();
       const moveHandleBefore = await page.getByTestId('plane-handle-move').boundingBox();

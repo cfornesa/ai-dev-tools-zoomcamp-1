@@ -54,7 +54,13 @@ test.describe('Offline mutation ownership recovery (#545)', () => {
 
       const mobileMenu = page.getByRole('button', { name: 'Open menu' });
       if (await mobileMenu.isVisible()) await mobileMenu.click();
-      await page.getByRole('button', { name: 'Logout' }).click();
+      // Wait for allauth's logout redirect to finish before loginViaUI starts a
+      // second navigation. Without this boundary, the next /accounts/login/
+      // request can race the logout response and carry the old session cookie.
+      await Promise.all([
+        page.waitForURL((url) => url.pathname === '/', { waitUntil: 'load' }),
+        page.getByRole('button', { name: 'Logout' }).click(),
+      ]);
       await loginViaUI(page, fixtures.other.email, fixtures.password);
       await page.goto(`/local-projects/${PROJECT_ID}`);
       await expect(page.getByRole('heading', { name: 'Local project unavailable' })).toBeVisible();

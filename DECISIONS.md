@@ -2359,3 +2359,12 @@ updates. The remaining open backlog was not silently claimed complete.
   closing Piece controls. The control now lives inside that popover in inline
   mode; re-home the assertion there without removing its intent, then finish
   the remaining #1109 scenario.
+
+## 2026-10-01 — #1109 closed after full inline-mode QA
+
+- Commit `b928c76e` rehomed the steering and immersive checks to their current
+  inline surfaces and updated the toolbar origin for the full-stage overlay.
+  The spec remains at 1/53 and passes 1280x900 plus 375x812 on local Chromium.
+- Stage 4 verified the exact spec, typecheck, lint, format, scope, screenshots,
+  and test-count inventory. QA comment 5923875615 records the matrix. #1109 is
+  closed; proceed to #1106's three-spec gate.

@@ -25300,3 +25300,30 @@ Keep #1114 open. Next: complete #1100's Linux six-spec gate, then #1103's
 server-backed multi-call 2D setup migration; rerun #1114's exact grouped 2D
 command and full matrix. QA evidence was appended to the issue body because
 the available issue-comment connector only targets pull requests.
+
+### 2026-10-01 — #1111 / #1120 shared-toolbar QA reconciliation
+
+The newly added 2D geometry case reproduced the 375px ink/fullscreen
+intersection on the current tree before the scoped-selector correction; the
+same case passed on the pre-#1111 tree, confirming a regression introduced by
+the shared CSS change rather than a pre-existing 2D defect. Scoped
+`max-width: calc(100% - 3.5rem)` to
+`.project3d-workspace .editor-piece-stage-toolbar` in `frontend/src/index.css`.
+The affected check is `inlineStageToolbarGeometry2d.spec.ts`.
+
+Current browser evidence on the disposable PostgreSQL stack (Django :8003,
+Vite :5003, local macOS Chromium): the new 2D geometry spec passes 2/2 at
+375x812 and 1280x900, every visible control is pairwise separate and
+hit-testable, the 375px Draw ink action opens the ink editor, and screenshots
+were inspected at both sizes. `inkLayer2d.spec.ts` passes 2/2 with its full
+stroke/erase/undo/redo/save/reload/cancel coverage. The #1111 3D geometry spec
+passes 2/2, `manual2dStageChrome` and `manual3dStageChrome` pass 2/2 and 1/1,
+and #796 passes 6/6 across three repetitions. EditorWorkspace focused tests
+pass 37/37; typecheck and format pass; lint exits 0 with existing repository
+warnings. LayersPanel first two cases time out in the shared project setup
+before their feature assertions, tracked by #1103 (blocked on #1100/Linux).
+No 2D behavior change is retained; its baseline layout is restored. QA is
+therefore PASS for #1120's mobile product criterion and #1111's 2D compatibility
+criterion, while #1111 remains QA-blocked pending the complete 2D regression
+gate in #1103. Screenshots are retained under ignored
+`frontend/test-results/`.

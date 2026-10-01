@@ -6742,7 +6742,7 @@ select.ai-proposal-field-full-width {
   /* Reserve the inline fullscreen target inside the narrower 3D stage. The
      shared rule above stays viewport-independent for the 2D editor; this
      stage-relative bound keeps the first icon row clear of fullscreen. */
-  .editor-piece-stage-toolbar {
+  .project3d-workspace .editor-piece-stage-toolbar {
     max-width: calc(100% - 3.5rem);
   }
 

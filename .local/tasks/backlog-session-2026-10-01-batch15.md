@@ -38,7 +38,7 @@ items advance only after the current transaction is terminal.
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
 | #1133 | Activity read API | COMPLETED | Implementation `b1796a7f`; independent Stage 4 QA PASS; reconciliation `ca7c5c9c`; closed completed after typed issue update. No QA comment URL; process fallback evidence in ledger. |
-| #1134 | History UI | QA | Engineer commit `b8359ec4`; focused 23 pass, E2E 1 pass on disposable PostgreSQL/fake AI at 1280x900 and 375x812, frontend gates pass; independent Stage 4 begins now. |
+| #1134 | History UI | ENGINEERING | Stage 2a commit `b8359ec4`; Stage 4 FAIL: pre-change Versions panel sizing/scroll comparison absent. Return to Stage 2a to add reproducible baseline assertion/artifact; no closure. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
 | #1137 | Compare-versions UI | DEPENDENCY-BLOCKED | Requires #1136. |
@@ -301,10 +301,37 @@ full relevant checks, and visually inspect rendered UI before verdict.
 | Independent review / 3 | Mistral Vibe | Not requested / not run | — |
 | QA / 4 | Claude / Sonnet 5 / Medium | Codex subagent / GPT-6.1-sol / effort unavailable | yes |
 
-Stage 4 is delegated separately. The known issue-comment connector
-limitation is carried forward: don't retry the unsafe PR-shaped comment
-operation; if QA passes, retain the complete verdict locally and use the
-documented typed-update closure fallback.
+**Stage 4 result:** separate Codex/GPT-6.1-sol QA substitution for Claude /
+Sonnet 5 / Medium returned FAIL. PASS: tabs/ARIA/keyboard, focused behavior,
+typed wrapper, pagination and labels, reason-as-text/time semantics, async
+states, axe, real owner route, saved/restored/accepted/discarded events,
+reason text, restore, no external/API/schema/dependency change, current
+desktop/mobile no-clipping. Focused three-file unit suite: 23/23; full
+`npm test`: 311 files / 3,193 tests passed; `npm run typecheck`, lint (exit 0,
+warnings), and `npm run format:check` passed. The exact Chromium owner E2E
+passed 1/1 against fresh isolated PostgreSQL with fake AI via approved
+unsandboxed local runner. Initial Docker and sandboxed browser launches failed
+for documented environment reasons; they were resolved by the local-Postgres
+fallback and approved unsandboxed retry. QA preserved existing :5000/:8000
+app/database, removed the task-specific database and servers, and ran fixture
+cleanup.
+
+**Failing criterion:** acceptance requires comparing Versions panel sizing and
+scroll behavior to the pre-change baseline at 1280x900 and 375x812. The E2E
+only proves current document/row overflow and edges; there is no baseline
+artifact/assertion or panel-height/vertical-scroll comparison. Current visual
+screenshots alone do not prove unchanged baseline behavior. Additionally the
+new browser E2E exercises Restore but not Delete; delete remains covered by
+the unchanged component test. Stage 2a must add a reproducible baseline
+comparison and directly prove unchanged Versions scroll/restore/delete
+behavior, then rerun all original checks. No code was changed during QA.
+Evidence boundary: local macOS Chromium + isolated PostgreSQL only; no Linux,
+CI, or deployed claim. Issue comment was not posted because the only comment
+operation is PR-shaped and auto-review previously rejected unsafe targeting;
+no indirect API was attempted. Complete verdict and matrix remain here.
+
+The issue remains open and current; return to Stage 2a. Do not select #1148 or
+another issue until #1134 reaches a terminal state.
 
 **New follow-up #1148:** add the same allowlisted event envelope to the
 existing authenticated JSON account export only. Duplicate check found no

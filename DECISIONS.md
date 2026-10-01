@@ -114,6 +114,26 @@
   Claude / Sonnet 5 / Medium. Stage 3 was not run. No closure until QA and
   transaction reconciliation complete.
 
+## 2026-10-01 — #1134 Stage 4 returned to engineering
+
+- Independent Stage 4 verdict is FAIL solely because the explicit pre-change
+  Versions panel sizing/scroll comparison lacks an actual baseline or
+  assertion. Current desktop/mobile screenshots and overflow checks do not
+  prove unchanged vertical sizing/scroll behavior. The E2E covers restore but
+  not delete; the unchanged component suite continues to cover delete.
+- Stage 4 independently passed 23 focused tests; full frontend tests (311
+  files, 3,193 tests); typecheck, lint (warnings only), format; and the exact
+  owner-route Playwright test 1/1 on isolated local PostgreSQL with fake AI.
+  It used the approved unsandboxed retry after the initial Mac Chromium Mach
+  port denial. No product files changed in Stage 4; no CI/Linux/deployed
+  evidence is claimed.
+- The QA comment connector remains PR-shaped and unsafe for issue targeting;
+  no comment or indirect API was attempted this pass. Local criterion matrix
+  is authoritative until closure. Return #1134 to Stage 2a; do not advance the
+  backlog. Next action: implement a reproducible pre-change geometry/scroll
+  comparison at both viewports and exercise unchanged restore/delete behavior,
+  then repeat the exact gates and separate QA.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

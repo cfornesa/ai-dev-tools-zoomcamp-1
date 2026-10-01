@@ -25617,3 +25617,23 @@ were removed. Stage 3 was not run. GitHub confirms #1136, #1137, #1141, and #114
 `closed/completed`, each verified by fetching the issue after its closure update. See
 `.local/tasks/backlog-session-2026-10-01-wave-c-transaction.md`. #1142 is now unblocked but
 requires review against #1102's public-route fixture migration; #1143 remains in grooming.
+
+### 2026-10-01 — Wave D #1142 implementation and closure
+
+Implemented “More like this” on the regular canonical public 2D piece route using #1141's
+bounded related-project API and the existing public gallery card. Empty/error responses add
+no section; the async request begins after the canonical content renders. Route inclusion is an
+explicit opt-in so the canonical immersive 2D viewer, embed, and owner editor do not issue the
+related request or render the row. Commits: `7a4c7bb6` and the route-scope correction
+`1eb8b1ab`.
+
+Independent Stage 4 passed the focused 44 tests, the new related-pieces and unchanged
+`public2dRouteStageChrome` Chromium E2E specs (2/2), active Chrome at 1280×900 and 375×812,
+and one `UV_CACHE_DIR=/tmp/uv-cache-1142 make check` (backend 1,942 passed / 41 skipped;
+frontend 315 files / 3,217 tests; lint, format, typecheck and build passed). The first manual
+immersive observation used a stale isolated Vite process; QA restarted that disposable server,
+confirmed its served module included the fix, then repeated the route check and E2E on the fixed
+tree. QA cleaned its database, services, fixtures, and task-created Chrome tabs. Stage 3 was
+not run. GitHub #1142 is `closed/completed`, confirmed with a post-update fetch at
+2026-10-01 21:51:22Z. #1102's separate Linux CI gate remains unverified; no Linux evidence is
+claimed for #1142.

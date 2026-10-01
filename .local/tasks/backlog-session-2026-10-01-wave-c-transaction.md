@@ -33,5 +33,5 @@ Batch record: [live backlog and impact refresh](backlog-session-2026-10-01-batch
 
 ## Residuals and next actions
 
-- #1142 is now unblocked by #1141's API closure; it still needs cross-impact review against #1102's public-route fixture migration before engineering. #1143 needs product-manager contract tightening. The #1096 Linux/PostgreSQL matrix and #1100 dependent helper issues remain outside this Wave C QA evidence.
+- #1142's dependent UI work and cross-impact review against #1102's public-route fixture migration were completed in Wave D; see `.local/tasks/backlog-session-2026-10-01-wave-d-transaction.md`. #1143 needs product-manager contract tightening. The #1096 Linux/PostgreSQL matrix and #1100 dependent helper issues remain outside this Wave C QA evidence.
 - No external service or deployment was used; no push or publish was performed.

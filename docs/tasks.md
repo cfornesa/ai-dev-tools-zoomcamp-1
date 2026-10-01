@@ -25613,6 +25613,7 @@ stack, and one `UV_CACHE_DIR=/tmp/uv-cache-wavec make check` (backend 1,942 pass
 skipped; frontend 314 files / 3,212 tests; lint, format, and typecheck passed with existing
 Oxlint warnings). Active Chrome inspection at 1280×900 and 375×812 found no horizontal overflow
 and verified internal scrolling for long comparison results. Disposable fixtures and services
-were removed. Stage 3 was not run. GitHub closure and read-after-write verification are pending;
-see `.local/tasks/backlog-session-2026-10-01-wave-c-transaction.md`. #1142 remains blocked on
-#1141, and #1143 remains in grooming.
+were removed. Stage 3 was not run. GitHub confirms #1136, #1137, #1141, and #1148 are
+`closed/completed`, each verified by fetching the issue after its closure update. See
+`.local/tasks/backlog-session-2026-10-01-wave-c-transaction.md`. #1142 is now unblocked but
+requires review against #1102's public-route fixture migration; #1143 remains in grooming.

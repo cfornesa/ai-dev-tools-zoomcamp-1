@@ -17,10 +17,10 @@ Batch record: [live backlog and impact refresh](backlog-session-2026-10-01-batch
 
 | Issue | Phase | Implementation commit | Acceptance / QA result | GitHub status |
 |---|---|---|---|---|
-| #1136 | RECONCILIATION | `93dfe777` | PASS. Deterministic, schema-validated bounded 2D scene diff; covers nested paths, reorder/add/remove, omitted counts, invalid input, immutability, and <50 ms schema-limit assertion. | Closure pending |
-| #1137 | RECONCILIATION | `cb164ecc` | PASS. Pairwise “Compare with…” UI within Versions tab; non-mutating, loading/empty/error states; active Chrome 1280×900 and 375×812, no horizontal overflow, internal long-list scrolling. | Closure pending |
-| #1141 | RECONCILIATION | `a1050763` | PASS. Related public projects endpoint enforces public eligibility, caps candidate work and response, deterministic ranking, expected card shape, and three-query bound. | Closure pending |
-| #1148 | RECONCILIATION | `db102898` | PASS. Owner JSON export adds only allowlisted activity, newest-first with ID tie-break, owner scoped, includes retained soft-deleted projects; ZIP and other payloads unchanged. | Closure pending |
+| #1136 | CLOSED | `93dfe777` | PASS. Deterministic, schema-validated bounded 2D scene diff; covers nested paths, reorder/add/remove, omitted counts, invalid input, immutability, and <50 ms schema-limit assertion. | GitHub `closed/completed`, read-after-write confirmed 2026-10-01 21:14:55Z |
+| #1137 | CLOSED | `cb164ecc` | PASS. Pairwise “Compare with…” UI within Versions tab; non-mutating, loading/empty/error states; active Chrome 1280×900 and 375×812, no horizontal overflow, internal long-list scrolling. | GitHub `closed/completed`, read-after-write confirmed 2026-10-01 21:14:58Z |
+| #1141 | CLOSED | `a1050763` | PASS. Related public projects endpoint enforces public eligibility, caps candidate work and response, deterministic ranking, expected card shape, and three-query bound. | GitHub `closed/completed`, read-after-write confirmed 2026-10-01 21:15:01Z |
+| #1148 | CLOSED | `db102898` | PASS. Owner JSON export adds only allowlisted activity, newest-first with ID tie-break, owner scoped, includes retained soft-deleted projects; ZIP and other payloads unchanged. | GitHub `closed/completed`, read-after-write confirmed 2026-10-01 21:15:04Z |
 
 ## Verification evidence
 
@@ -33,6 +33,5 @@ Batch record: [live backlog and impact refresh](backlog-session-2026-10-01-batch
 
 ## Residuals and next actions
 
-- Apply completed closure state to #1136, #1137, #1141, and #1148 only after the above QA pass, then re-read every updated GitHub issue and replace each “Closure pending” row with the confirmed result.
-- #1142 remains blocked on #1141's API; #1143 needs product-manager contract tightening. The #1096 Linux/PostgreSQL matrix and #1100 dependent helper issues remain outside this Wave C QA evidence.
+- #1142 is now unblocked by #1141's API closure; it still needs cross-impact review against #1102's public-route fixture migration before engineering. #1143 needs product-manager contract tightening. The #1096 Linux/PostgreSQL matrix and #1100 dependent helper issues remain outside this Wave C QA evidence.
 - No external service or deployment was used; no push or publish was performed.

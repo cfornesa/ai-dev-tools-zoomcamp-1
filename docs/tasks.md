@@ -25000,3 +25000,17 @@ The post-commit Chromium spec passes 1/1 and completes at 1280×900 and 375×812
 ### 2026-10-01 — #1106 three-spec QA and closure
 
 After #1113 and #1109 closed, the exact #1106 Chromium command passed all three specs against the running local Django/Vite app with disposable PostgreSQL: `cameraPreview3d.spec.ts`, `manual3dOutlineSelection.spec.ts`, and `manual3dStageChrome.spec.ts` (3 passed). Existing viewport variants passed at 1280×900 and 375×812; the camera preview retained its existing 1280×900 viewport. Test/expect counts match base `91a7a553` at 1/3, 1/28, and 1/53, and the stale menu opener is absent. Typecheck, format, diff checks pass; lint exits 0 with existing warnings. Rendered stage-chrome and outline screenshots were inspected at both viewport sizes. QA comment [5923931785](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1106#issuecomment-5923931785) records the matrix and provenance. Evidence is local macOS Chromium only; the Linux six-spec gate remains #1100's acceptance evidence. #1106 is closed completed; next is #1108, on which #1112 depends.
+
+### 2026-10-01 — analysis of #1112 (drawingPlaneTransform782 server-backed setup)
+
+[#1112](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1112): setup migration (`dc518652`, 1 test / 26
+expects preserved) is correct; its QA FAIL is accurate and the status is
+HANDED-OFF, dependency-blocked on [#1108](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108). Root cause of the
+residual failures is a stale **close** path (`closeMenu` only dismisses a
+menu-mode dialog, so the inline `3D authoring` popover stays open); `openMenu`
+is already a no-op. #1108's inventory was extended (comment) with
+`drawingPlaneTransform782.spec.ts`, its twin `drawingPlaneDraw3d.spec.ts`, and
+the fix pattern (`/close 3d authoring/i` toggle). If the mobile
+`Export piece package` pointer intercept survives a closed popover, file a new
+product issue of #1110's class instead of editing this setup-only issue.
+Order: #1108 -> rerun #1112's unchanged spec -> close #1112.

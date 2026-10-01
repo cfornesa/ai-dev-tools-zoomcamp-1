@@ -48,6 +48,7 @@ def palette_css_tokens(palette: Mapping[str, str], design: Mapping[str, str]) ->
 
 
 def presentation_css_tokens(presentation: Mapping[str, str]) -> dict[str, str]:
+    """Map sanitized presentation choices to fixed CSS-safe font stacks and sizes."""
     fonts = {
         "system": (
             "system-ui, 'Segoe UI', Roboto, sans-serif",

@@ -39,6 +39,11 @@
       --site-density: {{ site_theme_presentation_tokens.density }};
       --site-radius: {{ site_theme_presentation_tokens.radius }};
       --site-border-style: {{ site_theme_presentation_tokens.border_style }};
+      --space-xs: calc(var(--site-density) / 3);
+      --space-sm: calc(var(--site-density) / 2);
+      --space-md: var(--site-density);
+      --space-lg: calc(var(--site-density) * 1.5);
+      --space-xl: calc(var(--site-density) * 2);
       --border: color-mix(in srgb, var(--text) 28%, var(--bg));
       --accent-bg: color-mix(in srgb, var(--accent) 14%, var(--bg));
       --accent-border: color-mix(in srgb, var(--accent) 45%, var(--bg));
@@ -66,26 +71,26 @@
     :root[data-site-backdrop="cosmic"] body { background: radial-gradient(ellipse at top, color-mix(in srgb, var(--accent) 16%, var(--bg)), var(--bg) 68%); }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--text-h); font: 1rem/1.5 var(--site-font); }
-    header { padding: calc(var(--site-density) * 2) 24px; border-bottom: 1px var(--site-border-style) var(--border); background: color-mix(in srgb, var(--bg) 92%, transparent); text-align: center; }
+    header { padding: var(--space-xl) var(--site-density); border-bottom: 1px var(--site-border-style) var(--border); background: var(--bg); text-align: center; }
     header a { color: var(--text-h); text-decoration: none; font-family: var(--heading); font-weight: 700; font-size: 2rem; }
-    main { width: min(100% - 32px, 480px); margin: auto; padding: calc(var(--site-density) * 2) 0; flex: 1; display: flex; align-items: center; }
+    main { width: min(calc(100% - var(--site-density) - var(--site-density)), 480px); margin: auto; padding: var(--space-xl) 0; flex: 1; display: flex; align-items: center; }
     .card { width: 100%; background: var(--code-bg); border: 1px var(--site-border-style) var(--border); border-radius: var(--site-radius); padding: var(--site-density); box-shadow: var(--shadow); }
-    h1 { margin: 0 0 8px; color: var(--text-h); font-family: var(--heading); font-size: 1.875rem; line-height: 1.2; }
+    h1 { margin: 0 0 var(--space-sm); color: var(--text-h); font-family: var(--heading); font-size: 1.875rem; line-height: 1.2; }
     .intro { margin: 0 0 var(--site-density); color: var(--text); }
-    label { display: block; margin: var(--site-density) 0 6px; color: var(--text-h); font-weight: 600; }
-    input { width: 100%; padding: 11px 12px; border: 1px var(--site-border-style) var(--border); border-radius: var(--site-radius); background: var(--bg); color: var(--text-h); font: inherit; }
+    label { display: block; margin: var(--site-density) 0 var(--space-xs); color: var(--text-h); font-weight: 600; }
+    input { width: 100%; padding: var(--space-sm) var(--site-density); border: 1px var(--site-border-style) var(--border); border-radius: var(--site-radius); background: var(--bg); color: var(--text-h); font: inherit; }
     input::placeholder { color: var(--text); opacity: 1; }
-    input:focus, button:focus, a:focus { outline: 3px solid var(--text-h); outline-offset: 2px; }
-    button, .google { display: block; width: 100%; min-height: 44px; margin-top: var(--site-density); padding: 10px 16px; border: 1px var(--site-border-style) var(--accent-border); border-radius: var(--site-radius); background: var(--accent); color: var(--accent-foreground); font: inherit; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
+    input:focus, button:focus, a:focus { outline: 3px solid var(--text-h); outline-offset: var(--space-xs); }
+    button, .google { display: block; width: 100%; min-height: 44px; margin-top: var(--site-density); padding: var(--space-sm) var(--site-density); border: 1px var(--site-border-style) var(--accent-border); border-radius: var(--site-radius); background: var(--accent); color: var(--accent-foreground); font: inherit; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
     button:hover { background: color-mix(in srgb, var(--accent) 90%, var(--bg)); }
-    .google { margin-top: 12px; background: var(--accent-bg); border-color: var(--accent-border); color: var(--text-h); }
+    .google { margin-top: var(--space-sm); background: var(--accent-bg); border-color: var(--accent-border); color: var(--text-h); }
     .google:hover { background: color-mix(in srgb, var(--accent-bg) 70%, var(--text-h)); }
     .links { margin-top: var(--site-density); text-align: center; }
     .links a { color: var(--text-h); text-decoration-color: var(--accent); text-underline-offset: .2em; }
-    .errorlist { padding: 10px 12px; margin: 8px 0; border: 1px var(--site-border-style) var(--accent-border); border-radius: var(--site-radius); background: var(--accent-bg); color: var(--text-h); }
+    .errorlist { padding: var(--space-sm) var(--site-density); margin: var(--space-sm) 0; border: 1px var(--site-border-style) var(--accent-border); border-radius: var(--site-radius); background: var(--accent-bg); color: var(--text-h); }
     .messages { color: var(--text-h); }
     footer { padding: var(--site-density); text-align: center; border-top: 1px var(--site-border-style) var(--border); color: var(--text); font-size: 14px; }
-    @media (max-width: 520px) { header { padding: var(--site-density) 16px; } .card { padding: var(--site-density); } main { padding: var(--site-density) 0; } }
+    @media (max-width: 520px) { header { padding: var(--site-density); } .card { padding: var(--site-density); } main { padding: var(--site-density) 0; } }
     @media (prefers-reduced-motion: no-preference) { button, a { transition: background-color .15s ease, color .15s ease; } }
   </style>
   {% block head %}{% endblock %}

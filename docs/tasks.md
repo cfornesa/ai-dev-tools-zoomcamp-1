@@ -25052,3 +25052,16 @@ Evidence is local macOS Chromium/PostgreSQL only; no Linux or deployment
 evidence is claimed. #1110 and #1111 remain open: their remaining acceptance
 gates depend on the 2D fixture work (#1102/#1103) and #1112/#1114 transform
 verification, so local implementation alone is not closure evidence.
+
+### 2026-10-01 — #1116 private/public generated toolbar contract
+
+Commit `cc1333d1` updates the generated-art toolbar contract with the two
+currently rendered controls, “Unmute sound” and “Show hand gesture guide”.
+The exact same six labels were captured for the owner/private and published
+states at 1280x900 and 375x812. The focused PostgreSQL/Chromium scenario
+passed; typecheck, lint (existing warnings), format check, and diff check
+passed. Fixture, publish transition, screenshots, equality checks, editor
+checks, and test/assertion counts were preserved. QA evidence is issue comment
+[#5925025517](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1116#issuecomment-5925025517);
+#1116 is closed completed. The separate private 2D setup issue #1117 remains
+open.

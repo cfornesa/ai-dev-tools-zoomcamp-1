@@ -25113,7 +25113,7 @@ pre-existing open work while keeping #1102 and its dependents open.
 - [#1118](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1118) — private 2D inline toolbar E2E contract; PROPOSED.
 - [#1119](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1119) — public/plain/embed 2D toolbar E2E contract; PROPOSED.
 - [#1120](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1120) — 375px 2D ink action hit target; PROPOSED, depends on #1118.
-- [#1121](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121) — current 3D Web address button selector in slug E2E; QA FAIL pending #1123.
+- [#1121](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121) — current 3D Web address button selector in slug E2E; CLOSED / QA PASS after #1123.
 
 ### 2026-10-01 — #1108 private toolbar rerun and #1122 handoff
 
@@ -25141,23 +25141,23 @@ and editing the slug; preserve canonical URL transition and test/expect counts.
 This is test-only setup and does not imply a product visibility change.
 
 - **Milestone:** Batch 14: matching-ref CI stabilization (2026-09-30).
-- **Status:** GROOMED / READY; [GitHub issue #1123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1123), milestone 14.
+- **Status:** CLOSED / QA PASS; [GitHub issue #1123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1123), milestone 14.
 - **Evidence:** focused #1121 Chromium/PostgreSQL run passed the 3D slug,
   canonical route, API readback, and title-independence assertions, then failed
   at the generated-piece slug field visibility check. Rendered snapshot shows
   the current `Toggle description panel` button and hidden form.
-- **Next action:** a separate implementation transaction activates the current
-  description-panel control, then reruns both scenarios in
-  `pieceSlugEdit750.spec.ts`.
+- **Outcome:** commit `abdf25a7` activates the current description-panel
+  control before slug assertions; independent QA passed the focused scenario
+  1/1 and full spec 2/2, with 2 tests / 12 expectations unchanged. QA comment
+  [#5925979847](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1123#issuecomment-5925979847);
+  issue #1123 closed.
 
-The #1121 Web address correction is committed as `e73cea76`. Its focused run
-passes the 3D slug edit, canonical URL, API readback, and title-independence
-assertions, then fails at the generated-piece field because the description
-panel is collapsed. Independent QA recorded `FAIL` in comment
-[#5925927267](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121#issuecomment-5925927267).
-The acceptance remains incomplete until #1123 is implemented and #1121's
-focused plus full-file runs both pass. Typecheck, lint (existing warnings),
-format, and diff checks pass; evidence is local macOS Chromium/PostgreSQL.
+The #1121 Web address correction is committed as `e73cea76`. After #1123
+activated the generated-piece description panel, its focused scenario passed
+1/1 and the complete `pieceSlugEdit750.spec.ts` passed 2/2; full Vitest passed
+310 files / 3,186 tests. Test/expect counts remain 2/12. Final independent QA
+comment [#5926038646](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121#issuecomment-5926038646)
+records PASS; #1121 is closed. Evidence is local macOS Chromium/PostgreSQL.
 
 ### 2026-10-01 — distillation of Codex-filed #1114, #1118–#1121 (Batch 14)
 

@@ -21,10 +21,7 @@ test.describe('3D independent camera preview', () => {
 
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
-    // Issue #444: every action in this toolbar (including "Piece
-    // controls") is nested behind "Open piece controls menu" -- matches
-    // immersive3dRouteParity.spec.ts's own working sequence.
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    // The inline 3D toolbar renders Piece controls directly without a menu.
     await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await toolbar.getByRole('button', { name: 'Show camera' }).click();
     await expect(toolbar.getByRole('region', { name: 'Camera preview' })).toBeVisible();

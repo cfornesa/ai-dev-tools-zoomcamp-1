@@ -31,7 +31,6 @@ test.describe('manual 3D editor stage chrome', () => {
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(toolbar).toBeVisible();
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await toolbar.getByRole('button', { name: '3D authoring' }).click();
     await expect(toolbar.getByRole('group', { name: '3D authoring actions' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Add sphere' })).toBeVisible();

@@ -163,7 +163,6 @@ test.describe('manual 3D outline selection', () => {
     const toolbar = page
       .getByTestId('scene3d-preview-canvas-frame')
       .getByRole('toolbar', { name: 'Preview actions' });
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await toolbar.getByRole('button', { name: '3D authoring' }).click();
     await toolbar.getByRole('button', { name: 'Delete selected object' }).click();
     await expect(page.getByTestId('object-inspector')).not.toBeVisible();

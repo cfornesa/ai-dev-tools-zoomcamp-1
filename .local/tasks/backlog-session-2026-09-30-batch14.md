@@ -430,7 +430,7 @@ linked.
   rerun #1106, then the Linux six-spec gate for #1100. Stage 5 and session
   completion remain pending.
 
-| #1112 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1112 | Discovered during #1110 QA; parent #1096 | after owner authorization in later run | migrate `drawingPlaneTransform782.spec.ts` setup to server-backed 3D helper only | PROPOSED / HANDED-OFF, not implemented | stage 1 Codex; implementation and QA pending | none | current local-only editor causes old fixture wait for `POST /api/projects3d/` to time out before assertions | next backlog session; exact verification in issue #1112 |
+| #1112 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1112 | Discovered during #1110 QA; parent #1096 | setup migration committed; QA dependency-blocked by #1108 | migrate `drawingPlaneTransform782.spec.ts` setup to server-backed 3D helper only | OPEN / QA FAIL / DEPENDENCY-BLOCKED | stage 1 Codex; stage 2a Codex GPT-6.1-sol substituted; stage 3 not run; stage 4 Codex GPT-6.1-sol substituted | stage 2a and 4 substituted | commit dc518652, test/expect 1/26 preserved; exact Chromium/PostgreSQL rerun reaches both viewports but stale authoring-menu state prevents transform assertions | QA comment 5923459297; #1108 comment 5923468318; after #1108 migrates confirmed locators, rerun exact #782 spec |
 
 
 ## #1107 post-#1110 QA completion — 2026-10-01

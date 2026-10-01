@@ -2319,3 +2319,17 @@ updates. The remaining open backlog was not silently claimed complete.
   #1112. The owner has not authorized same-run implementation of #1112.
 - #1109 remains blocked on the explicit owner choice about its observed mobile
   authoring-panel overflow.
+
+## 2026-10-01 — #1112 authorized and dependency-blocked after setup migration
+
+- The resumed goal explicitly directs implementation and closure of the open
+  issues while preserving existing functionality; implement criterion-ready
+  #1112 as a stage-2a substitution.
+- Commit `dc518652` keeps the #782 scenario unchanged but reveals stale inline
+  toolbar state in both viewports. #1108 already owns the confirmed stale
+  `Open piece controls menu`/menu-dialog close inventory, so #1112 is handed
+  off there rather than retargeted.
+- The owner selected a minimum usable mobile panel width with no horizontal
+  clipping for #1109's authoring disclosure. Revise acceptance to allow usable
+  vertical scrolling on short viewports; do not treat the current 42px panel
+  rendering as acceptable.

@@ -309,6 +309,35 @@ test.describe('inline 3D stage toolbar geometry (#1111)', () => {
           hitTargets!.planeToolbarBox!.bottom,
           `phone plane toolbar stays within its reserved rail below the frame: ${evidence}`,
         ).toBeLessThanOrEqual(hitTargets!.frameBox!.bottom + 56);
+
+        // Keep the plane action sheet clear of the fixed display toggles on phones.
+        await page.getByRole('button', { name: 'More actions' }).click();
+        const deleteAction = page.getByRole('menuitem', { name: 'Delete' });
+        const deleteGeometry = await deleteAction.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          const center = document.elementFromPoint(
+            rect.left + rect.width / 2,
+            rect.top + rect.height / 2,
+          );
+          const toggles = document
+            .querySelector<HTMLElement>('.shell-display-toggles')
+            ?.getBoundingClientRect();
+          return {
+            height: rect.height,
+            unobstructed: Boolean(center && (center === element || element.contains(center))),
+            aboveDisplayToggles: Boolean(toggles && rect.bottom <= toggles.top),
+          };
+        });
+        expect(
+          deleteGeometry.height,
+          'mobile Delete action keeps a 44px target',
+        ).toBeGreaterThanOrEqual(44);
+        expect(deleteGeometry.unobstructed, 'mobile Delete action is hit-testable').toBe(true);
+        expect(
+          deleteGeometry.aboveDisplayToggles,
+          'mobile action menu clears fixed display controls',
+        ).toBe(true);
+        await page.keyboard.press('Escape');
       }
       for (const planeControl of hitTargets!.planeControls) {
         expect(

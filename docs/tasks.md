@@ -25562,3 +25562,21 @@ criterion-ready item is #1131; its transactional version-event work does not
 depend on the blocked E2E helper series or the #1129/#1130 owner decisions.
 The current transaction ledger and dependency rationale are recorded in
 `.local/tasks/backlog-session-2026-10-01-batch15.md`.
+
+### 2026-10-01 — Proposed #1149: retarget AI Agent browser specs
+
+QA of #1135 reproduced stale route setup in both
+`frontend/e2e/aiAgent2d.spec.ts` and `frontend/e2e/aiAgent3d.spec.ts`: the old
+`/ai-projects/:id` and `/ai-projects3d/:id` URLs redirect to manual editors,
+where the Agent workflow control is absent. The 2D failure also reproduces at
+the parent revision. Duplicate review found no current owner: #1100–#1104 cover
+their enumerated helper-migration files; #1144 covers two public 3D viewer
+specs; #1096 is only the full-matrix tracking parent. Historical feature
+issues #462/#463 are closed and remain unchanged. Filed
+[#1149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1149) in
+Batch 16, parented to #1096 and dependent on #1100's server-backed helper
+contract. It preserves the distinct 2D locked-background/editable-foreground
+and 3D cube/sphere AI Agent fixtures and scenarios, requires unchanged
+test/expect counts, and provides an exact Linux Chromium/PostgreSQL command.
+Status is PROPOSED and handed off for a later transaction; no product or test
+code was changed in this discovery pass.

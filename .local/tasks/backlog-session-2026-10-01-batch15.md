@@ -51,6 +51,7 @@ items advance only after the current transaction is terminal.
 | #1144 | Public 3D viewer E2E setup | DEPENDENCY-BLOCKED | Requires #1100. |
 | #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
 | #1148 | Activity in JSON account export | GROOMED / ELIGIBLE | #1133 closed; remains queued behind #1135 transaction. |
+| [#1149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1149) | #1100 server-backed fixture contract; parent #1096 | PROPOSED / HANDED-OFF | Discovered during #1135 QA; retarget the separate 2D and 3D AI Agent E2E specs to their canonical manual-editor routes after #1100 is reconciled. |
 
 ## Transaction ledger
 
@@ -129,6 +130,19 @@ Claude is unavailable, recording the substitution.
 
 **Current transaction:** #1135 ENGINEERING. No product commit or verification
 claim yet. QA, reconcile and close this issue before starting another issue.
+
+**Discovery during #1135 QA:** both existing AI Agent E2E specs still use
+retired routes (`/ai-projects/:id` and `/ai-projects3d/:id`) whose redirects
+land in manual editors without the Agent workflow radio. The 2D setup failure
+reproduces at the parent commit. Duplicate/ownership review found no exact
+owner: #1100–#1104 own their named fixture-helper caller sets, #1144 owns two
+public 3D specs, and #1096 is the full-matrix tracker. Closed #462/#463 remain
+the historical feature contracts; they are not reopened. Filed criterion-ready
+follow-up [#1149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1149)
+in Batch 16, linked to #1096, with separate preserved 2D/3D fixtures and an
+exact Linux Chromium/PostgreSQL command. It depends on #1100's helper contract
+and is handed to a later transaction under the discovery gate; no code was
+changed for it here.
 
 ### #1131 — 2D version lifecycle activity events
 

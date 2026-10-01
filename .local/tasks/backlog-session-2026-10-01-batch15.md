@@ -38,7 +38,7 @@ items advance only after the current transaction is terminal.
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
 | #1132 | Independent 2D AI accept/discard history writer A2 | COMPLETED | Implementation `f205906b`; QA PASS comment 5935797610; closed completed 2026-10-01. |
 | #1133 | Activity read API | COMPLETED | Implementation `b1796a7f`; independent Stage 4 QA PASS; reconciliation `ca7c5c9c`; closed completed after typed issue update. No QA comment URL; process fallback evidence in ledger. |
-| #1134 | History UI | GROOMED | #1133 closed completed; PM refresh required before Stage 2a. |
+| #1134 | History UI | QA | Engineer commit `b8359ec4`; focused 23 pass, E2E 1 pass on disposable PostgreSQL/fake AI at 1280x900 and 375x812, frontend gates pass; independent Stage 4 begins now. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
 | #1136 | Independent scene diff function B1 | GROOMED | Implement after Batch 15. |
 | #1137 | Compare-versions UI | DEPENDENCY-BLOCKED | Requires #1136. |
@@ -277,6 +277,34 @@ QA substitution only if Claude is unavailable and record it.
 coverage plus the real owner E2E, run exact commands, and produce an
 issue-scoped commit. Do not start #1148 or another transaction until #1134 is
 closed or terminally handed off.
+
+**Stage 2a engineer handoff:** accepted diff commit
+`b8359ec4cc4c85d1c58ebeae937bd1a5d2d6e79f`
+(`feat(activity): add project history tab`). Files are limited to
+`frontend/src/api/projectActivity.ts`,
+`frontend/src/pages/VersionHistoryPanel.tsx`,
+`frontend/src/pages/VersionHistoryPanel.activity.test.tsx`, and
+`frontend/e2e/projectActivityHistory.spec.ts`. The agent reports focused unit
+tests (three files, 23 passed), typecheck, lint (repo-existing unrelated
+warnings only), and format checks passing; exact Chromium spec 1/1 passed on
+disposable PostgreSQL with `AI_PROVIDER=fake`, using port 5001 to preserve the
+user's active 5000 server. E2E checked both tabs at 1280x900 and 375x812,
+document and row overflow, row/control edges, and mobile Inspector selection.
+No Stage 3, closure, or push. These are author claims; Stage 4 must re-read
+criteria, inspect all four-file diff and tests as untrusted, rerun focused and
+full relevant checks, and visually inspect rendered UI before verdict.
+
+| Stage | Rostered owner | Actual owner | Substituted |
+|---|---|---|---|
+| PM/grooming | Codex / GPT-6.1-sol | Codex subagent / GPT-6.1-sol / effort unavailable | no |
+| Implementation / 2a | Opencode Go / Kimi K2.5 | Codex subagent / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / 3 | Mistral Vibe | Not requested / not run | — |
+| QA / 4 | Claude / Sonnet 5 / Medium | Codex subagent / GPT-6.1-sol / effort unavailable | yes |
+
+Stage 4 is delegated separately. The known issue-comment connector
+limitation is carried forward: don't retry the unsafe PR-shaped comment
+operation; if QA passes, retain the complete verdict locally and use the
+documented typed-update closure fallback.
 
 **New follow-up #1148:** add the same allowlisted event envelope to the
 existing authenticated JSON account export only. Duplicate check found no

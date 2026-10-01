@@ -98,6 +98,22 @@
   substitution if Opencode is unavailable. Independent Stage 4 remains
   required after implementation.
 
+## 2026-10-01 — #1134 engineer commit and Stage 4 handoff
+
+- Stage 2a Codex substitution committed the refined tabbed Activity panel as
+  `b8359ec4cc4c85d1c58ebeae937bd1a5d2d6e79f`. Product/test scope is the typed
+  frontend activity wrapper, `VersionHistoryPanel`, its feature-slice tests,
+  and the named owner-route E2E only. No backend, schema, dependency, route,
+  API-contract, publish, or push change.
+- The engineer reports 23 focused tests passing; typecheck, lint (unrelated
+  existing warnings only), formatting, and the exact disposable-PostgreSQL
+  Chromium E2E passing with fake AI. E2E checks 1280x900 and 375x812 tab
+  states, overflow, and row/control bounds. Stage 4 treats these as untrusted
+  claims and independently reruns checks.
+- A separate Codex/GPT-6.1-sol QA pass is now delegated as a substitution for
+  Claude / Sonnet 5 / Medium. Stage 3 was not run. No closure until QA and
+  transaction reconciliation complete.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

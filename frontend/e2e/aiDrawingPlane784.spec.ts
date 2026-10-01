@@ -149,7 +149,11 @@ test.describe('AI drawing-plane proposals (#784)', () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     const id = await createProject(page, context);
     await setAIScenario(page, 'success');
-    const stage = page.getByTestId('scene3d-preview-canvas-frame');
+    // The proposal has its own Scene3DPreview; screenshot the editor stage,
+    // not the nested AI proposal preview.
+    const stage = page
+      .getByRole('region', { name: 'Preview' })
+      .getByTestId('scene3d-preview-canvas-frame');
     await stage.screenshot({ path: testInfo.outputPath('before.png') });
     await openAiPanel(page);
 

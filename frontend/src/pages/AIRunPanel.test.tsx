@@ -135,3 +135,105 @@ describe('AIRunPanel plan review', () => {
     expect(screen.getByLabelText('Failed')).toBeInTheDocument();
   });
 });
+
+describe('AIRunPanel 2D decision reason', () => {
+  function renderCandidate(overrides: Partial<ReturnType<typeof makeAiRun>> = {}) {
+    const accept = vi.fn().mockResolvedValue(null);
+    const stop = vi.fn().mockResolvedValue(undefined);
+    const aiRun = {
+      ...makeAiRun({
+        ...runBase,
+        status: 'awaiting_review',
+        candidate_scene: { schemaVersion: 1 },
+        change_summary: 'Candidate summary',
+      }),
+      accept,
+      stop,
+      ...overrides,
+    } as UseAIRunResult<SceneVersion>;
+    render(
+      <AIRunPanel
+        aiRun={aiRun}
+        workingCopy={null}
+        onAccepted={vi.fn()}
+        selectableObjects={[]}
+        renderCandidatePreview={() => null}
+        enableDecisionReason
+      />,
+    );
+    return { accept, stop };
+  }
+
+  it('associates the label and counter, limits input to 280 Unicode code points, and keeps Enter inert', async () => {
+    const { accept, stop } = renderCandidate();
+    const input = screen.getByRole('textbox', { name: 'Why? (optional)' });
+    expect(input).toHaveAttribute('aria-describedby', 'ai-run-decision-reason-count');
+    expect(screen.getByText('0 of 280 characters')).toBeInTheDocument();
+
+    const overLimit = `${'a'.repeat(279)}😀x`;
+    await userEvent.type(input, overLimit);
+    expect(input).toHaveValue(`${'a'.repeat(279)}😀`);
+    expect(screen.getByText('280 of 280 characters')).toBeInTheDocument();
+
+    await userEvent.clear(input);
+    await userEvent.click(input);
+    await userEvent.paste(`${'😀'.repeat(281)}`);
+    expect(input).toHaveValue('😀'.repeat(280));
+    expect(screen.getByText('280 of 280 characters')).toBeInTheDocument();
+
+    await userEvent.keyboard('{Enter}');
+    expect(accept).not.toHaveBeenCalled();
+    expect(stop).not.toHaveBeenCalled();
+    await userEvent.tab();
+    expect(screen.getByTestId('ai-run-accept')).toHaveFocus();
+    await userEvent.tab();
+    expect(screen.getByTestId('ai-run-reject')).toHaveFocus();
+  });
+
+  it('trims a non-empty accept reason and clears the field after the decision', async () => {
+    const { accept } = renderCandidate();
+    const input = screen.getByRole('textbox', { name: 'Why? (optional)' });
+    await userEvent.type(input, '  keep this direction  ');
+    await userEvent.click(screen.getByTestId('ai-run-accept'));
+    expect(accept).toHaveBeenCalledWith('keep this direction');
+    expect(input).toHaveValue('');
+  });
+
+  it('omits an empty or whitespace-only accept reason', async () => {
+    const { accept } = renderCandidate();
+    const input = screen.getByRole('textbox', { name: 'Why? (optional)' });
+    await userEvent.click(screen.getByTestId('ai-run-accept'));
+    expect(accept).toHaveBeenCalledWith(undefined);
+    expect(input).toHaveValue('');
+  });
+
+  it('trims the reject reason and omits whitespace-only values', async () => {
+    const { stop } = renderCandidate();
+    const input = screen.getByRole('textbox', { name: 'Why? (optional)' });
+    await userEvent.type(input, '  choose the first version  ');
+    await userEvent.click(screen.getByTestId('ai-run-reject'));
+    expect(stop).toHaveBeenCalledWith('choose the first version');
+    expect(input).toHaveValue('');
+  });
+
+  it('omits a whitespace-only reject reason', async () => {
+    const { stop } = renderCandidate();
+    const input = screen.getByRole('textbox', { name: 'Why? (optional)' });
+    await userEvent.type(input, '   ');
+    await userEvent.click(screen.getByTestId('ai-run-reject'));
+    expect(stop).toHaveBeenCalledWith(undefined);
+  });
+
+  it('keeps the reason field disabled by default for the shared 3D panel caller', () => {
+    render(
+      <AIRunPanel
+        aiRun={makeAiRun({ ...runBase, status: 'awaiting_review' })}
+        workingCopy={null}
+        onAccepted={vi.fn()}
+        selectableObjects={[]}
+        renderCandidatePreview={() => null}
+      />,
+    );
+    expect(screen.queryByRole('textbox', { name: 'Why? (optional)' })).not.toBeInTheDocument();
+  });
+});

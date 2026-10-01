@@ -288,6 +288,7 @@ function AIProposalPanel({
           onAccepted={onAccepted}
           selectableObjects={aiRunSelectableObjects}
           mediaAssets={mediaAssets}
+          enableDecisionReason
           renderCandidatePreview={(scene) => (
             <AIRunCandidatePreview2D scene={scene as SceneDocument} />
           )}

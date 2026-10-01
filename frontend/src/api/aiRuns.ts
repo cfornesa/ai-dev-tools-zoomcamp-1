@@ -124,10 +124,18 @@ export function advanceAIRun(id: number, signal?: AbortSignal): Promise<AIRun> {
   return apiFetch<AIRun>(`/api/ai/runs/${id}/advance/`, { method: 'POST', signal });
 }
 
-export function cancelAIRun(id: number, signal?: AbortSignal): Promise<AIRun> {
-  return apiFetch<AIRun>(`/api/ai/runs/${id}/cancel/`, { method: 'POST', signal });
+export function cancelAIRun(id: number, reason?: string, signal?: AbortSignal): Promise<AIRun> {
+  return apiFetch<AIRun>(`/api/ai/runs/${id}/cancel/`, {
+    method: 'POST',
+    ...(reason === undefined ? {} : { body: JSON.stringify({ reason }) }),
+    signal,
+  });
 }
 
-export function acceptAIRun(id: number, signal?: AbortSignal): Promise<AIRun> {
-  return apiFetch<AIRun>(`/api/ai/runs/${id}/accept/`, { method: 'POST', signal });
+export function acceptAIRun(id: number, reason?: string, signal?: AbortSignal): Promise<AIRun> {
+  return apiFetch<AIRun>(`/api/ai/runs/${id}/accept/`, {
+    method: 'POST',
+    ...(reason === undefined ? {} : { body: JSON.stringify({ reason }) }),
+    signal,
+  });
 }

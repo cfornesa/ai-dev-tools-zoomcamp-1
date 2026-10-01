@@ -25417,3 +25417,21 @@ replace that evidence. QA comment
 [#5929203583](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100#issuecomment-5929203583)
 records provenance and the next action. Keep #1100 open; #1102–#1104 remain
 blocked until the exact Linux command passes.
+
+### 2026-10-01 — #1145 3D drawing-plane Cancel QA reconciliation
+
+#1145 is complete and closed with state reason `completed`; QA PASS comment
+[#5932448095](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1145#issuecomment-5932448095)
+records the matrix and local evidence boundary. The #1108 audit's original
+frame-only screenshot mismatch did not reproduce as a product defect: a
+viewport capture showed the selection handles restored after Cancel. The
+Playwright assertion now captures full mobile viewport screenshots and checks
+the selected handle's stage-local position plus deep equality of server-backed
+scene data before/after cancellation. Confirm/save/reload remains covered. The
+375x812 and 1280x900 scenarios pass; desktop/mobile screenshots were inspected;
+the mobile stage and document have no horizontal overflow. Implementation is
+test-only in `frontend/e2e/drawingPlaneDraw3d.spec.ts` (`2e9da3b8`, followed by
+format-only commit `b5613875`). Full frontend unit suite passes 310 files /
+3,187 tests. The prior #1108 QA comment remains a record of what was known then;
+rerun #1108's full acceptance separately because its other fixture dependency
+on #1104 is still outstanding.

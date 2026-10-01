@@ -48,9 +48,61 @@ items advance only after the current transaction is terminal.
 | #1142 | More-like-this UI | DEPENDENCY-BLOCKED | Requires #1141. |
 | #1143 | Owner continuity metrics | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
 | #1144 | Public 3D viewer E2E setup | DEPENDENCY-BLOCKED | Requires #1100. |
-| #1145 | 3D drawing-plane cancel regression | GROOMED | Reproduce and address after #1108 audit. |
+| #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
 
 ## Transaction ledger
+
+### #1145 — 3D drawing-plane cancel regression
+
+**State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`. **Result:**
+completed and closed 2026-10-01 after QA PASS comment
+[#5932448095](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1145#issuecomment-5932448095).
+
+**PM/grooming:** issue re-read and confirmed criterion-ready; scope limited to
+`frontend/e2e/drawingPlaneDraw3d.spec.ts`. The observed failure was reproduced
+before edits at 375x812 (1280x900 passed). A full-page screenshot taken after
+Cancel showed the selected plane handles and toolbar in the rendered viewport;
+the prior assertion captured only the 16:9 canvas-frame element, whose
+Playwright element screenshot omitted the selection chrome. No product defect
+was present. The regression test now captures full viewport screenshots,
+asserts handles and unchanged move-handle position relative to the preview,
+compares server-backed scene objects before/after Cancel, and checks the mobile
+stage bounds and document overflow. The existing confirm/save/reload sequence
+and drawing-difference assertion remain.
+
+**Stage provenance**
+
+| Stage | Rostered owner | Actual owner | Substituted |
+|---|---|---|---|
+| PM/grooming | Codex / GPT-6.1-sol | Codex / GPT-6.1-sol / effort unavailable | no |
+| Implementation / stage 2a | Opencode Go / Kimi K2.5 | Codex / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / stage 3 | Mistral Vibe | Not requested / not run | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
+
+**Commits:** `2e9da3b8` test correction; `b5613875` formatter-only follow-up.
+Product implementation was unnecessary because the live UI already retained
+selection and canceled scene data. Only the issue-named E2E file changed.
+
+**Focused and full verification**
+
+- `E2E_BASE_URL=http://127.0.0.1:5003 E2E_ENV_FILE=/tmp/codex-qa-1120-current.env npm run test:e2e -- e2e/drawingPlaneDraw3d.spec.ts --project=chromium` — 2 passed at 1280x900 and 375x812.
+- `npm run typecheck` — passed.
+- `npm run lint` — exit 0; existing repository warnings only.
+- `npm run format:check` — passed (the ignored `.pytest_cache` directory was moved temporarily and restored).
+- `npm test` — 310 files / 3,187 tests passed.
+- `git diff --check` — passed. Test declaration count 1→1; `expect(...)` call count 20→30; no skip/fixme.
+
+**QA matrix:** all five issue criteria PASS. At mobile, full viewport before/after
+screenshots were inspected; selected plane handles stay in the same stage-local
+geometry. Persisted 3D scene objects are deeply equal before Draw and after
+Cancel. At desktop the full workflow passes. Mobile document width does not
+exceed its client width and the stage bounds remain within the viewport.
+
+**Evidence boundary:** local disposable PostgreSQL-backed Django/Vite stack at
+`127.0.0.1:5003`, Chromium on macOS. No Linux CI or deployment evidence claimed.
+No memory update required; this corrects a test oracle, not a durable platform
+constraint. **Next:** continue the refreshed open-issue manifest, respecting
+explicit dependencies and external Linux gates.
 
 ### #1124 — Account pages: site theme parity
 

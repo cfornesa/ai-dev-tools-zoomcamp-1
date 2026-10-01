@@ -2307,3 +2307,15 @@ updates. The remaining open backlog was not silently claimed complete.
   product/test-contract child. Keep #1109 and its dependents open meanwhile.
 - Memory-file session checkpoint remains unresolved: propose durable lessons
   to the owner before updating MEMORY.md.
+
+
+## 2026-10-01 — #1107 closed after #1110 regression fix
+
+- The unchanged A-Frame regression spec passed three consecutive runs at both
+  required viewports after #1110 commit `4587b424`. Baseline test/expect counts
+  are unchanged at 1/11, and rendered selected/after-drag screenshots were
+  inspected. QA comment 5923071850 records the evidence; #1107 is closed.
+- #1110 remains open for the separate Three.js transform spec fixture follow-up
+  #1112. The owner has not authorized same-run implementation of #1112.
+- #1109 remains blocked on the explicit owner choice about its observed mobile
+  authoring-panel overflow.

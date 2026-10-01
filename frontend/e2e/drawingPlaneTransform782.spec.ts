@@ -8,6 +8,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { apiGet } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 async function openMenu(page: Page) {
@@ -78,15 +79,7 @@ test.describe('drawing plane selection chrome (#782)', () => {
       test.setTimeout(150_000);
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      const created = page.waitForResponse(
-        (res) =>
-          res.request().method() === 'POST' && new URL(res.url()).pathname === '/api/projects3d/',
-      );
-      await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-      const projectId = ((await (await created).json()) as { id: string }).id;
-      await page.waitForURL(/\/users\/@[^/]+\/edit\/untitled-3d-scene/);
+      const projectId = await createServerProject3D(page);
       await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
       const frame = page.getByTestId('scene3d-preview-canvas-frame');
       const overlay = page.getByTestId('plane-selection-overlay');

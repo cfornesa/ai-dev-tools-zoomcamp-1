@@ -131,6 +131,18 @@ Claude is unavailable, recording the substitution.
 **Current transaction:** #1135 ENGINEERING. No product commit or verification
 claim yet. QA, reconcile and close this issue before starting another issue.
 
+**Stage 4 contract reconciliation:** QA found `aiAgent2d.spec.ts` and
+`aiAgent3d.spec.ts` fail on their retired routes on both the #1135 parent and
+target; #1149 owns their canonical-route retargeting. #1135's final QA must
+preserve those specs' assertions, reproduce and record the same failures on
+both revisions, and classify the legacy route issue as a verification
+boundary assigned to #1149. It is not a pass claim or a reason to change
+those specs in #1135. Valid non-regression evidence remains the dedicated
+#1135 fake-provider 2D reason E2E and inspected screenshots, focused tests
+showing the 3D caller/request remains unchanged, plus passing frontend
+static/unit checks. The live #1135 contract now records the exact baseline
+and dedicated E2E commands.
+
 **Discovery during #1135 QA:** both existing AI Agent E2E specs still use
 retired routes (`/ai-projects/:id` and `/ai-projects3d/:id`) whose redirects
 land in manual editors without the Agent workflow radio. The 2D setup failure

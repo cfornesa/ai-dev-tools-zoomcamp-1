@@ -25115,6 +25115,18 @@ pre-existing open work while keeping #1102 and its dependents open.
 - [#1120](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1120) — 375px 2D ink action hit target; PROPOSED, depends on #1118.
 - [#1121](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121) — current 3D Web address button selector in slug E2E; PROPOSED.
 
+### 2026-10-01 — #1108 private toolbar rerun and #1122 handoff
+
+After #1115–#1117 closed, the full `privatePieceToolbar773.spec.ts` run
+passed its generated-art parity case and private 3D/2D editor-stage case
+(2/2), then failed the distinct #790 owner regular-view scenario: Gallery
+creation navigated to `/local-projects/:id` while the test waited for the
+canonical server-backed edit route. New criterion-ready issue
+[#1122](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1122)
+records the two helper migrations while preserving the owner privacy checks.
+QA follow-up [#5925426967](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5925426967)
+updates #1108; it stays QA FAIL pending #1114 and #1122.
+
 ### 2026-10-01 — distillation of Codex-filed #1114, #1118–#1121 (Batch 14)
 
 Refinement sections were appended to each body (original text preserved).

@@ -2507,3 +2507,13 @@ updates. The remaining open backlog was not silently claimed complete.
   effort unavailable, substituted: yes. Scope is limited to the version
   lifecycle endpoints and their focused tests; the agent may make and commit
   only issue-scoped corrections and must not close the issue or perform QA.
+
+## 2026-10-01 — #1131 stage 4 QA delegated
+
+- Initiated the separate QA subagent pass after Stage 2b's independent
+  engineering audit. Rostered owner is Claude / Sonnet 5 / Medium; actual
+  owner is a Codex subagent / GPT-6.1-sol with effort unavailable,
+  substituted: yes. The QA agent must re-read the latest issue criteria,
+  inspect `b11971c0` as untrusted, rerun focused and full backend checks, and
+  post a criterion-matrix `## QA: PASS` or `## QA: FAIL` comment. It must not
+  modify product code or close the issue.

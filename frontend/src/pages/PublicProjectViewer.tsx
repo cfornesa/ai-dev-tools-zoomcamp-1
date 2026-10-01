@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { forkProject, getPublicProject, type PublicProject } from '../api/projects';
+import RelatedPublicProjects from './RelatedPublicProjects';
 import { formatPublicAttribution } from '../presentation/publicAttribution';
 import { useAuth } from '../auth/useAuth';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
@@ -827,6 +828,9 @@ function PublicProjectViewer({
             ))}
           </ul>
         </aside>
+      )}
+      {isCanonicalRoute && !isEmbedRoute && (
+        <RelatedPublicProjects projectId={project.id} ready={loadState === 'ready'} />
       )}
     </div>
   );

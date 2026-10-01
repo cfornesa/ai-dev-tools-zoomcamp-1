@@ -25377,3 +25377,16 @@ comment [#5928938966](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues
 The issue remains open. Rerun its full gate on Linux Chromium/PostgreSQL after
 #1114 and fixture follow-ups reconcile. Stage 2a and stage 4 were Codex
 substitutions; stage 3 not run; no Linux/deployment evidence is claimed.
+
+Final rerun after issue-scoped commits `5e0cc907` and `15a5a86f` completed the
+exact #1108 nine-spec batch at 19/20. The #784 file passes 4/4 at desktop and
+mobile after selecting the main editor Preview region (the AI proposal embeds
+a second scene preview) and explicitly closing the authoring disclosure before
+using Precise values. #782 passes at both viewports, #773 passes 3/3 including
+the owner private regular-view route, and all remaining named cases pass. The
+only failure is #781's mobile cancel screenshot mismatch; its separate
+selection-restoration follow-up is #1145. Typecheck, lint (exit 0 with existing
+warnings), format check, and diff check pass. QA comment
+[#5929141148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5929141148)
+supersedes the interim 17/20 matrix. #1108 remains open / QA FAIL, dependent on
+#1145 and lifecycle fixture migration #1104.

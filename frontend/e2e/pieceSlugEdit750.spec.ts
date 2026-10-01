@@ -80,9 +80,12 @@ test.describe('independent piece slug (#750)', () => {
     test.setTimeout(120_000);
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
-    // 3D, through the "Web address" disclosure.
+    // 3D, through the current Web address settings button.
     const id3d = await createServerProject3D(page);
-    await page.locator('summary', { hasText: 'Web address' }).click();
+    await page
+      .getByRole('region', { name: 'Project settings' })
+      .getByRole('button', { name: 'Web address' })
+      .click();
     const slug3d = `three-d-${Date.now().toString(36)}`;
     await editSlug(page, slug3d);
     await page.waitForURL(new RegExp(`/users/@[^/]+/edit/${slug3d}$`));

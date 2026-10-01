@@ -1,5 +1,19 @@
 # DECISIONS.md
 
+## 2026-10-01 — Reconciliation: #1109 test-side work is permitted; #1109 closure is gated on #1111
+
+- The entry above that says #1109's implementation is "handed-off to the next
+  run" applied the pre-2026-09-30 discovery-gate wording. Under the reworded
+  `docs/process.md` rule 4 (separation of duties), Codex may implement #1109
+  because Claude (a different agent) refined its scope; no waiver was needed.
+- Codex's test-side re-homing of `manual3dStageChrome.spec.ts` (inventory
+  stays 1/53, no skips) is correct and complete; its `QA: FAIL / blocked on
+  #1111` verdict is accurate: the preserved 375x812 non-overlap assertion
+  fails on the product layout defect. No product change for #1111 exists yet.
+- Order is unchanged: #1111 -> #1110 -> rerun #1109's spec. Because Claude
+  refined #1111/#1110, the implementer of those two should be a different
+  agent (Codex or Opencode), not Claude.
+
 ## 2026-09-30 — Discovery-gate rule 4 reworded as separation of duties
 
 - Approved by the owner: rule 4 in `docs/process.md` now forbids the *same
@@ -46,6 +60,25 @@
   mobile A-Frame failures; criterion-ready follow-ups #1106 and #1107 were
   filed under #1096. #1100 remains open / QA FAIL pending their resolution
   and the Linux Chromium gate.
+
+## 2026-09-30 — Owner resumes Batch 14 after #1106/#1107 refinement
+
+- After Claude Code refined the follow-ups, the owner asked Codex to work on
+  the currently open issues. This explicitly authorizes same-run work on the
+  then-open #1105–#1108, in addition to the earlier #1096/#1100–#1104
+  authorization; dependency order and issue contracts remain binding.
+- The later QA discovery #1109 was not open when this authorization was
+  given. It is filed and linked, but the discovery-gate rule keeps its
+  implementation handed-off to the next run.
+
+## 2026-10-01 — Defer mobile 3D handle UI fix from #1109
+
+- During #1107 investigation, measured the visible 375x812 drawing-plane
+  move-handle center resolving to the editor action toolbar, while desktop
+  passes. The owner chose to file a separate product issue and defer that UI
+  change; criterion-ready #1110 owns the correction and route regression.
+- #1107 remains blocked on #1110. Keep its strict movement and interaction
+  assertions unchanged until the linked fix is implemented and verified.
 
 ## 2026-09-30 — Batch 14 #1096 stage-agent loop
 

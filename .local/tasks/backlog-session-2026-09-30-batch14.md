@@ -24,7 +24,7 @@ no readiness pass is claimed and no GPT-5 substitution was authorized.
 |---|---|---|---|---|---|---|---|---|---|
 | #1095 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095 | `docs/tasks.md`, Batch 14 transaction #1095 | none; first | Gallery local-card date assertion under timezone/locale variation | completed / CLOSED | Codex GPT-6 (effort not exposed) / Codex GPT-6 (effort not exposed) / not run / Codex GPT-6 (effort not exposed) / pending batch gate | impl: yes (owner waiver); QA: yes; scoping: no | none | Reconciled; QA comment 5919356495; closed completed |
 | #1097 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097 | `docs/tasks.md`, Batch 14 CI follow-up | after #1095, before #1096 | named WebKit fullscreen/Escape workflow step | completed / CLOSED | Codex GPT-6 / stage 2b Ollama Cloud / optional Mistral Vibe / Claude Sonnet 5 / Claude Opus 5 or Sonnet 5 | impl: yes (owner waiver); QA: yes; stage 3 not run | Linux rerun belongs to #1096 | Reconciled; QA comment 5919537401; closed completed |
-| #1096 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 | `docs/tasks.md`, Batch 14 CI follow-up | after #1097 | tracking issue for full 16-shard Linux/PostgreSQL browser matrix and cause reconciliation | HANDED-OFF / QA FAIL, tracking incomplete | stage 1 Codex / GPT-6.1-sol (effort unavailable); stage 2 not applicable / stage 3 not run / stage 4 Claude Sonnet 5 Medium roster, actual Codex GPT-6.1-sol (effort unavailable), substituted yes / gate pending | stage 4 substitution: yes | #1100 + #1102–#1104 helper migration; #1101 closed; #1105 loginViaUI flake; #1106 toolbar locator drift; #1107 mobile A-Frame drag; remaining full-matrix causes still unclassified | Parent remains open; comments 5920587069 and 5921705496; after linked fixes rerun Linux matrix and classify every residual failure |
+| #1096 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 | `docs/tasks.md`, Batch 14 CI follow-up | after #1097 | tracking issue for full 16-shard Linux/PostgreSQL browser matrix and cause reconciliation | HANDED-OFF / QA FAIL, tracking incomplete | stage 1 Codex / GPT-6.1-sol (effort unavailable); stage 2 not applicable / stage 3 not run / stage 4 Claude Sonnet 5 Medium roster, actual Codex GPT-6.1-sol (effort unavailable), substituted yes / gate pending | stage 4 substitution: yes | #1100 + #1102–#1104 helper migration; #1101 closed; #1105 loginViaUI flake; #1106/#1109 toolbar E2E drift; #1107 mobile A-Frame drag; #1108 remaining 3D locator audit; remaining full-matrix causes still unclassified | Parent remains open; comments 5920587069, 5921705496, 5921927346; after linked fixes rerun Linux matrix and classify every residual failure |
 | #1098 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 | `docs/tasks.md`, Batch 14 local-public quota follow-up | independent of CI; before #1099 | public-transfer preflight across the two `LocalEditorWorkspace` callers and `localPublicTransfer` | completed / CLOSED | Codex GPT-6 / Codex GPT-6 (substitution) / not run / Codex GPT-6 (substitution) / pending gate | impl: yes (owner waiver); QA: yes; stage 3 not run | none | QA comment 5920252275; closed completed |
 | #1099 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 | `docs/tasks.md`, Batch 14 local-sync quota follow-up | #1098 (closed) | private sync aggregate preview and per-row preflight | completed / CLOSED | Codex GPT-6.1-sol / implementation-complex roster Ollama Cloud, actual Codex GPT-6 family / optional Mistral Vibe / Claude Sonnet 5 Medium roster, actual Codex GPT-6.1-sol / gate pending | stage 2 and stage 4 substitutions; stage 2 authorized in `DECISIONS.md`; stage 3 not run | expanded stored-content semantics via #1098 shared measurement | QA comment 5920683714; closed completed; batch readiness gate remains pending |
 | #1100 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100 | Proposed from #1096 run 36778653929 | approved defer-retirement option; prerequisite for #1102–#1104 | 2D/3D server-backed helpers; six 3D callers | HANDED-OFF / QA FAIL | stage 1 Codex GPT-6.1-sol / stage 2a roster Opencode Go Kimi K2.5, actual Codex GPT-6.1-sol / stage 3 not run / stage 4 roster Claude Sonnet 5 Medium, actual Codex GPT-6.1-sol / gate pending | stage 2a and 4: yes | #1106 stale toolbar locators, #1107 mobile A-Frame drag, Linux six-spec verification absent | Commit 91a7a553; QA comment 5921704822; resolve follow-ups, rerun exact Linux Chromium gate, then reconcile before #1102 |
@@ -33,16 +33,24 @@ no readiness pass is claimed and no GPT-5 substitution was authorized.
 | #1103 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1103 | Distilled from #1096 / #1100 | blocked by #1100 QA reconciliation | multi-call 2D E2E caller migration | DEPENDENCY-BLOCKED | stage 1 Codex; stage 2a Opencode Go (pending); stage 3 optional; stage 4 Claude Sonnet 5 (pending); gate pending | none yet | helper implementation exists in 91a7a553; #1100's six-spec gate remains QA FAIL | next operator after #1100 reconciles; preserve each caller's current assertions |
 | #1104 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1104 | Distilled from #1096 / #1100 | blocked by #1100 QA reconciliation; owner decision within issue | lifecycle/publishing/responsive caller migration | DEPENDENCY-BLOCKED | stage 1 Codex; stage 2b Ollama Cloud (pending); stage 3 optional; stage 4 Claude Sonnet 5 (pending); gate pending | none yet | helper implementation exists in 91a7a553; scenario-intent decision remains required | next operator after #1100 reconciles; halt at the embedded owner decision if any scenario cannot retain its intent |
 | #1105 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1105 | Proposed during #1101 QA | independent; handed to next session by discovery-gate rule | intermittent login form after logout during offline ownership account switch | HANDED-OFF / newly filed, not implemented this run | stage 1 Codex GPT-6.1-sol / stage 2a Opencode Go (pending) / stage 3 optional / stage 4 Claude Sonnet 5 (pending) / gate pending | no implementation or QA stage in this run | 20/20 repeated checks passed but root cause remains unexplained; no timeout widening | next backlog operator; investigate root cause per #1105 before any test/helper edits |
-| #1106 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1106 | Discovered during #1100 QA; parent #1096 | helper implementation commit 91a7a553 is available; separate follow-up | three 3D toolbar E2E locators | HANDED-OFF / newly filed, not implemented this run | stage 1 Codex GPT-6.1-sol / stage 2a Opencode Go (pending) / stage 3 optional / stage 4 Claude Sonnet 5 (pending) / gate pending | none; implementation not run | stale “Open piece controls menu” locator; preserve all behavior assertions | next backlog operator; migrate locators to current controls, verify all three specs |
-| #1107 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1107 | Discovered during #1100 QA; parent #1096 | helper implementation commit 91a7a553 is available; separate follow-up | mobile A-Frame drawing-plane drag root cause | HANDED-OFF / newly filed, not implemented this run | stage 1 Codex GPT-6.1-sol / stage 2a test-coordinate investigation, reroute to 2b if product code / stage 3 optional / stage 4 Claude Sonnet 5 (pending) / gate pending | none; implementation not run | 375x812 drag changed centroid by 0; strict >10px assertion remains | next backlog operator; root-cause and fix/test without relaxing the assertion |
+| #1106 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1106 | Discovered during #1100 QA; parent #1096 | helper implementation commit 91a7a553; #1109/#1111 block final QA | three 3D toolbar E2E locators | HANDED-OFF / QA FAIL | stage 1 Codex GPT-6.1-sol / stage 2a Opencode Go Kimi K2.5, actual Codex GPT-6.1-sol / stage 3 not run / stage 4 Claude Sonnet 5 Medium, actual Codex GPT-6.1-sol | stage 2a and 4 substituted: yes | direct locator fix passes camera and outline specs; stage-chrome spec exposes stale Save/AI placement assertions and current toolbar overlap | commit 1ea89aaa; QA comment 5921928116; resolve #1109/#1111, rerun all three specs, then resume #1100's Linux gate |
+| #1107 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1107 | Discovered during #1100 QA; parent #1096 | isolated local PostgreSQL-backed Chromium investigation | mobile A-Frame drawing-plane drag root cause | BLOCKED on product fix #1110 | stage 1 Codex GPT-6.1-sol / stage 2a roster Opencode Go, actual Codex GPT-6.1-sol; stage 3 not run; stage 4 pending implementation / stage 5 pending batch gate | stage 2a substitution: yes | 3/3 desktop passes, 3/3 mobile failures; mobile `elementFromPoint(187.5,90)` hit Editor actions group instead of handle; issue comment 5922170725 | product issue #1110 filed; keep threshold and selection assertions byte-identical; rerun #1107 after fix |
+| #1108 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108 | Discovered during #1106 refinement; parent #1096 | depends on #1106 locator pattern and final QA | audit remaining stale menu locators across E2E specs | DEPENDENCY-BLOCKED | stage 1 Codex GPT-6.1-sol; stage 2a Opencode Go pending; stage 3 optional; stage 4 Claude Sonnet 5 pending; gate pending | no implementation/QA yet | #1106 must reconcile via #1109 first | after #1106 closes, inventory each hit and migrate only confirmed stale 3D inline-toolbar locators |
+| #1109 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1109 | Discovered during #1106 QA; parent #1096 | implementation in progress; geometry defect deferred to #1111 by owner choice | manual 3D stage-chrome test checks current Save/AI control locations | BLOCKED / QA FAIL on #1111 | stage 1 Claude Code refinement; stage 2a roster Opencode Go/Kimi K2.5, actual Codex GPT-6.1-sol; stage 3 not run; stage 4 roster Claude Sonnet 5 Medium, actual Codex GPT-6.1-sol; gate pending | stage 2a and 4 substitutions: yes | 1/53 counts preserved; Save/AI relocated correctly; 375x812 Piece controls and Fullscreen rectangles intersect 17x28px | QA comment 5922300106; product issue #1111 filed per owner choice; rerun full scenario after #1111 |
+| #1110 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1110 | Discovered during #1107 investigation; parent #1096 | filed after owner's explicit choice to defer the product fix from #1109 | mobile 3D drawing-plane move-handle hit target | HANDED-OFF / newly filed; implementation not started | stage 1 Codex GPT-6.1-sol; stage 2a if positioning/stacking-only, reroute to 2b if interaction logic; stage 3 optional; stage 4 pending; gate pending | none | at 375x812 the visible move handle is covered by Editor actions group at its center; DPR/canvas measurement ruled out | implement layout/hit-target correction and route regression; Batch 14 |
+| #1111 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1111 | Discovered during #1109 QA; parent #1096 | filed after owner chose to defer product layout work | prevent mobile inline 3D stage action controls from intersecting | HANDED-OFF / newly filed; implementation not started | stage 1 Codex GPT-6.1-sol; stage 2a if responsive CSS only; stage 3 optional; stage 4 pending; gate pending | none | Piece controls `{238,384–282,424}` and Fullscreen `{265,396–309,436}` overlap at 375x812; screenshot inspected | product layout fix and route regression; Batch 14 |
 
 Order: #1095 → #1097 → #1096, then #1098 → #1099; the resumed work handles
 independent #1101 before the dependent creation-helper chain. The owner chose
 defer retirement for #1100, whose implementation commit exists but whose QA
 gate remains failed; #1102–#1104 stay dependency-blocked until #1100
-reconciles. #1105 is a handoff from #1101 QA. #1106/#1107 were filed during
-#1100 QA and are not implemented this run. #1096 remains open as the
-cross-shard matrix tracker; residual run failures are not fully classified.
+reconciles. Owner authorization covers #1105–#1109. #1106's direct-button
+patch is committed but its QA FAIL awaits #1109/#1111. #1107's investigation
+identified a product hit-target defect and is blocked on #1110. The owner
+chose to file and defer the UI fixes; #1110 and #1111 are handed off. #1109's
+control relocations pass, but the preserved mobile overlap assertion fails;
+#1108 remains blocked on #1106. #1096 remains open; residual full-matrix
+causes are not fully classified.
 
 Duplicate report at resumption: no duplicate among the six open issues
 (#1096, #1100–#1104). #1097 is the named WebKit failure boundary, while
@@ -385,3 +393,39 @@ linked.
   Next action is to resolve #1106/#1107, re-run and reconcile #1100, process
   #1102 → #1103 → #1104, then resume #1096's complete Linux matrix and
   residual-cause reconciliation.
+
+## #1106 implementation and QA handoff — 2026-09-30
+
+- Live #1106 criteria were re-read. The diff directly activates the current
+  inline 3D toolbar buttons in `cameraPreview3d`,
+  `manual3dOutlineSelection`, and `manual3dStageChrome`; no scenario or
+  assertion changed. Commit: `1ea89aaa`.
+- Stage 1 roster Codex; actual Codex / GPT-6.1-sol / effort unavailable,
+  substituted no. Stage 2a roster Opencode Go / Kimi K2.5; actual Codex /
+  GPT-6.1-sol / effort unavailable, substituted yes. Stage 3 not run. Stage
+  4 roster Claude / Sonnet 5 / Medium; actual Codex / GPT-6.1-sol / effort
+  unavailable, substituted yes. Stage 5 is pending the batch gate; not run.
+- Changed-file counts match base `91a7a553`: camera preview 1/3,
+  outline selection 1/28, and stage chrome 1/53 (`test(`/`expect(`).
+  Typecheck, lint (existing warnings), format check, and diff check passed.
+- Focused Chromium command with `E2E_BASE_URL=http://localhost:5000` and
+  `E2E_ENV_FILE=/tmp/creatrweb-e2e-1106.env` on local macOS and isolated
+  local PostgreSQL: 2 passed, 1 failed. Camera preview passed; outline
+  selection passed at both viewports. Stage chrome advanced past the direct
+  authoring button, then failed at its pre-existing `Save scene`-inside-
+  toolbar expectation on the first viewport. Snapshot confirms Save scene
+  in the editor header and Ask AI in Project settings. This is test drift;
+  no product control is missing. Initial attempt omitted `E2E_ENV_FILE` and
+  is invalid evidence. Corrected fixture teardown reported `deleted: 0`;
+  disposable database/temp env were removed and servers stopped.
+- New issue #1109 was filed in milestone 14 after duplicate search found no
+  open equivalent. It owns the unmodified control-placement assertions and
+  blocks final #1106 QA. Comment 5921928116 records `## QA: FAIL`; #1106 is
+  `HANDED-OFF / QA FAIL`, linked to #1109. Parent comment 5921927346 links
+  the follow-up. No Linux CI or deployed result is claimed.
+- Newest rollup: 15 discovered; 5 completed, 6 handed-off, 4 dependency-
+  blocked, 0 missing terminal statuses. Live open set: #1096, #1100,
+  #1102–#1109 (10). Next engineering in backlog order is #1105; then #1107.
+  #1108 waits on #1106/#1109; #1102–#1104 wait on #1100. After #1109,
+  rerun #1106, then the Linux six-spec gate for #1100. Stage 5 and session
+  completion remain pending.

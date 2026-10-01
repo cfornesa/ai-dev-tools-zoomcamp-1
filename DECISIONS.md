@@ -21,6 +21,17 @@
   tests, and `docs/api.md`. Engineer must not close or perform QA; separate
   Stage 4 is required.
 
+## 2026-10-01 — #1132 stage 4 QA pass delegated
+
+- The implementation is committed as `f205906b`; the worktree is clean and
+  the engineer reports the exact focused and full backend checks passed. The
+  Stage 4 review is delegated to a separate Codex subagent / GPT-6.1-sol as a
+  substitution for Claude / Sonnet 5 / Medium. It must re-fetch #1132, inspect
+  the four-file diff and new tests as untrusted, and independently rerun the
+  exact focused and full commands. The PostgreSQL-specific concurrency tests
+  are expected to skip without `POSTGRES_TEST_DATABASE_URL`; the reviewer
+  must confirm the evidence boundary and must not close the issue.
+
 ## 2026-10-01 — Backlog-session agent loop for #1147
 
 - The Codex orchestrator delegated the #1147 PM/groom pass to a separate

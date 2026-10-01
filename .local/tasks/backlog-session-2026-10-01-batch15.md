@@ -36,7 +36,7 @@ items advance only after the current transaction is terminal.
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | COMPLETED | Implementation `b11971c0`; latest QA PASS comment 5935229510; closed completed 2026-10-01. |
-| #1132 | Independent 2D AI accept/discard history writer A2 | ENGINEERING | Groomed 2026-10-01; implement exact 2D lifecycle contract, then separate QA. |
+| #1132 | Independent 2D AI accept/discard history writer A2 | QA | Implementation `f205906b`; separate Stage 4 review in progress. |
 | #1133 | Activity read API | DEPENDENCY-BLOCKED | Requires #1131/#1132. |
 | #1134 | History UI | DEPENDENCY-BLOCKED | Requires #1133. |
 | #1135 | AI proposal reason UI | DEPENDENCY-BLOCKED | Requires #1132/#1134. |
@@ -166,9 +166,22 @@ version and does not duplicate activity. Exact safe metadata is passed through
 | Stage | Rostered owner | Actual owner | Substituted |
 | --- | --- | --- | --- |
 | PM/grooming | Codex / GPT-6.1-sol | Separate Codex subagent / GPT-6.1-sol / effort unavailable | no |
-| Implementation / stage 2b | Ollama Cloud / Kimi K3 | Pending | pending |
+| Implementation / stage 2b | Ollama Cloud / Kimi K3 | Codex subagent / GPT-6.1-sol / effort unavailable | yes |
 | Independent review / stage 3 | Mistral Vibe | Not requested / pending | — |
-| QA / stage 4 | Claude / Sonnet 5 / Medium | Pending separate pass | pending |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Separate Codex subagent / GPT-6.1-sol / effort unavailable | yes |
+
+Implementation commit `f205906b` changes exactly the four issue-named files
+(`backend/scenes/ai_runs.py`, `backend/scenes/ai_runs_api.py`,
+`backend/tests/test_ai_runs.py`, and `docs/api.md`). It documents the optional
+request field before implementing it, adds 2D-only accept/discard activity in
+the transactional service paths, and tests the stated normalization and
+state/idempotency matrix. Engineer-reported checks: exact focused command
+passed 67 tests with 3 PostgreSQL-only skips; `make backend-check` passed
+Ruff, format check (288 files), mypy (396 files), and backend tests (1920
+passed, 41 skipped). The PostgreSQL-specific concurrency tests are present but
+skipped because no disposable `POSTGRES_TEST_DATABASE_URL` is configured.
+Stage 4 must independently re-run the exact issue commands and inspect the
+implementation and tests before reconciliation.
 
 ### #1147 — Account shell copy assertion
 

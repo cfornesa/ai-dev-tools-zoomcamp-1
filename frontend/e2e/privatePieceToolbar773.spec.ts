@@ -77,6 +77,8 @@ test.describe('owner (private) vs public regular view toolbar (#773)', () => {
       'Take screenshot',
       'Open download menu',
       'View immersive piece',
+      'Unmute sound',
+      'Show hand gesture guide',
       'Expand piece to fullscreen',
     ];
     for (const [name, labels] of Object.entries(seen)) {

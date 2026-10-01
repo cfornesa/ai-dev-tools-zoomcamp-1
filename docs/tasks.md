@@ -25114,3 +25114,22 @@ pre-existing open work while keeping #1102 and its dependents open.
 - [#1119](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1119) — public/plain/embed 2D toolbar E2E contract; PROPOSED.
 - [#1120](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1120) — 375px 2D ink action hit target; PROPOSED, depends on #1118.
 - [#1121](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121) — current 3D Web address button selector in slug E2E; PROPOSED.
+
+### 2026-10-01 — distillation of Codex-filed #1114, #1118–#1121 (Batch 14)
+
+Refinement sections were appended to each body (original text preserved).
+Key findings: **#1119** — its claim that the embed route is inline is
+wrong (`embed/p/:id` renders `PublicProjectViewer` with default
+`toolbarMode='menu'`); only the owner/`/p` steps are stale. **#1118** — reuse
+the inline-aware `openPieceControlsMenu` helper; `inkLayer2d` 375x812 stays
+blocked on #1120. **#1114** — now ready (stale #1108 dependency removed);
+hypothesis: the bottom-docked plane toolbar (`NARROW_STAGE_PX = 480`) collides
+with the stacked inline toolbar rows in the ≈180 px mobile stage; extends
+`inlineStageToolbarGeometry.spec.ts`; gates #1112. **#1120** — 2D twin of #1111;
+step 0 checks whether the intercept predates `efb5d494`. **#1121** — pure
+locator fix at `pieceSlugEdit750.spec.ts:85`, run to the end for further drift.
+New defect found (recorded on #1111, not a new issue): an **unscoped**
+`.editor-piece-stage-toolbar{max-width:calc(100% - 3.5rem)}` at `index.css`
+~6737 (inside `@media (max-width:700px)`) contradicts #1111's "2D unchanged"
+criterion. Order: #1118/#1119/#1121 and #1114/#1120 in two lanes (tests vs
+CSS, never two runs on the same files); then #1112, #1102, #1110, #1111, #1096.

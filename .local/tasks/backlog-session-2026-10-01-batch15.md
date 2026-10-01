@@ -28,9 +28,9 @@ items advance only after the current transaction is terminal.
 | #1114 | Depends on 3D toolbar/mobile regression lane | DEPENDENCY-BLOCKED | User selected 16:9 stage and outer rail under stage; finish required regression lane. |
 | #1124 | Batch 15 theme/token foundation | CLOSED | QA comment 5930214077; closed completed 2026-10-01. |
 | #1125 | After #1124 | CLOSED | Completed locally in `e2460057`; QA PASS comment 5931636109. |
-| #1126 | After #1124 | GROOMED | Next transaction: implement shared shell/header/navigation/toggles. |
+| #1126 | After #1124 | CLOSED | QA PASS; implementation commit `f8630dc5`; GitHub closed completed 2026-10-01. |
 | #1127 | Independent Batch 15 copy/provider order | GROOMED | Process after #1126 by backlog order. |
-| #1128 | After #1124–#1126 | DEPENDENCY-BLOCKED | Add route-level theme/viewport/contrast coverage after parents. |
+| #1128 | After #1124–#1126 | GROOMED | Eligible now that #1124–#1126 are closed; next eligible after #1127. |
 | #1146 | Discovered during #1125 QA; Batch 15 | HANDED-OFF | Filed/milestoned as new follow-up; implementation deferred to a later issue transaction per discovery-gate rule. |
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
@@ -178,5 +178,56 @@ the active `soft` root token is nonzero; because changing SPA CSS is outside
 | QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
 
 **Evidence boundary:** local disposable Django/Vite stack (`127.0.0.1:5003`),
-Chromium on macOS; no production or Linux CI claim. **Next:** post QA evidence,
-close #1125 after its issue-scoped commit, then process #1126.
+Chromium on macOS; no production or Linux CI claim. **Next:** process #1126.
+
+### #1126 — Account pages: shared header, navigation and display controls
+
+**State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+**Result:** completed and closed on 2026-10-01. GitHub QA PASS comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1126#issuecomment-5932016119.
+
+| Stage | Rostered owner | Actual owner | Substituted |
+| --- | --- | --- | --- |
+| PM/grooming | Codex / GPT-6.1-sol | Codex / GPT-6.1-sol / effort unavailable | no |
+| Implementation / stage 2b | Ollama Cloud / Kimi K3 | Codex / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / stage 3 | Mistral Vibe | Not requested / not run | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
+
+The user's stated priority was least risk and invasiveness; the mobile
+navigation therefore wraps visible links rather than introducing a menu
+state. The account pages now take the title from `SiteSettings`, request
+published navigation from the existing anonymous `/api/pages/` projection,
+and expose the SPA theme/motion preferences using their shared localStorage
+keys. The mobile display controls switch to normal flow after visual QA found
+that the fixed controls could cover the login helper copy. Allauth form fields,
+actions, CSRF handling, and provider POST forms remain untouched.
+
+**Implementation commit:** `f8630dc5`. Product files: site theme context,
+account base template, focused Django template coverage, and a dedicated
+Playwright shell/preference regression. No route, API contract, dependency,
+or migration change.
+
+**Focused verification:**
+
+- `UV_CACHE_DIR=/tmp/codex-uv-cache uv run pytest tests/test_account_theme.py tests/test_account_component_styles.py tests/test_account_templates.py`
+  — 6 passed.
+- `E2E_BASE_URL=http://127.0.0.1:5003 E2E_ENV_FILE=/tmp/codex-qa-1120-current.env npx playwright test e2e/accountShell.spec.ts --project=chromium`
+  — 1 passed. Checks 375px link reachability/no overflow, keyboard skip-link
+  order, light/dark and reduced-motion storage, SPA preference loading, and
+  persistence after logout. Four 1280×900/375×812 light/dark screenshots were
+  visually inspected; mobile control overlap was corrected before final run.
+- `UV_CACHE_DIR=/tmp/codex-uv-cache make check` — 1,880 backend tests passed,
+  39 skipped; 310 frontend files / 3,187 tests passed; action pin, lint,
+  formatting, mypy, and typecheck gates passed.
+- `git diff --check` and focused Prettier check — passed.
+
+**QA criterion matrix:** all #1126 criteria pass. The anonymous header uses
+the configured brand, published page navigation uses the shared API, primary
+landmarks and first-focus skip link are present, display controls work and
+persist between account/SPA routes, and login flow/form contracts remain
+unchanged.
+
+**Evidence boundary:** local disposable Django/Vite stack at
+`127.0.0.1:5003`, Chromium on macOS; no production or Linux browser claim.
+**Next eligible issues:** #1127 and #1128; process #1127 first per the live
+manifest order, then #1128.

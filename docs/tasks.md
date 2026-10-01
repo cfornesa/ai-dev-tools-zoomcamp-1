@@ -25251,8 +25251,12 @@ as completed. The transaction and remaining open-issue manifest are recorded
 in `.local/tasks/backlog-session-2026-10-01-batch15.md`. #1125's local styling
 and visual QA are complete; a computed-style gap between the SPA content
 panel and its soft-shadow token was filed as [#1146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146)
-and deferred to its own transaction. #1126 and #1127 are eligible, and #1128
-waits for #1126 (with #1125 now closed).
+and deferred to its own transaction. #1126 is now closed after commit
+`f8630dc5`, the site-shell/navigation/theme-motion implementation, and QA
+PASS comment [5932016119](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1126#issuecomment-5932016119).
+The nav links come from the published `/api/pages/` projection; small-screen
+links wrap, while the controls move below content to avoid overlap. #1127 and
+#1128 are eligible; process #1127 first per the batch manifest.
 
 ### 2026-10-01 — Task distillation: LIGDOL adaptation (Batch 16)
 

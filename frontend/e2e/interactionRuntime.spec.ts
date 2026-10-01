@@ -87,6 +87,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
+import { saveScene } from './support/saveScene.js';
 import { createServerProject2D } from './support/createProject.js';
 import {
   expandAllCollapsibleSections,
@@ -210,7 +211,7 @@ async function openLogicPanel(page: Page): Promise<void> {
 
 async function saveAndReload(page: Page, expectedVersionText: RegExp): Promise<void> {
   await reopenEditScene(page);
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await saveScene(page);
   await expect(page.getByTestId('editor-save-status')).toHaveText(expectedVersionText);
   await closeEditScene(page);
   await page.reload();

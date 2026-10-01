@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { saveScene } from './support/saveScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -179,7 +180,7 @@ test.describe('Draw.io editor', () => {
     await page.locator('button.piece-stage-command-close').click();
     await layers.getByRole('button', { name: 'Unlock Back Renamed' }).click();
     await page.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(page);
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version \d+/);
     const project = (await (await apiGet(context, `/api/projects/${id}/`)).json()) as {
       current_version: number;

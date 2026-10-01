@@ -56,6 +56,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { saveScene } from './support/saveScene.js';
 import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
@@ -111,7 +112,7 @@ async function addShapeAndSave(page: Page): Promise<void> {
   // history of this restructuring.
   await openEditScene(page);
   await page.getByRole('button', { name: 'Add circle' }).click();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await saveScene(page);
   await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version/);
   await closeEditScene(page);
 }

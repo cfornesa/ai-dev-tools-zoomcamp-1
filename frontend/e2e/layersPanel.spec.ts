@@ -42,6 +42,7 @@ import { expect, test, type Browser, type Locator, type Page } from '@playwright
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
+import { saveScene } from './support/saveScene.js';
 import { createServerProject2D } from './support/createProject.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import type { E2EState } from './support/state.js';
@@ -468,7 +469,7 @@ test.describe('Layers panel', () => {
       // Persisted order survives a real save + full page reload.
       const rowIdsBeforeSave = await outlineRowIds(page);
       await reopenEditScene(page);
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
       await page.reload();
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);

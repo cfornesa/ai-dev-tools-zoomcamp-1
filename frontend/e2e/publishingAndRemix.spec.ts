@@ -99,6 +99,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { saveScene } from './support/saveScene.js';
 import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { openEditScene, openPieceControlsMenu } from './support/openEditScene.js';
@@ -317,7 +318,7 @@ test.describe('Publishing', () => {
     await expect(positionX).toBeVisible();
     await positionX.fill('555');
     await positionX.blur();
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(page);
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
     // 1. Invalid metadata (still the untouched default title, still a
@@ -683,7 +684,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const rectFillInput = page.locator('#shape-style-fill');
     await rectFillInput.fill(rectFill);
     await rectFillInput.blur();
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(page);
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
     await saveMeaningfulMetadata(page, publicProjectId, {
       title: 'Anonymous viewer fixture project',
@@ -1325,7 +1326,7 @@ test.describe('Remix and fork', () => {
     const ownerPositionX = ownerPage.locator('#shape-style-positionX');
     await ownerPositionX.fill('100');
     await ownerPositionX.blur();
-    await ownerPage.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(ownerPage);
     await expect(ownerPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
     await saveMeaningfulMetadata(ownerPage, sourceId, {
@@ -1381,7 +1382,7 @@ test.describe('Remix and fork', () => {
     // recorded source version.
     await openEditScene(ownerPage);
     await ownerPage.getByRole('button', { name: 'Add circle' }).click();
-    await ownerPage.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(ownerPage);
     await expect(ownerPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 3/);
     const forkedFirstVersionAfterSourceEdit = (await (
       await apiGet(visitorContext, `/api/projects/${forkedId}/versions/${forkedVersionId}/`)
@@ -1399,7 +1400,7 @@ test.describe('Remix and fork', () => {
     await forkPositionX.fill('999');
     await forkPositionX.blur();
     await openEditScene(visitorPage);
-    await visitorPage.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(visitorPage);
     await expect(visitorPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
     // The source's own shape is completely untouched by the fork's edit

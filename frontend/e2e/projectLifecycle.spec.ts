@@ -56,6 +56,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { saveScene } from './support/saveScene.js';
 import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
@@ -153,7 +154,7 @@ test.describe('Project lifecycle', () => {
 
       await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
 
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
       await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version 2/);
 
@@ -256,7 +257,7 @@ test.describe('Project lifecycle', () => {
       await clonePositionX.fill('777');
       await clonePositionX.blur();
       await openEditScene(page);
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
       // Clone the same template again. If the first clone's edit had
@@ -288,7 +289,7 @@ test.describe('Project lifecycle', () => {
       // SaveControl.tsx (issue #95 follow-up) is a single-click Save with
       // no change-label field by design -- every version created here
       // shows up in history unlabeled, same as any other explicit Save.
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version/);
     }
 

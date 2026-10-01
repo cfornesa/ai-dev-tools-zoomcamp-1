@@ -113,6 +113,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { apiGet, apiPost, apiPut } from './support/api.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
 import { loginViaUI } from './support/auth.js';
+import { saveScene } from './support/saveScene.js';
 import { createServerProject2D } from './support/createProject.js';
 import {
   readLocalDraft,
@@ -774,7 +775,7 @@ test.describe('Local and server draft autosave', () => {
       await page.clock.fastForward(1700); // let the local debounce fire first
       expect(await readLocalDraft(page, projectId)).not.toBeNull();
 
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
       expect(await readLocalDraft(page, projectId)).toBeNull();
@@ -800,7 +801,7 @@ test.describe('Local and server draft autosave', () => {
       await page.clock.fastForward(1700); // local debounce fires, seeding a local draft
       expect(await readLocalDraft(page, projectId)).not.toBeNull();
 
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
       // Reproduces the exact evidence sequence from issue #125: POST
@@ -848,7 +849,7 @@ test.describe('Local and server draft autosave', () => {
       await page.clock.fastForward(1700);
       expect(await readLocalDraft(page, projectId)).not.toBeNull();
 
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
       // Reopen before a full periodic interval would have elapsed.

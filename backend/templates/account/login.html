@@ -8,11 +8,11 @@
   {% csrf_token %}{{ redirect_field }}
   <label for="id_login">Email</label>{{ form.login }}{{ form.login.errors }}
   <label for="id_password">Password</label>{{ form.password }}{{ form.password.errors }}
-  <button type="submit">Login</button>
+  <button class="auth-submit" type="submit">Login</button>
 </form>
 {% get_providers as socialaccount_providers %}
 {% for provider in socialaccount_providers %}
-<form method="post" action="{% provider_login_url provider.id %}">{% csrf_token %}<button class="{{ provider.id }}" type="submit">Continue with {{ provider.name }}</button></form>
+<form method="post" action="{% provider_login_url provider.id %}">{% csrf_token %}<button class="auth-provider" type="submit">Continue with {{ provider.name }}</button></form>
 {% endfor %}
 <p class="links">New here? Continue with Google to create your account.</p>
 {% endblock %}

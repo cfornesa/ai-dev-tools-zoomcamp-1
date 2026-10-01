@@ -25248,8 +25248,11 @@ guard the `loginViaUI` selectors and the allauth POST forms. #1124 is implemente
 on commits `2c3056d7`, `8cdeb84f`, and `3646959e`; its local QA matrix and full
 `make check` pass. GitHub QA comment 5930214077 records PASS and #1124 is closed
 as completed. The transaction and remaining open-issue manifest are recorded
-in `.local/tasks/backlog-session-2026-10-01-batch15.md`. #1125 and #1126 are
-now eligible; #1127 remains independent, and #1128 waits for #1125/#1126.
+in `.local/tasks/backlog-session-2026-10-01-batch15.md`. #1125's local styling
+and visual QA are complete; a computed-style gap between the SPA content
+panel and its soft-shadow token was filed as [#1146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146)
+and deferred to its own transaction. #1126 and #1127 are eligible, and #1128
+waits for #1126 (with #1125 now closed).
 
 ### 2026-10-01 — Task distillation: LIGDOL adaptation (Batch 16)
 

@@ -31,6 +31,7 @@ items advance only after the current transaction is terminal.
 | #1126 | After #1124 | GROOMED | Implement shared shell/header/navigation/toggles after current issue. |
 | #1127 | Independent Batch 15 copy/provider order | GROOMED | Next eligible after #1125, by backlog order. |
 | #1128 | After #1124–#1126 | DEPENDENCY-BLOCKED | Add route-level theme/viewport/contrast coverage after parents. |
+| #1146 | Discovered during #1125 QA; Batch 15 | PROPOSED | Align SPA `.content-panel` soft-shadow behavior with the `--shadow` token; defer implementation to its own issue transaction. |
 | #1129 | Owner decision D1 | OWNER-DECISION-PENDING | Request the project's documented owner choice when the decision gate is reached. |
 | #1130 | Owner decision D2 | OWNER-DECISION-PENDING | Request the documented 2D/3D history scope decision. |
 | #1131 | Independent 2D history event writer A1 | GROOMED | Implement after Batch 15. |
@@ -116,9 +117,14 @@ closed; retain strict one-issue-at-a-time implementation and QA. Do not push.
 
 ### #1125 — Account page component styles (current)
 
-**State:** `GROOMED → ENGINEERING` (single current transaction). The #1124
-prerequisite is closed. The issue names the entry point, finite visual
-outcomes, provider selectors, form preservation constraints, local E2E
+**State:** `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED`.
+**Result:** completed locally; GitHub issue closed 2026-10-01. QA comment:
+pending connector post. New related follow-up #1146 records the SPA
+`.content-panel` soft-shadow/token mismatch discovered in computed-style QA;
+that out-of-scope panel change is deferred to its own transaction.
+
+The #1124 prerequisite is closed. The issue names the entry point, finite
+visual outcomes, provider selectors, form preservation constraints, local E2E
 fixture, viewports, 200% zoom, and exact verification. Its code-quality
 conventions are `design-ux.md`, `html-css-vanilla-js.md`,
 `accessibility.md`, and `testing.md`.
@@ -128,7 +134,7 @@ conventions are `design-ux.md`, `html-css-vanilla-js.md`,
 | PM/grooming | Codex / GPT-6.1-sol (portable backlog-session profile) | Codex / GPT-6.1-sol / effort unavailable | no |
 | Implementation / stage 2a | Opencode Go / Kimi K2.5 | Codex / GPT-6.1-sol / effort unavailable | yes |
 | Independent review / stage 3 | Mistral Vibe | Not requested / not run | — |
-| QA / stage 4 | Claude / Sonnet 5 / Medium | Pending | pending |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
 
 The checked-in `docs/design-system.md` and `docs/testing-guidelines.md`
 mentioned by older project notes are absent; their current equivalents,
@@ -137,5 +143,39 @@ mentioned by older project notes are absent; their current equivalents,
 or open `REVIEW REQUIRED` gate. Relevant browser/account and local PostgreSQL
 memory topics were read.
 
-**Implementation exit checks:** pending. Do not start another issue until this
-transaction reaches a terminal state.
+**Implementation commit:** pending. Product files: account base/login/signup
+templates; focused Django template test; Playwright visual and form-contract
+test. No dependency/API/schema change.
+
+**Focused verification:**
+
+- `UV_CACHE_DIR=/tmp/codex-uv-cache uv run pytest tests/test_account_component_styles.py tests/test_account_theme.py tests/test_account_templates.py`
+  — 5 passed.
+- `E2E_BASE_URL=http://127.0.0.1:5003 E2E_ENV_FILE=/tmp/codex-qa-1120-current.env npx playwright test e2e/accountComponentStyles.spec.ts e2e/accountThemeParity.spec.ts --project=chromium`
+  — 3 passed. Covers stable provider class, themed controls, four shadow
+  states, script font, 375px and 188px (200%-equivalent) widths, keyboard and
+  pointer state, locally intercepted provider POST/CSRF, `loginViaUI`, and
+  #1124 parity regression. Manual active-Chrome inspection showed the themed
+  login card and consistent provider actions. 188px no-overflow check passes.
+- `UV_CACHE_DIR=/tmp/codex-uv-cache make check` — 1,879 backend tests passed,
+  39 skipped; 310 frontend files / 3,187 tests passed; workflow pin, lint,
+  format, mypy, and typecheck gates passed.
+- `git diff --check` — pending final issue commit.
+
+**QA criterion matrix:** all #1125 criteria pass after final primary-button
+correction to the site accent-tinted action token. Account card consumes its
+page `--shadow` token; stable provider styling and allauth POST/CSRF contracts
+remain intact. The SPA `.content-panel` computed shadow remains `none` while
+the active `soft` root token is nonzero; because changing SPA CSS is outside
+#1125, this distinct mismatch is shifted to [#1146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146).
+
+| Stage | Rostered owner | Actual owner | Substituted |
+| --- | --- | --- | --- |
+| PM/grooming | Codex / GPT-6.1-sol | Codex / GPT-6.1-sol / effort unavailable | no |
+| Implementation / stage 2a | Opencode Go / Kimi K2.5 | Codex / GPT-6.1-sol / effort unavailable | yes |
+| Independent review / stage 3 | Mistral Vibe | Not requested / not run | — |
+| QA / stage 4 | Claude / Sonnet 5 / Medium | Codex / GPT-6.1-sol / effort unavailable | yes |
+
+**Evidence boundary:** local disposable Django/Vite stack (`127.0.0.1:5003`),
+Chromium on macOS; no production or Linux CI claim. **Next:** post QA evidence,
+close #1125 after its issue-scoped commit, then process #1126.

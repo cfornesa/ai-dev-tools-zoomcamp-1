@@ -25537,3 +25537,25 @@ The QA reviewer independently repeated the browser test and full check. Stage
 2a and stage 4 were Codex substitutions; stage 3 was not run. Evidence is
 local only; no deployment claim applies. Next backlog issue selection follows
 the refreshed dependency order in `.local/tasks/backlog-session-2026-10-01-batch15.md`.
+
+### 2026-10-01 — #1100 QA refresh and dependency distillation
+
+After #1106 and #1107 closed, the exact #1100 six-spec command was rerun on
+the local disposable PostgreSQL/macOS Chromium stack and passed 7/7. Per-file
+`test()`/`expect()` counts remain identical to `ef5771b7`; typecheck, lint,
+format, and scoped diff checks pass. The independent QA review remains
+**FAIL / verification-boundary blocked** because the acceptance contract
+requires Linux Chromium/PostgreSQL. Docker has no running daemon on this host,
+and the implementation ref is unpushed; no push was authorized. Latest QA
+comment [#5934294294](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100#issuecomment-5934294294)
+records the per-criterion matrix. Parent #1096 received refreshed child status
+in comment
+[#5934302482](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5934302482).
+No new issue was found; #1101, #1106, and #1107 already cover the identified
+fixture causes. #1102–#1104, #1112, and #1144 remain dependency-blocked.
+
+Fresh GitHub enumeration found 25 open issues. The first independent,
+criterion-ready item is #1131; its transactional version-event work does not
+depend on the blocked E2E helper series or the #1129/#1130 owner decisions.
+The current transaction ledger and dependency rationale are recorded in
+`.local/tasks/backlog-session-2026-10-01-batch15.md`.

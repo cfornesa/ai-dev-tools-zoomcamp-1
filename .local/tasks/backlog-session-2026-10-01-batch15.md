@@ -16,14 +16,14 @@ items advance only after the current transaction is terminal.
 
 | Issue | Dependencies / lane | Initial status | Current owner / next action |
 | --- | --- | --- | --- |
-| #1096 | Browser-matrix tracker | HANDED-OFF | Reconcile only after cause-specific children and a fresh Linux matrix. |
-| #1100 | Foundation E2E server fixtures | GROOMED | Implement before helper-migration children. |
+| #1096 | Browser-matrix tracker | HANDED-OFF | Comment 5934302482 refreshes child status; wait for #1100 Linux gate, #1102–#1104 migrations, then rerun and classify the full Linux matrix. |
+| #1100 | Foundation E2E server fixtures | BLOCKED (verification-boundary) | Comment 5934294294; local 7/7 plus static checks pass; exact Linux Chromium/PostgreSQL gate is next, then reconcile before dependent migrations. |
 | #1102 | After #1100 | DEPENDENCY-BLOCKED | Wait for #1100, then migrate single-purpose 2D specs. |
 | #1103 | After #1100 | DEPENDENCY-BLOCKED | Wait for #1100, then migrate multi-call 2D specs. |
 | #1104 | After #1100 | DEPENDENCY-BLOCKED | Wait for #1100, then migrate lifecycle/publication/responsive specs. |
 | #1108 | 3D inline toolbar locator audit | CLOSED | QA PASS after 20/20 exact nine-spec rerun; comment 5932612079; closed completed 2026-10-01. #1104-owned lifecycle setup remains explicitly unverified and untouched. |
-| #1110 | 3D mobile move handle | GROOMED | Verify current implementation against its exact issue criteria. |
-| #1111 | 3D inline control overlap | GROOMED | Verify current implementation against its exact issue criteria. |
+| #1110 | 3D mobile move handle | DEPENDENCY-BLOCKED | After #1111/#1112 and #1102/#1103 compatibility gate; then verify exact hit-testing and mobile criteria. |
+| #1111 | 3D inline control overlap | DEPENDENCY-BLOCKED | Local CSS fix exists; reconcile its broad 2D gate after #1102/#1103 and #1100. |
 | #1112 | After #1100; drawing-plane E2E | DEPENDENCY-BLOCKED | Migrate its setup after helper foundation. |
 | #1114 | Depends on 3D toolbar/mobile regression lane | DEPENDENCY-BLOCKED | User selected 16:9 stage and outer rail under stage; finish required regression lane. |
 | #1124 | Batch 15 theme/token foundation | CLOSED | QA comment 5930214077; closed completed 2026-10-01. |
@@ -52,6 +52,48 @@ items advance only after the current transaction is terminal.
 | #1145 | 3D drawing-plane cancel regression | CLOSED | QA PASS; #1145 closed completed 2026-10-01. Full viewport evidence and scene-data equality show cancel restores the selected plane; the old frame-only byte comparison was an invalid visual oracle. |
 
 ## Transaction ledger
+
+### Fresh task-distillation reconciliation after #1100 QA — 2026-10-01
+
+Authenticated GitHub search returned **25 open issues**: #1096, #1100,
+#1102–#1104, #1110–#1112, #1114, #1129–#1144. Closed outcomes remain
+immutable; #1101, #1106, #1107, #1145, #1146, and #1147 are closed. This
+manifest's open rows cover the full refreshed set and retain links/dependencies
+from the Batch 14/16 issue bodies.
+
+**Current #1100 transaction:** its existing implementation commit is
+`91a7a553`; no product files changed in this refresh. The six named specs
+passed 7/7 on the local disposable PostgreSQL/macOS Chromium stack after
+#1106/#1107 closed. Assertion inventories match `ef5771b7` in every file:
+1/3, 1/11, 1/18, 1/28, 1/53, and 1/25. Typecheck/lint/format and diff checks
+pass. QA comment [#5934294294](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100#issuecomment-5934294294)
+records the latest independent Stage 4 review. The Linux-only acceptance is
+still unverified; this Mac has no active Docker daemon, the implementation ref
+is not pushed, and no push authorization was given. Class: **verification-
+boundary**, not a code or workflow defect. Owner/context: project owner must
+provide an authorized Linux runner/job against the implementation ref or
+authorize publishing the branch for GitHub Actions. Exact next action: run
+#1100's six-spec Linux Chromium/PostgreSQL command and record each spec's
+result. No new issue is needed: the fixture causes remain covered by #1100,
+#1101, #1106, and #1107; this refresh exposed no new actionable code defect.
+
+The parent tracker #1096 remains **HANDED-OFF**; comment
+[#5934302482](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5934302482)
+records that #1101/#1106/#1107 have closed, #1100 has local 7/7 but is still
+Linux-blocked, and residual full-matrix causes remain incompletely mapped.
+After #1100's Linux gate, #1102–#1104 can proceed one at a time; #1096 then
+needs a fresh 16-shard Linux run and a cause map for remaining failures.
+
+**Fresh dependency order:** #1100 is terminally blocked, so dependent
+#1102–#1104, #1112, and #1144 stay dependency-blocked. #1110/#1111/#1114 also
+wait for their stated mobile and 2D compatibility prerequisites. #1129 and
+#1130 remain owner-decision gates only for their own dependent LIGDOL slices;
+no current conversation response unambiguously chooses their listed options.
+The independent Batch 16 items #1131, #1132, #1136, and #1141 remain eligible.
+No duplicates or new issue gaps were found in this refresh. **Next issue:**
+#1131, a criterion-ready Stage 2a event-writer change using the existing
+`ProjectActivity` model, exact three version lifecycle actions, transaction/
+rollback and idempotency tests, and `make backend-check`.
 
 ### #1147 — Account shell copy assertion
 

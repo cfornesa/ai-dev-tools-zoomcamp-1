@@ -25090,3 +25090,27 @@ lint (existing warnings), format check, and diff check passed. QA evidence is
 issue comment
 [#5925178093](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1115#issuecomment-5925178093);
 #1115 is closed completed.
+
+### 2026-10-01 — #1102 single-purpose 2D helper migration QA
+
+Commit `f3b6f53b` replaces the stale helper in nine scoped E2E files (10
+server-backed 2D calls and the final 3D call in `pieceSlugEdit750.spec.ts`).
+The diff is limited to helper imports and setup calls; all per-file test and
+expect counts match base. The exact local macOS Chromium/PostgreSQL batch ran
+13 scenarios: 4 passed, 9 failed. Failures were classified into current
+private 2D control contracts (#1118), public/embed control contracts (#1119),
+a 375px 2D ink hit-target product defect (#1120), and a stale 3D Web address
+locator (#1121). The helper migration is correct but #1102 remains QA FAIL
+until those consumers pass and its Linux Chromium criterion is run. QA record:
+[#5925343335](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1102#issuecomment-5925343335).
+
+The four new criterion-ready issues are filed in Batch 14 and linked above.
+Per `docs/process.md`'s owner-mandated separation of duties, an issue filed
+and scoped by this agent cannot be implemented by the same agent in this run;
+they are proposed handoffs for a different agent/run. Continue with independent
+pre-existing open work while keeping #1102 and its dependents open.
+
+- [#1118](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1118) — private 2D inline toolbar E2E contract; PROPOSED.
+- [#1119](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1119) — public/plain/embed 2D toolbar E2E contract; PROPOSED.
+- [#1120](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1120) — 375px 2D ink action hit target; PROPOSED, depends on #1118.
+- [#1121](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121) — current 3D Web address button selector in slug E2E; PROPOSED.

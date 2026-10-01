@@ -24891,6 +24891,14 @@ ranked hypotheses and a stop-and-file rule for product defects. New
 [#1108](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108): audit remaining stale locators
 (`unifiedEditor3d.spec.ts:34` suspected). #1100 remains QA-FAIL/HANDED-OFF until #1106/#1107 land.
 
+### 2026-09-30 — Batch 14 #1106 locator patch and QA handoff
+
+The owner resumed work after #1106/#1107 were refined and authorized the then-open follow-ups. For #1106, Codex replaced the nonexistent menu opener with the direct inline-toolbar buttons in the three scoped specs. Commit `1ea89aaa` changes only those three E2E files; test/expect counts remain camera preview 1/3, outline selection 1/28, and stage chrome 1/53. `npm run typecheck`, `npm run lint` (existing warnings), `npm run format:check`, and `git diff --check` passed.
+
+Against isolated local PostgreSQL database `codex_qa_20260930_1106`, Django, Vite, and macOS Chromium, the correctly configured Playwright run passed camera preview and outline selection (the latter at both 1280x900 and 375x812). `manual3dStageChrome.spec.ts` passed the direct 3D authoring opener, then failed at an unchanged expectation that Save scene is inside the Preview actions toolbar. The captured snapshot shows Save scene in the editor header and Ask AI in Project settings. This is test drift from later control-placement changes, not evidence of a missing product control. New criterion-ready [#1109](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1109) captures the test-only reconciliation; it was filed in milestone 14 and is handed off under the discovery gate. QA comment [5921928116](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1106#issuecomment-5921928116) is `## QA: FAIL`; #1106 remains open / HANDED-OFF until #1109 is resolved and all three specs pass. Parent #1096 received comment [5921927346](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5921927346).
+
+The initial Playwright attempt omitted `E2E_ENV_FILE` and seeded the default local DB while Django used the isolated DB; its login failures are invalid evidence. The corrected run aligned fixture setup/teardown with the isolated database. Teardown reported `deleted: 0`; the isolated DB and temporary env file were removed, and both local servers were stopped. No Linux matrix or production evidence is claimed. The discovery reconciliation found no open duplicate for #1109; closed #367 and #1038 describe historical UI placement work and remain untouched. Current open set: #1096, #1100, #1102–#1109 (10 issues); production readiness and session completion remain pending.
+
 ### 2026-09-30 — distillation of Codex-filed #1109 (Batch 14)
 
 [#1109](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1109) verified and refined. Save scene
@@ -24902,3 +24910,20 @@ toolbar does not render and have never executed since #1106, so the issue now
 requires running to completion, re-homing with intent preserved, and an
 owner-decision stop rule for layouts with no inline equivalent. Order:
 #1109 → #1106 closure → #1108 → six-spec gate → #1100.
+
+### 2026-10-01 — Batch 14 #1107 product hit-target follow-up
+
+Investigated #1107 against an isolated local PostgreSQL-backed Django/Vite stack in macOS Chromium. The required `--repeat-each=3` run passed both desktop runs and failed all three 375x812 runs at the unchanged `> 10` px centroid movement assertion. A focused diagnostic measured DPR 1 and a 315x180 CSS/backing canvas, so the screenshot-pixel scale hypothesis is not supported. At mobile, the 34x34 move-handle center was `(187.5, 90)` with the stage scrolled to `scrollY=376`; `document.elementFromPoint(187.5, 90)` resolved to the `Editor actions` toolbar group rather than the visible handle. This is a product hit-target/stacking defect, not a test-coordinate or measurement defect. No change to the #1107 assertions remains in the working diff. Criterion-ready [#1110](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1110) was filed in Batch 14 to repair mobile handle reachability and preserve route-level coverage. #1107 is blocked on #1110; parent #1096 and #1100 remain open pending the required Linux verification.
+
+### 2026-09-30 — distillation of Codex-filed #1110 (Batch 14)
+
+[#1110](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1110) is the product-fix child of #1107
+(`elementFromPoint` at the move handle returned the `Editor actions` group at
+375x812). Source analysis: `.editor-piece-stage-toolbar > *{pointer-events:auto}`
+plus `[aria-label='Editor actions']{z-index:3}` ties with
+`.plane-selection-overlay{z-index:3}`, and the group grows under the
+`max-width:600px` rule once `.editor-stage-text-actions` becomes static. Refined
+with a confirm-first evidence step, narrow-fix constraints (2D toolbar shares
+the CSS; earlier tap-target regressions documented in index.css), a
+fail-before/pass-after regression test, and explicit verification commands.
+Order: #1110 → rerun #1107's spec (closes #1107).

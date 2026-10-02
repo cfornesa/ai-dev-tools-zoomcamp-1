@@ -1217,6 +1217,13 @@ test.describe('Draft recovery', () => {
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
+      // Seeded IndexedDB/server records do not make the mounted editor dirty.
+      // Make a real unsaved edit so reloadDirtyEditor exercises the app's
+      // beforeunload guard deterministically instead of relying on incidental
+      // state left by project creation or CI timing.
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
+
       const older = new Date(Date.now() - 60_000).toISOString();
       await seedLocalDraft(page, {
         projectId,

@@ -1793,3 +1793,36 @@ foreign, unknown, and unsupported-kind lookups all return `404` without
 revealing whether an asset exists. Successful responses send the retained MIME
 type, `X-Content-Type-Options: nosniff`, `Cache-Control: public, immutable`,
 `Access-Control-Allow-Origin: *`, and the stored checksum.
+
+## Owner-only project continuity metrics (#1143)
+
+`GET /api/admin/continuity-metrics/` is an additive, read-only endpoint for
+application administrators. It returns only aggregate cohorts for each
+owner's first, second, and third server-backed 2D `Project`, ordered by
+`created_at` then primary key. Lifetime projects and proposal activity are
+included, including soft-deleted projects still represented in the database;
+there is no date cutoff. The response contains no user, project, prompt, or
+scene identifiers or content. The response is
+`{"cohorts":[{"project_position":1,"suppressed":true,"metrics":null}]}`.
+Each of positions 1–3 always has a cohort row. Cohorts with fewer than five
+distinct owners suppress all metric values with `suppressed: true` and
+`metrics: null`; others return `proposals_per_project`, `accepted_share`, and
+`median_time_to_accept_seconds` under `metrics`. `accepted_share` is `null`
+when that cohort has no reviewable proposals; the median is `null` when no
+project in that cohort has both required timestamps.
+
+A reviewable proposal is an `AIRun` in `awaiting_review` or `accepted`, or a
+recorded `AI_PROPOSAL_REJECTED` event for a 2D project. Provider failures and
+cancellations before review are excluded. Accepted share is accepted proposals
+divided by all reviewable proposals. Proposals per project includes projects
+with zero reviewable proposals. Median time includes only projects with both a
+first run and an accepted proposal; the duration is from the first run's
+`created_at` to the acceptance activity's `created_at`.
+
+The full-history aggregate runs on demand using existing project, run, and
+activity foreign-key indexes. PostgreSQL enforces a five-second statement
+timeout for the aggregate. If the database cancels it, the endpoint returns a
+retryable `503` and no partial or truncated metrics. No history window,
+background job, cache, or schema change is part of this contract. This
+endpoint covers structured 2D projects only; 3D and generated-piece activity
+are not included.

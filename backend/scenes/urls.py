@@ -117,6 +117,7 @@ from scenes.collections_api import (
     PublicCollectionDetailView,
     PublicCollectionDownloadView,
 )
+from scenes.continuity_metrics_api import AdminContinuityMetricsView
 from scenes.pages_api import PublicPageDetailView, PublicPageNavigationView
 from scenes.piece_intake_api import PiecePackageIntakeView
 from scenes.profile_api import (
@@ -178,6 +179,11 @@ urlpatterns = [
     path("admin/content/actions/", AdminContentActionView.as_view(), name="admin-content-action"),
     path("admin/content/access/", AdminContentAccessView.as_view(), name="admin-content-access"),
     path("admin/settings/", AdminSiteSettingsView.as_view(), name="admin-settings"),
+    path(
+        "admin/continuity-metrics/",
+        AdminContinuityMetricsView.as_view(),
+        name="admin-continuity-metrics",
+    ),
     path(
         "admin/theme-generation/",
         AdminThemeGenerationView.as_view(),

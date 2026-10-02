@@ -167,6 +167,22 @@ export type UnpublishRetentionPolicy = {
   updated_at: string;
 };
 
+export type ContinuityMetrics = {
+  cohorts: Array<{
+    project_position: 1 | 2 | 3;
+    suppressed: boolean;
+    metrics: {
+      proposals_per_project: number;
+      accepted_share: number | null;
+      median_time_to_accept_seconds: number | null;
+    } | null;
+  }>;
+};
+
+export async function fetchContinuityMetrics(): Promise<ContinuityMetrics> {
+  return apiFetch<ContinuityMetrics>('/api/admin/continuity-metrics/');
+}
+
 export async function fetchSiteSettings(): Promise<SiteSettings> {
   return apiFetch<SiteSettings>('/api/admin/settings/');
 }

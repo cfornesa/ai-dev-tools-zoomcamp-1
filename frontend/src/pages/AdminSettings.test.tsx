@@ -29,6 +29,7 @@ vi.mock('../api/adminSettings', async () => {
     fetchAIProviderModels: vi.fn(),
     updateAIProviderModel: vi.fn(),
     fetchProfileStyles: vi.fn(),
+    fetchContinuityMetrics: vi.fn(),
     fetchThemeGenerationAttempts: vi.fn(),
     generateThemeDraft: vi.fn(),
     actOnThemeGeneration: vi.fn(),
@@ -96,6 +97,13 @@ beforeEach(() => {
     revision: 2,
   }));
   vi.mocked(adminApi.fetchThemeGenerationAttempts).mockResolvedValue([]);
+  vi.mocked(adminApi.fetchContinuityMetrics).mockResolvedValue({
+    cohorts: [1, 2, 3].map((project_position) => ({
+      project_position: project_position as 1 | 2 | 3,
+      suppressed: true,
+      metrics: null,
+    })),
+  });
   vi.mocked(adminApi.fetchProfileStyles).mockResolvedValue([
     {
       id: 1,
@@ -138,6 +146,28 @@ beforeEach(() => {
 });
 
 describe('AdminSettings presentation choices (#643)', () => {
+  it('loads continuity metrics independently from settings and offers retry on failure', async () => {
+    vi.mocked(adminApi.fetchContinuityMetrics).mockRejectedValueOnce(new Error('timeout'));
+
+    render(
+      <MemoryRouter>
+        <AdminSettings />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Site identity and global theme' }),
+    ).toBeTruthy();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Continuity metrics are temporarily unavailable. Please retry.',
+    );
+    expect(screen.getByRole('button', { name: 'Retry metrics' })).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Retry metrics' }));
+    expect(
+      await screen.findAllByText('Not enough owners in this cohort to show aggregate metrics.'),
+    ).toHaveLength(3);
+  });
+
   it('exposes finite font, shadow, and backdrop choices and saves them accessibly', async () => {
     const user = userEvent.setup();
     render(

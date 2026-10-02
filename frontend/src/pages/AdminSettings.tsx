@@ -28,8 +28,10 @@ import {
   updateAIProviderModel,
   deleteAIProviderModel,
   type ProfileStyle,
+  type ContinuityMetrics,
   type ThemeGenerationAttempt,
   fetchProfileStyles,
+  fetchContinuityMetrics,
   fetchThemeGenerationAttempts,
   generateThemeDraft,
   actOnThemeGeneration,
@@ -1595,6 +1597,109 @@ function ThemeGenerationSettings({ styles }: { styles: ProfileStyle[] }) {
   );
 }
 
+function ContinuityMetricsPanel() {
+  const [data, setData] = useState<ContinuityMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await fetchContinuityMetrics());
+    } catch {
+      setError('Continuity metrics are temporarily unavailable. Please retry.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  return (
+    <section
+      className="admin-console-section continuity-metrics"
+      aria-labelledby="continuity-heading"
+    >
+      <h3 id="continuity-heading">Project continuity</h3>
+      <p>
+        Compare AI proposal activity across owners’ first three server-backed 2D projects. This
+        aggregate includes lifetime project history.
+      </p>
+      {loading && <p role="status">Loading continuity metrics…</p>}
+      {error && (
+        <div role="alert">
+          <p>{error}</p>
+          <button className="admin-action-secondary" type="button" onClick={() => void load()}>
+            Retry metrics
+          </button>
+        </div>
+      )}
+      {data && (
+        <div className="continuity-cohorts" aria-live="polite">
+          {data.cohorts.map((cohort) => (
+            <article className="continuity-cohort" key={cohort.project_position}>
+              <h4>
+                {cohort.project_position}
+                {cohort.project_position === 1
+                  ? 'st'
+                  : cohort.project_position === 2
+                    ? 'nd'
+                    : 'rd'}{' '}
+                project
+              </h4>
+              {cohort.suppressed ? (
+                <p>Not enough owners in this cohort to show aggregate metrics.</p>
+              ) : cohort.metrics ? (
+                <dl>
+                  <div>
+                    <dt>Reviewable proposals per project</dt>
+                    <dd>{cohort.metrics.proposals_per_project.toFixed(1)}</dd>
+                  </div>
+                  <div>
+                    <dt>Accepted share</dt>
+                    <dd>
+                      {cohort.metrics.accepted_share === null
+                        ? 'No reviewable proposals'
+                        : `${(cohort.metrics.accepted_share * 100).toFixed(1)}%`}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Median time to first acceptance</dt>
+                    <dd>
+                      {cohort.metrics.median_time_to_accept_seconds === null
+                        ? 'Not available'
+                        : `${(cohort.metrics.median_time_to_accept_seconds / 86400).toFixed(1)} days`}
+                    </dd>
+                  </div>
+                </dl>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      )}
+      <details>
+        <summary>Metric definitions</summary>
+        <ul>
+          <li>
+            A reviewable proposal reached review: it is awaiting review, accepted, or has a recorded
+            rejection. Provider failures and pre-review cancellations are excluded.
+          </li>
+          <li>Accepted share is accepted proposals divided by all reviewable proposals.</li>
+          <li>Projects with no reviewable proposals remain in the per-project average.</li>
+          <li>
+            Median time runs from a project’s first AI run to its first accepted proposal; projects
+            without both events are excluded from that median.
+          </li>
+          <li>Cohorts with fewer than five owners are suppressed.</li>
+        </ul>
+      </details>
+    </section>
+  );
+}
+
 function AdminSettings() {
   const auth = useAuth();
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
@@ -1653,6 +1758,7 @@ function AdminSettings() {
     <section className="content-panel admin-settings">
       <AdminConsoleNav current="settings" />
       <h2>Admin settings</h2>
+      <ContinuityMetricsPanel />
       {loadError && (
         <p role="alert" aria-live="assertive">
           {loadError}

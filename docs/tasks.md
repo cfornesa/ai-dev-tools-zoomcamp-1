@@ -13,8 +13,10 @@ fixture lacked the title/description required by the publication contract
 publishing; it does not change product behavior or weaken privacy assertions.
 TypeScript, lint, formatting, Playwright discovery (1 test), and
 `git diff --check` passed locally. Keep #1139 open pending Linux verification
-of the fixture correction, screenshot inspection, and remaining batch-gate
-evidence.
+of the fixture correction. The test now attaches viewport screenshots at
+1280px and 375px so the required visual review can use the same authenticated
+E2E state; inspect both attachments from the next Linux run. Remaining
+batch-gate evidence is also pending.
 
 ## 2026-10-02 — Batch 19 current-head QA run #1085
 

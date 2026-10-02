@@ -31,6 +31,10 @@ async function expectDetailsLayout(page: Page, viewport: { width: number; height
   const details = await openDetailsPanel(page);
   const note = details.getByLabel('Intent notes (private)');
   await expect(note).toBeVisible();
+  await test.info().attach(`private-intent-note-${viewport.width}px`, {
+    body: await page.screenshot(),
+    contentType: 'image/png',
+  });
 
   const geometry = await details.evaluate((panel) => {
     const field = panel.querySelector<HTMLTextAreaElement>('#project-brief');

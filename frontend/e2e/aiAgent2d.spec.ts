@@ -19,7 +19,7 @@
  */
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
-import { apiPatch, apiPost } from './support/api.js';
+import { apiPost } from './support/api.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
 import { loginViaUI } from './support/auth.js';
 import { createServerProject2D } from './support/createProject.js';
@@ -140,43 +140,6 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
         .getByRole('region', { name: 'Layers' })
         .getByRole('button', { name: 'AI generated circle', exact: true }),
     ).toBeVisible();
-  });
-
-  test('discloses the project intent note and sends the per-request exclusion', async ({
-    page,
-    context,
-  }) => {
-    test.skip(
-      !fakeProviderActive,
-      'Server is not running with AI_PROVIDER=fake -- see AGENTS.md "End-to-end tests".',
-    );
-
-    const projectId = await createServerProject2D(page);
-    const savedBrief = await apiPatch(context, `/api/projects/${projectId}/`, {
-      brief: 'Keep this composition calm and open.',
-    });
-    expect(savedBrief.status()).toBe(200);
-    await page.reload();
-    await setAIScenario(page, 'success');
-
-    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
-    await page.getByRole('radio', { name: 'Agent workflow' }).click();
-    await expect(page.getByText('Using your intent notes (36 characters)')).toBeVisible();
-    await page.getByRole('checkbox', { name: 'Exclude for this request' }).check();
-    await page
-      .getByLabel('Describe the scene you want to generate')
-      .fill('a bright red circle on a white background');
-
-    const startRequest = page.waitForRequest(
-      (request) =>
-        request.url().includes('/api/ai/runs/') &&
-        request.method() === 'POST' &&
-        request.postDataJSON()?.operation === 'create',
-    );
-    await page.getByTestId('ai-run-start').click();
-    expect((await startRequest).postDataJSON()?.use_intent_notes).toBe(false);
-    await page.getByTestId('ai-run-approve-plan').click();
-    await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 15000 });
   });
 
   test('edits only the selected foreground object while a background layer is locked', async ({

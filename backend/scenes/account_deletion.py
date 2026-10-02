@@ -52,6 +52,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 
 from scenes.models import (
+    AIRun,
     ArtPiece,
     BillingEvent,
     CloudBackupProject,
@@ -139,6 +140,7 @@ def delete_account(user, *, password: str | None, confirmation: str) -> None:
     # Intent notes can contain personal creative direction. Clear them as
     # part of deletion even though the project row follows content retention.
     Project.all_objects.filter(owner=locked_user).update(brief="")
+    AIRun.objects.filter(owner=locked_user).update(intent_note="")
     Project3D.all_objects.filter(owner=locked_user, is_deleted=False).update(
         is_deleted=True, deleted_at=now
     )

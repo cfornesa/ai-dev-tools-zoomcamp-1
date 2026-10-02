@@ -289,9 +289,11 @@
   Context APIs, vector database, multi-agent orchestration, third-party tool
   routing. **Deferred:** "talk to a piece" (AI quota), references-as-links (waits
   on D2), public process sharing (waits on Slice A evidence).
-- **Pending owner decisions:** #1129 (where intent notes live; recommended:
-  per-project server field) and #1130 (history beyond 2D; recommended: 2D only
-  for now). M1-M3 (#1138-#1140) are blocked on #1129.
+- **Owner decisions resolved 2026-10-02:** #1129 chose the per-project
+  server-side field for structured 2D Projects (D1); #1130 chose owner-only
+  activity for structured 3D projects and generated ArtPieces, sequenced as
+  #1156 then #1157 (D2). #1138-#1140 are now eligible in dependency order;
+  #1156/#1157 remain separate follow-ups.
 
 ## 2026-10-01 — LIGDOL thesis revised from two architecture diagrams; login-page design parity filed
 

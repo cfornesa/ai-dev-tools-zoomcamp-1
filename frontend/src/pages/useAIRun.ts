@@ -253,6 +253,7 @@ export function useAIRun<TVersion>(
     async (
       workingCopy: AnySceneDocument | null,
       currentVersionId: number | null,
+      useIntentNotes = true,
     ): Promise<void> => {
       if (!projectId) return;
       const trimmed = prompt.trim();
@@ -321,6 +322,7 @@ export function useAIRun<TVersion>(
               }
             : {}),
           prompt: trimmed,
+          ...(targetType === 'project' ? { use_intent_notes: useIntentNotes } : {}),
           vendor,
           model: model.trim() || undefined,
           persona_id: personaId ?? undefined,

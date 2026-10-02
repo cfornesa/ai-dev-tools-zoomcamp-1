@@ -164,6 +164,7 @@ class _QueuedFakeProvider:
     def __init__(self, outcomes: list[dict | AIErrorCategory]) -> None:
         self._outcomes = list(outcomes)
         self.calls = 0
+        self.prompts: list[str] = []
 
     def _next_result(self, operation: AIOperation) -> AIOperationResult:
         self.calls += 1
@@ -188,12 +189,14 @@ class _QueuedFakeProvider:
         return AIOperationResult3D(operation=operation, usage=_USAGE, scene=outcome)
 
     def create_scene(self, request: AICreateSceneRequest) -> AIOperationResult:
+        self.prompts.append(request.prompt)
         return self._next_result(AIOperation.CREATE_SCENE)
 
     def edit_scene(self, request: AIEditSceneRequest) -> AIOperationResult:
         return self.edit_scene_with_patch(request).result
 
     def edit_scene_with_patch(self, request: AIEditSceneRequest) -> AIEditScenePatchResult:
+        self.prompts.append(request.prompt)
         result = self._next_result(AIOperation.EDIT_SCENE)
         if not result.success:
             return AIEditScenePatchResult(result=result)
@@ -202,9 +205,11 @@ class _QueuedFakeProvider:
         )
 
     def create_scene3d(self, request: AICreateScene3DRequest) -> AIOperationResult3D:
+        self.prompts.append(request.prompt)
         return self._next_result3d(AIOperation.CREATE_SCENE)
 
     def edit_scene3d_with_patch(self, request: AIEditScene3DRequest) -> AIEditScene3DPatchResult:
+        self.prompts.append(request.prompt)
         result = self._next_result3d(AIOperation.EDIT_SCENE)
         if not result.success:
             return AIEditScene3DPatchResult(result=result)
@@ -295,6 +300,74 @@ def test_start_persists_structured_plan_before_provider_attempt(owner, project):
         "target_ids": [],
         "success_criteria": [{"type": "renders_nonblank", "parameters": {"target": "scene"}}],
     }
+
+
+@pytest.mark.django_db
+def test_intent_note_snapshot_is_included_in_digest_and_provider_prompt(
+    monkeypatch, owner, project
+):
+    project.brief = "Keep it warm and playful."
+    project.save(update_fields=["brief"])
+    provider = _install_fake_provider(monkeypatch, [BLANK_SCENE])
+
+    run = _start_create_run(owner, project)
+
+    assert run.intent_note == "Keep it warm and playful."
+    assert run.input_digest == ai_runs._digest({}, intent_note=run.intent_note)
+    assert run.input_digest != ai_runs._digest({})
+    assert "UNTRUSTED PROJECT INTENT NOTE" in ai_runs._augmented_prompt(run)
+    assert '"Keep it warm and playful."' in ai_runs._augmented_prompt(run)
+
+    project.brief = "Use a cold palette instead."
+    project.save(update_fields=["brief"])
+    run = ai_runs.advance_run(run)
+
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    assert "Keep it warm and playful." in provider.prompts[0]
+    assert "Use a cold palette instead." not in provider.prompts[0]
+
+
+@pytest.mark.django_db
+def test_intent_note_opt_out_keeps_legacy_prompt_and_digest(monkeypatch, owner, project):
+    project.brief = "Keep it warm and playful."
+    project.save(update_fields=["brief"])
+
+    run = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT,
+        target=project,
+        operation=AIRun.Operation.CREATE,
+        prompt="a red square",
+        use_intent_notes=False,
+    )
+
+    assert run.intent_note == ""
+    assert run.input_digest == ai_runs._digest({})
+    assert ai_runs._augmented_prompt(run) == "a red square"
+
+
+@pytest.mark.django_db
+def test_repair_attempt_uses_the_same_intent_snapshot_after_project_note_changes(
+    monkeypatch, owner, project
+):
+    project.brief = "Keep the layout spare."
+    project.save(update_fields=["brief"])
+    provider = _install_fake_provider(
+        monkeypatch, [AIErrorCategory.INVALID_STRUCTURED_OUTPUT, BLANK_SCENE]
+    )
+    _enable_retries(owner)
+    run = _start_create_run(owner, project)
+
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.RUNNING
+    project.brief = "Fill every corner."
+    project.save(update_fields=["brief"])
+    run = ai_runs.advance_run(run)
+
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    assert len(provider.prompts) == 2
+    assert all('"Keep the layout spare."' in prompt for prompt in provider.prompts)
+    assert all("Fill every corner." not in prompt for prompt in provider.prompts)
 
 
 def test_evaluate_criteria_supports_all_plan_criterion_types():
@@ -1284,6 +1357,56 @@ def test_full_api_lifecycle_start_advance_accept(monkeypatch, owner_client, proj
 
     project.refresh_from_db()
     assert project.current_version is not None
+
+
+@pytest.mark.django_db
+def test_start_run_api_snapshots_opted_in_project_note_without_serializing_it(
+    monkeypatch, owner_client, project
+):
+    project.brief = "A quiet, geometric composition."
+    project.save(update_fields=["brief"])
+    _install_fake_provider(monkeypatch, [BLANK_SCENE])
+
+    response = owner_client.post(
+        "/api/ai/runs/",
+        {
+            "target_type": "project",
+            "project_id": str(project.public_id),
+            "operation": "create",
+            "prompt": "a red square",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    run = AIRun.objects.get(pk=response.json()["id"])
+    assert run.intent_note == "A quiet, geometric composition."
+    assert "intent_note" not in response.json()
+
+
+@pytest.mark.django_db
+def test_start_run_api_opt_out_does_not_snapshot_project_note(monkeypatch, owner_client, project):
+    project.brief = "A quiet, geometric composition."
+    project.save(update_fields=["brief"])
+    _install_fake_provider(monkeypatch, [BLANK_SCENE])
+
+    response = owner_client.post(
+        "/api/ai/runs/",
+        {
+            "target_type": "project",
+            "project_id": str(project.public_id),
+            "operation": "create",
+            "prompt": "a red square",
+            "use_intent_notes": False,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    run = AIRun.objects.get(pk=response.json()["id"])
+    assert run.intent_note == ""
+    assert run.input_digest == ai_runs._digest({})
+    assert "intent_note" not in response.json()
 
 
 @pytest.mark.django_db

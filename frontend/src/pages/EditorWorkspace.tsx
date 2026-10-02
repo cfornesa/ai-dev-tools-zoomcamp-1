@@ -2726,6 +2726,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                 workingCopy={workingCopy}
                 currentVersionId={project?.current_version ?? null}
                 mediaAssets={mediaAssets}
+                intentNote={project?.brief ?? ''}
                 seed={aiFixSeed}
                 onAccepted={handleAIProposalAccepted}
               />
@@ -3468,6 +3469,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   workingCopy={workingCopy}
                   currentVersionId={project?.current_version ?? null}
                   mediaAssets={mediaAssets}
+                  intentNote={project?.brief ?? ''}
                   seed={aiLayerSeed}
                   onAccepted={handleAIProposalAccepted}
                 />
@@ -3594,6 +3596,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   workingCopy={workingCopy}
                   currentVersionId={project?.current_version ?? null}
                   mediaAssets={mediaAssets}
+                  intentNote={project?.brief ?? ''}
                   onAccepted={handleAIProposalAccepted}
                 />
               )}

@@ -610,6 +610,20 @@ Existing layers and shapes must remain deep-equal. Unknown asset ids,
 multiple new layers, existing-layer changes, and image shapes without a
 submitted descriptor are rejected before the run reaches review.
 
+## AI-run project intent context (#1140)
+
+`POST /api/ai/runs/` accepts optional boolean `use_intent_notes` for a
+server-backed 2D `project`; it defaults to `true`. When enabled and
+`Project.brief` is non-empty, the run stores a bounded private snapshot and
+adds it as explicitly untrusted context to every provider attempt, including
+repair attempts. The snapshot is not included in run API responses or account
+exports and is cleared on account deletion. 3D runs ignore this option. The
+2D editor discloses the character count and offers a per-request exclusion
+toggle. The note is bounded to 1,500 characters (about 400 tokens); this
+adds no provider call and does not change quota behavior. With an empty note
+or `use_intent_notes: false`, the provider prompt and `input_digest` remain
+byte-identical to the existing behavior.
+
 ## AI-run plan evaluation and retries (#657)
 
 Each run snapshots the owner's `AIRetryPreference` at start as

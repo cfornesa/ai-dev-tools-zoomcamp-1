@@ -98,6 +98,8 @@ export type StartAIRunInput = {
   selected_target_ids?: string[];
   assets?: Array<{ id: string; name: string; mime: string; width: number; height: number }>;
   prompt: string;
+  /** #1140: 2D project intent is enabled by default and applies only to this run. */
+  use_intent_notes?: boolean;
   vendor?: 'mistral' | 'gemini' | 'deepseek';
   model?: string;
   persona_id?: number;

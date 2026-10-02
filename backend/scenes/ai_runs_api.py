@@ -99,6 +99,7 @@ class AIRunStartRequestSerializer(serializers.Serializer):
     )
     assets = serializers.ListField(child=serializers.DictField(), required=False, default=list)
     prompt = serializers.CharField(max_length=MAX_PROMPT_CHARS, allow_blank=False)
+    use_intent_notes = serializers.BooleanField(required=False, default=True)
     vendor = serializers.CharField(required=False, default="mistral")
     model = serializers.CharField(
         max_length=MAX_MODEL_ID_CHARS, required=False, allow_blank=True, default=""
@@ -230,6 +231,7 @@ class AIRunListCreateView(APIView):
                 selected_target_ids=data["selected_target_ids"],
                 assets=data["assets"],
                 prompt=data["prompt"],
+                use_intent_notes=data["use_intent_notes"],
                 vendor=data["vendor"],
                 model_id=data["model"],
                 start_request_id=data["start_request_id"],

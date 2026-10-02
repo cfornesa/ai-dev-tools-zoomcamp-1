@@ -24,6 +24,7 @@ from django.utils import timezone
 
 from scenes import account_deletion
 from scenes.models import (
+    AIRun,
     ArtPiece,
     BillingEvent,
     Project,
@@ -114,6 +115,16 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     project = Project.objects.create(
         owner=user, title="My animation", brief="private design intent"
     )
+    ai_run = AIRun.objects.create(
+        owner=user,
+        project=project,
+        target_type=AIRun.TargetType.PROJECT,
+        operation=AIRun.Operation.CREATE,
+        prompt="a red square",
+        intent_note="private design intent snapshot",
+        input_digest="0" * 64,
+        deadline_at=timezone.now(),
+    )
     project3d = Project3D.objects.create(owner=user)
     piece = ArtPiece.objects.create(owner=user, engine=ArtPiece.Engine.CANVAS2D, prompt="a circle")
     SocialAccount.objects.create(user=user, provider="github", uid="12345")
@@ -134,10 +145,12 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     assert response.status_code == 204
 
     project.refresh_from_db()
+    ai_run.refresh_from_db()
     project3d.refresh_from_db()
     piece.refresh_from_db()
     assert project.is_deleted is True and project.deleted_at is not None
     assert project.brief == ""
+    assert ai_run.intent_note == ""
     assert project3d.is_deleted is True and project3d.deleted_at is not None
     assert piece.is_deleted is True and piece.deleted_at is not None
     assert not Project.objects.filter(pk=project.pk).exists()  # hidden by the default manager

@@ -2421,6 +2421,9 @@ class AIRun(models.Model):
     # candidate image shape's mediaAssetId field.
     assets = models.JSONField(default=list, blank=True)
     prompt = models.TextField()
+    # A bounded, private snapshot of Project.brief used by every attempt in
+    # this run. Kept separate from the owner's prompt and omitted from APIs.
+    intent_note = models.TextField(max_length=1500, blank=True, default="")
     vendor = models.CharField(max_length=32, default="mistral")
     model_id = models.CharField(max_length=100, blank=True, default="")
     persona_id = models.PositiveIntegerField(null=True, blank=True)

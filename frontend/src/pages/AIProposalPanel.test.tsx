@@ -68,13 +68,14 @@ beforeEach(() => {
   mockedFetchRetryPreference.mockResolvedValue({ auto_retry_enabled: false, max_retries: 3 });
 });
 
-function renderPanel(onAccepted = vi.fn()) {
+function renderPanel(onAccepted = vi.fn(), intentNote = '') {
   render(
     <AIProposalPanel
       projectId="p1"
       workingCopy={VALID_SCENE}
       currentVersionId={1}
       onAccepted={onAccepted}
+      intentNote={intentNote}
     />,
   );
   return { onAccepted };
@@ -580,6 +581,24 @@ function makeRun(overrides: Partial<AIRun> = {}): AIRun {
 // that flow's own DOM/behavior (already proven by every passing test
 // above, all of which stay in the default 'one-shot' workflow).
 describe('AIProposalPanel Agent workflow', () => {
+  it('discloses the private note and lets the owner exclude it from this request', async () => {
+    mockedStartAIRun.mockResolvedValue(makeRun({ status: 'running' }));
+    renderPanel(vi.fn(), 'Keep the composition calm.');
+
+    await userEvent.click(screen.getByRole('radio', { name: /agent workflow/i }));
+    expect(screen.getByText('Using your intent notes (26 characters)')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('checkbox', { name: /exclude for this request/i }));
+    await userEvent.type(
+      screen.getByLabelText(/describe the scene you want to generate/i),
+      'a red circle',
+    );
+    await userEvent.click(screen.getByTestId('ai-run-start'));
+
+    expect(mockedStartAIRun).toHaveBeenCalledWith(
+      expect.objectContaining({ use_intent_notes: false }),
+    );
+  });
+
   it('toggles to the Agent workflow form and back without disturbing the one-shot fields', async () => {
     renderPanel();
     await userEvent.type(screen.getByLabelText(/describe the scene/i), 'a red circle');

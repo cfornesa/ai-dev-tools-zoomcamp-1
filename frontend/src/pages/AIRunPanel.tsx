@@ -41,6 +41,8 @@ type AIRunPanelProps<TVersion> = {
   /** Enables transient decision-reason entry for the 2D Agent workflow.
    * The shared 3D caller intentionally leaves this unset. */
   enableDecisionReason?: boolean;
+  /** Private intent note available to server-backed 2D projects only. */
+  intentNote?: string;
 };
 
 const MAX_DECISION_REASON_CODE_POINTS = 280;
@@ -80,8 +82,10 @@ function AIRunPanel<TVersion>({
   noSelectableObjectsMessage = 'No editable objects in this scene yet.',
   mediaAssets = [],
   enableDecisionReason = false,
+  intentNote = '',
 }: AIRunPanelProps<TVersion>) {
   const [decisionReason, setDecisionReason] = useState('');
+  const [includeIntentNotes, setIncludeIntentNotes] = useState(true);
   const {
     targetMode,
     setTargetMode,
@@ -116,6 +120,10 @@ function AIRunPanel<TVersion>({
   useEffect(() => {
     if (run?.status !== 'awaiting_review') setDecisionReason('');
   }, [run?.id, run?.status]);
+
+  useEffect(() => {
+    if (!run) setIncludeIntentNotes(true);
+  }, [run]);
 
   const targetModeRoving = useRovingRadioGroup(
     [
@@ -164,6 +172,21 @@ function AIRunPanel<TVersion>({
   if (!run) {
     return (
       <div className="ai-run-panel" data-testid="ai-run-form">
+        {intentNote.length > 0 && (
+          <div className="behavior-card-field ai-proposal-field-full-width">
+            <p>Using your intent notes ({Array.from(intentNote).length} characters)</p>
+            <label htmlFor="ai-run-exclude-intent-notes">
+              <input
+                id="ai-run-exclude-intent-notes"
+                type="checkbox"
+                checked={!includeIntentNotes}
+                disabled={starting}
+                onChange={(event) => setIncludeIntentNotes(!event.target.checked)}
+              />
+              Exclude for this request
+            </label>
+          </div>
+        )}
         <div role="radiogroup" aria-label="Agent action" className="editor-tool-group">
           {targetModeValues.map((value) => (
             <button
@@ -317,7 +340,7 @@ function AIRunPanel<TVersion>({
           type="button"
           disabled={starting || prompt.trim().length === 0}
           data-testid="ai-run-start"
-          onClick={() => void start(workingCopy, null)}
+          onClick={() => void start(workingCopy, null, includeIntentNotes)}
         >
           {starting ? 'Starting…' : 'Start agent run'}
         </button>

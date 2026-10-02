@@ -26112,6 +26112,14 @@ both domains. #1149 received `## QA: PASS` comment 5958321151 and
 #1154 received `## QA: PASS` comment 5958310474; both are closed/completed on
 GitHub. The open count is now 11.
 
+The same run verified the #1150 shared Save helper across its owned paths:
+AI draft Save, historical-version export, project lifecycle save, and
+publishing setup all reached their save assertions. The four-file matrix had
+27/30 passed, 3 failed, 0 skipped; each failure was isolated to #1103 recovery
+timeout flows or #1104's incorrect dialog expectation. GitHub comment
+5958366885 records the per-criterion boundary; #1150 is now closed/completed
+and the open count is 10.
+
 ### #1103 recovery-suite time budget — 2026-10-02
 
 Run #1116's Linux shard 3 exposed two time-budget failures inside the

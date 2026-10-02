@@ -31,7 +31,7 @@ reconciliation.
 | #1143 | 16 | Implemented locally; batch/CI reconciliation pending | Prior batch record; fresh CI evidence pending |
 | #1144 | 14 | Open; Linux/visual evidence pending | Full batch browser gate |
 | #1149 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958321151`; all 8 current Linux fake-provider 2D/3D Agent scenarios passed, 0 skipped; route changes confined to the two specs. |
-| #1150 | 14 | Open; focused Linux scenarios pass; full batch gate pending | `7b13c231`; run #1082 on exact ancestor implementation |
+| #1150 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958366885`; Linux run #1116 passed all #1150-owned scene-Save paths with current fixture setup; unrelated #1103/#1104 failures remain separately owned. |
 | #1151 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5956057113`; current source SHA `a3d53bce` is an ancestor of run #1105; all 3 Linux Chromium scenarios and four inspected 1280x900/375x812 motion-toggle artifacts passed. |
 | #1152 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5955170400`; run #1100 shard 9 passed all three Linux Chromium Layers-panel tests on a descendant of `510fcaf3`; retarget preserves #142. |
 | #1153 | 14 | Open; refined follow-up | E2E and Linux gate |
@@ -121,10 +121,10 @@ list-only E2E checks do not substitute. PR #1094 remains open and unmerged.
 The owner flagged Goodhart's Law risk from treating the full CI metric as the
 goal. Closed completed issues whose own contracts and impact rows were already
 verified, independent of unrelated full-matrix failures: #1100, #1102, #1129,
-#1130, #1139, #1140, #1151, and #1152. These are real GitHub state changes,
-not local claims.
-The live open inventory is now 11: #1096, #1103–#1104, #1138, #1143–#1144,
-#1150, #1153, #1155–#1157. The full matrix tracker #1096 remains open.
+#1130, #1139, #1140, #1149, #1150, #1151, #1152, and #1154. These are real
+GitHub state changes, not local claims.
+The live open inventory is now 10: #1096, #1103–#1104, #1138, #1143–#1144,
+#1153, #1155–#1157. The full matrix tracker #1096 remains open.
 
 This is issue-level reconciliation, not a green batch verdict. Remaining issues
 stay open where their own criteria are not yet evidenced (for example #1143's

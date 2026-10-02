@@ -1433,7 +1433,9 @@ test.describe('Remix and fork', () => {
 
     const anonContext = await browser.newContext();
     const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${forkedId}`);
+    // The contract is the rendered public viewer and provenance below, not
+    // completion of every resource requested during navigation.
+    await anonPage.goto(`/p/${forkedId}`, { waitUntil: 'domcontentloaded' });
     await expect(anonPage.locator('.public-project-viewer')).toHaveAttribute(
       'data-project-kind',
       'remix',

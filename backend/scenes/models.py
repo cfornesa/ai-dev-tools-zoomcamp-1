@@ -1735,6 +1735,13 @@ class ProjectActivity(models.Model):
         on_delete=models.CASCADE,
         related_name="activity",
     )
+    art_piece = models.ForeignKey(
+        "scenes.ArtPiece",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="activity",
+    )
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -1757,19 +1764,40 @@ class ProjectActivity(models.Model):
                 fields=["project3d", "-created_at", "-id"],
                 name="sc_pa_p3d_created_id_idx",
             ),
+            models.Index(
+                fields=["art_piece", "-created_at", "-id"],
+                name="sc_pa_piece_created_id_idx",
+            ),
         ]
         constraints = [
             models.CheckConstraint(
                 condition=(
-                    models.Q(project__isnull=False, project3d__isnull=True)
-                    | models.Q(project__isnull=True, project3d__isnull=False)
+                    (
+                        models.Q(project__isnull=False, project3d__isnull=True)
+                        & models.Q(art_piece__isnull=True)
+                    )
+                    | (
+                        models.Q(project__isnull=True, project3d__isnull=False)
+                        & models.Q(art_piece__isnull=True)
+                    )
+                    | (
+                        models.Q(project__isnull=True, project3d__isnull=True)
+                        & models.Q(art_piece__isnull=False)
+                    )
                 ),
                 name="sc_pa_exactly_one_family",
             ),
         ]
 
     def __str__(self) -> str:
-        family_id = self.project_id if self.project_id is not None else self.project3d_id
+        family_id = next(
+            (
+                family_id
+                for family_id in (self.project_id, self.project3d_id, self.art_piece_id)
+                if family_id is not None
+            ),
+            None,
+        )
         return f"{family_id}: {self.action_type}"
 
     def save(self, *args, **kwargs):

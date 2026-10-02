@@ -43,7 +43,7 @@ from scenes.ink_document import (
     metadata_with_inherited_ink,
     validate_ink_document,
 )
-from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion
+from scenes.models import ArtPiece, ArtPieceThumbnail, ArtPieceVersion, ProjectActivity
 from scenes.permissions import Action, can
 from scenes.public_identity import public_author_handle, public_author_name
 from scenes.sonic_contract import normalize_sonic
@@ -515,6 +515,23 @@ class ArtPieceDetailView(APIView):
                 elif was_published:
                     locked.unpublished_at = timezone.now()
                 locked.save()
+                is_published = locked.status == ArtPiece.Status.PUBLISHED
+                if was_published != is_published:
+                    metadata = (
+                        {"sequence": locked.current_version.sequence}
+                        if is_published and locked.current_version_id
+                        else {}
+                    )
+                    ProjectActivity.objects.create(
+                        art_piece=locked,
+                        actor=request.user,
+                        action_type=(
+                            ProjectActivity.ActionType.PUBLISHED
+                            if is_published
+                            else ProjectActivity.ActionType.UNPUBLISHED
+                        ),
+                        metadata=metadata,
+                    )
         except IntegrityError:
             return Response({"public_slug": ["This slug is already in use."]}, status=400)
         return Response(_piece_data(locked, public=False))
@@ -564,6 +581,12 @@ class ArtPieceVersionListCreateView(APIView):
             version = ArtPieceVersion.objects.create(piece=locked, sequence=sequence, **values)
             locked.current_version = version
             locked.save(update_fields=["current_version", "updated_at"])
+            ProjectActivity.objects.create(
+                art_piece=locked,
+                actor=request.user,
+                action_type=ProjectActivity.ActionType.VERSION_SAVED,
+                metadata={"sequence": version.sequence, "origin": "manual"},
+            )
             regenerate_thumbnail(version)
         return Response(_version_data(version, public=False), status=201)
 

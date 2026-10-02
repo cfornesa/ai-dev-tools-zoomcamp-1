@@ -10,6 +10,7 @@ from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
+from scenes.account_export import build_account_export
 from scenes.models import (
     ArtPiece,
     ArtPieceVersion,
@@ -278,3 +279,53 @@ def test_export_includes_allowlisted_activity_for_soft_deleted_owned_project_onl
     assert b"other-owner-sentinel@example.test" not in first_response.content
     assert b"Foreign activity sentinel" not in first_response.content
     assert b"must-not-export" not in first_response.content
+
+
+@pytest.mark.django_db
+def test_export_includes_activity_only_for_the_owners_generated_pieces():
+    owner = get_user_model().objects.create_user(username="piece-export-owner")
+    other = get_user_model().objects.create_user(username="piece-export-other")
+    owner_piece = ArtPiece.objects.create(
+        owner=owner,
+        title="Owner piece",
+        prompt="private prompt",
+        engine=ArtPiece.Engine.SVG,
+        is_deleted=True,
+        deleted_at=timezone.now(),
+    )
+    foreign_piece = ArtPiece.objects.create(
+        owner=other,
+        title="Foreign piece",
+        prompt="foreign prompt",
+        engine=ArtPiece.Engine.SVG,
+    )
+    own_event = ProjectActivity.objects.create(
+        art_piece=owner_piece,
+        actor=owner,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 2, "private_internal_id": 901},
+    )
+    foreign_event = ProjectActivity.objects.create(
+        art_piece=foreign_piece,
+        actor=other,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 999},
+    )
+
+    body = build_account_export(owner)
+
+    assert len(body["art_pieces"]) == 1
+    assert body["art_pieces"][0]["is_deleted"] is True
+    assert body["art_pieces"][0]["activity"] == [
+        {
+            "id": own_event.pk,
+            "action_type": ProjectActivity.ActionType.PUBLISHED,
+            "label": "Published",
+            "actor_display": owner.username,
+            "created_at": own_event.created_at.isoformat(),
+            "details": {"sequence": 2},
+        }
+    ]
+    assert foreign_event.pk not in {
+        item["id"] for piece in body["art_pieces"] for item in piece["activity"]
+    }

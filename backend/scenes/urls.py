@@ -9,7 +9,11 @@ from scenes.account_identities_api import (
     AccountIdentityUnlinkView,
 )
 from scenes.account_sessions_api import AccountSessionRevokeView, AccountSessionsView
-from scenes.activity_api import Project3DActivityListView, ProjectActivityListView
+from scenes.activity_api import (
+    ArtPieceActivityListView,
+    Project3DActivityListView,
+    ProjectActivityListView,
+)
 from scenes.admin_content_api import (
     AdminContentAccessView,
     AdminContentActionView,
@@ -610,6 +614,11 @@ urlpatterns = [
         name="art-piece-refine-detail",
     ),
     path("art-pieces/", ArtPieceListCreateView.as_view(), name="art-piece-list-create"),
+    path(
+        "art-pieces/<uuid:public_id>/activity/",
+        ArtPieceActivityListView.as_view(),
+        name="art-piece-activity",
+    ),
     path("art-pieces/<uuid:public_id>/", ArtPieceDetailView.as_view(), name="art-piece-detail"),
     path(
         "art-pieces/<uuid:public_id>/versions/",

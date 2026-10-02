@@ -1,4 +1,4 @@
-"""Owner-only, bounded project-family activity reads (#1133, #1156)."""
+"""Owner-only, bounded project-family activity reads (#1133, #1156, #1157)."""
 
 import re
 from datetime import datetime
@@ -11,13 +11,18 @@ from django.utils.timezone import is_aware
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes.models import Project, Project3D, ProjectActivity
+from scenes.models import ArtPiece, Project, Project3D, ProjectActivity
 from scenes.permissions import Action, can
 
-__all__ = ["ProjectActivityListView", "Project3DActivityListView"]
+__all__ = [
+    "ArtPieceActivityListView",
+    "ProjectActivityListView",
+    "Project3DActivityListView",
+]
 
 _CURSOR_SALT = "scenes.project-activity.cursor.v1"
 _CURSOR_SALT_3D = "scenes.project3d-activity.cursor.v1"
+_CURSOR_SALT_ART_PIECE = "scenes.art-piece-activity.cursor.v1"
 _DETAIL_KEYS = frozenset(
     {
         "sequence",
@@ -87,7 +92,7 @@ def _parse_limit(value: str | None) -> int | None:
 class _ProjectFamilyActivityListView(APIView):
     """Shared bounded, privacy-projected activity reader for one owner family."""
 
-    resource_model: type[Project] | type[Project3D] = Project
+    resource_model: type[Project] | type[Project3D] | type[ArtPiece] = Project
     permission = Action.PROJECT_ACTIVITY_READ
     activity_field = "project"
     cursor_salt = _CURSOR_SALT
@@ -169,3 +174,12 @@ class Project3DActivityListView(_ProjectFamilyActivityListView):
     permission = Action.PROJECT3D_ACTIVITY_READ
     activity_field = "project3d"
     cursor_salt = _CURSOR_SALT_3D
+
+
+class ArtPieceActivityListView(_ProjectFamilyActivityListView):
+    """Read activity only for the authenticated owner of a generated piece."""
+
+    resource_model = ArtPiece
+    permission = Action.ART_PIECE_ACTIVITY_READ
+    activity_field = "art_piece"
+    cursor_salt = _CURSOR_SALT_ART_PIECE

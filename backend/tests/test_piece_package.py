@@ -86,6 +86,22 @@ def test_shared_valid_manifest_fixtures_match_the_backend_schema() -> None:
         validate_piece_package(manifest, {})
 
 
+def test_generated_piece_package_rejects_private_activity_history() -> None:
+    manifest = json.loads((PIECE_FIXTURES / "valid-generated.json").read_text(encoding="utf-8"))
+    manifest["activity"] = [{"action_type": "published", "details": {"sequence": 1}}]
+
+    with pytest.raises(PiecePackageError, match="Invalid package manifest"):
+        validate_piece_package(manifest, {})
+
+
+def test_generated_piece_package_does_not_accept_private_activity_history() -> None:
+    manifest = json.loads((PIECE_FIXTURES / "valid-generated.json").read_text(encoding="utf-8"))
+    manifest["activity"] = [{"action_type": "published", "details": {"sequence": 1}}]
+
+    with pytest.raises(PiecePackageError, match="Invalid package manifest"):
+        validate_piece_package(manifest, {})
+
+
 def test_shared_invalid_manifest_fixtures_are_rejected() -> None:
     for path in sorted(PIECE_FIXTURES.glob("invalid-*.json")):
         manifest = json.loads(path.read_text(encoding="utf-8"))

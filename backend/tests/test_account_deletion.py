@@ -29,6 +29,7 @@ from scenes.models import (
     BillingEvent,
     Project,
     Project3D,
+    ProjectActivity,
     ProviderCredential,
     SessionMetadata,
     Subscription,
@@ -127,6 +128,26 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     )
     project3d = Project3D.objects.create(owner=user)
     piece = ArtPiece.objects.create(owner=user, engine=ArtPiece.Engine.CANVAS2D, prompt="a circle")
+    activity_rows = [
+        ProjectActivity.objects.create(
+            project=project,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+        ProjectActivity.objects.create(
+            project3d=project3d,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+        ProjectActivity.objects.create(
+            art_piece=piece,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+    ]
     SocialAccount.objects.create(user=user, provider="github", uid="12345")
     EmailAddress.objects.create(user=user, email="owner@example.test", verified=True, primary=True)
     ProviderCredential.objects.create(owner=user, vendor="mistral", encrypted_key=b"not-a-real-key")
@@ -153,6 +174,7 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     assert ai_run.intent_note == ""
     assert project3d.is_deleted is True and project3d.deleted_at is not None
     assert piece.is_deleted is True and piece.deleted_at is not None
+    assert ProjectActivity.objects.filter(pk__in=[row.pk for row in activity_rows]).count() == 3
     assert not Project.objects.filter(pk=project.pk).exists()  # hidden by the default manager
 
     assert not SocialAccount.objects.filter(user=user).exists()
@@ -285,11 +307,38 @@ def test_purge_command_only_removes_content_past_the_grace_period():
 
     not_deleted = Project.objects.create(owner=user, title="Active")
 
+    retained_piece = ArtPiece.objects.create(
+        owner=user, engine=ArtPiece.Engine.CANVAS2D, prompt="retained"
+    )
+    retained_piece.is_deleted = True
+    retained_piece.deleted_at = timezone.now() - timezone.timedelta(days=1)
+    retained_piece.save(update_fields=["is_deleted", "deleted_at"])
+    retained_activity = ProjectActivity.objects.create(
+        art_piece=retained_piece,
+        actor=user,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 1},
+    )
+    old_piece = ArtPiece.objects.create(owner=user, engine=ArtPiece.Engine.CANVAS2D, prompt="old")
+    old_piece.is_deleted = True
+    old_piece.deleted_at = timezone.now() - timezone.timedelta(days=31)
+    old_piece.save(update_fields=["is_deleted", "deleted_at"])
+    purged_activity = ProjectActivity.objects.create(
+        art_piece=old_piece,
+        actor=user,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 1},
+    )
+
     call_command("purge_deleted_content")
 
     assert not Project.all_objects.filter(pk=old_deleted.pk).exists()
     assert Project.all_objects.filter(pk=recently_deleted.pk).exists()
     assert Project.all_objects.filter(pk=not_deleted.pk).exists()
+    assert ArtPiece.all_objects.filter(pk=retained_piece.pk).exists()
+    assert ProjectActivity.objects.filter(pk=retained_activity.pk).exists()
+    assert not ArtPiece.all_objects.filter(pk=old_piece.pk).exists()
+    assert not ProjectActivity.objects.filter(pk=purged_activity.pk).exists()
 
 
 @pytest.mark.django_db
@@ -323,6 +372,10 @@ def test_purge_command_respects_a_custom_grace_period():
 @pytest.mark.django_db
 def test_purge_command_cascades_to_versions_and_covers_all_three_families():
     user = _make_user("owner")
+    project = Project.objects.create(owner=user, title="Old 2D")
+    project.is_deleted = True
+    project.deleted_at = timezone.now() - timezone.timedelta(days=31)
+    project.save(update_fields=["is_deleted", "deleted_at"])
     project3d = Project3D.objects.create(owner=user)
     project3d.is_deleted = True
     project3d.deleted_at = timezone.now() - timezone.timedelta(days=31)
@@ -333,10 +386,33 @@ def test_purge_command_cascades_to_versions_and_covers_all_three_families():
     piece.deleted_at = timezone.now() - timezone.timedelta(days=31)
     piece.save(update_fields=["is_deleted", "deleted_at"])
 
+    activity_rows = [
+        ProjectActivity.objects.create(
+            project=project,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+        ProjectActivity.objects.create(
+            project3d=project3d,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+        ProjectActivity.objects.create(
+            art_piece=piece,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+    ]
+
     call_command("purge_deleted_content")
 
+    assert not Project.all_objects.filter(pk=project.pk).exists()
     assert not Project3D.all_objects.filter(pk=project3d.pk).exists()
     assert not ArtPiece.all_objects.filter(pk=piece.pk).exists()
+    assert not ProjectActivity.objects.filter(pk__in=[row.pk for row in activity_rows]).exists()
 
 
 # --- PostgreSQL-only: genuine concurrent deletion attempts -------------------

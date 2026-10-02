@@ -70,6 +70,7 @@ class Action(StrEnum):
     ART_PIECE_READ = "art_piece.read"
     ART_PIECE_WRITE = "art_piece.write"
     ART_PIECE_DELETE = "art_piece.delete"
+    ART_PIECE_ACTIVITY_READ = "art_piece.activity.read"
 
 
 class PermissionDenied(Exception):  # noqa: N818
@@ -152,7 +153,11 @@ def can(user, action: Action, resource=None) -> bool:  # noqa: C901
             _is_authenticated(user) and resource.owner_id == user.id
         )
 
-    if action in (Action.ART_PIECE_WRITE, Action.ART_PIECE_DELETE):
+    if action in (
+        Action.ART_PIECE_WRITE,
+        Action.ART_PIECE_DELETE,
+        Action.ART_PIECE_ACTIVITY_READ,
+    ):
         return (
             isinstance(resource, ArtPiece)
             and _is_authenticated(user)

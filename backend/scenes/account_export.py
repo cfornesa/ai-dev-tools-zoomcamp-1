@@ -127,6 +127,7 @@ def _serialize_art_piece_version(version) -> dict[str, Any]:
 
 
 def _serialize_art_piece(piece: ArtPiece) -> dict[str, Any]:
+    activity = getattr(piece, "_export_activity", [])
     return {
         "public_id": str(piece.public_id),
         "title": piece.title,
@@ -141,6 +142,7 @@ def _serialize_art_piece(piece: ArtPiece) -> dict[str, Any]:
         "versions": [
             _serialize_art_piece_version(version) for version in piece.versions.order_by("sequence")
         ],
+        "activity": [_serialize_project_activity(event) for event in activity],
     }
 
 
@@ -209,6 +211,16 @@ def build_account_export(user) -> dict[str, Any]:
         ],
         "art_pieces": [
             _serialize_art_piece(piece)
-            for piece in ArtPiece.all_objects.filter(owner=user).order_by("id")
+            for piece in ArtPiece.all_objects.filter(owner=user)
+            .prefetch_related(
+                Prefetch(
+                    "activity",
+                    queryset=ProjectActivity.objects.select_related("actor").order_by(
+                        "-created_at", "-id"
+                    ),
+                    to_attr="_export_activity",
+                )
+            )
+            .order_by("id")
         ],
     }

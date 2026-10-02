@@ -9,11 +9,13 @@ from django.urls import reverse
 
 from scenes.cloud_backup import mark_backup_read_only_for_user
 from scenes.models import (
+    ArtPiece,
     CloudBackupBlob,
     CloudBackupBlobTransfer,
     CloudBackupProject,
     Plan,
     Project,
+    ProjectActivity,
     SiteSettings,
 )
 
@@ -51,6 +53,17 @@ def backup_policy(db):
 @pytest.mark.django_db
 def test_kill_switch_fails_before_creating_backup(client, owner, project):
     client.force_login(owner)
+    piece = ArtPiece.objects.create(
+        owner=owner,
+        title="Generated history stays private",
+        prompt="private",
+        engine=ArtPiece.Engine.SVG,
+    )
+    ProjectActivity.objects.create(
+        art_piece=piece,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 1},
+    )
     settings_row = SiteSettings.get_solo()
     settings_row.cloud_sync_enabled = False
     settings_row.save(update_fields=["cloud_sync_enabled"])
@@ -62,6 +75,17 @@ def test_kill_switch_fails_before_creating_backup(client, owner, project):
 @pytest.mark.django_db
 def test_owner_manifest_and_blob_are_idempotent_and_isolated(client, owner, other, project):
     client.force_login(owner)
+    piece = ArtPiece.objects.create(
+        owner=owner,
+        title="Generated history is private",
+        prompt="private",
+        engine=ArtPiece.Engine.SVG,
+    )
+    ProjectActivity.objects.create(
+        art_piece=piece,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 1},
+    )
     base = reverse("cloud-backup", args=[project.public_id])
     assert client.post(base, {"enabled": True}).status_code == 201
     manifest_url = reverse("cloud-backup-manifest", args=[project.public_id])
@@ -71,6 +95,8 @@ def test_owner_manifest_and_blob_are_idempotent_and_isolated(client, owner, othe
     replay = client.put(manifest_url, payload, content_type="application/json")
     assert first.status_code == replay.status_code == 200
     assert first.json() == replay.json()
+    assert "activity" not in first.json()["manifest"]
+    assert "activity" not in first.json()["manifest"]
     stale = client.put(
         manifest_url,
         {**payload, "idempotency_key": "manifest-stale"},

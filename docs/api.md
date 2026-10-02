@@ -250,6 +250,33 @@ index, and the exact-one-family constraint after migration `0111`. Reversing
 restores the 2D-only schema. After deployment, follow the issue's restoration
 path and retain the nullable columns rather than rolling back stored history.
 
+## Owner-only generated ArtPiece activity (#1157)
+
+`GET /api/art-pieces/<public_id>/activity/` returns the authenticated owner's
+bounded activity page for a server-backed generated ArtPiece. It uses the
+same result fields, metadata allowlist, ordering, page limits, and
+privacy-preserving 404 boundary documented for 2D activity above. Its opaque
+cursor is bound to both the ArtPiece public UUID and the ArtPiece activity
+family; cursors from 2D or structured 3D routes are invalid here. A
+soft-deleted piece remains readable during its existing retention period, and
+hard deletion cascades its activity rows.
+
+Explicit version saves record `version_saved` with only `sequence` and
+`origin`. Actual publish and unpublish status transitions record `published`
+with `sequence`, and `unpublished` with no details; unchanged status writes no
+event. Initial creation, package import, and accepted AI refinement runs do
+not emit activity. There are no version restore/delete routes. Event metadata
+never includes prompts, source code, scene content, credentials, email, or
+internal IDs. The activity log is owner-private and is absent from public
+pages, gallery/search, embed and public API payloads, portable piece packages,
+and cloud backup manifests. Account JSON export includes it only under the
+authenticated owner's generated pieces.
+
+Migration `0113` adds a nullable ArtPiece association, descending activity
+index, and the exact-one-family constraint after `0112`. Reversing `0113`
+drops ArtPiece activity rows while preserving 2D and 3D rows, then restores
+the two-family schema.
+
 ## Private project intent notes (#1138)
 
 The owner-scoped `GET /api/projects/<public_id>/` and `PATCH

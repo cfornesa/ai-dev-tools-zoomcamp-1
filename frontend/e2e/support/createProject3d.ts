@@ -19,8 +19,23 @@ export async function createServerProject3D(page: Page): Promise<string> {
     throw new Error('The 3D project create response did not include an id and editor_url');
   }
 
+  const editorReady = page.waitForResponse(
+    (editorResponse) =>
+      editorResponse.request().method() === 'GET' &&
+      /\/api\/users\/@[^/]+\/edit\/[^/]+\/$/.test(new URL(editorResponse.url()).pathname),
+  );
   await page.goto(project.editor_url);
   await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);
+  const editorResponse = await editorReady;
+  if (!editorResponse.ok()) {
+    throw new Error(
+      `Could not load the server-backed 3D project editor: HTTP ${editorResponse.status()}`,
+    );
+  }
+  const editorPayload = (await editorResponse.json()) as { piece?: { id?: string } };
+  if (editorPayload.piece?.id !== project.id) {
+    throw new Error('The 3D editor did not load the project created for this test');
+  }
   return project.id;
 }
 

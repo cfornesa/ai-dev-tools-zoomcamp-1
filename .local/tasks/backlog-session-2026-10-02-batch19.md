@@ -2,11 +2,13 @@
 
 ## Scope and gate
 
-Authenticated GitHub search returned 21 open issues: #1096, #1100, #1102–#1104,
-#1129–#1130, #1138–#1140, #1143–#1144, and #1149–#1157. No issue is treated
-as closed based on a local commit. Batch gate: **pending**; this record is a
-continuation of the active backlog session, not a declaration that the project
-batch is complete.
+The initial authenticated GitHub search returned 21 open issues. Read-after-
+write GitHub search on 2026-10-02 now reports seven open: #1096, #1103, #1138,
+#1144, #1155, #1156, and #1158. #1143 and #1159 were closed in GitHub only
+after their issue-level QA comments and acceptance matrices were posted. Batch
+gate: **pending** for the remaining issues; this record is a continuation of
+the active backlog session, not a declaration that the project batch is
+complete.
 
 Owner choices now resolved: #1129 selected the private server-backed 2D
 `Project.brief` field; #1130 selected owner-only history for structured 3D then
@@ -28,7 +30,7 @@ reconciliation.
 | #1138 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `d40f4a8a`; QA matrix posted; local backend criteria pass |
 | #1139 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5954588513`; Linux E2E, both inspected viewport artifacts, privacy, save/clear and accessibility criteria satisfied. |
 | #1140 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5950120078`; focused backend/panel checks and fake-provider Linux E2E satisfied the bounded note, request opt-out, snapshot/retry, and privacy criteria. |
-| #1143 | 16 | Implemented; exact desktop/mobile admin-panel captures added; Linux render and visual QA pending | Admin screenshot capture reuses `adminSettings.spec.ts`'s disposable `e2e_admin` fixture; inspect both images from Linux before criterion QA/closure. |
+| #1143 | 16 | **Closed completed on GitHub 2026-10-02**; QA PASS comment 5961624588 | Full-history reviewable-proposal metric, 5-second PostgreSQL timeout, admin privacy/suppression, rendered desktop/mobile evidence, and frontend/backend checks passed. Note: GitHub closure left the body checklist unchecked; preserve the closed record and ask owner before creating a corrective follow-up. |
 | #1144 | 14 | Engineering: visual captures added; awaiting Linux rendered evidence | Linux Chromium/PostgreSQL exact two-spec run; inspect desktop/mobile screenshots; then criterion QA and GitHub reconciliation |
 | #1149 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958321151`; all 8 current Linux fake-provider 2D/3D Agent scenarios passed, 0 skipped; route changes confined to the two specs. |
 | #1150 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958366885`; Linux run #1116 passed all #1150-owned scene-Save paths with current fixture setup; unrelated #1103/#1104 failures remain separately owned. |
@@ -39,6 +41,8 @@ reconciliation.
 | #1155 | 14 | QA: FAIL / handed off at Linux verification boundary; current local evidence posted to GitHub | Existing guard commit; isolated `gesture_studio_test` smoke 1/1, all fixture counts zero afterward; Linux/full matrix pending |
 | #1156 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `e28a57a3`; QA matrix posted; current-ref full matrix pending |
 | #1157 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS comment `5959139975`; current-head Linux backend checks 2,012 passed / 44 gated skips, migration drift clean; populated-row forward/reverse migration, PostgreSQL concurrent transition and Linux full-matrix execution on descendant `fba45bc` verified. Aggregate matrix remains red on unrelated specs; #1096 stays open. |
+| #1158 | 14 | Open; local QA pass, Linux acceptance pending | Centered in-flow toggle placement through 767px; admin definitions, gallery focus visibility, 768px/desktop position and both toggle actions tested. Push existing branch and inspect the Linux Chromium/PostgreSQL run. |
+| #1159 | 14 | **Closed completed on GitHub 2026-10-02**; QA PASS comment 5961685465 | Portal dialog uses exported-viewer sizing; public, editor, immersive and generated-art mounts inspected at 1280x900/375x812; 12/12 focused union; all 11 issue criteria checked before closure. |
 
 Stage owner provenance for this continuation: stage 1 / Codex (this session) /
 GPT-6 / effort not surfaced / substituted: no. Stage 2 for #1140 / rostered
@@ -82,10 +86,12 @@ first-cause disposition of that timeout, and Linux batch gate.
 | `frontend/e2e/interactionRuntime.spec.ts` and shared editor control helpers | #1151 | #1150 `saveScene`; #1152 Layers panel ordering stays separate; #1096 Linux gate | Existing ancestor implementation retargets the motion toggle and current editor action helpers while preserving runtime/persistence assertions. Run #1082 exact SHA passed all 3 interactionRuntime cases (Linux Chromium/PostgreSQL). The overall 16-shard matrix failed elsewhere. |
 | `frontend/e2e/layersPanel.spec.ts` | #1152 | #1103 migration assertions; #1111/#1114 responsive 2D layout regression; #1150 save helper; #1151 shared current-editor controls; #1096 Linux gate | Commit `510fcaf3` adds explicit first/last layer-move enabled/disabled checks while retaining pointer+keyboard reverse, canvas/panel order, save/reload and no-duplicate assertions. Focused outline unit tests 127 passed, typecheck/lint/format/discovery passed; run #1082 passed the pre-boundary update scenario, but not the new boundary assertions. |
 | `frontend/e2e/interactionRuntime.spec.ts` | #1151 | #1103 migrated caller; #1111/#1114 mobile layout regressions; #1096 Linux gate | Retain desktop/mobile screenshots of both reduced and full motion toggle states as visible test artifacts; preserve the three existing scenario titles and all runtime behavior assertions. Current local preflight passes; exact Linux run required for fresh artifact inspection. |
-| `frontend/e2e/aiAndRecovery.spec.ts` | #1103 | #1096 shared matrix; #1150 save helper; #1151 interaction controls; #1152 layer order; #1154 fake-provider Agent flows | Commit `24197488` replaces the legacy ID-route reopen with the captured canonical editor URL and handles/asserts the observed native beforeunload during conflict reload. Re-run the unchanged scenario assertions and all 4 migrated specs together; the explicit-exit timeout remains unresolved. |
+| `frontend/e2e/aiAndRecovery.spec.ts` | #1103 | #1096 shared matrix; #1150 save helper; #1151 interaction controls; #1152 layer order; #1154 fake-provider Agent flows | Commit `24197488` replaces the legacy ID-route reopen with the captured canonical editor URL and handles/asserts the observed native beforeunload during conflict reload. Follow-up setup correction uses current `openEditScene`/`closeEditScene` helpers after the legacy piece-menu trigger was intercepted by the stage toolbar. Exact four-spec local Chromium/PostgreSQL rerun: 17 passed, 0 failed, 0 skipped; Linux Chromium criterion remains pending. |
 | `frontend/e2e/publishingAndRemix.spec.ts` saved-source navigation | #1104 | #1150 Save helper; #1153 publication status; #1096 full browser gate | Commit `88b4085f` captures the canonical editor URL and adds explicit beforeunload handling/assertions around the previously stalled navigation; the trace establishes the hang but not its first cause. Existing scenario/assertions remain; typecheck, lint, format, discovery pass. Exact Chromium/PostgreSQL rerun and Linux evidence remain pending. |
 | `frontend/e2e/handGestureGuide.spec.ts`, `public3dProportions.spec.ts` | #1144 | #1096 Linux browser gate; #1100 server-backed 3D fixture contract | Add viewport screenshots at 1280x900/375x812 and assert no overflow; preserve fixture, publish→anonymous route, guide controls, ratios and counts. Inspect retained images from Linux PostgreSQL run before QA PASS. |
 | `frontend/e2e/adminSettings.spec.ts` continuity-panel capture | #1143 | #1096 Linux browser gate; existing #422 admin-settings scenarios in the same spec | Reuse the existing disposable `e2e_admin` route and capture the panel at the issue's exact desktop/mobile viewports; wait for a populated or correctly suppressed response. No settings or project records are changed for the capture. |
+| `frontend/src/index.css` `.shell-display-toggles`, `adminSettings.spec.ts`, shell regression specs | [#1158](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1158) | #1143 continuity definitions; #1111/#1114 CSS neighborhood; #1096 Linux browser gate | The refined issue owns only the shared display toggles. At ≤767px use the established centered in-flow placement; preserve fixed desktop and 768px behavior. Verify admin definitions plus one long non-admin route, focus visibility, toggle functionality and retained screenshots. |
+| `frontend/src/pages/HandGestureGuideDialog.tsx`, new colocated CSS, `HandGestureGuideDialog.test.tsx`, `handGestureGuide.spec.ts`, `artPieceFlatSpatial.spec.ts` | [#1159](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1159) | #1144 public fixture; #1158 shared overlay shell; #1111/#1114 `index.css` collision avoided by colocated CSS | Portal the existing dialog to `document.body`; match exported viewer sizing (28rem / min(60vh, 28rem)), test public bounds/intersections and generated-art mobile screenshots. Preserve five steps, no camera prompt, keyboard behavior and export markup. |
 | `frontend/src/pages/AIProposalPanel.tsx`, `AIRunPanel.tsx`, `useAIRun.ts`, `EditorWorkspace.tsx`, `frontend/e2e/aiIntentNotes.spec.ts` | #1140 | #1149 AI route retargeting; #1154 fake-provider Agent runs | Keep note disclosure confined to server-backed 2D Agent flow; per-request checkbox state resets; isolated E2E test checks disclosure and request opt-out. `aiAgent2d.spec.ts` test and expect counts are preserved for #1149. Current-SHA Linux CI run #36977977163 is the required browser evidence. |
 | Full `make check` and shared AI/backend tests | #1138–#1140 | #1143 and all other open issues | Current local union gate passed: backend lint/format/typecheck and 2,038 collected tests; frontend lint (existing warnings), format/typecheck and 3,228 Vitest tests. CI full 16-shard run completed with browser failures. |
 | `ProjectActivity` family FKs/constraint/index, shared activity view/cursor, 3D lifecycle and AIRun writers, private export, API docs | #1156 | #1133/#1148 2D projection/export; #1143 metrics; #1157 shared schema/view; #1096 Linux browser gate | Serialized after actual migration leaf `0111_airun_intent_note` as `0112`; preserved 2D response bytes with a golden test; separate 3D cursor salt; package intake/conversion/initial creation remain eventless; 2D metrics and public serialization unchanged. |
@@ -824,3 +830,88 @@ with existing warnings), format check, Playwright discovery (6 tests), and
 `git diff --check` pass. Run #1117 predates this capture. Linux E2E execution,
 screenshot inspection, and current issue-specific backend checks remain
 pending; #1143 stays open.
+
+## Mobile overlay obstruction — discovered during #1143/#1144 visual QA
+
+At 375x812, the continuity-metrics screenshot showed the fixed shell display
+controls over the metric definitions. The public 3D hand-gesture guide
+screenshot showed the open guide's text/navigation overlapping share, embed,
+and version details. Searches of `docs/tasks.md`, `.local/tasks/`, and open
+GitHub issues found no equivalent mobile-overlay issue. The owner authorized
+one focused follow-up. Filed [#1158](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1158)
+in milestone 14, linked from this impact row and `docs/tasks.md`;
+implementation was initially deferred under the discovery-gate separation
+rule. The owner later explicitly authorized same-run implementation for
+#1158 and the Claude-refined split issue #1159; this named waiver is recorded
+in `DECISIONS.md`.
+## #1103 recovery setup correction — exact local issue suite passes (2026-10-02)
+
+Replaced `aiAndRecovery.spec.ts`'s stale `Open piece controls menu` / `Edit
+scene` click sequence with the current `openEditScene` helper. The current
+toolbar can cover that legacy trigger, so the old locator timed out before
+the conflict-recovery assertions. The explicit-exit scenario now also closes
+the current Editor actions toolbar before clicking the page-level exit
+control. No product code, test title, or assertion was changed.
+
+On a fresh disposable PostgreSQL cluster (`qa1103`, `/tmp`, port 55433),
+the exact #1103 four-spec Chromium command passed **17/17, 0 failed, 0
+skipped**. `aiAndRecovery` ran with `AI_PROVIDER=fake`; its provider probe,
+AI proposal flow, concurrency flow and all recovery scenarios executed. The
+changed scenario that had timed out now passed in 16.4s. `npm run typecheck`,
+`npm run lint` (exit 0, existing warnings), `npm run format:check`, Playwright
+discovery (17 tests), and `git diff --check` pass. The first unsandboxed
+attempt did not start browser tests because macOS denied Chromium's Mach-port
+bootstrap; the identical retry ran after that host permission boundary was
+approved. Linux Chromium evidence is still required by #1103; do not infer
+that from this local pass or from the aggregate matrix. #1103 remains open
+pending its Linux criterion; #1096 remains its separate cross-suite tracker.
+
+Stage 2a substitution: rostered Opencode Go / actual Codex GPT-6 / effort not
+surfaced / substituted: yes. Stage 4 QA self-review: rostered Claude Sonnet 5
+Medium / actual Codex GPT-6 / effort not surfaced / substituted: yes. Stage 3
+independent-family review not run.
+
+## #1158/#1159 mobile overlay implementation — local QA in progress
+
+Owner-authorized same-run implementation is recorded in `DECISIONS.md`.
+Impact analysis separates shared shell toggles (#1158) from the hand-guide
+dialog (#1159), keeping the guide styles out of the `index.css` region used
+by #1110/#1111/#1114. #1158 mirrors the existing account-page placement at
+≤767px and covers admin metric definitions, the public gallery shell, focus
+traversal, 768px/desktop placement, working theme/motion toggles and
+screenshots. #1159 portals the guide to `document.body`, uses the exported
+viewer sizing (28rem / min(60vh, 28rem)), retains all five slides and keyboard
+behavior, and consolidates the duplicate `PieceStageControls` dialog onto
+the shared component.
+
+Exact local disposable-PostgreSQL Chromium run passed 12/12 across
+`adminSettings`, `handGestureGuide`, and `artPieceFlatSpatial`. Rendered
+screenshots were inspected at 1280x900 and 375x812 for admin definitions,
+editor preview, public route, immersive route, and generated-art controls.
+The broader disposable-PostgreSQL Chromium union passed 19/19, and the final
+admin focus assertion passed 7/7. The full frontend suite passed 316 files /
+3,229 tests; typecheck, format, diff hygiene passed and lint exited 0 with
+existing warnings. #1158 remains open pending its explicit Linux criterion;
+#1096 remains the separate aggregate CI tracker. #1159's issue-level QA PASS
+comment is 5961685465 and its issue is closed completed on GitHub.
+
+### 2026-10-02 — Issue-level reconciliation for #1143 and #1159
+
+GitHub read-after-write confirms #1143 and #1159 closed as completed; repository
+open count is seven (#1096, #1103, #1138, #1144, #1155, #1156, #1158). #1159's
+QA PASS comment is 5961685465; all eleven acceptance boxes were checked before
+closure, and its older 32rem/100dvh lines were aligned with the controlling
+audit addendum's 28rem / min(60vh, 28rem) contract.
+
+#1143 QA PASS comment 5961624588 covers all five criteria, but GitHub's issue
+body checklist remained unchecked at closure. Do not edit/reopen this closed
+issue; per the backlog closure-integrity rule, a corrective follow-up is
+pending owner authorization because the owner previously asked to approve new
+issue creation first. The UI close-button click was a no-op; the authenticated
+GitHub issue update returned `closed`, and Chrome read-after-write confirmed
+the Closed marker and repository count change.
+
+#1158's local shared-shell matrix passes; Linux Chromium/PostgreSQL remains its
+only outstanding direct acceptance gate. Existing branch push + CI dispatch is
+owner-authorized. #1096 remains a separate aggregate tracker and must not delay
+unaffected issue-specific closure.

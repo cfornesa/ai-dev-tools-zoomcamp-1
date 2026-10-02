@@ -1,5 +1,37 @@
 # DECISIONS.md
 
+## 2026-10-02 — Same-run implementation authorized for #1158 and #1159
+
+- The owner explicitly authorized implementation of #1158 and #1159 in this
+  backlog session after Claude Code refined and split the issues. This waives
+  the discovery-gate handoff for these two named issues only; it does not
+  authorize unrelated new issues or closing either issue without its own QA.
+- #1158 uses its refined recommended option: display toggles become centered
+  in-flow at widths through 767px, matching the account pages; desktop and
+  768px behavior stay fixed as before. #1159 owns the hand-gesture guide
+  portal/modal independently.
+- Keep changes on the existing PR #1094 branch; this does not create a new
+  PR or authorize a merge. Any push or CI dispatch must be tied to an
+  issue-specific evidence requirement and existing authorization.
+
+## 2026-10-02 — #1143 and #1159 QA closure records
+
+- #1143 passed its refined full-history, privacy, PostgreSQL timeout, and
+  rendered viewport criteria; QA comment 5961624588 is on the GitHub issue,
+  and authenticated update/read-after-write confirms it closed as completed.
+  The issue body still has unchecked acceptance boxes. Preserve the closed
+  record; owner approval is required before filing a corrective follow-up,
+  per the owner's earlier instruction to ask before creating new issues.
+- #1159 passed its per-issue matrix and closed as completed; QA comment
+  5961685465 records the local macOS/disposable-PostgreSQL boundary and known
+  non-trapping Tab behavior. Its checklist was reconciled to checked state and
+  the older sizing lines aligned with the controlling 28rem/min(60vh,28rem)
+  audit addendum before closure. Linux evidence remains tracked by #1096 and
+  is not claimed for #1159.
+- The #1158 shared-shell changes pass the local shared regression matrix; its
+  explicit Linux Chromium/PostgreSQL criterion remains open and will be
+  checked on the existing authorized branch/CI run. Do not merge PR #1094.
+
 ## 2026-10-02 — Owner authorizes Codex to edit ci.yml for #1155 (scoped)
 
 - The owner authorized Codex to edit `.github/workflows/ci.yml` for **#1155 only**

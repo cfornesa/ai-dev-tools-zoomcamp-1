@@ -26199,3 +26199,46 @@ run #1116 ran on descendant `fba45bc`, which contains #1157's implementation.
 Its aggregate failure remains tracked by #1096; that shared score did not
 override the passing evidence for #1157's own contract, and no #1096 closure
 is claimed.
+
+### 2026-10-02 — #1103 local recovery setup correction
+
+Retargeted `aiAndRecovery.spec.ts` to the current `openEditScene` and
+`closeEditScene` helpers after the retired piece-menu trigger was intercepted
+by the stage toolbar. No test title or assertion was removed or weakened.
+The exact four-spec Chromium run against a fresh disposable PostgreSQL
+database passed 17/17 with no skips; the fake-provider AI and PostgreSQL
+concurrency scenarios executed. Typecheck, lint (existing warnings), format,
+Playwright discovery, and `git diff --check` passed. Linux Chromium remains an
+explicit #1103 acceptance criterion; keep it open until that test result is
+recorded. This criterion-specific result does not depend on #1096's aggregate
+16-shard verdict.
+
+### 2026-10-02 — #1158/#1159 mobile overlay implementation batch
+
+Owner authorized same-run implementation after Claude Code refined the
+issues. The atomic split is now reflected in both issue records: #1158 owns
+the shared shell display toggles covering page content; #1159 owns the
+hand-gesture guide dialog. For #1158, use the issue's recommended centered
+in-flow placement through 767px, matching the existing account-page pattern;
+desktop and 768px behavior remain unchanged. For #1159, use a document-body
+portal and a colocated stylesheet, matching exported-guide sizing. #1159 is
+closed after its criterion QA; #1158 stays open pending its Linux acceptance.
+No #1096 aggregate result substitutes for per-issue evidence.
+
+## 2026-10-02 — #1143 and #1159 issue closure reconciliation
+
+Authenticated GitHub read-after-write confirms #1143 and #1159 are closed as
+completed; the open issue list is now #1096, #1103, #1138, #1144, #1155,
+#1156, and #1158. QA PASS comments: [#1143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1143#issuecomment-5961624588)
+and [#1159](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1159#issuecomment-5961685465).
+#1159's eleven acceptance boxes were checked before closure, and its sizing
+criteria were aligned with the issue's controlling audit addendum.
+
+#1143's rendered evidence and QA are complete, but its issue-body checkboxes
+were left unchecked when it was closed. Preserve that historical issue; the
+backlog closure-integrity rule calls for a corrective follow-up rather than
+reopening/editing it. The owner previously asked for approval before filing
+new issues, so follow-up creation is pending that approval. Next action: ask
+whether to file a checklist-reconciliation follow-up; meanwhile proceed with
+independent open issues. #1158 has passed its local shared-shell matrix; its
+Linux Chromium/PostgreSQL criterion remains pending and is next in the CI run.

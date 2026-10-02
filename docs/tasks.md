@@ -26105,5 +26105,19 @@ matrix failures were in unrelated files. A `## QA: PASS` criterion matrix was
 posted as comment 5958177716, and #1102 is now closed/completed on GitHub. The
 live open count is 13.
 
+### #1103 recovery-suite time budget — 2026-10-02
+
+Run #1116's Linux shard 3 exposed two time-budget failures inside the
+unchanged `aiAndRecovery.spec.ts` scenarios: the Cancel/Discard/Recover test
+reached its final recovery-prompt check at 30 seconds, and the expired/corrupt/
+unauthorized/conflict test reached its final conflict flow at the same default
+limit. All assertions remain intact; all four multi-call setup migration
+specs remain unchanged in scope. Added per-test budgets of 60 seconds and 90
+seconds to these two multi-project scenarios. `npm run typecheck`, lint (exit
+0 with existing repository warnings), format check, Playwright discovery (7
+tests), `git diff --check`, and assertion inventory passed; test/expect counts
+remain 9/102. Browser re-verification is pending on disposable Linux
+PostgreSQL. #1103 remains open.
+
 This does not mark #1096 or the full browser batch complete; the remaining
 open issues retain their own incomplete criteria and need focused work and QA.

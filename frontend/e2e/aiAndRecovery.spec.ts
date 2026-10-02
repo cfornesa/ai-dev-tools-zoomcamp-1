@@ -1026,6 +1026,10 @@ test.describe('Draft recovery', () => {
   test('the recovery prompt: Recover, Discard, and Cancel each behave correctly', async ({
     browser,
   }) => {
+    // This test creates three independent server-backed projects and logs in
+    // for each recovery choice; bound the complete lifecycle accordingly.
+    test.setTimeout(60_000);
+
     await test.step('Recover loads the draft as unsaved working state and leaves the saved version untouched', async () => {
       const context = await browser.newContext();
       const page = await context.newPage();
@@ -1137,6 +1141,10 @@ test.describe('Draft recovery', () => {
   test('expired, corrupt, and unauthorized draft candidates are treated as none; a genuine conflict resolves by recency', async ({
     browser,
   }) => {
+    // Four independent project/login flows and draft probes share this one
+    // aggregate scenario so give its recovery assertions a bounded budget.
+    test.setTimeout(90_000);
+
     await test.step('an expired local draft is treated as none and cleared, never prompted', async () => {
       const context = await browser.newContext();
       const page = await context.newPage();

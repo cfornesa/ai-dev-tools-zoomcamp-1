@@ -26034,3 +26034,20 @@ four inspected #1151 captures at exactly 1280×900 and 375×812; all three
 records issue-level PASS; #1151 remains open. Parent #1096's current FAIL is
 comment 5956065653. The batch gate remains FAIL pending full issue-impact
 reconciliation; no issue is closed.
+
+### #1104 saved-source navigation follow-up — 2026-10-02
+
+The #1105 Linux trace shows the remix-attribution scenario timing out in
+`page.goto` when it returns the owner to the source after the source was saved
+and published. The trace does not establish whether a native `beforeunload`
+dialog caused the hang. Commit `88b4085f` captures the canonical editor URL
+from the server-backed setup and adds a one-shot handler that accepts and
+asserts a `beforeunload` dialog if present, before continuing the original
+Draft/publication and attribution assertions. This is a setup-only change;
+no scenario or existing assertion was removed. Typecheck, lint (exit 0 with
+existing warnings), format check, Playwright discovery (13 tests), and
+`git diff --check` passed. Local browser execution was not attempted because
+the running database is not verified disposable. The change is pushed to the
+authorized branch; fresh Linux Chromium/PostgreSQL evidence remains pending.
+Keep #1104 open and QA FAIL until the focused three-spec suite and shared
+matrix pass; if the dialog does not occur, return the cause to trace diagnosis.

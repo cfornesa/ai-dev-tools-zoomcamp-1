@@ -8,7 +8,7 @@
  */
 import { expect, test } from '@playwright/test';
 
-import { apiPatch } from './support/api.js';
+import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -40,16 +40,9 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
         description: 'A public 2D stage control fixture.',
       });
       expect(metadata.ok()).toBe(true);
+      const published = await apiPost(page.context(), `/api/projects/${projectId}/publish/`);
+      expect(published.status()).toBe(200);
       await page.reload();
-
-      const preview = page.getByRole('region', { name: 'Preview' });
-      await preview.getByRole('button', { name: 'File', exact: true }).click();
-      const publicationStatus = preview.getByRole('group', { name: 'Publication status' });
-      await publicationStatus.getByRole('button', { name: 'Published', exact: true }).click();
-      await page
-        .getByRole('alertdialog')
-        .getByRole('button', { name: 'Publish', exact: true })
-        .click();
       await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
 
       const anonymousContext = await browser.newContext();

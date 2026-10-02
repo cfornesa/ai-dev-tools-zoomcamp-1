@@ -7,7 +7,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 
-import { apiPatch } from './support/api.js';
+import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -23,13 +23,9 @@ async function createPublishedProject(page: Page): Promise<string> {
     description: 'A published fixture for the canonical redirect contract.',
   });
   expect(metadata.ok()).toBe(true);
+  const published = await apiPost(page.context(), `/api/projects/${projectId}/publish/`);
+  expect(published.status()).toBe(200);
   await page.reload();
-
-  const preview = page.getByRole('region', { name: 'Preview' });
-  await preview.getByRole('button', { name: 'File', exact: true }).click();
-  const publicationStatus = preview.getByRole('group', { name: 'Publication status' });
-  await publicationStatus.getByRole('button', { name: 'Published', exact: true }).click();
-  await page.getByRole('alertdialog').getByRole('button', { name: 'Publish', exact: true }).click();
   await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
   return projectId;
 }

@@ -14,7 +14,7 @@ User-owned scope decisions carried forward: #1114 preserves 16:9 and places the 
 | #1100 | 14 | 3D E2E fixture helper; six E2E specs | none for implementation; gate precedes #1102–#1104/#1144/#1149 | 2a | Helper committed; local macOS focused rerun passed 7/7; Linux gate unavailable here. Keep verification-boundary open. |
 | #1102 | 14 | nine single-purpose 2D / one 3D call in nine E2E files | #1100 helper contract | 2a | Setup commit exists; previous 4/13 local run failed on now-closed children #1118–#1121. Re-run after their fixes; Linux still required. |
 | #1103 | 14 | 45 calls across `aiAndRecovery`, `layersPanel`, `interactionRuntime`, `exportConfigDialog` | #1100 helper contract | 2a | Implemented in `f98a564d`; QA FAIL locally (11/17 pass); #1150–#1152 deferred; Linux gate open. |
-| #1104 | 14 | Gallery UI lifecycle, publishing/remix, responsive 2D E2E | #1100 helper contract | 2b | Implemented in `ddd46cde`; QA FAIL locally (7/22 pass, 3 dependent cases did not run); #1150/#1153 deferred; Linux gate open. |
+| #1104 | 14 | Gallery UI lifecycle, publishing/remix, responsive 2D E2E | #1100 helper contract | 2b | Implemented in `ddd46cde`, with local-first template clone follow-up in `db3fd542`; full local batch 22 passed / 0 skipped, responsive 375px included. Linux gate open. |
 | #1110 | 14 | mobile 3D drawing-plane move-handle reachability | #1111, #1114; shares 3D stage CSS / specs | 2a | Implementation committed; QA depends on completed #1111/#1114 and regression batch. |
 | #1111 | 14 | mobile 3D inline stage-toolbar collision | #1114/#1103 regression evidence | 2a | Implementation committed; QA/reconciliation after the shared 2D and 3D regression batch. |
 | #1112 | 14 | migrate `drawingPlaneTransform782` fixture to server-backed 3D setup | #1114; helper contract #1100 | 2a | Setup commit exists; exact test previously blocked by #1114 interception; re-run after complete toolbar batch. |
@@ -27,10 +27,10 @@ User-owned scope decisions carried forward: #1114 preserves 16:9 and places the 
 | #1143 | 16 | owner-only aggregate continuity metrics | #1131–#1133 (closed) | 2b | Owner selected indexed full-history query with hard timeout and retryable unavailable response; implementation paused at owner's request pending risk evaluation. |
 | #1144 | 14 | public 3D hand-gesture guide and proportions E2E fixtures | #1100 helper contract | 2a | Owner authorized current open-issue work; criteria specify exact routes/viewports. Implement after shared helper contract; Linux gate remains. |
 | #1149 | 16 | 2D and 3D persisted AI Agent E2E canonical routes | #1100 helper contract | 2a | Owner authorized current open-issue work; preserve fake-provider and distinct 2D/3D workflows. Implement after shared helper contract; Linux gate remains. |
-| #1150 | 14 | 2D AI-recovery and export Save control E2E selectors | discovered during #1103 | 2a | Newly filed after QA; hand off to a later transaction. |
-| #1151 | 14 | interaction-runtime editor control E2E locators | discovered during #1103 | 2a | Newly filed after QA; hand off to a later transaction. |
-| #1152 | 14 | same-layer keyboard reorder vs. canvas z-order behavior | discovered during #1103; follow-up to closed #127/#194 | 2b if behavior defect | Newly filed after QA; preserve both historical closures and hand off to a later transaction. |
-| #1153 | 14 | publication-status selector in publishing and responsive E2E | discovered during #1104 | 2a | Newly filed after QA; hand off to a later transaction. |
+| #1150 | 14 | 2D AI-recovery and export Save control E2E selectors | discovered during #1103 | 2a | Shared `saveScene` helper and all consumers pass expanded local command 30/30, 0 skipped; Linux gate open. |
+| #1151 | 14 | interaction-runtime editor control E2E locators | discovered during #1103 | 2a | Shared control helper consumed in `aiAndRecovery` via `36a65af4`; issue choices remain pending for reduced-motion status and runtime assertion. |
+| #1152 | 14 | same-layer keyboard reorder vs. canvas z-order behavior | discovered during #1103; follow-up to closed #127/#194 | 2b if behavior defect | Awaiting owner choice: change Move up/down to sibling reorder or retain layer-level behavior and separate keyboard-parity gap. |
+| #1153 | 14 | publication-status selector in publishing and responsive E2E | discovered during #1104 | 2a | Local publishing/responsive batch passes 22/22 with 375px case; Linux gate open. |
 | #1154 | 14 | successful fake-provider AI Agent runs on canonical 2D/3D editors | discovered during #1149 | 2b | Implemented; local QA passed. Linux Chromium/PostgreSQL issue gate remains open. |
 
 ## GitHub state audit — 2026-10-01
@@ -61,7 +61,28 @@ Fetched each of the 21 active issues listed above directly from GitHub. All 21 a
 2. **Wave B — 3D interaction batch:** after Wave A's 2D regression suite is green, verify #1111 → #1114 → #1110 and #1112 together against 2D regression, 3D stage geometry, exact route-level controls and screenshots. Existing implementation commits are preserved.
 3. **Wave C — parent CI reconciliation:** only after child matrix can run on Linux, dispatch/re-run the full 16-shard fixed-ref matrix and classify all residual failures before reconciling #1096/#1100/#1102–#1104/#1112/#1114/#1144/#1149.
 
-**Skipped, explicitly:** #1129 and #1130 require owner decisions; #1138–#1140 depend on #1129; #1143 implementation is paused at the owner's request after an architecture choice. The macOS host's unavailable Docker daemon and absence of authorized remote dispatch leave all issue-specific Linux gates and the full-matrix gate unverified. No issue may close on local evidence when its live GitHub contract requires Linux.
+**Skipped, explicitly:** #1129 and #1130 require owner decisions; #1138–#1140 depend on #1129; #1143 implementation is paused at the owner's request after an architecture choice; #1151 and #1152 have owner choices pending. The macOS host's unavailable Docker daemon and absence of authorized remote dispatch leave all issue-specific Linux gates and the full-matrix gate unverified. No issue may close on local evidence when its live GitHub contract requires Linux.
+
+## Wave F checkpoint — #1104/#1150/#1153 local batch gate
+
+The exact #1104 lifecycle/publishing/responsive command passed **22/22**,
+with 0 failures and 0 skips, including the 375px populated gallery. The
+template-clone scenario now follows the actual `/local-projects/:id` workflow,
+inspects the copied scene through the local IndexedDB repository, saves a
+supported local scene-name change, and confirms a second clone has separate
+project/scene records and the original baseline. `projectLifecycle.spec.ts`
+expectations increased from 65 to 71; publishing and responsive expectation
+counts remain at 164 and 30. Commit: `db3fd542`.
+
+The exact expanded #1150 consumer command passed **30/30**, with 0 failures
+and 0 skips; historical-version export and all scene-save consumers are
+included. The only remaining exact-name `Save` locators are two admin form
+controls and one theme form control. #1153's publishing and responsive
+acceptance is included in the 22/22 #1104 regression batch. Frontend static
+checks pass. Issue QA comments record local evidence and the still-required
+Linux Chromium/PostgreSQL gates; read-after-write confirms #1104, #1150, and
+#1153 remain open. #1151 awaits the reduced-motion status contract choice;
+#1152 awaits the keyboard reorder contract choice.
 
 ## Wave A checkpoint — #1103
 

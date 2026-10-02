@@ -25718,3 +25718,28 @@ timestamp. The previous closure references for #1118–#1123, #1136–#1137,
 #1141–#1142, #1148, #127 and #194 were separately fetched and do report
 `closed`. Local implementation commits and QA notes are not GitHub issue
 closures; keep these state categories explicit in all future rollups.
+
+### 2026-10-02 — #1104, #1150, and #1153 re-verification
+
+The #1104 template-clone scenario now follows its actual local-first
+destination (`/local-projects/:id`). It verifies the template's scene payload
+in IndexedDB, saves a supported local scene-name change, then creates a second
+clone and confirms distinct project/scene records with the original template
+baseline. This preserves clone-independence coverage without trying to use
+the server editor's canvas/version controls on the local editor route.
+
+On the disposable local PostgreSQL/Django/Vite stack, `AI_PROVIDER=fake`:
+
+- #1104's full three-spec Chromium command passed **22/22, 0 skipped**, including
+  publishing, fork concurrency, and populated 375px responsive-gallery checks.
+- #1150's expanded four-spec command passed **30/30, 0 skipped**. The exact
+  Save-locator inventory now has only three hits, all unrelated admin-settings
+  or theme-form Save buttons; scene-save consumers use `support/saveScene.ts`.
+  The focused AI draft-save/exit workflow also passed after replacing its
+  retired menu-close button with `closePieceControlsMenu`.
+- Frontend typecheck, lint (exit 0, existing warnings), and format check pass.
+
+The required Linux Chromium/PostgreSQL CI gates remain unavailable from this
+macOS session. Therefore #1104, #1150, and #1153 remain open pending their
+Linux criteria; no closure is claimed. The local changes are recorded in
+issue-scoped commits before the batch QA comment.

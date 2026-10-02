@@ -22,7 +22,7 @@ reconciliation.
 | #1100 | 14 | **Closed completed on GitHub 2026-10-02** | Exact six 3D helper acceptance cases passed on Linux Chromium in run #1074; implementation and preservation criteria already QA PASS. Closing issue-specific work; unrelated full-matrix failures remain with #1096 and their owners. |
 | #1102 | 14 | **Closed completed on GitHub 2026-10-02** | Current full Linux run #1116 passed all nine specified Chromium specs and the WebKit fullscreen/Escape case; `## QA: PASS` comment 5958177716. |
 | #1103 | 14 | Open; current Linux run exposed two composite draft-recovery scenarios exceeding the default 30-second budget; bounded per-test budgets added, focused rerun required | Run #1116 shard 3: the Cancel/Discard/Recover test timed out while finishing its third fresh-project flow; the candidate/conflict test timed out on its final conflict flow. Both kept assertions; add 60s and 90s per-test budgets respectively. Static checks and 7-test discovery pass; counts remain 9 titles / 102 `expect` calls. |
-| #1104 | 14 | Open; follow-up QA found the prior fix asserted a nonexistent `beforeunload` dialog; erroneous assertion removed, focused rerun still required | Run #1116 shard 15 showed the lifecycle completes in 32.9s and fails only at `expect(sourceNavigationDialogs).toHaveLength(1)`; the owner editor is already on the source, so no navigation/dialog is needed. Current correction restores prior issue assertions exactly (16 tests / 164 expects). |
+| #1104 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5958690593; Linux run #1117 on `50f95f14` executed all three issue-owned specs on disposable PostgreSQL: 22 passed, 0 failed, 0 skipped. Two separate `authPolicy.spec.ts` failures are outside its impact row. |
 | #1129 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D1 recorded and dependent #1138–#1140 contracts implement the selected server-field design. |
 | #1130 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D2 recorded and split follow-ups #1156/#1157 created, milestoned, and sequenced; both are underway. |
 | #1138 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `d40f4a8a`; QA matrix posted; local backend criteria pass |
@@ -784,3 +784,18 @@ warnings), `npm run format:check`, Playwright discovery (2 tests), and
 database was touched and no local browser run was attempted. Linux screenshot
 artifacts and visual inspection are the outstanding #1144 criteria; keep it
 open until that focused evidence is inspected.
+
+## Owner-directed Goodhart correction — #1104 reconciliation (2026-10-02)
+
+The owner called out that shared CI completion had become a proxy for actual
+delivery. Reconciled #1104 against its finite acceptance contract and impact
+rows rather than the unrelated full matrix. PR run #1117 ran
+`projectLifecycle.spec.ts`, `publishingAndRemix.spec.ts`, and
+`responsiveShell.spec.ts` on Linux Chromium with disposable PostgreSQL: all
+22 issue-owned scenarios passed, including fork attribution, fork
+concurrency, responsive 375px gallery, and lifecycle/version assertions.
+The two failures in the combined smoke step were confined to unrelated
+`authPolicy.spec.ts` expectations and remain assigned for #1096 triage.
+Posted criterion matrix comment `5958690593` and verified GitHub issue #1104
+closed as `completed`. #1096 remains open; this closure does not claim the
+full suite passes.

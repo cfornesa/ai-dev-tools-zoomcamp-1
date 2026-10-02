@@ -26148,3 +26148,16 @@ Test titles and scenario count are unchanged; expectation counts are now
 (existing repository warnings), format check, Playwright discovery (2 tests),
 and `git diff --check` pass. Linux PostgreSQL execution and visual screenshot
 inspection remain required before #1144 can close.
+
+### 2026-10-02 — #1104 completed
+
+Linux run [#1117](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37045559174)
+ran the full #1104 three-spec Chromium scope against disposable PostgreSQL:
+all 22 issue-owned scenarios passed with zero skips or failures. This included
+lifecycle save/history/restore, publication, atomic fork and provenance,
+PostgreSQL fork concurrency, and the 375px responsive gallery. The combined
+CI smoke job's two failures were both `authPolicy.spec.ts` assertions, outside
+#1104's scope. The QA matrix is comment
+[#5958690593](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1104#issuecomment-5958690593);
+GitHub issue #1104 is closed as completed. The parent #1096 and unrelated
+issues remain open.

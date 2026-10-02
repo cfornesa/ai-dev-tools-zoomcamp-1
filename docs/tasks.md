@@ -26136,3 +26136,15 @@ PostgreSQL. #1103 remains open.
 
 This does not mark #1096 or the full browser batch complete; the remaining
 open issues retain their own incomplete criteria and need focused work and QA.
+
+### 2026-10-02 — #1144 viewport evidence capture
+
+Added retained desktop (1280x900) and mobile (375x812) screenshots for the
+public 3D viewer and hand-gesture guide to their two existing E2E specs. The
+guide checks document width at both sizes; the proportion test continues to
+check 16:9 frame/canvas ratios and overflow before capturing each viewport.
+Test titles and scenario count are unchanged; expectation counts are now
+15 (guide; baseline 13) and 12 (proportions; baseline 12). Typecheck, lint
+(existing repository warnings), format check, Playwright discovery (2 tests),
+and `git diff --check` pass. Linux PostgreSQL execution and visual screenshot
+inspection remain required before #1144 can close.

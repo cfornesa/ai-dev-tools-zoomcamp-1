@@ -18,7 +18,7 @@ test.describe('anonymous public 3D proportions', () => {
   test('keeps the public sphere frame proportional and controls reachable', async ({
     page,
     browser,
-  }) => {
+  }, testInfo) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createServerProject3D(page);
     await expect(page).toHaveURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);
@@ -75,6 +75,9 @@ test.describe('anonymous public 3D proportions', () => {
       expect(metrics.frameWidth / metrics.frameHeight).toBeCloseTo(16 / 9, 1);
       expect(metrics.canvasWidth / metrics.canvasHeight).toBeCloseTo(16 / 9, 1);
       expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
+      await anonymousPage.screenshot({
+        path: testInfo.outputPath(`public-3d-proportions-${viewport.width}x${viewport.height}.png`),
+      });
     }
 
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();

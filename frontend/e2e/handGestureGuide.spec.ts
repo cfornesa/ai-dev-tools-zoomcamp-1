@@ -15,7 +15,9 @@ test.describe('3D hand gesture guide', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('presents five named slides without requesting camera permission', async ({ page }) => {
+  test('presents five named slides without requesting camera permission', async ({
+    page,
+  }, testInfo) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const projectId = await createServerProject3D(page);
     await expect(page).toHaveURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);
@@ -53,6 +55,20 @@ test.describe('3D hand gesture guide', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('heading', { name: 'Look' })).toBeVisible();
     await expect(dialog).toContainText('Step 1 of 5');
+
+    for (const viewport of [
+      { width: 1280, height: 900 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect(dialog).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        viewport.width,
+      );
+      await page.screenshot({
+        path: testInfo.outputPath(`hand-gesture-guide-${viewport.width}x${viewport.height}.png`),
+      });
+    }
 
     for (const title of ['Move', 'Orbit', 'Zoom', 'Stop safely']) {
       await dialog.getByRole('button', { name: 'Next' }).click();

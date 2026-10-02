@@ -140,17 +140,9 @@ async function openPieceControls(page: Page): Promise<void> {
   }
 }
 
-/** Issue #427: reopens the "Edit scene" stage popover after a prior
- * `closeEditScene()` in the same test -- `openEditScene`'s own exact-match
- * "Edit scene" trigger lookup assumes a fresh, never-yet-toggled trigger,
- * which a close-then-reopen cycle within one page violates (see
- * `layersPanel.spec.ts`'s identical helper for the full explanation). */
+/** Reopens the canonical editor's authoring toolbar after it was closed. */
 async function reopenEditScene(page: Page): Promise<void> {
-  await openPieceControlsMenu(page);
-  const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-  const trigger = toolbar.getByRole('button', { name: /^(edit scene|hide edit scene)$/i });
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
-  await toolbar.getByRole('toolbar', { name: 'Editor actions' }).waitFor({ state: 'visible' });
+  await openEditScene(page);
 }
 
 function playbackProgress(page: Page) {

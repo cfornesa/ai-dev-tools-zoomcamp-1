@@ -25847,3 +25847,14 @@ GitHub QA comments and read-after-write verification closed #1112, #1110,
 and keep the #1096 Linux matrix open. Current open count after these closures:
 19 issues. #1151 remains open for its Linux gate; #1152 remains paused for the
 owner's scene-contract decision.
+# 2026-10-02 — Active backlog-session continuation (Batch 19)
+
+The authenticated open-issue inventory is 21 issues (#1096, #1100, #1102–#1104,
+#1129–#1130, #1138–#1140, #1143–#1144, #1149–#1157). The current impact matrix,
+implementation/QA evidence, stage provenance, and remaining gates are recorded
+in [`.local/tasks/backlog-session-2026-10-02-batch19.md`](../.local/tasks/backlog-session-2026-10-02-batch19.md).
+No issues were closed by this continuation. The #1140 implementation is pushed
+to PR #1094. Stale run 36977291895 targets `8100a4b9`; corrected full 16-shard
+run 36977977163 and current-SHA PR run 36977676552 target `9db8a584` and are
+in progress. #1139's required rendered checks at 1280x900 and 375x812 remain
+outstanding, so the intent-note batch has not passed QA/reconciliation.

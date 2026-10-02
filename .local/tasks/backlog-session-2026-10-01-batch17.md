@@ -13,12 +13,12 @@ User-owned scope decisions carried forward: #1114 preserves 16:9 and places the 
 | #1096 | 14 | 16-shard Linux E2E matrix and residual failure classification | #1100, #1101, all linked failure children | tracking | Open; parent only. Re-run full Linux matrix and classify every residual failure. |
 | #1100 | 14 | 3D E2E fixture helper; six E2E specs | none for implementation; gate precedes #1102–#1104/#1144/#1149 | 2a | Helper committed; local macOS focused rerun passed 7/7; Linux gate unavailable here. Keep verification-boundary open. |
 | #1102 | 14 | nine single-purpose 2D / one 3D call in nine E2E files | #1100 helper contract | 2a | Local Chromium batch now passes 13/13 and WebKit fullscreen/Escape 1/1 after #1118–#1121; Linux Chromium gate remains. |
-| #1103 | 14 | 45 calls across `aiAndRecovery`, `layersPanel`, `interactionRuntime`, `exportConfigDialog` | #1100 helper contract | 2a | Implemented in `f98a564d`; QA FAIL locally (11/17 pass); #1150–#1152 deferred; Linux gate open. |
+| #1103 | 14 | 45 calls across `aiAndRecovery`, `layersPanel`, `interactionRuntime`, `exportConfigDialog` | #1100 helper contract | 2a | Current combined local run: 16/17; sole failure is #1152's invalid shared-layer premise. #1150 focused retest passes; #1151's three scenarios pass under owner-approved toggle contract. Linux gate open. |
 | #1104 | 14 | Gallery UI lifecycle, publishing/remix, responsive 2D E2E | #1100 helper contract | 2b | Implemented in `ddd46cde`, with local-first template clone follow-up in `db3fd542`; full local batch 22 passed / 0 skipped, responsive 375px included. Linux gate open. |
-| #1110 | 14 | mobile 3D drawing-plane move-handle reachability | #1111, #1114; shares 3D stage CSS / specs | 2a | Implementation committed; QA depends on completed #1111/#1114 and regression batch. |
-| #1111 | 14 | mobile 3D inline stage-toolbar collision | #1114/#1103 regression evidence | 2a | Implementation committed; QA/reconciliation after the shared 2D and 3D regression batch. |
-| #1112 | 14 | migrate `drawingPlaneTransform782` fixture to server-backed 3D setup | #1114; helper contract #1100 | 2a | Setup commit exists; exact test previously blocked by #1114 interception; re-run after complete toolbar batch. |
-| #1114 | 14 | below-stage mobile rail for 3D plane actions; preserve 16:9 | #1103 2D regression suite; gates #1112/#1110 | 2a | Implementation committed; 3D criteria pass locally, shared 2D gate blocked by stale fixture. Re-run after #1103. |
+| #1110 | 14 | mobile 3D drawing-plane move-handle reachability | #1111, #1114; shares 3D stage CSS / specs | 2a | Closed on GitHub 2026-10-02 after focused geometry/toolbar QA; #1112 and #1102 dependencies satisfied. |
+| #1111 | 14 | mobile 3D inline stage-toolbar collision | #1114/#1103 regression evidence | 2a | Closed on GitHub 2026-10-02 after 3D geometry, disclosures, static, and affected 2D checks. |
+| #1112 | 14 | migrate `drawingPlaneTransform782` fixture to server-backed 3D setup | #1114; helper contract #1100 | 2a | Closed on GitHub 2026-10-02 after unchanged desktop/mobile transform scenarios passed 2/2. |
+| #1114 | 14 | below-stage mobile rail for 3D plane actions; preserve 16:9 | #1103 2D regression suite; gates #1112/#1110 | 2a | Closed on GitHub 2026-10-02 after selected-plane layout/hit-target checks and regression batch. |
 | #1129 | 16 | owner decision: intent-note storage | — | owner | Decision-pending. Do not implement dependent #1138–#1140. |
 | #1130 | 16 | owner decision: history support beyond 2D | — | owner | Decision-pending. No immediate child is in the live open set. |
 | #1138 | 16 | private intent field/API/export/deletion | #1129 | 2b | Dependency-blocked on owner decision #1129. |
@@ -28,14 +28,25 @@ User-owned scope decisions carried forward: #1114 preserves 16:9 and places the 
 | #1144 | 14 | public 3D hand-gesture guide and proportions E2E fixtures | #1100 helper contract | 2a | Owner authorized current open-issue work; criteria specify exact routes/viewports. Implement after shared helper contract; Linux gate remains. |
 | #1149 | 16 | 2D and 3D persisted AI Agent E2E canonical routes | #1100 helper contract | 2a | Owner authorized current open-issue work; preserve fake-provider and distinct 2D/3D workflows. Implement after shared helper contract; Linux gate remains. |
 | #1150 | 14 | 2D AI-recovery and export Save control E2E selectors | discovered during #1103 | 2a | Shared `saveScene` helper and all consumers pass expanded local command 30/30, 0 skipped; Linux gate open. |
-| #1151 | 14 | interaction-runtime editor control E2E locators | discovered during #1103 | 2a | Shared control helper consumed in `aiAndRecovery` via `36a65af4`; issue choices remain pending for reduced-motion status and runtime assertion. |
-| #1152 | 14 | same-layer keyboard reorder vs. canvas z-order behavior | discovered during #1103; follow-up to closed #127/#194 | 2b if behavior defect | Awaiting owner choice: change Move up/down to sibling reorder or retain layer-level behavior and separate keyboard-parity gap. |
+| #1151 | 14 | interaction-runtime editor control E2E locators | discovered during #1103 | 2a | Owner approved current toggle and behavior checks; exact unavailable status-message assertions removed. All 3 local Chromium cases pass; Linux gate open. `aiAndRecovery` shared menu fix committed `36a65af4`. |
+| #1152 | 14 | same-layer keyboard reorder vs. canvas z-order behavior | discovered during #1103; follow-up to closed #127/#194 | 2b if behavior defect | Owner approved sibling-level behavior, but current #142 schema/validators forbid shared shape layers; awaiting owner choice on preserving or broadening that contract. |
 | #1153 | 14 | publication-status selector in publishing and responsive E2E | discovered during #1104 | 2a | Local publishing/responsive batch passes 22/22 with 375px case; Linux gate open. |
 | #1154 | 14 | successful fake-provider AI Agent runs on canonical 2D/3D editors | discovered during #1149 | 2b | Implemented; local QA passed. Linux Chromium/PostgreSQL issue gate remains open. |
+| #1155 | 14 | fail-closed Playwright disposable database selection | discovered during Batch 17 fixture setup | 2b | Newly filed PROPOSED follow-up; defer implementation to a later authorized backlog batch under the discovery separation rule. |
 
 ## GitHub state audit — 2026-10-01
 
 Fetched each of the 21 active issues listed above directly from GitHub. All 21 are `open` and have no `closed_at` timestamp. In particular, #1103 and #1104 are not closed: both have local implementation commits and QA evidence, but each currently fails local QA and lacks the required Linux/browser batch gate. The earlier closed issues referenced by this batch (#1118–#1123, #1136–#1137, #1141–#1142, #1148, #127, and #194) were separately fetched and GitHub reports them closed. State changes must be confirmed by fetching GitHub after any closure action.
+
+## GitHub state audit — 2026-10-02
+
+Fetched the current open list after completing the 3D mobile layout batch: 19
+issues remain open (#1096, #1100, #1102–#1104, #1129–#1130, #1138–#1140,
+#1143–#1144, #1149–#1155). GitHub reports #1110, #1111, #1112, and #1114
+`CLOSED` with timestamps on 2026-10-02; each closure followed a QA comment and
+read-after-write state check. #1151 also received local QA evidence and remains
+open for its issue-specific Linux Chromium/PostgreSQL gate. No other closure is
+claimed from local implementation or tests alone.
 
 ## Batch impact matrix
 
@@ -83,6 +94,37 @@ checks pass. Issue QA comments record local evidence and the still-required
 Linux Chromium/PostgreSQL gates; read-after-write confirms #1104, #1150, and
 #1153 remain open. #1151 awaits the reduced-motion status contract choice;
 #1152 awaits the keyboard reorder contract choice.
+
+## Wave H checkpoint — #1103 residuals (superseded by Wave I)
+
+After the #1150 shared Save helper and #1151 editor control helper updates,
+the exact four-spec local PostgreSQL/Chromium batch now runs **15/17**, 0
+skipped. All AI recovery/save and export scenarios pass; both interaction
+runtime graph-authoring scenarios pass; the remaining failures are one
+unavailable Reduced radio/status contract (#1151) and the same-layer keyboard
+ordering mismatch (#1152). Both require owner choices before implementation
+or test-contract changes. #1103 remains open / QA FAIL and Linux-gated.
+
+## Wave I checkpoint — owner decision and focused retest
+
+The owner approved #1151's current accessible shell-toggle and runtime
+behavior contract, explicitly dropping only the unavailable exact status-copy
+assertion. The three `interactionRuntime.spec.ts` Chromium scenarios passed
+in the combined batch; the exact `aiAndRecovery` Save/recovery scenario also
+passed in a focused retest (1/1) against the explicitly selected disposable
+PostgreSQL DB. The earlier combined 15/17 result's other failure was #1150's
+Exit-without-saving scenario; it passed on focused rerun (1/1), so the
+combined-run failure was transient and is not a confirmed regression.
+
+The remaining reproducible failure is #1152: its requested same-layer setup
+violates the still-current #142 one-shape-per-layer schema and validators.
+The user's prior preference for sibling-level keyboard behavior does not
+resolve whether to broaden that scene contract. No #1152 product or test
+change was made. The fresh combined four-spec run then passed **16/17, 0
+skipped**, with only the #1152 order assertion failing. #1103 remains open
+pending resolution of that contract conflict and the required Linux
+Chromium/PostgreSQL gate. #1151's QA evidence and owner-approved contract were
+recorded on GitHub; it remains open pending its Linux gate.
 
 ## Wave A checkpoint — #1103
 

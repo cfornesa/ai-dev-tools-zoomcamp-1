@@ -25750,3 +25750,79 @@ After #1118–#1121 closed, #1102's exact nine-spec local Chromium/PostgreSQL
 command passed **13/13**, 0 failed, 0 skipped. Its separate WebKit
 fullscreen/Escape regression passed **1/1**. Linux Chromium remains the
 issue's explicit closure gate; #1102 stays open pending that evidence.
+
+### [#1155](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1155) — E2E fixture environment safety
+
+- **Goal:** Ensure Playwright fixture creation and teardown can mutate only a
+  database explicitly identified as disposable. The current Playwright
+  global setup silently falls back to `backend/.env`; a missed
+  `E2E_ENV_FILE` therefore seeded and cleaned fixtures in the local
+  development database during Batch 17 QA.
+- **Acceptance criteria:**
+  - [ ] `global-setup.ts`, `global-teardown.ts`, and `e2e_fixtures` fail closed
+    unless the selected environment explicitly opts into a disposable E2E
+    database; do not silently use `backend/.env` as a fallback.
+  - [ ] A rejected/missing opt-in writes no users, projects, versions, or
+    other fixture records and reports an actionable prerequisite message.
+  - [ ] Teardown runs only after successful setup and targets the same
+    explicitly selected disposable database as setup.
+  - [ ] The disposable CI and staging fixture flows retain their existing
+    behavior with the required marker and safe target checks.
+  - [ ] Backend command tests prove rejection leaves fixture records
+    unchanged; a disposable PostgreSQL browser smoke proves create/test/
+    cleanup works end to end.
+  - [ ] Frontend typecheck, lint, and format checks pass; the full Linux
+    Chromium/PostgreSQL E2E gate remains the closure criterion.
+- **Regression risk:** An overly broad guard could block legitimate isolated
+  CI/staging runs; a weak guard could still seed or delete persistent data.
+- **Restoration path:** Revert the guard and environment wiring together;
+  restore the prior flow only when the target database is explicitly
+  disposable.
+- **Applicable conventions:** `docs/conventions/security.md` (fail-closed
+  environment/data boundary), `docs/conventions/testing.md`, and
+  `docs/conventions/architecture.md` (environment-driven monolith setup).
+- **Milestone:** Batch 14; parent tracker #1096.
+- **Status:** PROPOSED; tracked in GitHub #1155.
+- **Evidence:** Initial E2E run omitted `E2E_ENV_FILE`; global setup used
+  the default local env file while the app server used an isolated test DB.
+  The fixture lifecycle then reset and removed the deterministic test users
+  and their dependent test-owned records from the default local database.
+  Corrected browser runs aligned fixture setup/teardown with the isolated DB.
+- **Next action:** Implement and verify in a separate authorized batch; this
+  newly discovered issue is deferred from the current run under the backlog
+  session's discovery separation rule.
+
+### 2026-10-02 — #1103 residuals after #1151 owner decision
+
+The owner approved #1151's current shell motion toggle and behavior checks,
+explicitly dropping only the unavailable exact status-message assertion. The
+four-spec local Chromium/PostgreSQL rerun passed **16/17, 0 skipped**. All
+three `interactionRuntime.spec.ts` scenarios passed; the only failure was
+#1152's keyboard order assertion at `layersPanel.spec.ts:466`, whose fixture
+assumes two shapes may share one layer despite the still-current #142 scene
+contract. The combined run's #1150 Exit-without-saving case passed on a
+focused rerun (1/1). GitHub #1151's local QA comment is recorded at
+[issue comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1151#issuecomment-5944384906);
+the issue remains open pending Linux Chromium/PostgreSQL evidence.
+
+No #1152 source or test change was made because its approved desired behavior
+conflicts with #142's one-shape-per-layer invariant; the owner has been asked
+whether to preserve or expand that contract. #1103 remains QA FAIL until this
+is resolved and its required Linux matrix runs.
+
+### 2026-10-02 — 3D toolbar batch closures
+
+After the shared server-backed 2D setup, the 3D/mobile local regression union
+passed **9/9, 0 skipped**; the unchanged #796 A-Frame case also passed
+`--repeat-each=3` (**6/6**). `drawingPlaneTransform782.spec.ts` passed both
+viewports (**2/2**), `manual3dStageChrome.spec.ts` passed (**1/1**), 2D toolbar
+geometry passed (**2/2**), focused EditorWorkspace component tests passed
+(**37/37**), and typecheck/lint/format checks passed. The four-spec #1103
+regression remained **16/17** because of the independent #1152 layer-order
+contract failure.
+
+GitHub QA comments and read-after-write verification closed #1112, #1110,
+#1111, and #1114 on 2026-10-02. The comments preserve the local-only evidence
+and keep the #1096 Linux matrix open. Current open count after these closures:
+19 issues. #1151 remains open for its Linux gate; #1152 remains paused for the
+owner's scene-contract decision.

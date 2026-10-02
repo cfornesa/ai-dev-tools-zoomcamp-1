@@ -14,9 +14,19 @@ type Fixtures = Extract<E2EState, { available: true }>;
 
 const privateNote = 'Keep this composition calm and open (#1139 privacy fixture).';
 
+async function openDetailsPanel(page: Page) {
+  const detailsTab = page.getByRole('tab', { name: 'Details', exact: true });
+  if (await detailsTab.isVisible()) await detailsTab.click();
+
+  const details = page.getByRole('region', { name: 'Details' });
+  const expand = details.getByRole('button', { name: 'Expand Details panel', exact: true });
+  if (await expand.isVisible()) await expand.click();
+  return details;
+}
+
 async function expectDetailsLayout(page: Page, viewport: { width: number; height: number }) {
   await page.setViewportSize(viewport);
-  const details = page.getByRole('region', { name: 'Details' });
+  const details = await openDetailsPanel(page);
   const note = details.getByLabel('Intent notes (private)');
   await expect(note).toBeVisible();
 
@@ -55,10 +65,7 @@ test.describe('private intent note editor (#1139)', () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     const projectId = await createServerProject2D(page);
 
-    const detailsTab = page.getByRole('tab', { name: 'Details', exact: true });
-    if (await detailsTab.isVisible()) await detailsTab.click();
-
-    const details = page.getByRole('region', { name: 'Details' });
+    const details = await openDetailsPanel(page);
     const note = details.getByLabel('Intent notes (private)');
     await expect(note).toBeVisible();
     await expect(note).toHaveAttribute(
@@ -81,10 +88,9 @@ test.describe('private intent note editor (#1139)', () => {
     await details.getByRole('button', { name: 'Save changes', exact: true }).click();
     await expect(details.getByRole('status')).toHaveText('Saved.');
     await page.reload();
-    await expect(details.getByLabel('Intent notes (private)')).toHaveValue(privateNote);
+    const reloadedDetails = await openDetailsPanel(page);
+    await expect(reloadedDetails.getByLabel('Intent notes (private)')).toHaveValue(privateNote);
 
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.getByRole('tab', { name: 'Details', exact: true }).click();
     await expectDetailsLayout(page, { width: 375, height: 812 });
 
     const published = await apiPost(page.context(), `/api/projects/${projectId}/publish/`);

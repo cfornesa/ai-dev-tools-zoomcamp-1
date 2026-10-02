@@ -1,5 +1,22 @@
 # AugmentrART Backlog
 
+## 2026-10-02 — Batch 19 current-head QA run #1085
+
+Pushed `635d1213a35a296cd8b59ef0fdc49176b847eaad` to the authorized
+`docs/backlog-reevaluation-2026-09-27` branch and dispatched [full CI run
+#1085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37004726979).
+Workflow validation, backend checks, frontend checks (3,228/3,228 Vitest
+tests), and disposable routing smoke passed; the full 16-shard browser matrix
+failed. Detailed shard 14 and shard 16 failures and exact links are recorded in
+[batch 19](../.local/tasks/backlog-session-2026-10-02-batch19.md). The other
+shards still require per-failure first-cause classification against the open
+issue manifest and discovery gate. Local `make check` also passed (backend
+2,012 passed / 44 skipped; frontend 3,228 passed). #1139's save/reload behavior
+was manually confirmed in Chrome, while its public privacy and 1280x900 / 375x812
+rendered checks remain pending; local Playwright Chromium could not start due a
+macOS MachPort permission failure. The batch gate remains FAIL, all GitHub
+issues remain open, and no merge or deployment was performed.
+
 ## 2026-09-28 — corrected continuation
 
 The prior final reconciliation over-gated several workable issues. The local

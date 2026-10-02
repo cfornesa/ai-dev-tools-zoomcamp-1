@@ -447,3 +447,56 @@ regression criteria passed locally, but the `docs/api.md updated first`
 chronology cannot be established because the API docs and code are in the same
 implementation commit. The Linux full 16-shard gate is also pending. Keep
 #1156 open; do not infer docs-first ordering from the author's report.
+
+## Current-head batch QA — run #1085 (2026-10-02)
+
+Pushed commit `635d1213a35a296cd8b59ef0fdc49176b847eaad` to the already-
+authorized `docs/backlog-reevaluation-2026-09-27` branch and manually dispatched
+the full CI workflow: [run #1085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37004726979).
+The run completed with a failed overall status. Workflow validation, backend
+checks, frontend checks (316 Vitest files / 3,228 tests), and disposable
+published-routing smoke passed. Hosted safe-push, published URL smoke, and
+staging-authenticated smoke were skipped by workflow conditions. All 16 Linux
+browser shards failed their full-suite step. Shard 16 reported 19 passed, 8
+failed, 5 skipped; shard 14 reported 15 passed, 5 failed, 16 skipped.
+
+Detailed failure evidence inspected in Chrome:
+
+- Shard 14: `publicGalleryMixedPieces` timed out waiting for the AI animation
+  menu item; `publicPieceSurfaceContract744` timed out; `publicProfiles` had a
+  public-profile visibility failure; both `publicShell` desktop/mobile cases
+  failed. Full job:
+  [shard 14](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37004726979/job/110830215822).
+- Shard 16: failures were in `sonicTelemetry` (ambiguous `Key` accessible
+  name), `themeCustomization` (ambiguous `accent` labels), `themeToggle`
+  (expected preference combobox absent), `unpublishRetention` (legacy editor
+  route wait after redirect to `/local-projects/...`), `vividDesignMatrix`
+  (stale color-mode combobox), `drawioEditor` (hidden piece-controls button
+  intercepted by stage), and WebKit generated-piece camera/sound contracts.
+  Exact log:
+  [shard 16](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37004726979/job/110830215984).
+  Shard 16 also shows the current `versionHistoryCompare` case passing and
+  both `manual2dStageChrome` cases passing.
+- These samples are not the complete 16-shard first-cause inventory. Parent
+  #1096 requires every failure to be reconciled to an existing owner or a
+  linked criterion-ready follow-up. Earlier #1074/#1082 records do not
+  substitute for classifying each failure from #1085.
+
+The complete local `UV_CACHE_DIR=/tmp/codex-uv-cache-batch19 make check`
+finished successfully: backend Ruff check/format, mypy and pytest (2,012
+passed, 44 skipped); frontend lint, format, typecheck, Vitest (316 files,
+3,228 passed), and build exited successfully. Focused #1139 component tests
+passed (13/13). The exact Linux `privateIntentNote.spec.ts` browser run was
+attempted locally but Chromium exited before test startup due macOS
+`MachPortRendezvous` permission failure; this is not an assertion result.
+Active Chrome manual verification saved the note, showed `Saved.`, reloaded
+the editor, and showed the note again. Public-route privacy and rendered
+screenshots at 1280x900 and 375x812 remain pending. GitHub `## QA: FAIL` on
+#1139 records that criterion matrix and boundary.
+
+**Batch gate: FAIL / reconciliation incomplete. No issue was closed.** Existing
+issue-level QA PASS comments do not satisfy the cross-issue gate. Next action:
+inspect all 16 run #1085 shard summaries, map failures to open versus already
+closed contracts, run duplicate searches for genuinely new findings under the
+discovery gate, then close only criteria-complete issues with unaffected
+impact rows. No merge or deployment was performed.

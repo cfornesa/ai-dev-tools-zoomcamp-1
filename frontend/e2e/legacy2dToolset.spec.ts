@@ -26,6 +26,7 @@ async function createPublishedProject(page: Page): Promise<string> {
   const published = await apiPost(page.context(), `/api/projects/${projectId}/publish/`);
   expect(published.status()).toBe(200);
   await page.reload();
+  await page.getByRole('button', { name: 'File', exact: true }).click();
   await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
   return projectId;
 }

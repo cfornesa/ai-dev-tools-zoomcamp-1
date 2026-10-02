@@ -26,7 +26,7 @@ reconciliation.
 | #1129 | 16 | QA: PASS; decision comment and design record verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
 | #1130 | 16 | QA: PASS; decision and split follow-ups verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
 | #1138 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `d40f4a8a`; QA matrix posted; local backend criteria pass |
-| #1139 | 16 | Implemented locally; browser/screenshot QA pending | `3019c228`, `271678ea`, `6cf487d7`; disposable E2E and inspect 1280x900 / 375x812 |
+| #1139 | 16 | Issue QA: PASS on `46d0696d`; awaiting batch gate (remains open) | GitHub QA comment `5954588513`; run #1100 shard 12 E2E pass and inspected 1280x900 / 375x812 artifact; shared impact/full-matrix reconciliation |
 | #1140 | 16 | Implemented locally; browser/CI criterion pending | `8100a4b9`; fake-provider E2E and full CI |
 | #1143 | 16 | Implemented locally; batch/CI reconciliation pending | Prior batch record; fresh CI evidence pending |
 | #1144 | 14 | Open; Linux/visual evidence pending | Full batch browser gate |
@@ -591,3 +591,40 @@ This run also confirms shared CI remains red: all 16 E2E shards ultimately faile
 The #1139 screenshots are now present in the shard-12 artifact on `e8d6b7e9` and were visually inspected. The desktop capture shows the field and helper text within the right Details panel. The initial mobile capture shows a responsive stage/tabs but is taken before scrolling to the Details field, so it does not visually prove the field's mobile layout. The test now scrolls the field into the viewport before each capture and asserts `toBeInViewport()`; typecheck/lint/format/discovery passed before this final screenshot-view adjustment. Re-run Linux CI and inspect the fresh mobile image before #1139 can receive QA PASS.
 
 Manual Linux workflow #1098 (`37016152439`, exact SHA `b8138d1a2479dfaa89c99b843274e5039b47b4bb`) uploaded both visible per-test screenshots. Visual review confirms the private-note field/helper are in the 1280px and 375px captures and the 375px layout has no horizontal clipping. The #1139 test reaches its privacy check after save/reload and mobile geometry, but publishing returns 400 because the Details-form save clears the description previously written via API. The E2E now fills the fixture description in that same form before saving. Preflight format, lint, typecheck, and Playwright discovery passed. The targeted privacy test requires another Linux run. #1098's shared matrix remains red; failure inventory/reconciliation is incomplete, so the batch gate remains FAIL and no GitHub issue state changed.
+
+Commit `46d0696d5fcf9a2f73fa2ef0487f1e9df1992d4a` records the #1139 fixture correction plus this evidence; it is pushed to the authorized PR branch. Manual Linux workflow #1100 (`37018043361`) was dispatched via the active Chrome session against this exact SHA. Its current status is queued; final shard results are pending. PR workflow #1099 (`37017824809`) also auto-started from the push. Keep #1139 open until the corrected privacy test and visual evidence pass on Linux. Shared batch gate remains FAIL pending current-run failure classification and the impact matrix.
+
+Run #1100 shard 12 completed with #1139's `privateIntentNote.spec.ts` passing 1/1 in Linux Chromium/PostgreSQL (12.7s). The new artifact `11232007438` contains both expected screenshot files; visual inspection confirms the labelled field/helper at 1280×900 and 375×812 with no mobile horizontal clipping. The full Vitest job also passed 316 files / 3,228 tests. QA `PASS` criterion matrix is posted at GitHub comment `5954588513`; read-after-write confirms issue #1139 is still open. As of the latest run check, 22/23 jobs were complete; 15/16 E2E shards had failed and shard 3 remained in progress. The batch gate remains FAIL until all shards and failures are reconciled; no issue was closed.
+
+## Final run #1100 reconciliation — 2026-10-02
+
+The completed Linux full-matrix run #1100 (`37018043361`) targeted exact SHA
+`46d0696d5fcf9a2f73fa2ef0487f1e9df1992d4a`. Backend, frontend (316 files /
+3,228 tests), workflow validation, and disposable published-routing smoke
+passed. All 16/16 E2E shards failed: 125 failed cases across 80 unique spec
+files. The shared batch gate is FAIL. A current-run `## QA: FAIL` summary was
+posted to parent #1096 as comment `5954772551`; no issue was closed.
+
+Targeted current-batch evidence: #1139 `privateIntentNote.spec.ts` passed 1/1
+in shard 12. Artifact `11232007438` was inspected and confirms the private
+field/helper at 1280×900 and 375×812 without mobile horizontal clipping. Its
+`## QA: PASS` criterion matrix is comment `5954588513`, but #1139 remains open
+pending the batch gate. #1140 `aiIntentNotes.spec.ts` passed 1/1 in shard 3.
+#1100's six named 3D helper specs passed all 7 cases. These issue-level results
+do not satisfy the full matrix gate.
+
+Four #1103 scenarios failed in `aiAndRecovery.spec.ts`. The autosave debounce
+scenario observed a populated IndexedDB draft at the pre-debounce assertion;
+the draft was the canonical empty scene seeded when the server-backed editor
+mounts, so this fixture already had local persistence before the edit under
+test. The explicit-save/reopen scenario timed out at 90 seconds; two recovery
+scenarios timed out at 30 seconds. Their artifact page states remained at
+“Opening the canonical editor…”. These snapshots establish symptoms, not yet a
+validated first-cause fix. Preserve #1103's setup-only and assertion-preserving
+scope: inspect traces for the hydration stalls and isolate the initial seeded
+draft at the fixture boundary before changing tests. #1103 remains QA FAIL.
+
+Full-matrix classification is incomplete: every one of 125 failed cases across
+80 unique spec files still needs first-cause mapping, existing issue or linked
+follow-up, and owner/next action. Do not characterize the failures as wholly
+unrelated or close any issue before reconciliation and a green batch gate.

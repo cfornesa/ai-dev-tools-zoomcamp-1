@@ -25924,3 +25924,39 @@ The test now fills the description in the same form before saving. Formatting,
 lint, typecheck, and Playwright discovery pass; this correction needs a fresh
 Linux run before #1139 can pass QA. Run #1098's browser matrix remains red on
 multiple unrelated historical contracts.
+
+After that run exposed a fixture-only publish failure in #1139, commit
+`46d0696d` fills the meaningful description through the Details form before
+saving the private note. Format, lint (with existing repository warnings),
+typecheck, and Playwright test discovery pass locally. The correction is pushed
+to PR #1094, and manual Linux workflow [#1100](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37018043361)
+was dispatched on the exact commit; its Linux browser verdict is pending.
+
+#### Final #1100 run reconciliation
+
+The completed Linux full-matrix run #1100
+([Actions run](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37018043361))
+targeted exact SHA `46d0696d5fcf9a2f73fa2ef0487f1e9df1992d4a`. Backend,
+frontend (316 files / 3,228 tests), workflow validation, and disposable
+published-routing smoke passed. All 16/16 E2E shards failed: 125 failed cases
+across 80 unique spec files. The shared batch gate remains FAIL. A current-run
+`## QA: FAIL` summary was posted to #1096 as comment `5954772551`; no issue was
+closed.
+
+In this run, #1139's focused privacy test passed 1/1 in shard 12 and artifact
+`11232007438` was visually inspected at 1280×900 and 375×812; the private
+field/helper is visible without horizontal clipping. Comment `5954588513`
+records issue QA PASS, but #1139 remains open pending the shared gate. #1140's
+`aiIntentNotes.spec.ts` passed 1/1 in shard 3. #1100's six named 3D helper
+specs passed 7/7. These targeted passes do not substitute for the red full
+matrix.
+
+Four #1103 scenarios failed in `aiAndRecovery.spec.ts`: the pre-debounce
+IndexedDB assertion found the canonical editor's already-seeded local draft;
+the explicit-save/reopen case timed out at 90 seconds, and two recovery cases
+timed out at 30 seconds while the page remained on “Opening the canonical
+editor…”. The artifacts prove these symptoms but not yet the hydration stall's
+first cause. Inspect the traces and isolate the helper's initial draft state
+while preserving #1103's setup-only scope and all assertions. #1103 remains QA
+FAIL. Reconcile all 125 cases across 80 spec files under #1096 before closing
+any batch issue.

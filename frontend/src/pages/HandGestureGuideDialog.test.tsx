@@ -21,6 +21,9 @@ describe('HandGestureGuideDialog', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Hand gesture guide' });
     expect(dialog).toBeInTheDocument();
     expect(dialog).toHaveFocus();
+    expect(dialog.parentElement).toHaveClass('hand-gesture-guide-backdrop');
+    expect(dialog.parentElement?.parentElement).toBe(document.body);
+    expect(dialog.closest('[role="toolbar"]')).toBeNull();
   });
 
   it('uses the compact stage icon treatment for the guide trigger', () => {
@@ -62,6 +65,22 @@ describe('HandGestureGuideDialog', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
+  });
+
+  it('keeps the page scroll mode and does not dismiss on a backdrop click', async () => {
+    const user = userEvent.setup();
+    render(<HandGestureGuideDialog />);
+    const scrollMode = document.body.style.overflow;
+    await user.click(screen.getByRole('button', { name: 'Show hand gesture guide' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Hand gesture guide' });
+    const backdrop = dialog.parentElement;
+    expect(backdrop).toHaveClass('hand-gesture-guide-backdrop');
+    if (!backdrop) throw new Error('Expected the dialog backdrop');
+    await user.click(backdrop);
+
+    expect(screen.getByRole('dialog', { name: 'Hand gesture guide' })).toBeInTheDocument();
+    expect(document.body.style.overflow).toBe(scrollMode);
   });
 
   it('closes via the Close button', async () => {

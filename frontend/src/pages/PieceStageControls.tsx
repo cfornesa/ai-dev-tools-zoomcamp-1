@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import type { SonicDefaults } from '../audio/sonicContract';
@@ -44,6 +44,7 @@ import type { TrackingProvider, TrackingProviderError } from '../tracking/types'
 import PieceStageIcon from '../components/PieceStageIcon';
 import PieceStageToolbar from '../components/PieceStageToolbar';
 import type { PieceStageCapabilities } from '../components/pieceStageCapabilities';
+import HandGestureGuideDialog from './HandGestureGuideDialog';
 import { useFullscreenToggle } from './useFullscreenToggle';
 import { useVisitorDrawingOverlay } from './useVisitorDrawingOverlay';
 import type { VisitorStroke } from './visitorDrawing';
@@ -168,6 +169,7 @@ function PieceStageControls({
   authoredSonic,
 }: Props) {
   const resolvedCameraPlacement: CameraPlacement = cameraPlacement ?? 'overlay';
+  const handSteeringReasonId = useId();
   const authoredSoundSettings = useMemo(
     () => soundSettingsFromSonic(authoredSonic),
     [authoredSonic],
@@ -177,7 +179,6 @@ function PieceStageControls({
   );
   const initialSoundSettings = initialSoundSettingsRef.current;
   const [open, setOpen] = useState(false);
-  const [guide, setGuide] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
@@ -1138,25 +1139,11 @@ function PieceStageControls({
         ) : undefined
       }
       gestureGuide={
-        <>
-          <button
-            type="button"
-            className="piece-stage-icon-button"
-            aria-label="Show hand gesture guide"
-            aria-describedby={
-              !capabilities.hand_steering ? 'piece-stage-hand-steering-reason' : undefined
-            }
-            disabled={!capabilities.hand_steering}
-            title={!capabilities.hand_steering ? CAPABILITY_REASON : undefined}
-            onClick={() => setGuide(true)}
-          >
-            <PieceStageIcon name="guide" />
-            <span className="piece-stage-action-label">Guide</span>
-          </button>
-          <span id="piece-stage-hand-steering-reason" className="visually-hidden">
-            {!capabilities.hand_steering && CAPABILITY_REASON}
-          </span>
-        </>
+        <HandGestureGuideDialog
+          disabled={!capabilities.hand_steering}
+          disabledReasonId={handSteeringReasonId}
+          disabledReason={CAPABILITY_REASON}
+        />
       }
       visitorDrawControl={
         library === 'c2js-interactive' ? (
@@ -1752,9 +1739,7 @@ function PieceStageControls({
             <button
               type="button"
               aria-pressed={steeringState === 'active'}
-              aria-describedby={
-                !capabilities.hand_steering ? 'piece-stage-hand-steering-reason' : undefined
-              }
+              aria-describedby={!capabilities.hand_steering ? handSteeringReasonId : undefined}
               disabled={!capabilities.hand_steering}
               onClick={() =>
                 command(
@@ -1795,21 +1780,6 @@ function PieceStageControls({
         </div>
       )}
       {screenshotError && <p role="alert">{screenshotError}</p>}
-      {guide && (
-        <div role="dialog" aria-label="Hand gesture guide" aria-modal="true">
-          <h3>Hand gesture guide</h3>
-          <ol>
-            <li>Look around with an open hand.</li>
-            <li>Move your hand to orbit.</li>
-            <li>Pinch to zoom.</li>
-            <li>Release to stop.</li>
-            <li>Disable steering safely from Piece controls.</li>
-          </ol>
-          <button type="button" onClick={() => setGuide(false)}>
-            Close
-          </button>
-        </div>
-      )}
     </>
   );
 }

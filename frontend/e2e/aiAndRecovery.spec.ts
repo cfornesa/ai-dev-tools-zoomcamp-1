@@ -115,6 +115,7 @@ import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiSc
 import { loginViaUI } from './support/auth.js';
 import { saveScene } from './support/saveScene.js';
 import { createServerProject2D } from './support/createProject.js';
+import { closePieceControlsMenu } from './support/openEditScene.js';
 import {
   readLocalDraft,
   readSessionId,
@@ -885,10 +886,7 @@ test.describe('Local and server draft autosave', () => {
       // menu. Close that menu before exercising the page-level exit action so
       // the test models the user's explicit dismissal rather than force-clicking
       // through the modal surface.
-      await page
-        .getByRole('dialog', { name: 'Piece actions' })
-        .getByRole('button', { name: 'Close piece controls menu' })
-        .click();
+      await closePieceControlsMenu(page);
       await page.getByRole('button', { name: 'Exit without saving' }).click();
       const dialog = page.getByRole('alertdialog', { name: 'Exit without saving?' });
       await expect(dialog).toBeVisible();

@@ -95,7 +95,7 @@
  * mechanism every other spec file in this directory already relies on,
  * not a new one.
  */
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Dialog, type Page } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
@@ -1321,6 +1321,7 @@ test.describe('Remix and fork', () => {
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
     const sourceId = await createServerProject2DWithExpandedSections(ownerPage); // version 1
+    const sourceEditorUrl = ownerPage.url();
 
     await openEditScene(ownerPage);
     await ownerPage.getByRole('button', { name: 'Add circle' }).click();
@@ -1446,7 +1447,14 @@ test.describe('Remix and fork', () => {
 
     // Durability across a source-side change: unpublishing the SOURCE
     // must never remove the fork's attribution -- only drop the link.
-    await ownerPage.goto(`/projects/${sourceId}`, { waitUntil: 'domcontentloaded' });
+    const sourceNavigationDialogs: Dialog[] = [];
+    ownerPage.once('dialog', (dialog) => {
+      sourceNavigationDialogs.push(dialog);
+      void dialog.accept();
+    });
+    await ownerPage.goto(sourceEditorUrl, { waitUntil: 'domcontentloaded' });
+    expect(sourceNavigationDialogs).toHaveLength(1);
+    expect(sourceNavigationDialogs[0].type()).toBe('beforeunload');
     await chooseDraft(ownerPage);
     await openPublicationStatus(ownerPage);
     await expect(ownerPage.getByTestId('visibility-status')).toContainText('Draft (private)');

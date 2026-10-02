@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from scenes.models import AIRun, ApplicationAdmin, Project, ProjectActivity
+from scenes.models import AIRun, ApplicationAdmin, Project, Project3D, ProjectActivity
 
 
 @pytest.mark.django_db
@@ -79,6 +79,23 @@ def test_continuity_metrics_counts_reviewable_proposals_and_full_history():
         actor=users[0],
         action_type=ProjectActivity.ActionType.AI_PROPOSAL_REJECTED,
         metadata={"run_id": 9001},
+    )
+    project3d = Project3D.objects.create(owner=users[0], title="3D metric boundary")
+    three_d_run = AIRun.objects.create(
+        owner=users[0],
+        target_type=AIRun.TargetType.PROJECT3D,
+        project3d=project3d,
+        operation=AIRun.Operation.CREATE,
+        prompt="private 3D context",
+        input_digest="c" * 64,
+        deadline_at=now + timedelta(days=1),
+        status=AIRun.Status.ACCEPTED,
+    )
+    ProjectActivity.objects.create(
+        project3d=project3d,
+        actor=users[0],
+        action_type=ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED,
+        metadata={"run_id": three_d_run.pk},
     )
 
     client = APIClient()

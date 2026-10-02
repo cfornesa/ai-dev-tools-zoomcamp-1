@@ -1156,7 +1156,13 @@ def advance_run(run: AIRun) -> AIRun:  # noqa: C901
 
 
 def _record_decision_activity(run: AIRun, action_type: str, reason: str | None) -> None:
-    assert run.project_id is not None
+    if run.target_type == AIRun.TargetType.PROJECT:
+        assert run.project_id is not None
+        project_kwargs = {"project_id": run.project_id}
+    else:
+        assert run.target_type == AIRun.TargetType.PROJECT3D
+        assert run.project3d_id is not None
+        project_kwargs = {"project3d_id": run.project3d_id}
     metadata = {
         "run_id": run.pk,
         "scope": run.scope,
@@ -1166,7 +1172,7 @@ def _record_decision_activity(run: AIRun, action_type: str, reason: str | None) 
     if reason:
         metadata["reason"] = reason
     ProjectActivity(
-        project_id=run.project_id,
+        **project_kwargs,
         actor=run.owner,
         action_type=action_type,
         metadata=metadata,
@@ -1178,9 +1184,9 @@ def cancel_run(run: AIRun, *, reason: str | None = None) -> AIRun:
         locked = AIRun.objects.select_for_update().get(pk=run.pk)
         if locked.is_terminal:
             return locked
-        records_discard = (
-            locked.status == AIRun.Status.AWAITING_REVIEW
-            and locked.target_type == AIRun.TargetType.PROJECT
+        records_discard = locked.status == AIRun.Status.AWAITING_REVIEW and locked.target_type in (
+            AIRun.TargetType.PROJECT,
+            AIRun.TargetType.PROJECT3D,
         )
         locked.status = AIRun.Status.CANCELLED
         locked.cancelled_at = timezone.now()
@@ -1327,9 +1333,9 @@ def _finalize_accept(run: AIRun, version_id: int, *, reason: str | None = None) 
             return
         if locked.status != AIRun.Status.AWAITING_REVIEW:
             raise NotAwaitingReview(f"Run is '{locked.status}', not awaiting review.")
-        record_accept = (
-            locked.status == AIRun.Status.AWAITING_REVIEW
-            and locked.target_type == AIRun.TargetType.PROJECT
+        record_accept = locked.status == AIRun.Status.AWAITING_REVIEW and locked.target_type in (
+            AIRun.TargetType.PROJECT,
+            AIRun.TargetType.PROJECT3D,
         )
         locked.status = AIRun.Status.ACCEPTED
         locked.accepted_version_id = version_id

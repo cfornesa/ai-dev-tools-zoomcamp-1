@@ -223,6 +223,33 @@ supported by an index on `(project_id, created_at DESC, id DESC)`. Activity
 for a soft-deleted project remains readable by its owner until the existing
 retention policy hard-purges the project and its cascading activity rows.
 
+## Owner-only structured 3D project activity (#1156)
+
+`GET /api/projects3d/<public_id>/activity/` returns the authenticated owner's
+bounded activity page for a server-backed structured 3D project. It uses the
+same result fields, metadata allowlist, ordering, page limits, and privacy-
+preserving 404 boundary documented for 2D activity above. Its opaque cursor
+is bound to both the 3D project and the 3D activity family; a 2D cursor is
+invalid on this route. Soft-deleted projects remain readable during the
+existing retention period, and hard deletion cascades their activity rows.
+
+Explicit 3D version saves record `version_saved` with only `sequence` and
+`origin`; accepted AI proposals (one-shot or Agent run) record
+`ai_proposal_accepted`, while rejecting an Agent proposal records
+`ai_proposal_rejected`. Publishing and unpublishing record one event only
+when visibility changes, with `sequence` on publish and no details on
+unpublish. Initial creation, package import, 2D-to-3D conversion, and
+AI-generated version creation do not emit a second save event. There is no
+3D version restore/delete endpoint or one-shot AI rejection endpoint, so
+those events are not applicable. Activity remains private and is absent from
+public 3D payloads, gallery/search/embed responses, piece packages, and cloud
+backup manifests.
+Migration `0112` adds the nullable 3D association, its descending activity
+index, and the exact-one-family constraint after migration `0111`. Reversing
+`0112` drops 3D activity rows while preserving all existing 2D rows, then
+restores the 2D-only schema. After deployment, follow the issue's restoration
+path and retain the nullable columns rather than rolling back stored history.
+
 ## Private project intent notes (#1138)
 
 The owner-scoped `GET /api/projects/<public_id>/` and `PATCH
@@ -243,8 +270,8 @@ signal for Replit's schema-diff publish path.
 
 ### Activity in the owner JSON account export (#1148)
 
-`GET /api/account/export/` adds an `activity` array to each owned 2D
-project. The rows use the #1133 projection: exactly `id`, `action_type`,
+`GET /api/account/export/` adds an `activity` array to each owned 2D and
+structured 3D project. The rows use the #1133 projection: exactly `id`, `action_type`,
 `label`, `actor_display`, `created_at`, and `details`. Events are newest-first
 by `created_at DESC, id DESC`; `actor_display` is the actor username or `null`.
 `details` contains only present `sequence`, `origin`,
@@ -254,7 +281,8 @@ repeatable. Activity is included for soft-deleted projects during their
 existing retention period and disappears with the existing hard-purge
 cascade. This is an additive JSON export field only; it does not change the
 #945 ZIP/package export, other export sections, or existing credential
-redaction.
+redaction. ArtPiece activity is not included until the dependent generated-
+piece history issue is implemented.
 
 
 

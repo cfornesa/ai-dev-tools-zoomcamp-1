@@ -29,6 +29,7 @@ from scenes import scene_conversion
 from scenes.models import (
     Project,
     Project3D,
+    ProjectActivity,
     SceneConversionRun,
     SceneVersion,
     SceneVersion3D,
@@ -242,6 +243,7 @@ def test_accept_creates_a_brand_new_project3d_with_provenance(monkeypatch, owner
     assert version.source_project_id == source_project.id
     assert version.source_version_id == run.source_version_id
     assert Project3D.objects.filter(owner=owner).count() == 1
+    assert not ProjectActivity.objects.filter(project3d=project3d).exists()
 
 
 @pytest.mark.django_db

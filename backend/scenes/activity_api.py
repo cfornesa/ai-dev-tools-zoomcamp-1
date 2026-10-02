@@ -1,4 +1,4 @@
-"""Owner-only, bounded 2D project activity reads (#1133)."""
+"""Owner-only, bounded project-family activity reads (#1133, #1156)."""
 
 import re
 from datetime import datetime
@@ -11,12 +11,13 @@ from django.utils.timezone import is_aware
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes.models import Project, ProjectActivity
+from scenes.models import Project, Project3D, ProjectActivity
 from scenes.permissions import Action, can
 
-__all__ = ["ProjectActivityListView"]
+__all__ = ["ProjectActivityListView", "Project3DActivityListView"]
 
 _CURSOR_SALT = "scenes.project-activity.cursor.v1"
+_CURSOR_SALT_3D = "scenes.project3d-activity.cursor.v1"
 _DETAIL_KEYS = frozenset(
     {
         "sequence",
@@ -37,17 +38,25 @@ def _invalid_cursor() -> Response:
     return Response({"errors": {"cursor": ["Invalid cursor."]}}, status=400)
 
 
-def _encode_cursor(project_id: str, created_at: datetime, activity_id: int) -> str:
+def _encode_cursor(
+    project_id: str,
+    created_at: datetime,
+    activity_id: int,
+    *,
+    salt: str = _CURSOR_SALT,
+) -> str:
     return signing.dumps(
         {"v": 1, "project": project_id, "created_at": created_at.isoformat(), "id": activity_id},
-        salt=_CURSOR_SALT,
+        salt=salt,
         compress=True,
     )
 
 
-def _decode_cursor(value: str, project_id: str) -> tuple[datetime, int] | None:
+def _decode_cursor(
+    value: str, project_id: str, *, salt: str = _CURSOR_SALT
+) -> tuple[datetime, int] | None:
     try:
-        payload = signing.loads(value, salt=_CURSOR_SALT)
+        payload = signing.loads(value, salt=salt)
         if (
             not isinstance(payload, dict)
             or payload.get("v") != 1
@@ -75,18 +84,23 @@ def _parse_limit(value: str | None) -> int | None:
     return limit if 1 <= limit <= _MAX_LIMIT else None
 
 
-class ProjectActivityListView(APIView):
-    """Read a bounded, privacy-projected activity page for an owned project."""
+class _ProjectFamilyActivityListView(APIView):
+    """Shared bounded, privacy-projected activity reader for one owner family."""
+
+    resource_model: type[Project] | type[Project3D] = Project
+    permission = Action.PROJECT_ACTIVITY_READ
+    activity_field = "project"
+    cursor_salt = _CURSOR_SALT
 
     def get(self, request, public_id):
         try:
             # The default manager hides soft-deleted projects. This owner API
             # deliberately retains read access during the existing grace period.
-            project = Project.all_objects.get(public_id=public_id)
-        except (Project.DoesNotExist, ValueError, TypeError) as exc:
+            project = self.resource_model.all_objects.get(public_id=public_id)
+        except (self.resource_model.DoesNotExist, ValueError, TypeError) as exc:
             raise Http404 from exc
 
-        if not can(request.user, Action.PROJECT_ACTIVITY_READ, project):
+        if not can(request.user, self.permission, project):
             raise Http404
 
         raw_limit = request.query_params.get("limit")
@@ -102,12 +116,14 @@ class ProjectActivityListView(APIView):
             raw_cursor = request.query_params.get("cursor", "")
             if len(raw_cursor) > 512:
                 return _invalid_cursor()
-            decoded = _decode_cursor(raw_cursor, str(project.public_id))
+            decoded = _decode_cursor(raw_cursor, str(project.public_id), salt=self.cursor_salt)
             if decoded is None:
                 return _invalid_cursor()
             cursor_created_at, cursor_id = decoded
 
-        events = ProjectActivity.objects.filter(project_id=project.pk).select_related("actor")
+        events = ProjectActivity.objects.filter(
+            **{f"{self.activity_field}_id": project.pk}
+        ).select_related("actor")
         if cursor_created_at is not None and cursor_id is not None:
             events = events.filter(
                 Q(created_at__lt=cursor_created_at)
@@ -136,5 +152,20 @@ class ProjectActivityListView(APIView):
         next_cursor = None
         if has_more and page:
             last = page[-1]
-            next_cursor = _encode_cursor(str(project.public_id), last.created_at, last.pk)
+            next_cursor = _encode_cursor(
+                str(project.public_id), last.created_at, last.pk, salt=self.cursor_salt
+            )
         return Response({"results": results, "next_cursor": next_cursor})
+
+
+class ProjectActivityListView(_ProjectFamilyActivityListView):
+    """Read 2D activity; retain the #1133 cursor signing format."""
+
+
+class Project3DActivityListView(_ProjectFamilyActivityListView):
+    """Read activity only for the authenticated owner of a structured 3D project."""
+
+    resource_model = Project3D
+    permission = Action.PROJECT3D_ACTIVITY_READ
+    activity_field = "project3d"
+    cursor_salt = _CURSOR_SALT_3D

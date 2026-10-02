@@ -3,6 +3,7 @@ import io
 import json
 import uuid
 import zipfile
+from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -10,7 +11,16 @@ from django.core.cache import cache
 from PIL import Image
 from rest_framework.test import APIClient
 
-from scenes.models import PieceIntakeAsset, PieceIntakeReceipt, Project, SceneVersion, SiteSettings
+from scenes.models import (
+    PieceIntakeAsset,
+    PieceIntakeReceipt,
+    Project,
+    Project3D,
+    ProjectActivity,
+    SceneVersion,
+    SceneVersion3D,
+    SiteSettings,
+)
 from scenes.piece_intake import _image_bytes
 
 
@@ -44,6 +54,42 @@ def _package() -> bytes:
             "description": "Imported fixture",
             "tags": [],
             "visibilityIntent": "public",
+            "origin": {"appVersion": "test", "exportedAt": "2026-09-26T00:00:00Z"},
+        },
+        "records": [{"index": 0, "schemaVersion": 1, "fileIndex": 0}],
+        "mediaAssets": [],
+        "files": [
+            {
+                "index": 0,
+                "path": "files/0.json",
+                "byteSize": len(record),
+                "sha256": hashlib.sha256(record).hexdigest(),
+            }
+        ],
+    }
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as archive:
+        archive.writestr("manifest.json", json.dumps(manifest))
+        archive.writestr("files/0.json", record)
+    return output.getvalue()
+
+
+def _package_3d() -> bytes:
+    record = (
+        Path(__file__)
+        .resolve()
+        .parents[2]
+        .joinpath("schema/fixtures3d/valid/minimal.json")
+        .read_bytes()
+    )
+    manifest = {
+        "formatVersion": 1,
+        "kind": "3d",
+        "metadata": {
+            "title": "Imported 3D",
+            "description": "Imported fixture",
+            "tags": [],
+            "visibilityIntent": "private",
             "origin": {"appVersion": "test", "exportedAt": "2026-09-26T00:00:00Z"},
         },
         "records": [{"index": 0, "schemaVersion": 1, "fileIndex": 0}],
@@ -110,6 +156,20 @@ def test_intake_creates_private_piece_and_is_idempotent(client):
     assert replay.json() == first.json()
     assert Project.objects.count() == 1
     assert PieceIntakeReceipt.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_3d_package_intake_does_not_record_version_activity(client):
+    response = client.post(
+        "/api/pieces/intake/",
+        {"package": io.BytesIO(_package_3d()), "idempotency_key": "3d-one"},
+        format="multipart",
+    )
+
+    assert response.status_code == 201
+    project = Project3D.objects.get(public_id=response.json()["public_id"])
+    assert SceneVersion3D.objects.filter(project=project).count() == 1
+    assert not ProjectActivity.objects.filter(project3d=project).exists()
 
 
 @pytest.mark.django_db

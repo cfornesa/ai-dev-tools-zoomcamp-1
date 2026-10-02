@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from scenes.models import Project3D, SceneVersion3D
+from scenes.models import Project3D, ProjectActivity, SceneVersion3D
 from scenes.validation3d import validate_scene3d
 
 
@@ -41,6 +41,7 @@ def test_creates_exactly_one_project_and_version(owner_client):
     project = Project3D.objects.get(public_id=response.json()["id"])
     assert SceneVersion3D.objects.filter(project=project).count() == 1
     assert project.current_version_id is not None
+    assert not ProjectActivity.objects.filter(project3d=project).exists()
 
 
 @pytest.mark.django_db

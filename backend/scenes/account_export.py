@@ -99,6 +99,7 @@ def _serialize_scene_version_3d(version) -> dict[str, Any]:
 
 
 def _serialize_project_3d(project: Project3D) -> dict[str, Any]:
+    activity = getattr(project, "_export_activity", [])
     return {
         "public_id": str(project.public_id),
         "title": project.title,
@@ -111,6 +112,7 @@ def _serialize_project_3d(project: Project3D) -> dict[str, Any]:
             _serialize_scene_version_3d(version)
             for version in project.versions.order_by("sequence")
         ],
+        "activity": [_serialize_project_activity(event) for event in activity],
     }
 
 
@@ -193,7 +195,17 @@ def build_account_export(user) -> dict[str, Any]:
         ],
         "projects_3d": [
             _serialize_project_3d(project)
-            for project in Project3D.all_objects.filter(owner=user).order_by("id")
+            for project in Project3D.all_objects.filter(owner=user)
+            .prefetch_related(
+                Prefetch(
+                    "activity",
+                    queryset=ProjectActivity.objects.select_related("actor").order_by(
+                        "-created_at", "-id"
+                    ),
+                    to_attr="_export_activity",
+                )
+            )
+            .order_by("id")
         ],
         "art_pieces": [
             _serialize_art_piece(piece)

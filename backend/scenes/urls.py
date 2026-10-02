@@ -9,7 +9,7 @@ from scenes.account_identities_api import (
     AccountIdentityUnlinkView,
 )
 from scenes.account_sessions_api import AccountSessionRevokeView, AccountSessionsView
-from scenes.activity_api import ProjectActivityListView
+from scenes.activity_api import Project3DActivityListView, ProjectActivityListView
 from scenes.admin_content_api import (
     AdminContentAccessView,
     AdminContentActionView,
@@ -657,6 +657,11 @@ urlpatterns = [
         "projects3d/<uuid:public_id>/versions/",
         SceneVersion3DListCreateView.as_view(),
         name="project3d-version-list-create",
+    ),
+    path(
+        "projects3d/<uuid:public_id>/activity/",
+        Project3DActivityListView.as_view(),
+        name="project3d-activity",
     ),
     # #243: owner-facing gallery-card thumbnail (also now resolves for
     # anonymous/non-owner callers once a project is public -- issue #296

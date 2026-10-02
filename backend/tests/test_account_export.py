@@ -114,6 +114,12 @@ def test_export_includes_owned_3d_projects_and_art_pieces():
         scene_json=_MINIMAL_SCENE_3D,
         origin=SceneVersion3D.Origin.MANUAL,
     )
+    event = ProjectActivity.objects.create(
+        project3d=project3d,
+        actor=user,
+        action_type=ProjectActivity.ActionType.VERSION_SAVED,
+        metadata={"sequence": 1, "origin": "manual", "private_marker": "hidden"},
+    )
     piece = ArtPiece.objects.create(
         owner=user,
         title="My art piece",
@@ -128,6 +134,17 @@ def test_export_includes_owned_3d_projects_and_art_pieces():
 
     body = response.json()
     assert len(body["projects_3d"]) == 1
+    assert body["projects_3d"][0]["activity"] == [
+        {
+            "id": event.pk,
+            "action_type": ProjectActivity.ActionType.VERSION_SAVED,
+            "label": "Version saved",
+            "actor_display": user.username,
+            "created_at": event.created_at.isoformat(),
+            "details": {"sequence": 1, "origin": "manual"},
+        }
+    ]
+    assert b"private_marker" not in response.content
     assert body["projects_3d"][0]["title"] == "My 3D scene"
     assert len(body["projects_3d"][0]["versions"]) == 1
     assert len(body["art_pieces"]) == 1

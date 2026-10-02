@@ -22,7 +22,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes.models import Project3D, SceneVersion3D, Thumbnail3D
+from scenes.models import Project3D, ProjectActivity, SceneVersion3D, Thumbnail3D
 from scenes.permissions import Action, can
 from scenes.piece_engine import (
     DEFAULT_SCENE3D_ENGINE,
@@ -192,6 +192,7 @@ class Project3DPublishView(APIView):
                 if errors:
                     raise Project3DPublishValidationError(errors)
 
+                was_public = locked_project.visibility == Project3D.Visibility.PUBLIC
                 locked_project.visibility = Project3D.Visibility.PUBLIC
                 locked_project.published_at = timezone.now()
                 # Issue #944: republish restores an unpublished piece within
@@ -200,6 +201,15 @@ class Project3DPublishView(APIView):
                 locked_project.save(
                     update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
                 )
+                if not was_public:
+                    ProjectActivity.objects.create(
+                        project3d=locked_project,
+                        actor=request.user,
+                        action_type=ProjectActivity.ActionType.PUBLISHED,
+                        metadata={
+                            "sequence": locked_project.current_version.sequence,
+                        },
+                    )
         except Project3DPublishValidationError as exc:
             return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Project3D.DoesNotExist as exc:
@@ -221,6 +231,7 @@ class Project3DUnpublishView(APIView):
         try:
             with transaction.atomic():
                 locked_project = Project3D.objects.select_for_update().get(pk=project.pk)
+                was_public = locked_project.visibility == Project3D.Visibility.PUBLIC
                 locked_project.visibility = Project3D.Visibility.PRIVATE
                 locked_project.published_at = None
                 # Issue #944: start the unpublish-retention clock; see the
@@ -229,6 +240,13 @@ class Project3DUnpublishView(APIView):
                 locked_project.save(
                     update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
                 )
+                if was_public:
+                    ProjectActivity.objects.create(
+                        project3d=locked_project,
+                        actor=request.user,
+                        action_type=ProjectActivity.ActionType.UNPUBLISHED,
+                        metadata={},
+                    )
         except Project3D.DoesNotExist as exc:
             raise Http404 from exc
 
@@ -304,6 +322,12 @@ class SceneVersion3DListCreateView(APIView):
                 )
                 locked_project.current_version = version
                 locked_project.save(update_fields=["current_version", "updated_at"])
+                ProjectActivity.objects.create(
+                    project3d=locked_project,
+                    actor=request.user,
+                    action_type=ProjectActivity.ActionType.VERSION_SAVED,
+                    metadata={"sequence": version.sequence, "origin": version.origin},
+                )
                 # Issue #243: schedule (as a post-commit follow-up, mirroring
                 # the 2D `maybe_schedule_thumbnail_generation` placement)
                 # generating a thumbnail for the version that just became

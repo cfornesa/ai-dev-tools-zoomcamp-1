@@ -1,6 +1,6 @@
 """Focused owner-privacy and bounded-pagination coverage for #1133."""
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -124,6 +124,30 @@ def test_activity_projection_is_exact_and_allowlisted(activity_context):
     assert "project_id" not in str(body)
     assert "private_note" not in str(body)
     assert "unknown" not in str(body)
+
+
+@pytest.mark.django_db
+def test_2d_activity_json_bytes_keep_the_existing_projection(activity_context):
+    data = activity_context
+    ProjectActivity.objects.filter(project=data["private"]).delete()
+    event = ProjectActivity.objects.create(
+        project=data["private"],
+        actor=data["owner"],
+        action_type=ProjectActivity.ActionType.VERSION_SAVED,
+        metadata={"sequence": 3},
+    )
+    timestamp = datetime(2020, 1, 1, tzinfo=UTC)
+    ProjectActivity.objects.filter(pk=event.pk).update(created_at=timestamp)
+
+    response = data["owner_client"].get(_activity_url(data["private"]))
+
+    expected = (
+        f'{{"results":[{{"id":{event.pk},"action_type":"version_saved",'
+        f'"label":"Version saved","actor_display":"{data["owner"].username}",'
+        '"created_at":"2020-01-01T00:00:00+00:00","details":{"sequence":3}}],'
+        '"next_cursor":null}'
+    ).encode()
+    assert response.content == expected
 
 
 @pytest.mark.django_db

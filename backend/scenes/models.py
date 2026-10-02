@@ -1721,7 +1721,20 @@ class ProjectActivity(models.Model):
         AI_PROPOSAL_REJECTED = "ai_proposal_rejected", "AI proposal rejected"
         EXPORTED = "exported", "Exported"
 
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="activity")
+    project = models.ForeignKey(
+        Project,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="activity",
+    )
+    project3d = models.ForeignKey(
+        "scenes.Project3D",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="activity",
+    )
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -1740,10 +1753,24 @@ class ProjectActivity(models.Model):
                 fields=["project", "-created_at", "-id"],
                 name="sc_pa_project_created_id_idx",
             ),
+            models.Index(
+                fields=["project3d", "-created_at", "-id"],
+                name="sc_pa_p3d_created_id_idx",
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(project__isnull=False, project3d__isnull=True)
+                    | models.Q(project__isnull=True, project3d__isnull=False)
+                ),
+                name="sc_pa_exactly_one_family",
+            ),
         ]
 
     def __str__(self) -> str:
-        return f"{self.project_id}: {self.action_type}"
+        family_id = self.project_id if self.project_id is not None else self.project3d_id
+        return f"{family_id}: {self.action_type}"
 
     def save(self, *args, **kwargs):
         validate_activity_metadata(self.metadata)

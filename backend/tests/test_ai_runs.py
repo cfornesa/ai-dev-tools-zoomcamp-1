@@ -1622,7 +1622,7 @@ def test_invalid_and_stale_2d_acceptance_do_not_record_activity(
 
 
 @pytest.mark.django_db
-def test_3d_accept_and_discard_never_write_2d_project_activity(
+def test_3d_accept_and_discard_write_activity_to_the_3d_family_only(
     monkeypatch, owner_client, owner, project3d
 ):
     _install_fake_provider(monkeypatch, [MINIMAL_SCENE_3D, MINIMAL_SCENE_3D])
@@ -1653,7 +1653,26 @@ def test_3d_accept_and_discard_never_write_2d_project_activity(
         f"/api/ai/runs/{discarded.pk}/cancel/", {"reason": "Discard it."}, format="json"
     )
     assert discard_response.status_code == 200
-    assert not ProjectActivity.objects.exists()
+    assert not ProjectActivity.objects.filter(project__isnull=False).exists()
+    events = list(ProjectActivity.objects.filter(project3d=project3d).order_by("id"))
+    assert [event.action_type for event in events] == [
+        ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED,
+        ProjectActivity.ActionType.AI_PROPOSAL_REJECTED,
+    ]
+    assert events[0].metadata == {
+        "run_id": accepted.pk,
+        "scope": accepted.scope,
+        "operation": accepted.operation,
+        "change_summary": accepted.change_summary[:200],
+        "reason": "Keep it.",
+    }
+    assert events[1].metadata == {
+        "run_id": discarded.pk,
+        "scope": discarded.scope,
+        "operation": discarded.operation,
+        "change_summary": discarded.change_summary[:200],
+        "reason": "Discard it.",
+    }
 
 
 @pytest.mark.parametrize("endpoint", ["accept", "cancel"])

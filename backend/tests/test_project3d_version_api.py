@@ -8,7 +8,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from scenes.models import Project3D, SceneVersion3D
+from scenes.models import Project3D, ProjectActivity, SceneVersion3D
 
 SCHEMA_DIR = Path(__file__).resolve().parent.parent.parent / "schema"
 
@@ -47,6 +47,10 @@ def test_owner_can_save_a_new_version(owner_client):
     assert body["sequence"] == 2
     assert body["origin"] == "manual"
     assert body["scene_json"]["id"] == "scene3d-updated"
+    project = Project3D.objects.get(public_id=public_id)
+    activity = ProjectActivity.objects.get(project3d=project)
+    assert activity.action_type == ProjectActivity.ActionType.VERSION_SAVED
+    assert activity.metadata == {"sequence": 2, "origin": "manual"}
 
 
 @pytest.mark.django_db

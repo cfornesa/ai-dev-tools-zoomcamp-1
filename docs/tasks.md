@@ -26095,7 +26095,15 @@ The issue-specific QA PASS for #1151 also satisfies its motion-toggle
 acceptance independently: the tested source SHA is an ancestor of run #1105,
 all three Linux Chromium scenarios passed, and the desktop/mobile reduced/full
 motion screenshots were inspected. #1151 is now closed/completed on GitHub;
-the open count is 14.
+the open count was 14.
+
+The current Linux run #1116 also passed all nine #1102 Chromium spec files,
+plus its Linux WebKit fullscreen/Escape case. The spec results were
+reconciled from their completed shard logs; all three scenarios in
+`layersPanel.spec.ts` passed, all listed #1102 cases passed, and the remaining
+matrix failures were in unrelated files. A `## QA: PASS` criterion matrix was
+posted as comment 5958177716, and #1102 is now closed/completed on GitHub. The
+live open count is 13.
 
 This does not mark #1096 or the full browser batch complete; the remaining
 open issues retain their own incomplete criteria and need focused work and QA.

@@ -19,21 +19,21 @@ reconciliation.
 | Issue | Milestone | Current state | Commit / next gate |
 |---|---:|---|---|
 | #1096 | 14 | Open; CI tracking/hand-off | Full 16-shard outcome and failure reconciliation |
-| #1100 | 14 | Open; implementation/QA status carried from batch 18 | Linux Chromium six-spec gate |
-| #1102 | 14 | Open; implementation/QA status carried from batch 18 | Linux Chromium child gate |
+| #1100 | 14 | **Closed completed on GitHub 2026-10-02** | Exact six 3D helper acceptance cases passed on Linux Chromium in run #1074; implementation and preservation criteria already QA PASS. Closing issue-specific work; unrelated full-matrix failures remain with #1096 and their owners. |
+| #1102 | 14 | **Closed completed on GitHub 2026-10-02** | Current full Linux run #1116 passed all nine specified Chromium specs and the WebKit fullscreen/Escape case; `## QA: PASS` comment 5958177716. |
 | #1103 | 14 | Open; corrective fixture setup committed, QA pending | `24197488`; exact four-spec run on verified disposable PostgreSQL, then Linux Chromium |
-| #1104 | 14 | Open; fork/provenance scenario still exhausts the default per-test budget in Linux CI; targeted 60s budget correction in progress | `b9f285f2` reproduced on Linux; rerun #1104's three-spec Chromium suite and Linux gate |
-| #1129 | 16 | QA: PASS; decision comment and design record verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
-| #1130 | 16 | QA: PASS; decision and split follow-ups verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
+| #1104 | 14 | Open; follow-up QA found the prior fix asserted a nonexistent `beforeunload` dialog; erroneous assertion removed, focused rerun still required | Run #1116 shard 15 showed the lifecycle completes in 32.9s and fails only at `expect(sourceNavigationDialogs).toHaveLength(1)`; the owner editor is already on the source, so no navigation/dialog is needed. Current correction restores prior issue assertions exactly (16 tests / 164 expects). |
+| #1129 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D1 recorded and dependent #1138–#1140 contracts implement the selected server-field design. |
+| #1130 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D2 recorded and split follow-ups #1156/#1157 created, milestoned, and sequenced; both are underway. |
 | #1138 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `d40f4a8a`; QA matrix posted; local backend criteria pass |
-| #1139 | 16 | Issue QA: PASS on `46d0696d`; awaiting batch gate (remains open) | GitHub QA comment `5954588513`; run #1100 shard 12 E2E pass and inspected 1280x900 / 375x812 artifact; shared impact/full-matrix reconciliation |
-| #1140 | 16 | Implemented locally; browser/CI criterion pending | `8100a4b9`; fake-provider E2E and full CI |
+| #1139 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5954588513`; Linux E2E, both inspected viewport artifacts, privacy, save/clear and accessibility criteria satisfied. |
+| #1140 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5950120078`; focused backend/panel checks and fake-provider Linux E2E satisfied the bounded note, request opt-out, snapshot/retry, and privacy criteria. |
 | #1143 | 16 | Implemented locally; batch/CI reconciliation pending | Prior batch record; fresh CI evidence pending |
 | #1144 | 14 | Open; Linux/visual evidence pending | Full batch browser gate |
 | #1149 | 16 | Open; local failures tracked in batch 18 | Resolve #1154 path and Linux browser gate |
 | #1150 | 14 | Open; focused Linux scenarios pass; full batch gate pending | `7b13c231`; run #1082 on exact ancestor implementation |
-| #1151 | 14 | Screenshot capture added; fresh Linux artifact and visual inspection pending | Focused typecheck/lint/format/discovery pass; run #1100's prior `interactionRuntime.spec.ts` 3/3 is before this test-only update |
-| #1152 | 14 | QA: PASS; awaiting batch impact reconciliation | `510fcaf3`; run #1100 `layersPanel.spec.ts` 3/3; QA comment `5955170400` |
+| #1151 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5956057113`; current source SHA `a3d53bce` is an ancestor of run #1105; all 3 Linux Chromium scenarios and four inspected 1280x900/375x812 motion-toggle artifacts passed. |
+| #1152 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5955170400`; run #1100 shard 9 passed all three Linux Chromium Layers-panel tests on a descendant of `510fcaf3`; retarget preserves #142. |
 | #1153 | 14 | Open; refined follow-up | E2E and Linux gate |
 | #1154 | 16 | Open; fake-provider Agent run follow-up | E2E/CI gate |
 | #1155 | 14 | QA: FAIL / handed off at Linux verification boundary; current local evidence posted to GitHub | Existing guard commit; isolated `gesture_studio_test` smoke 1/1, all fixture counts zero afterward; Linux/full matrix pending |
@@ -115,6 +115,22 @@ Do not close issues until the complete ready batch's QA/matrix gate passes or th
 issue has a documented terminal hand-off/blocker with next owner/action. Browser
 contracts requiring Linux evidence must use CI; local source, component, and
 list-only E2E checks do not substitute. PR #1094 remains open and unmerged.
+
+## Owner-directed issue-level reconciliation (2026-10-02)
+
+The owner flagged Goodhart's Law risk from treating the full CI metric as the
+goal. Closed completed issues whose own contracts and impact rows were already
+verified, independent of unrelated full-matrix failures: #1100, #1102, #1129,
+#1130, #1139, #1140, #1151, and #1152. These are real GitHub state changes,
+not local claims.
+The live open inventory is now 13: #1096, #1103–#1104, #1138, #1143–#1144,
+#1149–#1150, and #1153–#1157. The full matrix tracker #1096 remains open.
+
+This is issue-level reconciliation, not a green batch verdict. Remaining issues
+stay open where their own criteria are not yet evidenced (for example #1143's
+rendered admin screenshots and #1144's route screenshots). CI run #1116 is in
+progress at the time of this update; it is supporting evidence for applicable
+browser criteria, not the sole completion metric.
 
 ## QA continuation — run #1074 on current head (2026-10-02)
 

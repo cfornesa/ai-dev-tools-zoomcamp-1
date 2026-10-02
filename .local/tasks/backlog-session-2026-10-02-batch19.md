@@ -23,7 +23,7 @@ reconciliation.
 | #1096 | 14 | Open; CI tracking/hand-off | Full 16-shard outcome and failure reconciliation |
 | #1100 | 14 | **Closed completed on GitHub 2026-10-02** | Exact six 3D helper acceptance cases passed on Linux Chromium in run #1074; implementation and preservation criteria already QA PASS. Closing issue-specific work; unrelated full-matrix failures remain with #1096 and their owners. |
 | #1102 | 14 | **Closed completed on GitHub 2026-10-02** | Current full Linux run #1116 passed all nine specified Chromium specs and the WebKit fullscreen/Escape case; `## QA: PASS` comment 5958177716. |
-| #1103 | 14 | Open; current Linux run exposed two composite draft-recovery scenarios exceeding the default 30-second budget; bounded per-test budgets added, focused rerun required | Run #1116 shard 3: the Cancel/Discard/Recover test timed out while finishing its third fresh-project flow; the candidate/conflict test timed out on its final conflict flow. Both kept assertions; add 60s and 90s per-test budgets respectively. Static checks and 7-test discovery pass; counts remain 9 titles / 102 `expect` calls. |
+| #1103 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5963116281; focused local PostgreSQL/Chromium passed 17/17 with `AI_PROVIDER=fake`, 0 skips; Linux Chromium passed every #1103-owned case across shards 3/8/9 in run #1124 at `85340d2d`. Full-matrix residuals remain with #1096. |
 | #1104 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5958690593; Linux run #1117 on `50f95f14` executed all three issue-owned specs on disposable PostgreSQL: 22 passed, 0 failed, 0 skipped. Two separate `authPolicy.spec.ts` failures are outside its impact row. |
 | #1129 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D1 recorded and dependent #1138–#1140 contracts implement the selected server-field design. |
 | #1130 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D2 recorded and split follow-ups #1156/#1157 created, milestoned, and sequenced; both are underway. |
@@ -1041,6 +1041,24 @@ QA PASS was posted, and #1155 was closed completed after those checks.
 The live open issue inventory is now #1096, #1103, #1138, and #1156. Parent
 #1096 stays open for broad triage; its failed aggregate score does not block
 independent child closures when their own scoped Linux criteria pass.
+
+## 2026-10-02 — #1103 closure and current inventory
+
+Closed GitHub issue [#1103](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1103)
+as completed after refreshing its criterion matrix and reconciling all six
+acceptance checkboxes. QA PASS is recorded in
+[comment 5963116281](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1103#issuecomment-5963116281).
+The exact focused local PostgreSQL/Chromium command passed 17/17 with
+`AI_PROVIDER=fake`, 0 failures, and 0 skips. Run #1124 at SHA
+`85340d2d2a78a325186e1e1920c73874e2edcb3c` passed every #1103-owned Linux
+case across shards 3, 8, and 9; its aggregate 16-shard run remains red on
+unrelated scenarios tracked by #1096. GitHub read-after-write shows #1103
+closed and all six checklist criteria checked.
+
+Authenticated GitHub search now reports three open issues: #1096, #1138, and
+#1156. #1096 remains parent triage. #1138/#1156 await owner disposition of
+their docs-first chronology criterion; no source changes were made during
+this closure pass.
 
 ## 2026-10-02 — Fresh full-repository QA refresh
 

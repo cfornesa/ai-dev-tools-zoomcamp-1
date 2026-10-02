@@ -26105,6 +26105,13 @@ matrix failures were in unrelated files. A `## QA: PASS` criterion matrix was
 posted as comment 5958177716, and #1102 is now closed/completed on GitHub. The
 live open count is 13.
 
+The same run executed all eight #1149/#1154 fake-provider Agent cases on Linux
+Chromium/PostgreSQL: four 2D and four 3D scenarios, with 0 skips. Create,
+selected-object edit, terminal validation, and reload/reconnection passed in
+both domains. #1149 received `## QA: PASS` comment 5958321151 and
+#1154 received `## QA: PASS` comment 5958310474; both are closed/completed on
+GitHub. The open count is now 11.
+
 ### #1103 recovery-suite time budget — 2026-10-02
 
 Run #1116's Linux shard 3 exposed two time-budget failures inside the

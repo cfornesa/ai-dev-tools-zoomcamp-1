@@ -21,7 +21,7 @@ reconciliation.
 | #1096 | 14 | Open; CI tracking/hand-off | Full 16-shard outcome and failure reconciliation |
 | #1100 | 14 | **Closed completed on GitHub 2026-10-02** | Exact six 3D helper acceptance cases passed on Linux Chromium in run #1074; implementation and preservation criteria already QA PASS. Closing issue-specific work; unrelated full-matrix failures remain with #1096 and their owners. |
 | #1102 | 14 | **Closed completed on GitHub 2026-10-02** | Current full Linux run #1116 passed all nine specified Chromium specs and the WebKit fullscreen/Escape case; `## QA: PASS` comment 5958177716. |
-| #1103 | 14 | Open; corrective fixture setup committed, QA pending | `24197488`; exact four-spec run on verified disposable PostgreSQL, then Linux Chromium |
+| #1103 | 14 | Open; current Linux run exposed two composite draft-recovery scenarios exceeding the default 30-second budget; bounded per-test budgets added, focused rerun required | Run #1116 shard 3: the Cancel/Discard/Recover test timed out while finishing its third fresh-project flow; the candidate/conflict test timed out on its final conflict flow. Both kept assertions; add 60s and 90s per-test budgets respectively. Static checks and 7-test discovery pass; counts remain 9 titles / 102 `expect` calls. |
 | #1104 | 14 | Open; follow-up QA found the prior fix asserted a nonexistent `beforeunload` dialog; erroneous assertion removed, focused rerun still required | Run #1116 shard 15 showed the lifecycle completes in 32.9s and fails only at `expect(sourceNavigationDialogs).toHaveLength(1)`; the owner editor is already on the source, so no navigation/dialog is needed. Current correction restores prior issue assertions exactly (16 tests / 164 expects). |
 | #1129 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D1 recorded and dependent #1138–#1140 contracts implement the selected server-field design. |
 | #1130 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D2 recorded and split follow-ups #1156/#1157 created, milestoned, and sequenced; both are underway. |
@@ -30,12 +30,12 @@ reconciliation.
 | #1140 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5950120078`; focused backend/panel checks and fake-provider Linux E2E satisfied the bounded note, request opt-out, snapshot/retry, and privacy criteria. |
 | #1143 | 16 | Implemented locally; batch/CI reconciliation pending | Prior batch record; fresh CI evidence pending |
 | #1144 | 14 | Open; Linux/visual evidence pending | Full batch browser gate |
-| #1149 | 16 | Open; local failures tracked in batch 18 | Resolve #1154 path and Linux browser gate |
+| #1149 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958321151`; all 8 current Linux fake-provider 2D/3D Agent scenarios passed, 0 skipped; route changes confined to the two specs. |
 | #1150 | 14 | Open; focused Linux scenarios pass; full batch gate pending | `7b13c231`; run #1082 on exact ancestor implementation |
 | #1151 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5956057113`; current source SHA `a3d53bce` is an ancestor of run #1105; all 3 Linux Chromium scenarios and four inspected 1280x900/375x812 motion-toggle artifacts passed. |
 | #1152 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5955170400`; run #1100 shard 9 passed all three Linux Chromium Layers-panel tests on a descendant of `510fcaf3`; retarget preserves #142. |
 | #1153 | 14 | Open; refined follow-up | E2E and Linux gate |
-| #1154 | 16 | Open; fake-provider Agent run follow-up | E2E/CI gate |
+| #1154 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958310474`; all 8 Linux Chromium fake-provider scenarios passed on the fixed target-aware contract, 0 skipped. |
 | #1155 | 14 | QA: FAIL / handed off at Linux verification boundary; current local evidence posted to GitHub | Existing guard commit; isolated `gesture_studio_test` smoke 1/1, all fixture counts zero afterward; Linux/full matrix pending |
 | #1156 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `e28a57a3`; QA matrix posted; current-ref full matrix pending |
 | #1157 | 16 | QA: FAIL / handed off at shared Linux batch gate; criterion matrix posted to GitHub | `6b2f9cb1`; focused union 125 passed / 4 skipped; full backend-check 2,012 passed / 44 skipped; configured PostgreSQL concurrency 1 passed |
@@ -123,8 +123,8 @@ goal. Closed completed issues whose own contracts and impact rows were already
 verified, independent of unrelated full-matrix failures: #1100, #1102, #1129,
 #1130, #1139, #1140, #1151, and #1152. These are real GitHub state changes,
 not local claims.
-The live open inventory is now 13: #1096, #1103–#1104, #1138, #1143–#1144,
-#1149–#1150, and #1153–#1157. The full matrix tracker #1096 remains open.
+The live open inventory is now 11: #1096, #1103–#1104, #1138, #1143–#1144,
+#1150, #1153, #1155–#1157. The full matrix tracker #1096 remains open.
 
 This is issue-level reconciliation, not a green batch verdict. Remaining issues
 stay open where their own criteria are not yet evidenced (for example #1143's

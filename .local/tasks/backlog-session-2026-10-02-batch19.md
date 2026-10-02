@@ -22,7 +22,7 @@ reconciliation.
 | #1100 | 14 | Open; implementation/QA status carried from batch 18 | Linux Chromium six-spec gate |
 | #1102 | 14 | Open; implementation/QA status carried from batch 18 | Linux Chromium child gate |
 | #1103 | 14 | Open; corrective fixture setup committed, QA pending | `24197488`; exact four-spec run on verified disposable PostgreSQL, then Linux Chromium |
-| #1104 | 14 | Open; navigation setup correction committed; static checks pass, browser QA pending | `88b4085f`; rerun #1104's three-spec Chromium suite and Linux gate |
+| #1104 | 14 | Open; fork/provenance scenario still exhausts the default per-test budget in Linux CI; targeted 60s budget correction in progress | `b9f285f2` reproduced on Linux; rerun #1104's three-spec Chromium suite and Linux gate |
 | #1129 | 16 | QA: PASS; decision comment and design record verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
 | #1130 | 16 | QA: PASS; decision and split follow-ups verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
 | #1138 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `d40f4a8a`; QA matrix posted; local backend criteria pass |
@@ -225,7 +225,7 @@ setup-only changes target those causes while preserving the product surface:
 |---|---|---|---|---|
 | `frontend/e2e/legacy2dToolset.spec.ts` publish fixture | Change setup from footer-obstructed dialog click to existing owner publish API | #1102 | #1096 tracks matrix; no other open issue names this spec | Keep public `/p/:id` assertions intact; rerun #1102's full 9-spec Linux Chromium union. |
 | `frontend/e2e/public2dRouteStageChrome.spec.ts` publish fixture | Change setup from footer-obstructed dialog click to existing owner publish API | #1102 | #1096 tracks matrix | Preserve both plain/embed route assertions; rerun #1102's full 9-spec Linux Chromium union. |
-| `frontend/e2e/publishingAndRemix.spec.ts` forked public viewer navigation | Change readiness from full `load` to `domcontentloaded`; rendered viewer and provenance assertions remain | #1104 | #1153 preserves fork fixtures and the Remix scenario; #1096 tracks matrix | Rerun #1104's 3-spec union and #1153's publishing/Remix affected cases; inspect test/expect inventories. |
+| `frontend/e2e/publishingAndRemix.spec.ts` forked public viewer navigation | Wait for `domcontentloaded` and give the multi-step atomic fork scenario a 60s per-test budget; rendered viewer/provenance and all existing assertions remain | #1104 | #1153 preserves fork fixtures and the Remix scenario; #1096 tracks matrix | Run #1104's 3-spec union and #1153's publishing/Remix cases on Linux/PostgreSQL; inspect test/expect inventories. |
 
 Stage 2a roster: Opencode Go (Kimi K2.5 frontend); actual Codex GPT-6 / effort
 not surfaced; substituted: yes. Two issue-scoped commits have been created and

@@ -1317,6 +1317,11 @@ test.describe('Remix and fork', () => {
   test('remix enabled permits an authenticated atomic fork: private default, independent scene, exact source version, durable attribution', async ({
     browser,
   }) => {
+    // This end-to-end lifecycle crosses owner edit/publish, visitor fork,
+    // and anonymous public rendering; keep enough budget for those real
+    // server transitions on the loaded full-matrix runner.
+    test.setTimeout(60_000);
+
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);

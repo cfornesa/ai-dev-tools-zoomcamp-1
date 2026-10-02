@@ -26074,5 +26074,11 @@ desktop/mobile screenshots and Linux E2E; #1140's backend and fake-provider
 E2E contracts; and #1152's three Linux Layers-panel cases. The #1152 code SHA
 is an ancestor of the recorded Linux run. The open count is now 15.
 
+The issue-specific QA PASS for #1151 also satisfies its motion-toggle
+acceptance independently: the tested source SHA is an ancestor of run #1105,
+all three Linux Chromium scenarios passed, and the desktop/mobile reduced/full
+motion screenshots were inspected. #1151 is now closed/completed on GitHub;
+the open count is 14.
+
 This does not mark #1096 or the full browser batch complete; the remaining
 open issues retain their own incomplete criteria and need focused work and QA.

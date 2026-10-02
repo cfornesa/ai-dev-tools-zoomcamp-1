@@ -341,16 +341,16 @@ test.describe('Interaction runtime', () => {
       // preference set): Play/Pause is offered.
       await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
 
-      // The global Reduce motion control lives in the header (Layout.tsx),
-      // available on every route including the editor -- but the stage's
-      // "Piece controls" popover is a modal overlay that covers the whole
-      // main content area while open (same class of occlusion documented in
-      // `layersPanel.spec.ts`'s own module doc comment), so it must be
-      // closed before this header control is reachable, then reopened for
-      // the Step click that follows.
+      // The shell motion toggle is available on every route. Close the
+      // stage's Piece controls overlay before reaching it, then reopen the
+      // controls for the manual Step assertion.
       await closePieceControlsMenu(page);
-      await page.getByRole('radio', { name: 'Reduced' }).click();
-      await expect(page.getByText('Motion is currently reduced.')).toBeVisible();
+      const motionToggle = page.getByRole('button', { name: 'Use reduced motion' });
+      await motionToggle.click();
+      await expect(page.getByRole('button', { name: 'Use full motion' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
       await openPieceControls(page);
 
       // Task 29's documented substitution: auto-advance turns off entirely
@@ -366,10 +366,13 @@ test.describe('Interaction runtime', () => {
       await page.getByRole('button', { name: 'Step', exact: true }).click();
       await expect(playbackProgress(page)).toHaveText('1 of 9 events played');
 
-      // Switching back to Full restores Play/Pause.
+      // Switching back to full motion restores Play/Pause.
       await closePieceControlsMenu(page);
-      await page.getByRole('radio', { name: 'Full', exact: true }).click();
-      await expect(page.getByText('Motion is currently full.')).toBeVisible();
+      await page.getByRole('button', { name: 'Use full motion' }).click();
+      await expect(page.getByRole('button', { name: 'Use reduced motion' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
       await openPieceControls(page);
       await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toBeVisible();
 

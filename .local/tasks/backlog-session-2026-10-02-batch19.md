@@ -3,12 +3,12 @@
 ## Scope and gate
 
 The initial authenticated GitHub search returned 21 open issues. Read-after-
-write GitHub search on 2026-10-02 now reports seven open: #1096, #1103, #1138,
-#1144, #1155, #1156, and #1158. #1143 and #1159 were closed in GitHub only
-after their issue-level QA comments and acceptance matrices were posted. Batch
-gate: **pending** for the remaining issues; this record is a continuation of
-the active backlog session, not a declaration that the project batch is
-complete.
+write GitHub search on 2026-10-02 previously reported seven open; issue-level
+QA has since closed #1144, #1158, and #1155. The current inventory is four
+open issues: #1096, #1103, #1138, and #1156. #1143, #1159, and those three
+issues were closed only after their issue-level QA comments/checklists were
+reconciled. Batch gate: **pending** for the remaining issues; this record is a
+continuation, not a declaration that the project batch is complete.
 
 Owner choices now resolved: #1129 selected the private server-backed 2D
 `Project.brief` field; #1130 selected owner-only history for structured 3D then
@@ -38,10 +38,10 @@ reconciliation.
 | #1152 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5955170400`; run #1100 shard 9 passed all three Linux Chromium Layers-panel tests on a descendant of `510fcaf3`; retarget preserves #142. |
 | #1153 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5958787980; Linux run #1117 executed all 13 Publishing/Remix and 3 responsive-shell tests on disposable PostgreSQL; all 16 passed, including populated-gallery at 375px. |
 | #1154 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958310474`; all 8 Linux Chromium fake-provider scenarios passed on the fixed target-aware contract, 0 skipped. |
-| #1155 | 14 | QA: FAIL / handed off at Linux verification boundary; current local evidence posted to GitHub | Existing guard commit; isolated `gesture_studio_test` smoke 1/1, all fixture counts zero afterward; Linux/full matrix pending |
+| #1155 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS posted after current-ref Linux evidence. `projectLifecycle.spec.ts` shard 13 passed 6/6; backend/frontend checks passed. The full run #1122 remains red on unrelated failures under #1096. Rejected-action tests snapshot every SQLite table row (41 focused backend tests pass). |
 | #1156 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `e28a57a3`; QA matrix posted; current-ref full matrix pending |
 | #1157 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS comment `5959139975`; current-head Linux backend checks 2,012 passed / 44 gated skips, migration drift clean; populated-row forward/reverse migration, PostgreSQL concurrent transition and Linux full-matrix execution on descendant `fba45bc` verified. Aggregate matrix remains red on unrelated specs; #1096 stays open. |
-| #1158 | 14 | Open; local QA pass, Linux acceptance pending | Centered in-flow toggle placement through 767px; admin definitions, gallery focus visibility, 768px/desktop position and both toggle actions tested. Push existing branch and inspect the Linux Chromium/PostgreSQL run. |
+| #1158 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS: 7/7 Linux `adminSettings` cases, named shell regressions, screenshot review, and isolated restoration reproduction. |
 | #1159 | 14 | **Closed completed on GitHub 2026-10-02**; QA PASS comment 5961685465 | Portal dialog uses exported-viewer sizing; public, editor, immersive and generated-art mounts inspected at 1280x900/375x812; 12/12 focused union; all 11 issue criteria checked before closure. |
 
 Stage owner provenance for this continuation: stage 1 / Codex (this session) /
@@ -997,3 +997,47 @@ Fresh authenticated GitHub enumeration returns five open issues: #1096, #1103,
 #1138, #1155, and #1156. Treat #1096 as a parent triage tracker; continue
 independent child issue implementation and QA, then reconcile closure evidence
 against each child's acceptance criteria.
+
+## 2026-10-02 — #1103 current-head shard-3 reconciliation
+
+Fetched run #1122 shard 3 logs for exact failure output. Two `aiAndRecovery`
+autosave cases fail: (1) before the fake-clock debounce test edits the scene,
+`readLocalDraft` already returns the initial empty scene (`changeSummary: No
+changes detected`), failing the assertion that no local draft exists at 1s;
+(2) the 90s explicit-save/reopen/exit flow times out and its trace ZIP is
+corrupt, so this log does not prove a first cause. The Postgres
+`unique_draft_scope` errors in the worker log coincide with concurrent sync,
+but `_upsert_draft` contains an explicit IntegrityError retry under a row lock;
+those errors alone do not establish an unhandled race.
+
+The first mismatch is outside #1103's test-migration-only scope and its hard
+rule against changing expectations. No duplicate open issue was found. Record
+as an owner disposition question before filing a follow-up or altering the
+contract; leave #1103 / #1096 open. No source changes made.
+
+## 2026-10-02 — #1155 current-head Linux QA closure
+
+All 12 original/refined acceptance criteria were re-audited. The pre-code
+implementation-choice comment records option 1 and its five allowed values;
+the single resolver covers all five entry points; the 5-action × 6-invalid-
+selection backend matrix checks rejected writes; positive environment,
+fingerprint-bound teardown, unavailable-setup skip, workflow/smoke wiring,
+operator docs, isolated PostgreSQL smoke, and restoration behavior have prior
+evidence. This turn strengthened the negative test's protection assertion from
+a partial model count to a complete per-table SQLite row snapshot. Exact test
+run: 41 passed. Ruff lint/format and `git diff --check` pass.
+
+Run #1122 at exact implementation SHA `13d57ea` supplies Linux Chromium /
+disposable-PostgreSQL evidence: all six `projectLifecycle.spec.ts` cases passed
+on shard 13, including `blank-canvas save/reload`; backend checks passed
+2,012 tests / 44 skips and frontend checks passed 3,229 tests. It ran against
+the authorized fixture guard and current explicit environment wiring. The full
+16-shard run remains red on unrelated browser failures tracked by #1096; no
+#1155-owned failure is present in its Linux run. Existing QA comment also
+records the pre-guard acceptance / guarded rejection restoration proof and the
+isolated PostgreSQL post-cleanup zero-row audit. GitHub checklist was checked,
+QA PASS was posted, and #1155 was closed completed after those checks.
+
+The live open issue inventory is now #1096, #1103, #1138, and #1156. Parent
+#1096 stays open for broad triage; its failed aggregate score does not block
+independent child closures when their own scoped Linux criteria pass.

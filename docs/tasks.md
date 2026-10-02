@@ -26274,3 +26274,34 @@ passed; the matrix's remaining cases stay under #1096.
 Closed GitHub issue [#1158](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1158) as completed at 2026-10-02T22:21:16Z after posting the QA PASS comment. The focused Linux Chromium/PostgreSQL `adminSettings.spec.ts` scenarios passed 7/7 on shard 2; responsive shell, header, public shell, account shell/theme regression checks, and Linux frontend checks passed on the cited shards. Retained 375×812 and 1280×900 screenshots were inspected. For the restoration criterion, an isolated disposable PostgreSQL run with the mobile in-flow override temporarily removed reproduced the overlap at 375×812 (`metric definition 4 remains unobscured`, expected false, received true); the original CSS was restored immediately and has no diff. The full matrix remains failed under #1096 and was not used as a substitute for scoped evidence.
 
 Authenticated GitHub enumeration now shows five open issues: #1096, #1103, #1138, #1155, and #1156. #1096 is a triage parent, not an implementation target. Keep each child tied to its own acceptance evidence; next focus on issue-specific remediation/QA and close independently passing issues without waiting for an unrelated aggregate matrix verdict.
+
+### 2026-10-02 — #1103 shard-3 failure detail and disposition needed
+
+Current-head Linux run #1122 (SHA `13d57ea`, which is an ancestor of this
+checkout) fails two `aiAndRecovery.spec.ts` autosave scenarios. The first,
+`local debounce, periodic server-sync cadence, and page-hide keepalive all fire
+on schedule`, fails at the unchanged pre-debounce assertion: after advancing
+fake time by 1,000ms, `readLocalDraft` returns an initial empty scene with
+`changeSummary: "No changes detected"`, although the tested circle edit has
+not happened. This contradicts the test's assumption that no local draft
+exists before the first edit. The database log also shows `unique_draft_scope`
+conflicts during concurrent sync, but the current `_upsert_draft` explicitly
+catches that insert race and retries under a row lock; the SQL error alone is
+not evidence of an uncaught race.
+
+The second test, `explicit Save and its interaction with sync failures,
+periodic ticks, reopening, and Exit-without-saving`, times out at 90 seconds;
+its attached trace reports a corrupt ZIP, preventing useful trace inspection.
+The first cause remains unknown. #1103 is constrained to setup-only changes
+and preserving every test title/assertion, so no product code or assertion was
+changed. No matching open issue was found for the pre-edit initial-draft
+behavior. Owner disposition is needed before creating a product follow-up or
+changing the test contract; until then #1103 and #1096 remain open.
+
+### 2026-10-02 — #1155 current-head Linux QA closure
+
+Re-audited #1155 against the 12 original/refined acceptance criteria. The issue's configured option and five environment values were recorded before implementation; one shared fixture resolver covers all five TypeScript entry points; each of five mutating actions is exercised against six invalid environment selections; allowed values, unavailable-setup teardown, recorded fingerprint, isolated positive PostgreSQL smoke, restoration behavior, and operator/workflow wiring have evidence in the implementation and existing QA comments. I strengthened `backend/tests/test_e2e_fixtures_command.py` so each rejected action now snapshots every row in the isolated SQLite test database, catching updates/deletes/inserts beyond the previously enumerated tables.
+
+Verification after that test change: `UV_CACHE_DIR=/tmp/codex-qa1155-uv-cache uv run pytest tests/test_e2e_fixtures_command.py -q` → 41 passed; Ruff lint and format checks for the file passed; `git diff --check` passed. Existing local isolated-PostgreSQL positive browser smoke passed, with a read-only post-teardown audit finding no fixture users, email/social rows, projects/versions, 3D projects, art pieces/versions, activity, or AI runs. Prior isolated restoration proof showed that the pre-guard command accepted unmarked create/cleanup; the guarded command rejects unmarked create with an actionable error and makes no fixture changes.
+
+The authorized Linux run #1122 on SHA `13d57ea` includes the #1155 guard and explicit workflow configuration. Its issue-specific `projectLifecycle.spec.ts` scenarios passed 6/6 in disposable PostgreSQL/Chromium on shard 13, including the exact blank-canvas create/save/reload smoke; backend checks passed (2,012 passed / 44 skipped) and Linux frontend checks passed (3,229 tests). The complete 16-shard matrix remains failed on unrelated browser cases tracked under #1096. The failed aggregate result does not represent a #1155 guard failure: the focused Linux project lifecycle, frontend resolver, backend guard suite, and explicit fixture environment passed. The GitHub issue checklist and new QA PASS comment were reconciled before closure; the issue is closed completed on GitHub.

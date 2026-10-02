@@ -53,15 +53,17 @@ def select_disposable_test_database(monkeypatch):
     monkeypatch.setenv("E2E_EXPECTED_DATABASE_FINGERPRINT", _database_fingerprint())
 
 
-def fixture_record_counts():
-    User = get_user_model()  # noqa: N806
-    names = [name for name, _email in E2E_USERS.values()]
-    return (
-        User.objects.filter(username__in=names).count(),
-        Project.all_objects.filter(owner__username__in=names).count(),
-        SceneVersion.objects.filter(project__owner__username__in=names).count(),
-        PieceIntakeAsset.objects.filter(owner__username__in=names).count(),
-    )
+def fixture_database_snapshot():
+    """Capture every SQLite row so rejected actions cannot mutate uncounted fixtures."""
+    with connection.cursor() as cursor:
+        tables = connection.introspection.table_names(cursor)
+        snapshot = {}
+        for table in tables:
+            cursor.execute(f"SELECT * FROM {connection.ops.quote_name(table)}")
+            # Stable text snapshots make updates, deletes, and inserts visible without
+            # coupling this safety check to the command's growing model inventory.
+            snapshot[table] = tuple(sorted(map(repr, cursor.fetchall())))
+    return snapshot
 
 
 @pytest.mark.django_db
@@ -110,11 +112,15 @@ def test_rejected_fixture_actions_leave_records_unchanged(
     else:
         monkeypatch.setenv("E2E_EXPECTED_DATABASE_FINGERPRINT", "not-the-selected-database")
 
-    before = fixture_record_counts()
-    assert before[0] > 0 and before[1] > 0 and before[2] > 0
+    before = fixture_database_snapshot()
+    names = [name for name, _email in E2E_USERS.values()]
+    User = get_user_model()  # noqa: N806
+    assert User.objects.filter(username__in=names).exists()
+    assert Project.all_objects.filter(owner__username__in=names).exists()
+    assert SceneVersion.objects.filter(project__owner__username__in=names).exists()
     with pytest.raises(CommandError, match="refused|requires|allowed|staging"):
         call_command("e2e_fixtures", action, "--json")
-    assert fixture_record_counts() == before
+    assert fixture_database_snapshot() == before
 
 
 @pytest.mark.django_db

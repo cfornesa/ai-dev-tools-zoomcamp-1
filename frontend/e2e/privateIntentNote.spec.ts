@@ -4,7 +4,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 
-import { apiPost } from './support/api.js';
+import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -66,6 +66,11 @@ test.describe('private intent note editor (#1139)', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     await page.setViewportSize({ width: 1280, height: 900 });
     const projectId = await createServerProject2D(page);
+    const metadata = await apiPatch(page.context(), `/api/projects/${projectId}/`, {
+      title: `Private intent note fixture ${projectId}`,
+      description: 'A valid public-route privacy fixture.',
+    });
+    expect(metadata.ok()).toBe(true);
 
     const details = await openDetailsPanel(page);
     const note = details.getByLabel('Intent notes (private)');

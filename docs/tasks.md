@@ -5,13 +5,16 @@
 Run #1085's Linux browser evidence identified the mobile #1139 failure: its
 E2E switched to 375px without expanding the independent Details disclosure.
 Commit `2250eae3` opened Details at each viewport and after reload. Run #1089
-showed that this still raced the responsive tab switch: the Details region
-was checked before it became visible. The next correction waits for the
-region and disclosure control, then checks `aria-expanded` before toggling.
-It does not change product behavior or weaken assertions. TypeScript, lint,
-formatting, Playwright discovery (1 test), and `git diff --check` passed
-locally. Keep #1139 open pending a current-SHA Linux result and remaining
-batch-gate evidence.
+showed that this still raced the responsive tab switch, so commit `75476cfe`
+waited for the Details region and checked `aria-expanded` before toggling.
+Run #1091 confirmed both viewport checks now pass but found the test's publish
+fixture lacked the title/description required by the publication contract
+(HTTP 400). The next test-only correction adds valid fixture metadata before
+publishing; it does not change product behavior or weaken privacy assertions.
+TypeScript, lint, formatting, Playwright discovery (1 test), and
+`git diff --check` passed locally. Keep #1139 open pending Linux verification
+of the fixture correction, screenshot inspection, and remaining batch-gate
+evidence.
 
 ## 2026-10-02 — Batch 19 current-head QA run #1085
 

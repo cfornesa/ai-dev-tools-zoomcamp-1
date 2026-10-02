@@ -26184,3 +26184,18 @@ change user/project records for the capture. Typecheck, lint (existing
 repository warnings), format check, test discovery (6 tests), and
 `git diff --check` pass. Linux PostgreSQL execution and visual inspection
 remain pending before #1143 can close.
+
+### 2026-10-02 — #1157 completed on issue-owned criteria
+
+The QA review closed GitHub issue [#1157](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1157)
+as completed after rechecking its full refined contract. QA PASS comment
+[#5959139975](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1157#issuecomment-5959139975)
+records the three-family constraint and populated-row reversible migration,
+lifecycle and eventless-path behavior, concurrent idempotent publication,
+owner-only history, export/privacy boundaries, and 2D/3D regressions. The
+current-head Linux backend job passed 2,012 tests with 44 environment-gated
+skips; migration drift check reports no changes. The separate full 16-shard
+run #1116 ran on descendant `fba45bc`, which contains #1157's implementation.
+Its aggregate failure remains tracked by #1096; that shared score did not
+override the passing evidence for #1157's own contract, and no #1096 closure
+is claimed.

@@ -38,7 +38,7 @@ reconciliation.
 | #1154 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958310474`; all 8 Linux Chromium fake-provider scenarios passed on the fixed target-aware contract, 0 skipped. |
 | #1155 | 14 | QA: FAIL / handed off at Linux verification boundary; current local evidence posted to GitHub | Existing guard commit; isolated `gesture_studio_test` smoke 1/1, all fixture counts zero afterward; Linux/full matrix pending |
 | #1156 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `e28a57a3`; QA matrix posted; current-ref full matrix pending |
-| #1157 | 16 | QA: FAIL / handed off at shared Linux batch gate; criterion matrix posted to GitHub | `6b2f9cb1`; focused union 125 passed / 4 skipped; full backend-check 2,012 passed / 44 skipped; configured PostgreSQL concurrency 1 passed |
+| #1157 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS comment `5959139975`; current-head Linux backend checks 2,012 passed / 44 gated skips, migration drift clean; populated-row forward/reverse migration, PostgreSQL concurrent transition and Linux full-matrix execution on descendant `fba45bc` verified. Aggregate matrix remains red on unrelated specs; #1096 stays open. |
 
 Stage owner provenance for this continuation: stage 1 / Codex (this session) /
 GPT-6 / effort not surfaced / substituted: no. Stage 2 for #1140 / rostered

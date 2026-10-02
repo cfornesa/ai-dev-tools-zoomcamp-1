@@ -675,3 +675,15 @@ The #1151 acceptance also requires screenshots of the motion toggle in both
 states at 1280x900 and 375x812; the run did not retain those screenshots, so
 #1151 remains issue-QA incomplete. Neither issue is closed while #1096's
 failure-by-failure impact reconciliation remains unfinished.
+
+## Current-head full matrix rerun
+
+After adding screenshot attachments to #1151, commit `6b29711c` was pushed
+under the owner's existing push authorization. The full manual CI workflow was
+dispatched in the active Chrome session as run [#1103](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37024873824)
+(`37024873824`) on exact SHA `6b29711c55dcfb113e832f50687917990cf9371a`.
+Workflow validation and disposable published-routing smoke passed; backend,
+frontend, and all 16 browser shards were still running at the latest status
+read. This rerun is required for #1151's retained screenshot evidence and
+current-head batch review. It does not supersede the prior #1096 FAIL result
+until the run and case-by-case failure reconciliation are complete.

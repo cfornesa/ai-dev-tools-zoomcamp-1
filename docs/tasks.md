@@ -25986,3 +25986,12 @@ lookup already within #1104. The closed #516 auth-shell contract is preserved;
 no new issue was filed pending owner approval. This is not full-matrix
 evidence. The current batch ledger records the first-cause review and the
 macOS Chromium launch boundary for the separate export-injection assertion.
+
+After adding the four screenshot attachments for #1151, commit `6b29711c` was
+pushed under existing authorization and the full manual CI workflow was
+dispatched in the active Chrome session as run [#1103](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37024873824)
+on exact SHA `6b29711c55dcfb113e832f50687917990cf9371a`. Workflow validation
+and disposable published-routing smoke passed; backend, frontend, and all 16
+browser shards were still running at the latest status read. This is fresh
+#1151 screenshot and current-head matrix evidence. The prior #1096 FAIL gate
+and no-closure rule remain until completion and full failure reconciliation.

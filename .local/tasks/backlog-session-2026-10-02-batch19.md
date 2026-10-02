@@ -500,6 +500,69 @@ Detailed failure evidence inspected in Chrome:
   linked criterion-ready follow-up. Earlier #1074/#1082 records do not
   substitute for classifying each failure from #1085.
 
+Remaining shard inventories reviewed from the #1085 GitHub Actions job logs:
+
+- Shard 6 (`110830215837`): `artPieceThumbnailCapture` failed on missing
+  revision prompt / undefined fallback bytes; `authoringOwnershipGate` failed
+  against the current unavailable/redirect contract; `authoringWorkflow740`
+  timed out; `authPolicy` had old shell/theme assertions. `cameraPreview3d`
+  (#1100) passed in the same shard.
+- Shard 7 (`110830215847`): stale `cosmicBackdropStars` z-index expectation;
+  `designSchemeMatrix` expected the absent `.reduced-motion-status`; an
+  immersive drawing-plane color assertion failed; `drawioEditor` clicked a
+  hidden Piece-controls button intercepted by the visible stage toolbar; and
+  `editOutputConsistency` used an ambiguous SVG locator.
+- Shard 8 (`110830215878`): header/theme selectors, mobile header color
+  combobox, CMS home-hero content, immersive art-piece controls, immersive
+  collection, and injection-artifact assertions failed. The sampled log
+  extraction does not establish a first cause for every item in this shard.
+- Shard 9 (`110830215766`): #1111 inline 3D toolbar geometry (2/2), #1120 2D
+  toolbar geometry (2/2), interaction runtime (3/3), layers panel (3/3),
+  canonical legacy toolset routes, local-first 2D/3D/generated creation, and
+  local-only transfer consent passed. Failures: #669 live preview timed out;
+  #1087 local gallery card expected “Local card with preview” but no heading
+  appeared.
+- Shard 10 (`110830215866`): #943 local piece upload offer (2/2), #955 local
+  template creation (2/2), durable local workspace saves (6/6), folder bridge
+  (2/2), #513 media library, both #1150 manual 2D stage cases, both Mistral
+  credential cases, #1113 mobile 3D panel, and #1151 interaction runtime
+  assertions passed. Failures: #942 publish confirmation remained disabled;
+  #1114 manual 3D layout, publication lifecycle, and generated 3D manual edit
+  cases failed.
+- Shard 11 (`110830215785`): offline conflict/transport/media/ownership
+  scenarios, durable project lifecycle, public 2D page/route chrome, public
+  3D information architecture, proportions/material warnings, #1083/#1084
+  public-piece mobile layouts, #823 downloads, and #565 collection modes
+  passed. Failures included generated 2D fill/runtime-error/stage sizing;
+  #742 and public 3D camera overlay/immersive toolbar contracts; #690 public
+  generated-piece toolset; public drawing; and #564 gallery engine selection.
+- Shard 12 (`110830215870`): #799/#800 generated template parity failed
+  because profile updates were rejected; #706 toolbar placement exceeded its
+  expected stage boundary; #1139 intent-note E2E failed after switching to
+  375px because the Details region's `Expand Details panel` disclosure stayed
+  collapsed and the note field was hidden. Profile handle/photo/style flows,
+  3D project lifecycle/publication/package export also failed. The #1139
+  failure is a test-setup defect; `openDetailsPanel()` now opens that
+  in-scope disclosure at each viewport. Focused TypeScript, lint, formatting,
+  Playwright discovery (1 test), and diff checks passed locally; exact Linux
+  rerun is pending.
+- Shard 13 (`110830215775`): 3D project thumbnail cards, public 3D camera
+  overlays/placement/toolbar, public generated-piece toolsets, public drawing,
+  and gallery engine filtering failed. Public #1142 related-project cards
+  timed out.
+- Shard 15 (`110830215946`): #768 2D and #767 3D toolbar contracts, #823
+  collection downloads, #565 collection modes, responsive shell, #553 saved
+  models, and share metadata passed. Failures: atomic remix/fork setup;
+  #766 generated-piece toolbar variants; #1142 related public projects. The
+  reference-import case was skipped.
+
+This completes inspection of the six previously unread shard summaries, but
+not the required failure-by-failure reconciliation: shard 8 first causes and
+several timeout failures remain unclassified. The active Chrome tab became
+unresponsive during the requested CDP state read; GitHub connector logs were
+used as the source for CI records, with no Chrome restart or process
+termination attempted.
+
 The complete local `UV_CACHE_DIR=/tmp/codex-uv-cache-batch19 make check`
 finished successfully: backend Ruff check/format, mypy and pytest (2,012
 passed, 44 skipped); frontend lint, format, typecheck, Vitest (316 files,

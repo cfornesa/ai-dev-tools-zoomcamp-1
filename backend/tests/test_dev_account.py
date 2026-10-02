@@ -98,6 +98,10 @@ def test_status_reports_credential_presence_without_key_material(monkeypatch):
 @pytest.mark.django_db
 def test_fixture_cleanup_leaves_dev_account_and_owned_data(monkeypatch):
     monkeypatch.setenv("DEV_ACCOUNT_PASSWORD", "local-only-password")
+    from scenes.management.commands.e2e_fixtures import _database_fingerprint
+
+    monkeypatch.setenv("E2E_FIXTURE_ENVIRONMENT", "disposable-test")
+    monkeypatch.setenv("E2E_EXPECTED_DATABASE_FINGERPRINT", _database_fingerprint())
     _run("create")
     user = get_user_model().objects.get(username="dev_owner")
     project = Project.objects.create(owner=user, title="Persistent local project")

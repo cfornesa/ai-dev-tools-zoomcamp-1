@@ -15,6 +15,7 @@ def test_browser_qa_owns_disposable_stack_and_identity_probes():
     assert '"status"[[:space:]]*:[[:space:]]*"ok"' in script
     assert "whoami_status" in script
     assert 'E2E_ENV_FILE="$ENV_FILE"' in script
+    assert "export E2E_FIXTURE_ENVIRONMENT=disposable-local" in script
     assert 'for candidate in {5000..5099}' in script
     assert "npx playwright test e2e/layersPanel.spec.ts" in script
     assert 'E2E_SPEC="${BROWSER_QA_E2E_SPEC:-}"' in script
@@ -41,8 +42,14 @@ def test_vite_proxy_allows_browser_qa_to_avoid_an_occupied_backend_port():
 def test_playwright_fixture_hooks_accept_the_disposable_environment_file():
     for name in ("global-setup.ts", "global-teardown.ts"):
         hook = (ROOT / "frontend" / "e2e" / "support" / name).read_text()
-        assert "process.env.E2E_ENV_FILE" in hook
-        assert "['--env-file', configuredEnvFile]" in hook
+        assert "runFixtureCommand" in hook
+        assert "configuredEnvFile" not in hook
+
+    resolver = (ROOT / "frontend" / "e2e" / "support" / "fixtureCommand.ts").read_text()
+    assert "process.env.E2E_ENV_FILE" in resolver
+    assert "process.env.E2E_FIXTURE_ENVIRONMENT" in resolver
+    assert "['run', '--env-file', target.envFile" in resolver
+    assert "backend/.env is never selected implicitly" in resolver
 
 
 def test_playwright_disclosure_helper_handles_nested_closed_panels():

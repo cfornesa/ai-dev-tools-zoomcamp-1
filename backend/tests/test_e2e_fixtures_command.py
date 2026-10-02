@@ -18,9 +18,15 @@ from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
+from django.db import connection
 
-from scenes.management.commands.e2e_fixtures import E2E_USERS, PUBLIC_MEDIA_FIXTURE_SLUG
+from scenes.management.commands.e2e_fixtures import (
+    E2E_USERS,
+    PUBLIC_MEDIA_FIXTURE_SLUG,
+    _authorize_fixture_mutation,
+    _database_fingerprint,
+)
 from scenes.models import ForkProvenance, PieceIntakeAsset, Project, PublicProfile, SceneVersion
 
 BLANK_SCENE = json.loads(
@@ -32,6 +38,126 @@ BLANK_SCENE = json.loads(
         / "blank.json"
     ).read_text()
 )
+
+
+@pytest.fixture(autouse=True)
+def select_disposable_test_database(monkeypatch):
+    for key in (
+        "E2E_ENV_FILE",
+        "E2E_ALLOWED_DB_NAME",
+        "STAGING_SMOKE",
+        "E2E_DOCKER_COMPOSE",
+    ):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("E2E_FIXTURE_ENVIRONMENT", "disposable-test")
+    monkeypatch.setenv("E2E_EXPECTED_DATABASE_FINGERPRINT", _database_fingerprint())
+
+
+def fixture_record_counts():
+    User = get_user_model()  # noqa: N806
+    names = [name for name, _email in E2E_USERS.values()]
+    return (
+        User.objects.filter(username__in=names).count(),
+        Project.all_objects.filter(owner__username__in=names).count(),
+        SceneVersion.objects.filter(project__owner__username__in=names).count(),
+        PieceIntakeAsset.objects.filter(owner__username__in=names).count(),
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "action",
+    ["create", "cleanup", "reset-sessions", "public-media-create", "public-media-cleanup"],
+)
+@pytest.mark.parametrize(
+    "invalid_selection",
+    ["missing", "unknown", "staging", "env-file", "database-name", "fingerprint"],
+)
+def test_rejected_fixture_actions_leave_records_unchanged(
+    action, invalid_selection, monkeypatch, tmp_path
+):
+    call_command("e2e_fixtures", "create", "--json")
+    User = get_user_model()  # noqa: N806
+    owner = User.objects.get(username=E2E_USERS["owner"][0])
+    project = Project.objects.create(owner=owner, title="Protected fixture baseline")
+    SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=BLANK_SCENE,
+        origin=SceneVersion.Origin.MANUAL,
+        created_by=owner,
+    )
+    if action == "public-media-cleanup":
+        call_command("e2e_fixtures", "public-media-create", "--json")
+
+    if invalid_selection == "missing":
+        monkeypatch.delenv("E2E_FIXTURE_ENVIRONMENT")
+    elif invalid_selection == "unknown":
+        monkeypatch.setenv("E2E_FIXTURE_ENVIRONMENT", "production")
+    elif invalid_selection == "staging":
+        monkeypatch.setenv("E2E_FIXTURE_ENVIRONMENT", "disposable-staging")
+        monkeypatch.delenv("STAGING_SMOKE", raising=False)
+    elif invalid_selection == "env-file":
+        monkeypatch.setenv("E2E_FIXTURE_ENVIRONMENT", "disposable-local")
+        monkeypatch.delenv("E2E_ENV_FILE", raising=False)
+    elif invalid_selection == "database-name":
+        env_file = tmp_path / "disposable.env"
+        env_file.write_text("DATABASE_URL=not-used-by-test\n")
+        monkeypatch.setenv("E2E_FIXTURE_ENVIRONMENT", "disposable-local")
+        monkeypatch.setenv("E2E_ENV_FILE", str(env_file))
+        monkeypatch.setitem(connection.settings_dict, "NAME", "durable_database")
+        monkeypatch.delenv("E2E_ALLOWED_DB_NAME", raising=False)
+    else:
+        monkeypatch.setenv("E2E_EXPECTED_DATABASE_FINGERPRINT", "not-the-selected-database")
+
+    before = fixture_record_counts()
+    assert before[0] > 0 and before[1] > 0 and before[2] > 0
+    with pytest.raises(CommandError, match="refused|requires|allowed|staging"):
+        call_command("e2e_fixtures", action, "--json")
+    assert fixture_record_counts() == before
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("environment", "database_name"),
+    [
+        ("disposable-local", "codex_local_test"),
+        ("disposable-ci", "creatrweb_e2e"),
+        ("disposable-compose", "gesture_studio"),
+        ("disposable-staging", "creatrweb_staging"),
+        ("disposable-test", ":memory:"),
+    ],
+)
+def test_each_disposable_environment_is_an_explicitly_authorized_target(
+    environment, database_name, monkeypatch, tmp_path
+):
+    monkeypatch.setenv("E2E_FIXTURE_ENVIRONMENT", environment)
+    monkeypatch.setitem(connection.settings_dict, "NAME", database_name)
+    if environment == "disposable-test":
+        monkeypatch.setenv("PYTEST_CURRENT_TEST", "fixture-policy-test")
+    else:
+        env_file = tmp_path / "disposable.env"
+        env_file.write_text("DATABASE_URL=fixture-only\n")
+        monkeypatch.setenv("E2E_ENV_FILE", str(env_file))
+    if environment == "disposable-compose":
+        monkeypatch.setenv("E2E_DOCKER_COMPOSE", "true")
+    if environment == "disposable-staging":
+        monkeypatch.setenv("STAGING_SMOKE", "1")
+    monkeypatch.setenv("E2E_EXPECTED_DATABASE_FINGERPRINT", _database_fingerprint())
+    assert _authorize_fixture_mutation("create") == _database_fingerprint()
+
+
+@pytest.mark.django_db
+def test_empty_database_name_does_not_match_an_unset_allowed_name(monkeypatch, tmp_path):
+    env_file = tmp_path / "disposable.env"
+    env_file.write_text("DATABASE_URL=fixture-only\n")
+    monkeypatch.setenv("E2E_FIXTURE_ENVIRONMENT", "disposable-local")
+    monkeypatch.setenv("E2E_ENV_FILE", str(env_file))
+    monkeypatch.delenv("E2E_ALLOWED_DB_NAME", raising=False)
+    monkeypatch.setitem(connection.settings_dict, "NAME", "")
+    monkeypatch.setenv("E2E_EXPECTED_DATABASE_FINGERPRINT", _database_fingerprint())
+    with pytest.raises(CommandError, match="database name must identify a disposable target"):
+        _authorize_fixture_mutation("create")
 
 
 @pytest.mark.django_db

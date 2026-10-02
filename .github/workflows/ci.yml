@@ -270,6 +270,7 @@ jobs:
           github.event.deployment_status.target_url
         }}
       E2E_FIXTURE_ENVIRONMENT: disposable-staging
+      E2E_ENV_FILE: ${{ github.workspace }}/backend/.env
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
@@ -371,6 +372,8 @@ jobs:
       AI_PROVIDER: fake
       DJANGO_DEBUG: "True"
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      E2E_FIXTURE_ENVIRONMENT: disposable-ci
+      E2E_ENV_FILE: ${{ github.workspace }}/backend/.env
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 

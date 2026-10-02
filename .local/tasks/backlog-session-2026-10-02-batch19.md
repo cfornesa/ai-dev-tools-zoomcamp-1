@@ -724,3 +724,29 @@ criterion-level QA PASS is comment `5956057113`; #1151 remains open under the
 red parent gate. Updated #1096 failure comment `5956065653` preserves the
 unreconciled full-matrix status. Do not close any issues until each current
 failure is mapped to a first cause and linked owner/next action.
+
+## Current-head Linux full-matrix rerun — 2026-10-02 (run #1112)
+
+User-authorized manual CI run [#1112](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37036827054)
+completed on exact SHA `41e45142f1e368028f03a16effbc3590ddeebc4a`. Workflow
+validation, backend checks, frontend checks (316 files / 3,228 Vitest tests),
+and disposable published-routing smoke passed. All 16 browser shards completed
+with FAIL: 126 failed cases across 82 unique spec files (124 Chromium, one
+Firefox, one WebKit), 387 passed, 22 skipped.
+Per-shard failed counts (shards 1–16): 5, 6, 7, 13, 4, 10, 8, 17, 2, 6, 3,
+15, 12, 5, 6, 7. Diagnostics artifacts are attached to the Actions run.
+Read-after-write verification confirms #1096 records this outcome, marks CI
+blocked, and keeps the one-to-one cause mapping/handoff pending; no issue was
+closed or newly filed.
+
+Issue-targeted Linux evidence within the matrix: #1134 activity history, #1139
+private intent-note editing, #1140 request-local intent-note disclosure, #1144
+public 3D proportions, and #1149 canonical 2D/3D Agent workflows passed their
+named scenarios; #1137 pairwise version comparison also passed. These are not
+full criterion/batch passes by themselves. The run still has failures that
+overlap open scopes #1103/#1104, #1144, #1149, #1150, #1153, and #1154; the
+current logs enumerate 126 test cases but the first-cause mapping and duplicate
+check across all 82 spec files is still incomplete. In particular, preserve
+#1104's atomic fork and lifecycle coverage; its fork still fails at the same
+public Remix-viewer assertion as PR smoke run #1111. No issue may close until
+the full mapping, owner handoff, and batch gate are satisfied.

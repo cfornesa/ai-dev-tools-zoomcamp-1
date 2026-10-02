@@ -694,7 +694,18 @@ viewport rather than the entire long page. Typecheck, lint (exit 0 with
 existing warnings), format check, Playwright discovery (3 tests), and
 `git diff --check` passed locally. The user-authorized manual Linux full
 matrix was dispatched in the active Chrome session as run [#1105](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37027709237)
-on exact SHA `a3d53bce507ad86414b68e508bf6738c6c199545`. It is queued; fresh
-shard evidence and complete batch reconciliation are pending. Do not close
-issues while the #1096 shared gate is red or its failure inventory remains
-unreconciled.
+on exact SHA `a3d53bce507ad86414b68e508bf6738c6c199545`. The result and
+targeted #1151 evidence are recorded below. Do not close issues while the
+#1096 shared gate is red or its failure inventory remains unreconciled.
+
+Run #1105 completed FAIL. Workflow validation, backend, frontend (316 files /
+3,228 Vitest tests), and disposable published-routing smoke passed. All 16/16
+browser shards failed: 126 cases (124 Chromium, one Firefox, one WebKit), 387
+passed, and 22 skipped across 82 unique failing spec files. The log is saved
+at `/private/tmp/run1105-failed.log`; shard 9 artifact `11235739026` confirms
+#1151's three interaction-runtime scenarios passed 3/3 with zero skips. Its
+four toggle-state images were inspected at exactly 1280×900 and 375×812. The
+criterion-level QA PASS is comment `5956057113`; #1151 remains open under the
+red parent gate. Updated #1096 failure comment `5956065653` preserves the
+unreconciled full-matrix status. Do not close any issues until each current
+failure is mapped to a first cause and linked owner/next action.

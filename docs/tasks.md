@@ -25999,8 +25999,15 @@ and no-closure rule remain until completion and full failure reconciliation.
 
 Commit `a3d53bce` changes the #1151 screenshot helper to retain viewport-sized
 captures. Typecheck, lint (exit 0 with existing warnings), format check,
-Playwright discovery (3 tests), and `git diff --check` pass locally. The
-user-authorized manual Linux full matrix is queued as [Actions run #1105](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37027709237)
-on exact SHA `a3d53bce507ad86414b68e508bf6738c6c199545`. Await its result and
-inspect the four #1151 images before updating issue QA. The #1096 batch gate
-remains FAIL pending full issue-impact reconciliation; no issue is closed.
+Playwright discovery (3 tests), and `git diff --check` passed locally. The
+user-authorized manual Linux full matrix [run #1105](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37027709237)
+completed on exact SHA `a3d53bce507ad86414b68e508bf6738c6c199545`. All 16
+browser shards failed: 126 cases (124 Chromium, one Firefox, one WebKit), 387
+passed, and 22 skipped across 82 unique failing spec files. Backend, frontend
+(316 files / 3,228 Vitest tests), workflow validation, and disposable
+published-routing smoke passed. Shard 9 artifact 11235739026 contains all
+four inspected #1151 captures at exactly 1280×900 and 375×812; all three
+`interactionRuntime.spec.ts` tests passed with zero skips. Comment 5956057113
+records issue-level PASS; #1151 remains open. Parent #1096's current FAIL is
+comment 5956065653. The batch gate remains FAIL pending full issue-impact
+reconciliation; no issue is closed.

@@ -477,6 +477,24 @@ Detailed failure evidence inspected in Chrome:
   [shard 16](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37004726979/job/110830215984).
   Shard 16 also shows the current `versionHistoryCompare` case passing and
   both `manual2dStageChrome` cases passing.
+- Targeted current-run pass: shard 3 executed
+  `e2e/aiIntentNotes.spec.ts` (`#1140`) and passed its sole Linux Chromium
+  case, including the disclosed note count and request-local exclusion. This
+  supplements the earlier focused pass, but does not classify the adjacent AI
+  failures in the same shard or satisfy #1096's batch reconciliation gate.
+- Additional completed shard details inspected in Chrome: shard 1 had failures
+  in `accountComponentStyles` (#1125 reduced-motion computed CSS expected
+  `0s`, observed `1e-05s`) and four `accountSettings` list-count assertions
+  (expected 11, observed 12); shard 2 had two keyboard section-order failures
+  (#555), one reorder handle-count failure (#677), an admin theme-generation
+  assertion, and two legacy 2D creation-menu route timeouts. Shard 4 failed
+  three obsolete 3D AI panel layout assertions, 2D/3D plan-review route
+  locators, one mobile existing-piece AI edit visibility case, and other
+  generated-piece editor/runtime scenarios. Shard 5 failed two six-engine
+  public iframe aspect-ratio assertions and a strict-mode `Piece controls`
+  locator in a hand-steering scenario. These failures are evidence for the
+  parent inventory only; most are outside the current open-issue manifest and
+  need duplicate/owner reconciliation before assigning or changing them.
 - These samples are not the complete 16-shard first-cause inventory. Parent
   #1096 requires every failure to be reconciled to an existing owner or a
   linked criterion-ready follow-up. Earlier #1074/#1082 records do not

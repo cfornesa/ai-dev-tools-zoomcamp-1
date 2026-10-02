@@ -25875,3 +25875,7 @@ to PR #1094. Stale run 36977291895 targets `8100a4b9`; corrected full 16-shard
 run 36977977163 and current-SHA PR run 36977676552 target `9db8a584` and are
 in progress. #1139's required rendered checks at 1280x900 and 375x812 remain
 outstanding, so the intent-note batch has not passed QA/reconciliation.
+
+### 2026-10-02 — Updated current-ref batch gate (run #1085)
+
+On product SHA `635d1213`, Linux run [#1085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37004726979) passed workflow validation, backend, frontend, and disposable published-routing smoke; all 16 browser shards failed. The intent-note E2E for #1140 passed 1/1 in shard 3. The full failure review remains incomplete: additional first causes in shards 1–5 and 14–16 are recorded in `.local/tasks/backlog-session-2026-10-02-batch19.md`; they include old account-setting contracts, stale AI creation routes, legacy AI panel selectors, and generated-piece viewport/control assertions. Do not count those as failures of the current issue batch without owner/duplicate reconciliation. The shared #1096 matrix gate remains FAIL, and the verified open issue inventory remains 21; no issue was closed during this continuation.

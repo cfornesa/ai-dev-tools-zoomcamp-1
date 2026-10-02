@@ -26250,16 +26250,27 @@ after all six scoped criteria passed. Focused Linux Chromium/PostgreSQL tests
 passed on authorized run #1122 / SHA `13d57ea`: `handGestureGuide.spec.ts`
 1/1 (shard 8) and `public3dProportions.spec.ts` 1/1 (shard 13). Local
 disposable-PostgreSQL E2E passed 2/2; retained 1280x900 and 375x812 screenshots
-were visually inspected. Scenario/assertion inventories remained 1/13 and
-1/12; frontend typecheck, lint, and format checks passed; no product source,
-backend, schema, dependency, or workflow files changed. The GitHub checklist
-was checked, QA PASS was posted, and read-after-write verified the issue is
-closed. Unrelated failures in the 16-shard run remain tracked under #1096.
+were visually inspected. At the helper-migration commit the guide/proportions
+expectation inventory stayed 13/12; the #1144 screenshot commit added two guide
+viewport assertions, so its final #1144-specific inventory was 15/12. Later
+#1159 work extended the same guide scenario further. Frontend typecheck, lint,
+and format checks passed; no product source, backend, schema, dependency, or
+workflow files changed. The GitHub checklist was checked, QA PASS was posted,
+and read-after-write verified the issue is closed. Unrelated failures in the
+16-shard run remain tracked under #1096.
 
 The run also passed #1158's focused `adminSettings.spec.ts` controls, desktop/
 mobile/breakpoint behavior, and named responsive-shell, public-shell, header,
 and theme-parity regressions. `accountShell.spec.ts` hit a Playwright screenshot
-capture protocol error in shard 2; retry that shard after the matrix completes
-before closing #1158. `aiAndRecovery.spec.ts` still has two autosave failures
-under #1103 (shard 3), so #1103 stays open. The full matrix is still pending
-shard 1; its final case mapping belongs to #1096.
+capture protocol error in shard 2; a targeted rerun is in progress.
+`aiAndRecovery.spec.ts` still has two autosave failures under #1103 (shard 3),
+so #1103 stays open. Run #1122 is complete with 16/16 browser shards failing
+(112 failed, 392 passed, 22 skipped). Workflow validation, backend, frontend,
+disposable published-routing smoke, public-media, and WebKit fullscreen checks
+passed; the matrix's remaining cases stay under #1096.
+
+### 2026-10-02 — #1158 issue-level closure and batch inventory
+
+Closed GitHub issue [#1158](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1158) as completed at 2026-10-02T22:21:16Z after posting the QA PASS comment. The focused Linux Chromium/PostgreSQL `adminSettings.spec.ts` scenarios passed 7/7 on shard 2; responsive shell, header, public shell, account shell/theme regression checks, and Linux frontend checks passed on the cited shards. Retained 375×812 and 1280×900 screenshots were inspected. For the restoration criterion, an isolated disposable PostgreSQL run with the mobile in-flow override temporarily removed reproduced the overlap at 375×812 (`metric definition 4 remains unobscured`, expected false, received true); the original CSS was restored immediately and has no diff. The full matrix remains failed under #1096 and was not used as a substitute for scoped evidence.
+
+Authenticated GitHub enumeration now shows five open issues: #1096, #1103, #1138, #1155, and #1156. #1096 is a triage parent, not an implementation target. Keep each child tied to its own acceptance evidence; next focus on issue-specific remediation/QA and close independently passing issues without waiting for an unrelated aggregate matrix verdict.

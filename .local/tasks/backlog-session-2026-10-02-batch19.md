@@ -958,10 +958,12 @@ Closed #1144 as completed after all six issue criteria passed. Its focused
 Linux Chromium/PostgreSQL tests passed: `handGestureGuide.spec.ts` 1/1 on
 shard 8 and `public3dProportions.spec.ts` 1/1 on shard 13. Local disposable
 PostgreSQL E2E was 2/2, and the retained 1280x900 / 375x812 screenshots were
-visually inspected. Titles/assertion counts are unchanged (1/13 and 1/12);
-typecheck, lint, and format checks pass; no prohibited source/workflow changes
-are present. GitHub issue checkboxes were checked, QA evidence was posted,
-and read-after-write confirms `closed` at 2026-10-02T21:50:44Z. The unrelated
+visually inspected. The helper-migration diff preserved its original 13 guide
+/ 12 proportions `expect(` occurrences; the #1144 screenshot commit then added
+two guide viewport assertions (final #1144-specific inventory: 1/15 and
+1/12). The later #1159 mobile-dialog work further extended the shared guide
+test. GitHub issue checkboxes were checked, QA evidence was posted, and
+read-after-write confirms `closed` at 2026-10-02T21:50:44Z. The unrelated
 full-matrix failures remain under #1096.
 
 Issue-specific Linux evidence also shows #1158's adminSettings scenarios
@@ -972,5 +974,26 @@ Playwright screenshot capture (`Page.captureScreenshot` protocol error), so
 that required regression is not yet accepted; retry the shard after the
 matrix completes before closing #1158. #1103 is still blocked by two
 `aiAndRecovery.spec.ts` autosave scenarios failing in shard 3; do not close.
-The full 16-shard result is still pending shard 1 and must be reconciled before
-final batch handoff. No new issue was filed.
+The original full 16-shard run #1122 completed on SHA `13d57ea`: all 16 browser
+shards failed, with **112 failed, 392 passed, and 22 skipped** across the
+full-suite shard commands. Workflow validation, backend, frontend, disposable
+published-routing smoke, shard-1 public-media targets, and shard-1 WebKit
+fullscreen regression passed. This exact run is not a green full matrix; map
+the remaining 112 failures against open work and keep #1096 open. A focused
+retry of shard 2 is in progress only to resolve #1158's transient
+`accountShell.spec.ts` screenshot-capture error. No new issue was filed.
+
+## 2026-10-02 — #1158 closed; current open inventory
+
+#1158 is closed on GitHub as completed (read-after-write: closed at
+2026-10-02T22:21:16Z). QA PASS comment records 7/7 issue-specific Linux
+`adminSettings.spec.ts` scenarios on shard 2, the named shell regressions and
+frontend checks, visual review of retained mobile/desktop screenshots, and a
+restoration run in which removing the mobile in-flow override reproduced the
+375×812 overlap. The temporary regression was restored; `frontend/src/index.css`
+has no diff. Full matrix failures remain under #1096.
+
+Fresh authenticated GitHub enumeration returns five open issues: #1096, #1103,
+#1138, #1155, and #1156. Treat #1096 as a parent triage tracker; continue
+independent child issue implementation and QA, then reconcile closure evidence
+against each child's acceptance criteria.

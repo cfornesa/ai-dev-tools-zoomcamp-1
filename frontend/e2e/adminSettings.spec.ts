@@ -48,6 +48,33 @@ async function currentFreePlan(context: BrowserContext) {
   return freePlan;
 }
 
+async function expectFocusedContentDoesNotOverlapDisplayToggles(
+  page: import('@playwright/test').Page,
+) {
+  await page.evaluate(() => {
+    document.body.tabIndex = -1;
+    document.body.focus();
+  });
+  for (let index = 0; index < 60; index += 1) {
+    await page.keyboard.press('Tab');
+    const overlap = await page.evaluate(() => {
+      const toggles = document.querySelector<HTMLElement>('.shell-display-toggles');
+      const focused = document.activeElement;
+      if (
+        !toggles ||
+        !(focused instanceof HTMLElement) ||
+        focused === document.body ||
+        toggles.contains(focused)
+      )
+        return false;
+      const a = toggles.getBoundingClientRect();
+      const b = focused.getBoundingClientRect();
+      return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    });
+    expect(overlap, 'focused page content must not sit under the display toggles').toBe(false);
+  }
+}
+
 test.describe('Admin settings: site title and plan policy (#422)', () => {
   let fixture: ReturnType<typeof requireE2EFixtures>;
   test.beforeAll(() => {
@@ -118,9 +145,34 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
         const definitions = continuity.getByText('Metric definitions');
         await definitions.click();
         await expect(continuity.locator('details')).toHaveJSProperty('open', true);
-        await continuity.screenshot({
+        await page.screenshot({
           path: testInfo.outputPath(`continuity-metrics-${viewport.width}x${viewport.height}.png`),
         });
+        if (viewport.width === 375) {
+          const definitionRows = continuity.locator('details li');
+          const displayToggles = page.locator('.shell-display-toggles');
+          for (let index = 0; index < (await definitionRows.count()); index += 1) {
+            const row = definitionRows.nth(index);
+            await row.scrollIntoViewIfNeeded();
+            const rowBox = await row.boundingBox();
+            const togglesBox = await displayToggles.boundingBox();
+            expect(rowBox).not.toBeNull();
+            expect(togglesBox).not.toBeNull();
+            if (rowBox && togglesBox) {
+              const intersects =
+                rowBox.x < togglesBox.x + togglesBox.width &&
+                rowBox.x + rowBox.width > togglesBox.x &&
+                rowBox.y < togglesBox.y + togglesBox.height &&
+                rowBox.y + rowBox.height > togglesBox.y;
+              expect(intersects, `metric definition ${index + 1} remains unobscured`).toBe(false);
+            }
+          }
+          await expectFocusedContentDoesNotOverlapDisplayToggles(page);
+          await displayToggles.scrollIntoViewIfNeeded();
+          await page.screenshot({
+            path: testInfo.outputPath('display-controls-after-content-375x812.png'),
+          });
+        }
 
         const titleInput = page
           .getByRole('form', { name: 'Site title settings' })
@@ -189,6 +241,37 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
         await context.close();
       });
     }
+  });
+
+  test('shared display controls stay in flow on mobile and remain usable across breakpoints', async ({
+    page,
+  }) => {
+    await loginViaUI(page, fixture.admin.email, fixture.password);
+    for (const viewport of [
+      { width: 375, height: 812 },
+      { width: 768, height: 900 },
+      { width: 1280, height: 900 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/gallery');
+      const toggles = page.locator('.shell-display-toggles');
+      await expect(toggles).toBeVisible();
+      await expect(toggles).toHaveCSS('position', viewport.width <= 767 ? 'static' : 'fixed');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        viewport.width,
+      );
+      if (viewport.width === 375) await expectFocusedContentDoesNotOverlapDisplayToggles(page);
+    }
+
+    const themeButton = page.getByRole('button', { name: /Switch to (light|dark) mode/i });
+    const initialTheme = await page.locator('html').getAttribute('data-theme');
+    await themeButton.click();
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme', initialTheme ?? '');
+
+    const motionButton = page.getByRole('button', { name: /Use (reduced|full) motion/i });
+    const initialMotionLabel = await motionButton.getAttribute('aria-label');
+    await motionButton.click();
+    await expect(motionButton).not.toHaveAttribute('aria-label', initialMotionLabel ?? '');
   });
 
   test('a stale revision is rejected with a conflict, leaving the previous value intact', async ({

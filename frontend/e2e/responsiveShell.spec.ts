@@ -165,9 +165,10 @@ test.describe('Responsive app shell', () => {
       await expectVisibleAndInViewport(
         page.getByRole('navigation', { name: 'Primary navigation' }),
       );
-      await expectVisibleAndInViewport(
-        page.getByRole('button', { name: /Use (reduced|full) motion/i }),
-      );
+      const displayToggles = page.locator('.shell-display-toggles');
+      const motion = displayToggles.getByRole('button', { name: /Use (reduced|full) motion/i });
+      await expect(displayToggles).toHaveCSS('position', 'static');
+      await expect(motion).toBeVisible();
       // Task #572: '/' now resolves anonymous visitors to the public
       // gallery instead of a standalone Home surface with its own
       // Google-specific sign-in CTA. The gallery's content panel is real,
@@ -176,6 +177,8 @@ test.describe('Responsive app shell', () => {
       // asserted visible.
       await expect(page.locator('.content-panel')).toBeVisible();
       await expectVisibleAndInViewport(page.getByRole('heading', { name: 'Public gallery' }));
+      await motion.scrollIntoViewIfNeeded();
+      await expectVisibleAndInViewport(motion);
       await expectNoHorizontalOverflow(page);
     });
 
@@ -311,6 +314,7 @@ test.describe('Responsive app shell', () => {
         await expectVisibleAndInViewport(accountLink);
         await expectVisibleAndInViewport(logoutButton);
         await expectVisibleAndInViewport(motion);
+        await expect(page.locator('.shell-display-toggles')).toHaveCSS('position', 'fixed');
         await expectNoOverlap(title, navigation);
         await expectNoOverlap(title, accountLink);
         await expectNoOverlap(title, logoutButton);
@@ -325,6 +329,9 @@ test.describe('Responsive app shell', () => {
         await expectVisibleAndInViewport(navigation);
         await expectVisibleAndInViewport(accountLink);
         await expectVisibleAndInViewport(logoutButton);
+        await expect(motion).toBeVisible();
+        await expect(page.locator('.shell-display-toggles')).toHaveCSS('position', 'static');
+        await motion.scrollIntoViewIfNeeded();
         await expectVisibleAndInViewport(motion);
         await expectNoOverlap(title, navigation);
         await expectNoOverlap(title, accountLink);

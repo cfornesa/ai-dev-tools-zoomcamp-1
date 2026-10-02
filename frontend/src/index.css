@@ -270,6 +270,16 @@ body {
   gap: 0.5rem;
 }
 
+@media (max-width: 767px) {
+  /* Keep the shared display controls in document flow so they cannot cover
+     page content or keyboard focus at narrow widths. Match account pages. */
+  .shell-display-toggles {
+    position: static;
+    justify-content: center;
+    margin: var(--site-density) auto;
+  }
+}
+
 .shell-theme-toggle,
 .shell-motion-toggle {
   position: static;

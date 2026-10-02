@@ -36,7 +36,7 @@ reconciliation.
 | #1152 | 14 | Open; re-scoped test implementation committed; updated boundary browser test pending | `510fcaf3`; Linux Chromium #1096 gate |
 | #1153 | 14 | Open; refined follow-up | E2E and Linux gate |
 | #1154 | 16 | Open; fake-provider Agent run follow-up | E2E/CI gate |
-| #1155 | 14 | Open; disposable fixture guard | Full browser/CI gate |
+| #1155 | 14 | Local criteria pass; Linux Chromium/full batch gate pending | Existing guard commit; explicit `gesture_studio_test` smoke 1/1, all fixture counts zero afterward |
 | #1156 | 16 | Open; implementation committed; batch QA pending | `e28a57a3`; batch gate and Linux full-matrix reconciliation |
 | #1157 | 16 | Implemented locally; issue QA PASS; GitHub QA note and batch Linux gate pending | `6b2f9cb1`; see focused/full backend evidence below |
 
@@ -387,6 +387,46 @@ issues in that shard are unrelated historical 3D/art/public-draw/gallery specs.
 This verifies the previously failing public 2D case, but does not establish the
 complete #1102 nine-spec union without the per-spec results across the other
 shards. Thus #1102 remains open and no GitHub issue was closed from this run.
+
+## #1155 fixture guard QA — local acceptance pass; Linux gate pending
+
+Re-read the refined #1155 contract, including its limitation that there is no
+push/dispatch/merge authorization in that issue note. Implementation intake was
+accepted for the committed shared fixture resolver, backend guard, workflow
+opt-in, and matching tests; no product code was changed during this QA pass.
+
+- Backend command regressions: `UV_CACHE_DIR=/tmp/codex-uv-cache-batch19 uv
+  run pytest tests/test_e2e_fixtures_command.py -q` → 41 passed. This covers
+  missing/invalid opts, unsafe/mismatched database targets, cleanup/create
+  rejection, and allowed disposable modes.
+- Frontend guard regressions: `npm test -- --run
+  src/e2e/fixtureCommand.test.ts` → 1 file / 6 tests passed.
+- Frontend required checks: `npm run typecheck && npm run lint && npm run
+  format:check` → passed; lint exits 0 with existing repository warnings.
+- Positive local E2E: `E2E_ENV_FILE=/tmp/codex-e2e-1155-isolated.env
+  E2E_FIXTURE_ENVIRONMENT=disposable-local
+  E2E_BASE_URL=http://127.0.0.1:5004 npm run test:e2e --
+  e2e/projectLifecycle.spec.ts --project=chromium
+  --grep='blank-canvas save/reload'` → 1 passed. The app was started with
+  `AI_PROVIDER=fake`, the explicit Vite proxy pointed at `127.0.0.1:8004`,
+  and Django read the env file targeting the isolated PostgreSQL database
+  `gesture_studio_test`. The first run surfaced the test database's missing
+  `0110_project_brief`–`0113` migrations; after applying migrations only to
+  that explicitly selected test DB, the same smoke passed.
+- Post-teardown read-only database audit on `gesture_studio_test`: 0 fixture
+  users, email/social rows, 2D projects/versions, 3D projects, ArtPieces/versions,
+  activity rows, or AI runs. The normal `gesture_studio` database was not used.
+- Linux Chromium and current 16-shard matrix are still pending. Existing full
+  matrix evidence is failed and stale relative to current HEAD; do not claim
+  this issue or the batch closed. Stage 4 actual Codex/GPT-6, substituted for
+  Claude Sonnet 5 Medium; Stage 3 independent-family review not run. Exact
+  next action: after explicit publication/CI authorization is reconciled,
+  push the reviewed branch and run the required Linux focused and full-matrix
+  gates, then record every residual first cause under #1096.
+
+Verdict: local fixture safety, frontend resolver, explicit-database create /
+test / cleanup behavior PASS; Linux acceptance and batch gate NOT VERIFIED.
+Keep #1155 open.
 
 ## #1156 Project3D activity QA — focused checks pass; batch gate open
 

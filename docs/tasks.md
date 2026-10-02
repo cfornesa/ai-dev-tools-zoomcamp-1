@@ -26051,3 +26051,28 @@ the running database is not verified disposable. The change is pushed to the
 authorized branch; fresh Linux Chromium/PostgreSQL evidence remains pending.
 Keep #1104 open and QA FAIL until the focused three-spec suite and shared
 matrix pass; if the dialog does not occur, return the cause to trace diagnosis.
+
+### 2026-10-02 — Close completed foundation and decision issues
+
+The owner called out that the batch had become over-focused on full-matrix CI
+as a metric. Reconciled and closed three issues on GitHub whose own acceptance
+criteria were independently complete:
+
+- #1100: all six server-backed 3D helper scenarios passed in Linux Chromium
+  run #1074; its setup-only diff, preserved test inventories, and scope were
+  already QA-verified. The unrelated failures in the broader matrix are owned
+  by separate open issues and do not invalidate #1100's criteria.
+- #1129: the owner-selected D1 storage decision is recorded in
+  `DECISIONS.md`, and the dependent #1138–#1140 contracts follow it.
+- #1130: the owner-selected generalized history decision is recorded in
+  `DECISIONS.md` and `docs/ligdol-adaptation.md`; separate, milestoned follow-
+  ups #1156 and #1157 implement its two families.
+
+Follow-up reconciliation also closed #1139, #1140, and #1152 as completed on
+GitHub, using their existing issue-specific QA records: #1139's inspected
+desktop/mobile screenshots and Linux E2E; #1140's backend and fake-provider
+E2E contracts; and #1152's three Linux Layers-panel cases. The #1152 code SHA
+is an ancestor of the recorded Linux run. The open count is now 15.
+
+This does not mark #1096 or the full browser batch complete; the remaining
+open issues retain their own incomplete criteria and need focused work and QA.

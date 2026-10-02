@@ -27,7 +27,7 @@ reconciliation.
 | #1104 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5958690593; Linux run #1117 on `50f95f14` executed all three issue-owned specs on disposable PostgreSQL: 22 passed, 0 failed, 0 skipped. Two separate `authPolicy.spec.ts` failures are outside its impact row. |
 | #1129 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D1 recorded and dependent #1138–#1140 contracts implement the selected server-field design. |
 | #1130 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D2 recorded and split follow-ups #1156/#1157 created, milestoned, and sequenced; both are underway. |
-| #1138 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `d40f4a8a`; QA matrix posted; local backend criteria pass |
+| #1138 | 16 | QA: FAIL / docs-first chronology unresolved; latest shared Linux matrix remains red | `d40f4a8a`; refreshed QA `5962714826`; current-head `make check` and migration drift pass |
 | #1139 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5954588513`; Linux E2E, both inspected viewport artifacts, privacy, save/clear and accessibility criteria satisfied. |
 | #1140 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5950120078`; focused backend/panel checks and fake-provider Linux E2E satisfied the bounded note, request opt-out, snapshot/retry, and privacy criteria. |
 | #1143 | 16 | **Closed completed on GitHub 2026-10-02**; QA PASS comment 5961624588 | Full-history reviewable-proposal metric, 5-second PostgreSQL timeout, admin privacy/suppression, rendered desktop/mobile evidence, and frontend/backend checks passed. Note: GitHub closure left the body checklist unchecked; preserve the closed record and ask owner before creating a corrective follow-up. |
@@ -39,7 +39,7 @@ reconciliation.
 | #1153 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5958787980; Linux run #1117 executed all 13 Publishing/Remix and 3 responsive-shell tests on disposable PostgreSQL; all 16 passed, including populated-gallery at 375px. |
 | #1154 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958310474`; all 8 Linux Chromium fake-provider scenarios passed on the fixed target-aware contract, 0 skipped. |
 | #1155 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS posted after current-ref Linux evidence. `projectLifecycle.spec.ts` shard 13 passed 6/6; backend/frontend checks passed. The full run #1122 remains red on unrelated failures under #1096. Rejected-action tests snapshot every SQLite table row (41 focused backend tests pass). |
-| #1156 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `e28a57a3`; QA matrix posted; current-ref full matrix pending |
+| #1156 | 16 | QA: FAIL / docs-first chronology unresolved; latest shared Linux matrix remains red | `e28a57a3`; refreshed QA `5962707997`; current-head `make check` and migration drift pass |
 | #1157 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS comment `5959139975`; current-head Linux backend checks 2,012 passed / 44 gated skips, migration drift clean; populated-row forward/reverse migration, PostgreSQL concurrent transition and Linux full-matrix execution on descendant `fba45bc` verified. Aggregate matrix remains red on unrelated specs; #1096 stays open. |
 | #1158 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS: 7/7 Linux `adminSettings` cases, named shell regressions, screenshot review, and isolated restoration reproduction. |
 | #1159 | 14 | **Closed completed on GitHub 2026-10-02**; QA PASS comment 5961685465 | Portal dialog uses exported-viewer sizing; public, editor, immersive and generated-art mounts inspected at 1280x900/375x812; 12/12 focused union; all 11 issue criteria checked before closure. |
@@ -1041,3 +1041,29 @@ QA PASS was posted, and #1155 was closed completed after those checks.
 The live open issue inventory is now #1096, #1103, #1138, and #1156. Parent
 #1096 stays open for broad triage; its failed aggregate score does not block
 independent child closures when their own scoped Linux criteria pass.
+
+## 2026-10-02 — Fresh full-repository QA refresh
+
+At local HEAD `346eeee2`, `UV_CACHE_DIR=/tmp/codex-progress-20261002-cache make check`
+completed successfully: workflow pin validation, backend Ruff lint/format,
+mypy, backend pytest (2,056 collected), frontend lint/format/typecheck, and
+Vitest (316 files / 3,229 tests). The explicit
+`makemigrations --check --dry-run` command reported no model drift;
+`git diff --check` passed. The run used backend test settings/SQLite and local frontend
+tests; it is not production or PostgreSQL browser evidence.
+
+Refreshed stage-4 comments were posted in active Chrome:
+[#1138 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138#issuecomment-5962714826)
+and [#1156 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1156#issuecomment-5962707997).
+Both code/test contracts are accepted locally. Their docs-first chronology
+criteria remain unverifiable because docs and implementation were committed
+together; owner disposition is pending. Linux run #1122 executed after the
+dependent work, but its 16-shard matrix failed and residual first-cause
+mapping remains under #1096. These two issues remain open.
+
+No source files changed during this QA refresh. #1096 remains a parent
+triage issue with residual matrix failures; #1103 remains open because its
+initial-local-draft test assumption conflicts with current behavior and its
+setup-only contract disallows changing either product behavior or assertions
+without owner disposition. The exact open issue inventory remains #1096,
+#1103, #1138, and #1156.

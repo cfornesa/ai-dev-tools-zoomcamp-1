@@ -37,7 +37,7 @@ reconciliation.
 | #1153 | 14 | Open; refined follow-up | E2E and Linux gate |
 | #1154 | 16 | Open; fake-provider Agent run follow-up | E2E/CI gate |
 | #1155 | 14 | QA: FAIL / handed off at Linux verification boundary; current local evidence posted to GitHub | Existing guard commit; isolated `gesture_studio_test` smoke 1/1, all fixture counts zero afterward; Linux/full matrix pending |
-| #1156 | 16 | Open; implementation committed; batch QA pending | `e28a57a3`; batch gate and Linux full-matrix reconciliation |
+| #1156 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `e28a57a3`; QA matrix posted; current-ref full matrix pending |
 | #1157 | 16 | QA: FAIL / handed off at shared Linux batch gate; criterion matrix posted to GitHub | `6b2f9cb1`; focused union 125 passed / 4 skipped; full backend-check 2,012 passed / 44 skipped; configured PostgreSQL concurrency 1 passed |
 
 Stage owner provenance for this continuation: stage 1 / Codex (this session) /
@@ -431,7 +431,7 @@ Verdict: local fixture safety, frontend resolver, explicit-database create /
 test / cleanup behavior PASS; Linux acceptance and batch gate NOT VERIFIED.
 Keep #1155 open.
 
-## #1156 Project3D activity QA — focused checks pass; batch gate open
+## #1156 Project3D activity QA — local checks pass; chronology and batch gates open
 
 On the committed #1156 implementation (`e28a57a3`), focused regression checks
 passed: 169 backend tests / 5 skipped across Project3D activity, version and AI
@@ -440,11 +440,11 @@ intake, and conversion. `makemigrations --check --dry-run` reported no model
 drift. Run #1082 on the parent revision also passed the backend job; its full
 16-shard browser matrix failed, so the required #1096 Linux gate remains open.
 
-The Claude refinement adds a criterion to verify account deletion removes
-Project3D activity. The established #443 account-deletion contract soft-deletes
-local projects and retains their history during the 30-day grace period; the
-hard purge cascades the rows. `account_deletion.py` confirms that behavior for
-Project3D. I asked the owner whether the refinement means immediate activity
-erasure or the existing hard-purge timing. Until clarified, do not change
-retention behavior or claim that criterion passed. #1156 stays open; no issue
-state changed.
+The latest #1156 body explicitly says to preserve the existing retention
+behavior; account-deletion tests prove soft-deleted rows remain during the
+grace window and are removed at hard purge. Local criterion QA was posted in
+Chrome as `## QA: FAIL`: the code, privacy, export, cursor, writer, and
+regression criteria passed locally, but the `docs/api.md updated first`
+chronology cannot be established because the API docs and code are in the same
+implementation commit. The Linux full 16-shard gate is also pending. Keep
+#1156 open; do not infer docs-first ordering from the author's report.

@@ -225,7 +225,7 @@ async function captureMotionToggle(page: Page, state: 'reduced' | 'full'): Promi
     await toggle.scrollIntoViewIfNeeded();
     const name = `interaction-runtime-motion-${state}-${viewport.width}.png`;
     const screenshotPath = `test-results/${name}`;
-    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await page.screenshot({ path: screenshotPath });
     await test.info().attach(name, { path: screenshotPath, contentType: 'image/png' });
   }
 }

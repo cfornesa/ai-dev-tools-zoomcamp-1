@@ -25866,6 +25866,29 @@ conflicts with #142's one-shape-per-layer invariant; the owner has been asked
 whether to preserve or expand that contract. #1103 remains QA FAIL until this
 is resolved and its required Linux matrix runs.
 
+### 2026-10-02 — #1103 trace-based setup correction
+
+The current-head full matrix (run #1105, exact SHA `a3d53bce`) exposed three
+`aiAndRecovery.spec.ts` failures for #1103. Trace/network review found that the
+cancel/reopen scenario navigated back through the legacy `/projects/:id` shim
+instead of the canonical editor URL returned by the current server-backed
+helper; it now captures and reuses that URL without changing its assertions.
+The local/server-conflict reload was waiting on Chromium's native
+`beforeunload` dialog; commit `9ff7d3de` accepts that dialog in the test setup
+and asserts its type before checking the existing recovery prompt. Test titles
+and prior assertions are preserved; one setup assertion is added. The
+explicit-exit scenario still timed out at 90 seconds after reaching the
+Gallery, so it remains unresolved and has not been characterized as fixed.
+
+`npm run typecheck`, `npm run lint` (exit 0 with existing warnings),
+`npm run format:check`, `npx playwright test --list e2e/aiAndRecovery.spec.ts`
+(7 tests discovered), and `git diff --check` pass. The exact browser command
+was not run locally because `make compose-preflight` reports the Docker daemon
+unavailable and the running local database is not verified disposable. #1103
+remains open / QA FAIL; next run its documented four-spec Chromium command
+against a verified disposable PostgreSQL stack, diagnose the remaining timeout,
+and include it in the shared Linux gate.
+
 ### 2026-10-02 — 3D toolbar batch closures
 
 After the shared server-backed 2D setup, the 3D/mobile local regression union

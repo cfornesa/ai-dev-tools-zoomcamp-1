@@ -108,7 +108,7 @@
  * validation, versioning, accept/reject, draft persistence/cleanup, and
  * recovery — never prompt quality.
  */
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Dialog, type Page } from '@playwright/test';
 
 import { apiGet, apiPost, apiPut } from './support/api.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
@@ -127,6 +127,27 @@ import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
+
+/** Reload the dirty editor in browser runs where Chromium surfaces its
+ * native beforeunload confirmation. Recovery scenarios deliberately reload
+ * after seeding IndexedDB; accept only that browser guard so the app can
+ * mount and evaluate the recovery candidate. */
+async function reloadDirtyEditor(page: Page): Promise<void> {
+  const receivedDialogs: Dialog[] = [];
+  const handleDialog = (dialog: Dialog) => {
+    receivedDialogs.push(dialog);
+    void dialog.accept();
+  };
+
+  page.once('dialog', handleDialog);
+  try {
+    await page.reload();
+  } finally {
+    page.off('dialog', handleDialog);
+  }
+
+  expect(receivedDialogs[0]?.type()).toBe('beforeunload');
+}
 
 /**
  * Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
@@ -1084,6 +1105,7 @@ test.describe('Draft recovery', () => {
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
       const projectId = await createServerProject2D(page);
+      const editorUrl = page.url();
 
       await seedLocalDraft(page, {
         projectId,
@@ -1105,7 +1127,7 @@ test.describe('Draft recovery', () => {
       expect(await readLocalDraft(page, projectId)).not.toBeNull();
 
       // Reopening the project still offers the same draft for recovery.
-      await page.goto(`/projects/${projectId}`);
+      await page.goto(editorUrl);
       await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toBeVisible();
 
       await context.close();
@@ -1233,7 +1255,7 @@ test.describe('Draft recovery', () => {
         client_seq: 1_000_000,
       });
 
-      await page.reload();
+      await reloadDirtyEditor(page);
       const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
       await expect(prompt).toBeVisible();
       await prompt.getByRole('button', { name: 'Recover draft' }).click();

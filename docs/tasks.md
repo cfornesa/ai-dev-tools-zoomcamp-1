@@ -25907,5 +25907,10 @@ privacy. Its shard-12 artifact did not contain those images: Playwright's
 which the existing GitHub artifact upload omits. The test now also writes
 screenshots into its visible per-test result directory and attaches by path.
 Typecheck, lint (existing warnings), format, and E2E discovery passed. A fresh
-Linux run and visual screenshot inspection remain required before #1139 QA
-passes; the batch matrix remains red and reconciliation incomplete.
+Linux run is required before #1139 QA passes. The desktop image showed the
+field and helper text in the right-side Details panel; the 375px image showed
+the responsive stage/tabs but captured the page before scrolling down to the
+field. The test now scrolls the field into view before taking each screenshot
+so the artifact demonstrates the target metadata control at both widths. A
+fresh artifact must be inspected; the batch matrix remains red and
+reconciliation incomplete.

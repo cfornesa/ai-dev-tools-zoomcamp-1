@@ -1,6 +1,6 @@
-# LIGDOL adaptation plan (status: PROPOSED — filed as Batch 16; D1 decided, D2 pending)
+# LIGDOL adaptation plan (status: PROPOSED — filed as Batch 16; D1 and D2 decided, implementation in progress)
 
-Source: `LIGDOL_Creative_Continuity_Thesis.md` (local, gitignored) revised 2026-10-01 from the owner's two architecture diagrams. Scope rule from `DECISIONS.md` (2026-09-27) still holds: **this application stays an animation / generative-art studio**. LIGDOL is a long-term product thesis; this plan adopts only the parts that fit the existing Django + PostgreSQL + React/Vite + local-first architecture and the Replit deployment. Distilled with `.claude/skills/task-distillation` (backlog definition only; nothing here is implemented).
+Source: `LIGDOL_Creative_Continuity_Thesis.md` (local, gitignored) revised 2026-10-01 from the owner's two architecture diagrams. Scope rule from `DECISIONS.md` (2026-09-27) still holds: **this application stays an animation / generative-art studio**. LIGDOL is a long-term product thesis; this plan adopts only the parts that fit the existing Django + PostgreSQL + React/Vite + local-first architecture and the Replit deployment. Distilled with `.claude/skills/task-distillation`; selected slices are implemented locally and remain subject to issue-level and batch QA before closure or deployment.
 
 ## 1. Guardrails (apply to every Batch 16 issue)
 

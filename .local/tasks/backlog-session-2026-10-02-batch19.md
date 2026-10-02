@@ -166,6 +166,13 @@ Targeted current-batch evidence extracted from the completed shard logs:
   #5950120078 with the per-criterion matrix and stage substitutions. This is
   issue-level QA PASS only; run #1082's full 16-shard matrix failed, so #1140
   remains open pending batch reconciliation.
+- Owner reaffirmed the #1140 storage choice on 2026-10-02 after asking which
+  option best fits persistent project notes and repo standards: snapshot the
+  private project note onto `AIRun` at submission. This keeps retry context
+  stable when `Project.brief` changes and follows the existing server-side run
+  snapshot pattern. The private copy remains subject to the #1140 export,
+  privacy, and account-deletion checks; it must not be mixed into the prompt or
+  exposed in public responses.
 - #1154's complete eight-case Linux browser coverage is present in run #1082
   at the current tested SHA: `aiAgent2d.spec.ts` passed 4/4 in shard 2 and
   `aiAgent3d.spec.ts` passed 4/4 in shard 3, with no skips in either file.

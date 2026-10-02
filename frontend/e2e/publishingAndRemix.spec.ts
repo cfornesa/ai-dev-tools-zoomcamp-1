@@ -1446,7 +1446,7 @@ test.describe('Remix and fork', () => {
 
     // Durability across a source-side change: unpublishing the SOURCE
     // must never remove the fork's attribution -- only drop the link.
-    await ownerPage.goto(`/projects/${sourceId}`);
+    await ownerPage.goto(`/projects/${sourceId}`, { waitUntil: 'domcontentloaded' });
     await chooseDraft(ownerPage);
     await openPublicationStatus(ownerPage);
     await expect(ownerPage.getByTestId('visibility-status')).toContainText('Draft (private)');

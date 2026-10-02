@@ -25,7 +25,7 @@ reconciliation.
 | #1104 | 14 | Open; QA failures carried from batch 18 | Resolve linked failures; Linux Chromium |
 | #1129 | 16 | QA: PASS; decision comment and design record verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
 | #1130 | 16 | QA: PASS; decision and split follow-ups verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
-| #1138 | 16 | Implemented locally; batch QA pending | `d40f4a8a`; full impact/QA gate |
+| #1138 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `d40f4a8a`; QA matrix posted; local backend criteria pass |
 | #1139 | 16 | Implemented locally; browser/screenshot QA pending | `3019c228`, `271678ea`, `6cf487d7`; disposable E2E and inspect 1280x900 / 375x812 |
 | #1140 | 16 | Implemented locally; browser/CI criterion pending | `8100a4b9`; fake-provider E2E and full CI |
 | #1143 | 16 | Implemented locally; batch/CI reconciliation pending | Prior batch record; fresh CI evidence pending |
@@ -189,9 +189,8 @@ Targeted current-batch evidence extracted from the completed shard logs:
   #1096 are not complete. Do not claim a green or closure-ready matrix.
 
 GitHub state after this continuation: all 21 manifest issues remain open; no
-issue was closed. QA comments are posted for #1100, #1129, #1130, #1155, and
-#1157. No new
-follow-up issue was filed. #1157's refine-accept path remains eventless because
+issue was closed. QA comments are posted for #1100, #1129, #1130, #1138,
+#1155, #1156, and #1157. No new follow-up issue was filed. #1157's refine-accept path remains eventless because
 AI proposal events are out of scope; the existing regression asserts that
 behavior. This is an explicit implementation disposition, not an inferred
 owner response.

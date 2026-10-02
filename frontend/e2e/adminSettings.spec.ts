@@ -91,7 +91,7 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
 
   test('an admin can edit site title and plan caps, with save/cancel/error states, at both viewports', async ({
     browser,
-  }) => {
+  }, testInfo) => {
     test.setTimeout(60000);
 
     for (const viewport of VIEWPORTS) {
@@ -104,6 +104,23 @@ test.describe('Admin settings: site title and plan policy (#422)', () => {
         const before = await currentSiteSettings(context);
         await page.goto('/admin/settings');
         await expect(page.getByRole('heading', { name: 'Admin settings' })).toBeVisible();
+
+        // Issue #1143 requires inspection of the rendered aggregate panel at
+        // both viewports. Wait for either the suppressed-cohort or populated
+        // metrics state before retaining the viewport-sized capture.
+        const continuity = page.locator('.continuity-metrics');
+        await expect(continuity).toBeVisible();
+        await expect(
+          continuity
+            .getByText(/Not enough owners in this cohort|Reviewable proposals per project/)
+            .first(),
+        ).toBeVisible();
+        const definitions = continuity.getByText('Metric definitions');
+        await definitions.click();
+        await expect(continuity.locator('details')).toHaveJSProperty('open', true);
+        await continuity.screenshot({
+          path: testInfo.outputPath(`continuity-metrics-${viewport.width}x${viewport.height}.png`),
+        });
 
         const titleInput = page
           .getByRole('form', { name: 'Site title settings' })

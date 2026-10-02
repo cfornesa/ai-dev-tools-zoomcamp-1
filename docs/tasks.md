@@ -26173,3 +26173,14 @@ matrix is comment
 [#5958787980](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1153#issuecomment-5958787980);
 GitHub issue #1153 is closed as completed. The unrelated #1096 matrix remains
 open.
+
+### 2026-10-02 — #1143 admin-panel screenshot capture
+
+The existing admin settings E2E flow now captures the continuity panel at
+1280x900 and 375x812 using Playwright's disposable `e2e_admin` fixture. It
+waits for the populated or privacy-suppressed state, opens the metric
+definitions, and writes retained panel screenshots. It does not create or
+change user/project records for the capture. Typecheck, lint (existing
+repository warnings), format check, test discovery (6 tests), and
+`git diff --check` pass. Linux PostgreSQL execution and visual inspection
+remain pending before #1143 can close.

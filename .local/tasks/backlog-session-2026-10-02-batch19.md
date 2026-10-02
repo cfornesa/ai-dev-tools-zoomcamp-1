@@ -28,7 +28,7 @@ reconciliation.
 | #1138 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `d40f4a8a`; QA matrix posted; local backend criteria pass |
 | #1139 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5954588513`; Linux E2E, both inspected viewport artifacts, privacy, save/clear and accessibility criteria satisfied. |
 | #1140 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5950120078`; focused backend/panel checks and fake-provider Linux E2E satisfied the bounded note, request opt-out, snapshot/retry, and privacy criteria. |
-| #1143 | 16 | Implemented locally; batch/CI reconciliation pending | Prior batch record; fresh CI evidence pending |
+| #1143 | 16 | Implemented; exact desktop/mobile admin-panel captures added; Linux render and visual QA pending | Admin screenshot capture reuses `adminSettings.spec.ts`'s disposable `e2e_admin` fixture; inspect both images from Linux before criterion QA/closure. |
 | #1144 | 14 | Engineering: visual captures added; awaiting Linux rendered evidence | Linux Chromium/PostgreSQL exact two-spec run; inspect desktop/mobile screenshots; then criterion QA and GitHub reconciliation |
 | #1149 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958321151`; all 8 current Linux fake-provider 2D/3D Agent scenarios passed, 0 skipped; route changes confined to the two specs. |
 | #1150 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958366885`; Linux run #1116 passed all #1150-owned scene-Save paths with current fixture setup; unrelated #1103/#1104 failures remain separately owned. |
@@ -85,6 +85,7 @@ first-cause disposition of that timeout, and Linux batch gate.
 | `frontend/e2e/aiAndRecovery.spec.ts` | #1103 | #1096 shared matrix; #1150 save helper; #1151 interaction controls; #1152 layer order; #1154 fake-provider Agent flows | Commit `24197488` replaces the legacy ID-route reopen with the captured canonical editor URL and handles/asserts the observed native beforeunload during conflict reload. Re-run the unchanged scenario assertions and all 4 migrated specs together; the explicit-exit timeout remains unresolved. |
 | `frontend/e2e/publishingAndRemix.spec.ts` saved-source navigation | #1104 | #1150 Save helper; #1153 publication status; #1096 full browser gate | Commit `88b4085f` captures the canonical editor URL and adds explicit beforeunload handling/assertions around the previously stalled navigation; the trace establishes the hang but not its first cause. Existing scenario/assertions remain; typecheck, lint, format, discovery pass. Exact Chromium/PostgreSQL rerun and Linux evidence remain pending. |
 | `frontend/e2e/handGestureGuide.spec.ts`, `public3dProportions.spec.ts` | #1144 | #1096 Linux browser gate; #1100 server-backed 3D fixture contract | Add viewport screenshots at 1280x900/375x812 and assert no overflow; preserve fixture, publish→anonymous route, guide controls, ratios and counts. Inspect retained images from Linux PostgreSQL run before QA PASS. |
+| `frontend/e2e/adminSettings.spec.ts` continuity-panel capture | #1143 | #1096 Linux browser gate; existing #422 admin-settings scenarios in the same spec | Reuse the existing disposable `e2e_admin` route and capture the panel at the issue's exact desktop/mobile viewports; wait for a populated or correctly suppressed response. No settings or project records are changed for the capture. |
 | `frontend/src/pages/AIProposalPanel.tsx`, `AIRunPanel.tsx`, `useAIRun.ts`, `EditorWorkspace.tsx`, `frontend/e2e/aiIntentNotes.spec.ts` | #1140 | #1149 AI route retargeting; #1154 fake-provider Agent runs | Keep note disclosure confined to server-backed 2D Agent flow; per-request checkbox state resets; isolated E2E test checks disclosure and request opt-out. `aiAgent2d.spec.ts` test and expect counts are preserved for #1149. Current-SHA Linux CI run #36977977163 is the required browser evidence. |
 | Full `make check` and shared AI/backend tests | #1138–#1140 | #1143 and all other open issues | Current local union gate passed: backend lint/format/typecheck and 2,038 collected tests; frontend lint (existing warnings), format/typecheck and 3,228 Vitest tests. CI full 16-shard run completed with browser failures. |
 | `ProjectActivity` family FKs/constraint/index, shared activity view/cursor, 3D lifecycle and AIRun writers, private export, API docs | #1156 | #1133/#1148 2D projection/export; #1143 metrics; #1157 shared schema/view; #1096 Linux browser gate | Serialized after actual migration leaf `0111_airun_intent_note` as `0112`; preserved 2D response bytes with a golden test; separate 3D cursor salt; package intake/conversion/initial creation remain eventless; 2D metrics and public serialization unchanged. |
@@ -810,3 +811,16 @@ unpublish/public access, fork authorization and the populated 375px gallery.
 QA matrix comment `5958787980` was posted and read-after-write verified; issue
 #1153 is closed as `completed`. It shares the same successful run as #1104;
 no full-matrix pass is claimed.
+
+## #1143 — rendered admin evidence capture (2026-10-02)
+
+Added screenshot capture to the existing admin settings browser flow, using
+the disposable `e2e_admin` fixture already created by Playwright global setup.
+At each requested viewport it waits for either aggregate metrics or the
+expected small-cohort suppression, opens Metric definitions, and captures the
+whole rendered panel to `testInfo.outputPath`. This adds no user/project data
+writes and changes no application UI/API. `npm run typecheck`, lint (exit 0
+with existing warnings), format check, Playwright discovery (6 tests), and
+`git diff --check` pass. Run #1117 predates this capture. Linux E2E execution,
+screenshot inspection, and current issue-specific backend checks remain
+pending; #1143 stays open.

@@ -130,7 +130,7 @@ describe('EditorDetailsPanel', () => {
     await user.type(descriptionInput, 'Updated');
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
-    expect(await screen.findByText('Saved.')).toBeInTheDocument();
+    expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
     expect(mockedUpdateProjectMetadata).toHaveBeenCalledWith(
       'p1',
       expect.objectContaining({ description: 'Updated' }),
@@ -153,7 +153,7 @@ describe('EditorDetailsPanel', () => {
 
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
-    expect(await screen.findByText('Saved.')).toBeInTheDocument();
+    expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
     expect(mockedUpdateProjectMetadata).toHaveBeenCalledWith(
       'p1',
       expect.objectContaining({ allow_public_remix: false }),
@@ -191,7 +191,7 @@ describe('EditorDetailsPanel', () => {
     render(<Harness initialProject={baseProject()} />);
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
-    expect(await screen.findByText('Saved.')).toBeInTheDocument();
+    expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
   });
 
   describe('issue #128: imperative handle used by PublishControl to auto-persist', () => {
@@ -254,7 +254,7 @@ describe('EditorDetailsPanel', () => {
         'p1',
         expect.objectContaining({ description: 'Persisted' }),
       );
-      expect(await screen.findByText('Saved.')).toBeInTheDocument();
+      expect(await screen.findByRole('status')).toHaveTextContent(/saved/i);
     });
 
     it('save() surfaces a 400 field error via fieldErrors without clearing the typed value', async () => {

@@ -25914,3 +25914,13 @@ field. The test now scrolls the field into view before taking each screenshot
 so the artifact demonstrates the target metadata control at both widths. A
 fresh artifact must be inspected; the batch matrix remains red and
 reconciliation incomplete.
+
+The current-head #1098 Linux run (`37016152439`, SHA `b8138d1a`) uploaded
+visible 1280px and 375px captures. Both show the private intent field; the
+mobile field is in view and neither layout clips horizontally. The focused
+#1139 test reached its privacy-fixture publish step but received HTTP 400:
+saving the Details form cleared the description previously set through the API.
+The test now fills the description in the same form before saving. Formatting,
+lint, typecheck, and Playwright discovery pass; this correction needs a fresh
+Linux run before #1139 can pass QA. Run #1098's browser matrix remains red on
+multiple unrelated historical contracts.

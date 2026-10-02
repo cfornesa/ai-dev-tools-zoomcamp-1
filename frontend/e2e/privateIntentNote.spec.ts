@@ -95,6 +95,10 @@ test.describe('private intent note editor (#1139)', () => {
     ).toBeVisible();
     await expect(details.getByText('0 / 1,500 characters', { exact: true })).toBeVisible();
 
+    // Saving the Details form persists all metadata fields together. Keep the
+    // fixture publishable after this form save so the anonymous privacy check
+    // can inspect the public canonical route below.
+    await details.getByLabel('Description').fill('A valid public-route privacy fixture.');
     await note.focus();
     await note.pressSequentially(privateNote);
     await expect(details.getByText(`${privateNote.length} / 1,500 characters`)).toBeVisible();

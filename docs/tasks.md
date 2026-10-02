@@ -25897,3 +25897,15 @@ outstanding, so the intent-note batch has not passed QA/reconciliation.
 ### 2026-10-02 — Updated current-ref batch gate (run #1085)
 
 On product SHA `635d1213`, Linux run [#1085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37004726979) passed workflow validation, backend, frontend, and disposable published-routing smoke; all 16 browser shards failed. The intent-note E2E for #1140 passed 1/1 in shard 3. The full failure review remains incomplete: additional first causes in shards 1–5 and 14–16 are recorded in `.local/tasks/backlog-session-2026-10-02-batch19.md`; they include old account-setting contracts, stale AI creation routes, legacy AI panel selectors, and generated-piece viewport/control assertions. Do not count those as failures of the current issue batch without owner/duplicate reconciliation. The shared #1096 matrix gate remains FAIL, and the verified open issue inventory remains 21; no issue was closed during this continuation.
+
+### 2026-10-02 — #1139 screenshot artifact correction
+
+Linux run #1094 (`37012212894`, SHA `95c8e359`) passed both #1139 viewport
+scenarios (1280x900 and 375x812), including save/reload and public-route
+privacy. Its shard-12 artifact did not contain those images: Playwright's
+`test.info().attach({ body })` output uses a hidden attachment directory,
+which the existing GitHub artifact upload omits. The test now also writes
+screenshots into its visible per-test result directory and attaches by path.
+Typecheck, lint (existing warnings), format, and E2E discovery passed. A fresh
+Linux run and visual screenshot inspection remain required before #1139 QA
+passes; the batch matrix remains red and reconciliation incomplete.

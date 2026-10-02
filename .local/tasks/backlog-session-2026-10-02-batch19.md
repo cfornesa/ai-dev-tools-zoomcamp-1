@@ -581,3 +581,9 @@ inspect all 16 run #1085 shard summaries, map failures to open versus already
 closed contracts, run duplicate searches for genuinely new findings under the
 discovery gate, then close only criteria-complete issues with unaffected
 impact rows. No merge or deployment was performed.
+
+### 2026-10-02 — current-head run #1094 follow-up
+
+Manual Linux workflow [#1094](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37012212894) targets exact SHA `95c8e3599e3a753234b90ad52ea39f5503bf1ab8`. Backend, workflow validation, and disposable published-routing smoke passed; frontend Vitest failed its unrelated timing ceiling in `sceneDiff.test.ts` (85.87482ms vs 50ms, with 3,227/3,228 tests passing). Shard 12 confirms #1139's desktop/mobile save, reload, privacy, and geometry case passed. The uploaded artifact omitted the two screenshots because `test.info().attach({body})` writes them under a hidden path, which artifact upload excludes. The test now additionally writes visible per-test screenshot files and attaches by path; typecheck, lint (existing warnings), format, and one-test Playwright discovery passed. A fresh Linux run must upload these files before visual inspection; #1139 stays pending.
+
+This run also confirms shared CI remains red: all 16 E2E shards ultimately failed; failure-by-failure impact reconciliation is still underway. The current batch gate remains FAIL and no GitHub issue state is changed.

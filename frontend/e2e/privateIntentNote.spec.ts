@@ -31,8 +31,10 @@ async function expectDetailsLayout(page: Page, viewport: { width: number; height
   const details = await openDetailsPanel(page);
   const note = details.getByLabel('Intent notes (private)');
   await expect(note).toBeVisible();
+  const screenshotPath = test.info().outputPath(`private-intent-note-${viewport.width}px.png`);
+  await page.screenshot({ path: screenshotPath });
   await test.info().attach(`private-intent-note-${viewport.width}px`, {
-    body: await page.screenshot(),
+    path: screenshotPath,
     contentType: 'image/png',
   });
 

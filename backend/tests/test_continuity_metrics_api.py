@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -122,5 +123,86 @@ def test_continuity_metrics_timeout_is_retryable(monkeypatch):
     client.force_authenticate(admin)
 
     response = client.get(reverse("admin-continuity-metrics"))
+    assert response.status_code == 503
+    assert response.json()["retryable"] is True
+
+
+@pytest.mark.django_db
+@pytest.mark.skipif(
+    connection.vendor != "postgresql",
+    reason="The current test database is not PostgreSQL; skipping its aggregate query test.",
+)
+def test_continuity_metrics_aggregate_runs_on_postgresql():
+    user_model = get_user_model()
+    now = timezone.now()
+    owners = [
+        user_model.objects.create_user(username=f"pg-continuity-{index}") for index in range(5)
+    ]
+    project = Project.objects.create(owner=owners[0])
+    for owner in owners[1:]:
+        Project.objects.create(owner=owner)
+
+    def make_run(status, created_at):
+        run = AIRun.objects.create(
+            owner=owners[0],
+            target_type=AIRun.TargetType.PROJECT,
+            project=project,
+            operation=AIRun.Operation.CREATE,
+            prompt="private test content",
+            input_digest="b" * 64,
+            deadline_at=now + timedelta(days=1),
+            status=status,
+        )
+        AIRun.objects.filter(pk=run.pk).update(created_at=created_at)
+        return run
+
+    make_run(AIRun.Status.AWAITING_REVIEW, now - timedelta(days=3))
+    accepted = make_run(AIRun.Status.ACCEPTED, now - timedelta(days=2))
+    make_run(AIRun.Status.CANCELLED, now - timedelta(days=1))
+    accepted_at = now - timedelta(days=1)
+    accepted_activity = ProjectActivity.objects.create(
+        project=project,
+        actor=owners[0],
+        action_type=ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED,
+        metadata={"run_id": accepted.pk},
+    )
+    ProjectActivity.objects.filter(pk=accepted_activity.pk).update(created_at=accepted_at)
+    ProjectActivity.objects.create(
+        project=project,
+        actor=owners[0],
+        action_type=ProjectActivity.ActionType.AI_PROPOSAL_REJECTED,
+        metadata={"run_id": 42},
+    )
+    admin = user_model.objects.create_user(username="pg-continuity-admin")
+    ApplicationAdmin.objects.create(user=admin)
+    client = APIClient()
+    client.force_authenticate(admin)
+
+    response = client.get(reverse("admin-continuity-metrics"))
+
+    assert response.status_code == 200
+    first_cohort = response.json()["cohorts"][0]
+    assert first_cohort["suppressed"] is False
+    assert first_cohort["metrics"]["proposals_per_project"] == pytest.approx(0.6)
+    assert first_cohort["metrics"]["accepted_share"] == pytest.approx(1 / 3)
+
+
+@pytest.mark.django_db
+@pytest.mark.skipif(
+    connection.vendor != "postgresql",
+    reason="The current test database is not PostgreSQL; skipping its statement-timeout test.",
+)
+def test_postgres_statement_timeout_returns_retryable_503(monkeypatch):
+    from scenes import continuity_metrics
+
+    user_model = get_user_model()
+    admin = user_model.objects.create_user(username="pg-continuity-timeout-admin")
+    ApplicationAdmin.objects.create(user=admin)
+    client = APIClient()
+    client.force_authenticate(admin)
+    monkeypatch.setattr(continuity_metrics, "_aggregate_sql", lambda: "SELECT pg_sleep(6)")
+
+    response = client.get(reverse("admin-continuity-metrics"))
+
     assert response.status_code == 503
     assert response.json()["retryable"] is True

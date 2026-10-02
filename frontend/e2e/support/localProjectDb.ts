@@ -34,6 +34,7 @@ type TransferRow = {
 
 type DatabaseAction =
   | { kind: 'seed'; input: SeedInput }
+  | { kind: 'read-scenes'; projectId: string }
   | { kind: 'read-outbox'; projectId: string }
   | { kind: 'put-transfer'; record: TransferRow }
   | { kind: 'get-transfer'; transferId: string };
@@ -69,6 +70,7 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
           altText: string;
         },
       ): Promise<{ id: string }>;
+      listScenesForProject(db: IDBDatabase, projectId: string): Promise<unknown[]>;
     };
     const db = await repository.openLocalProjectDatabase();
     try {
@@ -125,6 +127,8 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
           });
           return rows.filter((row) => row.projectId === operation.projectId);
         }
+        case 'read-scenes':
+          return await repository.listScenesForProject(db, operation.projectId);
         case 'put-transfer': {
           await new Promise<void>((resolve, reject) => {
             const tx = db.transaction('mediaTransfers', 'readwrite');

@@ -58,6 +58,7 @@ import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { saveScene } from './support/saveScene.js';
 import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
+import { localProjectDb } from './support/localProjectDb.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -239,39 +240,49 @@ test.describe('Project lifecycle', () => {
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
       // "Hand follower" (scenes/fixtures/templates/hand_follower.json) has
-      // exactly one shape at positionX=400 — a stable, known baseline.
+      // exactly one shape at transform.x=400 — a stable, known baseline.
       await page.goto('/templates');
       await page
         .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
         .click();
-      await page.waitForURL(/\/projects\/[^/]+$/);
-      await expandAllCollapsibleSections(page);
+      await page.waitForURL(/\/local-projects\/[^/]+$/);
+      const firstProjectId = new URL(page.url()).pathname.split('/').at(-1)!;
+      await expect(page.getByRole('region', { name: 'Local project editor' })).toBeVisible();
+      const firstScenes = await localProjectDb<
+        Array<{ id: string; name: string; sceneJson: Record<string, unknown> }>
+      >(page, { kind: 'read-scenes', projectId: firstProjectId });
+      expect(firstScenes).toHaveLength(1);
+      const firstShapes = firstScenes[0]!.sceneJson.shapes as Array<{
+        transform: { x: number };
+      }>;
+      expect(firstShapes[0]!.transform.x).toBe(400);
 
-      await shapeListItem(page).first().click();
-      const clonePositionX = page.locator('#shape-style-positionX');
-      await expect(clonePositionX).toHaveValue('400');
-
-      // Edit and save this clone — this must never reach back into the
-      // shared Template row (TemplateCloneView deep-copies scene_json on
-      // clone with no mutable link back — scenes/api.py).
-      await clonePositionX.fill('777');
-      await clonePositionX.blur();
-      await openEditScene(page);
-      await saveScene(page);
-      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      // The local editor supports scene-name edits. Saving this clone must
+      // leave the template and a later clone at their original baseline.
+      await page.getByLabel('Scene name').fill('First clone only');
+      await page.getByRole('button', { name: 'Save local changes' }).click();
+      await expect(page.getByText('Saved local scene changes to this browser.')).toBeVisible();
 
       // Clone the same template again. If the first clone's edit had
-      // somehow touched the shared template, this second, independent
-      // clone would start from 777 instead of the template's own baseline.
+      // somehow touched the shared template, this second clone would carry
+      // the first clone's local scene name instead of its own baseline.
       await page.goto('/templates');
       await page
         .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
         .click();
-      await page.waitForURL(/\/projects\/[^/]+$/);
-      await expandAllCollapsibleSections(page);
-
-      await shapeListItem(page).first().click();
-      await expect(page.locator('#shape-style-positionX')).toHaveValue('400');
+      await page.waitForURL(/\/local-projects\/[^/]+$/);
+      const secondProjectId = new URL(page.url()).pathname.split('/').at(-1)!;
+      expect(secondProjectId).not.toBe(firstProjectId);
+      await expect(page.getByLabel('Scene name')).toHaveValue('Scene 1');
+      const secondScenes = await localProjectDb<
+        Array<{ id: string; name: string; sceneJson: Record<string, unknown> }>
+      >(page, { kind: 'read-scenes', projectId: secondProjectId });
+      expect(secondScenes).toHaveLength(1);
+      expect(secondScenes[0]!.id).not.toBe(firstScenes[0]!.id);
+      const secondShapes = secondScenes[0]!.sceneJson.shapes as Array<{
+        transform: { x: number };
+      }>;
+      expect(secondShapes[0]!.transform.x).toBe(400);
 
       await context.close();
     });

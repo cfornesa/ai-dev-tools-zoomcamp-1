@@ -211,6 +211,25 @@ async function saveAndReload(page: Page, expectedVersionText: RegExp): Promise<v
   await expandAllCollapsibleSections(page);
 }
 
+async function captureMotionToggle(page: Page, state: 'reduced' | 'full'): Promise<void> {
+  const viewports = [
+    { width: 1280, height: 900 },
+    { width: 375, height: 812 },
+  ];
+  const toggleName = state === 'reduced' ? 'Use full motion' : 'Use reduced motion';
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    const toggle = page.getByRole('button', { name: toggleName, exact: true });
+    await expect(toggle).toBeVisible();
+    await toggle.scrollIntoViewIfNeeded();
+    const name = `interaction-runtime-motion-${state}-${viewport.width}.png`;
+    const screenshotPath = `test-results/${name}`;
+    await page.screenshot({ path: screenshotPath, fullPage: true });
+    await test.info().attach(name, { path: screenshotPath, contentType: 'image/png' });
+  }
+}
+
 test.describe('Interaction runtime', () => {
   let fixtures: Fixtures;
 
@@ -351,6 +370,7 @@ test.describe('Interaction runtime', () => {
         'aria-pressed',
         'true',
       );
+      await captureMotionToggle(page, 'reduced');
       await openPieceControls(page);
 
       // Task 29's documented substitution: auto-advance turns off entirely
@@ -373,6 +393,7 @@ test.describe('Interaction runtime', () => {
         'aria-pressed',
         'false',
       );
+      await captureMotionToggle(page, 'full');
       await openPieceControls(page);
       await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toBeVisible();
 

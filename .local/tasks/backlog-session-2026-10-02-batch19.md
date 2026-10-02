@@ -32,8 +32,8 @@ reconciliation.
 | #1144 | 14 | Open; Linux/visual evidence pending | Full batch browser gate |
 | #1149 | 16 | Open; local failures tracked in batch 18 | Resolve #1154 path and Linux browser gate |
 | #1150 | 14 | Open; focused Linux scenarios pass; full batch gate pending | `7b13c231`; run #1082 on exact ancestor implementation |
-| #1151 | 14 | Open; focused Linux scenarios pass; full batch gate pending | `bd32cae9`; run #1082 on exact ancestor implementation |
-| #1152 | 14 | Open; re-scoped test implementation committed; updated boundary browser test pending | `510fcaf3`; Linux Chromium #1096 gate |
+| #1151 | 14 | Screenshot capture added; fresh Linux artifact and visual inspection pending | Focused typecheck/lint/format/discovery pass; run #1100's prior `interactionRuntime.spec.ts` 3/3 is before this test-only update |
+| #1152 | 14 | QA: PASS; awaiting batch impact reconciliation | `510fcaf3`; run #1100 `layersPanel.spec.ts` 3/3; QA comment `5955170400` |
 | #1153 | 14 | Open; refined follow-up | E2E and Linux gate |
 | #1154 | 16 | Open; fake-provider Agent run follow-up | E2E/CI gate |
 | #1155 | 14 | QA: FAIL / handed off at Linux verification boundary; current local evidence posted to GitHub | Existing guard commit; isolated `gesture_studio_test` smoke 1/1, all fixture counts zero afterward; Linux/full matrix pending |
@@ -68,6 +68,7 @@ Medium); the other issue matrices and comments remain in progress.
 | `frontend/e2e/support/saveScene.ts` and scene-save E2E call sites | #1150 | #1103 migration batch; #1151/#1152 assertions in `interactionRuntime`/`layersPanel`; #1096 Linux gate | Existing ancestor commit `7b13c231` scopes the canonical Save scene action. Run #1082 exact SHA includes this commit: named AI draft save passed; historical-version export passed; lifecycle save/history/restore cases passed; relevant publish setup passed. Full matrix still failed on a separate atomic-fork case in `publishingAndRemix`. |
 | `frontend/e2e/interactionRuntime.spec.ts` and shared editor control helpers | #1151 | #1150 `saveScene`; #1152 Layers panel ordering stays separate; #1096 Linux gate | Existing ancestor implementation retargets the motion toggle and current editor action helpers while preserving runtime/persistence assertions. Run #1082 exact SHA passed all 3 interactionRuntime cases (Linux Chromium/PostgreSQL). The overall 16-shard matrix failed elsewhere. |
 | `frontend/e2e/layersPanel.spec.ts` | #1152 | #1103 migration assertions; #1111/#1114 responsive 2D layout regression; #1150 save helper; #1151 shared current-editor controls; #1096 Linux gate | Commit `510fcaf3` adds explicit first/last layer-move enabled/disabled checks while retaining pointer+keyboard reverse, canvas/panel order, save/reload and no-duplicate assertions. Focused outline unit tests 127 passed, typecheck/lint/format/discovery passed; run #1082 passed the pre-boundary update scenario, but not the new boundary assertions. |
+| `frontend/e2e/interactionRuntime.spec.ts` | #1151 | #1103 migrated caller; #1111/#1114 mobile layout regressions; #1096 Linux gate | Retain desktop/mobile screenshots of both reduced and full motion toggle states as visible test artifacts; preserve the three existing scenario titles and all runtime behavior assertions. Current local preflight passes; exact Linux run required for fresh artifact inspection. |
 | `frontend/src/pages/AIProposalPanel.tsx`, `AIRunPanel.tsx`, `useAIRun.ts`, `EditorWorkspace.tsx`, `frontend/e2e/aiIntentNotes.spec.ts` | #1140 | #1149 AI route retargeting; #1154 fake-provider Agent runs | Keep note disclosure confined to server-backed 2D Agent flow; per-request checkbox state resets; isolated E2E test checks disclosure and request opt-out. `aiAgent2d.spec.ts` test and expect counts are preserved for #1149. Current-SHA Linux CI run #36977977163 is the required browser evidence. |
 | Full `make check` and shared AI/backend tests | #1138–#1140 | #1143 and all other open issues | Current local union gate passed: backend lint/format/typecheck and 2,038 collected tests; frontend lint (existing warnings), format/typecheck and 3,228 Vitest tests. CI full 16-shard run completed with browser failures. |
 | `ProjectActivity` family FKs/constraint/index, shared activity view/cursor, 3D lifecycle and AIRun writers, private export, API docs | #1156 | #1133/#1148 2D projection/export; #1143 metrics; #1157 shared schema/view; #1096 Linux browser gate | Serialized after actual migration leaf `0111_airun_intent_note` as `0112`; preserved 2D response bytes with a golden test; separate 3D cursor salt; package intake/conversion/initial creation remain eventless; 2D metrics and public serialization unchanged. |
@@ -601,8 +602,8 @@ Run #1100 shard 12 completed with #1139's `privateIntentNote.spec.ts` passing 1/
 The completed Linux full-matrix run #1100 (`37018043361`) targeted exact SHA
 `46d0696d5fcf9a2f73fa2ef0487f1e9df1992d4a`. Backend, frontend (316 files /
 3,228 tests), workflow validation, and disposable published-routing smoke
-passed. All 16/16 E2E shards failed: 125 failed cases across 80 unique spec
-files. The shared batch gate is FAIL. A current-run `## QA: FAIL` summary was
+passed. All 16/16 E2E shards failed: 127 failed cases across 80 unique spec
+files (125 Chromium, one Firefox, one WebKit). The shared batch gate is FAIL. A current-run `## QA: FAIL` summary was
 posted to parent #1096 as comment `5954772551`; no issue was closed.
 
 Targeted current-batch evidence: #1139 `privateIntentNote.spec.ts` passed 1/1
@@ -624,7 +625,53 @@ validated first-cause fix. Preserve #1103's setup-only and assertion-preserving
 scope: inspect traces for the hydration stalls and isolate the initial seeded
 draft at the fixture boundary before changing tests. #1103 remains QA FAIL.
 
-Full-matrix classification is incomplete: every one of 125 failed cases across
+Full-matrix classification is incomplete: every one of 127 failed cases across
 80 unique spec files still needs first-cause mapping, existing issue or linked
 follow-up, and owner/next action. Do not characterize the failures as wholly
 unrelated or close any issue before reconciliation and a green batch gate.
+
+## PR run #1101 — current-head smoke gate (2026-10-02)
+
+PR workflow [#1101](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37021439341)
+ran on commit `df0146f9f65d4c4146a3a94f2496ae5e6c634ffd`. Workflow
+validation, backend checks, frontend checks (316 files / 3,228 Vitest tests),
+and disposable published-routing smoke passed. Its browser smoke group ran
+24 tests: 21 passed and 3 failed; the full browser suite was skipped because
+the smoke gate failed. The active Chrome session was used to inspect the
+completed Actions run and confirm those job states.
+
+Two failures are the old `authPolicy.spec.ts` dark-shell assertions (signup
+policy copy absent; login body background computed transparent). This has no
+matching open issue after duplicate search; closed #516 is historical and is
+not reopened. Record as a candidate #1096 follow-up pending owner approval.
+The third failure is `publishingAndRemix.spec.ts`'s atomic-fork test waiting
+for `.public-project-viewer[data-project-kind="remix"]`; this remains in the
+existing #1104 lifecycle/publishing scope. Do not count this run as #1104's
+Linux acceptance or as a full-matrix run. The exact Linux current-head
+16-shard evidence remains run #1100 at code SHA `46d0696d`; its corrected
+total is 127 failures across 80 spec files (125 Chromium, one Firefox, one
+WebKit).
+
+The focused local `injectionArtifacts.spec.ts` attempt could not launch the
+bundled macOS Chromium: `MachPortRendezvousServer` returned Permission denied
+(1100) before test code started. CI shard 8's first cause was the helper's
+script-count expectation: the exported p5 demo contains six expected script
+elements (p5 loader, three JSON data blocks, runtime, toolbar runtime), while
+the test expects five; pwn markers and event-handler scans were clean. This
+is a stale test contract for closed #74, not evidence that hostile payloads
+executed. Keep it recorded under #1096; do not edit the tracking parent or
+create a new issue without owner approval.
+
+Correction: run #1100's 125 case count was Chromium-only. One Firefox and one
+WebKit case failed as well, making 127 total failures across 80 unique spec
+files. GitHub QA comment `5954772551` and this local ledger now state the
+correct breakdown. No issue was closed.
+
+Additional issue-level Linux evidence from run #1100: `interactionRuntime.spec.ts`
+passed 3/3 for #1151 and `layersPanel.spec.ts` passed 3/3 for #1152. #1152's
+owner-retargeted scope and boundary checks satisfy its issue criteria; its
+`## QA: PASS` comment `5955170400` is posted and read-after-write verified.
+The #1151 acceptance also requires screenshots of the motion toggle in both
+states at 1280x900 and 375x812; the run did not retain those screenshots, so
+#1151 remains issue-QA incomplete. Neither issue is closed while #1096's
+failure-by-failure impact reconciliation remains unfinished.

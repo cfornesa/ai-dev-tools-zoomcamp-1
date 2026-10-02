@@ -25938,8 +25938,8 @@ The completed Linux full-matrix run #1100
 ([Actions run](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37018043361))
 targeted exact SHA `46d0696d5fcf9a2f73fa2ef0487f1e9df1992d4a`. Backend,
 frontend (316 files / 3,228 tests), workflow validation, and disposable
-published-routing smoke passed. All 16/16 E2E shards failed: 125 failed cases
-across 80 unique spec files. The shared batch gate remains FAIL. A current-run
+published-routing smoke passed. All 16/16 E2E shards failed: 127 failed cases
+across 80 unique spec files (125 Chromium, one Firefox, one WebKit). The shared batch gate remains FAIL. A current-run
 `## QA: FAIL` summary was posted to #1096 as comment `5954772551`; no issue was
 closed.
 
@@ -25958,5 +25958,31 @@ timed out at 30 seconds while the page remained on “Opening the canonical
 editor…”. The artifacts prove these symptoms but not yet the hydration stall's
 first cause. Inspect the traces and isolate the helper's initial draft state
 while preserving #1103's setup-only scope and all assertions. #1103 remains QA
-FAIL. Reconcile all 125 cases across 80 spec files under #1096 before closing
+FAIL. Reconcile all 127 cases across 80 spec files under #1096 before closing
 any batch issue.
+
+Run #1100 also passed the Linux `interactionRuntime.spec.ts` and
+`layersPanel.spec.ts` suites (3/3 each). #1152 received a criterion-level
+`## QA: PASS` comment (`5955170400`) and remains open pending #1096 impact
+reconciliation. #1151 remains QA-incomplete because its refined contract
+requires inspected motion-toggle screenshots at 1280x900 and 375x812; those
+images were not retained in the run artifact.
+
+The #1151 E2E now saves four visible artifacts for the reduced/full motion
+toggle at 1280x900 and 375x812. Typecheck, lint (exit 0 with existing
+warnings), format check, Playwright discovery (3 tests), and diff checks pass.
+The exact local browser run is not attempted against the currently running
+server because its database target is not verified as disposable. Commit and
+fresh Linux/PostgreSQL artifact inspection are pending; see the Batch 19
+ledger.
+
+PR run #1101 (`37021439341`, exact SHA `df0146f9f65d4c4146a3a94f2496ae5e6c634ffd`)
+passed workflow validation, backend, frontend (316 files / 3,228 tests), and
+disposable published-routing smoke. Its browser smoke gate ran 24 tests (21
+passed, 3 failed), so the full browser suite was skipped. Failures were two
+stale `authPolicy.spec.ts` dark-shell assertions with no open duplicate after
+search, plus the atomic-fork `.public-project-viewer[data-project-kind="remix"]`
+lookup already within #1104. The closed #516 auth-shell contract is preserved;
+no new issue was filed pending owner approval. This is not full-matrix
+evidence. The current batch ledger records the first-cause review and the
+macOS Chromium launch boundary for the separate export-injection assertion.

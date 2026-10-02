@@ -26052,6 +26052,23 @@ authorized branch; fresh Linux Chromium/PostgreSQL evidence remains pending.
 Keep #1104 open and QA FAIL until the focused three-spec suite and shared
 matrix pass; if the dialog does not occur, return the cause to trace diagnosis.
 
+### #1104 correction after current Linux trace — 2026-10-02
+
+The current Linux run [#1116](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37042132246)
+completed `publishingAndRemix.spec.ts` in shard 15 and isolated the failure:
+the 32.9-second atomic-fork lifecycle reached the new assertion expecting a
+`beforeunload` dialog, but the dialog array was empty. The source editor was
+already open on that project, so navigating back and requiring a dialog was
+an incorrect test assumption introduced during QA. Removed the unnecessary
+navigation and dialog expectation; retained the 60-second budget for the
+multi-account lifecycle, all original scenario assertions, and exact original
+counts (16 tests / 164 expects, compared with the pre-QA-fix version). Static
+verification passes (`npm run typecheck`, `npm run lint` with existing
+warnings, `npm run format:check`, Playwright discovery: 13 tests,
+`git diff --check`). Browser verification of this correction remains pending;
+the current run predates it. #1104 remains open until the focused three-spec
+Linux Chromium check passes.
+
 ### 2026-10-02 — Close completed foundation and decision issues
 
 The owner called out that the batch had become over-focused on full-matrix CI

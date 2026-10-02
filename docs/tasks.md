@@ -26161,3 +26161,15 @@ CI smoke job's two failures were both `authPolicy.spec.ts` assertions, outside
 [#5958690593](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1104#issuecomment-5958690593);
 GitHub issue #1104 is closed as completed. The parent #1096 and unrelated
 issues remain open.
+
+### 2026-10-02 — #1153 completed
+
+The #1153 locator correction is in commit `230a8788`; both publisher helpers
+select the current visible control within the authenticated Primary editor
+actions group. In Linux run [#1117](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37045559174),
+all 13 Publishing/Remix and 3 Responsive shell scenarios passed against
+disposable PostgreSQL, including the 375px populated-gallery path. The QA
+matrix is comment
+[#5958787980](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1153#issuecomment-5958787980);
+GitHub issue #1153 is closed as completed. The unrelated #1096 matrix remains
+open.

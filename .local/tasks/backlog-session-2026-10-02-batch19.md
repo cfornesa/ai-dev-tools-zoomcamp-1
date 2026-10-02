@@ -34,7 +34,7 @@ reconciliation.
 | #1150 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958366885`; Linux run #1116 passed all #1150-owned scene-Save paths with current fixture setup; unrelated #1103/#1104 failures remain separately owned. |
 | #1151 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5956057113`; current source SHA `a3d53bce` is an ancestor of run #1105; all 3 Linux Chromium scenarios and four inspected 1280x900/375x812 motion-toggle artifacts passed. |
 | #1152 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5955170400`; run #1100 shard 9 passed all three Linux Chromium Layers-panel tests on a descendant of `510fcaf3`; retarget preserves #142. |
-| #1153 | 14 | Open; refined follow-up | E2E and Linux gate |
+| #1153 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5958787980; Linux run #1117 executed all 13 Publishing/Remix and 3 responsive-shell tests on disposable PostgreSQL; all 16 passed, including populated-gallery at 375px. |
 | #1154 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958310474`; all 8 Linux Chromium fake-provider scenarios passed on the fixed target-aware contract, 0 skipped. |
 | #1155 | 14 | QA: FAIL / handed off at Linux verification boundary; current local evidence posted to GitHub | Existing guard commit; isolated `gesture_studio_test` smoke 1/1, all fixture counts zero afterward; Linux/full matrix pending |
 | #1156 | 16 | QA: FAIL / docs-first chronology and Linux batch gate unverified | `e28a57a3`; QA matrix posted; current-ref full matrix pending |
@@ -799,3 +799,14 @@ The two failures in the combined smoke step were confined to unrelated
 Posted criterion matrix comment `5958690593` and verified GitHub issue #1104
 closed as `completed`. #1096 remains open; this closure does not claim the
 full suite passes.
+
+### #1153 completed in the shared #1104 surface
+
+The #1153 implementation commit `230a8788` retargets both publication helpers
+to the visible Publication status group inside authenticated Primary editor
+actions. Linux run #1117's 13 Publishing/Remix and 3 Responsive shell tests all
+passed on disposable PostgreSQL, including confirmation, invalid metadata,
+unpublish/public access, fork authorization and the populated 375px gallery.
+QA matrix comment `5958787980` was posted and read-after-write verified; issue
+#1153 is closed as `completed`. It shares the same successful run as #1104;
+no full-matrix pass is claimed.

@@ -132,11 +132,14 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
     await expect(page.getByTestId('ai-run-status')).toContainText(/accepted/i);
     await page.getByTestId('ai-run-start-new').click();
     await expect(page.getByTestId('ai-run-form')).toBeVisible();
-    // Accept persisted a real version -- the workspace's own preview now
-    // reflects it (still visible after switching back to the one-shot tab,
-    // proving the accepted scene actually replaced the working copy).
+    // Accept persisted a real version -- the generated shape is present in
+    // the canonical editor's Layers panel after switching back to One-shot.
     await page.getByRole('radio', { name: 'One-shot' }).click();
-    await expect(page.locator('.ai-editor-preview')).toBeVisible();
+    await expect(
+      page
+        .getByRole('region', { name: 'Layers' })
+        .getByRole('button', { name: 'AI generated circle', exact: true }),
+    ).toBeVisible();
   });
 
   test('edits only the selected foreground object while a background layer is locked', async ({

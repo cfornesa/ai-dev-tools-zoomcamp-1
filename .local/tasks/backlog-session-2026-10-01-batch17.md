@@ -4,7 +4,7 @@
 
 Repository: `cfornesa/ai-dev-tools-zoomcamp-1`, one codebase with local and Replit deployment tracks. `AGENTS.md` is an adaptation over the repository's existing documentation network (Case D was previously reconciled; `docs/process.md`, `docs/plan.md`, `docs/tasks.md`, and `docs/task-template.md` remain canonical). The checkout is on `docs/backlog-reevaluation-2026-09-27`, 120 commits ahead of its remote after this batch's two issue-scoped commits. No push or workflow dispatch was authorized. `DECISIONS.md` and `.agents/memory/MEMORY.md` contain no open REVIEW REQUIRED or PENDING CONFIRMATION gate. This run uses Codex directly because the available environment exposes no rostered implementation or QA services; service substitution must be marked in stage evidence.
 
-User-owned scope decisions carried forward: #1114 preserves 16:9 and places the rail below the stage; #1134 uses tabs; #1137 uses pairwise compare; #1108 targets the manual editor. The owner now rejects a 90-day activity-history cutoff for #1143. Lifetime history must remain available. A separate choice between bounded lifetime computation and rollups is still awaiting the owner; no dependent design is assumed.
+User-owned scope decisions carried forward: #1114 preserves 16:9 and places the rail below the stage; #1134 uses tabs; #1137 uses pairwise compare; #1108 targets the manual editor. For #1143, lifetime history must remain available; the owner selected an indexed full-history query with a hard timeout and retryable unavailable response, then asked to pause implementation while delivery/failure risk is evaluated.
 
 ## Live issue manifest (GitHub enumeration: 2026-10-01)
 
@@ -24,13 +24,14 @@ User-owned scope decisions carried forward: #1114 preserves 16:9 and places the 
 | #1138 | 16 | private intent field/API/export/deletion | #1129 | 2b | Dependency-blocked on owner decision #1129. |
 | #1139 | 16 | 2D private intent-note editor UI | #1138 | 2a | Dependency-blocked on #1129/#1138. |
 | #1140 | 16 | disclosed, bounded intent context in 2D AI prompts | #1138, #1139 | 2b | Dependency-blocked on #1129/#1138. |
-| #1143 | 16 | owner-only aggregate continuity metrics | #1131–#1133 (closed) | 2b | Grooming incomplete: preserve lifetime history, refine bounded-query contract. Owner has not selected lifetime query vs rollup architecture. |
+| #1143 | 16 | owner-only aggregate continuity metrics | #1131–#1133 (closed) | 2b | Owner selected indexed full-history query with hard timeout and retryable unavailable response; implementation paused at owner's request pending risk evaluation. |
 | #1144 | 14 | public 3D hand-gesture guide and proportions E2E fixtures | #1100 helper contract | 2a | Owner authorized current open-issue work; criteria specify exact routes/viewports. Implement after shared helper contract; Linux gate remains. |
 | #1149 | 16 | 2D and 3D persisted AI Agent E2E canonical routes | #1100 helper contract | 2a | Owner authorized current open-issue work; preserve fake-provider and distinct 2D/3D workflows. Implement after shared helper contract; Linux gate remains. |
 | #1150 | 14 | 2D AI-recovery and export Save control E2E selectors | discovered during #1103 | 2a | Newly filed after QA; hand off to a later transaction. |
 | #1151 | 14 | interaction-runtime editor control E2E locators | discovered during #1103 | 2a | Newly filed after QA; hand off to a later transaction. |
 | #1152 | 14 | same-layer keyboard reorder vs. canvas z-order behavior | discovered during #1103; follow-up to closed #127/#194 | 2b if behavior defect | Newly filed after QA; preserve both historical closures and hand off to a later transaction. |
 | #1153 | 14 | publication-status selector in publishing and responsive E2E | discovered during #1104 | 2a | Newly filed after QA; hand off to a later transaction. |
+| #1154 | 14 | successful fake-provider AI Agent runs on canonical 2D/3D editors | discovered during #1149 | 2b | Implemented; local QA passed. Linux Chromium/PostgreSQL issue gate remains open. |
 
 ## GitHub state audit — 2026-10-01
 
@@ -60,8 +61,27 @@ Fetched each of the 21 active issues listed above directly from GitHub. All 21 a
 2. **Wave B — 3D interaction batch:** after Wave A's 2D regression suite is green, verify #1111 → #1114 → #1110 and #1112 together against 2D regression, 3D stage geometry, exact route-level controls and screenshots. Existing implementation commits are preserved.
 3. **Wave C — parent CI reconciliation:** only after child matrix can run on Linux, dispatch/re-run the full 16-shard fixed-ref matrix and classify all residual failures before reconciling #1096/#1100/#1102–#1104/#1112/#1114/#1144/#1149.
 
-**Skipped, explicitly:** #1129 and #1130 require owner decisions; #1138–#1140 depend on #1129; #1143 awaits its lifetime-bounded query architecture choice. The macOS host's unavailable Docker daemon and absence of authorized remote dispatch leave all issue-specific Linux gates and the full-matrix gate unverified. No issue may close on local evidence when its live GitHub contract requires Linux.
+**Skipped, explicitly:** #1129 and #1130 require owner decisions; #1138–#1140 depend on #1129; #1143 implementation is paused at the owner's request after an architecture choice. The macOS host's unavailable Docker daemon and absence of authorized remote dispatch leave all issue-specific Linux gates and the full-matrix gate unverified. No issue may close on local evidence when its live GitHub contract requires Linux.
 
 ## Wave A checkpoint — #1103
 
 Commit `f98a564d` migrates the 45 helper call/import/definition references across the four named specs to the explicit server-backed helper, preserving the section-expansion wrappers. Per-file test/expect counts match base: 9/101, 4/55, 4/66, 4/26. Typecheck, lint (exit 0; existing warnings), formatting, and Playwright discovery pass. Against a fresh disposable local PostgreSQL database, fake-AI Django and Vite, exact Chromium batch result: 11 passed, 6 failed, 0 skipped. Failures: two current Save control locators (#1150), three interaction-runtime control locators (#1151), and one same-layer keyboard/canvas ordering mismatch (#1152). New findings are linked to #1096 and deferred under the separation-of-duties rule. #1103 stays open / QA FAIL; Linux gate unverified. Browser fixture users were cleaned by Playwright global teardown; the temporary database/services are pending cleanup at session end.
+
+## Wave E checkpoint — #1154
+
+`backend/scenes/ai_runs.py` now treats the root scene ID as document identity,
+while target-scoped validation still rejects document-field changes and
+collection reordering. The fake provider makes target-aware 2D/3D edit patches
+only when the prompt declares selected IDs; its no-target 2D success patch is
+byte-identical to the existing fixture. The 2D accept assertion now observes
+the generated shape in the canonical Layers panel rather than the retired AI
+preview. Existing run validation/retry limits and all eight scenario titles
+and substantive assertions are preserved.
+
+Verification on the disposable local PostgreSQL stack with `AI_PROVIDER=fake`:
+all 8 AI Agent Chromium scenarios passed, 0 skipped; focused backend tests
+passed (150 passed, 3 skipped); full `make backend-check` passed (lint,
+format, typecheck, 1,946 passed / 41 skipped); frontend typecheck, lint (exit
+0 with existing warnings), and format check passed. Required Linux Chromium /
+PostgreSQL evidence is unavailable on this macOS host, so #1154 remains open
+pending its explicit issue gate. No GitHub state transition was performed.

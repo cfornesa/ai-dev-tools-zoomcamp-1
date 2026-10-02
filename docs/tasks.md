@@ -25696,9 +25696,9 @@ session ledger.
 
 The #1143 time-window discussion is also reconciled: the owner rejects a
 90-day cutoff because quiet projects must retain full historical context.
-Keep lifetime activity visible. The bounded lifetime computation versus
-rollup architecture choice remains open; #1143 must stay in grooming until
-that contract is resolved.
+Keep lifetime activity visible. The owner selected an indexed full-history
+query with a hard timeout and retryable unavailable response; implementation
+is paused at the owner's request while they evaluate delivery/failure risk.
 
 ### 2026-10-01 — #1104 lifecycle/publishing fixture migration and GitHub state audit
 

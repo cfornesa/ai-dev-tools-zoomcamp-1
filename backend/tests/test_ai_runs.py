@@ -114,6 +114,46 @@ def test_run_scope_rejects_out_of_scope_changes_and_preserves_scene_scope_rules(
     assert ai_runs._validate_candidate_scope({"scope": "overhaul"}, before, overhaul) is None
 
 
+def test_target_scope_ignores_document_identity_but_guards_document_fields_and_order():
+    before = {
+        "id": "scene-before",
+        "canvas": {"width": 800, "height": 600},
+        "layers": [{"id": "layer-1"}],
+        "shapes": [
+            {"id": "shape-a", "type": "circle", "x": 1},
+            {"id": "shape-b", "type": "rect", "x": 1},
+        ],
+    }
+    edited = copy.deepcopy(before)
+    edited["id"] = "scene-after"
+    edited["shapes"][0]["x"] = 2
+    target_plan = {"scope": "targets", "target_ids": ["shape-a"]}
+
+    assert ai_runs._validate_candidate_scope(target_plan, before, edited) is None
+
+    edited["canvas"]["width"] = 900
+    assert ai_runs._validate_candidate_scope(target_plan, before, edited) == (
+        "target-scoped plans cannot modify document-level fields."
+    )
+
+    reordered = copy.deepcopy(before)
+    reordered["shapes"].reverse()
+    assert ai_runs._validate_candidate_scope(target_plan, before, reordered) == (
+        "target-scoped plans cannot reorder scene elements."
+    )
+
+
+def test_overhaul_treats_root_document_id_as_identity_not_removable_element():
+    before = {"id": "scene-before", "layers": [{"id": "layer-1"}], "shapes": []}
+    after = {
+        "id": "scene-after",
+        "layers": [{"id": "layer-1"}],
+        "shapes": [{"id": "shape-new", "type": "circle"}],
+    }
+
+    assert ai_runs._validate_candidate_scope({"scope": "overhaul"}, before, after) is None
+
+
 class _QueuedFakeProvider:
     """Returns one canned outcome per call, in order. Each outcome is
     either a scene dict (success) or an `AIErrorCategory` (failure). A
@@ -546,6 +586,185 @@ def test_3d_create_run_reaches_awaiting_review(monkeypatch, owner, project3d):
 
     assert run.status == AIRun.Status.AWAITING_REVIEW
     assert run.candidate_scene_json == MINIMAL_SCENE_3D
+
+
+@pytest.mark.django_db
+def test_fake_provider_agent_create_runs_reach_review_for_both_scene_families(
+    monkeypatch, owner, project, project3d
+):
+    from ai_provider.e2e_provider import build_e2e_provider
+
+    monkeypatch.setattr(
+        ai_runs, "_provider_for_user", lambda *args, **kwargs: build_e2e_provider("success")
+    )
+    base2d = SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=BLANK_SCENE,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project.current_version = base2d
+    project.save(update_fields=["current_version"])
+    base3d = SceneVersion3D.objects.create(
+        project=project3d,
+        sequence=1,
+        scene_json=MINIMAL_SCENE_3D,
+        created_by=owner,
+        origin=SceneVersion3D.Origin.MANUAL,
+    )
+    project3d.current_version = base3d
+    project3d.save(update_fields=["current_version"])
+
+    for target_type, target in (
+        (AIRun.TargetType.PROJECT, project),
+        (AIRun.TargetType.PROJECT3D, project3d),
+    ):
+        run = ai_runs.start_run(
+            owner=owner,
+            target_type=target_type,
+            target=target,
+            operation=AIRun.Operation.CREATE,
+            prompt="create a small scene",
+        )
+        advanced = ai_runs.advance_run(run)
+        assert advanced.status == AIRun.Status.AWAITING_REVIEW, (
+            target_type,
+            advanced.error_reason,
+            advanced.validation_summary,
+        )
+
+
+@pytest.mark.django_db
+def test_fake_provider_agent_selection_edits_only_the_declared_target(
+    monkeypatch, owner, project, project3d
+):
+    from ai_provider.e2e_provider import build_e2e_provider
+
+    monkeypatch.setattr(
+        ai_runs, "_provider_for_user", lambda *args, **kwargs: build_e2e_provider("success")
+    )
+    scene2d = copy.deepcopy(BLANK_SCENE)
+    scene2d["layers"] = [
+        {"id": "layer-target", "name": "Target", "order": 0, "visible": True, "locked": False},
+        {"id": "layer-other", "name": "Other", "order": 1, "visible": True, "locked": False},
+    ]
+    scene2d["shapes"] = [
+        {
+            "id": "shape-target",
+            "type": "circle",
+            "layerId": "layer-target",
+            "groupId": None,
+            "transform": {"x": 20, "y": 20, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1},
+            "style": {"fill": "#ff0000", "stroke": None, "strokeWidth": 0},
+            "radius": 10,
+        },
+        {
+            "id": "shape-other",
+            "type": "circle",
+            "layerId": "layer-other",
+            "groupId": None,
+            "transform": {"x": 40, "y": 40, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1},
+            "style": {"fill": "#00ff00", "stroke": None, "strokeWidth": 0},
+            "radius": 10,
+        },
+    ]
+    scene3d = copy.deepcopy(MINIMAL_SCENE_3D)
+    scene3d["objects"] = [
+        {
+            "id": "object-target",
+            "type": "box",
+            "groupId": None,
+            "transform": {
+                "position": {"x": 0, "y": 0, "z": 0},
+                "rotation": {"x": 0, "y": 0, "z": 0},
+                "scale": {"x": 1, "y": 1, "z": 1},
+                "opacity": 1,
+            },
+            "material": {"color": "#ff0000"},
+            "visible": True,
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+        },
+        {
+            "id": "object-other",
+            "type": "box",
+            "groupId": None,
+            "transform": {
+                "position": {"x": 2, "y": 0, "z": 0},
+                "rotation": {"x": 0, "y": 0, "z": 0},
+                "scale": {"x": 1, "y": 1, "z": 1},
+                "opacity": 1,
+            },
+            "material": {"color": "#00ff00"},
+            "visible": True,
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+        },
+    ]
+
+    version2d = SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=scene2d,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project.current_version = version2d
+    project.save(update_fields=["current_version"])
+    version3d = SceneVersion3D.objects.create(
+        project=project3d,
+        sequence=1,
+        scene_json=scene3d,
+        created_by=owner,
+        origin=SceneVersion3D.Origin.MANUAL,
+    )
+    project3d.current_version = version3d
+    project3d.save(update_fields=["current_version"])
+
+    for target_type, target, target_id in (
+        (AIRun.TargetType.PROJECT, project, "shape-target"),
+        (AIRun.TargetType.PROJECT3D, project3d, "object-target"),
+    ):
+        run = ai_runs.start_run(
+            owner=owner,
+            target_type=target_type,
+            target=target,
+            operation=AIRun.Operation.EDIT_PATCH,
+            scope=AIRun.Scope.SELECTION,
+            selected_target_ids=[target_id],
+            prompt="make the selected item blue",
+        )
+        assert (
+            f"Only modify the following existing element id(s): {target_id}."
+            in ai_runs._augmented_prompt(run)
+        )
+        advanced = ai_runs.advance_run(run)
+        assert advanced.status == AIRun.Status.AWAITING_REVIEW, (
+            target_type,
+            advanced.error_reason,
+            advanced.validation_summary,
+        )
+        candidate = advanced.candidate_scene_json
+        assert candidate is not None
+        records = (
+            candidate["shapes"] if target_type == AIRun.TargetType.PROJECT else candidate["objects"]
+        )
+        color_path = "style" if target_type == AIRun.TargetType.PROJECT else "material"
+        target_record = next(record for record in records if record["id"] == target_id)
+        other_record = next(record for record in records if record["id"] != target_id)
+        assert (
+            target_record[color_path][
+                "fill" if target_type == AIRun.TargetType.PROJECT else "color"
+            ]
+            == "#3366ff"
+        )
+        assert (
+            other_record[color_path]["fill" if target_type == AIRun.TargetType.PROJECT else "color"]
+            != "#3366ff"
+        )
 
 
 @pytest.mark.django_db

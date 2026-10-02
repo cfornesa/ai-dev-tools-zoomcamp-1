@@ -157,8 +157,8 @@ def _layer_recolor_patch(user_content: str) -> list[dict[str, Any]]:
         target_text = user_content.split("Only modify the selected element id(s):", 1)
     if len(target_text) != 2:
         return []
-    target_line = target_text[1].splitlines()[0]
-    target_ids = {value.strip().rstrip(".") for value in target_line.split(",")}
+    target_line = target_text[1].splitlines()[0].partition(".")[0]
+    target_ids = {value.strip() for value in target_line.split(",")}
     layers = scene.get("layers", []) if isinstance(scene, dict) else []
     target_layer_ids = {
         layer.get("id")
@@ -330,6 +330,31 @@ _REQUESTED_EDIT_MARKER = "\n\nRequested edit:\n"
 _STRETCH_MARKER = "\n\nStretch requested"
 
 
+def _selected_object_color_patch_3d(user_text: str) -> list[dict[str, Any]]:
+    """Color only explicitly selected 3D objects in the #1154 Agent fixture."""
+    if _CURRENT_SCENE_MARKER not in user_text or _REQUESTED_EDIT_MARKER not in user_text:
+        return []
+    scene_text, _, _ = user_text[len(_CURRENT_SCENE_MARKER) :].partition(_REQUESTED_EDIT_MARKER)
+    try:
+        scene = json.loads(scene_text)
+    except json.JSONDecodeError:
+        return []
+    target_text = user_text.split("Only modify the following existing element id(s):", 1)
+    if len(target_text) != 2:
+        return []
+    target_ids = {
+        value.strip() for value in target_text[1].splitlines()[0].partition(".")[0].split(",")
+    }
+    return [
+        {"op": "replace", "path": f"/objects/{index}/material/color", "value": "#3366ff"}
+        for index, obj in enumerate(scene.get("objects", []))
+        if isinstance(obj, dict)
+        and obj.get("id") in target_ids
+        and isinstance(obj.get("material"), dict)
+        and isinstance(obj["material"].get("color"), str)
+    ]
+
+
 def _drawing_plane_patch_3d(user_text: str) -> list[dict[str, Any]] | None:
     """Deterministic drawing-plane proposals for `AI_PROVIDER=fake` (#784).
 
@@ -439,9 +464,14 @@ class _E2EFakeChat3D:
                     if isinstance(m, dict) and m.get("role") == "user"
                 ]
                 drawing_patch = _drawing_plane_patch_3d(user_messages[-1] if user_messages else "")
+            selected_patch = None
+            if self.scenario == "success" and user_messages:
+                selected_patch = _selected_object_color_patch_3d(user_messages[-1])
             content = json.dumps(
                 drawing_patch
                 if drawing_patch is not None
+                else selected_patch
+                if selected_patch
                 else _EDIT_PATCH_3D_BY_SCENARIO.get(self.scenario, _EDIT_PATCH_3D_SUCCESS)
             )
         else:
@@ -504,6 +534,9 @@ class _E2EFakeChat:
                 if self.scenario == "layer-recolor"
                 else _asset_layer_patch(user_content)
                 if self.scenario == "add-asset-layer"
+                else _layer_recolor_patch(user_content)
+                if self.scenario == "success"
+                and "Only modify the following existing element id(s):" in user_content
                 else _EDIT_PATCH_BY_SCENARIO.get(self.scenario, _EDIT_PATCH_SUCCESS)
             )
             content = json.dumps(patch)

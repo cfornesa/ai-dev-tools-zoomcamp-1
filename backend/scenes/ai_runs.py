@@ -267,10 +267,10 @@ def _build_plan(
 def _scene_elements_by_id(scene_json: dict[str, Any] | None) -> dict[str, Any]:
     elements: dict[str, Any] = {}
 
-    def visit(value: Any) -> None:
+    def visit(value: Any, *, is_document_root: bool = False) -> None:
         if isinstance(value, dict):
             element_id = value.get("id")
-            if isinstance(element_id, str):
+            if isinstance(element_id, str) and not is_document_root:
                 elements[element_id] = value
             for child in value.values():
                 visit(child)
@@ -278,8 +278,45 @@ def _scene_elements_by_id(scene_json: dict[str, Any] | None) -> dict[str, Any]:
             for child in value:
                 visit(child)
 
-    visit(scene_json or {})
+    visit(scene_json or {}, is_document_root=True)
     return elements
+
+
+def _scene_scope_envelope(
+    scene_json: dict[str, Any] | None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Separate document fields and collection order from ID-addressable records."""
+    scene = scene_json or {}
+    record_collections = {
+        "shapes",
+        "layers",
+        "groups",
+        "bindings",
+        "lights",
+        "objects",
+    }
+    document_fields = {
+        key: value
+        for key, value in scene.items()
+        if key != "id" and key not in record_collections and key != "graph"
+    }
+    collection_order = {
+        key: [record.get("id") for record in records if isinstance(record, dict)]
+        for key in record_collections
+        if isinstance((records := scene.get(key)), list)
+    }
+    graph = scene.get("graph")
+    if isinstance(graph, dict):
+        document_fields["graph_fields"] = {
+            key: value for key, value in graph.items() if key not in {"nodes", "connections"}
+        }
+        collection_order["graph.nodes"] = [
+            record.get("id") for record in graph.get("nodes", []) if isinstance(record, dict)
+        ]
+        collection_order["graph.connections"] = [
+            record.get("id") for record in graph.get("connections", []) if isinstance(record, dict)
+        ]
+    return document_fields, collection_order
 
 
 def _descendant_ids(element: Any) -> set[str]:
@@ -321,6 +358,90 @@ def _scope_allowed_ids(plan: dict[str, Any], before: dict[str, Any] | None) -> s
     return set(elements := _scene_elements_by_id(before))
 
 
+def _validate_add_layer_scope(
+    before: dict[str, Any] | None,
+    after: dict[str, Any],
+) -> str | None:
+    before_layers: dict[str, dict[str, Any]] = {
+        layer["id"]: layer
+        for layer in (before or {}).get("layers", [])
+        if isinstance(layer, dict) and isinstance(layer.get("id"), str)
+    }
+    after_layers: dict[str, dict[str, Any]] = {
+        layer["id"]: layer
+        for layer in after.get("layers", [])
+        if isinstance(layer, dict) and isinstance(layer.get("id"), str)
+    }
+    added_layers = [
+        layer for layer_id, layer in after_layers.items() if layer_id not in before_layers
+    ]
+    if len(added_layers) != 1:
+        return "add-layer scope must add exactly one new layer."
+    changed = {
+        layer_id
+        for layer_id in set(before_layers) & set(after_layers)
+        if before_layers[layer_id] != after_layers[layer_id]
+    }
+    before_shapes: dict[str, dict[str, Any]] = {
+        shape["id"]: shape
+        for shape in (before or {}).get("shapes", [])
+        if isinstance(shape, dict) and isinstance(shape.get("id"), str)
+    }
+    after_shapes: dict[str, dict[str, Any]] = {
+        shape["id"]: shape
+        for shape in after.get("shapes", [])
+        if isinstance(shape, dict) and isinstance(shape.get("id"), str)
+    }
+    changed.update(
+        shape_id
+        for shape_id in set(before_shapes) & set(after_shapes)
+        if before_shapes[shape_id] != after_shapes[shape_id]
+    )
+    if changed:
+        return f"add-layer scope cannot modify existing element IDs: {sorted(changed)!r}."
+    added_shapes = [
+        shape
+        for shape_id, shape in after_shapes.items()
+        if shape_id not in before_shapes and shape.get("type") == "image"
+    ]
+    if len(added_shapes) != 1:
+        return "add-layer scope must add exactly one image shape."
+    return None
+
+
+def _validate_target_scope(
+    plan: dict[str, Any],
+    before: dict[str, Any] | None,
+    after: dict[str, Any],
+    before_elements: dict[str, Any],
+    after_elements: dict[str, Any],
+) -> str | None:
+    allowed = _scope_allowed_ids(plan, before)
+    before_document, before_order = _scene_scope_envelope(before)
+    after_document, after_order = _scene_scope_envelope(after)
+    if before_document != after_document:
+        return "target-scoped plans cannot modify document-level fields."
+    if before_order != after_order:
+        return "target-scoped plans cannot reorder scene elements."
+    changed = {
+        element_id
+        for element_id in set(before_elements) & set(after_elements)
+        if before_elements[element_id] != after_elements[element_id]
+    }
+    outside = (
+        changed
+        | (set(after_elements) - set(before_elements))
+        | (set(before_elements) - set(after_elements))
+    ) - allowed
+    if outside:
+        return (
+            f"plan scope {plan.get('scope')!r} permits only declared target IDs "
+            "and their children; "
+            f"out-of-scope element IDs: {sorted(outside)!r}."
+        )
+    return None
+
+
 def _validate_candidate_scope(
     plan: dict[str, Any] | None,
     before: dict[str, Any] | None,
@@ -333,73 +454,13 @@ def _validate_candidate_scope(
     after_elements = _scene_elements_by_id(after)
     scope = plan.get("scope")
     if scope == "add-layer":
-        before_layers: dict[str, dict[str, Any]] = {
-            layer["id"]: layer
-            for layer in (before or {}).get("layers", [])
-            if isinstance(layer, dict) and isinstance(layer.get("id"), str)
-        }
-        after_layers: dict[str, dict[str, Any]] = {
-            layer["id"]: layer
-            for layer in (after or {}).get("layers", [])
-            if isinstance(layer, dict) and isinstance(layer.get("id"), str)
-        }
-        added_layers = [
-            layer for layer_id, layer in after_layers.items() if layer_id not in before_layers
-        ]
-        if len(added_layers) != 1:
-            return "add-layer scope must add exactly one new layer."
-        changed = {
-            layer_id
-            for layer_id in set(before_layers) & set(after_layers)
-            if before_layers[layer_id] != after_layers[layer_id]
-        }
-        before_shapes: dict[str, dict[str, Any]] = {
-            shape["id"]: shape
-            for shape in (before or {}).get("shapes", [])
-            if isinstance(shape, dict) and isinstance(shape.get("id"), str)
-        }
-        after_shapes: dict[str, dict[str, Any]] = {
-            shape["id"]: shape
-            for shape in (after or {}).get("shapes", [])
-            if isinstance(shape, dict) and isinstance(shape.get("id"), str)
-        }
-        changed.update(
-            shape_id
-            for shape_id in set(before_shapes) & set(after_shapes)
-            if before_shapes[shape_id] != after_shapes[shape_id]
-        )
-        if changed:
-            return f"add-layer scope cannot modify existing element IDs: {sorted(changed)!r}."
-        added_shapes = [
-            shape
-            for shape_id, shape in after_shapes.items()
-            if shape_id not in before_shapes
-            and isinstance(shape, dict)
-            and shape.get("type") == "image"
-        ]
-        if len(added_shapes) != 1:
-            return "add-layer scope must add exactly one image shape."
-        return None
+        return _validate_add_layer_scope(before, after)
     if scope in {"scene", "overhaul"}:
         missing = set(before_elements) - set(after_elements)
         if missing:
             return f"plan scope {scope!r} cannot remove existing element IDs: {sorted(missing)!r}."
         return None
-    allowed = _scope_allowed_ids(plan, before)
-    changed = {
-        element_id
-        for element_id in set(before_elements) & set(after_elements)
-        if before_elements[element_id] != after_elements[element_id]
-    }
-    added = set(after_elements) - set(before_elements)
-    removed = set(before_elements) - set(after_elements)
-    outside = (changed | added | removed) - allowed
-    if outside:
-        return (
-            f"plan scope {scope!r} permits only declared target IDs and their children; "
-            f"out-of-scope element IDs: {sorted(outside)!r}."
-        )
-    return None
+    return _validate_target_scope(plan, before, after, before_elements, after_elements)
 
 
 def _validate_add_layer_assets(

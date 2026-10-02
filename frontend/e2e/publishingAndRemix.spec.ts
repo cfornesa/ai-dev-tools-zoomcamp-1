@@ -1452,7 +1452,7 @@ test.describe('Remix and fork', () => {
     await expect(ownerPage.getByTestId('visibility-status')).toContainText('Draft (private)');
     await closePublicationStatus(pieceActionsToolbar(ownerPage));
 
-    await anonPage.reload();
+    await anonPage.reload({ waitUntil: 'domcontentloaded' });
     const provenanceAfterUnpublish = anonPage.getByTestId('provenance');
     await expect(provenanceAfterUnpublish).toContainText(`Remixed from ${fixtures.owner.username}`);
     await expect(

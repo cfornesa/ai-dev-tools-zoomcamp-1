@@ -915,3 +915,33 @@ the Closed marker and repository count change.
 only outstanding direct acceptance gate. Existing branch push + CI dispatch is
 owner-authorized. #1096 remains a separate aggregate tracker and must not delay
 unaffected issue-specific closure.
+
+## 2026-10-02 — Current-turn full check and Linux batch dispatch
+
+Re-ran `UV_CACHE_DIR=/tmp/codex-batch19-uv-cache make check` on current branch
+head `13d57ea`: backend lint/format/typecheck and the full pytest suite passed
+(**2,012 passed, 44 skipped**); frontend lint/format/typecheck and the full
+Vitest suite passed (**316 files, 3,229 tests**). Lint exits were zero;
+existing warning output remains. The worktree was clean before this record.
+
+PR run [#1121](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37066902123)
+ran on the PR merge ref containing `13d57ea`. Workflow validation, backend,
+frontend, disposable published-routing smoke, public-media targets, and the
+WebKit fullscreen/Escape target passed. The routine one-shard Linux browser
+smoke failed **2 of 24** in `authPolicy.spec.ts` (missing signup policy copy;
+login body background is transparent); the other 22 passed and the full shard
+was skipped by the PR workflow. This reproduces the existing unmatched
+auth-shell candidate already assigned to #1096 triage; no new issue was filed.
+This smoke run does not cover #1158's admin-settings entry point and does not
+satisfy its Linux criterion.
+
+The already-authorized manual CI dispatch was started from active Chrome on
+branch `docs/backlog-reevaluation-2026-09-27`: [run #1122](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37067859980),
+at `13d57ea`. The workflow graph created all 16 isolated PostgreSQL Chromium
+shards. At the latest read, shards were still running; no issue closure is
+based on this pending run. Inspect its finished logs/artifacts for owned
+scenarios and rendered screenshots, map new failures against #1096 and
+existing open issues, then reconcile issue criteria and GitHub states.
+
+The #1143 checklist discrepancy remains pending owner authorization; no
+corrective issue was created. No merge occurred.

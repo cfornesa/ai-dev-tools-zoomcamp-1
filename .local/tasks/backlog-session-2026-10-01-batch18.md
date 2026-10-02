@@ -28,7 +28,7 @@
 | #1149 | 16 | #1100; local failures and #1154 dependency evidence in prior ledger; Linux pending | Open; implementation/verification reconciliation | prior ledger |
 | #1150 | 14 | Discovered E2E locator follow-up; local criterion passes, Linux pending | Open; verification-boundary | prior ledger |
 | #1151 | 14 | Owner-approved toggle contract; local criterion passes, Linux pending | Open; verification-boundary | prior ledger |
-| #1152 | 14 | Shared-layer desired behavior conflicts with #142 invariant | Open; owner decision required | not run |
+| #1152 | 14 | Owner selected preserve #142; retarget to layer-level keyboard moves | Open; local implementation and QA pass; Linux gate pending | implementation Codex GPT-6 substitution; stage 3 not run; QA Codex GPT-6 self-review substitution; Linux gate pending |
 | #1153 | 14 | Local fixture migration passes; Linux pending | Open; verification-boundary | prior ledger |
 | #1154 | 14 | Local fake-provider flow passes; Linux pending | Open; verification-boundary | prior ledger |
 | #1155 | 14 | Owner-authorized, refined data-mutation guard; this transaction | HANDED-OFF — local QA pass; Linux verification boundary | scope Codex GPT-6.1-sol / effort unavailable; impl Codex GPT-6.1-sol / effort unavailable, substituted yes; stage 3 not run; QA Codex GPT-6.1-sol / effort unavailable, substituted yes; stage 5 not run |
@@ -46,9 +46,22 @@
 | `backend/tests/test_browser_qa_configuration.py` | change | #1155 | #1096 and browser children through shared E2E setup | Existing source-contract assertion referenced per-hook env resolution; retargeted to assert the centralized fail-closed resolver contract | Focused test and full backend suite |
 | `AGENTS.md` | no edit | #1155 | operator instructions | Human-edited file; issue requires proposed patch in issue instead of local edit | Add suggested snippet to #1155 QA comment |
 
+## Impact matrix — #1152 layer-level keyboard reorder retarget
+
+| Surface | Kind | Issues in scope | Other open issues referencing / depending on surface | Collision / invalidation | Re-verification |
+|---|---|---|---|---|---|
+| `frontend/e2e/layersPanel.spec.ts` | change | #1152 | #1103; #1111/#1114; #1150/#1151 | Replaces invalid same-layer top-level shape premise with adjacent shape layers, then proves pointer/keyboard parity while preserving #142 and #194 invariants | Focused Chromium/PostgreSQL E2E, focused outline/component unit tests, full frontend suite and static checks; Linux Chromium/PostgreSQL remains required |
+
 ## Duplicate and dependency reconciliation
 
-No new independent issue discovered yet. #1155's shared-surface impact applies to existing browser issues but does not change their finite test criteria. The existing browser migration children are implemented and await Linux gates; local helper changes are sequenced after those implementation commits as refined. #1129/#1130 and #1152 remain owner-decision items. #1138–#1140 remain dependency-blocked; #1143 remains explicitly paused.
+No new independent issue discovered yet. #1155's shared-surface impact applies to existing browser issues but does not change their finite test criteria. The existing browser migration children are implemented and await Linux gates; local helper changes are sequenced after those implementation commits as refined. #1129/#1130 remain owner-decision items. #1152's owner decision resolved the conflict in favor of preserving #142, and its retargeted test passes locally; Linux remains the closure gate. #1138–#1140 remain dependency-blocked; #1143 remains explicitly paused.
+
+## #1152 implementation and QA evidence
+
+- Retargeted issue acceptance with the owner's decision to preserve #142; issue remains open pending Linux verification.
+- Changed `frontend/e2e/layersPanel.spec.ts` only: the spec creates separate shape layers, checks pointer reordering reverses both panel and canvas order, uses focus + Enter for keyboard Move down, checks original order restoration, then continues through save/reload persistence.
+- Focused outline/component unit tests: 127 passed. Full frontend Vitest: 316 files, 3,223 tests passed. Typecheck, format check, and lint exited successfully (lint reports existing repository warnings).
+- Isolated local PostgreSQL + installed Chrome: `layersPanel.spec.ts` 3 passed, 0 failed, 0 skipped. Linux Chromium/PostgreSQL has not run; keep #1152 open until that required gate passes.
 
 ## #1155 implementation and QA evidence
 

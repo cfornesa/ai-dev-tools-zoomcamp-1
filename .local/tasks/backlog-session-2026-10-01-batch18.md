@@ -3,7 +3,7 @@
 ## Batch record
 
 - Repository: `cfornesa/ai-dev-tools-zoomcamp-1`; one Django/React codebase with local and Replit deployment tracks.
-- Scope: currently open issue inventory refreshed through authenticated GitHub on 2026-10-01; issue #1155 is the only issue entering engineering in this transaction because its owner authorization and refined contract are explicit. Other ready E2E issues retain their previous implementation and Linux verification boundaries; owner-decision/dependency-blocked issues remain skipped with their state recorded below.
+- Scope: currently open issue inventory refreshed through authenticated GitHub on 2026-10-01. The initial engineering transaction implemented #1155 under explicit owner authorization; a later owner decision retargeted #1152 and its test correction was committed separately. Other ready E2E issues retain their previous implementation and Linux verification boundaries; owner-decision/dependency-blocked issues remain skipped with their state recorded below.
 - Branch/starting commit: `docs/backlog-reevaluation-2026-09-27` / `797a8732`.
 - Workflow boundary: owner authorization permits edits to `.github/workflows/ci.yml` only for #1155's existing E2E and staging jobs. No push, workflow dispatch, merge, production DB access, or shared DB fixture use.
 - Batch gate: **FAIL / verification boundary**. Local unit, static, and isolated PostgreSQL Chromium smoke checks pass; the Linux Chromium/PostgreSQL gate and full impacted 16-shard matrix remain unrun, so no issue closure is eligible.
@@ -62,6 +62,13 @@ No new independent issue discovered yet. #1155's shared-surface impact applies t
 - Changed `frontend/e2e/layersPanel.spec.ts` only: the spec creates separate shape layers, checks pointer reordering reverses both panel and canvas order, uses focus + Enter for keyboard Move down, checks original order restoration, then continues through save/reload persistence.
 - Focused outline/component unit tests: 127 passed. Full frontend Vitest: 316 files, 3,223 tests passed. Typecheck, format check, and lint exited successfully (lint reports existing repository warnings).
 - Isolated local PostgreSQL + installed Chrome: `layersPanel.spec.ts` 3 passed, 0 failed, 0 skipped. Linux Chromium/PostgreSQL has not run; keep #1152 open until that required gate passes.
+
+## Batch QA refresh — full static/unit gate and browser-run interruption
+
+- `UV_CACHE_DIR=/tmp/codex-uv-cache-1155 make check` exited 0 on macOS. Backend action-pin validation, Ruff lint/format, mypy, the full backend pytest suite, frontend lint/format/typecheck, and all 3,223 frontend Vitest tests passed. Frontend lint retains pre-existing warnings. The backend suite collected 2,024 cases; its PostgreSQL-only skips remain environment-gated.
+- A full Chromium suite attempt in the managed sandbox could not launch Chrome (`browserType.launch: Target page, context or browser has been closed` before application assertions). The identical unsandboxed attempt was interrupted at the owner's request to stop repeated browser launches; it produced no complete suite result and is not counted as QA evidence.
+- Per the owner's instruction, no further Playwright/Chrome process was launched. The existing Chrome extension session was used directly to open the isolated local app at `http://127.0.0.1:5012`; the gallery rendered, and only the task-created tab was closed. The temporary app servers, isolated PostgreSQL cluster, and E2E fixtures were stopped/removed; fixture counts were verified as zero before cluster removal.
+- Batch gate remains **FAIL / verification boundary** for E2E issues: the Linux Chromium/PostgreSQL checks and full fixed-ref 16-shard workflow have not been run. The repo remains local-only on the existing branch; no workflow dispatch or push occurred.
 
 ## #1155 implementation and QA evidence
 

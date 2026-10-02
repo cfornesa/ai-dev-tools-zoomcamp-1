@@ -849,6 +849,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     const pending = panel.getPendingDetails();
     const changed =
       pending.description !== project.description ||
+      pending.brief !== (project.brief ?? '') ||
       JSON.stringify(pending.tags) !== JSON.stringify(project.tags) ||
       pending.allowRemix !== project.allow_public_remix ||
       pending.exportAttribution !== project.export_attribution;

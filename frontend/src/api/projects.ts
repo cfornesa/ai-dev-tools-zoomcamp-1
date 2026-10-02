@@ -32,6 +32,8 @@ export type Project = {
   owner_handle?: string | null;
   title: string;
   description: string;
+  /** #1129: private project intent note included only in owner responses. */
+  brief?: string;
   seo_config?: SeoConfig;
   tags: string[];
   visibility: Visibility;
@@ -114,6 +116,7 @@ export type ProjectMetadataInput = Partial<
     Project,
     | 'title'
     | 'description'
+    | 'brief'
     | 'seo_config'
     | 'tags'
     | 'allow_public_remix'

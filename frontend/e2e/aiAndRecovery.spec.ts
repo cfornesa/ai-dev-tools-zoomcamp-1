@@ -115,7 +115,7 @@ import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiSc
 import { loginViaUI } from './support/auth.js';
 import { saveScene } from './support/saveScene.js';
 import { createServerProject2D } from './support/createProject.js';
-import { closePieceControlsMenu } from './support/openEditScene.js';
+import { closeEditScene, closePieceControlsMenu, openEditScene } from './support/openEditScene.js';
 import {
   readLocalDraft,
   readSessionId,
@@ -168,12 +168,7 @@ async function reloadDirtyEditor(page: Page): Promise<void> {
 async function openAuthoringControls(page: Page): Promise<void> {
   const addCircle = page.getByRole('button', { name: 'Add circle' });
   if (!(await addCircle.isVisible())) {
-    const pieceControlsMenu = page.getByRole('button', { name: 'Open piece controls menu' });
-    await expect(pieceControlsMenu).toBeVisible();
-    await pieceControlsMenu.click();
-    const editScene = page.getByRole('button', { name: 'Edit scene' });
-    await expect(editScene).toBeVisible();
-    await editScene.click();
+    await openEditScene(page);
   }
   await expect(addCircle).toBeVisible();
 }
@@ -908,6 +903,7 @@ test.describe('Local and server draft autosave', () => {
       // the test models the user's explicit dismissal rather than force-clicking
       // through the modal surface.
       await closePieceControlsMenu(page);
+      await closeEditScene(page);
       await page.getByRole('button', { name: 'Exit without saving' }).click();
       const dialog = page.getByRole('alertdialog', { name: 'Exit without saving?' });
       await expect(dialog).toBeVisible();

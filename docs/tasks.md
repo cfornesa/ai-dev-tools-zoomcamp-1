@@ -25782,15 +25782,36 @@ issue's explicit closure gate; #1102 stays open pending that evidence.
   environment/data boundary), `docs/conventions/testing.md`, and
   `docs/conventions/architecture.md` (environment-driven monolith setup).
 - **Milestone:** Batch 14; parent tracker #1096.
-- **Status:** PROPOSED; tracked in GitHub #1155.
+- **Status:** HANDED-OFF after local QA; #1155's Linux Chromium/PostgreSQL gate remains open as a verification boundary.
 - **Evidence:** Initial E2E run omitted `E2E_ENV_FILE`; global setup used
   the default local env file while the app server used an isolated test DB.
   The fixture lifecycle then reset and removed the deterministic test users
   and their dependent test-owned records from the default local database.
   Corrected browser runs aligned fixture setup/teardown with the isolated DB.
-- **Next action:** Implement and verify in a separate authorized batch; this
-  newly discovered issue is deferred from the current run under the backlog
-  session's discovery separation rule.
+- **Implementation choice:** The owner authorized #1155 after Claude Code
+  refined it. Option 1 is recorded in issue comment
+  [#5944562693](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1155#issuecomment-5944562693). The implementation is commit
+  `70d30d9b8ac8a5014462db0f712ce36fab548a91`; QA is recorded in
+  [comment #5944937281](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1155#issuecomment-5944937281).
+  A single fixture-command resolver now governs the five mutating actions;
+  Python validates the explicit disposable target and fingerprints the
+  database so later mutations match setup. The scoped CI edit only wires the
+  marker and env file into existing E2E and staging jobs. `AGENTS.md` remains
+  unedited; its operator note will be proposed in the QA issue comment.
+- **QA evidence:** Backend full suite 1,982 passed / 41 skipped; targeted
+  fixture, dev-account, and browser-harness regressions 56 passed. Frontend
+  full Vitest 3,223 passed; typecheck, lint, and format passed. A temporary
+  isolated PostgreSQL cluster completed `projectLifecycle.spec.ts` on
+  installed Chrome 6/6, and teardown left zero fixture users/projects/
+  versions. A rollback replay accepted an unmarked fixture lifecycle on the
+  pre-guard command; the guarded command rejected the same call without
+  writing rows. Ruff, mypy, actionlint, action pin, shell syntax, and diff
+  checks passed. Docker is unavailable locally, and the required Linux gate
+  was not dispatched.
+- **Next action:** Re-run the Linux Chromium/PostgreSQL E2E gate (including
+  the impacted 16-shard matrix) after the authorized branch is available to
+  CI; close #1155 only if that gate passes. No push or workflow dispatch was
+  authorized in this session.
 
 ### 2026-10-02 — #1103 residuals after #1151 owner decision
 

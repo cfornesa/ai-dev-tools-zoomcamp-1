@@ -26242,3 +26242,24 @@ new issues, so follow-up creation is pending that approval. Next action: ask
 whether to file a checklist-reconciliation follow-up; meanwhile proceed with
 independent open issues. #1158 has passed its local shared-shell matrix; its
 Linux Chromium/PostgreSQL criterion remains pending and is next in the CI run.
+
+### 2026-10-02 — #1144 issue-specific Linux QA closure
+
+Closed GitHub issue [#1144](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1144)
+after all six scoped criteria passed. Focused Linux Chromium/PostgreSQL tests
+passed on authorized run #1122 / SHA `13d57ea`: `handGestureGuide.spec.ts`
+1/1 (shard 8) and `public3dProportions.spec.ts` 1/1 (shard 13). Local
+disposable-PostgreSQL E2E passed 2/2; retained 1280x900 and 375x812 screenshots
+were visually inspected. Scenario/assertion inventories remained 1/13 and
+1/12; frontend typecheck, lint, and format checks passed; no product source,
+backend, schema, dependency, or workflow files changed. The GitHub checklist
+was checked, QA PASS was posted, and read-after-write verified the issue is
+closed. Unrelated failures in the 16-shard run remain tracked under #1096.
+
+The run also passed #1158's focused `adminSettings.spec.ts` controls, desktop/
+mobile/breakpoint behavior, and named responsive-shell, public-shell, header,
+and theme-parity regressions. `accountShell.spec.ts` hit a Playwright screenshot
+capture protocol error in shard 2; retry that shard after the matrix completes
+before closing #1158. `aiAndRecovery.spec.ts` still has two autosave failures
+under #1103 (shard 3), so #1103 stays open. The full matrix is still pending
+shard 1; its final case mapping belongs to #1096.

@@ -945,3 +945,32 @@ existing open issues, then reconcile issue criteria and GitHub states.
 
 The #1143 checklist discrepancy remains pending owner authorization; no
 corrective issue was created. No merge occurred.
+
+## 2026-10-02 — Linux matrix issue-level reconciliation
+
+The owner-authorized run #1122 reached 15 completed browser shards at the
+latest read: workflow validation, backend checks, frontend checks, and
+disposable published-routing smoke passed; 15 browser shards failed and shard
+1 remained in progress. These aggregate failures are tracked by #1096 and
+are being mapped to existing issue scopes. The run uses exact SHA `13d57ea`.
+
+Closed #1144 as completed after all six issue criteria passed. Its focused
+Linux Chromium/PostgreSQL tests passed: `handGestureGuide.spec.ts` 1/1 on
+shard 8 and `public3dProportions.spec.ts` 1/1 on shard 13. Local disposable
+PostgreSQL E2E was 2/2, and the retained 1280x900 / 375x812 screenshots were
+visually inspected. Titles/assertion counts are unchanged (1/13 and 1/12);
+typecheck, lint, and format checks pass; no prohibited source/workflow changes
+are present. GitHub issue checkboxes were checked, QA evidence was posted,
+and read-after-write confirms `closed` at 2026-10-02T21:50:44Z. The unrelated
+full-matrix failures remain under #1096.
+
+Issue-specific Linux evidence also shows #1158's adminSettings scenarios
+passed (including shared display controls across mobile/breakpoint sizes),
+and responsiveShell, headerMobile, publicShell, and accountThemeParity cases
+passed. The #1158 batch regression `accountShell.spec.ts` failed during
+Playwright screenshot capture (`Page.captureScreenshot` protocol error), so
+that required regression is not yet accepted; retry the shard after the
+matrix completes before closing #1158. #1103 is still blocked by two
+`aiAndRecovery.spec.ts` autosave scenarios failing in shard 3; do not close.
+The full 16-shard result is still pending shard 1 and must be reconciled before
+final batch handoff. No new issue was filed.

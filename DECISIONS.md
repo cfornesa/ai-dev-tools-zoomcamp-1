@@ -1,5 +1,19 @@
 # DECISIONS.md
 
+## 2026-10-02 — Owner authorizes Codex to edit ci.yml for #1155 (scoped)
+
+- The owner authorized Codex to edit `.github/workflows/ci.yml` for **#1155 only**
+  (fixture environment safety), limited to wiring `E2E_FIXTURE_ENVIRONMENT` and,
+  where missing, `E2E_ENV_FILE` into existing jobs (`e2e-browser`, any job that
+  reaches Playwright global setup/teardown; `staging-authenticated-smoke` stays on
+  `disposable-staging` + `STAGING_SMOKE=1`). This supersedes the "no workflow edits
+  authorized" line in the Batch 17 ledger for #1155 alone.
+- Not authorized: other workflow edits (jobs, triggers, matrix, secrets, weakened
+  checks), landing the workflow change before the guard, or any push, dispatch or
+  merge. Restoration: revert the guard and workflow edit together.
+- Recorded on the issue body and a comment; the instruction came from the owner
+  in chat, relayed by Claude Sonnet 5.5.
+
 ## 2026-10-01 — Implementation and QA move to session batches (issues stay atomic)
 
 - **Decision (owner):** issues are still created and groomed atomically, but

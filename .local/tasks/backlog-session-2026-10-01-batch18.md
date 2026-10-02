@@ -80,3 +80,11 @@ No new independent issue discovered yet. #1155's shared-surface impact applies t
 - Restoration proof: a temporary run of the pre-#1155 command accepted unmarked fixture create/cleanup against a fresh isolated database; restoring the guard caused the same unmarked create to fail with `Fixture mutation refused` and left counts at zero. No production/shared DB was involved.
 - Workflow validation: `scripts/check-github-action-pins.py`, `actionlint .github/workflows/ci.yml`, shell syntax, `git diff --check`, and resolver fallback search passed. No workflow dispatch or push.
 - `make browser-qa` could not use Docker because the daemon is unavailable, so QA used a temporary local PostgreSQL cluster. Linux CI was not run; the issue's explicit Linux Chromium/PostgreSQL gate and full affected E2E matrix remain the exact next action.
+
+## Current PR CI reconciliation — 2026-10-01
+
+- Read GitHub Actions run `36797311618` in the active Chrome/GitHub session and fetched the failed job log. The run tested PR #1094 head `c2ea356d8d5e969f2fc729ac04d2b71c4afed8c7`, not this checkout's `f8e711fe91ec523eb854eda2b9a1e612ba2806d3`.
+- Workflow validation, backend checks, frontend checks, and disposable published-routing smoke passed. The browser job's focused public-media and WebKit Escape steps passed. Its smoke suite had 15 failed, 3 not run, and 6 passed; every failure stopped at `frontend/e2e/support/createProject.ts:54`, where the stale UI helper waited for a server-backed edit response after current Gallery creation had moved local-first.
+- This cause is already tracked by #1100 and its migration children. Because the CI commit predates the local helper migrations and all current local changes, this run is diagnostic evidence only, not verification of those changes. It does not satisfy the Linux gate for #1100, #1102–#1104, or the full #1096 matrix.
+- GitHub's refreshed open-issue search returned 18 open issues: #1096, #1100, #1102–#1104, #1129–#1130, #1138–#1140, #1143–#1144, and #1149–#1155. In particular, #1152 remains open; no closure is inferred from local commits or QA notes.
+- Before this evidence update, the working tree had no uncommitted code changes; the branch was `ahead 138` of `origin/docs/backlog-reevaluation-2026-09-27`. No push, dispatch, or merge was performed.

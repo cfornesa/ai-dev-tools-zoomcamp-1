@@ -1,4 +1,4 @@
-# LIGDOL adaptation plan (status: PROPOSED — filed as Batch 16; owner decisions pending)
+# LIGDOL adaptation plan (status: PROPOSED — filed as Batch 16; D1 decided, D2 pending)
 
 Source: `LIGDOL_Creative_Continuity_Thesis.md` (local, gitignored) revised 2026-10-01 from the owner's two architecture diagrams. Scope rule from `DECISIONS.md` (2026-09-27) still holds: **this application stays an animation / generative-art studio**. LIGDOL is a long-term product thesis; this plan adopts only the parts that fit the existing Django + PostgreSQL + React/Vite + local-first architecture and the Replit deployment. Distilled with `.claude/skills/task-distillation` (backlog definition only; nothing here is implemented).
 
@@ -43,10 +43,10 @@ Slice E — **E1** owner-only continuity metrics (after A1, A2).
 
 Suggested start: A1 and A2 in parallel, then A3 → A4 → A5; B1 and C1 are independent and can fill gaps. M-slice waits for D1.
 
-## 4. Owner decisions requested
+## 4. Owner decisions
 
-- **D1 — where "intent notes" live** (recommended: per-project server field, 2D structured first). Alternatives: reuse account-level `AIPersona` only (zero schema, no per-project intent); or per-project local IndexedDB field sent with each AI request (local-first parity, but needs a local schema v6).
-- **D2 — history beyond 2D.** The activity log is keyed to the 2D `Project` model only. Options: (a) keep 2D-only for now; (b) make `ProjectActivity.project` nullable and add nullable `project3d`/`art_piece` FKs; (c) a new generic event table. Recommended: (a) until Slice A proves its value, then (c).
+- **D1 — RESOLVED 2026-10-02:** per-project server field on structured 2D `Project` (`brief`, max 1,500 characters). It remains private, is included in account JSON export, is cleared during account deletion, and does not change local-only project creation. Implement via #1138 → #1139 → #1140.
+- **D2 — RESOLVED 2026-10-02:** generalize the existing `ProjectActivity` table for structured 3D scenes and generated ArtPieces. Implement the 3D family first, then ArtPieces, with exactly one project-family FK per activity row and owner-only activity/export projections. Tracked separately by [#1156](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1156) and [#1157](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1157). No public activity feed is authorized.
 
 ## 5. Rollback and risk summary
 

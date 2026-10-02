@@ -173,6 +173,7 @@ def test_clone_own_private_template_succeeds(owner_client, private_template):
 
     assert response.status_code == 201
     assert response.json()["title"] == "Alice's private template"
+    assert response.json()["brief"] == ""
 
 
 @pytest.mark.django_db

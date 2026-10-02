@@ -111,7 +111,9 @@ def test_oauth_only_account_needs_no_password_but_still_needs_confirmation():
 @pytest.mark.django_db
 def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_user():
     user = _make_user("owner")
-    project = Project.objects.create(owner=user, title="My animation")
+    project = Project.objects.create(
+        owner=user, title="My animation", brief="private design intent"
+    )
     project3d = Project3D.objects.create(owner=user)
     piece = ArtPiece.objects.create(owner=user, engine=ArtPiece.Engine.CANVAS2D, prompt="a circle")
     SocialAccount.objects.create(user=user, provider="github", uid="12345")
@@ -135,6 +137,7 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     project3d.refresh_from_db()
     piece.refresh_from_db()
     assert project.is_deleted is True and project.deleted_at is not None
+    assert project.brief == ""
     assert project3d.is_deleted is True and project3d.deleted_at is not None
     assert piece.is_deleted is True and piece.deleted_at is not None
     assert not Project.objects.filter(pk=project.pk).exists()  # hidden by the default manager

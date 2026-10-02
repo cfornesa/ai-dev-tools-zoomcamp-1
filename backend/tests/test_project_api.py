@@ -176,6 +176,39 @@ def test_owner_can_update_metadata_without_creating_a_version(owner_client, priv
 
 
 @pytest.mark.django_db
+def test_owner_can_save_and_read_private_brief_with_control_characters_stripped(
+    owner_client, private_project
+):
+    response = owner_client.patch(
+        f"/api/projects/{private_project.public_id}/",
+        {"brief": "Premium\x01 but not corporate\nLimited palette"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["brief"] == "Premium but not corporate\nLimited palette"
+    assert owner_client.get(f"/api/projects/{private_project.public_id}/").json()["brief"] == (
+        "Premium but not corporate\nLimited palette"
+    )
+
+
+@pytest.mark.django_db
+def test_owner_brief_is_limited_to_1500_characters_and_clearable(owner_client, private_project):
+    too_long = owner_client.patch(
+        f"/api/projects/{private_project.public_id}/", {"brief": "x" * 1501}, format="json"
+    )
+    assert too_long.status_code == 400
+    assert "brief" in too_long.json()
+
+    cleared = owner_client.patch(
+        f"/api/projects/{private_project.public_id}/", {"brief": ""}, format="json"
+    )
+    assert cleared.status_code == 200
+    private_project.refresh_from_db()
+    assert private_project.brief == ""
+
+
+@pytest.mark.django_db
 def test_owner_can_toggle_remix_via_metadata(owner_client, private_project):
     response = owner_client.patch(
         f"/api/projects/{private_project.public_id}/",

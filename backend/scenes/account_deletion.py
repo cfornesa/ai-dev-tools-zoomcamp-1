@@ -136,6 +136,9 @@ def delete_account(user, *, password: str | None, confirmation: str) -> None:
     Project.all_objects.filter(owner=locked_user, is_deleted=False).update(
         is_deleted=True, deleted_at=now
     )
+    # Intent notes can contain personal creative direction. Clear them as
+    # part of deletion even though the project row follows content retention.
+    Project.all_objects.filter(owner=locked_user).update(brief="")
     Project3D.all_objects.filter(owner=locked_user, is_deleted=False).update(
         is_deleted=True, deleted_at=now
     )

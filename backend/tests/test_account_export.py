@@ -81,7 +81,7 @@ def test_export_never_exposes_credential_key_material():
 @pytest.mark.django_db
 def test_export_includes_owned_projects_and_versions_including_soft_deleted():
     user = _make_user("owner")
-    project = Project.objects.create(owner=user, title="My animation")
+    project = Project.objects.create(owner=user, title="My animation", brief="limited palette")
     SceneVersion.objects.create(
         project=project, sequence=1, scene_json={"shapes": []}, origin=SceneVersion.Origin.MANUAL
     )
@@ -99,6 +99,7 @@ def test_export_includes_owned_projects_and_versions_including_soft_deleted():
     project_export = next(p for p in body["projects"] if p["title"] == "My animation")
     assert len(project_export["versions"]) == 1
     assert project_export["versions"][0]["scene_json"] == {"shapes": []}
+    assert project_export["brief"] == "limited palette"
     deleted_export = next(p for p in body["projects"] if p["title"] == "Deleted animation")
     assert deleted_export["is_deleted"] is True
 

@@ -121,6 +121,8 @@ def test_missing_project_404s(visitor_client):
 @pytest.mark.django_db
 def test_successful_fork_creates_private_project_version_and_provenance(visitor_client, owner):
     source = _make_public_project(owner)
+    source.brief = "source-only private intent"
+    source.save(update_fields=["brief"])
 
     response = visitor_client.post(_fork_url(source))
 
@@ -130,6 +132,7 @@ def test_successful_fork_creates_private_project_version_and_provenance(visitor_
     assert body["owner"] == "bob"
 
     forked = Project.objects.get(public_id=body["id"])
+    assert forked.brief == ""
     assert forked.owner_id != source.owner_id
     versions = SceneVersion.objects.filter(project=forked)
     assert versions.count() == 1

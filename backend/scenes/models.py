@@ -964,6 +964,9 @@ class Project(models.Model):
     title = models.CharField(max_length=200, default="Untitled animation")
     public_slug = models.SlugField(max_length=220, default="", blank=True)
     description = models.TextField(default="", blank=True)
+    # Issue #1138: owner-private creative intent for server-backed 2D work.
+    # Public serializers and piece packages deliberately do not include it.
+    brief = models.TextField(max_length=1500, blank=True, default="")
     # Issue #588: bounded content SEO/AEO overrides for canonical public
     # project pages. Validation belongs to the owner-facing serializer;
     # keeping the persisted value defaultable makes this additive for legacy

@@ -76,6 +76,7 @@ def _serialize_project(project: Project) -> dict[str, Any]:
         "public_id": str(project.public_id),
         "title": project.title,
         "description": project.description,
+        "brief": project.brief,
         "visibility": project.visibility,
         "is_deleted": project.is_deleted,
         "created_at": _isoformat(project.created_at),

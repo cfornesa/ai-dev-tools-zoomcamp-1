@@ -222,6 +222,25 @@ and piece-package serializers do not include activity. The event query is
 supported by an index on `(project_id, created_at DESC, id DESC)`. Activity
 for a soft-deleted project remains readable by its owner until the existing
 retention policy hard-purges the project and its cascading activity rows.
+
+## Private project intent notes (#1138)
+
+The owner-scoped `GET /api/projects/<public_id>/` and `PATCH
+/api/projects/<public_id>/` contract includes `brief`, a private intent note
+for server-backed 2D projects. The owner may set it to a string up to 1,500
+characters or clear it with an empty string. Over-limit input returns the
+standard field validation `400`; control characters are stripped before
+storage. Existing local-only projects do not use this server field.
+
+`brief` is excluded from every public project serializer, gallery/search
+projection, embed/immersive response, piece/package export, ZIP export,
+fork, template clone, and cloud backup/sync payload. It is included in the
+owner's account JSON export and cleared when account deletion is requested.
+After a Replit Publish containing this migration, verify `brief` exists on
+the actual production `scenes_project` table (for example through
+`information_schema.columns`); `django_migrations` is not a valid success
+signal for Replit's schema-diff publish path.
+
 ### Activity in the owner JSON account export (#1148)
 
 `GET /api/account/export/` adds an `activity` array to each owned 2D

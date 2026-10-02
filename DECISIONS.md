@@ -2784,3 +2784,20 @@ updates. The remaining open backlog was not silently claimed complete.
   and 0.333 ms. The evidence is local to this test setup and is not a
   PostgreSQL/deployment claim. Re-enter Stage 4 for a full acceptance review,
   fresh exact backend checks, and an updated QA verdict.
+
+## 2026-10-02 — LIGDOL batch owner decisions
+
+- #1129 / D1: use an additive owner-private `Project.brief` server field for
+  server-backed structured 2D projects, capped at 1,500 characters. Local-only
+  projects remain local-first and do not gain this field until uploaded.
+- #1143: define accepted share over reviewable proposals (awaiting review,
+  accepted, or rejected); exclude provider failures and cancellations before
+  review. Preserve full history with indexed queries and a hard timeout that
+  returns a retryable unavailable response.
+- #1130 / D2: generalize ProjectActivity to structured 3D scenes and generated
+  ArtPieces with one associated project-family FK per event. #1156 and #1157
+  own the serialized implementation slices; no public activity feed is
+  authorized.
+- CI: owner authorizes pushing the existing branch and dispatching required
+  CI checks without merging. No production publish or database operation is
+  included.

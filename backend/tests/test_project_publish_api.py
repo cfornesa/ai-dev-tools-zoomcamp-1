@@ -115,6 +115,8 @@ def _public_url(project):
 def test_publish_success_makes_current_version_reachable_at_public_url(
     owner_client, anon_client, publishable_project
 ):
+    publishable_project.brief = "private launch constraints"
+    publishable_project.save(update_fields=["brief"])
     response = owner_client.post(_publish_url(publishable_project))
 
     assert response.status_code == 200
@@ -130,6 +132,7 @@ def test_publish_success_makes_current_version_reachable_at_public_url(
     assert public_response.status_code == 200
     public_body = public_response.json()
     assert public_body["title"] == "My gesture garden"
+    assert "brief" not in public_body
     assert public_body["current_version"]["sequence"] == 1
     assert public_body["current_version"]["scene_json"] == BLANK_SCENE
 

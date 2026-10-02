@@ -25743,3 +25743,10 @@ The required Linux Chromium/PostgreSQL CI gates remain unavailable from this
 macOS session. Therefore #1104, #1150, and #1153 remain open pending their
 Linux criteria; no closure is claimed. The local changes are recorded in
 issue-scoped commits before the batch QA comment.
+
+### 2026-10-02 — #1102 rerun after follow-up fixes
+
+After #1118–#1121 closed, #1102's exact nine-spec local Chromium/PostgreSQL
+command passed **13/13**, 0 failed, 0 skipped. Its separate WebKit
+fullscreen/Escape regression passed **1/1**. Linux Chromium remains the
+issue's explicit closure gate; #1102 stays open pending that evidence.

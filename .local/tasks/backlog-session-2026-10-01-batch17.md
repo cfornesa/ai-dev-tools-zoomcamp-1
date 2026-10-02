@@ -12,7 +12,7 @@ User-owned scope decisions carried forward: #1114 preserves 16:9 and places the 
 |---|---|---|---|---|---|
 | #1096 | 14 | 16-shard Linux E2E matrix and residual failure classification | #1100, #1101, all linked failure children | tracking | Open; parent only. Re-run full Linux matrix and classify every residual failure. |
 | #1100 | 14 | 3D E2E fixture helper; six E2E specs | none for implementation; gate precedes #1102–#1104/#1144/#1149 | 2a | Helper committed; local macOS focused rerun passed 7/7; Linux gate unavailable here. Keep verification-boundary open. |
-| #1102 | 14 | nine single-purpose 2D / one 3D call in nine E2E files | #1100 helper contract | 2a | Setup commit exists; previous 4/13 local run failed on now-closed children #1118–#1121. Re-run after their fixes; Linux still required. |
+| #1102 | 14 | nine single-purpose 2D / one 3D call in nine E2E files | #1100 helper contract | 2a | Local Chromium batch now passes 13/13 and WebKit fullscreen/Escape 1/1 after #1118–#1121; Linux Chromium gate remains. |
 | #1103 | 14 | 45 calls across `aiAndRecovery`, `layersPanel`, `interactionRuntime`, `exportConfigDialog` | #1100 helper contract | 2a | Implemented in `f98a564d`; QA FAIL locally (11/17 pass); #1150–#1152 deferred; Linux gate open. |
 | #1104 | 14 | Gallery UI lifecycle, publishing/remix, responsive 2D E2E | #1100 helper contract | 2b | Implemented in `ddd46cde`, with local-first template clone follow-up in `db3fd542`; full local batch 22 passed / 0 skipped, responsive 375px included. Linux gate open. |
 | #1110 | 14 | mobile 3D drawing-plane move-handle reachability | #1111, #1114; shares 3D stage CSS / specs | 2a | Implementation committed; QA depends on completed #1111/#1114 and regression batch. |
@@ -106,3 +106,12 @@ format, typecheck, 1,946 passed / 41 skipped); frontend typecheck, lint (exit
 0 with existing warnings), and format check passed. Required Linux Chromium /
 PostgreSQL evidence is unavailable on this macOS host, so #1154 remains open
 pending its explicit issue gate. No GitHub state transition was performed.
+
+## Wave G checkpoint — #1102
+
+After linked follow-ups #1118–#1121 closed, #1102's exact nine-spec local
+Chromium/PostgreSQL batch passed **13/13**, 0 skipped. The separate WebKit
+fullscreen/Escape scenario passed **1/1**. The prior test/expectation
+inventory remains recorded on the implementation comment; no assertions or
+scenario setup were weakened. GitHub #1102 remains open pending the required
+Linux Chromium gate.

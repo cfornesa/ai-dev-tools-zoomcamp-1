@@ -480,6 +480,31 @@ test.describe('Layers panel', () => {
       expect(shapeOrderAfterKeyboard).toEqual(shapeOrderBefore);
       await assertNoDuplicateOutlineRows(page);
 
+      // The restored Circle 3 layer is at the end of the layer order, so a
+      // further Move down must be unavailable. Walk it to the opposite
+      // boundary using keyboard activation, verify that Move up is disabled
+      // there, then return it to its original position before persistence
+      // checks. This covers both first/last boundaries without changing the
+      // one-top-level-shape-per-layer scene contract from #142.
+      const moveThirdCircleUp = page.getByRole('button', {
+        name: `Move ${thirdCircleLabel} up`,
+        exact: true,
+      });
+      await expect(moveThirdCircleDown).toBeDisabled();
+      await expect(moveThirdCircleUp).toBeEnabled();
+      const layerCount = await outlineList(page).locator('[data-outline-kind="layer"]').count();
+      for (let step = 0; step < layerCount && (await moveThirdCircleUp.isEnabled()); step += 1) {
+        await moveThirdCircleUp.press('Enter');
+      }
+      await expect(moveThirdCircleUp).toBeDisabled();
+      await expect(moveThirdCircleDown).toBeEnabled();
+      for (let step = 0; step < layerCount && (await moveThirdCircleDown.isEnabled()); step += 1) {
+        await moveThirdCircleDown.press('Enter');
+      }
+      await expect(moveThirdCircleDown).toBeDisabled();
+      expect(await canvasZOrder(page)).toEqual(zAfterKeyboard);
+      await assertNoDuplicateOutlineRows(page);
+
       // Persisted order survives a real save + full page reload.
       const rowIdsBeforeSave = await outlineRowIds(page);
       await reopenEditScene(page);

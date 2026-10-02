@@ -36,9 +36,9 @@ reconciliation.
 | #1152 | 14 | Open; re-scoped test implementation committed; updated boundary browser test pending | `510fcaf3`; Linux Chromium #1096 gate |
 | #1153 | 14 | Open; refined follow-up | E2E and Linux gate |
 | #1154 | 16 | Open; fake-provider Agent run follow-up | E2E/CI gate |
-| #1155 | 14 | Local criteria pass; Linux Chromium/full batch gate pending | Existing guard commit; explicit `gesture_studio_test` smoke 1/1, all fixture counts zero afterward |
+| #1155 | 14 | QA: FAIL / handed off at Linux verification boundary; current local evidence posted to GitHub | Existing guard commit; isolated `gesture_studio_test` smoke 1/1, all fixture counts zero afterward; Linux/full matrix pending |
 | #1156 | 16 | Open; implementation committed; batch QA pending | `e28a57a3`; batch gate and Linux full-matrix reconciliation |
-| #1157 | 16 | Implemented locally; issue QA PASS; GitHub QA note and batch Linux gate pending | `6b2f9cb1`; see focused/full backend evidence below |
+| #1157 | 16 | QA: FAIL / handed off at shared Linux batch gate; criterion matrix posted to GitHub | `6b2f9cb1`; focused union 125 passed / 4 skipped; full backend-check 2,012 passed / 44 skipped; configured PostgreSQL concurrency 1 passed |
 
 Stage owner provenance for this continuation: stage 1 / Codex (this session) /
 GPT-6 / effort not surfaced / substituted: no. Stage 2 for #1140 / rostered
@@ -71,7 +71,7 @@ Medium); the other issue matrices and comments remain in progress.
 | `frontend/src/pages/AIProposalPanel.tsx`, `AIRunPanel.tsx`, `useAIRun.ts`, `EditorWorkspace.tsx`, `frontend/e2e/aiIntentNotes.spec.ts` | #1140 | #1149 AI route retargeting; #1154 fake-provider Agent runs | Keep note disclosure confined to server-backed 2D Agent flow; per-request checkbox state resets; isolated E2E test checks disclosure and request opt-out. `aiAgent2d.spec.ts` test and expect counts are preserved for #1149. Current-SHA Linux CI run #36977977163 is the required browser evidence. |
 | Full `make check` and shared AI/backend tests | #1138–#1140 | #1143 and all other open issues | Current local union gate passed: backend lint/format/typecheck and 2,038 collected tests; frontend lint (existing warnings), format/typecheck and 3,228 Vitest tests. CI full 16-shard run completed with browser failures. |
 | `ProjectActivity` family FKs/constraint/index, shared activity view/cursor, 3D lifecycle and AIRun writers, private export, API docs | #1156 | #1133/#1148 2D projection/export; #1143 metrics; #1157 shared schema/view; #1096 Linux browser gate | Serialized after actual migration leaf `0111_airun_intent_note` as `0112`; preserved 2D response bytes with a golden test; separate 3D cursor salt; package intake/conversion/initial creation remain eventless; 2D metrics and public serialization unchanged. |
-| `ProjectActivity` ArtPiece FK/constraint/index, shared family API/export/deletion boundaries and API docs | #1157 | #1156 schema/view; #1138/#1148 export; #1143 remains 2D-only; packages/cloud backup/public routes must exclude logs | Commit `6b2f9cb1` adds migration `0113`, eventless initial/import/refine-accept paths, version/publish transition writers, owner-only activity and export, privacy/cursor/cascade/package/cloud tests. Focused union 125 passed / 4 skipped; full backend-check 2,012 passed / 44 skipped; migration drift clean. Separate configured PostgreSQL test DB concurrency check passed (1 passed, 5 deselected). Stage 4 issue-level QA PASS; GitHub QA comment and Linux full-matrix gate remain pending. |
+| `ProjectActivity` ArtPiece FK/constraint/index, shared family API/export/deletion boundaries and API docs | #1157 | #1156 schema/view; #1138/#1148 export; #1143 remains 2D-only; packages/cloud backup/public routes must exclude logs | Commit `6b2f9cb1` adds migration `0113`, eventless initial/import/refine-accept paths, version/publish transition writers, owner-only activity and export, privacy/cursor/cascade/package/cloud tests. Focused union 125 passed / 4 skipped; full backend-check 2,012 passed / 44 skipped; migration drift clean. Separate configured PostgreSQL test DB concurrency check passed (1 passed, 5 deselected). Stage 4 criterion matrix posted as `## QA: FAIL`; Linux full-matrix gate remains pending. |
 
 Open issue-body scan confirmed shared references: #1154 references `ai_runs.py`
 and `test_ai_runs.py`; #1149 references `aiAgent2d.spec.ts`; #1138, #1143,
@@ -189,9 +189,11 @@ Targeted current-batch evidence extracted from the completed shard logs:
   #1096 are not complete. Do not claim a green or closure-ready matrix.
 
 GitHub state after this continuation: all 21 manifest issues remain open; no
-issue was closed. The QA comment on #1100 is the only new QA comment. No new
-follow-up issue was filed. #1157's refine-accept event decision remains
-unresolved; it is not silently assumed from a generic “Yes, please.”
+issue was closed. QA comments are posted for #1100, #1155, and #1157. No new
+follow-up issue was filed. #1157's refine-accept path remains eventless because
+AI proposal events are out of scope; the existing regression asserts that
+behavior. This is an explicit implementation disposition, not an inferred
+owner response.
 
 Next action: finish the issue-by-issue criterion matrices and classify every
 full-matrix failure, then file/reuse linked follow-ups only after owner

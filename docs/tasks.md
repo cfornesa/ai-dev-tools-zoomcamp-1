@@ -25874,7 +25874,7 @@ cancel/reopen scenario navigated back through the legacy `/projects/:id` shim
 instead of the canonical editor URL returned by the current server-backed
 helper; it now captures and reuses that URL without changing its assertions.
 The local/server-conflict reload was waiting on Chromium's native
-`beforeunload` dialog; commit `9ff7d3de` accepts that dialog in the test setup
+`beforeunload` dialog; commit `24197488` accepts that dialog in the test setup
 and asserts its type before checking the existing recovery prompt. Test titles
 and prior assertions are preserved; one setup assertion is added. The
 explicit-exit scenario still timed out at 90 seconds after reaching the

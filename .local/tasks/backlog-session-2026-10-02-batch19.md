@@ -21,7 +21,7 @@ reconciliation.
 | #1096 | 14 | Open; CI tracking/hand-off | Full 16-shard outcome and failure reconciliation |
 | #1100 | 14 | Open; implementation/QA status carried from batch 18 | Linux Chromium six-spec gate |
 | #1102 | 14 | Open; implementation/QA status carried from batch 18 | Linux Chromium child gate |
-| #1103 | 14 | Open; corrective fixture setup committed, QA pending | `9ff7d3de`; exact four-spec run on verified disposable PostgreSQL, then Linux Chromium |
+| #1103 | 14 | Open; corrective fixture setup committed, QA pending | `24197488`; exact four-spec run on verified disposable PostgreSQL, then Linux Chromium |
 | #1104 | 14 | Open; QA failures carried from batch 18 | Resolve linked failures; Linux Chromium |
 | #1129 | 16 | QA: PASS; decision comment and design record verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
 | #1130 | 16 | QA: PASS; decision and split follow-ups verified; awaiting batch gate | GitHub QA comment posted; close only after batch gate |
@@ -58,7 +58,7 @@ a separate Codex GPT-6 subagent (substituted for rostered Claude Sonnet 5
 Medium); the other issue matrices and comments remain in progress.
 
 Stage 2a for #1103 / rostered Opencode Go / actual Codex GPT-6, effort not
-surfaced / substituted: yes. Commit `9ff7d3de` changes only
+surfaced / substituted: yes. Commit `24197488` changes only
 `frontend/e2e/aiAndRecovery.spec.ts`: recovery reopening uses the captured
 canonical editor URL, and the conflict reload accepts/asserts Chromium's
 observed native `beforeunload` dialog. Existing test titles and assertions are
@@ -82,7 +82,7 @@ first-cause disposition of that timeout, and Linux batch gate.
 | `frontend/e2e/interactionRuntime.spec.ts` and shared editor control helpers | #1151 | #1150 `saveScene`; #1152 Layers panel ordering stays separate; #1096 Linux gate | Existing ancestor implementation retargets the motion toggle and current editor action helpers while preserving runtime/persistence assertions. Run #1082 exact SHA passed all 3 interactionRuntime cases (Linux Chromium/PostgreSQL). The overall 16-shard matrix failed elsewhere. |
 | `frontend/e2e/layersPanel.spec.ts` | #1152 | #1103 migration assertions; #1111/#1114 responsive 2D layout regression; #1150 save helper; #1151 shared current-editor controls; #1096 Linux gate | Commit `510fcaf3` adds explicit first/last layer-move enabled/disabled checks while retaining pointer+keyboard reverse, canvas/panel order, save/reload and no-duplicate assertions. Focused outline unit tests 127 passed, typecheck/lint/format/discovery passed; run #1082 passed the pre-boundary update scenario, but not the new boundary assertions. |
 | `frontend/e2e/interactionRuntime.spec.ts` | #1151 | #1103 migrated caller; #1111/#1114 mobile layout regressions; #1096 Linux gate | Retain desktop/mobile screenshots of both reduced and full motion toggle states as visible test artifacts; preserve the three existing scenario titles and all runtime behavior assertions. Current local preflight passes; exact Linux run required for fresh artifact inspection. |
-| `frontend/e2e/aiAndRecovery.spec.ts` | #1103 | #1096 shared matrix; #1150 save helper; #1151 interaction controls; #1152 layer order; #1154 fake-provider Agent flows | Commit `9ff7d3de` replaces the legacy ID-route reopen with the captured canonical editor URL and handles/asserts the observed native beforeunload during conflict reload. Re-run the unchanged scenario assertions and all 4 migrated specs together; the explicit-exit timeout remains unresolved. |
+| `frontend/e2e/aiAndRecovery.spec.ts` | #1103 | #1096 shared matrix; #1150 save helper; #1151 interaction controls; #1152 layer order; #1154 fake-provider Agent flows | Commit `24197488` replaces the legacy ID-route reopen with the captured canonical editor URL and handles/asserts the observed native beforeunload during conflict reload. Re-run the unchanged scenario assertions and all 4 migrated specs together; the explicit-exit timeout remains unresolved. |
 | `frontend/src/pages/AIProposalPanel.tsx`, `AIRunPanel.tsx`, `useAIRun.ts`, `EditorWorkspace.tsx`, `frontend/e2e/aiIntentNotes.spec.ts` | #1140 | #1149 AI route retargeting; #1154 fake-provider Agent runs | Keep note disclosure confined to server-backed 2D Agent flow; per-request checkbox state resets; isolated E2E test checks disclosure and request opt-out. `aiAgent2d.spec.ts` test and expect counts are preserved for #1149. Current-SHA Linux CI run #36977977163 is the required browser evidence. |
 | Full `make check` and shared AI/backend tests | #1138–#1140 | #1143 and all other open issues | Current local union gate passed: backend lint/format/typecheck and 2,038 collected tests; frontend lint (existing warnings), format/typecheck and 3,228 Vitest tests. CI full 16-shard run completed with browser failures. |
 | `ProjectActivity` family FKs/constraint/index, shared activity view/cursor, 3D lifecycle and AIRun writers, private export, API docs | #1156 | #1133/#1148 2D projection/export; #1143 metrics; #1157 shared schema/view; #1096 Linux browser gate | Serialized after actual migration leaf `0111_airun_intent_note` as `0112`; preserved 2D response bytes with a golden test; separate 3D cursor salt; package intake/conversion/initial creation remain eventless; 2D metrics and public serialization unchanged. |

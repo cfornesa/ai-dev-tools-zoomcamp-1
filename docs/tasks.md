@@ -1,5 +1,18 @@
 # AugmentrART Backlog
 
+## 2026-10-02 — #1139 responsive QA setup fix
+
+Run #1085's Linux browser evidence identified the mobile #1139 failure: its
+E2E switched to 375px without expanding the independent Details disclosure.
+Commit `2250eae3` opened Details at each viewport and after reload. Run #1089
+showed that this still raced the responsive tab switch: the Details region
+was checked before it became visible. The next correction waits for the
+region and disclosure control, then checks `aria-expanded` before toggling.
+It does not change product behavior or weaken assertions. TypeScript, lint,
+formatting, Playwright discovery (1 test), and `git diff --check` passed
+locally. Keep #1139 open pending a current-SHA Linux result and remaining
+batch-gate evidence.
+
 ## 2026-10-02 — Batch 19 current-head QA run #1085
 
 Pushed `635d1213a35a296cd8b59ef0fdc49176b847eaad` to the authorized

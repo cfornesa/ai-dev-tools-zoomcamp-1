@@ -19,8 +19,10 @@ async function openDetailsPanel(page: Page) {
   if (await detailsTab.isVisible()) await detailsTab.click();
 
   const details = page.getByRole('region', { name: 'Details' });
-  const expand = details.getByRole('button', { name: 'Expand Details panel', exact: true });
-  if (await expand.isVisible()) await expand.click();
+  await expect(details).toBeVisible();
+  const toggle = details.getByRole('button', { name: /(?:Expand|Collapse) Details panel/ });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
   return details;
 }
 

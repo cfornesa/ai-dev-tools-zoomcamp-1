@@ -633,6 +633,7 @@ def test_fake_provider_agent_create_runs_reach_review_for_both_scene_families(
             advanced.error_reason,
             advanced.validation_summary,
         )
+        assert advanced.error_reason == ""
 
 
 @pytest.mark.django_db
@@ -747,6 +748,7 @@ def test_fake_provider_agent_selection_edits_only_the_declared_target(
             advanced.error_reason,
             advanced.validation_summary,
         )
+        assert advanced.error_reason == ""
         candidate = advanced.candidate_scene_json
         assert candidate is not None
         records = (

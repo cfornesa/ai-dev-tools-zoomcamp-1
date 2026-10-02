@@ -25995,3 +25995,12 @@ and disposable published-routing smoke passed; backend, frontend, and all 16
 browser shards were still running at the latest status read. This is fresh
 #1151 screenshot and current-head matrix evidence. The prior #1096 FAIL gate
 and no-closure rule remain until completion and full failure reconciliation.
+# 2026-10-02 — Current-head #1151 viewport evidence rerun
+
+Commit `a3d53bce` changes the #1151 screenshot helper to retain viewport-sized
+captures. Typecheck, lint (exit 0 with existing warnings), format check,
+Playwright discovery (3 tests), and `git diff --check` pass locally. The
+user-authorized manual Linux full matrix is queued as [Actions run #1105](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37027709237)
+on exact SHA `a3d53bce507ad86414b68e508bf6738c6c199545`. Await its result and
+inspect the four #1151 images before updating issue QA. The #1096 batch gate
+remains FAIL pending full issue-impact reconciliation; no issue is closed.

@@ -687,3 +687,14 @@ frontend, and all 16 browser shards were still running at the latest status
 read. This rerun is required for #1151's retained screenshot evidence and
 current-head batch review. It does not supersede the prior #1096 FAIL result
 until the run and case-by-case failure reconciliation are complete.
+# Current-head viewport-capture rerun — 2026-10-02
+
+Commit `a3d53bce` changes #1151's screenshot helper to capture the requested
+viewport rather than the entire long page. Typecheck, lint (exit 0 with
+existing warnings), format check, Playwright discovery (3 tests), and
+`git diff --check` passed locally. The user-authorized manual Linux full
+matrix was dispatched in the active Chrome session as run [#1105](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37027709237)
+on exact SHA `a3d53bce507ad86414b68e508bf6738c6c199545`. It is queued; fresh
+shard evidence and complete batch reconciliation are pending. Do not close
+issues while the #1096 shared gate is red or its failure inventory remains
+unreconciled.

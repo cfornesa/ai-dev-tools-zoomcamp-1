@@ -82,5 +82,27 @@ def test_ci_runs_the_full_browser_acceptance_suite_and_uploads_diagnostics():
 
     assert "e2e-browser:" in workflow
     assert "name: Browser acceptance E2E" in workflow
-    assert "run: npm run test:e2e" in workflow
-    assert "browser-e2e-diagnostics" in workflow
+
+    full_suite = workflow.split("      - name: Run full browser acceptance suite\n", 1)[1]
+    full_suite = full_suite.split("\n      - name:", 1)[0]
+    assert "github.event_name == 'workflow_dispatch'" in full_suite
+    assert "github.event_name == 'schedule'" in full_suite
+    assert "PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json" in full_suite
+    assert "npm run test:e2e -- --shard=${{ matrix.shard }}/16 --reporter=list,json" in full_suite
+    assert 'echo "playwright_exit=$playwright_exit" >> "$GITHUB_OUTPUT"' in full_suite
+
+    ratchet = workflow.split(
+        "      - name: Apply known-failure ratchet and write job summary\n", 1
+    )[1]
+    ratchet = ratchet.split("\n      - name:", 1)[0]
+    assert "github.event_name == 'workflow_dispatch'" in ratchet
+    assert "github.event_name == 'schedule'" in ratchet
+    assert "node scripts/e2e-ratchet.mjs" in ratchet
+    assert "--report test-results/results.json" in ratchet
+    assert "--baseline e2e/known-failures.json" in ratchet
+    assert '--playwright-exit-code "$PLAYWRIGHT_EXIT_CODE"' in ratchet
+
+    diagnostics = workflow.split("      - name: Upload browser diagnostics\n", 1)[1]
+    diagnostics = diagnostics.split("\n      - name:", 1)[0]
+    assert "if: ${{ failure() }}" in diagnostics
+    assert "name: browser-e2e-diagnostics" in diagnostics

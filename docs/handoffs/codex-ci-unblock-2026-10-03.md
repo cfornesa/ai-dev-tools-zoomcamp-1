@@ -117,6 +117,22 @@ Run make check before reporting. Post a ## QA matrix on each issue and list the 
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
+### 3b. Repair the CI regressions from #1190 (do this before continuing any other goal)
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: make PR #1094's required checks green again by repairing two regressions introduced by your own #1190 commit 17f077e1. I reported the evidence as a comment on #1190. They are NOT pre-existing and NOT out of scope: a failure caused by your own commit belongs to that commit's issue. Never call a failure pre-existing without checking git log and the base commit first.
+
+1. Backend: backend/tests/test_browser_qa_configuration.py::test_ci_runs_the_full_browser_acceptance_suite_and_uploads_diagnostics asserts the literal `run: npm run test:e2e`, which your workflow edit removed (it is now a `run: |` block). Keep the test's intent (the full browser suite runs on dispatch/schedule and diagnostics are uploaded) and update the assertions to the new workflow shape, including the `--reporter=list,json` run and the `node scripts/e2e-ratchet.mjs` ratchet step. Do not weaken it to a bare existence check.
+2. Frontend: Vitest picks up frontend/scripts/e2e-ratchet.test.mjs and fails on `node:test`. Exclude frontend/scripts/** from Vitest in frontend/vite.config.ts, and run those tests with `node --test` through a new package.json script that is part of `npm test` (so `make check` and CI still run them). No new dependency. Prove the ratchet's four cases still run and pass.
+3. Run, and record the output of: cd backend && uv run pytest tests/test_browser_qa_configuration.py; cd frontend && npm test; then make check from the repo root. All three must pass before you commit. A failure you cannot fix within these two items: stop and report it.
+4. One commit: "fix(ci): repair backend workflow assertion and ratchet test runner (#1190)". Post the refreshed ## QA matrix on #1190 and a short note on #1096. Do not close issues.
+5. Do not push. If your first goal run pushed the branch, tell me what instruction led to it. I will push and dispatch checks myself.
+
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
 ### 4. Wave 2A — account and shell
 
 ```text

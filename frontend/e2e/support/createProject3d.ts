@@ -39,18 +39,27 @@ export async function createServerProject3D(page: Page): Promise<string> {
   return project.id;
 }
 
+/** Creates a local-only 3D project through the creation page and opens its IndexedDB editor. */
+export async function createLocalProject3DViaUI(page: Page): Promise<string> {
+  await page.goto('/create');
+  await page.getByRole('button', { name: 'Create a new 3D project', exact: true }).click();
+  await page.waitForURL(/\/local-projects\/[^/]+$/);
+  const id = /\/local-projects\/([^/]+)$/.exec(new URL(page.url()).pathname)?.[1];
+  if (!id) throw new Error('The local 3D project route did not contain a project id');
+  await page.getByTestId('project3d-save-status').waitFor({ state: 'visible' });
+  return id;
+}
+
 /**
- * Creates a blank 3D project through the Gallery's "More creation options" menu and waits for the
- * canonical `/users/@handle/edit/:slug` route, returning the project's real id (read from the create
- * response, since the slug in the URL is not the id). Issue #746/#795: the create flow no longer lands on
- * the legacy `/projects3d/:id` route, so specs must not wait for that URL.
+ * Creates a server-backed 3D project through the Gallery's creation menu and opens its editor.
  */
 export async function createBlank3DProjectViaUI(page: Page): Promise<string> {
   await page.goto('/');
   await page.getByRole('button', { name: 'More creation options' }).click();
   const created = page.waitForResponse(
-    (res) =>
-      res.request().method() === 'POST' && new URL(res.url()).pathname === '/api/projects3d/',
+    (response) =>
+      response.request().method() === 'POST' &&
+      new URL(response.url()).pathname === '/api/projects3d/',
   );
   await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
   const { id } = (await (await created).json()) as { id: string };

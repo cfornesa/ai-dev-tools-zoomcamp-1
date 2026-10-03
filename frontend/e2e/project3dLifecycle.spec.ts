@@ -21,6 +21,7 @@ import JSZip from 'jszip';
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createLocalProject3DViaUI, createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -37,25 +38,22 @@ async function extractBundle(zip: JSZip, prefix: string) {
   return { directory, indexUrl: pathToFileURL(path.join(directory, 'index.html')).href };
 }
 
-// Issue #394 moved the manual editor's (`/projects3d/:id`) Draft/Published
-// disclosure out of this shared stage toolbar and into the editor header
-// (`PublishControl3D.tsx`'s non-`compact` branch) -- but the AI-assisted
-// editor (`/ai-projects3d/:id`) still renders `PublishControl3D compact`,
-// so the toolbar-based publication trigger only still exists there.
+// Issue #394 moved the manual editor's Draft/Published disclosure out of this
+// shared stage toolbar and into the editor header; local projects instead
+// expose the explicit local-to-server transfer control.
 async function expectThreeDStageChrome(
   page: Page,
-  { hasStagePublicationTrigger }: { hasStagePublicationTrigger: boolean },
+  {
+    hasStagePublicationTrigger,
+    publicationControlName = 'Publish',
+  }: { hasStagePublicationTrigger: boolean; publicationControlName?: string },
 ) {
   const frame = page.getByTestId('scene3d-preview-canvas-frame');
   const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
   await expect(toolbar).toBeVisible();
-  // Issue #347: the shared stage command surface is intentionally closed by
-  // default. Enter through its hamburger before asserting contextual actions.
-  await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
   await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Piece controls', exact: true })).toBeVisible();
-  await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
   const publicationTrigger = toolbar.getByRole('button', {
@@ -71,11 +69,15 @@ async function expectThreeDStageChrome(
     await expect(toolbar.getByRole('button', { name: 'Published', exact: true })).toBeEnabled();
   } else {
     await expect(publicationTrigger).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Publish', exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: publicationControlName, exact: true }),
+    ).toBeVisible();
   }
 
   await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
-  await expect(toolbar.getByRole('group', { name: 'Piece controls' })).toBeVisible();
+  const pieceControls = toolbar.getByRole('group', { name: 'Piece controls' });
+  await expect(pieceControls).toBeVisible();
+  await expect(pieceControls.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
 
   await toolbar.getByRole('button', { name: 'Open download menu' }).click();
   await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();
@@ -91,26 +93,26 @@ test.describe('3D project creation', () => {
 
   test('creating a new 3D project persists it and opens the manual editor', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const match = /\/projects3d\/([^/]+)$/.exec(page.url());
-    expect(match).not.toBeNull();
+    const localProjectId = await createLocalProject3DViaUI(page);
+    expect(page.url()).toMatch(new RegExp(`/local-projects/${localProjectId}$`));
 
     // Confirms the manual editor actually loaded the newly-created project
     // (not just that the route matched) -- this testid only renders once
     // Project3DWorkspace.tsx has fetched the project and its current
     // version successfully (Project3DWorkspace.tsx).
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
-    await expectThreeDStageChrome(page, { hasStagePublicationTrigger: false });
     await expect(page.getByTestId('project3d-save-button')).toBeDisabled();
     await expect(page.getByRole('button', { name: 'Download standalone bundle' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Ask AI to improve this scene' })).toBeVisible();
 
-    // Reload to prove the project genuinely persisted server-side, not
-    // just in local React state from the create response.
+    // Keep the local Gallery creation assertion above, then use the server
+    // helper for persisted editor, publication, and AI controls.
+    await createServerProject3D(page);
+    await expect(page.getByTestId('project3d-save-status')).toBeVisible();
+    await expectThreeDStageChrome(page, {
+      hasStagePublicationTrigger: false,
+      publicationControlName: 'Publish',
+    });
+    await expect(page.getByRole('button', { name: 'Ask AI to improve this scene' })).toBeVisible();
     await page.reload();
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
   });
@@ -149,14 +151,8 @@ test.describe('3D project creation', () => {
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const match = /\/projects3d\/([^/]+)$/.exec(page.url());
-    expect(match).not.toBeNull();
-    const projectId = match?.[1];
-    if (!projectId) return;
+    const projectId = await createServerProject3D(page);
+    expect(projectId).toBeTruthy();
 
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
     await page.getByRole('button', { name: 'Edit title' }).click();
@@ -177,18 +173,18 @@ test.describe('3D project creation', () => {
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
     await expect(toolbar).toBeVisible();
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
     await expect(
       toolbar.getByRole('button', { name: 'Piece controls', exact: true }),
     ).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
 
     await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
-    await expect(toolbar.getByRole('group', { name: 'Piece controls' })).toBeVisible();
+    const pieceControls = toolbar.getByRole('group', { name: 'Piece controls' });
+    await expect(pieceControls).toBeVisible();
+    await expect(pieceControls.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
     await toolbar.getByRole('button', { name: 'Open download menu' }).click();
     const fullMenuItem = toolbar.getByRole('menuitem', { name: 'Download Full ZIP' });
     const nonCameraMenuItem = toolbar.getByRole('menuitem', {
@@ -248,9 +244,10 @@ test.describe('3D project creation', () => {
     const fullArtifact = await extractBundle(fullZip, 'creatrweb-full-3d-');
     await artifactPage.goto(fullArtifact.indexUrl);
     await expect(artifactPage.locator('#scene3d-canvas-host canvas')).toHaveCount(1);
-    await expect(artifactPage.getByRole('toolbar', { name: 'Piece actions' })).toBeVisible();
-    await artifactPage.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await expect(artifactPage.getByRole('dialog', { name: 'Piece actions' })).toBeVisible();
+    const artifactToolbar = artifactPage.getByRole('toolbar', { name: 'Piece actions' });
+    await expect(
+      artifactToolbar.getByRole('button', { name: 'Piece controls', exact: true }),
+    ).toBeVisible();
     await artifactPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(artifactPage.getByRole('group', { name: 'Piece controls' })).toBeVisible();
     const cameraBeforeTravel = await artifactPage.evaluate(() =>
@@ -268,7 +265,6 @@ test.describe('3D project creation', () => {
     const nonCameraArtifact = await extractBundle(nonCameraZip, 'creatrweb-non-camera-3d-');
     await artifactPage.goto(nonCameraArtifact.indexUrl);
     await expect(artifactPage.locator('#scene3d-canvas-host canvas')).toHaveCount(1);
-    await artifactPage.getByRole('button', { name: 'Open piece controls menu' }).click();
     await artifactPage.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(artifactPage.getByRole('group', { name: 'Piece controls' })).toBeVisible();
     await expect(artifactPage.getByRole('button', { name: 'Live mic' })).toHaveCount(0);
@@ -295,14 +291,8 @@ test.describe('3D project creation', () => {
   test('immersive 3D touch d-pad holds and releases the matching travel keys', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const match = /\/projects3d\/([^/]+)$/.exec(page.url());
-    expect(match).not.toBeNull();
-    const projectId = match?.[1];
-    if (!projectId) return;
+    const projectId = await createServerProject3D(page);
+    expect(projectId).toBeTruthy();
 
     await expect(page.getByTestId('project3d-save-status')).toBeVisible();
     // Issue #394 moved this manual-editor Draft/Published disclosure into

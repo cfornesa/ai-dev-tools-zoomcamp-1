@@ -378,20 +378,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/manual3dLayoutParity.spec.ts|manual 3D editor layout parity › Preview, outline, inspector, and publication controls stay non-overlapping and reachable at both required viewports",
-    "issue": 1168,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/manual3dPublicationLifecycle.spec.ts|manual 3D publication lifecycle › publishes and restores the exact editor fixture at both required viewports",
-    "issue": 1168,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/manualEdit3d.spec.ts|Generated 3D manual editing tools (#668) › adds, outlines, transforms, saves, and publishes Three.js and A-Frame edits",
     "issue": 1171,
     "added": "2026-10-03",
@@ -469,64 +455,8 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation › creating a new 3D project persists it and opens the manual editor",
-    "issue": 1168,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation › creating a new AI-assisted 3D project persists it and opens the AI-assisted editor",
     "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation › immersive 3D touch d-pad holds and releases the matching travel keys",
-    "issue": 1168,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation › published 3D projects expose the shared public stage chrome and can return to Draft",
-    "issue": 1168,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/project3dPublicationDiscoverability.spec.ts|3D publication discoverability › shows and updates visibility in the editor and owner card",
-    "issue": 1168,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/project3dServerPackageExport.spec.ts|server-backed 3D piece package export (#968) › exports complete 3D history at 1280x900",
-    "issue": 1168,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/project3dServerPackageExport.spec.ts|server-backed 3D piece package export (#968) › exports complete 3D history at 375x812",
-    "issue": 1168,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/project3dThumbnailCard.spec.ts|owner 3D project card thumbnails › regenerates the card thumbnail after the current version changes",
-    "issue": 1168,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/project3dThumbnailCard.spec.ts|owner 3D project card thumbnails › shows real geometry for a renderable scene and a safe retryable fallback for a failing one",
-    "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
@@ -660,13 +590,6 @@
   {
     "key": "chromium|e2e/sonicTelemetry.spec.ts|Generated public sound telemetry (#918) › captures eight ambient notes and the C4-C5 major keyboard sequence",
     "issue": 1183,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/unpublishRetention.spec.ts|Unpublish retention: restore within the grace window (#944) › unpublishing a project starts the retention clock, and republishing restores it",
-    "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1

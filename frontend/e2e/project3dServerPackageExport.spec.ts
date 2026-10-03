@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const SCENE = {
@@ -37,28 +38,20 @@ test.describe('server-backed 3D piece package export (#968)', () => {
     }, testInfo) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      const created = page.waitForResponse(
-        (response) =>
-          response.request().method() === 'POST' &&
-          new URL(response.url()).pathname === '/api/projects3d/',
-      );
-      await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-      const project = (await (await created).json()) as { id: string };
+      const projectId = await createServerProject3D(page);
 
-      const first = await apiPost(page.context(), `/api/projects3d/${project.id}/versions/`, {
+      const first = await apiPost(page.context(), `/api/projects3d/${projectId}/versions/`, {
         scene_json: SCENE,
         origin: 'manual',
       });
       expect(first.status()).toBe(201);
-      const second = await apiPost(page.context(), `/api/projects3d/${project.id}/versions/`, {
+      const second = await apiPost(page.context(), `/api/projects3d/${projectId}/versions/`, {
         scene_json: { ...SCENE, id: 'server-3d-package-fixture-v2' },
         origin: 'manual',
       });
       expect(second.status()).toBe(201);
 
-      await page.goto(`/projects3d/${project.id}`);
+      await page.goto(`/projects3d/${projectId}`);
       await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
       const exportButton = page.getByRole('button', { name: 'Export piece package' });
       await expect(exportButton).toBeVisible();
@@ -81,7 +74,7 @@ test.describe('server-backed 3D piece package export (#968)', () => {
       expect(manifest.source.currentVersionId).toBeGreaterThan(0);
       expect(manifest.source.renderer).toMatchObject({ preferred: 'threejs' });
 
-      const unchanged = await apiGet(page.context(), `/api/projects3d/${project.id}/`);
+      const unchanged = await apiGet(page.context(), `/api/projects3d/${projectId}/`);
       expect(unchanged.status()).toBe(200);
       expect((await unchanged.json()).current_version.sequence).toBe(3);
       await page.screenshot({

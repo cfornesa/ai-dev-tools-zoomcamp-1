@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -90,13 +91,8 @@ async function create3DProjectWithScene(
   page: import('@playwright/test').Page,
   scene: unknown,
 ): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-  await page.waitForURL(/\/projects3d\/[^/]+$/);
-  const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
+  const projectId = await createServerProject3D(page);
   expect(projectId).toBeTruthy();
-  if (!projectId) throw new Error('Could not determine the created 3D project id.');
 
   const saved = await apiPost(page.context(), `/api/projects3d/${projectId}/versions/`, {
     scene_json: scene,

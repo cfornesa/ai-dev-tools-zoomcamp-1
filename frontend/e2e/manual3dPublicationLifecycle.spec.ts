@@ -13,6 +13,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -30,13 +31,8 @@ test.describe('manual 3D publication lifecycle', () => {
     browser,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
+    const projectId = await createServerProject3D(page);
     expect(projectId).toBeTruthy();
-    if (!projectId) return;
 
     const status = page.getByTestId('visibility-status-3d');
     const publicationGroup = page.getByRole('group', { name: 'Publication status', exact: true });
@@ -80,7 +76,7 @@ test.describe('manual 3D publication lifecycle', () => {
     await anonymousPage.goto(`/p3d/${projectId}`);
     await expect(anonymousPage.getByTestId('scene3d-preview-canvas-frame')).toBeVisible();
     await expect(
-      anonymousPage.getByRole('button', { name: 'Open piece controls menu' }),
+      anonymousPage.getByRole('button', { name: 'Piece controls', exact: true }),
     ).toBeVisible();
     await expect(anonymousPage.getByRole('button', { name: 'Logout' })).toHaveCount(0);
 
@@ -89,9 +85,7 @@ test.describe('manual 3D publication lifecycle', () => {
     await expect(status).toContainText('Private');
 
     await anonymousPage.reload();
-    await expect(anonymousPage.getByRole('alert')).toContainText(
-      "This project isn't available. It may have been unpublished, deleted, or never existed.",
-    );
+    await expect(anonymousPage).toHaveURL(/\/gallery(?:\?.*)?$/);
     await anonymousContext.close();
   });
 });

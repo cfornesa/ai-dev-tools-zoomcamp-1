@@ -215,7 +215,68 @@ Verify with `curl` of rendered HTML without JavaScript against the local stack, 
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
-### 10. Finish
+### 10. Batch 18A — public MCP server (needs the #1205 owner decision)
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: build the public, no-auth MCP surface (tracker #1207).
+
+Precondition: the owner has answered #1205 in a comment (stack, hosting and dependency approval). If there is no answer, add no dependency and write no MCP code: report that Goal 10 is waiting and skip to the next goal.
+
+Order, one commit per issue (read each issue first; update docs/api.md and openapi.yaml before any contract change; AGENTS.md section 8 applies to the approved dependency):
+1. #1210 MCP scaffold with the health tool.
+2. #1211 public 2D tools and resources, then #1212 public 3D, generated-piece and collection tools (document the endpoints that openapi.yaml lacks first).
+3. #1213 rate limiting and audit logging.
+4. #1214 docs/mcp.md and the API docs.
+Prove privacy gating with a fixture for each state (private, unlisted, draft, soft-deleted). Verify against a real MCP client or the SDK's test client, the focused pytest suites, and make check. Post a ## QA matrix on each issue and the batch gate result. Do not close issues.
+
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
+### 11. Batch 18B — security check and OAuth foundation (needs the #1206 owner decision)
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: add per-user authorization for MCP (tracker #1208).
+
+1. #1215 first and alone: verify the access level of the 3D accept-proposal endpoint with tests for anonymous, non-owner and owner on both 2D and 3D accept-proposal routes. The repository shows `x-access: owner` and a 404 for non-owners; record what the tests show and do not change the spec to match an outside report. If an anonymous write is possible, stop at once, file a P0 issue and report.
+2. Precondition for the rest: the owner has answered #1206 (OAuth approach, scopes, dependency approval). If not, add no dependency, skip the remaining steps and report.
+3. #1216 OAuth 2.1 provider (PKCE S256 only, exact redirect matching, additive migrations), then #1217 bearer authentication, scope enforcement and the cross-user isolation test across every tool. Reuse backend/scenes/permissions.py; never bypass it.
+One commit per issue. Run the focused tests, the full backend suite and make check. Post a ## QA matrix on each issue and the batch gate result. Do not close issues.
+
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
+### 12. Batch 18C — authenticated MCP tools
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: implement the authenticated tools (tracker #1208). Run only after Goal 11 finished #1216 and #1217; otherwise report and skip.
+
+Order, one commit per issue: #1218 2D projects and versions; #1220 AI tools (use AI_PROVIDER=fake in tests; same quotas and entitlements as the web UI); #1221 3D mirror tools (only expose the accept tool because #1215 confirmed its access level); #1222 piece package intake; then #1219 destructive tools last, behind the separate destructive scope with a confirm argument (first record in the issue whether to ship deletion at all, and default to not shipping it if unsure).
+Every tool needs a contract test against its REST endpoint, a non-owner/not-found test and a scope test. Run make check. Post a ## QA matrix on each issue and the batch gate result. Do not close issues.
+
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
+### 13. Batch 18D — MCP Apps gallery widget
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: build the in-chat gallery widget (tracker #1209, issue #1223). Run only after Goal 10 is done.
+
+1. First verify the current status of SEP-1865 and which clients support it, from primary sources, and record it in the issue; if the standard is not stable enough to build on, stop and report instead of guessing.
+2. Build the UI resource using only the public tools, with the narrowest sandbox and CSP, and a text fallback. Verify in at least two supporting clients with screenshots; if no supporting client is available to you, say so and leave the issue unverified.
+Run make check. Post a ## QA matrix and the batch gate result. Do not close issues.
+
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
+### 14. Finish
 
 ```text
 Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
@@ -224,7 +285,7 @@ Goal: remove the inert shim and wrap up.
 
 1. Run rg "Open piece controls menu" frontend/ and confirm that only menu-mode usages remain. If any test still depends on the inert sr-only shim, list them, leave the shim in place, and report instead of removing it.
 2. Otherwise implement #1187: remove the shim, run the focused specs and make check, one commit, ## QA matrix.
-3. Report the final state: baseline entries remaining, issues still open (including Batch 17, #1196 to #1204), owner decisions outstanding.
+3. Report the final state: baseline entries remaining, issues still open (including Batch 17, #1196 to #1204, and Batch 18, #1205 to #1223), owner decisions outstanding.
 4. Do not start #1193 or #1195 until I ask.
 
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.

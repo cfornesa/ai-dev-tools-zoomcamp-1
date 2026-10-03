@@ -26394,3 +26394,29 @@ Finding: `/gallery` returns only the SPA shell (HTTP 200, no noscript); `/robots
 | [#1202](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1202) | Guard: description changes propagate to llms, sitemap and gallery listing | DEPENDENCY-BLOCKED | #1197, #1199, #1200 | 2a |
 | [#1203](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1203) | Crawlable collections index and art-piece gallery listings | DEPENDENCY-BLOCKED | #1197 | 2b |
 | [#1204](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1204) | llms.txt: evaluate absolute URLs instead of relative links | GROOMED (evaluation) | — | 2a |
+
+### 2026-10-03 — Batch 18: MCP extension surface (Muse AI handoff)
+
+Create-only pass; nothing implemented. Verified against the repo: no MCP code exists; `openapi.yaml` has 35 paths / 44 operations and one `sessionCookie` scheme. Discrepancies recorded in the issues: the reported anonymous `acceptAIProposal3D` is `x-access: owner` in this repo and the view 404s non-owners (#1215); `openapi.yaml`'s public surface is 2D only while `urls.py` also serves public 3D, art-piece and collection endpoints (#1212). Muse's three proposed issues are kept as trackers (#1207 to #1209) over atomic children, per the atomic-sizing rule. Milestone: Batch 18. Handoff goals 10 to 13.
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1205](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1205) | Owner decision: MCP server stack, hosting and dependency approval | OWNER-DECISION-PENDING | — | owner |
+| [#1206](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1206) | Owner decision: OAuth 2.1 provider approach and scope model | OWNER-DECISION-PENDING | — | owner |
+| [#1207](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1207) | MCP public read-only gallery tools (tracker) | BLOCKED | #1205 | tracker |
+| [#1208](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1208) | OAuth provider and authenticated MCP tools (tracker) | BLOCKED | #1206, #1210 | tracker |
+| [#1209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1209) | MCP Apps gallery widget (tracker) | BLOCKED | #1207 | tracker |
+| [#1210](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1210) | MCP server scaffold with health tool | DEPENDENCY-BLOCKED | #1205 | 2b |
+| [#1211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1211) | Public MCP tools and resources for 2D projects and templates | DEPENDENCY-BLOCKED | #1210 | 2b |
+| [#1212](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1212) | Public MCP tools for 3D, generated pieces and collections | DEPENDENCY-BLOCKED | #1210 | 2b |
+| [#1213](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1213) | MCP rate limiting and audit logging | DEPENDENCY-BLOCKED | #1210 | 2b |
+| [#1214](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1214) | Document the MCP surface (openapi.yaml, api.md, mcp.md) | GROOMED | grows with the others | 2a |
+| [#1215](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1215) | Verify the 3D accept-proposal access level | GROOMED | — | 2b |
+| [#1216](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1216) | OAuth 2.1 provider | DEPENDENCY-BLOCKED | #1206, #1210 | 2b complex |
+| [#1217](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1217) | MCP bearer auth, scopes and isolation tests | DEPENDENCY-BLOCKED | #1216 | 2b complex |
+| [#1218](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1218) | Authenticated tools: 2D projects and versions | DEPENDENCY-BLOCKED | #1217 | 2b |
+| [#1219](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1219) | Destructive tools behind a separate scope | DEPENDENCY-BLOCKED | #1217, #1218 | 2b |
+| [#1220](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1220) | Authenticated AI tools | DEPENDENCY-BLOCKED | #1217, #1218, #1215 | 2b complex |
+| [#1221](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1221) | Authenticated 3D mirror tools | DEPENDENCY-BLOCKED | #1217, #1215, #1218 | 2b |
+| [#1222](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1222) | MCP tool for piece package intake | DEPENDENCY-BLOCKED | #1217 | 2b |
+| [#1223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1223) | MCP Apps gallery and viewer widget | DEPENDENCY-BLOCKED | #1211, #1212 | 2b |

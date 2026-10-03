@@ -7,27 +7,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/accountSettingsLayout.spec.ts|account settings layout persistence (#555) \u203a persists keyboard reorder and recovers malformed storage at 1280x900",
-    "issue": 1161,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/accountSettingsLayout.spec.ts|account settings layout persistence (#555) \u203a persists keyboard reorder and recovers malformed storage at 375x812",
-    "issue": 1161,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/accountSettingsReorder.spec.ts|Account settings reorder controls (#677) \u203a supports keyboard lift, move, drop, and Escape cancellation",
-    "issue": 1161,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/adminThemeGeneration.spec.ts|admin can generate, inspect, accept, and restore a custom theme draft",
     "issue": 1184,
     "added": "2026-10-03",

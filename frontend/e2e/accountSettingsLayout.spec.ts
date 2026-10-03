@@ -26,10 +26,17 @@ test.describe('account settings layout persistence (#555)', () => {
 
       await page.getByRole('button', { name: 'Expand Automatic retry' }).click();
 
-      for (let index = 0; index < 6; index += 1) {
+      const initialOrder = await sections(page);
+      const retryIndex = initialOrder.indexOf('retry');
+      expect(retryIndex).toBeGreaterThanOrEqual(0);
+      for (let index = 0; index < retryIndex; index += 1) {
         await page.getByRole('button', { name: 'Move Automatic retry up' }).click();
       }
       const reordered = await sections(page);
+      expect(reordered).toEqual([
+        'retry',
+        ...initialOrder.filter((section) => section !== 'retry'),
+      ]);
       expect(reordered[0]).toBe('retry');
       await page
         .locator('[data-settings-section="retry"]')
@@ -56,8 +63,11 @@ test.describe('account settings layout persistence (#555)', () => {
       await expect(
         page.locator('[data-settings-section="plan"]').getByRole('button', { name: 'Collapse' }),
       ).toBeVisible();
-      await page.getByRole('radio', { name: 'Reduced' }).click();
-      await expect(page.locator('.reduced-motion-status')).toContainText('reduced');
+      await page.getByRole('button', { name: 'Use reduced motion' }).click();
+      await expect(page.getByRole('button', { name: 'Use full motion' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     });
   }
 });

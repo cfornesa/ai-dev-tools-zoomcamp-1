@@ -357,27 +357,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/localPieceRoundTripPublish.spec.ts|Local-only piece publish-as-transfer (#942) › refuses to upload over quota and leaves the local piece editable",
-    "issue": 1174,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/localPieceRoundTripPublish.spec.ts|Local-only piece publish-as-transfer (#942) › warns, validates, uploads, and publishes a local-only 2D piece at 1280x900",
-    "issue": 1174,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/localPieceRoundTripPublish.spec.ts|Local-only piece publish-as-transfer (#942) › warns, validates, uploads, and publishes a local-only 2D piece at 375x812",
-    "issue": 1174,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/manualEdit3d.spec.ts|Generated 3D manual editing tools (#668) › adds, outlines, transforms, saves, and publishes Three.js and A-Frame edits",
     "issue": 1171,
     "added": "2026-10-03",
@@ -576,13 +555,6 @@
   {
     "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) › sound only: exact set and order",
     "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/relatedPublicProjects.spec.ts|canonical related public 2D pieces (#1142) › shows shared-tag public cards below canonical details, without shifting the stage",
-    "issue": 1174,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1

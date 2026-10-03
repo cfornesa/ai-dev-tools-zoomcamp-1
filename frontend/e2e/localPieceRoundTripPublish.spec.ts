@@ -68,6 +68,7 @@ test.describe('Local-only piece publish-as-transfer (#942)', () => {
       const publishButton = dialog.getByRole('button', { name: 'Publish' });
       await expect(publishButton).toBeDisabled();
 
+      await dialog.getByLabel('Title').fill('Local project');
       await dialog.getByLabel('Description').fill('A short description.');
       await expect(publishButton).toBeEnabled();
       await publishButton.click();
@@ -104,6 +105,7 @@ test.describe('Local-only piece publish-as-transfer (#942)', () => {
 
     await page.getByRole('button', { name: 'Make public' }).click();
     const dialog = page.getByRole('alertdialog', { name: /Make .* public\?/ });
+    await dialog.getByLabel('Title').fill('Local project');
     await dialog.getByLabel('Description').fill('A short description.');
     await dialog.getByRole('button', { name: 'Publish' }).click();
 

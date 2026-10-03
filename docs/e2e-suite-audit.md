@@ -41,8 +41,8 @@ Classes: **A** core journey (login, create, save, publish, offline, lifecycle); 
 3. **Fix the mapped children** (#1160-#1186); each child removes its baseline entries.
 4. **Owner decision A:** approve the 20 E? candidates as "rewrite" (default) or "retire" per spec; retirement removes coverage of a journey that may be re-homed in the unified editor.
 5. **Owner decision B:** approve the PR-smoke widening (item 2 above) after the PR gate is green for a week.
-6. **Follow-up issue (to file after approval):** class F audit comparing class B specs with Vitest coverage, moving copy/label-only assertions down.
-7. **Follow-up issue (to file after approval):** a short `README` in `frontend/e2e/` mapping each shared helper to the contract it owns, plus a lint rule or CI check flagging new specs that re-derive helper-owned locators.
+6. **Follow-up (approved 2026-10-03, filed):** #1193 class F audit comparing class B specs with Vitest coverage, then one issue per group of movable assertions.
+7. **Follow-up (approved 2026-10-03, filed):** #1194 `frontend/e2e/support/README.md` mapping each shared helper to the contract it owns, then #1195 a ratcheted check flagging new specs that re-derive helper-owned locators.
 
 ## Per-spec table
 

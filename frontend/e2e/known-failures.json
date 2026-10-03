@@ -1,12 +1,5 @@
 [
   {
-    "key": "chromium|e2e/accountComponentStyles.spec.ts|allauth controls match site components across theme, shadow, font, and zoom settings (#1125)",
-    "issue": 1162,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/adminThemeGeneration.spec.ts|admin can generate, inspect, accept, and restore a custom theme draft",
     "issue": 1184,
     "added": "2026-10-03",

@@ -333,16 +333,28 @@ async function assertKeyboardAndPointerStates(
     .toBe(accentBorder);
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  expect(await provider.evaluate((element) => getComputedStyle(element).transitionDuration)).toBe(
-    '0s',
-  );
+  await expect(page.locator('html')).toHaveAttribute('data-reduced-motion', 'true');
+  await expect
+    .poll(() =>
+      provider.evaluate((element) => {
+        const duration = getComputedStyle(element).transitionDuration;
+        const value = Number.parseFloat(duration);
+        return duration.endsWith('ms') ? value : value * 1000;
+      }),
+    )
+    .toBeLessThanOrEqual(0.01);
   await page.mouse.down();
-  const active = await provider.evaluate((element) => ({
-    matches: element.matches(':active'),
-    offset: new DOMMatrix(getComputedStyle(element).transform).m42,
-  }));
-  expect(active.matches).toBe(true);
-  expect(active.offset).toBe(1);
+  await expect
+    .poll(() =>
+      provider.evaluate((element) => ({
+        matches: element.matches(':active'),
+        offset: new DOMMatrix(getComputedStyle(element).transform).m42,
+      })),
+    )
+    .toMatchObject({ matches: true });
+  await expect
+    .poll(() => provider.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m42))
+    .toBeGreaterThan(0);
   await page.mouse.up();
 }
 

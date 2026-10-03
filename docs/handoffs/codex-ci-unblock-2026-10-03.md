@@ -117,7 +117,7 @@ Run make check before reporting. Post a ## QA matrix on each issue and list the 
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
-### 3b. Repair the CI regressions from #1190 (do this before continuing any other goal)
+### 3b. Repair the CI regressions from #1190 (done: commit 55dca9d2; kept for reference)
 
 ```text
 Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
@@ -131,33 +131,6 @@ Goal: make PR #1094's required checks green again by repairing two regressions i
 5. Do not push. If your first goal run pushed the branch, tell me what instruction led to it. I will push and dispatch checks myself.
 
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
-```
-
-### 3c. Publish the branch and clear the PR gate (owner grants commit and push for this goal)
-
-```text
-Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
-
-Goal: push the branch, get PR #1094's required checks green on the new head, then continue the work order.
-
-Owner permissions for this goal (they replace the generic "do not push" rule only as listed here):
-- You may commit your own changes and push the current branch with a normal fast-forward push: `git push origin docs/backlog-reevaluation-2026-09-27`. Never force-push (not even --force-with-lease), never push another branch, a tag or main.
-- If authentication fails, follow .agents/memory/github-https-credential-helper.md (a one-command in-memory credential helper); never print, store or put the credential in a remote URL.
-- If the local origin tracking-ref update fails on a lock-file permission error, that is a sandbox detail: confirm the push with `git ls-remote origin refs/heads/docs/backlog-reevaluation-2026-09-27` and compare it with `git rev-parse HEAD`.
-- You may use read-only CI commands: `gh pr checks 1094`, `gh run list`, `gh run view`, `gh run watch`.
-- NOT permitted: `gh workflow run`, `gh run rerun`, merging, closing issues, changing branch protection or repository settings. Dispatching the full 16-shard matrix and merging stay with me.
-
-Steps:
-1. Push now (it includes 55dca9d2 and the handoff commit). If the push is rejected, run `git fetch origin`, show me the divergence and stop; do not merge, rebase or reset.
-2. Watch the pull_request run on the new head until it finishes. Required checks: Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E (shard 1).
-3. If a required check is red: read the failing log, then decide whether this branch caused it (`git log`/`git blame`, compare the base run). If a commit on this branch caused it, repair it in a follow-up commit under the owning issue, push, and watch again (at most two repair rounds, then stop and report). If it is genuinely pre-existing on the base, report it with the evidence and do not fix it.
-4. When all four required checks are green, post the run URL and head SHA on #1096 and #1190, and tell me the PR is ready for me to merge.
-5. Then continue with the first incomplete goal in this file, in order (3 and 3b are done once you have confirmed their QA comments exist). Apply that goal's own prompt and stop conditions exactly. After each completed goal batch, push (fast-forward, same rules) and confirm the PR checks are still green, repairing branch-caused failures the same way. Product or owner-decision blockers: file or reference the issue, skip that item, and continue with the next; never skip an owner decision.
-6. Leave any uncommitted file that is not part of the goal you are working on exactly as it is (for example the pending frontend/e2e/accountComponentStyles.spec.ts change belongs to Goal 4 / #1162; do not commit it under another goal).
-
-Report after the push and again after the PR run: head SHA, run URL, each required check's conclusion, anything repaired (commit, reason), and what remains.
-
-Ground rules: do not dispatch workflows, merge, or close issues. If you see a modified file that you did not change, stop and ask. Never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
 ### 4. Wave 2A — account and shell
@@ -176,25 +149,39 @@ Issues: #1160, #1161, #1162 (re-scoped: wait for html[data-reduced-motion] and p
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
-### 5. Wave 2B — creation and setup, including its product blockers
+### 5. Wave 2B — creation and setup, including its product blockers (and publishing the branch)
 
 ```text
 Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
 
-Goal: finish Wave 2B as one batch, including the product defects your first run found. This replaces your blocked version of this goal.
+Goal: publish the branch and clear PR #1094's required checks, then finish Wave 2B as one batch, including the product defects your first run found. This replaces your current blocked version of this goal.
 
-Status you reported: #1168 is committed; #1169, #1170 and #1166 are blocked by product issues #1225, #1226 and #1227, and #1174 is blocked by the same footer layering as #1227. Your uncommitted spec edits in the working tree are your own earlier work on this goal: keep and continue from them, never discard them.
+State you reported: #1168 is committed; the #1190 repair is committed (55dca9d2) and unpushed; #1169, #1170 and #1166 are blocked by product issues #1225, #1226 and #1227; #1174 is blocked by the same footer layering as #1227. Your uncommitted spec edits in the working tree are your own earlier work: keep and continue from them, never discard them. The pending frontend/e2e/accountComponentStyles.spec.ts change belongs to Goal 4 (#1162): leave it uncommitted and untouched.
 
-Owner authorization (updated): #1225, #1226, #1227 and #1174 were filed or groomed before this run, now carry a "Distillation refinement" comment, and are in scope. Product CSS and markup changes are allowed for these four issues only. Do not touch the generated-piece stage rules (#1175, #1188, #1189; Goal 7 owns them). Keep every existing assertion strict: no forced clicks, no weakened expectations.
+Owner permissions for this goal (they replace the generic "do not push" rule only as listed here):
+- You may commit your own changes and push the current branch with a normal fast-forward push: `git push origin docs/backlog-reevaluation-2026-09-27`. Never force-push (not even --force-with-lease), never push another branch, a tag or main.
+- If authentication fails, follow .agents/memory/github-https-credential-helper.md (an in-memory credential helper); never print, store or put the credential in a remote URL.
+- If the local origin tracking-ref update fails on a lock-file permission error, that is a sandbox detail: confirm with `git ls-remote origin refs/heads/docs/backlog-reevaluation-2026-09-27` against `git rev-parse HEAD`.
+- Read-only CI commands are allowed: `gh pr checks 1094`, `gh run list`, `gh run view`, `gh run watch`.
+- NOT permitted: `gh workflow run`, `gh run rerun`, merging, closing issues, changing branch protection or repository settings. Dispatching the full matrix and merging stay with me.
 
+Part A — publish and verify (do this first):
+1. Push now. If the push is rejected, run `git fetch origin`, show me the divergence and stop; do not merge, rebase or reset.
+2. Watch the pull_request run on the new head. Required checks: Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E (shard 1).
+3. If a required check is red: decide from the log and git history whether this branch caused it. If so, repair it in a follow-up commit under the owning issue, push, and watch again (at most two repair rounds, then stop and report). If it is genuinely pre-existing on the base, report it with evidence and do not fix it.
+4. When all four are green, post the run URL and head SHA on #1096 and #1190 and tell me the PR is ready for me to merge. Then continue with Part B without waiting.
+
+Part B — Wave 2B. Owner authorization (updated): #1225, #1226, #1227 and #1174 were filed or groomed before this run, carry a "Distillation refinement" comment, and are in scope. Product CSS and markup changes are allowed for these four issues only. Do not touch the generated-piece stage rules (#1175, #1188, #1189; Goal 7 owns them). Keep every existing assertion strict: no forced clicks, no weakened expectations. A failure caused by your own commit belongs to that commit's issue; never call a failure pre-existing without checking git history.
 Order, one commit per issue, each with its restoration path (revert that commit):
 1. #1227 first: fix the shared app-shell footer layering. Verify the refinement hypothesis first: in frontend/src/index.css the rule `.app-shell > :not(.cosmic-starfield):not(.shell-display-toggles):not(.skip-link) { position: relative; z-index: 1; }` gives #main-content and .app-shell-footer the same z-index, so the later footer paints over menus and dialogs inside main. Choose the smallest fix that keeps the footer visible. Then #1174, whose specs may need only their own expectation updates; if its disabled Publish button has a different cause, classify it and fix only test-side causes.
 2. #1226: stop the decorative cosmic backdrop from creating horizontal overflow at 768px (verify the container's rule first; clipping the decorative container is the candidate). Reduced-motion and low-power behavior must not change.
 3. #1225: public structured-3D toolbar placement (desktop fullscreen action right of the stage midpoint; phone toolbar must not cover the immersive touch D-pad or zoom buttons). Structured-3D routes only; relocate, never hide.
 4. Then complete #1169, #1170 and #1166: finish their spec migrations, run the previously blocked cases, and remove their known-failures.json entries and #1168's, #1174's and these four product issues' entries as each case passes. Creation is local-first (IndexedDB, /local-projects/:id) and /ai-projects* redirect to the unified editor, so update tests to that contract. Rewrite stale specs to current behavior; never retire one without asking me. Do NOT remove the inert "Open piece controls menu" shim (#1187).
-Write the batch impact analysis first, including Goal 7's open issues that touch index.css. For the CSS issues inspect screenshots at 375x812, 768x1024 and 1280x900 and describe what you saw. Run the union of focused specs plus responsiveShell, headerMobile, publicShell and the stage and toolbar regression specs, then make check. Post a ## QA matrix on each issue and the batch gate result. Do not close issues.
+Write the batch impact analysis first, including Goal 7's open issues that touch index.css. For the CSS issues inspect screenshots at 375x812, 768x1024 and 1280x900 and describe what you saw. Run the union of focused specs plus responsiveShell, headerMobile, publicShell and the stage and toolbar regression specs, then make check. After the batch passes, push once more (same rules), confirm the PR checks are still green, and repair branch-caused failures the same way. Post a ## QA matrix on each issue and the batch gate result. Do not close issues. Stop after this goal; I will set Goal 6.
 
-Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+Report after Part A and again after Part B: head SHA, run URL, each required check's conclusion, anything repaired (commit, reason), and what remains.
+
+Ground rules: do not dispatch workflows, merge, or close issues. Pushing is permitted only as described in this goal. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
 ### 6. Wave 2C — profile and publication

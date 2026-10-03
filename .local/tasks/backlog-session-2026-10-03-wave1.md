@@ -30,8 +30,8 @@
 
 | Issue | Commit | Files | Verification / result | QA comment | Provenance |
 | --- | --- | --- | --- | --- | --- |
-| #1190 | this commit | `.github/workflows/ci.yml`; `frontend/e2e/known-failures.json`; `frontend/scripts/e2e-ratchet.mjs`; `frontend/scripts/e2e-ratchet.test.mjs`; this ledger | PASS: `node --test scripts/e2e-ratchet.test.mjs` (7/7); parsed run #1126 dry run (120 baseline failures, 0 new/fixed/expired); one removed entry failed and named the test; targeted Oxlint, Prettier, workflow validation and `git diff --check` passed. | To post after batch gate. | Codex / GPT-6 / default effort; track: mixed |
-| #1191 | pending | pending | pending | pending | Codex / GPT-6 / default effort; track: mixed |
+| #1190 | `17f077e1` | `.github/workflows/ci.yml`; `frontend/e2e/known-failures.json`; `frontend/scripts/e2e-ratchet.mjs`; `frontend/scripts/e2e-ratchet.test.mjs`; this ledger | PASS: `node --test scripts/e2e-ratchet.test.mjs` (7/7); parsed run #1126 dry run (120 baseline failures, 0 new/fixed/expired); one removed entry failed and named the test; targeted Oxlint, Prettier, workflow validation and `git diff --check` passed. | To post after batch gate. | Codex / GPT-6 / default effort; track: mixed |
+| #1191 | this commit | `frontend/playwright.config.ts`; this ledger | PASS: authPolicy + projectLifecycle Chromium run (8/8); temporary missing-control probe failed as expected at 10.3 s with `locator.click: Timeout 10000ms exceeded`; temporary spec removed. Two full-matrix consecutive-run criterion and before/after failed-duration comparison are pending owner dispatches. | To post after batch gate. | Codex / GPT-6 / default effort; track: mixed |
 | #1194 | pending | pending | pending | pending | Codex / GPT-6 / default effort; track: mixed |
 
 ## Batch gate

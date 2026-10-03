@@ -1,5 +1,12 @@
 # DECISIONS.md
 
+## 2026-10-03 — CI tiers: PR gate blocks, the 16-shard matrix is advisory
+
+- **Owner decisions:** merging is gated by the PR checks (Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E shard 1); the 16-shard browser matrix is advisory and reports through a known-failure ratchet (#1190) that fails only on new failures, on baseline entries that now pass, and on expired entries; all 241 E2E specs are to be audited (`docs/e2e-suite-audit.md`); Codex may edit `.github/workflows/ci.yml` for the ratchet and the fast-fail timeouts (#1191) only, in the same commit series, with no new jobs, triggers or secrets and no push, dispatch or merge.
+- **Evidence:** the PR check failed on 2 tests (#1179); main has no branch protection and no green run in the last 100; 108 of ~111 failing tests were identical in two consecutive full runs; 192 of 241 specs are per-issue probes.
+- **Owner action pending:** protect `main` with the four PR checks (#1192).
+- **Restoration:** revert the ratchet series to return to raw pass/fail; the policy text in `docs/process.md` is documentation only.
+
 ## 2026-10-02 — Same-run implementation authorized for #1158 and #1159
 
 - The owner explicitly authorized implementation of #1158 and #1159 in this

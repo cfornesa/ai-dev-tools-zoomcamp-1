@@ -456,3 +456,25 @@ through a pull-request or other indirect API. Record the complete evidence
 matrix in the local task ledger and use the correctly typed GitHub issue update
 operation for the final state transition. The issue remains permanently closed
 once its finite contract passes; any later gap is a new linked issue.
+
+## CI tiers and E2E suite standards (owner-decided 2026-10-03)
+
+Evidence behind this section (run #1126 against run #1112, `docs/ci-failure-map-run1126.md`): the 16-shard browser matrix runs only on `workflow_dispatch` and the weekday schedule; `main` had no branch protection and no green run in the last 100 runs; 108 of ~111 failing tests failed identically in two consecutive full runs (deterministic, stale contracts, not flaky); 192 of 241 specs are per-issue acceptance probes. A permanently red advisory run must not block merging or other work.
+
+### CI tiers
+| Tier | What | Blocks |
+|---|---|---|
+| 1. PR gate | `Workflow validation`, `Backend checks`, `Frontend checks`, and `Browser acceptance E2E (shard 1)` (on pull requests: the 4-spec smoke suite, 3 public-media specs, the WebKit fullscreen regression) | **Merging** (required status checks on `main`, owner action #1192) |
+| 2. Full matrix | 16 isolated shards on `workflow_dispatch` and the weekday schedule, reported through the **known-failure ratchet** (#1190) | Nothing by itself. Fails only on a **new** failure, on a baseline entry that now passes, or on an expired entry |
+| 3. Release | A production publish needs a ratchet-clean full run on the exact commit plus `scripts/smoke-published.sh` | **Replit publishes** |
+
+Ratchet rules: the baseline (`frontend/e2e/known-failures.json`) lists each currently failing test with an owner issue and an expiry (21 days; 7 for security or authorization checks); no test is skipped, `fixme`'d, edited or weakened to make a run green; the commit that fixes a child issue removes its baseline entries; an entry without an issue or past its expiry fails the run. A child issue's closure evidence is a matrix run in which its entries are gone and its specs pass. The tracker (#1096) closes when every child is closed or baselined with an owner and expiry.
+
+### E2E authoring and maintenance standards
+1. **Test a journey or a current contract, not an issue.** Name specs by feature; an issue number may appear in a comment, not as the identity. A new E2E spec needs a user journey that unit or component tests cannot cover.
+2. **Selectors go through shared helpers** (`frontend/e2e/support/`: `createServerProject2D/3D`, `openPieceControlsMenu`, the scene-Save helper, the Ask AI panel helper). A spec must not re-derive a locator that a helper owns.
+3. **No unexplained magic numbers.** Pixel counts, script counts, exact ratios and copy strings need a stated rationale and tolerance next to the assertion, or an allowlist of identified items (for example script ids) instead of a bare count.
+4. **UI changes run an E2E impact search.** Any change that renames an accessible name, moves a control, changes a route or alters layout runs `rg` over `frontend/e2e` for the old name/route/selector in the batch impact analysis ("Canonical batch transaction") and updates the specs in the same batch.
+5. **Fail fast.** Do not rely on the default test timeout to detect a missing control (#1191); per-call timeouts above the config default carry a comment with the reason.
+6. **Baselines are debt with a clock.** A baseline entry names its owner issue and expiry; extending an expiry needs a comment on the issue.
+7. **The suite is audited, not just run.** `docs/e2e-suite-audit.md` classifies every spec (core journey, current contract, geometry/pixel probe, export/security audit, obsolete, duplicate of lower-level coverage); retirements need the owner's approval.

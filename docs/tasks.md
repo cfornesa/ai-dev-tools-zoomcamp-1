@@ -26364,3 +26364,13 @@ Case-to-issue map: `docs/ci-failure-map-run1126.md` (120 failed cases → childr
 | [#1189](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1189) | Embed route on phones follows the same stage and toolbar rule (after #1188) | DEPENDENCY-BLOCKED | #1188 | 2a |
 
 Owner decisions of 2026-10-03: #1167 remove the inert shim (→ #1187); #1175 two-tier phone specs, toolbar below the stage, tall phone stage only for `c2js-interactive` (→ #1188, #1189). #1096 stays open until a full 16-shard Linux run is green or every remaining failure has an owner and next action.
+
+### 2026-10-03 — CI tiers: PR gate blocks, 16-shard matrix is advisory (#1096)
+
+Owner decisions: PR gate (Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E shard 1) blocks merging; the full matrix is advisory through a known-failure ratchet (no skipped or weakened tests); audit all 241 specs; Codex may edit ci.yml for the ratchet and fast-fail timeouts only. Rules: `docs/process.md` "CI tiers and E2E suite standards". #1179 is first priority (the only failures in the blocking PR check).
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1190](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1190) | CI: known-failure ratchet so the 16-shard matrix fails only on new problems | GROOMED | —; first | 2b (CI gate semantics); Codex, ci.yml authorization scoped to #1190/#1191 |
+| [#1191](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1191) | E2E: fail fast on missing controls (actionTimeout and navigationTimeout) | DEPENDENCY-BLOCKED | after #1190 | 2a |
+| [#1192](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1192) | Owner action: protect main with the PR gate checks | OWNER-ACTION-PENDING | — | owner |

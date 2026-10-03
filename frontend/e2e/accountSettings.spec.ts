@@ -33,7 +33,30 @@ async function assertGroupedSettings(page: Page) {
     if (await expand.count()) await expand.click();
   }
   const actions = page.getByRole('list', { name: 'Account management actions' });
-  await expect(actions.getByRole('listitem')).toHaveCount(11);
+  await expect
+    .poll(() =>
+      actions.getByRole('listitem').evaluateAll((items) =>
+        items.map((item) => {
+          const label = item.cloneNode(true) as HTMLElement;
+          label.querySelectorAll('[aria-hidden="true"]').forEach((icon) => icon.remove());
+          return label.textContent?.trim();
+        }),
+      ),
+    )
+    .toEqual([
+      'Manage billing',
+      'Manage public collections',
+      'Manage linked sign-in methods',
+      'Manage verified email addresses',
+      'Set a local password',
+      'Change your password',
+      'Recover a password',
+      'Manage active sessions',
+      'Export your data',
+      'View local storage usage',
+      'Retained unpublished pieces',
+      'Delete your account',
+    ]);
   await expect(actions.getByRole('link', { name: /delete your account/i })).toBeVisible();
   expect(
     await page.evaluate(

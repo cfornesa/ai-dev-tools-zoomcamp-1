@@ -7,34 +7,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/accountSettings.spec.ts|Account settings grouping (#548) \u203a empty settings fixture stays grouped at 1280x900",
-    "issue": 1160,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/accountSettings.spec.ts|Account settings grouping (#548) \u203a empty settings fixture stays grouped at 375x812",
-    "issue": 1160,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/accountSettings.spec.ts|Account settings grouping (#548) \u203a populated settings fixture stays grouped at 1280x900",
-    "issue": 1160,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/accountSettings.spec.ts|Account settings grouping (#548) \u203a populated settings fixture stays grouped at 375x812",
-    "issue": 1160,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/accountSettingsLayout.spec.ts|account settings layout persistence (#555) \u203a persists keyboard reorder and recovers malformed storage at 1280x900",
     "issue": 1161,
     "added": "2026-10-03",

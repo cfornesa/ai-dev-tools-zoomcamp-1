@@ -26524,3 +26524,12 @@ Create-only pass; nothing implemented. Verified against the repo: no MCP code ex
 | [#1223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1223) | MCP Apps gallery and viewer widget | DEPENDENCY-BLOCKED | #1211, #1212 | 2b |
 
 - 2026-10-03 — Owner decisions: E2E audit decision A (20 E? candidates rewritten, none retired) and B (PR smoke widened): [#1224](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1224) CI: add the three offline core-journey specs to the PR smoke set (GROOMED; depends on #1179 and the PR gate green; scoped ci.yml authorization).
+
+### Proposed follow-up — Desktop shell display toggles and AI prompt overlap (#1228)
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1228](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1228) | Desktop shell display toggles obscure the unified editor AI prompt | PROPOSED | discovered by #1170; related to closed #1158 | Batch 14; 2b shell/accessibility |
+
+Found in the inspected `ai-2d-1280.png` screenshot from #1170: at 1280×900, fixed bottom-right Display settings buttons overlap the visible AI prompt textarea. The mobile behavior from #1158 is already covered; this proposed issue is limited to the desktop editor route/state.
+

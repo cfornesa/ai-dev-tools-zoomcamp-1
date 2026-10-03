@@ -2,36 +2,37 @@
 
 ## Scope and gate
 
-The initial authenticated GitHub search returned 21 open issues. Read-after-
-write GitHub search on 2026-10-02 previously reported seven open; issue-level
-QA has since closed #1144, #1158, and #1155. The current inventory is four
-open issues: #1096, #1103, #1138, and #1156. #1143, #1159, and those three
-issues were closed only after their issue-level QA comments/checklists were
-reconciled. Batch gate: **pending** for the remaining issues; this record is a
-continuation, not a declaration that the project batch is complete.
+The initial authenticated GitHub search returned 21 open issues. Subsequent
+issue-level QA closed #1144, #1158, #1155, and #1103; the authenticated
+inventory at the start of this continuation was #1096, #1138, and #1156.
+After current-head QA and reconciliation, #1138 and #1156 are closed, leaving
+#1096 open. Earlier closures, including #1143, #1159, and #1157, were
+reconciled against their issue-level QA records. Batch gate: **pending** for
+#1096; this record is a continuation, not a declaration that the project
+batch is complete.
 
 Owner choices now resolved: #1129 selected the private server-backed 2D
 `Project.brief` field; #1130 selected owner-only history for structured 3D then
 generated ArtPieces, tracked by #1156 and #1157. Their comments, `DECISIONS.md`,
-and `docs/ligdol-adaptation.md` agree. Decision issues remain open until batch
-reconciliation.
+and `docs/ligdol-adaptation.md` agree. The decision issues are closed after
+their criterion reconciliation.
 
 ## Current manifest
 
 | Issue | Milestone | Current state | Commit / next gate |
 |---|---:|---|---|
-| #1096 | 14 | Open; CI tracking/hand-off | Full 16-shard outcome and failure reconciliation |
+| #1096 | 14 | Open; QA FAIL / triage hand-off | Run 37081997610 completed on current HEAD `78ee6c7`; workflow/backend/frontend/disposable routing passed, all 16 browser shards failed. QA matrix posted as comment `5963808831`. Atomic children #1160–#1162 filed for three evidenced settings contracts; other failures remain unmapped. |
 | #1100 | 14 | **Closed completed on GitHub 2026-10-02** | Exact six 3D helper acceptance cases passed on Linux Chromium in run #1074; implementation and preservation criteria already QA PASS. Closing issue-specific work; unrelated full-matrix failures remain with #1096 and their owners. |
 | #1102 | 14 | **Closed completed on GitHub 2026-10-02** | Current full Linux run #1116 passed all nine specified Chromium specs and the WebKit fullscreen/Escape case; `## QA: PASS` comment 5958177716. |
 | #1103 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5963116281; focused local PostgreSQL/Chromium passed 17/17 with `AI_PROVIDER=fake`, 0 skips; Linux Chromium passed every #1103-owned case across shards 3/8/9 in run #1124 at `85340d2d`. Full-matrix residuals remain with #1096. |
 | #1104 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5958690593; Linux run #1117 on `50f95f14` executed all three issue-owned specs on disposable PostgreSQL: 22 passed, 0 failed, 0 skipped. Two separate `authPolicy.spec.ts` failures are outside its impact row. |
 | #1129 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D1 recorded and dependent #1138–#1140 contracts implement the selected server-field design. |
 | #1130 | 16 | **Closed completed on GitHub 2026-10-02** | Decision criteria met; D2 recorded and split follow-ups #1156/#1157 created, milestoned, and sequenced; both are underway. |
-| #1138 | 16 | QA: FAIL / docs-first chronology unresolved; latest shared Linux matrix remains red | `d40f4a8a`; refreshed QA `5962714826`; current-head `make check` and migration drift pass |
+| #1138 | 16 | **Closed completed on GitHub 2026-10-03** | QA PASS `5963533424`; owner accepted same-commit docs criterion; all five acceptance checks reconciled. Remaining #1096 browser failures do not touch this backend contract. |
 | #1139 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5954588513`; Linux E2E, both inspected viewport artifacts, privacy, save/clear and accessibility criteria satisfied. |
 | #1140 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5950120078`; focused backend/panel checks and fake-provider Linux E2E satisfied the bounded note, request opt-out, snapshot/retry, and privacy criteria. |
 | #1143 | 16 | **Closed completed on GitHub 2026-10-02**; QA PASS comment 5961624588 | Full-history reviewable-proposal metric, 5-second PostgreSQL timeout, admin privacy/suppression, rendered desktop/mobile evidence, and frontend/backend checks passed. Note: GitHub closure left the body checklist unchecked; preserve the closed record and ask owner before creating a corrective follow-up. |
-| #1144 | 14 | Engineering: visual captures added; awaiting Linux rendered evidence | Linux Chromium/PostgreSQL exact two-spec run; inspect desktop/mobile screenshots; then criterion QA and GitHub reconciliation |
+| #1144 | 14 | **Closed completed on GitHub 2026-10-02** | Linux Chromium/PostgreSQL issue-specific cases and retained viewport screenshots were reviewed; closure evidence is recorded in the current batch history. |
 | #1149 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958321151`; all 8 current Linux fake-provider 2D/3D Agent scenarios passed, 0 skipped; route changes confined to the two specs. |
 | #1150 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958366885`; Linux run #1116 passed all #1150-owned scene-Save paths with current fixture setup; unrelated #1103/#1104 failures remain separately owned. |
 | #1151 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS `5956057113`; current source SHA `a3d53bce` is an ancestor of run #1105; all 3 Linux Chromium scenarios and four inspected 1280x900/375x812 motion-toggle artifacts passed. |
@@ -39,7 +40,7 @@ reconciliation.
 | #1153 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS comment 5958787980; Linux run #1117 executed all 13 Publishing/Remix and 3 responsive-shell tests on disposable PostgreSQL; all 16 passed, including populated-gallery at 375px. |
 | #1154 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS `5958310474`; all 8 Linux Chromium fake-provider scenarios passed on the fixed target-aware contract, 0 skipped. |
 | #1155 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS posted after current-ref Linux evidence. `projectLifecycle.spec.ts` shard 13 passed 6/6; backend/frontend checks passed. The full run #1122 remains red on unrelated failures under #1096. Rejected-action tests snapshot every SQLite table row (41 focused backend tests pass). |
-| #1156 | 16 | QA: FAIL / docs-first chronology unresolved; latest shared Linux matrix remains red | `e28a57a3`; refreshed QA `5962707997`; current-head `make check` and migration drift pass |
+| #1156 | 16 | **Closed completed on GitHub 2026-10-03** | QA PASS `5963549414`; owner accepted same-commit docs criterion; all 12 criteria checked. Run 37076051935 executed all 16 shards after #1156/#1157; no #1156-owned browser failure reported. Residuals remain under #1096. |
 | #1157 | 16 | **Closed completed on GitHub 2026-10-02** | QA PASS comment `5959139975`; current-head Linux backend checks 2,012 passed / 44 gated skips, migration drift clean; populated-row forward/reverse migration, PostgreSQL concurrent transition and Linux full-matrix execution on descendant `fba45bc` verified. Aggregate matrix remains red on unrelated specs; #1096 stays open. |
 | #1158 | 14 | **Closed completed on GitHub 2026-10-02** | QA PASS: 7/7 Linux `adminSettings` cases, named shell regressions, screenshot review, and isolated restoration reproduction. |
 | #1159 | 14 | **Closed completed on GitHub 2026-10-02**; QA PASS comment 5961685465 | Portal dialog uses exported-viewer sizing; public, editor, immersive and generated-art mounts inspected at 1280x900/375x812; 12/12 focused union; all 11 issue criteria checked before closure. |
@@ -105,6 +106,130 @@ record. Other open issues remain listed in the manifest and in
 silently omitted from the batch.
 
 ## Verification and external run state
+
+### #1096 full-matrix run 37081997610 (2026-10-02)
+
+The owner-authorized `workflow_dispatch` ran on branch
+`docs/backlog-reevaluation-2026-09-27`, exact HEAD
+`78ee6c7997cc4e19bc574db49f3f83f065ab08fb`. It completed in 16m24s and
+uploaded 16 diagnostic artifacts. Workflow validation passed; backend checks
+passed (2,012 passed / 44 skipped); frontend checks passed (316 files / 3,229
+tests); disposable published-routing smoke passed (1m19s). All 16 browser
+acceptance shards failed. Published-production, hosted-safe-push, and staging
+authenticated jobs were skipped by the manual-dispatch conditions; no
+production publish or shared-database operation occurred.
+
+Failed-spec inventory from run 37081997610 (names grouped by browser shard;
+several specs contribute multiple failed cases):
+
+| Shard | Failed specs observed |
+|---:|---|
+| 1 | `accountComponentStyles`, `accountSettings` (4 cases) |
+| 2 | `accountSettingsLayout` (2), `accountSettingsReorder`, `adminThemeGeneration`, `ai2dPublication`, `ai2dResponsive` |
+| 3 | `aiAndRecovery`, `aiAuthoringSixEngine743`, `aiMention3d` (2), `aiPanelLayout2d` (3) |
+| 4 | `aiPanelLayout3d` (3), `aiPlanReview2d`, `aiPlanReview3d`, `aiRegionTargetExisting`, `artPiece2dEditor`, `artPiece3dEditor`, `artPieceCameraRuntime` (2), `artPieceFakeRefinement` |
+| 5 | `artPieceSixEngineEmbed`, `artPieceSixEngineRegular`, `artPieceSteeringRuntime` |
+| 6 | `artPieceThumbnailCapture` (2), `authoringOwnershipGate` (2), `authoringWorkflow740`, `authPolicy` (2), `canonicalImmersiveStructuredPiece`, `canonicalStructuredPieceSlug`, `celestialStyle` |
+| 7 | `contentPanelShadow`, `cosmicBackdropStars` (2), `designSchemeMatrix`, `drawingPlane3d`, `drawioEditor`, `editOutputConsistency`, `embedToolbarOrder`, `exportArtifacts` |
+| 8 | `headerChrome` (3), `homeHero` (2), `immersiveArtPieceToolset` (3), `immersiveCollection` (2), `injectionArtifacts` (5) |
+| 9 | `layersPanel`, `livePreview`, `localGalleryCards` |
+| 10 | `localPieceRoundTripPublish` (3), `manual3dLayoutParity`, `manual3dPublicationLifecycle`, `manualEdit3d` |
+| 11 | `piece2dFill`, `pieceRuntimeErrorTemplate`, `pieceStageSizing` |
+| 12 | `pieceTemplateParity2d`, `pieceTemplateParity3d`, `pieceToolbarPlacement`, `profileHandles` (2), `profilePhotoUpload` (2), `profileStyleInheritance`, `project3dLifecycle` (4), `project3dPublicationDiscoverability`, `project3dServerPackageExport` (2) |
+| 13 | `project3dThumbnailCard` (2), `public3dCameraOverlay728`, `public3dCameraPlacement742`, `public3dImmersiveCameraOverlay734`, `public3dToolbar730`, `publicArtPieceToolset` (3), `publicDraw`, `publicGalleryEngine` (2) |
+| 14 | `publicGalleryMixedPieces`, `publicPieceSurfaceContract744`, `publicProfiles` |
+| 15 | `regularToolbarMatrix` (4), `relatedPublicProjects` |
+| 16 | `sonicTelemetry`, `themeCustomization`, `themeToggle`, `unpublishRetention`, `vividDesignMatrix`, Firefox `drawioEditor`, WebKit `artPieceCameraRuntime` |
+
+This inventory is not yet a first-cause classification for every failed
+test. Examples directly visible in logs:
+
+- Account-settings reorder failures are test-contract drift, not evidence of
+  a new product defect. The current `DEFAULT_SECTION_ORDER` contains eight
+  sections, including `cloudSync` (introduced by the previously completed
+  cloud-backup/settings work); `accountSettingsReorder.spec.ts` still expects
+  seven handles. `accountSettingsLayout.spec.ts` moves Automatic retry up six
+  times as if it started at index 6, but it now starts at index 7, so it ends
+  behind Plan and the assertion `reordered[0] === 'retry'` fails with
+  `plan`. Both source and test establish this mismatch. The referenced #555
+  and #677 issues are closed; preserve them and propose one corrective
+  test-contract follow-up only after owner authorization. No product code
+  change is justified by these failures.
+- The four #548 account-management count failures share another stale test
+  constant: the closed #548 spec expects 11 list items, while `AccountSettings`
+  now renders 12. Git blame shows the twelfth entry, “Retained unpublished
+  pieces,” was added by the already-closed #944 implementation. This is a
+  post-closure test-contract update, not evidence to reopen #548 or remove the
+  #944 link. Candidate scope can share the account-settings test refresh
+  above, subject to owner approval.
+- Several AI-editor E2E failures are stale-route contracts. The current app
+  shell's `GalleryCreateMenu` exposes renderer-specific/manual 2D, 3D, and
+  local-generated creation choices, not the old “Create an AI-assisted
+  animation/project” menu actions. `App.tsx` keeps `/ai-projects/:id` and
+  `/ai-projects3d/:id` only as compatibility routes that redirect to the
+  canonical 2D/3D editor. The failed `ai2dPublication`, `ai2dResponsive`,
+  `aiMention3d`, `aiPanelLayout2d`, and `aiPanelLayout3d` specs still enter
+  through those retired menu entries/routes or query the removed dedicated
+  editor selectors. This is test-contract drift from the unified editor
+  migration, not evidence to restore the retired UI. Existing #1108 and
+  #1149 covered different named specs and are closed; do not reopen them. The
+  remaining specs need criterion-ready follow-up coverage split by current
+  editor surface after owner authorization.
+- Shards 1–2: account action-count expectation is 11 while the page exposes
+  12; account settings keyboard reorder expects `retry` first but gets `plan`,
+  and expects 7 drag handles but sees 8. The admin theme test finds its
+  “accepted” state hidden while the event still reads “awaiting review”; two
+  legacy AI 2D tests time out clicking their expected publication/responsive
+  controls.
+- Shards 3–4: the `aiAndRecovery` explicit-save case times out; the 3D AI
+  panel is missing at all three viewports; AI plan-review/editor and
+  existing-generated-piece targeting cases time out.
+- Shards 5–13 include theme/settings and responsive-layout expectations,
+  generated-piece engine/runtime and export cases, public/immersive 3D
+  controls/camera behavior, injection fixtures, manual 3D flows, and stage
+  sizing. The Layers reorder test fails in shard 9. Shard 7's draw.io test
+  clicks a hidden piece-controls button intercepted by the stage shell.
+  Exact root causes and existing-issue ownership have not been reconciled for
+  each case.
+- Shard 14 includes public mixed-piece gallery, public-version cleanup, and
+  profile-save failures. Shard 15's toolbar tests see extra visible controls
+  (`Unmute sound` and `Show hand gesture guide`), and its related-project
+  Publish action is intercepted by the shell footer. Shard 16 exposes
+  telemetry/theme/unpublish/design-matrix failures and a Firefox draw.io
+  editor click intercepted by the stage shell.
+
+These are failure symptoms, not proof that every case is a product defect;
+test/fixture drift, product behavior, and runner/environment causes must be
+distinguished from each failure's first cause. After the owner authorized
+filing novel cases and requested atomic issues, three source-verified,
+test-only follow-ups were filed in Batch 14:
+
+- [#1160](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1160) —
+  stale account action count (11 expected, 12 rendered; preserve #548/#944).
+- [#1161](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1161) —
+  account settings reorder expects seven sections/six moves while current
+  order has eight (preserve #555/#677).
+- [#1162](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1162) —
+  reduced-motion test expects `0s` while existing CSS specifies `0.01ms`, which
+  Chromium reports as `1e-05s` (preserve #1125).
+
+These issues cover only their named contracts, use Stage 2a routing, and are
+not implemented. The owner asked Claude Code to refine them before work
+resumes. Issue-scoping provenance: rostered Codex / actual GPT-6.1-sol
+(reasoning effort unavailable); Stage 2 and Stage 4 have not started. Their
+links are recorded in `docs/tasks.md`. #1096 remains open and QA FAIL; no issue
+closure is claimed.
+
+The rest of the failed-spec inventory remains symptom-level or partly
+classified. In particular, retired AI-creation menu/route failures in
+`ai2dPublication`, `ai2dResponsive`, `aiMention3d`, `aiPanelLayout2d`, and
+`aiPanelLayout3d`, the separate AI plan-review modes, public mixed-piece gallery
+setup, project3d thumbnail-card route setup, and the many art-piece/runtime,
+theme, public viewer, and shell interaction failures have not been converted to
+issues here. Their duplicates and first causes need the next refinement pass;
+do not infer product defects from failure symptoms alone. The full 16-shard run
+is still red, and #1096's mapping, child-linkage, and green-matrix criteria
+remain unmet.
 
 - Final frontend gate after the issue implementation commits: `make frontend-check` passed lint (exit 0 with existing repository warnings), Prettier, TypeScript build/typecheck, and Vitest (316 files, 3,228 tests passed). #1157's final-tree backend gate passed separately (`make backend-check`: 2,012 passed, 44 skipped), so both local check halves have current-tree evidence without rerunning the already completed backend suite.
 - Focused backend: `uv run ruff format ...`; `uv run pytest tests/test_ai_runs.py tests/test_account_deletion.py` → 90 passed, 4 skipped.
@@ -1079,9 +1204,53 @@ together; owner disposition is pending. Linux run #1122 executed after the
 dependent work, but its 16-shard matrix failed and residual first-cause
 mapping remains under #1096. These two issues remain open.
 
-No source files changed during this QA refresh. #1096 remains a parent
-triage issue with residual matrix failures; #1103 remains open because its
-initial-local-draft test assumption conflicts with current behavior and its
-setup-only contract disallows changing either product behavior or assertions
-without owner disposition. The exact open issue inventory remains #1096,
-#1103, #1138, and #1156.
+That QA refresh made no source changes. #1096 remains a parent triage issue
+with residual matrix failures. #1103 was subsequently re-reviewed and closed
+completed; its closure evidence is recorded below. The current open inventory
+is #1096, #1138, and #1156.
+
+## 2026-10-03 — Focused QA and current failure evidence
+
+At checkout `78ee6c79`, the combined #1138/#1156 backend regression union
+passed **241 tests with 9 skips** in 24.74s (SQLite/test settings). It covered
+the private 2D brief, package/fork/export/deletion and cloud/sync boundaries,
+2D activity response, structured 3D activity/version/publish, AIRun decisions,
+and continuity metrics. Skips require configured PostgreSQL; this is not a
+PostgreSQL claim.
+
+PR smoke run #1125 on SHA `78ee6c79` completed backend, frontend, workflow,
+and disposable published-routing checks successfully. Its single browser
+shard failed the two previously identified `authPolicy.spec.ts` checks
+(signup-policy copy and dark-shell background); no new issue was filed. Run
+#1124's `project3dThumbnailCard` first cause is confirmed by source: its
+private setup waits for removed `/projects3d/:id` routing rather than using
+`createBlank3DProjectViaUI`, which captures the real id and waits for the
+canonical owner editor. #1100's six named helper callers and closed #393 do
+not include this direct caller. A focused follow-up-vs-parent-record question
+is pending; no source or GitHub issue mutation was made.
+
+Current authenticated open inventory is #1096, #1138, and #1156. The latter
+two remain open pending owner disposition of `docs/api.md updated first`:
+source and docs share an implementation commit, so chronological order is
+unverifiable. No issue was closed during this refresh.
+
+
+## 2026-10-03 — #1138/#1156 QA reconciliation and closure
+
+Owner explicitly accepted same-commit `docs/api.md` updates as sufficient for
+#1138 and #1156; the scoped disposition is recorded in `DECISIONS.md`. Fresh
+issue-level QA PASS comments were posted through the active Chrome session:
+[#1138 comment 5963533424](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138#issuecomment-5963533424)
+and [#1156 comment 5963549414](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1156#issuecomment-5963549414).
+All #1138 and #1156 acceptance checklist items were checked, including
+#1156's added N/A and regression criteria. Read-after-write confirmed both
+GitHub issues closed as completed.
+
+The combined current-head focused backend union remains 241 passed / 9 skipped
+(SQLite/test settings). Earlier current-head `make check` passed: backend
+2,012 passed / 44 skipped, frontend lint/format/typecheck, and Vitest 3,229
+passed; migration drift check was clean. Linux run 37076051935 executed all
+16 shards after the dependent #1156/#1157 batch but is aggregate red. No
+#1138- or #1156-owned browser failure was reported; residual cases remain
+with #1096. This does not claim a green matrix, PostgreSQL local run, or Replit
+publish. The sole remaining open issue is #1096, which remains a triage parent.

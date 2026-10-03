@@ -1,5 +1,33 @@
 # AugmentrART Backlog
 
+## 2026-10-03 — #1096 atomic E2E contract follow-ups filed
+
+The owner authorized filing novel cases and splitting #1096's independent
+subtasks into atomic issues, while deferring implementation until Claude Code
+completes refinement. Three source-verified test-contract follow-ups were
+created in open milestone Batch 14:
+
+- [#1160](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1160) —
+  update the account-settings action count to 12 and explicitly retain
+  “Retained unpublished pieces” (`accountSettings.spec.ts`; stale #548-era
+  expectation, with #944 preserved).
+- [#1161](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1161) —
+  update the account-settings keyboard reorder assertions for the current
+  eight sections and persisted reorder flow (`accountSettingsReorder.spec.ts`,
+  `accountSettingsLayout.spec.ts`; preserve closed #555/#677).
+- [#1162](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1162) —
+  allow the Chromium CSSOM representation of the existing 0.01ms reduced-motion
+  transition while retaining the motion-toggle and full-motion assertions
+  (`accountComponentStyles.spec.ts`; preserve closed #1125).
+
+All three are Stage 2a test maintenance; no product or test code was changed.
+The parent [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096)
+remains open and QA FAIL: this filing addresses only these three evidenced
+contracts, not the unclassified failures elsewhere in run #1126. Claude Code
+should refine the new issue wording and duplicate/scope relationships before
+implementation resumes. Full evidence and outstanding classifications are in
+the [batch 19 ledger](../.local/tasks/backlog-session-2026-10-02-batch19.md).
+
 ## 2026-10-02 — #1139 responsive QA setup fix
 
 Run #1085's Linux browser evidence identified the mobile #1139 failure: its
@@ -26312,7 +26340,7 @@ At current local HEAD `346eeee2`, `UV_CACHE_DIR=/tmp/codex-progress-20261002-cac
 
 Fresh criterion matrices were posted through the active Chrome session: [#1138 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138#issuecomment-5962714826) and [#1156 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1156#issuecomment-5962707997). Their local implementation criteria pass. Both retain the explicit `docs/api.md updated first` criterion; implementation and documentation are in one commit, so Git history cannot prove the sequence. Owner disposition remains pending. Linux run #1122 exercised the dependent batch after #1156/#1157 landed, but its 16-shard matrix failed; residual causes remain tracked under #1096. No closure is claimed.
 
-The live open issue inventory remains #1096, #1103, #1138, and #1156. #1096 is parent triage and still needs first-cause mapping for residual failures. #1103 remains constrained to setup-only edits and preserved assertions; its initial local-draft observation fails before the intended edit, while its explicit-save timeout still lacks a proven first cause. The current issue record does not authorize changing product behavior or the test contract.
+At that refresh, the live open issue inventory remained #1096, #1103, #1138, and #1156. #1096 was parent triage; #1103 still awaited its later QA reconciliation. The subsequent closure is recorded below.
 
 ### 2026-10-02 — #1103 QA pass and GitHub closure
 
@@ -26328,6 +26356,80 @@ run remains red on unrelated browser failures tracked by parent #1096; no
 reason `completed` and all six criteria checked. Current open inventory:
 #1096, #1138, and #1156. The latter two still await owner disposition on their
 docs-first chronology criterion.
+
+### 2026-10-03 — Focused intent/activity QA refresh
+
+At checkout `78ee6c79`, the combined #1138/#1156 backend regression union
+passed **241 tests with 9 skips** in 24.74s (SQLite/test settings). It covered
+private intent-note validation/privacy/package/export/deletion, sync/backup
+exclusions, unchanged 2D activity, structured 3D activity and lifecycle
+writers, AIRun behavior, and the continuity-metrics regression. PostgreSQL-
+only cases were skipped; no PostgreSQL claim is made for this run.
+
+PR smoke run #1125 on the same SHA passed backend, frontend, workflow, and
+disposable published-routing checks. Its one browser shard failed the two
+previously identified `authPolicy.spec.ts` checks (missing signup-policy copy
+and transparent body background). Run #1124 also exposes an untracked
+`project3dThumbnailCard.spec.ts` setup failure: it waits for the retired
+`/projects3d/:id` route instead of using the existing canonical 3D helper.
+The failure is within #1096 triage; follow-up filing is pending owner choice.
+
+Current GitHub open inventory is #1096, #1138, and #1156. #1138/#1156 await
+owner disposition on `docs/api.md updated first` because their documentation
+and implementation share a commit. #1103's closure is recorded above; no
+issue closed in this QA refresh.
+
+
+### 2026-10-03 — #1138/#1156 QA pass and GitHub closure
+
+The owner accepted the same-commit API-documentation update for #1138 and
+#1156; `DECISIONS.md` records that limited criterion interpretation. Current
+QA PASS comments: [#1138](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138#issuecomment-5963533424)
+and [#1156](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1156#issuecomment-5963549414).
+Both acceptance checklists were reconciled and GitHub read-after-write
+confirmed both issues closed as completed.
+
+Evidence: combined focused backend regression union 241 passed / 9 skipped
+(SQLite test settings); current-head `make check` previously passed backend
+2,012 / 44 skipped, frontend lint/format/typecheck, and Vitest 3,229;
+`makemigrations --check --dry-run` found no drift. Linux run 37076051935 ran
+all 16 shards after #1156/#1157; aggregate failures remain assigned to #1096,
+with no #1138/#1156-owned case reported. This remains a red full matrix and
+does not claim a local PostgreSQL or Replit publish result. Authenticated live
+open inventory is now #1096 only; that issue remains open as the full-matrix
+triage parent, with residual first-cause classification and owner disposition
+for any separate follow-up still outstanding.
+### 2026-10-03 — #1096 current-head matrix QA FAIL
+
+The owner-authorized full Linux `workflow_dispatch` run
+[#1126](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37081997610)
+completed on branch `docs/backlog-reevaluation-2026-09-27` at exact HEAD
+`78ee6c7997cc4e19bc574db49f3f83f065ab08fb`. Workflow validation passed;
+backend passed (2,012 passed / 44 skipped), frontend passed (316 files /
+3,229 tests), and disposable published-routing smoke passed. All 16 browser
+acceptance shards failed and 16 diagnostic artifacts were uploaded. The
+production/hosted-push/staging-authenticated jobs were skipped as expected
+for this manual dispatch. No production publish or shared-database action
+was performed.
+
+Observed examples include account-action count drift (11 expected / 12
+rendered), account and Layers keyboard-reorder failures, toolbar tests seeing
+additional visible controls, a Publish button intercepted by the application
+footer, AI panel/route and plan-review timeouts, generated-piece engine and
+runtime behavior, public/immersive 3D layout and camera behavior, theme and
+responsive assertions, and Firefox draw.io interactions intercepted by the
+piece-stage shell. These are symptoms only: every failing test still needs a
+first-cause classification (test/fixture drift, product behavior, or runner)
+and reconciliation against existing issues. No novel follow-up issue was
+filed. Per the owner's prior instruction, seek disposition after presenting
+the reconciled discrepancies; #1096 remains open / QA FAIL, with the full
+failure-to-issue map and any owner-authorized follow-ups as next actions.
+
+The criterion matrix and evidence boundary were posted as [#1096 QA comment
+5963808831](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5963808831).
+The issue was visibly left open. Current aggregate evidence does not satisfy
+the tracker’s per-test classification or residual issue/owner/next-action
+criteria.
 
 ### 2026-10-03 — CI run #1126 child issues of #1096 (Batch 14)
 

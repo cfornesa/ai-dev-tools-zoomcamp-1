@@ -2842,3 +2842,12 @@ updates. The remaining open backlog was not silently claimed complete.
 - CI: owner authorizes pushing the existing branch and dispatching required
   CI checks without merging. No production publish or database operation is
   included.
+
+## 2026-10-02 — #1138/#1156 API documentation criterion disposition
+
+- The owner accepts the same-commit `docs/api.md` update as satisfying the
+  issues' “docs/api.md updated first” criterion. The implementation commit
+  does not prove chronological ordering; this is the owner's explicit
+  criterion interpretation for #1138 and #1156, not a general change to the
+  repository's API-documentation-first rule. Record and link this disposition
+  in both issue QA/closure records before any closure.

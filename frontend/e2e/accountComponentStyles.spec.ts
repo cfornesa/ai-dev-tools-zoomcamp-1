@@ -353,7 +353,9 @@ async function assertKeyboardAndPointerStates(
     )
     .toMatchObject({ matches: true });
   await expect
-    .poll(() => provider.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m42))
+    .poll(() =>
+      provider.evaluate((element) => new DOMMatrix(getComputedStyle(element).transform).m42),
+    )
     .toBeGreaterThan(0);
   await page.mouse.up();
 }

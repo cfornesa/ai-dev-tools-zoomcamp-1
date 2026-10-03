@@ -2860,3 +2860,10 @@ updates. The remaining open backlog was not silently claimed complete.
   injection path (#700). Build-time prerender and full SSR are rejected; no
   new dependency. Implemented by #1197; #1203 extends it to the collections
   and art-piece listings.
+
+## 2026-10-03 — Batch 18 MCP decisions and E2E suite curation
+
+- #1205: official `mcp` Python SDK mounted in the existing Django ASGI app; dependency approved (AGENTS.md section 8 answered on the issue).
+- #1206: django-oauth-toolkit approved; pre-registered clients only (no dynamic registration); scopes `gallery:read`, `projects:write`, `ai:use`, plus separately granted `destructive`; AI tools use the same quotas and entitlements as the web app.
+- #1219: deletion over MCP ships in the first release, behind the `destructive` scope with a matching `confirm` argument, soft-delete only, audited.
+- E2E audit decision A: all 20 E? candidates are rewritten (via #1166, #1168, #1170, #1173, #1174), none retired. Decision B: PR smoke widened with the three offline specs (#1224).

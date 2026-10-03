@@ -26503,12 +26503,12 @@ Create-only pass; nothing implemented. Verified against the repo: no MCP code ex
 
 | Issue | Task | Status | Depends on | Routing |
 |---|---|---|---|---|
-| [#1205](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1205) | Owner decision: MCP server stack, hosting and dependency approval | OWNER-DECISION-PENDING | — | owner |
-| [#1206](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1206) | Owner decision: OAuth 2.1 provider approach and scope model | OWNER-DECISION-PENDING | — | owner |
+| [#1205](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1205) | Owner decision: MCP server stack, hosting and dependency approval | DECIDED 2026-10-03: official mcp SDK in Django ASGI | — | owner |
+| [#1206](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1206) | Owner decision: OAuth 2.1 provider approach and scope model | DECIDED 2026-10-03: django-oauth-toolkit, pre-registered clients | — | owner |
 | [#1207](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1207) | MCP public read-only gallery tools (tracker) | BLOCKED | #1205 | tracker |
 | [#1208](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1208) | OAuth provider and authenticated MCP tools (tracker) | BLOCKED | #1206, #1210 | tracker |
 | [#1209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1209) | MCP Apps gallery widget (tracker) | BLOCKED | #1207 | tracker |
-| [#1210](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1210) | MCP server scaffold with health tool | DEPENDENCY-BLOCKED | #1205 | 2b |
+| [#1210](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1210) | MCP server scaffold with health tool | GROOMED (decision #1205 made) | — | 2b |
 | [#1211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1211) | Public MCP tools and resources for 2D projects and templates | DEPENDENCY-BLOCKED | #1210 | 2b |
 | [#1212](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1212) | Public MCP tools for 3D, generated pieces and collections | DEPENDENCY-BLOCKED | #1210 | 2b |
 | [#1213](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1213) | MCP rate limiting and audit logging | DEPENDENCY-BLOCKED | #1210 | 2b |
@@ -26522,3 +26522,5 @@ Create-only pass; nothing implemented. Verified against the repo: no MCP code ex
 | [#1221](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1221) | Authenticated 3D mirror tools | DEPENDENCY-BLOCKED | #1217, #1215, #1218 | 2b |
 | [#1222](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1222) | MCP tool for piece package intake | DEPENDENCY-BLOCKED | #1217 | 2b |
 | [#1223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1223) | MCP Apps gallery and viewer widget | DEPENDENCY-BLOCKED | #1211, #1212 | 2b |
+
+- 2026-10-03 — Owner decisions: E2E audit decision A (20 E? candidates rewritten, none retired) and B (PR smoke widened): [#1224](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1224) CI: add the three offline core-journey specs to the PR smoke set (GROOMED; depends on #1179 and the PR gate green; scoped ci.yml authorization).

@@ -26378,3 +26378,19 @@ Owner decisions: PR gate (Workflow validation, Backend checks, Frontend checks, 
 - 2026-10-03 — E2E suite audit (241 specs, 536 tests): `docs/e2e-suite-audit.md` (proposal, nothing deleted). Findings: 70 specs (144 tests) fail in all three analysed full runs, 106 specs pass in all; 8 of 14 core-journey specs fail in every run; 196 specs are per-issue probes; 20 rewrite-or-retire candidates await the owner. Follow-ups to file after approval: class F lower-level coverage audit; `frontend/e2e` helper README plus a check for helper-owned locators. Owner decisions pending: retire vs rewrite for the E? candidates; PR-smoke widening; branch protection (#1192).
 
 - 2026-10-03 — E2E audit follow-ups approved by the owner: [#1193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1193) class F audit (analysis doc, any run other than the scoping run; after most migration children); [#1194](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1194) helper README (docs, 2a, no dependency); [#1195](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1195) ratcheted helper-use check (2a, depends on #1194, wired into `npm run lint`, no workflow edit). Suggested order: #1179, then #1190/#1191 (Codex), #1194 in parallel, migration children by shared-file batches, #1193, then #1195.
+
+### 2026-10-03 — Batch 17: public discoverability (Muse AI finding)
+
+Finding: `/gallery` returns only the SPA shell (HTTP 200, no noscript); `/robots.txt` and `/sitemap.xml` also return the shell; unknown paths return 200. `/llms.txt` and `/llms-full.txt` are already generated per request (#585) and correct. Milestone: Batch 17 (new; unrelated to the Batch 14 CI work). Goals 1-9 do not cover this; handoff Goal 10 does, after Goal 8 and the owner's #1196 decision.
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1196](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1196) | Owner decision: how the public gallery becomes crawlable (injection, prerender, or SSR) | OWNER-DECISION-PENDING | — | owner |
+| [#1197](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1197) | Crawlable public gallery: link-bearing content for /gallery without JavaScript | DEPENDENCY-BLOCKED | #1196; after Goal 8 | 2b |
+| [#1198](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1198) | Public gallery: bounded loading state with timeout and retry | GROOMED | — | 2a |
+| [#1199](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1199) | Generated robots.txt | GROOMED | — | 2b |
+| [#1200](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1200) | Generated sitemap.xml of public URLs | GROOMED | — | 2b |
+| [#1201](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1201) | Unknown public URLs return 404 instead of 200 | GROOMED (verify first) | — | 2b |
+| [#1202](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1202) | Guard: description changes propagate to llms, sitemap and gallery listing | DEPENDENCY-BLOCKED | #1197, #1199, #1200 | 2a |
+| [#1203](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1203) | Crawlable collections index and art-piece gallery listings | DEPENDENCY-BLOCKED | #1197 | 2b |
+| [#1204](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1204) | llms.txt: evaluate absolute URLs instead of relative links | GROOMED (evaluation) | — | 2a |

@@ -192,6 +192,7 @@ Issues: #1171, #1185, #1186, #1181, #1182, #1183.
 1. For each, capture the first-failure evidence the issue requires (trace, log, or request), classify the cause as test-side, product, or environment, and post it on the issue.
 2. Fix test-side causes (one commit each, removing baseline entries). For product causes, file a product issue (milestone, matching docs/tasks.md entry) and leave the baseline entry in place with its issue link.
 3. End with a table: issue, cause, action, status.
+4. Do not change gallery markup or behavior beyond what #1181 and #1182 require; Goal 10 (#1197) changes the same gallery code later.
 
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
@@ -207,6 +208,24 @@ Goal: remove the inert shim and wrap up.
 2. Otherwise implement #1187: remove the shim, run the focused specs and make check, one commit, ## QA matrix.
 3. Report the final state: baseline entries remaining, issues still open, owner decisions outstanding.
 4. Do not start #1193 or #1195 until I ask.
+
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
+### 10. Batch 17 — public discoverability (after Goal 8 and the #1196 owner decision)
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: make the public site discoverable by crawlers (Batch 17, Muse AI finding). Run only after Goal 8 is done and the owner has answered the decision issue #1196 in a comment; if #1196 has no owner answer, do only the independent issues (#1198, #1199, #1200, #1201, #1204) and report that #1197, #1202 and #1203 wait.
+
+Issues and order, one commit per issue (read each issue and `backend/scenes/llms.py` first; llms.txt is already generated per request and must not change behavior except under #1204):
+1. #1199 generated /robots.txt and #1200 generated /sitemap.xml (reuse llms.py helpers and the eligible_* selectors; proxy in frontend/vite.config.ts like /llms.txt; update docs/api.md before the contract change).
+2. #1201 unknown public URLs return 404 (verify on the production run path first; do not break deep links like /users/@handle/pieces/slug).
+3. #1198 bounded loading state with timeout and retry in frontend/src/pages/PublicGallery.tsx.
+4. #1197 crawlable /gallery content per the owner's choice in #1196 (privacy tests for private, unlisted, draft and soft-deleted pieces).
+5. #1203 collections index and art-piece gallery listings, then #1202 the propagation guard test, then #1204 the llms.txt absolute-URL evaluation.
+Verify with `curl` of rendered HTML without JavaScript against the local stack, the focused pytest and Vitest suites, the existing gallery E2E specs and the PR smoke set, then make check. If a new product defect or gap appears, file it (milestone, tasks.md entry) and continue. Post a ## QA matrix on each issue and the batch gate result. Do not close issues.
 
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```

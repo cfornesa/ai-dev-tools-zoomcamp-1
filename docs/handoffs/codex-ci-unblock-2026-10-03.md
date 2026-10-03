@@ -133,6 +133,33 @@ Goal: make PR #1094's required checks green again by repairing two regressions i
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
+### 3c. Publish the branch and clear the PR gate (owner grants commit and push for this goal)
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: push the branch, get PR #1094's required checks green on the new head, then continue the work order.
+
+Owner permissions for this goal (they replace the generic "do not push" rule only as listed here):
+- You may commit your own changes and push the current branch with a normal fast-forward push: `git push origin docs/backlog-reevaluation-2026-09-27`. Never force-push (not even --force-with-lease), never push another branch, a tag or main.
+- If authentication fails, follow .agents/memory/github-https-credential-helper.md (a one-command in-memory credential helper); never print, store or put the credential in a remote URL.
+- If the local origin tracking-ref update fails on a lock-file permission error, that is a sandbox detail: confirm the push with `git ls-remote origin refs/heads/docs/backlog-reevaluation-2026-09-27` and compare it with `git rev-parse HEAD`.
+- You may use read-only CI commands: `gh pr checks 1094`, `gh run list`, `gh run view`, `gh run watch`.
+- NOT permitted: `gh workflow run`, `gh run rerun`, merging, closing issues, changing branch protection or repository settings. Dispatching the full 16-shard matrix and merging stay with me.
+
+Steps:
+1. Push now (it includes 55dca9d2 and the handoff commit). If the push is rejected, run `git fetch origin`, show me the divergence and stop; do not merge, rebase or reset.
+2. Watch the pull_request run on the new head until it finishes. Required checks: Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E (shard 1).
+3. If a required check is red: read the failing log, then decide whether this branch caused it (`git log`/`git blame`, compare the base run). If a commit on this branch caused it, repair it in a follow-up commit under the owning issue, push, and watch again (at most two repair rounds, then stop and report). If it is genuinely pre-existing on the base, report it with the evidence and do not fix it.
+4. When all four required checks are green, post the run URL and head SHA on #1096 and #1190, and tell me the PR is ready for me to merge.
+5. Then continue with the first incomplete goal in this file, in order (3 and 3b are done once you have confirmed their QA comments exist). Apply that goal's own prompt and stop conditions exactly. After each completed goal batch, push (fast-forward, same rules) and confirm the PR checks are still green, repairing branch-caused failures the same way. Product or owner-decision blockers: file or reference the issue, skip that item, and continue with the next; never skip an owner decision.
+6. Leave any uncommitted file that is not part of the goal you are working on exactly as it is (for example the pending frontend/e2e/accountComponentStyles.spec.ts change belongs to Goal 4 / #1162; do not commit it under another goal).
+
+Report after the push and again after the PR run: head SHA, run URL, each required check's conclusion, anything repaired (commit, reason), and what remains.
+
+Ground rules: do not dispatch workflows, merge, or close issues. If you see a modified file that you did not change, stop and ask. Never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
 ### 4. Wave 2A — account and shell
 
 ```text

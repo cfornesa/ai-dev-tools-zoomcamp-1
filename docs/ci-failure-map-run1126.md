@@ -24,7 +24,7 @@ Method: the 120 failing-case headers and their first error lines were extracted 
 | #1172 | 10 | shell chrome: header colour mode, reduced motion, skip link | P2 | test drift | confirmed (controls replaced by toggles; skip-link z-index) |
 | #1173 | 4 | byline 'By e2e_owner' | P2 | unknown | unconfirmed (attribution format) |
 | #1174 | 4 | publish confirmation dialog | P2 | unknown | unconfirmed (button disabled/covered) |
-| #1175 | 4 | generated-piece stage specs vs phone layout (≤700px) | P2 | test drift | confirmed from source: per-piece ratio (16:9 fallback) at desktop; deliberate tall phone stage and in-flow toolbar since `64b03f53` |
+| #1175 | 4 | generated-piece stage specs vs phone layout (≤700px) | P2 | test drift after a product change | owner-decided 2026-10-03: two-tier; toolbar below; tall stage only for `c2js-interactive`. Depends on #1188 (regular) and #1189 (embed) |
 | #1176 | 1 | HTML export 44px targets | P2 | possible product | unconfirmed (button width 40) |
 | #1177 | 1 | content panel shadow height drift (NEW) | P1 possible regression | possible regression (NEW) | unconfirmed; bisect |
 | #1178 | 1 | 3D drawing plane pixel coverage | P2 | unknown | unconfirmed |
@@ -213,7 +213,7 @@ Method: the 120 failing-case headers and their first error lines were extracted 
 2. **Probable shared root:** #1164 (profile PATCH 400) before #1165, #1173, #1174.
 3. **Setup migration family:** #1168 and #1169 (Gallery-click creation), then #1170 (AI routes and menus), sharing `project3dLifecycle.spec.ts` and the support helpers.
 4. **Selector and contract drift (independent, parallelizable by file):** #1160, #1161, #1162, #1166 (then the shim removal #1187, decided in #1167), #1172, #1175, #1179, #1182, #1183, #1184.
-5. **Regression checks with bisect:** #1177 (NEW), #1178, #1176. (#1175 is confirmed test drift; one owner confirmation: phone toolbar below the stage.)
+5. **Regression checks with bisect:** #1177 (NEW), #1178, #1176. (#1175 waits for the product change #1188/#1189.)
 6. **Diagnosis-first:** #1171, #1185, #1186, #1181.
 7. **Gate:** one `workflow_dispatch` of the full 16-shard matrix on the final commit; reconcile #1096 from its result.
 

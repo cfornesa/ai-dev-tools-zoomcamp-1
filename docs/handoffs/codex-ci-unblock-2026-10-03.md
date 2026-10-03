@@ -133,18 +133,23 @@ Issues: #1160, #1161, #1162 (re-scoped: wait for html[data-reduced-motion] and p
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
-### 5. Wave 2B — creation and setup
+### 5. Wave 2B — creation and setup, including its product blockers
 
 ```text
 Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
 
-Goal: fix the creation/setup E2E failures as one batch with a single implementer.
+Goal: finish Wave 2B as one batch, including the product defects your first run found. This replaces your blocked version of this goal.
 
-Issues: #1168, #1169, #1170, #1166. #1170 shares project3dLifecycle.spec.ts and support/ helpers with the others, so do not parallelize. Do NOT remove the inert "Open piece controls menu" shim (#1187) in this batch.
-1. Write the batch impact analysis first.
-2. One commit per issue, each removing its known-failures.json entries. Creation is local-first (IndexedDB, /local-projects/:id) and /ai-projects* redirect to the unified editor, so update tests to that contract rather than restoring old routes.
-3. Run the union of focused specs and make check.
-4. Post ## QA matrices and the batch gate result. Do not close issues.
+Status you reported: #1168 is committed; #1169, #1170 and #1166 are blocked by product issues #1225, #1226 and #1227, and #1174 is blocked by the same footer layering as #1227. Your uncommitted spec edits in the working tree are your own earlier work on this goal: keep and continue from them, never discard them.
+
+Owner authorization (updated): #1225, #1226, #1227 and #1174 were filed or groomed before this run, now carry a "Distillation refinement" comment, and are in scope. Product CSS and markup changes are allowed for these four issues only. Do not touch the generated-piece stage rules (#1175, #1188, #1189; Goal 7 owns them). Keep every existing assertion strict: no forced clicks, no weakened expectations.
+
+Order, one commit per issue, each with its restoration path (revert that commit):
+1. #1227 first: fix the shared app-shell footer layering. Verify the refinement hypothesis first: in frontend/src/index.css the rule `.app-shell > :not(.cosmic-starfield):not(.shell-display-toggles):not(.skip-link) { position: relative; z-index: 1; }` gives #main-content and .app-shell-footer the same z-index, so the later footer paints over menus and dialogs inside main. Choose the smallest fix that keeps the footer visible. Then #1174, whose specs may need only their own expectation updates; if its disabled Publish button has a different cause, classify it and fix only test-side causes.
+2. #1226: stop the decorative cosmic backdrop from creating horizontal overflow at 768px (verify the container's rule first; clipping the decorative container is the candidate). Reduced-motion and low-power behavior must not change.
+3. #1225: public structured-3D toolbar placement (desktop fullscreen action right of the stage midpoint; phone toolbar must not cover the immersive touch D-pad or zoom buttons). Structured-3D routes only; relocate, never hide.
+4. Then complete #1169, #1170 and #1166: finish their spec migrations, run the previously blocked cases, and remove their known-failures.json entries and #1168's, #1174's and these four product issues' entries as each case passes. Creation is local-first (IndexedDB, /local-projects/:id) and /ai-projects* redirect to the unified editor, so update tests to that contract. Rewrite stale specs to current behavior; never retire one without asking me. Do NOT remove the inert "Open piece controls menu" shim (#1187).
+Write the batch impact analysis first, including Goal 7's open issues that touch index.css. For the CSS issues inspect screenshots at 375x812, 768x1024 and 1280x900 and describe what you saw. Run the union of focused specs plus responsiveShell, headerMobile, publicShell and the stage and toolbar regression specs, then make check. Post a ## QA matrix on each issue and the batch gate result. Do not close issues.
 
 Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
@@ -157,7 +162,7 @@ Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 bra
 Goal: resolve the profile/publication E2E failures.
 
 1. Start with #1164: capture each failing request's HTTP 400 response body and classify the cause (test data, contract change, or product defect).
-2. Then #1165, #1173 and #1174, which may be fixed by #1164. Fix test-side causes. For any product cause, file a product issue (milestone, matching docs/tasks.md entry), leave its baseline entry in place with the issue link, and continue with the next issue; do not fix product code in this goal.
+2. Then #1165 and #1173, which may be fixed by #1164 (#1174 moved to Goal 5 together with its product cause). Fix test-side causes. For any product cause, file a product issue (milestone, matching docs/tasks.md entry), leave its baseline entry in place with the issue link, and continue with the next issue; do not fix product code in this goal.
 3. One commit per issue, each removing its known-failures.json entries. Run the focused specs and make check.
 4. Post ## QA matrices and the batch gate result. Do not close issues.
 

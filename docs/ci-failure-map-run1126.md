@@ -24,7 +24,7 @@ Method: the 120 failing-case headers and their first error lines were extracted 
 | #1172 | 10 | shell chrome: header colour mode, reduced motion, skip link | P2 | test drift | confirmed (controls replaced by toggles; skip-link z-index) |
 | #1173 | 4 | byline 'By e2e_owner' | P2 | unknown | unconfirmed (attribution format) |
 | #1174 | 4 | publish confirmation dialog | P2 | unknown | unconfirmed (button disabled/covered) |
-| #1175 | 4 | generated-piece stage geometry | P1 | unknown / possible product | unconfirmed; specs disagree (4/3 vs 16/9) |
+| #1175 | 4 | generated-piece stage specs vs phone layout (≤700px) | P2 | test drift | confirmed from source: per-piece ratio (16:9 fallback) at desktop; deliberate tall phone stage and in-flow toolbar since `64b03f53` |
 | #1176 | 1 | HTML export 44px targets | P2 | possible product | unconfirmed (button width 40) |
 | #1177 | 1 | content panel shadow height drift (NEW) | P1 possible regression | possible regression (NEW) | unconfirmed; bisect |
 | #1178 | 1 | 3D drawing plane pixel coverage | P2 | unknown | unconfirmed |
@@ -161,7 +161,7 @@ Method: the 120 failing-case headers and their first error lines were extracted 
 - `localPieceRoundTripPublish.spec.ts:81` [chromium] Local-only piece publish-as-transfer (#942) › refuses to upload over quota and leaves the 
 - `relatedPublicProjects.spec.ts:41` [chromium] canonical related public 2D pieces (#1142) › shows shared-tag public cards below canonical
 
-### #1175 — generated-piece stage geometry (4)
+### #1175 — generated-piece stage specs vs phone layout (4)
 - `artPieceSixEngineEmbed.spec.ts:49` [chromium] Six-engine chrome-less embeds (#615) › renders each engine in the shared embed runtime at 
 - `artPieceSixEngineRegular.spec.ts:55` [chromium] Six-engine regular canonical viewer (#607) › renders every engine through the slug route a
 - `pieceStageSizing.spec.ts:10` [chromium] Generated regular-piece stage sizing (#703) › keeps the canonical regular stage responsive
@@ -212,9 +212,9 @@ Method: the 120 failing-case headers and their first error lines were extracted 
 1. **P0 checks first, no code until classified:** #1163 (injection audit), #1180 (ownership gate). A real finding becomes a security/authorization issue and blocks the batch gate.
 2. **Probable shared root:** #1164 (profile PATCH 400) before #1165, #1173, #1174.
 3. **Setup migration family:** #1168 and #1169 (Gallery-click creation), then #1170 (AI routes and menus), sharing `project3dLifecycle.spec.ts` and the support helpers.
-4. **Selector and contract drift (independent, parallelizable by file):** #1160, #1161, #1162, #1166 (then #1167 decision), #1172, #1179, #1182, #1183, #1184.
-5. **Regression checks with bisect:** #1177 (NEW), #1175, #1178, #1176.
+4. **Selector and contract drift (independent, parallelizable by file):** #1160, #1161, #1162, #1166 (then the shim removal #1187, decided in #1167), #1172, #1175, #1179, #1182, #1183, #1184.
+5. **Regression checks with bisect:** #1177 (NEW), #1178, #1176. (#1175 is confirmed test drift; one owner confirmation: phone toolbar below the stage.)
 6. **Diagnosis-first:** #1171, #1185, #1186, #1181.
 7. **Gate:** one `workflow_dispatch` of the full 16-shard matrix on the final commit; reconcile #1096 from its result.
 
-Shared files to serialize: `frontend/e2e/support/*` (helpers), `frontend/src/index.css` (shell and stage regions), `PieceStageToolbar.tsx` (#1167), `backend/scenes/profile_api.py` (#1164, #1165), `src/export/generateHtmlExport*.ts` (#1163, #1176).
+Shared files to serialize: `frontend/e2e/support/*` (helpers), `frontend/src/index.css` (shell and stage regions), `PieceStageToolbar.tsx` (#1167 decided: remove → #1187), `backend/scenes/profile_api.py` (#1164, #1165), `src/export/generateHtmlExport*.ts` (#1163, #1176).

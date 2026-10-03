@@ -137,9 +137,9 @@ explicitly preserved and included in the batch regression run.
   repeated runs with this synchronization; #734 passed in the combined union.
 - The combined 39-spec focused plus responsive-shell/header/public-shell and
   stage/toolbar union completed **66 passed, 4 failed, 0 skipped**. The four
-  failures are known open Goal 7 issues: #615 aspect ratio, #779–#786
-  immersive drawing-plane pixels, #703 stage aspect-ratio CSS, and #706
-  generated-art toolbar position. No Goal 7 source rule changed. The 26-spec
+  failures map to open Goal 7 owners #1189 (`artPieceSixEngineEmbed`), #1178
+  (`drawingPlane3d`), #1175 (`pieceStageSizing`), and #1188
+  (`pieceToolbarPlacement`). No Goal 7 source rule changed. The 26-spec
   Wave 2B focused union remains **51/51**. Inspected #730 screenshots at
   375×812, 768×1024, and 1280×900 show the toolbar at the stage top,
   fullscreen on the right, and the mobile controls panel opening below the

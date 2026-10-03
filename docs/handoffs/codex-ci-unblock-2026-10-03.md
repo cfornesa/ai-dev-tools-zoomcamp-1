@@ -2,6 +2,20 @@
 
 Paste everything below the line into Codex. It is written to be self-contained.
 
+## Goals to set (owner), one at a time, after pasting the prompt
+
+Common clause for every goal: *Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, a failing baseline you did not expect, or a rule in the handoff that needs the owner, stop and ask me before continuing.*
+
+1. **Wave 0 — PR gate.** "Finish #1179: fix the two `authPolicy.spec.ts` assertions to the current contract, run the PR smoke set (`authPolicy`, `projectLifecycle`, `publishingAndRemix`, `responsiveShell`) plus typecheck, lint and format check (record any local-environment boundary), commit as one commit, post the `## QA` criterion matrix on #1179, and report. Stop there." *Owner checkpoint: push the branch; confirm the PR's `Browser acceptance E2E (shard 1)` is green; merge when ready.*
+2. **Security and authorization checks (run right after goal 1).** "Diagnose #1163 and #1180 only: capture the evidence each issue asks for (script elements and their generator; what a non-owner sees at the owner editor URL, with status codes) and post it. Fix only if it is test-side and safe; if any owner content or write control is reachable by a non-owner, or any fixture content reaches the extra script, stop, file a P0 issue and report immediately."
+3. **Wave 1 — quiet and fast matrix.** "Implement #1190 (ratchet with comparator, unit tests, baseline from run #1126, workflow wiring within the authorized scope), then #1191 (fast-fail timeouts), and #1194 (support README), one commit each. Prove the ratchet with its four unit cases and a dry run against the parsed run #1126 failures. Post QA matrices and list the owner dispatches still needed (two consecutive full runs for #1191)." *Owner checkpoint: push, dispatch the full matrix twice, send the results.*
+4. **Wave 2A — account and shell.** "Implement #1160, #1161, #1162, #1172 and #1184 as one batch, one commit each, removing each issue's entries from `known-failures.json`; run the union of their focused specs, `make check`, and re-run `responsiveShell`, `headerMobile`, `publicShell`, `accountShell`, `accountThemeParity`; post QA matrices."
+5. **Wave 2B — creation and setup.** "Implement #1168, #1169, #1170 and #1166 as one batch (one implementer for the files they share, `project3dLifecycle.spec.ts` and `support/`), removing baseline entries; do not remove the shim (#1187) yet; post QA matrices."
+6. **Wave 2C — profile and publication.** "Start with #1164: capture each failing request's 400 body and classify it; then #1165, #1173 and #1174, which may be fixed by it. Fix test-side causes; for any product cause, stop and file a product issue. Remove baseline entries; post QA matrices."
+7. **Wave 2D — stage and geometry.** "Implement #1188 then #1189 (owner-decided phone rule: declared ratio, tall stage only for `c2js-interactive`, toolbar below the stage), then #1175, then bisect and resolve #1177, #1178 and #1176. Serialize edits to `index.css`; screenshots at 375x812 and 1280x900 must be inspected; remove baseline entries; post QA matrices."
+8. **Wave 2E — diagnosis first.** "For #1171, #1185, #1186, #1181, #1182 and #1183, capture the first-failure evidence each issue requires (trace or logs), classify the cause, fix test-side causes, and file product issues for the rest; report a table of cause, action and status."
+9. **Finish.** "Remove the inert shim (#1187) only after `rg \"Open piece controls menu\"` shows menu-mode usages only; then report. Do not start #1193 or #1195 until I ask." *Owner checkpoint: decide the rewrite-or-retire candidates and the smoke widening.*
+
 ---
 
 ## Role and repository

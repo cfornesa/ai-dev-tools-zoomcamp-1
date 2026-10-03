@@ -6434,6 +6434,15 @@ select.ai-proposal-field-full-width {
   gap: 0.65rem;
 }
 
+/* Inline public viewers keep fullscreen independent from the wrapping action
+   row so it stays anchored to the stage's bottom-right corner. Structured 3D
+   public viewers override this route-scoped position below. */
+.piece-stage-fullscreen-control {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
 .piece-stage-menu-trigger,
 .piece-stage-command-close,
 .piece-stage-submenu-close {

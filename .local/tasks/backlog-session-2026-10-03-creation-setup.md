@@ -129,30 +129,30 @@ explicitly preserved and included in the batch regression run.
   Chromium needed host permission because the sandbox's first attempts failed
   before test execution at macOS Mach port rendezvous (`Permission denied
   (1100)`).
-- The repeated #730/#734 regression was run three times per spec after
-  changing the geometry helper to compare action bounds relative to the preview
-  frame. Diagnostic evidence at 375×812 showed both frame and toolbar move up
-  36px while `window.scrollY` remains 0; the original viewport-coordinate
-  delta therefore measured a page layout translation, not toolbar reflow.
-  The 1px within-frame position/size tolerance and action-count assertion are
-  retained. Both specs passed 3/3; after restoring the count assertion, #730
-  passed twice more.
-- The required responsive-shell/header/public-shell and Goal 7 stage/toolbar
-  regression run remains as recorded above: 20 passed, 4 failed on the known
-  open Goal 7 issues #1175, #1178, #1188, and #1189. No Goal 7 source rule was
-  changed. At 375×812, 768×1024, and 1280×900, the inspected #730 screenshots
-  show the toolbar remains at the stage top, fullscreen stays at the right,
-  and controls remain reachable; the mobile controls panel opens below the
-  stage. The immersive #734 D-pad/zoom click assertions pass.
+- The repeated #730/#734 regression initially showed an apparent 36px mobile
+  change when the test measured immediately after resizing from tablet to
+  phone. The test now waits for two identical consecutive action-bound samples
+  after each resize, then retains its original absolute viewport-coordinate
+  comparisons, 1px tolerances, and action-count assertion. #730 passed five
+  repeated runs with this synchronization; #734 passed in the combined union.
+- The combined 39-spec focused plus responsive-shell/header/public-shell and
+  stage/toolbar union completed **66 passed, 4 failed, 0 skipped**. The four
+  failures are known open Goal 7 issues: #615 aspect ratio, #779–#786
+  immersive drawing-plane pixels, #703 stage aspect-ratio CSS, and #706
+  generated-art toolbar position. No Goal 7 source rule changed. The 26-spec
+  Wave 2B focused union remains **51/51**. Inspected #730 screenshots at
+  375×812, 768×1024, and 1280×900 show the toolbar at the stage top,
+  fullscreen on the right, and the mobile controls panel opening below the
+  stage.
 - Frontend `npm run typecheck`, `npm run lint`, and `npm run format:check`
   passed. Lint emitted only the repository's existing warnings. `make check`
   remains blocked by the unrelated stale backend CI-configuration test and
   Vitest discovering the Node-test-runner-only ratchet file, as recorded
   above. The focused CSS component test after restoring the shared fullscreen
   rule passed 9/9.
-- #1225 follow-up commit `2a27b0c6` (`test(e2e): scope toolbar stability to
-  stage geometry (#1225)`) preserves strict geometry and collection-size
-  checks. Its restoration path is reverting that commit. Prior CSS follow-up
+- #1225 test commits `2a27b0c6` and `7fe006cd` record the intermediate
+  relative-measurement attempt and the final stabilized absolute-coordinate
+  checks. `7fe006cd` restoration path: revert that commit. Prior CSS follow-up
   `607fcb8c` restored generic fullscreen placement after the component test
   exposed the regression; its restoration path is reverting that commit.
 - Chromium entries for #1169/#1170/#1166 pass in the final union; Firefox's
@@ -162,4 +162,4 @@ explicitly preserved and included in the batch regression run.
   matrices are refreshed with local evidence and the pending Linux gate.
   Final batch gate: **BLOCKED pending Linux matrix and green `make check`**.
 
-QA comment links: [#1168](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1168#issuecomment-5973496846), [#1169](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1169#issuecomment-5973496968), [#1170](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1170#issuecomment-5973497100), [#1166](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1166#issuecomment-5973497218), [#1174](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1174#issuecomment-5973497342), [#1225](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1225#issuecomment-5973488691), [#1226](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1226#issuecomment-5973497441), [#1227](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1227#issuecomment-5973497555), [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5973497657).
+QA comment links: [#1168](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1168#issuecomment-5973496846), [#1169](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1169#issuecomment-5973496968), [#1170](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1170#issuecomment-5973497100), [#1166](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1166#issuecomment-5973497218), [#1174](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1174#issuecomment-5973497342), [#1225 final](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1225#issuecomment-5973661355), [#1226](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1226#issuecomment-5973497441), [#1227](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1227#issuecomment-5973497555), [#1096 final](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5973661458).

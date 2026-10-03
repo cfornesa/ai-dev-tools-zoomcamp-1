@@ -26444,6 +26444,9 @@ Case-to-issue map: `docs/ci-failure-map-run1126.md` (120 failed cases → childr
 | [#1167](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1167) | Owner decision: remove the sr-only no-op 'Open piece controls menu' button from inline toolbars? | DECIDED (remove) | after #1166 | owner decision; implementation #1187 |
 | [#1168](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1168) | E2E: migrate remaining 3D lifecycle specs from Gallery-click creation to the server-backed helper (11 tests) | GROOMED | #1100 helper (closed) | 2a |
 | [#1169](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1169) | E2E: migrate public 3D camera/toolbar specs from Gallery-click creation to the server-backed helper (3 tests) | GROOMED | after #1168 | 2a |
+| [#1225](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1225) | Public structured-3D toolbar placement blocks immersive touch controls | IMPLEMENTED LOCALLY / LINUX PENDING | discovered by #1169 | 2b product geometry |
+| [#1226](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1226) | Cosmic site backdrop creates horizontal overflow at 768px | IMPLEMENTED LOCALLY / LINUX PENDING | discovered by #1170 | 2b shell geometry |
+| [#1227](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1227) | App-shell footer intercepts public stage download menu at phone width | IMPLEMENTED LOCALLY / LINUX PENDING | discovered by #1166; related #1174 | 2b shell geometry |
 | [#1170](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1170) | E2E: retarget AI panel specs from legacy AI routes and removed creation menu items to the unified editor (14 tests) | GROOMED | #1149 helper (closed) | 2a + stop rule |
 | [#1171](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1171) | E2E: generated-art studio editor specs never reach their first control (12 tests) — diagnose first cause | GROOMED | diagnosis first | 2b diagnosis |
 | [#1172](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1172) | E2E: shell chrome specs expect the removed header color-mode and reduced-motion controls (10 tests) | GROOMED | after #1158 (closed) | 2a + stop rule |
@@ -26466,6 +26469,12 @@ Case-to-issue map: `docs/ci-failure-map-run1126.md` (120 failed cases → childr
 | [#1189](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1189) | Embed route on phones follows the same stage and toolbar rule (after #1188) | DEPENDENCY-BLOCKED | #1188 | 2a |
 
 Owner decisions of 2026-10-03: #1167 remove the inert shim (→ #1187); #1175 two-tier phone specs, toolbar below the stage, tall phone stage only for `c2js-interactive` (→ #1188, #1189). #1096 stays open until a full 16-shard Linux run is green or every remaining failure has an owner and next action.
+
+#1225 is a structured-3D public-viewer product finding from #1169: at 1440px the fullscreen control was in the stage's left half, and at 375px the toolbar intercepted immersive D-pad clicks. Local CSS commits `61cdf839`/`607fcb8c` corrected route-scoped placement while preserving other inline toolbar routes; follow-up test commit `2a27b0c6` measures popup stability relative to the stage and retains strict 1px/action-count assertions. The final 51-scenario Chromium union passed, including #730/#734; Linux verification remains pending. This is separate from generated-art routes covered by #1175/#1188/#1189.
+
+#1226 is a site-shell backdrop finding from #1170: at 768x1024 the decorative cosmic layers extended the document's scroll width 6px beyond the viewport in 2D, and the same responsive criterion failed in 3D. The decorative container clipping fix is locally verified by the final 51-scenario Chromium union; reduced-motion and low-power behavior were preserved. Linux verification remains pending.
+
+#1227 is a public generated-3D viewer finding from #1166: at 375x812 the app-shell footer intercepted the visible Full ZIP menu item's click in #742's export step. The shell stacking fix and #1174's related publication-dialog fix pass in the final local Chromium union, including #742's real download/ZIP assertions. Linux verification remains pending.
 
 ### 2026-10-03 — CI tiers: PR gate blocks, 16-shard matrix is advisory (#1096)
 

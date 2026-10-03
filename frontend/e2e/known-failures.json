@@ -1,209 +1,209 @@
 [
   {
-    "key": "chromium|e2e/ai2dPublication.spec.ts|AI-assisted 2D publication \u203a publishes and returns to Draft from the stage-local control",
+    "key": "chromium|e2e/ai2dPublication.spec.ts|AI-assisted 2D publication › publishes and returns to Draft from the stage-local control",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/ai2dResponsive.spec.ts|AI-assisted 2D responsive editor \u203a contains the preview canvas without horizontal page overflow at phone width",
+    "key": "chromium|e2e/ai2dResponsive.spec.ts|AI-assisted 2D responsive editor › contains the preview canvas without horizontal page overflow at phone width",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiAndRecovery.spec.ts|Local and server draft autosave \u203a explicit Save and its interaction with sync failures, periodic ticks, reopening, and Exit-without-saving",
+    "key": "chromium|e2e/aiAndRecovery.spec.ts|Local and server draft autosave › explicit Save and its interaction with sync failures, periodic ticks, reopening, and Exit-without-saving",
     "issue": 1186,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiAuthoringSixEngine743.spec.ts|AI authoring six-engine Persona matrix (#743) \u203a generates, saves, and reopens every engine through the Studio UI",
+    "key": "chromium|e2e/aiAuthoringSixEngine743.spec.ts|AI authoring six-engine Persona matrix (#743) › generates, saves, and reopens every engine through the Studio UI",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiMention3d.spec.ts|3D AI @ targeting (#662) \u203a filters and inserts a typed stable-ID chip at 1280px",
+    "key": "chromium|e2e/aiMention3d.spec.ts|3D AI @ targeting (#662) › filters and inserts a typed stable-ID chip at 1280px",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiMention3d.spec.ts|3D AI @ targeting (#662) \u203a filters and inserts a typed stable-ID chip at 375px",
+    "key": "chromium|e2e/aiMention3d.spec.ts|3D AI @ targeting (#662) › filters and inserts a typed stable-ID chip at 375px",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiPanelLayout2d.spec.ts|2D AI panel layout (#678) \u203a keeps fields full width at 1280x900",
+    "key": "chromium|e2e/aiPanelLayout2d.spec.ts|2D AI panel layout (#678) › keeps fields full width at 1280x900",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiPanelLayout2d.spec.ts|2D AI panel layout (#678) \u203a keeps fields full width at 375x812",
+    "key": "chromium|e2e/aiPanelLayout2d.spec.ts|2D AI panel layout (#678) › keeps fields full width at 375x812",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiPanelLayout2d.spec.ts|2D AI panel layout (#678) \u203a keeps fields full width at 768x1024",
+    "key": "chromium|e2e/aiPanelLayout2d.spec.ts|2D AI panel layout (#678) › keeps fields full width at 768x1024",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiPanelLayout3d.spec.ts|3D AI panel layout (#679) \u203a keeps fields full width at 1280x900",
+    "key": "chromium|e2e/aiPanelLayout3d.spec.ts|3D AI panel layout (#679) › keeps fields full width at 1280x900",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiPanelLayout3d.spec.ts|3D AI panel layout (#679) \u203a keeps fields full width at 375x812",
+    "key": "chromium|e2e/aiPanelLayout3d.spec.ts|3D AI panel layout (#679) › keeps fields full width at 375x812",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiPanelLayout3d.spec.ts|3D AI panel layout (#679) \u203a keeps fields full width at 768x1024",
+    "key": "chromium|e2e/aiPanelLayout3d.spec.ts|3D AI panel layout (#679) › keeps fields full width at 768x1024",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiPlanReview2d.spec.ts|AI 2D editor: plan review (#659) \u203a shows the plan and waits for explicit approval before implementation",
+    "key": "chromium|e2e/aiPlanReview2d.spec.ts|AI 2D editor: plan review (#659) › shows the plan and waits for explicit approval before implementation",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiPlanReview3d.spec.ts|AI 3D editor: plan review (#660) \u203a shows the plan and waits for explicit approval before implementation",
+    "key": "chromium|e2e/aiPlanReview3d.spec.ts|AI 3D editor: plan review (#660) › shows the plan and waits for explicit approval before implementation",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiRegionTargetExisting.spec.ts|existing generated-piece targeting (#921) \u203a targets one existing region at 375px",
+    "key": "chromium|e2e/aiRegionTargetExisting.spec.ts|existing generated-piece targeting (#921) › targets one existing region at 375px",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPiece2dEditor.spec.ts|2D AI editor engine modes (#618) \u203a catalogs all 2D engines and preserves source-only editor identity through revision/save",
+    "key": "chromium|e2e/artPiece2dEditor.spec.ts|2D AI editor engine modes (#618) › catalogs all 2D engines and preserves source-only editor identity through revision/save",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPiece3dEditor.spec.ts|3D AI editor engine modes (#620) \u203a preserves authored Three.js and A-Frame editor identity through revision/save",
+    "key": "chromium|e2e/artPiece3dEditor.spec.ts|3D AI editor engine modes (#620) › preserves authored Three.js and A-Frame editor identity through revision/save",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceCameraRuntime.spec.ts|Generated regular viewer: camera composition and capture (#431) \u203a camera starts from its own gesture, composites into the live view and the screenshot, and reports denied/unavailable/ended",
+    "key": "chromium|e2e/artPieceCameraRuntime.spec.ts|Generated regular viewer: camera composition and capture (#431) › camera starts from its own gesture, composites into the live view and the screenshot, and reports denied/unavailable/ended",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceCameraRuntime.spec.ts|Generated regular viewer: camera composition and capture (#431) \u203a real unmocked getUserMedia reaches active through the parent frame (issue #479)",
+    "key": "chromium|e2e/artPieceCameraRuntime.spec.ts|Generated regular viewer: camera composition and capture (#431) › real unmocked getUserMedia reaches active through the parent frame (issue #479)",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceFakeRefinement.spec.ts|fake-provider generated-piece refinement (#698) \u203a accepts an observable AI refinement for every supported engine",
+    "key": "chromium|e2e/artPieceFakeRefinement.spec.ts|fake-provider generated-piece refinement (#698) › accepts an observable AI refinement for every supported engine",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceSixEngineEmbed.spec.ts|Six-engine chrome-less embeds (#615) \u203a renders each engine in the shared embed runtime at both viewports",
+    "key": "chromium|e2e/artPieceSixEngineEmbed.spec.ts|Six-engine chrome-less embeds (#615) › renders each engine in the shared embed runtime at both viewports",
     "issue": 1175,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceSixEngineRegular.spec.ts|Six-engine regular canonical viewer (#607) \u203a renders every engine through the slug route at both fixed viewports",
+    "key": "chromium|e2e/artPieceSixEngineRegular.spec.ts|Six-engine regular canonical viewer (#607) › renders every engine through the slug route at both fixed viewports",
     "issue": 1175,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceSteeringRuntime.spec.ts|Generated regular viewer: hand-steering ownership and Reset (#432) \u203a steering is gated on camera and a registered engine camera, then applies bounded pose changes and resets cleanly",
+    "key": "chromium|e2e/artPieceSteeringRuntime.spec.ts|Generated regular viewer: hand-steering ownership and Reset (#432) › steering is gated on camera and a registered engine camera, then applies bounded pose changes and resets cleanly",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceThumbnailCapture.spec.ts|Generated thumbnail service: capture artwork instead of hash-derived placeholders (#438) \u203a creating a piece through the real Studio, and revising it from the Editor, each replace the fallback with a real capture",
+    "key": "chromium|e2e/artPieceThumbnailCapture.spec.ts|Generated thumbnail service: capture artwork instead of hash-derived placeholders (#438) › creating a piece through the real Studio, and revising it from the Editor, each replace the fallback with a real capture",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceThumbnailCapture.spec.ts|Generated thumbnail service: capture artwork instead of hash-derived placeholders (#438) \u203a the Regenerate thumbnail button captures off-screen, a failed capture leaves the fallback until retried, and cross-user upload/public-route access stay denied",
+    "key": "chromium|e2e/artPieceThumbnailCapture.spec.ts|Generated thumbnail service: capture artwork instead of hash-derived placeholders (#438) › the Regenerate thumbnail button captures off-screen, a failed capture leaves the fallback until retried, and cross-user upload/public-route access stay denied",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/authPolicy.spec.ts|Google-only account creation policy \u203a desktop auth pages use the dark shell and preserve provider policy",
+    "key": "chromium|e2e/authPolicy.spec.ts|Google-only account creation policy › desktop auth pages use the dark shell and preserve provider policy",
     "issue": 1179,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/authPolicy.spec.ts|Google-only account creation policy \u203a mobile auth pages preserve the same policy and remain usable",
+    "key": "chromium|e2e/authPolicy.spec.ts|Google-only account creation policy › mobile auth pages preserve the same policy and remain usable",
     "issue": 1179,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) \u203a a published 2D project: signed-out and non-owner visitors never see owner controls at /projects/:id or /ai-projects/:id, at both viewports",
+    "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) › a published 2D project: signed-out and non-owner visitors never see owner controls at /projects/:id or /ai-projects/:id, at both viewports",
     "issue": 1180,
     "added": "2026-10-03",
     "expires": "2026-10-10",
     "count": 1
   },
   {
-    "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) \u203a a published 3D project: signed-out and non-owner visitors are redirected off /projects3d/:id and /ai-projects3d/:id, at both viewports",
+    "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) › a published 3D project: signed-out and non-owner visitors are redirected off /projects3d/:id and /ai-projects3d/:id, at both viewports",
     "issue": 1180,
     "added": "2026-10-03",
     "expires": "2026-10-10",
     "count": 1
   },
   {
-    "key": "chromium|e2e/authoringWorkflow740.spec.ts|reference-style authoring workflow (#740) \u203a creates, publishes, views, downloads, and refines 2D/3D pieces",
+    "key": "chromium|e2e/authoringWorkflow740.spec.ts|reference-style authoring workflow (#740) › creates, publishes, views, downloads, and refines 2D/3D pieces",
     "issue": 1185,
     "added": "2026-10-03",
     "expires": "2026-10-24",
@@ -224,13 +224,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/celestialStyle.spec.ts|Celestial style (#647) \u203a uses script headings, readable serif body, cosmic backdrop, and reduced-motion controls",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/contentPanelShadow.spec.ts|SPA content panel follows each site shadow presentation (#1146)",
     "issue": 1177,
     "added": "2026-10-03",
@@ -238,364 +231,315 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/cosmicBackdropStars.spec.ts|Cosmic backdrop star field (#807) \u203a renders a bounded decorative field at 1280x900",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/cosmicBackdropStars.spec.ts|Cosmic backdrop star field (#807) \u203a renders a bounded decorative field at 375x812",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/designSchemeMatrix.spec.ts|Design-scheme evidence matrix (#655) \u203a captures Celestial/Pareto routes in both modes and viewports",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/drawingPlane3d.spec.ts|drawing plane renders in 3D scenes (#779, #780, #785, #786) \u203a threejs on the immersive route",
+    "key": "chromium|e2e/drawingPlane3d.spec.ts|drawing plane renders in 3D scenes (#779, #780, #785, #786) › threejs on the immersive route",
     "issue": 1178,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/drawioEditor.spec.ts|Draw.io editor \u203a mutates objects, renames a layer, and preserves saved draw.io state",
+    "key": "chromium|e2e/drawioEditor.spec.ts|Draw.io editor › mutates objects, renames a layer, and preserves saved draw.io state",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/editOutputConsistency.spec.ts|edit-to-output consistency (#671) \u203a manual and fake-provider AI edits reach regular, immersive, and ZIP outputs",
+    "key": "chromium|e2e/editOutputConsistency.spec.ts|edit-to-output consistency (#671) › manual and fake-provider AI edits reach regular, immersive, and ZIP outputs",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/embedToolbarOrder.spec.ts|Embed toolbar order and placement (#752) \u203a /embed/art-pieces/:id shows the icon row in matrix order with Fullscreen last",
+    "key": "chromium|e2e/embedToolbarOrder.spec.ts|Embed toolbar order and placement (#752) › /embed/art-pieces/:id shows the icon row in matrix order with Fullscreen last",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/exportArtifacts.spec.ts|HTML export: responsive piece action surface \u203a stacks labeled actions and confines scrolling to opened controls at desktop and mobile widths",
+    "key": "chromium|e2e/exportArtifacts.spec.ts|HTML export: responsive piece action surface › stacks labeled actions and confines scrolling to opened controls at desktop and mobile widths",
     "issue": 1176,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/headerChrome.spec.ts|Header chrome (#674) \u203a fits the toolbar and exposes one mode control at 1280x900",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/headerChrome.spec.ts|Header chrome (#674) \u203a fits the toolbar and exposes one mode control at 375x812",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/headerChrome.spec.ts|Header chrome (#674) \u203a fits the toolbar and exposes one mode control at 768x1024",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/immersiveArtPieceToolset.spec.ts|generated immersive toolset (#691) \u203a renders labelled aframe immersive actions without a hamburger",
+    "key": "chromium|e2e/immersiveArtPieceToolset.spec.ts|generated immersive toolset (#691) › renders labelled aframe immersive actions without a hamburger",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/immersiveArtPieceToolset.spec.ts|generated immersive toolset (#691) \u203a renders labelled canvas2d immersive actions without a hamburger",
+    "key": "chromium|e2e/immersiveArtPieceToolset.spec.ts|generated immersive toolset (#691) › renders labelled canvas2d immersive actions without a hamburger",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/immersiveArtPieceToolset.spec.ts|generated immersive toolset (#691) \u203a renders labelled threejs immersive actions without a hamburger",
+    "key": "chromium|e2e/immersiveArtPieceToolset.spec.ts|generated immersive toolset (#691) › renders labelled threejs immersive actions without a hamburger",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/immersiveCollection.spec.ts|immersive collection gallery (#557) \u203a navigates a bounded live collection room at 1280x900",
+    "key": "chromium|e2e/immersiveCollection.spec.ts|immersive collection gallery (#557) › navigates a bounded live collection room at 1280x900",
     "issue": 1173,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/immersiveCollection.spec.ts|immersive collection gallery (#557) \u203a navigates a bounded live collection room at 375x812",
+    "key": "chromium|e2e/immersiveCollection.spec.ts|immersive collection gallery (#557) › navigates a bounded live collection room at 375x812",
     "issue": 1173,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: URL / closing-tag / quote / Unicode-control fixtures, real Chromium execution (title position) \u203a URL, closing-tag, quote, and Unicode-control fixtures are inert as title content",
+    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: URL / closing-tag / quote / Unicode-control fixtures, real Chromium execution (title position) › URL, closing-tag, quote, and Unicode-control fixtures are inert as title content",
     "issue": 1163,
     "added": "2026-10-03",
     "expires": "2026-10-10",
     "count": 1
   },
   {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: combined worst-case payload across attribution on/off and every interaction mode \u203a title/description/label all carry the combined payload and stay inert across every mode and attribution setting",
+    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: combined worst-case payload across attribution on/off and every interaction mode › title/description/label all carry the combined payload and stay inert across every mode and attribution setting",
     "issue": 1163,
     "added": "2026-10-03",
     "expires": "2026-10-10",
     "count": 1
   },
   {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: scoped-string fixtures, real Chromium execution \u203a label (layer/group name) fixtures are inert",
+    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: scoped-string fixtures, real Chromium execution › label (layer/group name) fixtures are inert",
     "issue": 1163,
     "added": "2026-10-03",
     "expires": "2026-10-10",
     "count": 1
   },
   {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: scoped-string fixtures, real Chromium execution \u203a structured scene string (graph node params) fixtures are inert",
+    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: scoped-string fixtures, real Chromium execution › structured scene string (graph node params) fixtures are inert",
     "issue": 1163,
     "added": "2026-10-03",
     "expires": "2026-10-10",
     "count": 1
   },
   {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: scoped-string fixtures, real Chromium execution \u203a title fixtures are inert",
+    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: scoped-string fixtures, real Chromium execution › title fixtures are inert",
     "issue": 1163,
     "added": "2026-10-03",
     "expires": "2026-10-10",
     "count": 1
   },
   {
-    "key": "chromium|e2e/layersPanel.spec.ts|Layers panel \u203a pointer drag-and-drop, keyboard reorder, and a locked-layer drop rejection all land on the correct scene order",
+    "key": "chromium|e2e/layersPanel.spec.ts|Layers panel › pointer drag-and-drop, keyboard reorder, and a locked-layer drop rejection all land on the correct scene order",
     "issue": 1185,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/livePreview.spec.ts|Generated-piece live preview (#669) \u203a debounces source edits, keeps the latest frame, and preserves the last good frame on errors",
+    "key": "chromium|e2e/livePreview.spec.ts|Generated-piece live preview (#669) › debounces source edits, keeps the latest frame, and preserves the last good frame on errors",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/localGalleryCards.spec.ts|Local project gallery cards (#1087) \u203a renders local metadata, thumbnails/fallbacks, and responsive cards",
+    "key": "chromium|e2e/localGalleryCards.spec.ts|Local project gallery cards (#1087) › renders local metadata, thumbnails/fallbacks, and responsive cards",
     "issue": 1181,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/localPieceRoundTripPublish.spec.ts|Local-only piece publish-as-transfer (#942) \u203a refuses to upload over quota and leaves the local piece editable",
+    "key": "chromium|e2e/localPieceRoundTripPublish.spec.ts|Local-only piece publish-as-transfer (#942) › refuses to upload over quota and leaves the local piece editable",
     "issue": 1174,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/localPieceRoundTripPublish.spec.ts|Local-only piece publish-as-transfer (#942) \u203a warns, validates, uploads, and publishes a local-only 2D piece at 1280x900",
+    "key": "chromium|e2e/localPieceRoundTripPublish.spec.ts|Local-only piece publish-as-transfer (#942) › warns, validates, uploads, and publishes a local-only 2D piece at 1280x900",
     "issue": 1174,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/localPieceRoundTripPublish.spec.ts|Local-only piece publish-as-transfer (#942) \u203a warns, validates, uploads, and publishes a local-only 2D piece at 375x812",
+    "key": "chromium|e2e/localPieceRoundTripPublish.spec.ts|Local-only piece publish-as-transfer (#942) › warns, validates, uploads, and publishes a local-only 2D piece at 375x812",
     "issue": 1174,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/manual3dLayoutParity.spec.ts|manual 3D editor layout parity \u203a Preview, outline, inspector, and publication controls stay non-overlapping and reachable at both required viewports",
+    "key": "chromium|e2e/manual3dLayoutParity.spec.ts|manual 3D editor layout parity › Preview, outline, inspector, and publication controls stay non-overlapping and reachable at both required viewports",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/manual3dPublicationLifecycle.spec.ts|manual 3D publication lifecycle \u203a publishes and restores the exact editor fixture at both required viewports",
+    "key": "chromium|e2e/manual3dPublicationLifecycle.spec.ts|manual 3D publication lifecycle › publishes and restores the exact editor fixture at both required viewports",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/manualEdit3d.spec.ts|Generated 3D manual editing tools (#668) \u203a adds, outlines, transforms, saves, and publishes Three.js and A-Frame edits",
+    "key": "chromium|e2e/manualEdit3d.spec.ts|Generated 3D manual editing tools (#668) › adds, outlines, transforms, saves, and publishes Three.js and A-Frame edits",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/piece2dFill.spec.ts|Generated 2D regular stage fill (#705) \u203a fills, resizes, preserves pointer coordinates, and supplies inspected screenshots for every 2D engine",
+    "key": "chromium|e2e/piece2dFill.spec.ts|Generated 2D regular stage fill (#705) › fills, resizes, preserves pointer coordinates, and supplies inspected screenshots for every 2D engine",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/pieceRuntimeErrorTemplate.spec.ts|Generated runtime error/ready template (#801) \u203a reports a throwing SVG online and in the extracted ZIP",
+    "key": "chromium|e2e/pieceRuntimeErrorTemplate.spec.ts|Generated runtime error/ready template (#801) › reports a throwing SVG online and in the extracted ZIP",
     "issue": 1164,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/pieceStageSizing.spec.ts|Generated regular-piece stage sizing (#703) \u203a keeps the canonical regular stage responsive, themed, stable, and contained",
+    "key": "chromium|e2e/pieceStageSizing.spec.ts|Generated regular-piece stage sizing (#703) › keeps the canonical regular stage responsive, themed, stable, and contained",
     "issue": 1175,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/pieceTemplateParity2d.spec.ts|2D runtime template parity (#799) \u203a asserts online and Full ZIP controls for every 2D engine",
+    "key": "chromium|e2e/pieceTemplateParity2d.spec.ts|2D runtime template parity (#799) › asserts online and Full ZIP controls for every 2D engine",
     "issue": 1164,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/pieceTemplateParity3d.spec.ts|3D runtime template parity (#800) \u203a asserts online and Full ZIP controls for Three.js and A-Frame",
+    "key": "chromium|e2e/pieceTemplateParity3d.spec.ts|3D runtime template parity (#800) › asserts online and Full ZIP controls for Three.js and A-Frame",
     "issue": 1164,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/pieceToolbarPlacement.spec.ts|regular generated-piece toolbar placement (#706) \u203a keeps controls above the stage, wraps mobile targets, and overlays only in fullscreen",
+    "key": "chromium|e2e/pieceToolbarPlacement.spec.ts|regular generated-piece toolbar placement (#706) › keeps controls above the stage, wraps mobile targets, and overlays only in fullscreen",
     "issue": 1175,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/profileHandles.spec.ts|public handle lifecycle (#551) \u203a generates, changes, validates, and redirects handles at 1280x900",
+    "key": "chromium|e2e/profileHandles.spec.ts|public handle lifecycle (#551) › generates, changes, validates, and redirects handles at 1280x900",
     "issue": 1164,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/profileHandles.spec.ts|public handle lifecycle (#551) \u203a generates, changes, validates, and redirects handles at 375x812",
+    "key": "chromium|e2e/profileHandles.spec.ts|public handle lifecycle (#551) › generates, changes, validates, and redirects handles at 375x812",
     "issue": 1164,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/profilePhotoUpload.spec.ts|profile photo upload and removal (#824) \u203a uploads, renders, rejects, and removes a photo at 1280x900",
+    "key": "chromium|e2e/profilePhotoUpload.spec.ts|profile photo upload and removal (#824) › uploads, renders, rejects, and removes a photo at 1280x900",
     "issue": 1165,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/profilePhotoUpload.spec.ts|profile photo upload and removal (#824) \u203a uploads, renders, rejects, and removes a photo at 375x812",
+    "key": "chromium|e2e/profilePhotoUpload.spec.ts|profile photo upload and removal (#824) › uploads, renders, rejects, and removes a photo at 375x812",
     "issue": 1165,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/profileStyleInheritance.spec.ts|profile style inheritance (#672) \u203a inherits the active site style on profile and collection pages in both modes/viewports",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation \u203a creating a new 3D project persists it and opens the manual editor",
+    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation › creating a new 3D project persists it and opens the manual editor",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation \u203a creating a new AI-assisted 3D project persists it and opens the AI-assisted editor",
+    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation › creating a new AI-assisted 3D project persists it and opens the AI-assisted editor",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation \u203a immersive 3D touch d-pad holds and releases the matching travel keys",
+    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation › immersive 3D touch d-pad holds and releases the matching travel keys",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation \u203a published 3D projects expose the shared public stage chrome and can return to Draft",
+    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation › published 3D projects expose the shared public stage chrome and can return to Draft",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dPublicationDiscoverability.spec.ts|3D publication discoverability \u203a shows and updates visibility in the editor and owner card",
+    "key": "chromium|e2e/project3dPublicationDiscoverability.spec.ts|3D publication discoverability › shows and updates visibility in the editor and owner card",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dServerPackageExport.spec.ts|server-backed 3D piece package export (#968) \u203a exports complete 3D history at 1280x900",
+    "key": "chromium|e2e/project3dServerPackageExport.spec.ts|server-backed 3D piece package export (#968) › exports complete 3D history at 1280x900",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dServerPackageExport.spec.ts|server-backed 3D piece package export (#968) \u203a exports complete 3D history at 375x812",
+    "key": "chromium|e2e/project3dServerPackageExport.spec.ts|server-backed 3D piece package export (#968) › exports complete 3D history at 375x812",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dThumbnailCard.spec.ts|owner 3D project card thumbnails \u203a regenerates the card thumbnail after the current version changes",
+    "key": "chromium|e2e/project3dThumbnailCard.spec.ts|owner 3D project card thumbnails › regenerates the card thumbnail after the current version changes",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dThumbnailCard.spec.ts|owner 3D project card thumbnails \u203a shows real geometry for a renderable scene and a safe retryable fallback for a failing one",
+    "key": "chromium|e2e/project3dThumbnailCard.spec.ts|owner 3D project card thumbnails › shows real geometry for a renderable scene and a safe retryable fallback for a failing one",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/public3dCameraOverlay728.spec.ts|public 3D camera overlay geometry (#728) \u203a matches the stage at desktop and mobile viewports, keeps chrome above it, and captures evidence",
+    "key": "chromium|e2e/public3dCameraOverlay728.spec.ts|public 3D camera overlay geometry (#728) › matches the stage at desktop and mobile viewports, keeps chrome above it, and captures evidence",
     "issue": 1169,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/public3dCameraPlacement742.spec.ts|public 3D camera placement contract (#742) \u203a owner choice, live camera modes, geometry, labels, and ZIP variants",
+    "key": "chromium|e2e/public3dCameraPlacement742.spec.ts|public 3D camera placement contract (#742) › owner choice, live camera modes, geometry, labels, and ZIP variants",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
@@ -609,147 +553,133 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/public3dToolbar730.spec.ts|public 3D stage toolbar placement (#730) \u203a overlays controls without reflow at desktop and mobile sizes",
+    "key": "chromium|e2e/public3dToolbar730.spec.ts|public 3D stage toolbar placement (#730) › overlays controls without reflow at desktop and mobile sizes",
     "issue": 1169,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicArtPieceToolset.spec.ts|generated art-piece public toolset (#690) \u203a renders labelled aframe actions without a hamburger",
+    "key": "chromium|e2e/publicArtPieceToolset.spec.ts|generated art-piece public toolset (#690) › renders labelled aframe actions without a hamburger",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicArtPieceToolset.spec.ts|generated art-piece public toolset (#690) \u203a renders labelled canvas2d actions without a hamburger",
+    "key": "chromium|e2e/publicArtPieceToolset.spec.ts|generated art-piece public toolset (#690) › renders labelled canvas2d actions without a hamburger",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicArtPieceToolset.spec.ts|generated art-piece public toolset (#690) \u203a renders labelled threejs actions without a hamburger",
+    "key": "chromium|e2e/publicArtPieceToolset.spec.ts|generated art-piece public toolset (#690) › renders labelled threejs actions without a hamburger",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicDraw.spec.ts|C2.js Interactive visitor drawing (#670) \u203a draws temporarily on regular and immersive views and captures the marks",
+    "key": "chromium|e2e/publicDraw.spec.ts|C2.js Interactive visitor drawing (#670) › draws temporarily on regular and immersive views and captures the marks",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicGalleryEngine.spec.ts|public gallery engine filter (#564) \u203a derives supported engines and persists the filter at 1280x812",
+    "key": "chromium|e2e/publicGalleryEngine.spec.ts|public gallery engine filter (#564) › derives supported engines and persists the filter at 1280x812",
     "issue": 1182,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicGalleryEngine.spec.ts|public gallery engine filter (#564) \u203a derives supported engines and persists the filter at 375x812",
+    "key": "chromium|e2e/publicGalleryEngine.spec.ts|public gallery engine filter (#564) › derives supported engines and persists the filter at 375x812",
     "issue": 1182,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicGalleryMixedPieces.spec.ts|mixed public gallery \u203a shows published 2D, 3D, and generated cards to anonymous visitors at desktop and mobile widths",
+    "key": "chromium|e2e/publicGalleryMixedPieces.spec.ts|mixed public gallery › shows published 2D, 3D, and generated cards to anonymous visitors at desktop and mobile widths",
     "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicPieceSurfaceContract744.spec.ts|public generated-piece surface contract matrix (#744) \u203a keeps route consumers aligned with one published current version",
+    "key": "chromium|e2e/publicPieceSurfaceContract744.spec.ts|public generated-piece surface contract matrix (#744) › keeps route consumers aligned with one published current version",
     "issue": 1185,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicProfiles.spec.ts|Public profiles (#520) \u203a owner publishes profile metadata and only its public profile route is visible",
+    "key": "chromium|e2e/publicProfiles.spec.ts|Public profiles (#520) › owner publishes profile metadata and only its public profile route is visible",
     "issue": 1164,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) \u203a hand steering only: exact set and order",
+    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) › hand steering only: exact set and order",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) \u203a minimal flat piece: exact set and order",
+    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) › minimal flat piece: exact set and order",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) \u203a screenshot and fullscreen explicitly off: exact set and order",
+    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) › screenshot and fullscreen explicitly off: exact set and order",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) \u203a sound only: exact set and order",
+    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) › sound only: exact set and order",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/relatedPublicProjects.spec.ts|canonical related public 2D pieces (#1142) \u203a shows shared-tag public cards below canonical details, without shifting the stage",
+    "key": "chromium|e2e/relatedPublicProjects.spec.ts|canonical related public 2D pieces (#1142) › shows shared-tag public cards below canonical details, without shifting the stage",
     "issue": 1174,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/sonicTelemetry.spec.ts|Generated public sound telemetry (#918) \u203a captures eight ambient notes and the C4-C5 major keyboard sequence",
+    "key": "chromium|e2e/sonicTelemetry.spec.ts|Generated public sound telemetry (#918) › captures eight ambient notes and the C4-C5 major keyboard sequence",
     "issue": 1183,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/themeToggle.spec.ts|visitor theme preference (#644) \u203a persists light/dark/system choices across routes and reloads",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/unpublishRetention.spec.ts|Unpublish retention: restore within the grace window (#944) \u203a unpublishing a project starts the retention clock, and republishing restores it",
+    "key": "chromium|e2e/unpublishRetention.spec.ts|Unpublish retention: restore within the grace window (#944) › unpublishing a project starts the retention clock, and republishing restores it",
     "issue": 1168,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "chromium|e2e/vividDesignMatrix.spec.ts|Vivid design evidence matrix (#683) \u203a captures header, AI panel, and account settings across styles, modes, and widths",
-    "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "firefox|e2e/drawioEditor.spec.ts|Draw.io editor \u203a mutates objects, renames a layer, and preserves saved draw.io state",
+    "key": "firefox|e2e/drawioEditor.spec.ts|Draw.io editor › mutates objects, renames a layer, and preserves saved draw.io state",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
-    "key": "webkit|e2e/artPieceCameraRuntime.spec.ts|Generated regular viewer: camera composition and capture (#431) \u203a camera starts from its own gesture, composites into the live view and the screenshot, and reports denied/unavailable/ended",
+    "key": "webkit|e2e/artPieceCameraRuntime.spec.ts|Generated regular viewer: camera composition and capture (#431) › camera starts from its own gesture, composites into the live view and the screenshot, and reports denied/unavailable/ended",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",

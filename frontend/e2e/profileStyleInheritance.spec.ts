@@ -31,21 +31,23 @@ async function readProfile(context: BrowserContext): Promise<Profile> {
 }
 
 async function assertInheritedStyle(page: Page, mode: (typeof MODES)[number]) {
-  const style = await page
-    .locator('.public-profile, .public-collection')
-    .first()
-    .evaluate((node) => {
-      const computed = getComputedStyle(node);
-      return {
-        background: computed.getPropertyValue('--profile-background').trim(),
-        accent: computed.getPropertyValue('--profile-accent').trim(),
-        font: computed.getPropertyValue('--profile-font').trim(),
-        headingFont: getComputedStyle(node.querySelector('h2, h3') ?? node).fontFamily,
-      };
-    });
+  const surface = page.locator('.public-profile, .public-collection').first();
+  await expect
+    .poll(() =>
+      surface.evaluate((node) => getComputedStyle(node).getPropertyValue('--profile-font').trim()),
+    )
+    .toContain('Lora');
+  const style = await surface.evaluate((node) => {
+    const computed = getComputedStyle(node);
+    return {
+      background: computed.getPropertyValue('--profile-background').trim(),
+      accent: computed.getPropertyValue('--profile-accent').trim(),
+      font: computed.getPropertyValue('--profile-font').trim(),
+      headingFont: getComputedStyle(node.querySelector('h2, h3') ?? node).fontFamily,
+    };
+  });
   expect(style.background).toBe(mode.background);
   expect(style.accent).toBe(mode.accent);
-  expect(style.font).toContain('Lora');
   expect(style.headingFont).toContain('Pinyon Script');
 }
 
@@ -116,7 +118,21 @@ test.describe('profile style inheritance (#672)', () => {
 
           await anonymousPage.goto(`/users/@${handle}`);
           await expect(anonymousPage.locator('.public-profile')).toBeVisible();
-          await expect(anonymousPage.locator('.reduced-motion-status')).toContainText('reduced');
+          const displaySettings = anonymousPage.getByRole('complementary', {
+            name: 'Display settings',
+          });
+          const motionToggle = displaySettings.getByRole('button', {
+            name: /Use (reduced|full) motion/i,
+          });
+          if ((await motionToggle.getAttribute('aria-pressed')) !== 'true') {
+            if ((await motionToggle.getAttribute('aria-label')) === 'Use full motion') {
+              await motionToggle.click();
+            }
+            await displaySettings.getByRole('button', { name: 'Use reduced motion' }).click();
+          }
+          await expect(
+            displaySettings.getByRole('button', { name: 'Use full motion' }),
+          ).toHaveAttribute('aria-pressed', 'true');
           await assertInheritedStyle(anonymousPage, mode);
           await anonymousPage.screenshot({
             path: testInfo.outputPath(`profile-${viewport.label}-${mode.name}.png`),

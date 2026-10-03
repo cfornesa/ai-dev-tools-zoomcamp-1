@@ -1,19 +1,5 @@
 [
   {
-    "key": "chromium|e2e/ai2dPublication.spec.ts|AI-assisted 2D publication › publishes and returns to Draft from the stage-local control",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/ai2dResponsive.spec.ts|AI-assisted 2D responsive editor › contains the preview canvas without horizontal page overflow at phone width",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/aiAndRecovery.spec.ts|Local and server draft autosave › explicit Save and its interaction with sync failures, periodic ticks, reopening, and Exit-without-saving",
     "issue": 1186,
     "added": "2026-10-03",
@@ -23,76 +9,6 @@
   {
     "key": "chromium|e2e/aiAuthoringSixEngine743.spec.ts|AI authoring six-engine Persona matrix (#743) › generates, saves, and reopens every engine through the Studio UI",
     "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiMention3d.spec.ts|3D AI @ targeting (#662) › filters and inserts a typed stable-ID chip at 1280px",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiMention3d.spec.ts|3D AI @ targeting (#662) › filters and inserts a typed stable-ID chip at 375px",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiPanelLayout2d.spec.ts|2D AI panel layout (#678) › keeps fields full width at 1280x900",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiPanelLayout2d.spec.ts|2D AI panel layout (#678) › keeps fields full width at 375x812",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiPanelLayout2d.spec.ts|2D AI panel layout (#678) › keeps fields full width at 768x1024",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiPanelLayout3d.spec.ts|3D AI panel layout (#679) › keeps fields full width at 1280x900",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiPanelLayout3d.spec.ts|3D AI panel layout (#679) › keeps fields full width at 375x812",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiPanelLayout3d.spec.ts|3D AI panel layout (#679) › keeps fields full width at 768x1024",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiPlanReview2d.spec.ts|AI 2D editor: plan review (#659) › shows the plan and waits for explicit approval before implementation",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/aiPlanReview3d.spec.ts|AI 3D editor: plan review (#660) › shows the plan and waits for explicit approval before implementation",
-    "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
@@ -434,13 +350,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/project3dLifecycle.spec.ts|3D project creation › creating a new AI-assisted 3D project persists it and opens the AI-assisted editor",
-    "issue": 1170,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/public3dCameraPlacement742.spec.ts|public 3D camera placement contract (#742) › owner choice, live camera modes, geometry, labels, and ZIP variants",
     "issue": 1166,
     "added": "2026-10-03",
@@ -485,13 +394,6 @@
   {
     "key": "chromium|e2e/publicGalleryEngine.spec.ts|public gallery engine filter (#564) › derives supported engines and persists the filter at 375x812",
     "issue": 1182,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/publicGalleryMixedPieces.spec.ts|mixed public gallery › shows published 2D, 3D, and generated cards to anonymous visitors at desktop and mobile widths",
-    "issue": 1170,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1

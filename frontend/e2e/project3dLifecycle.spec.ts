@@ -21,6 +21,7 @@ import JSZip from 'jszip';
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createServerProjectAndOpenAIProposalPanel } from './support/aiProposal.js';
 import { createLocalProject3DViaUI, createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
@@ -123,23 +124,14 @@ test.describe('3D project creation', () => {
     page: Page;
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    const { projectId } = await createServerProjectAndOpenAIProposalPanel(page, '3d');
+    expect(projectId).toBeTruthy();
 
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create an AI-assisted 3D project' }).click();
-    await page.waitForURL(/\/ai-projects3d\/[^/]+$/);
-    const match = /\/ai-projects3d\/([^/]+)$/.exec(page.url());
-    expect(match).not.toBeNull();
-
-    // AiProject3DWorkspace.tsx mounts Scene3DPreview.tsx (issue #244) once
-    // it has fetched the newly-created project and its current version
-    // successfully -- same persistence proof as the manual scenario above,
-    // via the AI-assisted route's own load path instead. A real browser
-    // (unlike this repo's jsdom-based component tests) has WebGL, so the
-    // live canvas -- not the WebGL-unavailable fallback -- is what proves
-    // the preview actually mounted and rendered.
+    // The removed AI-assisted creation route now resolves to the canonical
+    // 3D editor. The helper opens its current AI panel after proving the
+    // server-backed project and editor response agree on the project id.
     await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
-    await expectThreeDStageChrome(page, { hasStagePublicationTrigger: true });
+    await expectThreeDStageChrome(page, { hasStagePublicationTrigger: false });
     await expect(page.getByRole('button', { name: 'Download standalone bundle' })).toHaveCount(0);
 
     await page.reload();

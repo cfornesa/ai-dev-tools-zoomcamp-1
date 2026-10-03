@@ -1,6 +1,7 @@
 /** Issue #662: 3D AI @ targeting uses the shared caret-safe mention field. */
 import { expect, test, type TestInfo } from '@playwright/test';
 
+import { createServerProjectAndOpenAIProposalPanel } from './support/aiProposal.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
@@ -23,12 +24,9 @@ test.describe('3D AI @ targeting (#662)', () => {
     }, testInfo: TestInfo) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      await page.getByRole('menuitem', { name: 'Create an AI-assisted 3D project' }).click();
-      await page.waitForURL(/\/ai-projects3d\/[^/]+$/);
+      const { panel } = await createServerProjectAndOpenAIProposalPanel(page, '3d');
 
-      const prompt = page.getByRole('textbox', {
+      const prompt = panel.getByRole('textbox', {
         name: /describe the scene you want to generate/i,
       });
       await prompt.fill('@');

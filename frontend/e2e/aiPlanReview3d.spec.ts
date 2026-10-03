@@ -6,6 +6,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { apiPost } from './support/api.js';
+import { createServerProjectAndOpenAIProposalPanel } from './support/aiProposal.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -44,23 +45,20 @@ test.describe('AI 3D editor: plan review (#660)', () => {
       'Server is not running with AI_PROVIDER=fake -- see AGENTS.md end-to-end setup.',
     );
 
-    const created = await apiPost(context, '/api/projects3d/', {});
-    const { id: projectId } = (await created.json()) as { id: string };
     await setAIScenario(page, 'success');
+    const { panel } = await createServerProjectAndOpenAIProposalPanel(page, '3d');
+    await panel.getByRole('radio', { name: 'Agent workflow' }).click();
+    await panel.getByRole('radio', { name: 'Create piece' }).click();
+    await panel.getByLabel('Describe the scene you want to generate').fill('a cube and a sphere');
+    await panel.getByTestId('ai-run-start').click();
 
-    await page.goto(`/ai-projects3d/${projectId}`);
-    await page.getByRole('radio', { name: 'Agent workflow' }).click();
-    await page.getByRole('radio', { name: 'Create piece' }).click();
-    await page.getByLabel('Describe the scene you want to generate').fill('a cube and a sphere');
-    await page.getByTestId('ai-run-start').click();
+    await expect(panel.getByTestId('ai-run-plan-review')).toBeVisible();
+    await expect(panel.getByTestId('ai-run-approve-plan')).toBeEnabled();
+    await expect(panel.getByTestId('ai-run-edit-request')).toBeEnabled();
+    await expect(panel.getByTestId('ai-run-attempts')).toHaveCount(0);
 
-    await expect(page.getByTestId('ai-run-plan-review')).toBeVisible();
-    await expect(page.getByTestId('ai-run-approve-plan')).toBeEnabled();
-    await expect(page.getByTestId('ai-run-edit-request')).toBeEnabled();
-    await expect(page.getByTestId('ai-run-attempts')).toHaveCount(0);
-
-    await page.getByTestId('ai-run-approve-plan').click();
-    await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 15000 });
+    await panel.getByTestId('ai-run-approve-plan').click();
+    await expect(panel.getByTestId('ai-run-preview')).toBeVisible({ timeout: 15000 });
     await resetAIScenario(page);
   });
 });

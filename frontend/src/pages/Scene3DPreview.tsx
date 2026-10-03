@@ -251,6 +251,7 @@ function ThreeScenePreview({
   showSoundControl = true,
   showEditorHelpers = false,
   flyControls = false,
+  publicStructuredViewer = false,
   screenshotBaseName,
   onDownload,
   downloadFormat = 'zip',
@@ -296,6 +297,8 @@ function ThreeScenePreview({
    * every other caller, since it changes what arrow keys do (translation
    * instead of `OrbitControls`' own built-in panning). */
   flyControls?: boolean;
+  /** Scope public-viewer toolbar placement away from editor/embed stages. */
+  publicStructuredViewer?: boolean;
   /** Stage-level download action supplied by the owning editor/viewer. */
   onDownload?: (variant?: Scene3DExportVariant) => void | Promise<void>;
   /** Artifact format used by the owning surface, for accurate menu labels. */
@@ -1155,7 +1158,10 @@ function ThreeScenePreview({
 
   if (renderError) {
     return (
-      <div ref={containerRef} className="scene3d-preview scene3d-preview-unavailable">
+      <div
+        ref={containerRef}
+        className={`scene3d-preview scene3d-preview-unavailable${publicStructuredViewer ? ' scene3d-preview--public-structured' : ''}`}
+      >
         <div role="status" aria-live="polite" data-testid="scene3d-preview-unavailable">
           <p>3D preview isn't available in this browser.</p>
           <p>
@@ -1171,6 +1177,11 @@ function ThreeScenePreview({
             onDownload={onDownload}
             downloadFormat={downloadFormat}
             capabilities={THREE_D_STAGE_CAPABILITIES}
+            fullscreenControlClassName={
+              publicStructuredViewer && toolbarMode === 'inline'
+                ? 'piece-stage-fullscreen-control'
+                : undefined
+            }
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
             editorControls={editorControls}
@@ -1181,7 +1192,11 @@ function ThreeScenePreview({
   }
 
   return (
-    <div ref={containerRef} className="scene3d-preview" data-testid="scene3d-preview">
+    <div
+      ref={containerRef}
+      className={`scene3d-preview${publicStructuredViewer ? ' scene3d-preview--public-structured' : ''}`}
+      data-testid="scene3d-preview"
+    >
       <div
         ref={canvasFrameRef}
         className="scene3d-preview-canvas-frame"
@@ -1230,6 +1245,11 @@ function ThreeScenePreview({
           onDownload={onDownload}
           downloadFormat={downloadFormat}
           capabilities={THREE_D_STAGE_CAPABILITIES}
+          fullscreenControlClassName={
+            publicStructuredViewer && toolbarMode === 'inline'
+              ? 'piece-stage-fullscreen-control'
+              : undefined
+          }
           immersiveHref={immersiveHref}
           toolbarMode={toolbarMode}
           isFullscreen={isFullscreen}

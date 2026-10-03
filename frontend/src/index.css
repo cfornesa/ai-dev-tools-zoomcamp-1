@@ -6434,14 +6434,6 @@ select.ai-proposal-field-full-width {
   gap: 0.65rem;
 }
 
-/* Inline public viewers keep fullscreen independent from the wrapping action
-   row so it stays anchored to the stage's bottom-right corner. */
-.piece-stage-fullscreen-control {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-}
-
 .piece-stage-menu-trigger,
 .piece-stage-command-close,
 .piece-stage-submenu-close {
@@ -7534,6 +7526,42 @@ select.ai-proposal-field-full-width {
 .piece-stage-toolbar[data-toolbar-mode='inline'] {
   flex-direction: column;
   align-items: flex-start;
+}
+
+/* Canonical structured 3D viewers use the stage itself as the positioning
+   area for the inline toolbar. Let empty toolbar space pass pointer input to
+   the immersive touch controls below it; the visible controls keep their own
+   hit targets. */
+.scene3d-preview--public-structured .piece-stage-toolbar[data-toolbar-mode='inline'] {
+  inset: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+.scene3d-preview--public-structured
+  .piece-stage-toolbar[data-toolbar-mode='inline']
+  .scene3d-preview-actions {
+  max-width: calc(100% - 3.5rem);
+  pointer-events: none;
+}
+
+.scene3d-preview--public-structured
+  .piece-stage-toolbar[data-toolbar-mode='inline']
+  .scene3d-preview-actions
+  :is(button, a, input, select, textarea, [role='menu'], [role='menuitem'], [role='slider']) {
+  pointer-events: auto;
+}
+
+/* The fullscreen action stays on the top row, outside its compact left-hand
+   controls, and on the far side of the stage. The action group reserves its
+   width so the two targets cannot overlap on phones. */
+.scene3d-preview--public-structured
+  .piece-stage-toolbar[data-toolbar-mode='inline']
+  .piece-stage-icon-button.piece-stage-fullscreen-control {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  bottom: auto;
 }
 
 /* Icon-only inline toolbars are ~44px wide, so a popover sized as a percentage of

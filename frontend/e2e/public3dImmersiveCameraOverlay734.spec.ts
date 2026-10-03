@@ -70,6 +70,8 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
 
     for (const viewport of [
       { name: 'desktop', width: 1440, height: 900 },
+      { name: 'wide', width: 1280, height: 900 },
+      { name: 'tablet', width: 768, height: 1024 },
       { name: 'mobile', width: 375, height: 812 },
     ]) {
       await anonymousPage.setViewportSize(viewport);

@@ -85,6 +85,8 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
 
       for (const viewport of [
         { name: 'desktop', width: 1440, height: 900 },
+        { name: 'wide', width: 1280, height: 900 },
+        { name: 'tablet', width: 768, height: 1024 },
         { name: 'mobile', width: 375, height: 812 },
       ]) {
         await anonymousPage.setViewportSize(viewport);
@@ -108,7 +110,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
           expect(button.width).toBeGreaterThanOrEqual(32);
           expect(button.height).toBeGreaterThanOrEqual(32);
         }
-        if (viewport.name === 'desktop') {
+        if (viewport.width >= 700) {
           expect(
             Math.max(...closed.map((button) => button.y)) -
               Math.min(...closed.map((button) => button.y)),

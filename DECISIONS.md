@@ -2867,3 +2867,10 @@ updates. The remaining open backlog was not silently claimed complete.
 - #1206: django-oauth-toolkit approved; pre-registered clients only (no dynamic registration); scopes `gallery:read`, `projects:write`, `ai:use`, plus separately granted `destructive`; AI tools use the same quotas and entitlements as the web app.
 - #1219: deletion over MCP ships in the first release, behind the `destructive` scope with a matching `confirm` argument, soft-delete only, audited.
 - E2E audit decision A: all 20 E? candidates are rewritten (via #1166, #1168, #1170, #1173, #1174), none retired. Decision B: PR smoke widened with the three offline specs (#1224).
+
+## 2026-10-03 — Wave 2B local verification and #1225 geometry sampling
+
+- **Execution decision (not a new owner decision):** preserve #730's original absolute viewport-coordinate comparisons and 1px/action-count assertions; after each viewport resize, wait until two consecutive toolbar-bound samples are within 1px before recording the baseline. This addresses immediate post-resize sampling while keeping the acceptance criterion strict.
+- **Local evidence:** the 26-spec Wave 2B Chromium union passed 51/51 on disposable Compose PostgreSQL. The 39-spec combined focused/shell/stage union passed 66/70; the four failures remain with Goal 7 owners #615, #779–#786, #703, and #706. The separate #1166 Firefox case could not launch on macOS; its ratchet entry stays. No Goal 7 rules changed.
+- **Gate:** frontend typecheck/lint/format checks passed (existing lint warnings). `make check` remains red on 2,011 backend passes, 44 skips, and the existing stale CI-YAML assertion failure, followed by Vitest discovering the Node-only ratchet file as an empty suite. No workflow was dispatched; Linux evidence is pending. No issue was closed.
+- **Provenance:** Stage 2a roster Opencode Go / Kimi K2.5; actual implementer Codex / GPT-6 (effort not surfaced), substituted. Stage 4 roster Claude / Sonnet 5 / Medium was not run independently; these local results are implementation evidence only. Track: mixed.

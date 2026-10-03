@@ -441,29 +441,8 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/public3dCameraOverlay728.spec.ts|public 3D camera overlay geometry (#728) › matches the stage at desktop and mobile viewports, keeps chrome above it, and captures evidence",
-    "issue": 1169,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/public3dCameraPlacement742.spec.ts|public 3D camera placement contract (#742) › owner choice, live camera modes, geometry, labels, and ZIP variants",
     "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/public3dImmersiveCameraOverlay734.spec.ts|canonical immersive 3D camera overlay fills and centers the stage at desktop and mobile",
-    "issue": 1169,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/public3dToolbar730.spec.ts|public 3D stage toolbar placement (#730) › overlays controls without reflow at desktop and mobile sizes",
-    "issue": 1169,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1

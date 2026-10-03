@@ -26328,3 +26328,39 @@ run remains red on unrelated browser failures tracked by parent #1096; no
 reason `completed` and all six criteria checked. Current open inventory:
 #1096, #1138, and #1156. The latter two still await owner disposition on their
 docs-first chronology criterion.
+
+### 2026-10-03 — CI run #1126 child issues of #1096 (Batch 14)
+
+Case-to-issue map: `docs/ci-failure-map-run1126.md` (120 failed cases → children; #1160-#1162 are recorded above). Each entry mirrors a GitHub issue (Discovery gate: backlog entry and issue linked both ways).
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1163](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1163) | E2E injection audit: identify the extra <script> element in exported artifacts (5 tests) | GROOMED | — | 2b security oracle; P0 |
+| [#1164](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1164) | E2E: PATCH /api/account/profile/ fails in profile and template-parity flows (6 tests) | GROOMED | — (resolve before #1165, #1173, #1174) | 2a/2b; P1 |
+| [#1165](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1165) | E2E: profile photo removal leaves the Remove photo control (2 tests) | GROOMED | after #1164 | 2a |
+| [#1166](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1166) | E2E: 'Piece controls' and the sr-only 'Open piece controls menu' shim collide in toolbar specs (18 tests) | GROOMED | — | 2a |
+| [#1167](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1167) | Owner decision: remove the sr-only no-op 'Open piece controls menu' button from inline toolbars? | DECIDED (remove) | after #1166 | owner decision; implementation #1187 |
+| [#1168](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1168) | E2E: migrate remaining 3D lifecycle specs from Gallery-click creation to the server-backed helper (11 tests) | GROOMED | #1100 helper (closed) | 2a |
+| [#1169](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1169) | E2E: migrate public 3D camera/toolbar specs from Gallery-click creation to the server-backed helper (3 tests) | GROOMED | after #1168 | 2a |
+| [#1170](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1170) | E2E: retarget AI panel specs from legacy AI routes and removed creation menu items to the unified editor (14 tests) | GROOMED | #1149 helper (closed) | 2a + stop rule |
+| [#1171](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1171) | E2E: generated-art studio editor specs never reach their first control (12 tests) — diagnose first cause | GROOMED | diagnosis first | 2b diagnosis |
+| [#1172](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1172) | E2E: shell chrome specs expect the removed header color-mode and reduced-motion controls (10 tests) | GROOMED | after #1158 (closed) | 2a + stop rule |
+| [#1173](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1173) | E2E: public piece pages no longer show the expected 'By e2e_owner' byline (4 tests) | GROOMED | after #1164 | 2a |
+| [#1174](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1174) | E2E: the publish confirmation dialog cannot be completed in two publication specs (4 tests) | GROOMED | after #1164 | 2a/2b |
+| [#1175](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1175) | Generated-piece stage specs expect the pre-phone-layout geometry (≤700px) (4 tests) | DEPENDENCY-BLOCKED | #1188, #1189 | 2a |
+| [#1176](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1176) | HTML export: labelled action buttons are 40px wide where the spec requires >= 44px (1 test) | GROOMED | — | 2a |
+| [#1177](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1177) | Content panel shadow spec: offset panel height drifts by 306px at 375x812 dark (new in run #1126) | GROOMED | bisect first; P1 possible regression | 2a |
+| [#1178](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1178) | 3D drawing plane render: pixel-coverage threshold fails (230 vs > 271) (1 test) | GROOMED | after the 3D stage specs | 2a |
+| [#1179](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1179) | E2E: auth policy spec expects pre-#1127 login copy and a body background that moved (2 tests) | GROOMED | — | 2a |
+| [#1180](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1180) | Authoring ownership gate: non-owner lands on the owner editor URL instead of being redirected (2 tests) | GROOMED | — | 2b authorization check; P0 |
+| [#1181](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1181) | Local gallery cards spec (#1087): the card heading is not found after creation (1 test) | GROOMED | uses #1101 seeding | 2a |
+| [#1182](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1182) | Public gallery engine filter: the select does not retain c2js-interactive (2 tests) | GROOMED | — | 2a |
+| [#1183](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1183) | Sound telemetry spec: getByLabel(Key) matches two controls (1 test) | GROOMED | — | 2a |
+| [#1184](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1184) | Site content and theme admin specs: stale text and an ambiguous accent label (4 tests) | GROOMED | — | 2a |
+| [#1185](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1185) | E2E: three long-running specs end in protocol or connection errors after their timeouts (3 tests) | GROOMED | diagnosis first | 2b diagnosis |
+| [#1186](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1186) | aiAndRecovery: explicit Save scenario receives a non-ZIP download (1 test, new in run #1126) | GROOMED | new in run #1126 | 2a |
+| [#1187](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1187) | Remove the inert 'Open piece controls menu' shim from inline toolbars (after consumers migrate) | DEPENDENCY-BLOCKED | #1166 and all consumer migrations | 2a (wide) |
+| [#1188](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1188) | Public regular generated-piece page on phones: declared ratio, tall stage only for interactive drawing, toolbar below | GROOMED | —; serialize with #1177 | 2a, owner-decided |
+| [#1189](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1189) | Embed route on phones follows the same stage and toolbar rule (after #1188) | DEPENDENCY-BLOCKED | #1188 | 2a |
+
+Owner decisions of 2026-10-03: #1167 remove the inert shim (→ #1187); #1175 two-tier phone specs, toolbar below the stage, tall phone stage only for `c2js-interactive` (→ #1188, #1189). #1096 stays open until a full 16-shard Linux run is green or every remaining failure has an owner and next action.

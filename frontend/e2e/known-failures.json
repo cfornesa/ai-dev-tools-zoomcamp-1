@@ -1,12 +1,5 @@
 [
   {
-    "key": "chromium|e2e/adminThemeGeneration.spec.ts|admin can generate, inspect, accept, and restore a custom theme draft",
-    "issue": 1184,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/ai2dPublication.spec.ts|AI-assisted 2D publication \u203a publishes and returns to Draft from the stage-local control",
     "issue": 1170,
     "added": "2026-10-03",
@@ -317,20 +310,6 @@
   {
     "key": "chromium|e2e/headerChrome.spec.ts|Header chrome (#674) \u203a fits the toolbar and exposes one mode control at 768x1024",
     "issue": 1172,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/homeHero.spec.ts|home hero (#648) \u203a renders configured hero, CMS content, and keyboard-focusable See More CTA on desktop",
-    "issue": 1184,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/homeHero.spec.ts|home hero (#648) \u203a wraps long configured titles without horizontal overflow on mobile",
-    "issue": 1184,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
@@ -737,13 +716,6 @@
   {
     "key": "chromium|e2e/sonicTelemetry.spec.ts|Generated public sound telemetry (#918) \u203a captures eight ambient notes and the C4-C5 major keyboard sequence",
     "issue": 1183,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/themeCustomization.spec.ts|Theme customization (#521) \u203a admin and profile token controls are scoped and responsive",
-    "issue": 1184,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1

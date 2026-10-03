@@ -45,7 +45,7 @@ test.describe('home hero (#648)', () => {
   }, testInfo) => {
     await stubHomeContent(page);
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/');
+    await page.goto('/home');
 
     await expect(page.getByText('From the studio')).toBeVisible();
     await expect(page.locator('#home-hero-heading')).toHaveText(SITE_TITLE);
@@ -67,7 +67,7 @@ test.describe('home hero (#648)', () => {
   }, testInfo) => {
     await stubHomeContent(page);
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/');
+    await page.goto('/home');
 
     await expect(page.locator('#home-hero-heading')).toHaveText(SITE_TITLE);
     await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 375);

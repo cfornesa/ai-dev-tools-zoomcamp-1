@@ -192,14 +192,32 @@ async function eventHandlerAttributes(page: Page): Promise<string[]> {
   });
 }
 
-/** Count of `<script>` elements in the live DOM beyond the exact expected,
- * pinned set for a demo-only export (p5 CDN loader, two JSON data blocks,
- * runtime script, and the stage-toolbar runtime — 5 total). Every scenario below uses `interactionMode:
- * 'demo'` except the dedicated interaction-mode-matrix test, which adjusts
- * the expected count itself. */
-async function unexpectedScriptElementCount(page: Page, expected: number): Promise<number> {
-  const count = await page.evaluate(() => document.querySelectorAll('script').length);
-  return Math.max(0, count - expected);
+type LiveScript = { id: string; type: string; src: string | null; text: string };
+
+/** Exact first-party scripts allowed in the exported P5 document. Keeping
+ * roles beside their DOM identity makes the expected structure reviewable;
+ * an unknown element still changes the live inventory and fails the audit. */
+function expectedScriptAllowlist(includesCamera: boolean) {
+  return [
+    { role: 'p5-library', id: '', type: '', src: generator.constants.P5_CDN_URL },
+    { role: 'scene-data', id: 'scene-data', type: 'application/json', src: null },
+    { role: 'media-assets', id: 'media-assets', type: 'application/json', src: null },
+    { role: 'export-config', id: 'export-config', type: 'application/json', src: null },
+    { role: 'scene-runtime', id: '', type: '', src: null },
+    ...(includesCamera ? [{ role: 'camera-runtime', id: '', type: '', src: null }] : []),
+    { role: 'stage-toolbar-runtime', id: 'piece-stage-runtime', type: '', src: null },
+  ];
+}
+
+async function liveScripts(page: Page): Promise<LiveScript[]> {
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll('script')).map((script) => ({
+      id: script.id,
+      type: script.getAttribute('type') ?? '',
+      src: script.getAttribute('src'),
+      text: script.textContent ?? '',
+    })),
+  );
 }
 
 async function openInIsolatedContext(
@@ -221,13 +239,29 @@ async function assertArtifactIsInert(
   browser: Browser,
   html: string,
   filename: string,
-  expectedScriptCount = 5,
+  includesCamera = false,
+  untrustedValues: string[] = [],
 ): Promise<void> {
   const { page, close, observed } = await openInIsolatedContext(browser, html, filename);
   try {
     expect(await firedPwnMarkers(page)).toEqual([]);
     expect(await eventHandlerAttributes(page)).toEqual([]);
-    expect(await unexpectedScriptElementCount(page, expectedScriptCount)).toBe(0);
+    const scripts = await liveScripts(page);
+    const stageRuntimeText =
+      scripts.find((script) => script.id === 'piece-stage-runtime')?.text ?? '';
+    expect({
+      scripts: scripts.map(({ id, type, src }) => ({ id, type, src })),
+      fixtureContentInStageToolbar: untrustedValues.filter(
+        (value) => value.length > 0 && stageRuntimeText.includes(value),
+      ),
+    }).toEqual({
+      scripts: expectedScriptAllowlist(includesCamera).map(({ id, type, src }) => ({
+        id,
+        type,
+        src,
+      })),
+      fixtureContentInStageToolbar: [],
+    });
     expect(page.url()).toBe(`file://${path.join(tempDir, filename)}`);
     for (const url of observed) {
       expect(url === generator.constants.P5_CDN_URL || url.startsWith('file://')).toBe(true);
@@ -259,7 +293,9 @@ test.describe('Injection audit: scoped-string fixtures, real Chromium execution'
         });
         expect(result.ok).toBe(true);
         if (!result.ok) return;
-        await assertArtifactIsInert(browser, result.html, `title-${fixture.id}.html`);
+        await assertArtifactIsInert(browser, result.html, `title-${fixture.id}.html`, false, [
+          fixture.value,
+        ]);
       });
     }
   });
@@ -275,7 +311,9 @@ test.describe('Injection audit: scoped-string fixtures, real Chromium execution'
         });
         expect(result.ok).toBe(true);
         if (!result.ok) return;
-        await assertArtifactIsInert(browser, result.html, `label-${fixture.id}.html`);
+        await assertArtifactIsInert(browser, result.html, `label-${fixture.id}.html`, false, [
+          fixture.value,
+        ]);
       });
     }
   });
@@ -295,7 +333,9 @@ test.describe('Injection audit: scoped-string fixtures, real Chromium execution'
         });
         expect(result.ok).toBe(true);
         if (!result.ok) return;
-        await assertArtifactIsInert(browser, result.html, `structured-${fixture.id}.html`);
+        await assertArtifactIsInert(browser, result.html, `structured-${fixture.id}.html`, false, [
+          fixture.value,
+        ]);
       });
     }
   });
@@ -337,7 +377,22 @@ test.describe('Injection audit: colors -- hostile values are rejected, never ope
           `color-${color.replace('#', '')}.html`,
         );
         try {
-          await expect(page.locator('#scene-canvas-host canvas')).toHaveCount(1);
+          const scripts = await liveScripts(page);
+          const stageRuntimeText =
+            scripts.find((script) => script.id === 'piece-stage-runtime')?.text ?? '';
+          expect({
+            scripts: scripts.map(({ id, type, src }) => ({ id, type, src })),
+            fixtureContentInStageToolbar: stageRuntimeText.includes(color),
+            canvasCount: await page.locator('#scene-canvas-host canvas').count(),
+          }).toEqual({
+            scripts: expectedScriptAllowlist(false).map(({ id, type, src }) => ({
+              id,
+              type,
+              src,
+            })),
+            fixtureContentInStageToolbar: false,
+            canvasCount: 1,
+          });
         } finally {
           await close();
         }
@@ -373,17 +428,13 @@ test.describe('Injection audit: combined worst-case payload across attribution o
         if (!result.ok) return;
 
         const includesCamera = scenario.interactionMode !== 'demo';
-        // Expected pinned <script> elements: p5 CDN + scene-data json +
-        // export-config json + runtime script (4), plus the camera script
-        // for camera-inclusive modes (5). Attribution never adds a <script>
-        // (only a footer/comment/marker).
-        const expectedScriptCount = includesCamera ? 6 : 5;
 
         await assertArtifactIsInert(
           browser,
           result.html,
           `combined-${scenario.interactionMode}-${scenario.attribution}.html`,
-          expectedScriptCount,
+          includesCamera,
+          [COMBINED_WORST_CASE_PAYLOAD],
         );
       });
     }
@@ -409,7 +460,9 @@ test.describe('Injection audit: URL / closing-tag / quote / Unicode-control fixt
         });
         expect(result.ok).toBe(true);
         if (!result.ok) return;
-        await assertArtifactIsInert(browser, result.html, `cat-${fixture.id}.html`);
+        await assertArtifactIsInert(browser, result.html, `cat-${fixture.id}.html`, false, [
+          fixture.value,
+        ]);
         if (fixture.category === 'url') {
           // Extra, category-specific check: the URL string never became a
           // live href/src anywhere in the rendered DOM (it has no reason to

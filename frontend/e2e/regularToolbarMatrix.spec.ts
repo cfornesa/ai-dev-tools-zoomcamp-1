@@ -17,7 +17,13 @@ const CASES: Array<{
     name: 'minimal flat piece',
     engine: 'c2js',
     capabilities: { screenshot: true, download: true, fullscreen: true },
-    expected: ['Take screenshot', 'Open download menu', 'Expand piece to fullscreen'],
+    expected: [
+      'Take screenshot',
+      'Open download menu',
+      'Unmute sound',
+      'Show hand gesture guide',
+      'Expand piece to fullscreen',
+    ],
   },
   {
     name: 'full three.js piece',
@@ -50,6 +56,7 @@ const CASES: Array<{
       'Open download menu',
       'Unmute sound',
       'Piece controls',
+      'Show hand gesture guide',
       'Expand piece to fullscreen',
     ],
   },
@@ -60,6 +67,7 @@ const CASES: Array<{
     expected: [
       'Take screenshot',
       'Open download menu',
+      'Unmute sound',
       'Piece controls',
       'Show hand gesture guide',
       'Expand piece to fullscreen',
@@ -69,7 +77,7 @@ const CASES: Array<{
     name: 'screenshot and fullscreen explicitly off',
     engine: 'svg',
     capabilities: { screenshot: false, download: true, fullscreen: false },
-    expected: ['Open download menu'],
+    expected: ['Open download menu', 'Unmute sound', 'Show hand gesture guide'],
   },
 ];
 
@@ -142,7 +150,15 @@ test.describe('regular generated-piece toolbar matrix (#766)', () => {
         await expect(toolbar).toBeVisible();
         const labels = await toolbar.locator('.piece-stage-toolbar-group').evaluate((group) =>
           Array.from(group.querySelectorAll(':scope > button, :scope > a, :scope > div > button'))
-            .filter((node) => !node.closest('[data-piece-stage-download-menu]'))
+            .filter((node) => {
+              const bounds = node.getBoundingClientRect();
+              return (
+                bounds.width > 1 &&
+                bounds.height > 1 &&
+                getComputedStyle(node).visibility === 'visible' &&
+                !node.closest('[data-piece-stage-download-menu]')
+              );
+            })
             .map((node) => node.getAttribute('aria-label') ?? ''),
         );
         expect(labels).toEqual(testCase.expected);

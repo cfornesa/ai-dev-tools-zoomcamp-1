@@ -35,20 +35,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceCameraRuntime.spec.ts|Generated regular viewer: camera composition and capture (#431) › camera starts from its own gesture, composites into the live view and the screenshot, and reports denied/unavailable/ended",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/artPieceCameraRuntime.spec.ts|Generated regular viewer: camera composition and capture (#431) › real unmocked getUserMedia reaches active through the parent frame (issue #479)",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/artPieceFakeRefinement.spec.ts|fake-provider generated-piece refinement (#698) › accepts an observable AI refinement for every supported engine",
     "issue": 1171,
     "added": "2026-10-03",
@@ -65,13 +51,6 @@
   {
     "key": "chromium|e2e/artPieceSixEngineRegular.spec.ts|Six-engine regular canonical viewer (#607) › renders every engine through the slug route at both fixed viewports",
     "issue": 1175,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/artPieceSteeringRuntime.spec.ts|Generated regular viewer: hand-steering ownership and Reset (#432) › steering is gated on camera and a registered engine camera, then applies bounded pose changes and resets cleanly",
-    "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
@@ -154,13 +133,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/drawioEditor.spec.ts|Draw.io editor › mutates objects, renames a layer, and preserves saved draw.io state",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/editOutputConsistency.spec.ts|edit-to-output consistency (#671) › manual and fake-provider AI edits reach regular, immersive, and ZIP outputs",
     "issue": 1171,
     "added": "2026-10-03",
@@ -168,36 +140,8 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/embedToolbarOrder.spec.ts|Embed toolbar order and placement (#752) › /embed/art-pieces/:id shows the icon row in matrix order with Fullscreen last",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/exportArtifacts.spec.ts|HTML export: responsive piece action surface › stacks labeled actions and confines scrolling to opened controls at desktop and mobile widths",
     "issue": 1176,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/immersiveArtPieceToolset.spec.ts|generated immersive toolset (#691) › renders labelled aframe immersive actions without a hamburger",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/immersiveArtPieceToolset.spec.ts|generated immersive toolset (#691) › renders labelled canvas2d immersive actions without a hamburger",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/immersiveArtPieceToolset.spec.ts|generated immersive toolset (#691) › renders labelled threejs immersive actions without a hamburger",
-    "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
@@ -350,34 +294,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/public3dCameraPlacement742.spec.ts|public 3D camera placement contract (#742) › owner choice, live camera modes, geometry, labels, and ZIP variants",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/publicArtPieceToolset.spec.ts|generated art-piece public toolset (#690) › renders labelled aframe actions without a hamburger",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/publicArtPieceToolset.spec.ts|generated art-piece public toolset (#690) › renders labelled canvas2d actions without a hamburger",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/publicArtPieceToolset.spec.ts|generated art-piece public toolset (#690) › renders labelled threejs actions without a hamburger",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/publicDraw.spec.ts|C2.js Interactive visitor drawing (#670) › draws temporarily on regular and immersive views and captures the marks",
     "issue": 1171,
     "added": "2026-10-03",
@@ -413,34 +329,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) › hand steering only: exact set and order",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) › minimal flat piece: exact set and order",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) › screenshot and fullscreen explicitly off: exact set and order",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/regularToolbarMatrix.spec.ts|regular generated-piece toolbar matrix (#766) › sound only: exact set and order",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/sonicTelemetry.spec.ts|Generated public sound telemetry (#918) › captures eight ambient notes and the C4-C5 major keyboard sequence",
     "issue": 1183,
     "added": "2026-10-03",
@@ -449,13 +337,6 @@
   },
   {
     "key": "firefox|e2e/drawioEditor.spec.ts|Draw.io editor › mutates objects, renames a layer, and preserves saved draw.io state",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "webkit|e2e/artPieceCameraRuntime.spec.ts|Generated regular viewer: camera composition and capture (#431) › camera starts from its own gesture, composites into the live view and the screenshot, and reports denied/unavailable/ended",
     "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",

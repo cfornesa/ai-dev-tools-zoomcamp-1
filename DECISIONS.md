@@ -2851,3 +2851,12 @@ updates. The remaining open backlog was not silently claimed complete.
   criterion interpretation for #1138 and #1156, not a general change to the
   repository's API-documentation-first rule. Record and link this disposition
   in both issue QA/closure records before any closure.
+
+## 2026-10-03 — #1196 public gallery crawlability: server-side injection plus noscript
+
+- Owner decision: the public gallery becomes crawler-visible through
+  server-side injection of a bounded, privacy-gated first-page list into the
+  SPA shell plus a `<noscript>` fallback, extending the existing production
+  injection path (#700). Build-time prerender and full SSR are rejected; no
+  new dependency. Implemented by #1197; #1203 extends it to the collections
+  and art-piece listings.

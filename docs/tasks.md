@@ -26385,8 +26385,8 @@ Finding: `/gallery` returns only the SPA shell (HTTP 200, no noscript); `/robots
 
 | Issue | Task | Status | Depends on | Routing |
 |---|---|---|---|---|
-| [#1196](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1196) | Owner decision: how the public gallery becomes crawlable (injection, prerender, or SSR) | OWNER-DECISION-PENDING | — | owner |
-| [#1197](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1197) | Crawlable public gallery: link-bearing content for /gallery without JavaScript | DEPENDENCY-BLOCKED | #1196; after Goal 8 | 2b |
+| [#1196](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1196) | Owner decision: how the public gallery becomes crawlable (injection, prerender, or SSR) | DECIDED 2026-10-03: server-side injection + noscript | — | owner |
+| [#1197](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1197) | Crawlable public gallery: link-bearing content for /gallery without JavaScript | GROOMED | after Goal 8 (decision #1196 made) | 2b |
 | [#1198](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1198) | Public gallery: bounded loading state with timeout and retry | GROOMED | — | 2a |
 | [#1199](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1199) | Generated robots.txt | GROOMED | — | 2b |
 | [#1200](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1200) | Generated sitemap.xml of public URLs | GROOMED | — | 2b |

@@ -217,7 +217,7 @@ Ground rules: do not push, dispatch workflows, merge, or close issues. Two files
 ```text
 Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
 
-Goal: make the public site discoverable by crawlers (Batch 17, Muse AI finding). Run only after Goal 8 is done and the owner has answered the decision issue #1196 in a comment; if #1196 has no owner answer, do only the independent issues (#1198, #1199, #1200, #1201, #1204) and report that #1197, #1202 and #1203 wait.
+Goal: make the public site discoverable by crawlers (Batch 17, Muse AI finding). Run only after Goal 8 is done (the owner decided on #1196: server-side injection plus a noscript fallback, extending the #700 injection path; no prerender, SSR or new dependency).
 
 Issues and order, one commit per issue (read each issue and `backend/scenes/llms.py` first; llms.txt is already generated per request and must not change behavior except under #1204):
 1. #1199 generated /robots.txt and #1200 generated /sitemap.xml (reuse llms.py helpers and the eligible_* selectors; proxy in frontend/vite.config.ts like /llms.txt; update docs/api.md before the contract change).

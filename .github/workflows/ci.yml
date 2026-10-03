@@ -334,10 +334,9 @@ jobs:
       # Routine pushes keep one smoke shard. Manual/scheduled full runs use
       # sixteen isolated jobs, each with its own disposable database and
       # fixture lifecycle, so serial test semantics remain intact while
-      # wall-clock time falls roughly with the shard count. Issue #1034:
-      # 3 shards each hit Playwright's 25-minute globalTimeout having
-      # completed only ~20% of their assigned tests (total serial suite
-      # time is ~327 minutes); 16 shards brings each shard to ~20 minutes,
+      # wall-clock time falls roughly with the shard count. The current
+      # suite totals about 90 minutes of test time across all 16 shards;
+      # each isolated shard stays bounded by Playwright's global timeout,
       # with headroom, well under GitHub's 256-concurrent-job matrix cap
       # for a public repo. The literal "16" here and in this job's own
       # `--shard=N/16` step below must be kept in sync by hand --
@@ -481,15 +480,33 @@ jobs:
           --project=chromium
 
       - name: Run full browser acceptance suite
+        id: full_suite
         # Keep collecting this shard's full-suite evidence even when the
-        # shard-1-only WebKit regression above fails. The failure still marks
-        # the job red, and the diagnostics/cleanup steps below retain their
-        # normal failure/always semantics.
+        # shard-1-only WebKit regression above fails. The following ratchet
+        # step evaluates this report and preserves the raw Playwright exit
+        # code for distinguishing test failures from runner failures.
         if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') }}
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:5000
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}/16
+          PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json
+        run: |
+          set +e
+          npm run test:e2e -- --shard=${{ matrix.shard }}/16 --reporter=list,json
+          playwright_exit=$?
+          echo "playwright_exit=$playwright_exit" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Apply known-failure ratchet and write job summary
+        if: ${{ always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') }}
+        working-directory: frontend
+        env:
+          PLAYWRIGHT_EXIT_CODE: ${{ steps.full_suite.outputs.playwright_exit }}
+        run: >-
+          node scripts/e2e-ratchet.mjs
+          --report test-results/results.json
+          --baseline e2e/known-failures.json
+          --playwright-exit-code "$PLAYWRIGHT_EXIT_CODE"
 
       - name: Upload browser diagnostics
         if: ${{ failure() }}

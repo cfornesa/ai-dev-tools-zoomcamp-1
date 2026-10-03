@@ -12,25 +12,40 @@ type Fixtures = Extract<E2EState, { available: true }>;
 const TOP_LEVEL_ACTIONS =
   ':scope > .piece-stage-icon-button, :scope > .piece-stage-download > .piece-stage-icon-button, :scope > .piece-stage-controls > .piece-stage-icon-button';
 
-async function actionGeometry(
-  actions: import('@playwright/test').Locator,
-  frame: import('@playwright/test').Locator,
-) {
-  const frameBox = await frame.boundingBox();
-  if (!frameBox) throw new Error('Public 3D preview frame is not measurable.');
-  return actions.locator(TOP_LEVEL_ACTIONS).evaluateAll(
-    (elements, origin) =>
-      elements.map((element) => {
-        const box = element.getBoundingClientRect();
-        return {
-          x: box.x - origin.x,
-          y: box.y - origin.y,
-          width: box.width,
-          height: box.height,
-        };
-      }),
-    { x: frameBox.x, y: frameBox.y },
+type ActionBox = { x: number; y: number; width: number; height: number };
+
+async function actionGeometry(actions: import('@playwright/test').Locator): Promise<ActionBox[]> {
+  return actions.locator(TOP_LEVEL_ACTIONS).evaluateAll((elements) =>
+    elements.map((element) => {
+      const box = element.getBoundingClientRect();
+      return { x: box.x, y: box.y, width: box.width, height: box.height };
+    }),
   );
+}
+
+async function waitForStableActionGeometry(actions: import('@playwright/test').Locator) {
+  let previous: ActionBox[] | undefined;
+  await expect
+    .poll(
+      async () => {
+        const current = await actionGeometry(actions);
+        const prior = previous;
+        const stable =
+          prior !== undefined &&
+          current.length === prior.length &&
+          current.every(
+            (button, index) =>
+              Math.abs(button.x - prior[index].x) <= 1 &&
+              Math.abs(button.y - prior[index].y) <= 1 &&
+              Math.abs(button.width - prior[index].width) <= 1 &&
+              Math.abs(button.height - prior[index].height) <= 1,
+          );
+        previous = current;
+        return stable;
+      },
+      { timeout: 3_000 },
+    )
+    .toBe(true);
 }
 
 test.describe('public 3D stage toolbar placement (#730)', () => {
@@ -93,6 +108,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
         { name: 'mobile', width: 375, height: 812 },
       ]) {
         await anonymousPage.setViewportSize(viewport);
+        await waitForStableActionGeometry(actions);
         const stageBox = await frame.boundingBox();
         const fullscreen = toolbar.getByRole('button', { name: 'Expand piece to fullscreen' });
         await expect(fullscreen).toBeVisible();
@@ -107,7 +123,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
         );
         expect(fullscreenBox!.x).toBeGreaterThan(stageBox!.x + stageBox!.width / 2);
 
-        const closed = await actionGeometry(actions, frame);
+        const closed = await actionGeometry(actions);
         expect(closed.length).toBe(7);
         for (const button of closed) {
           expect(button.width).toBeGreaterThanOrEqual(32);
@@ -122,7 +138,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
 
         const controls = toolbar.getByRole('button', { name: 'Piece controls', exact: true });
         await controls.click();
-        const controlsOpen = await actionGeometry(actions, frame);
+        const controlsOpen = await actionGeometry(actions);
         expect(controlsOpen).toHaveLength(closed.length);
         controlsOpen.forEach((button, index) => {
           expect(Math.abs(button.x - closed[index].x)).toBeLessThanOrEqual(1);
@@ -143,7 +159,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
 
         await toolbar.getByRole('button', { name: 'Open download menu' }).click();
         await expect(toolbar.getByRole('menuitem', { name: 'Download Full ZIP' })).toBeVisible();
-        const downloadOpen = await actionGeometry(actions, frame);
+        const downloadOpen = await actionGeometry(actions);
         downloadOpen.forEach((button, index) => {
           expect(Math.abs(button.x - closed[index].x)).toBeLessThanOrEqual(1);
           expect(Math.abs(button.y - closed[index].y)).toBeLessThanOrEqual(1);

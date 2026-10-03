@@ -222,7 +222,7 @@ Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 bra
 
 Goal: build the public, no-auth MCP surface (tracker #1207).
 
-Owner decisions (do not relitigate; see #1205 and DECISIONS.md): the official `mcp` Python SDK, mounted in the existing Django ASGI app; the dependency is approved. Add it with `uv add mcp` (not by hand-editing pyproject.toml), record it in docs/dependencies.md including the AGENTS.md section 8 answer, and commit the lockfile with it.
+Owner decisions (do not relitigate; see #1205 and DECISIONS.md): the official `mcp` Python SDK, mounted in the existing Django ASGI app; the dependency is approved. Add it with `uv add mcp` (not by hand-editing pyproject.toml), record it in docs/dependencies.md including the AGENTS.md section 8 answer, and commit the lockfile with it. Use the SDK's FastMCP-style API (`mcp.server.fastmcp.FastMCP` with decorated tool functions), configured for stateless_http and JSON responses, and follow the hosting findings in the comments on #1210 and #1213. Do not add the separate `fastmcp` package; if you believe a feature of it is needed, file a decision issue instead. Confirm the current package version and API names against the installed package before relying on them.
 
 Order, one commit per issue (read each issue first; update docs/api.md and openapi.yaml before any contract change):
 1. #1210 MCP scaffold with the health tool.

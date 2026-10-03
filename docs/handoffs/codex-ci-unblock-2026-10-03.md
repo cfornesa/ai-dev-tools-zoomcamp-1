@@ -66,132 +66,147 @@ If a requirement is ambiguous or a step would break a rule above, stop and ask t
 
 ## Owner reference: goals to set, one at a time
 
-*This section is the owner's checklist; Codex does not set or change goals itself. Copy each fenced prompt into the goal field, one at a time, in order. Every prompt is self-contained and points back to this file.*
+*This section is the owner's checklist; Codex does not set or change goals itself. Each fenced prompt is complete and can be pasted as is, in order.*
 
 ### 1. Wave 0 — PR gate (set first)
 
 ```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
 Goal: finish #1179 so the PR's "Browser acceptance E2E (shard 1)" check can pass.
 
 Scope: only frontend/e2e/authPolicy.spec.ts (2 tests) and any helper it needs.
-1. Read #1179 and its "Distillation refinement" section, then read backend/templates/account/login.html and the two failing tests.
+1. Read #1179 and its "Distillation refinement" section, then backend/templates/account/login.html and the two failing tests.
 2. Fix the assertions to the current contract: quote the current login copy instead of "uses Google sign-in for new accounts."; for the mobile test, read the computed background on the element that carries the themed --bg (html or .account-shell), not body. Keep every Google-only account-creation policy assertion.
-3. Run: cd frontend && E2E_BASE_URL=http://localhost:5000 npx playwright test e2e/authPolicy.spec.ts --project=chromium, then the PR smoke set (e2e/authPolicy.spec.ts e2e/projectLifecycle.spec.ts e2e/publishingAndRemix.spec.ts e2e/responsiveShell.spec.ts), then npm run typecheck && npm run lint && npm run format:check. If the local PostgreSQL stack is unavailable, say exactly which command could not run and why.
+3. Run: cd frontend && E2E_BASE_URL=http://localhost:5000 npx playwright test e2e/authPolicy.spec.ts --project=chromium; then the PR smoke set (e2e/authPolicy.spec.ts e2e/projectLifecycle.spec.ts e2e/publishingAndRemix.spec.ts e2e/responsiveShell.spec.ts); then npm run typecheck && npm run lint && npm run format:check. If the local PostgreSQL stack is unavailable, say exactly which command could not run and why.
 4. One commit: "test(e2e): align auth policy expectations (#1179)". Post the ## QA criterion matrix on #1179.
 Stop after reporting. Do not start any other issue.
 
-Ground rules: first read docs/handoffs/codex-ci-unblock-2026-10-03.md in full and follow its Step 0 branch check and Standing rules. Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, an unexpected failing baseline, or a rule that needs the owner, stop and ask me one short question before continuing.
-Owner checkpoint afterwards: push the branch, confirm the PR's shard 1 is green, merge when ready.
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
-### 2. Security and authorization checks (right after goal 1)
+### 2. Security and authorization checks
 
 ```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
 Goal: diagnose #1163 and #1180 and report immediately.
 
 1. Read both issues and their refinement sections.
-2. For #1163, capture what the issue asks for: every script element on the affected page and which generator emits it. For #1180, capture what a non-owner sees at the owner editor URL, including HTTP status codes and visible controls.
+2. For #1163, capture every script element on the affected page and which generator emits it. For #1180, capture what a non-owner sees at the owner editor URL, including HTTP status codes and visible controls.
 3. Post the evidence as a comment on each issue.
-4. Fix only if the cause is test-side and safe. If any owner content or write control is reachable by a non-owner, or any fixture content reaches the extra script, stop at once, file a P0 issue (milestone assigned, matching docs/tasks.md entry) and report to me before doing anything else.
+4. Fix only if the cause is test-side and safe. If any owner content or write control is reachable by a non-owner, or any fixture content reaches the extra script, stop at once, file a P0 issue (milestone assigned, matching docs/tasks.md entry) and report to me before doing anything else. This is the one finding that must always stop the run.
 5. Do not batch these with any other issue.
 
-Ground rules: first read docs/handoffs/codex-ci-unblock-2026-10-03.md in full and follow its Step 0 branch check and Standing rules. Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, an unexpected failing baseline, or a rule that needs the owner, stop and ask me one short question before continuing.
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
 ### 3. Wave 1 — quiet and fast matrix
 
 ```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
 Goal: make the full 16-shard matrix advisory and quiet, per the Wave 1 section of the handoff.
 
-Order, one commit per issue:
-1. #1190 known-failure ratchet: --reporter=list,json on the full-suite step; built-ins-only frontend/scripts/e2e-ratchet.mjs with unit tests; baseline frontend/e2e/known-failures.json generated from docs/ci-failure-map-run1126.md (key project|spec|full title, owner issue, added date, expiry: 21 days, 7 for #1163 and #1180). Evaluate only baseline entries whose test appears in the shard's report. Fail on new failures, baseline tests that now pass, expired entries, entries without an issue. Prove all four cases with unit tests plus a dry run against a downloaded results.json or the parsed run #1126 logs. Edit .github/workflows/ci.yml only as far as #1190 and #1191 authorize: no new jobs, triggers, secrets, or permissions.
+One commit per issue, in this order:
+1. #1190 known-failure ratchet: --reporter=list,json on the full-suite step; built-ins-only frontend/scripts/e2e-ratchet.mjs with unit tests; baseline frontend/e2e/known-failures.json generated from docs/ci-failure-map-run1126.md (key project|spec|full title, owner issue, added date, expiry: 21 days, 7 for #1163 and #1180). Evaluate only baseline entries whose test appears in the shard's report. Fail on new failures, baseline tests that now pass, expired entries, and entries without an issue. Prove all four cases with unit tests plus a dry run against a downloaded results.json or the parsed run #1126 logs. Edit .github/workflows/ci.yml only as far as #1190 and #1191 authorize: no new jobs, triggers, secrets, or permissions.
 2. #1191 fast-fail timeouts: actionTimeout about 10 s and navigationTimeout about 20 s in frontend/playwright.config.ts; correct the stale 327-minute comment. Report the "two consecutive full runs show no new failures" criterion as pending the owner's dispatches.
 3. #1194 frontend/e2e/support/README.md documenting every exported helper, deprecated legacy helpers, recipes and stale patterns; link it from docs/process.md standard 2.
 Run make check before reporting. Post a ## QA matrix on each issue and list the owner dispatches still needed.
 
-Ground rules: first read docs/handoffs/codex-ci-unblock-2026-10-03.md in full and follow its Step 0 branch check and Standing rules. Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, an unexpected failing baseline, or a rule that needs the owner, stop and ask me one short question before continuing.
-Owner checkpoint afterwards: push, dispatch the full matrix twice (gh workflow run CI --ref docs/backlog-reevaluation-2026-09-27), send me the results.
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
 ### 4. Wave 2A — account and shell
 
 ```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
 Goal: fix the account/shell E2E failures as one batch.
 
 Issues: #1160, #1161, #1162 (re-scoped: wait for html[data-reduced-motion] and poll the :active offset instead of asserting a fixed value), #1172, #1184. #1179 is already done.
 1. Write the batch impact analysis first (all open issues, not only these) and record it in the batch ledger.
-2. Implement one commit per issue. Each commit also removes that issue's entries from frontend/e2e/known-failures.json.
+2. One commit per issue. Each commit also removes that issue's entries from frontend/e2e/known-failures.json.
 3. Run the union of the focused specs plus responsiveShell, headerMobile, publicShell, accountShell and accountThemeParity, then make check.
 4. Post a ## QA matrix on each issue and the batch gate result. Do not close issues.
 
-Ground rules: first read docs/handoffs/codex-ci-unblock-2026-10-03.md in full and follow its Step 0 branch check and Standing rules. Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, an unexpected failing baseline, or a rule that needs the owner, stop and ask me one short question before continuing.
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
 ### 5. Wave 2B — creation and setup
 
 ```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
 Goal: fix the creation/setup E2E failures as one batch with a single implementer.
 
 Issues: #1168, #1169, #1170, #1166. #1170 shares project3dLifecycle.spec.ts and support/ helpers with the others, so do not parallelize. Do NOT remove the inert "Open piece controls menu" shim (#1187) in this batch.
-1. Batch impact analysis first.
+1. Write the batch impact analysis first.
 2. One commit per issue, each removing its known-failures.json entries. Creation is local-first (IndexedDB, /local-projects/:id) and /ai-projects* redirect to the unified editor, so update tests to that contract rather than restoring old routes.
 3. Run the union of focused specs and make check.
 4. Post ## QA matrices and the batch gate result. Do not close issues.
 
-Ground rules: first read docs/handoffs/codex-ci-unblock-2026-10-03.md in full and follow its Step 0 branch check and Standing rules. Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, an unexpected failing baseline, or a rule that needs the owner, stop and ask me one short question before continuing.
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
 ### 6. Wave 2C — profile and publication
 
 ```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
 Goal: resolve the profile/publication E2E failures.
 
 1. Start with #1164: capture each failing request's HTTP 400 response body and classify the cause (test data, contract change, or product defect).
-2. Then #1165, #1173 and #1174, which may be fixed by #1164. Fix test-side causes. For any product cause, stop, file a product issue (milestone, tasks.md entry) and report; do not fix product code in this goal.
+2. Then #1165, #1173 and #1174, which may be fixed by #1164. Fix test-side causes. For any product cause, file a product issue (milestone, matching docs/tasks.md entry), leave its baseline entry in place with the issue link, and continue with the next issue; do not fix product code in this goal.
 3. One commit per issue, each removing its known-failures.json entries. Run the focused specs and make check.
 4. Post ## QA matrices and the batch gate result. Do not close issues.
 
-Ground rules: first read docs/handoffs/codex-ci-unblock-2026-10-03.md in full and follow its Step 0 branch check and Standing rules. Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, an unexpected failing baseline, or a rule that needs the owner, stop and ask me one short question before continuing.
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
 ### 7. Wave 2D — stage and geometry
 
 ```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
 Goal: apply the owner-decided phone stage rule and clear the geometry failures.
 
 Owner decisions (do not relitigate): at 701px and wider the stage uses the declared ratio (16:9 fallback, --art-piece-aspect-ratio); at 700px and narrower the toolbar sits below the stage; the tall stage min(70vh, 26rem) applies only to c2js-interactive pieces.
 1. Implement #1188 then #1189 (product CSS), then #1175, then bisect and resolve #1177, #1178 and #1176.
 2. Serialize all edits to index.css; no parallel edits.
 3. Inspect screenshots at 375x812 and 1280x900 for the changed surfaces and describe what you saw.
-4. One commit per issue, each removing its known-failures.json entries. Run the focused specs, make check, and the regression specs for the stage and toolbar.
+4. One commit per issue, each removing its known-failures.json entries. Run the focused specs, make check, and the existing stage and toolbar regression specs.
 5. Post ## QA matrices and the batch gate result. Do not close issues.
 
-Ground rules: first read docs/handoffs/codex-ci-unblock-2026-10-03.md in full and follow its Step 0 branch check and Standing rules. Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, an unexpected failing baseline, or a rule that needs the owner, stop and ask me one short question before continuing.
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
 ### 8. Wave 2E — diagnosis first
 
 ```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
 Goal: classify and resolve the remaining unexplained failures.
 
 Issues: #1171, #1185, #1186, #1181, #1182, #1183.
 1. For each, capture the first-failure evidence the issue requires (trace, log, or request), classify the cause as test-side, product, or environment, and post it on the issue.
-2. Fix test-side causes (one commit each, removing baseline entries). For product causes, file a product issue (milestone, tasks.md entry) and leave the baseline entry in place with its issue link.
+2. Fix test-side causes (one commit each, removing baseline entries). For product causes, file a product issue (milestone, matching docs/tasks.md entry) and leave the baseline entry in place with its issue link.
 3. End with a table: issue, cause, action, status.
 
-Ground rules: first read docs/handoffs/codex-ci-unblock-2026-10-03.md in full and follow its Step 0 branch check and Standing rules. Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, an unexpected failing baseline, or a rule that needs the owner, stop and ask me one short question before continuing.
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
 ### 9. Finish
 
 ```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
 Goal: remove the inert shim and wrap up.
 
-1. Run rg "Open piece controls menu" frontend/ and confirm that only menu-mode usages remain. If any test still depends on the inert sr-only shim, stop and list them.
-2. Implement #1187: remove the shim, run the focused specs and make check, one commit, ## QA matrix.
+1. Run rg "Open piece controls menu" frontend/ and confirm that only menu-mode usages remain. If any test still depends on the inert sr-only shim, list them, leave the shim in place, and report instead of removing it.
+2. Otherwise implement #1187: remove the shim, run the focused specs and make check, one commit, ## QA matrix.
 3. Report the final state: baseline entries remaining, issues still open, owner decisions outstanding.
 4. Do not start #1193 or #1195 until I ask.
 
-Ground rules: first read docs/handoffs/codex-ci-unblock-2026-10-03.md in full and follow its Step 0 branch check and Standing rules. Do not push, dispatch workflows, merge, or close issues. If you see an unexpected branch, uncommitted files that are not yours, an unexpected failing baseline, or a rule that needs the owner, stop and ask me one short question before continuing.
-Owner checkpoint afterwards: decide the rewrite-or-retire candidates and the PR smoke widening.
+Ground rules: do not push, dispatch workflows, merge, or close issues. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```

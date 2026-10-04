@@ -610,7 +610,9 @@ the next request without a manual artifact edit or deployment.
 `/llms.txt` is the concise orientation document; `/llms-full.txt` is the
 expanded bounded inventory of published CMS pages and canonical public
 profile, collection, and piece routes. Both use deterministic ordering and
-safe text serialization. Draft, deleted, private, unpublished, credential,
+safe text serialization. Their links are absolute URLs on the validated
+request host, including the concise document's link to `/llms-full.txt`, so a
+copied or cached file retains resolvable destinations. Draft, deleted, private, unpublished, credential,
 provider-identity, billing, admin, account-management, and other internal
 data or routes are excluded. Existing routes and API contracts remain
 backward-compatible.

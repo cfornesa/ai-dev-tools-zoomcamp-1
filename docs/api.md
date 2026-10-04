@@ -80,6 +80,14 @@ The authenticated MCP AI tools mirror `POST /api/projects/{projectId}/ai/create-
 tool errors retain the REST status and response body, including provider,
 validation, quota, and entitlement failures.
 
+The authenticated 3D MCP tools mirror the available owner-facing operations:
+`GET`/`POST /api/projects3d/`, `GET`/`PATCH /api/projects3d/{projectId}/`,
+publish/unpublish, version list/save, and the 3D AI create/edit/accept routes.
+They use `projects:write`; AI create/edit additionally use `ai:use`, while 3D
+proposal acceptance requires both. The 3D REST views retain scene schema
+validation, source-size bounds, stale-base checks, idempotency, quotas, and
+privacy-preserving 404 behavior. No 3D version-detail or restore endpoint exists.
+
 ## MCP OAuth authorization server (#1216)
 
 The MCP protected resource identifier is `https://<validated-request-host>/mcp` and

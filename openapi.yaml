@@ -115,7 +115,10 @@ paths:
         JSON Streamable HTTP MCP transport. Every request requires a valid
         bearer token issued for this exact `/mcp` resource; session cookies
         are ignored. Public content tools and resources require `gallery:read`;
-        `health_check` and `whoami` require authentication only. Tool schemas,
+        owner 2D/3D project tools require `projects:write` (including reads);
+        AI generation and run tools require `ai:use`, and proposal acceptance
+        also requires `projects:write`. `health_check` and `whoami` require
+        authentication only. Tool schemas,
         scope declarations, and public data eligibility are documented in
         `docs/mcp.md`. Authenticated tool calls are limited to 60 per minute
         per OAuth client and per user;

@@ -128,7 +128,8 @@ and `whoami` require a valid token but no additional scope. AI generation,
 editing, run creation/read, and standalone art generation require `ai:use`;
 accepting a proposal also requires `projects:write`. AI proposals remain
 unsaved until `ai_accept_proposal`, and persistent runs are created without
-blocking. Public data tools
+blocking. Authenticated 3D project/version tools use `projects:write`; 3D AI
+create/edit use `ai:use`, and 3D proposal acceptance uses both scopes. Public data tools
 use the same eligibility rules as their REST counterpart; a missing or
 ineligible individual resource returns not found. MCP schemas below list the
 SDK input properties; optional properties may be omitted.
@@ -168,6 +169,17 @@ SDK input properties; optional properties may be omitted.
 | `ai_start_run` | `ai:use` |
 | `ai_get_run` | `ai:use` |
 | `ai_generate_art_piece` | `ai:use` |
+| `list_my_3d_projects` | `projects:write` |
+| `create_3d_project` | `projects:write` |
+| `get_3d_project` | `projects:write` |
+| `update_3d_project_metadata` | `projects:write` |
+| `publish_3d_project` | `projects:write` |
+| `unpublish_3d_project` | `projects:write` |
+| `list_3d_versions` | `projects:write` |
+| `save_3d_version` | `projects:write` |
+| `ai_create_3d_scene` | `ai:use` |
+| `ai_edit_3d_scene` | `ai:use` |
+| `ai_accept_3d_proposal` | `ai:use`, `projects:write` |
 
 | Tool | Input schema | Example call | Result |
 |---|---|---|---|
@@ -204,6 +216,17 @@ SDK input properties; optional properties may be omitted.
 | `ai_start_run` | `target_type: string`, `operation: string`, `prompt: string`, `project_id?: string`, `project3d_id?: string`, `scope?: string`, `selected_target_ids?: string[]`, `assets?: object[]`, `use_intent_notes?: boolean`, `vendor?: string`, `model?: string`, `start_request_id?: string` | `ai_start_run({...})` | Creates a persistent run and returns immediately; uses REST quota and entitlement checks. |
 | `ai_get_run` | `run_id: integer` | `ai_get_run({"run_id": 42})` | Reads only the caller's run state; does not advance or accept it. |
 | `ai_generate_art_piece` | `prompt: string`, `library: string`, `vendor?: string`, `model?: string`, `persona_id?: integer` | `ai_generate_art_piece({"prompt": "A star field", "library": "svg"})` | Returns standalone snippet data; REST credential, quota, and entitlement checks apply, and MCP does not execute it. |
+| `list_my_3d_projects` | `{}` | `list_my_3d_projects()` | The caller's 3D project list using `Project3DSerializer`. |
+| `create_3d_project` | `renderer?: string` | `create_3d_project({"renderer": "threejs"})` | Private 3D project with first blank scene/version; REST validation applies. |
+| `get_3d_project` | `project_id: string` | `get_3d_project({"project_id": "<uuid>"})` | Owner or REST-authorized public 3D project payload; foreign private projects are not found. |
+| `update_3d_project_metadata` | `project_id: string`, `title: string` | `update_3d_project_metadata({"project_id": "<uuid>", "title": "Scene"})` | REST title serializer and owner check. |
+| `publish_3d_project` | `project_id: string` | `publish_3d_project({"project_id": "<uuid>"})` | REST meaningful-title and saved-version publication checks. |
+| `unpublish_3d_project` | `project_id: string` | `unpublish_3d_project({"project_id": "<uuid>"})` | Makes the caller's 3D project private using REST retention behavior. |
+| `list_3d_versions` | `project_id: string` | `list_3d_versions({"project_id": "<uuid>"})` | Owner's ordered 3D version snapshots. |
+| `save_3d_version` | `project_id: string`, `scene_json: object`, `html_source?: string`, `css_source?: string`, `js_source?: string` | `save_3d_version({...})` | REST 3D scene schema and source-byte validation; appends immutable version. |
+| `ai_create_3d_scene` | `project_id: string`, `prompt: string`, `vendor?: string`, `model?: string`, `persona_id?: integer`, `target_ids?: string[]` | `ai_create_3d_scene({...})` | Unsaved 3D proposal; REST owner, schema, quota, and entitlement checks apply. |
+| `ai_edit_3d_scene` | `project_id: string`, `prompt: string`, `current_scene: object`, `base_version_id: integer or null`, `vendor?: string`, `model?: string`, `persona_id?: integer`, `target_ids?: string[]` | `ai_edit_3d_scene({...})` | Unsaved patch proposal; REST validation and stale-base checks apply. |
+| `ai_accept_3d_proposal` | `project_id: string`, `operation: string`, `scene_json: object`, `base_version_id: integer or null`, `client_request_id?: string` | `ai_accept_3d_proposal({...})` | Explicitly persists one scene3d-validated version after owner, base-version, and idempotency checks; requires both scopes. |
 
 Page sizes are clamped to 1–60. Gallery cursors are opaque, may expire, and
 are scoped to their corresponding gallery type or collection sort. Search

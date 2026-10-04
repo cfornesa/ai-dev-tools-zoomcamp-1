@@ -242,6 +242,17 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "ai_start_run",
                             "ai_get_run",
                             "ai_generate_art_piece",
+                            "list_my_3d_projects",
+                            "create_3d_project",
+                            "get_3d_project",
+                            "update_3d_project_metadata",
+                            "publish_3d_project",
+                            "unpublish_3d_project",
+                            "list_3d_versions",
+                            "save_3d_version",
+                            "ai_create_3d_scene",
+                            "ai_edit_3d_scene",
+                            "ai_accept_3d_proposal",
                         }
                         for tool in listing.tools:
                             matching_rows = [
@@ -1068,6 +1079,252 @@ def test_mcp_ai_tools_surface_rest_quota_errors(monkeypatch):
     assert mcp_error.isError is True
     assert "HTTP 429" in json.dumps(mcp_error.model_dump())
     assert "quota_exceeded" in json.dumps(mcp_error.model_dump())
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_3d_tools_match_rest_contract_and_validate_scene3d(monkeypatch):
+    cache.clear()
+    monkeypatch.setenv("AI_PROVIDER", "fake")
+    user = get_user_model().objects.create_user(username="mcp-3d-contract-owner")
+    token, _, _ = _create_mcp_access_token(user, scopes=("ai:use", "projects:write"))
+    rest = APIClient()
+    rest.force_authenticate(user)
+
+    rest_list = rest.get("/api/projects3d/")
+    mcp_list = _mcp_result_payload(_call_mcp_tool(token, "list_my_3d_projects"))
+    assert rest_list.status_code == 200
+    assert mcp_list == rest_list.json()
+
+    rest_created = rest.post("/api/projects3d/", {"renderer": "threejs"}, format="json")
+    mcp_created = _mcp_result_payload(
+        _call_mcp_tool(token, "create_3d_project", {"renderer": "threejs"})
+    )
+    assert rest_created.status_code == 201
+    assert mcp_created["owner"] == rest_created.json()["owner"] == user.username
+    assert mcp_created["current_version"]["scene_json"]["renderer"] == {"preferred": "threejs"}
+    project_id = rest_created.json()["id"]
+
+    rest_detail = rest.get(f"/api/projects3d/{project_id}/")
+    mcp_detail = _mcp_result_payload(
+        _call_mcp_tool(token, "get_3d_project", {"project_id": project_id})
+    )
+    assert rest_detail.status_code == 200
+    assert mcp_detail == rest_detail.json()
+
+    update_body = {"title": "MCP 3D contract project"}
+    rest_update = rest.patch(f"/api/projects3d/{project_id}/", update_body, format="json")
+    mcp_update = _mcp_result_payload(
+        _call_mcp_tool(
+            token,
+            "update_3d_project_metadata",
+            {"project_id": project_id, **update_body},
+        )
+    )
+    assert rest_update.status_code == 200
+    assert mcp_update["title"] == rest_update.json()["title"] == update_body["title"]
+
+    rest_versions = rest.get(f"/api/projects3d/{project_id}/versions/")
+    mcp_versions = _mcp_result_payload(
+        _call_mcp_tool(token, "list_3d_versions", {"project_id": project_id})
+    )
+    assert rest_versions.status_code == 200
+    assert mcp_versions == rest_versions.json()
+
+    save_body = {
+        "scene_json": copy.deepcopy(MINIMAL_SCENE_3D),
+        "html_source": "<main>3D source</main>",
+        "css_source": "main { display: block; }",
+        "js_source": "window.sceneReady = true;",
+    }
+    rest_saved = rest.post(f"/api/projects3d/{project_id}/versions/", save_body, format="json")
+    mcp_saved = _mcp_result_payload(
+        _call_mcp_tool(
+            token,
+            "save_3d_version",
+            {"project_id": project_id, **save_body},
+        )
+    )
+    assert rest_saved.status_code == 201
+    assert mcp_saved["scene_json"] == rest_saved.json()["scene_json"]
+    assert mcp_saved["html_source"] == rest_saved.json()["html_source"]
+    assert mcp_saved["css_source"] == rest_saved.json()["css_source"]
+    assert mcp_saved["js_source"] == rest_saved.json()["js_source"]
+
+    rest_publish = rest.post(f"/api/projects3d/{project_id}/publish/")
+    mcp_publish = _mcp_result_payload(
+        _call_mcp_tool(token, "publish_3d_project", {"project_id": project_id})
+    )
+    assert rest_publish.status_code == 200
+    assert mcp_publish["visibility"] == rest_publish.json()["visibility"] == "public"
+    rest_unpublish = rest.post(f"/api/projects3d/{project_id}/unpublish/")
+    mcp_unpublish = _mcp_result_payload(
+        _call_mcp_tool(token, "unpublish_3d_project", {"project_id": project_id})
+    )
+    assert rest_unpublish.status_code == 200
+    assert mcp_unpublish["visibility"] == rest_unpublish.json()["visibility"] == "private"
+
+    current_project = Project3D.objects.get(public_id=project_id)
+    base_version_id = current_project.current_version_id
+    ai_create_body = {"prompt": "Create a simple 3D sphere", "vendor": "mistral"}
+    rest_ai_create = rest.post(
+        f"/api/projects3d/{project_id}/ai/create-scene/",
+        ai_create_body,
+        format="json",
+    )
+    cache.clear()
+    mcp_ai_create = _mcp_result_payload(
+        _call_mcp_tool(
+            token,
+            "ai_create_3d_scene",
+            {"project_id": project_id, **ai_create_body},
+        )
+    )
+    assert rest_ai_create.status_code == 200
+    assert mcp_ai_create == rest_ai_create.json()
+    assert mcp_ai_create["draft"] is True
+    assert Project3D.objects.get(public_id=project_id).current_version_id == base_version_id
+
+    current_scene = current_project.current_version.scene_json
+    ai_edit_body = {
+        "prompt": "Recolor the main object",
+        "current_scene": copy.deepcopy(current_scene),
+        "base_version_id": base_version_id,
+        "vendor": "mistral",
+    }
+    rest_ai_edit = rest.post(
+        f"/api/projects3d/{project_id}/ai/edit-scene/",
+        ai_edit_body,
+        format="json",
+    )
+    cache.clear()
+    mcp_ai_edit = _mcp_result_payload(
+        _call_mcp_tool(token, "ai_edit_3d_scene", {"project_id": project_id, **ai_edit_body})
+    )
+    assert rest_ai_edit.status_code == 200
+    assert mcp_ai_edit == rest_ai_edit.json()
+    assert mcp_ai_edit["draft"] is True
+    assert Project3D.objects.get(public_id=project_id).current_version_id == base_version_id
+
+    accept_body = {
+        "operation": SceneVersion3D.Origin.AI_CREATE,
+        "scene_json": copy.deepcopy(mcp_ai_create["scene"]),
+        "base_version_id": base_version_id,
+        "client_request_id": str(uuid.uuid4()),
+    }
+    rest_accept = rest.post(
+        f"/api/projects3d/{project_id}/ai/accept-proposal/",
+        accept_body,
+        format="json",
+    )
+    mcp_accept = _mcp_result_payload(
+        _call_mcp_tool(
+            token,
+            "ai_accept_3d_proposal",
+            {"project_id": project_id, **accept_body},
+        )
+    )
+    assert rest_accept.status_code == 201
+    assert mcp_accept == rest_accept.json()
+    assert mcp_accept["origin"] == SceneVersion3D.Origin.AI_CREATE
+    assert Project3D.objects.get(public_id=project_id).current_version_id == mcp_accept["id"]
+
+    invalid_scene = _call_mcp_tool(
+        token,
+        "ai_accept_3d_proposal",
+        {
+            "project_id": project_id,
+            "operation": SceneVersion3D.Origin.AI_CREATE,
+            "scene_json": {},
+            "base_version_id": mcp_accept["id"],
+        },
+    )
+    assert invalid_scene.isError is True
+    assert "HTTP 422" in json.dumps(invalid_scene.model_dump())
+    assert "invalid_structured_output" in json.dumps(invalid_scene.model_dump())
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_3d_tools_preserve_non_owner_404_and_enforce_scope(monkeypatch):
+    cache.clear()
+    monkeypatch.setenv("AI_PROVIDER", "fake")
+    owner = get_user_model().objects.create_user(username="mcp-3d-private-owner")
+    caller = get_user_model().objects.create_user(username="mcp-3d-private-caller")
+    owner_rest = APIClient()
+    owner_rest.force_authenticate(owner)
+    project_response = owner_rest.post("/api/projects3d/", {}, format="json")
+    assert project_response.status_code == 201
+    project_id = project_response.json()["id"]
+    base_version_id = project_response.json()["current_version"]["id"]
+    caller_token, _, _ = _create_mcp_access_token(caller, scopes=("ai:use", "projects:write"))
+
+    private_calls = [
+        ("get_3d_project", {"project_id": project_id}),
+        (
+            "update_3d_project_metadata",
+            {"project_id": project_id, "title": "Forged title"},
+        ),
+        ("publish_3d_project", {"project_id": project_id}),
+        ("unpublish_3d_project", {"project_id": project_id}),
+        ("list_3d_versions", {"project_id": project_id}),
+        (
+            "save_3d_version",
+            {"project_id": project_id, "scene_json": copy.deepcopy(MINIMAL_SCENE_3D)},
+        ),
+        (
+            "ai_create_3d_scene",
+            {"project_id": project_id, "prompt": "Inspect the private 3D scene"},
+        ),
+        (
+            "ai_edit_3d_scene",
+            {
+                "project_id": project_id,
+                "prompt": "Edit the private scene",
+                "current_scene": copy.deepcopy(MINIMAL_SCENE_3D),
+                "base_version_id": base_version_id,
+            },
+        ),
+        (
+            "ai_accept_3d_proposal",
+            {
+                "project_id": project_id,
+                "operation": SceneVersion3D.Origin.AI_CREATE,
+                "scene_json": copy.deepcopy(MINIMAL_SCENE_3D),
+                "base_version_id": base_version_id,
+            },
+        ),
+    ]
+    private_results = _call_mcp_tools(caller_token, private_calls)
+    assert all(result.isError is True for result in private_results)
+    assert all("HTTP 404" in json.dumps(result.model_dump()) for result in private_results)
+
+    gallery_token, _, _ = _create_mcp_access_token(caller, scopes=("gallery:read",))
+    all_scope_calls = [
+        ("list_my_3d_projects", {}),
+        ("create_3d_project", {}),
+        *private_calls,
+    ]
+    scope_results = _call_mcp_tools(gallery_token, all_scope_calls)
+    assert all(result.isError is True for result in scope_results)
+    assert all("required scope" in json.dumps(result.model_dump()) for result in scope_results)
+
+    ai_only_token, _, _ = _create_mcp_access_token(caller, scopes=("ai:use",))
+    accept_without_write = _call_mcp_tool(
+        ai_only_token,
+        "ai_accept_3d_proposal",
+        {
+            "project_id": project_id,
+            "operation": SceneVersion3D.Origin.AI_CREATE,
+            "scene_json": copy.deepcopy(MINIMAL_SCENE_3D),
+            "base_version_id": base_version_id,
+        },
+    )
+    assert accept_without_write.isError is True
+    assert "required scope" in json.dumps(accept_without_write.model_dump())
+
+    own_projects = _mcp_result_payload(_call_mcp_tool(caller_token, "list_my_3d_projects"))
+    assert project_id not in {project["id"] for project in own_projects}
+    own_project = _mcp_result_payload(_call_mcp_tool(caller_token, "create_3d_project", {}))
+    assert own_project["owner"] == caller.username
 
 
 @pytest.mark.django_db(transaction=True)

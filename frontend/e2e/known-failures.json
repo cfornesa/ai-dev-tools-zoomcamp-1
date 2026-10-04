@@ -133,6 +133,13 @@
     "count": 1
   },
   {
+    "key": "chromium|e2e/immersive3dToolbar769.spec.ts|structured 3D immersive view toolbar (#769) › exact icon row and Steer inside Piece controls",
+    "issue": 1231,
+    "added": "2026-10-04",
+    "expires": "2026-10-25",
+    "count": 1
+  },
+  {
     "key": "chromium|e2e/immersiveCollection.spec.ts|immersive collection gallery (#557) › navigates a bounded live collection room at 1280x900",
     "issue": 1173,
     "added": "2026-10-03",

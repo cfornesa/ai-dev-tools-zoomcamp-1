@@ -26548,6 +26548,14 @@ Found in the inspected `ai-2d-1280.png` screenshot from #1170: at 1280×900, fix
 
 Implemented locally: `frontend/e2e/support/README.md` documents the exported support helpers/constants, current contracts and anti-patterns, legacy helper replacements, and three typechecked recipes; `docs/process.md` standard 2 links to it. The `support/` export-name audit passed across all 21 modules. `UV_CACHE_DIR=/private/tmp/codex-1190-uv-cache make check` passed (backend 2,012 passed / 44 skipped, Vitest 3,229 passed, ratchet 7 passed; frontend lint warnings are existing). No `known-failures.json` entries changed. The Linux full-matrix reconciliation still awaits the owner's dispatch/run ID.
 
+### 2026-10-04 — Immersive structured 3D toolbar geometry follow-up (#1231)
+
+Discovered in Linux full-matrix run [#37177255209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37177255209), shard 8. This is a diagnosis-first follow-up to closed #769; keep the issue's screenshot/bounds review before deciding whether the test oracle or rendered geometry owns the cause.
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1231](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1231) | Diagnose oversized immersive structured 3D toolbar geometry | PROPOSED | discovered in #37177255209; follow-up to closed #769 | Batch 14; 2a diagnosis, then route by cause |
+
 ### 2026-10-04 — account login script-font clipping (Batch 14)
 
 Linux full-matrix run [#37172058510](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37172058510) found the login instruction paragraph clipping in the narrow script-font presentation (card child scrollWidth > clientWidth) in Chromium shard 1. Follow-up [#1229](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1229) tracks the product correction; related account styling issue [#1125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1125) is closed. The full matrix issue remains [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096).

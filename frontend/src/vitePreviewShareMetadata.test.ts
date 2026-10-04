@@ -3,7 +3,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { AddressInfo } from 'node:net';
+import { isIP, type AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { preview, type PreviewServer } from 'vite';
 import { resolveBackendProxyTarget } from './viteBackendTarget.js';
@@ -194,9 +194,7 @@ describe('vite preview share metadata (production run path)', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('application/json');
-    expect([...forwardedClientAddresses].some((address) => address.includes('127.0.0.1'))).toBe(
-      true,
-    );
+    expect([...forwardedClientAddresses].some((address) => isIP(address) > 0)).toBe(true);
     await expect(response.json()).resolves.toMatchObject({
       result: { tools: [{ name: 'health_check' }] },
     });

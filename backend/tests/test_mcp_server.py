@@ -12,6 +12,7 @@ import uuid
 import zipfile
 from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import anyio
 import httpx
@@ -626,9 +627,11 @@ def test_mcp_piece_intake_matches_rest_and_enforces_transport_limit_and_scope(mo
 
     monkeypatch.setattr(intake, "get_effective_cap", lambda user, feature: 1)
     monkeypatch.setattr(intake, "_plan_quota", lambda user: (1_000_000, 10))
-    settings = SiteSettings.get_solo()
-    settings.cloud_sync_enabled = True
-    settings.save(update_fields=["cloud_sync_enabled"])
+    monkeypatch.setattr(
+        SiteSettings,
+        "get_solo",
+        classmethod(lambda cls: SimpleNamespace(cloud_sync_enabled=True)),
+    )
 
     owner = get_user_model().objects.create_user(username="mcp-piece-intake-owner")
     token, _, _ = _create_mcp_access_token(owner, scopes=("projects:write",))

@@ -7316,6 +7316,16 @@ select.ai-proposal-field-full-width {
   }
 }
 
+@media (max-width: 700px) {
+  /* A phone-ratio stage can be shorter than its expanded legacy controls.
+     Keep the disclosure scrollable within the stage so it cannot cover the
+     toolbar row that follows the artwork. */
+  .art-piece-stage > [role='region'][aria-label='Piece controls'] {
+    bottom: 0;
+    max-height: none;
+  }
+}
+
 @media (max-width: 1023px) {
   .editor-tools-toggle {
     display: inline-flex;

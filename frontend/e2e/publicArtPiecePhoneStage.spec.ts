@@ -57,7 +57,11 @@ test('public generated-piece stages keep declared phone ratios and place control
       prompt: `Stage ratio fixture ${fixture.id}`,
       engine: fixture.engine,
       public_slug: `phone-stage-${runId}-${fixture.id}`,
-      capabilities: { screenshot: true, fullscreen: true },
+      capabilities: {
+        screenshot: true,
+        fullscreen: true,
+        ...(fixture.id === 'ratio-4-3' ? { sound: true } : {}),
+      },
       ...(fixture.ratio ? { generation_metadata: { aspect_ratio: fixture.ratio } } : {}),
       source: sourceFor(fixture.engine),
     });
@@ -166,6 +170,24 @@ test('public generated-piece stages keep declared phone ratios and place control
           expect(box).not.toBeNull();
           expect(box!.width, JSON.stringify(targetDetails)).toBeGreaterThanOrEqual(44);
           expect(box!.height, JSON.stringify(targetDetails)).toBeGreaterThanOrEqual(44);
+        }
+
+        if (fixture.id === 'ratio-4-3') {
+          await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
+          const soundButton = toolbarRow.getByRole('button', {
+            name: 'Unmute sound',
+            exact: true,
+          });
+          const soundReceivesPointer = await soundButton.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            const hit = document.elementFromPoint(
+              rect.left + rect.width / 2,
+              rect.top + rect.height / 2,
+            );
+            return hit === element || (hit instanceof Node && element.contains(hit));
+          });
+          expect(soundReceivesPointer).toBe(true);
+          await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
         }
       } else {
         expect(geometry.row.top).toBeLessThanOrEqual(geometry.stage.bottom);

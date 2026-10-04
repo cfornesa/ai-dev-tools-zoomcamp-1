@@ -48,7 +48,10 @@ test.describe('public handle lifecycle (#551)', () => {
       const page = await context.newPage();
       try {
         await loginViaUI(page, fixture.email, fixtures.password);
-        await setHandle(context, fixture === fixtures.owner ? 'e2e_owner' : 'e2e_other');
+        const restoredHandle = fixture === fixtures.owner ? 'e2e_owner' : 'e2e_other';
+        await setHandle(context, restoredHandle);
+        const restoredProfile = await profile(context);
+        expect(restoredProfile.handle).toBe(restoredHandle);
       } finally {
         await context.close();
       }

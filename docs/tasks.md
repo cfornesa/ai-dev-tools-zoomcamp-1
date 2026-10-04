@@ -26572,6 +26572,14 @@ Discovered in Linux full-matrix run [#37177255209](https://github.com/cfornesa/a
 |---|---|---|---|---|
 | [#1233](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1233) | Restore per-piece Ambient BPM setting in WebKit | PROPOSED | discovered in #37177255209; follow-up to closed #843 | Batch 14; 2b runtime diagnosis |
 
+### 2026-10-04 — Six-engine offline ZIP E2E timeout (Batch 14)
+
+Discovered in Linux full-matrix run [#37178806457](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37178806457), shard 5. The chromium case in `frontend/e2e/artPieceSixEngineZip.spec.ts` exceeded its existing 300-second test timeout while exercising six engines in regular and immersive offline bundles. It passed in the preceding full-matrix run [#37177255209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37177255209); inspect as a test-side/runtime-budget issue before considering any assertion change. No product change is authorized here.
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1234](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1234) | Make the six-engine offline ZIP browser case complete within its existing timeout | PROPOSED | discovered in #37178806457; follow-up to closed #609 | Batch 14; 2a diagnosis/optimization |
+
 ### 2026-10-04 — account login script-font clipping (Batch 14)
 
 Linux full-matrix run [#37172058510](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37172058510) found the login instruction paragraph clipping in the narrow script-font presentation (card child scrollWidth > clientWidth) in Chromium shard 1. Follow-up [#1229](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1229) tracks the product correction; related account styling issue [#1125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1125) is closed. The full matrix issue remains [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096).

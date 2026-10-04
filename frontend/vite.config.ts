@@ -28,6 +28,7 @@ const djangoProxy = {
   '/api': { target: backendProxyTarget, changeOrigin: false },
   '/accounts': { target: backendProxyTarget, changeOrigin: false },
   '/health': { target: backendProxyTarget, changeOrigin: false },
+  '/robots.txt': { target: backendProxyTarget, changeOrigin: false },
   '/llms.txt': { target: backendProxyTarget, changeOrigin: false },
   '/llms-full.txt': { target: backendProxyTarget, changeOrigin: false },
 };

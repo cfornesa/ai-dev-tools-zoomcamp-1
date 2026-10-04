@@ -20,6 +20,7 @@ from django.urls import include, path
 
 from backend.oauth_gates import github_callback, github_login, linkedin_callback, linkedin_login
 from backend.views import health, whoami
+from scenes.crawler_resources import RobotsTextView
 from scenes.llms import LLMSFullTextView, LLMSTextView
 from scenes.profile_feeds import (
     PublicProfileAtomFeedView,
@@ -28,6 +29,7 @@ from scenes.profile_feeds import (
 )
 
 urlpatterns = [
+    path('robots.txt', RobotsTextView.as_view(), name='robots'),
     path('llms.txt', LLMSTextView.as_view(), name='llms'),
     path('llms-full.txt', LLMSFullTextView.as_view(), name='llms-full'),
     path(

@@ -615,6 +615,14 @@ provider-identity, billing, admin, account-management, and other internal
 data or routes are excluded. Existing routes and API contracts remain
 backward-compatible.
 
+## Generated crawler directives (#1199)
+
+`GET /robots.txt` is an anonymous, request-time generated `text/plain`
+resource. It allows public routes, disallows `/api/`, `/admin`, `/account`,
+`/accounts/`, and `/studio`, and names absolute `/sitemap.xml` and `/llms.txt`
+URLs on the validated request host. It is proxied to Django by the Vite dev
+and preview servers; no static crawler file is required.
+
 ## Structured AI-run plans (#656)
 
 `GET /api/ai/runs/<id>/` and the response from `POST /api/ai/runs/` expose a

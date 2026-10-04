@@ -63,20 +63,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/authPolicy.spec.ts|Google-only account creation policy › desktop auth pages use the dark shell and preserve provider policy",
-    "issue": 1179,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/authPolicy.spec.ts|Google-only account creation policy › mobile auth pages preserve the same policy and remain usable",
-    "issue": 1179,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) › a published 2D project: signed-out and non-owner visitors never see owner controls at /projects/:id or /ai-projects/:id, at both viewports",
     "issue": 1180,
     "added": "2026-10-03",

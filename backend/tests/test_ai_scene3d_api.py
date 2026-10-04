@@ -411,6 +411,10 @@ def test_accept_requires_authentication(project):
     )
 
     assert response.status_code == 404
+    assert SceneVersion3D.objects.filter(project=project).count() == 0
+    project.refresh_from_db()
+    assert project.current_version_id is None
+    assert not ProjectActivity.objects.filter(project3d=project).exists()
 
 
 @pytest.mark.django_db

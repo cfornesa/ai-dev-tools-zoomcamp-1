@@ -1,5 +1,21 @@
 # Public gallery API contract
 
+## AI route authorization (#1215)
+
+The `x-access` values in `openapi.yaml` match the checks in the API views:
+
+| Routes | OpenAPI access | Code check |
+|---|---|---|
+| `POST /api/projects/{projectId}/ai/create-scene/`, `edit-scene/`, `accept-proposal/` | `owner` | `Action.AI_CREATE_SCENE`, `Action.AI_EDIT_SCENE`, or `Action.VERSION_CREATE` through `require()`; denied requests return 404. |
+| `POST /api/projects3d/{projectId}/ai/create-scene/`, `edit-scene/`, `accept-proposal/` | `owner` | `Action.PROJECT3D_WRITE` through `can()`; denied requests return 404. |
+| `POST /api/ai/runs/`, `GET /api/ai/runs/{runId}/` | `owner` | Start verifies target ownership; read filters by run owner; denied requests return 404. |
+| `POST /api/ai/art-pieces/generate/` | `session` | Requires an authenticated session; it is not project-owner scoped. |
+
+The 2D and 3D accept-proposal endpoints reject anonymous and foreign users
+without creating a scene version or activity record. The 3D endpoint uses the
+same owner-only policy as the 2D endpoint; the report that it is anonymous is
+not reflected in this repository's code or OpenAPI contract.
+
 ## Anonymous MCP endpoint (#1210)
 
 `POST /mcp/` is the anonymous Model Context Protocol Streamable HTTP endpoint.

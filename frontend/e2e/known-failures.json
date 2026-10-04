@@ -161,41 +161,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: URL / closing-tag / quote / Unicode-control fixtures, real Chromium execution (title position) › URL, closing-tag, quote, and Unicode-control fixtures are inert as title content",
-    "issue": 1163,
-    "added": "2026-10-03",
-    "expires": "2026-10-10",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: combined worst-case payload across attribution on/off and every interaction mode › title/description/label all carry the combined payload and stay inert across every mode and attribution setting",
-    "issue": 1163,
-    "added": "2026-10-03",
-    "expires": "2026-10-10",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: scoped-string fixtures, real Chromium execution › label (layer/group name) fixtures are inert",
-    "issue": 1163,
-    "added": "2026-10-03",
-    "expires": "2026-10-10",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: scoped-string fixtures, real Chromium execution › structured scene string (graph node params) fixtures are inert",
-    "issue": 1163,
-    "added": "2026-10-03",
-    "expires": "2026-10-10",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/injectionArtifacts.spec.ts|Injection audit: scoped-string fixtures, real Chromium execution › title fixtures are inert",
-    "issue": 1163,
-    "added": "2026-10-03",
-    "expires": "2026-10-10",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/layersPanel.spec.ts|Layers panel › pointer drag-and-drop, keyboard reorder, and a locked-layer drop rejection all land on the correct scene order",
     "issue": 1185,
     "added": "2026-10-03",

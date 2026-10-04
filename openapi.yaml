@@ -115,7 +115,12 @@ paths:
         JSON Streamable HTTP MCP transport. Public tools and resources are
         documented in `docs/mcp.md`; public project data follows the same
         eligibility filters and serializers as the corresponding REST routes.
-        No session cookie or bearer credential is used.
+        No session cookie or bearer credential is used. Anonymous tool calls
+        are limited to 60 per minute per client IP; rate errors use JSON-RPC
+        code -32029 with `retry_after_seconds` in error data. Each tool call
+        receives one payload-free audit row with a keyed client IP fingerprint.
+        `X-Forwarded-For` is honored only when the immediate peer is loopback;
+        raw client IPs are never stored.
       x-access: anonymous
       security: []
       requestBody:

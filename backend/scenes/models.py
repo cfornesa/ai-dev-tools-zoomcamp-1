@@ -559,6 +559,37 @@ class AdminContentAuditEvent(models.Model):
         return f"{self.action} {self.resource_type} {self.resource_id}"
 
 
+class MCPToolAuditEvent(models.Model):
+    """Minimal per-invocation MCP audit; stores no payloads or raw client IPs."""
+
+    class Outcome(models.TextChoices):
+        SUCCESS = "success", "Success"
+        ERROR = "error", "Error"
+        RATE_LIMITED = "rate_limited", "Rate limited"
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    tool_name = models.CharField(max_length=80)
+    client_id = models.CharField(  # noqa: DJ001 - NULL represents anonymous MCP callers.
+        max_length=200, null=True, blank=True
+    )
+    client_ip_fingerprint = models.CharField(max_length=64)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="mcp_tool_audit_events",
+    )
+    outcome = models.CharField(max_length=16, choices=Outcome.choices)
+    duration_ms = models.PositiveIntegerField()
+
+    class Meta:
+        indexes = [models.Index(fields=["user", "-created_at"])]
+
+    def __str__(self) -> str:
+        return f"MCP {self.tool_name} {self.outcome} at {self.created_at}"
+
+
 class EntitlementRole(models.Model):
     """Reusable admin-defined capability section for subscription plans (#519)."""
 

@@ -33,6 +33,7 @@ describe('vite preview share metadata (production run path)', () => {
   let baseUrl: string;
   let backendPort: number;
   const forwardedHosts = new Set<string>();
+  const forwardedClientAddresses = new Set<string>();
   const saved = { ...process.env };
 
   beforeAll(async () => {
@@ -40,6 +41,8 @@ describe('vite preview share metadata (production run path)', () => {
       const forwardedHost = request.headers['x-forwarded-host'];
       if (typeof forwardedHost === 'string') forwardedHosts.add(forwardedHost);
       if (request.url === '/mcp/' && request.method === 'POST') {
+        const forwardedAddress = request.headers['x-forwarded-for'];
+        if (typeof forwardedAddress === 'string') forwardedClientAddresses.add(forwardedAddress);
         response.setHeader('Content-Type', 'application/json');
         response.statusCode = 200;
         response.end(
@@ -191,6 +194,9 @@ describe('vite preview share metadata (production run path)', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toContain('application/json');
+    expect([...forwardedClientAddresses].some((address) => address.includes('127.0.0.1'))).toBe(
+      true,
+    );
     await expect(response.json()).resolves.toMatchObject({
       result: { tools: [{ name: 'health_check' }] },
     });

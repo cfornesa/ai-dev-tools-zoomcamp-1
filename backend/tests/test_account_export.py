@@ -14,6 +14,7 @@ from scenes.account_export import build_account_export
 from scenes.models import (
     ArtPiece,
     ArtPieceVersion,
+    MCPToolAuditEvent,
     Project,
     Project3D,
     ProjectActivity,
@@ -57,6 +58,41 @@ def test_export_includes_schema_version_and_profile():
     body = response.json()
     assert body["schema_version"] == 1
     assert body["profile"] == {"username": "owner", "email": ""}
+
+
+@pytest.mark.django_db
+def test_export_includes_only_callers_payload_free_mcp_audit_records():
+    owner = _make_user("owner")
+    other = _make_user("other")
+    event = MCPToolAuditEvent.objects.create(
+        tool_name="list_public_pieces",
+        client_id="registered-client",
+        client_ip_fingerprint="a" * 64,
+        user=owner,
+        outcome=MCPToolAuditEvent.Outcome.SUCCESS,
+        duration_ms=17,
+    )
+    MCPToolAuditEvent.objects.create(
+        tool_name="search_public",
+        user=other,
+        outcome=MCPToolAuditEvent.Outcome.ERROR,
+        duration_ms=9,
+    )
+
+    records = build_account_export(owner)["mcp_tool_audit"]
+
+    assert records == [
+        {
+            "created_at": event.created_at.isoformat(),
+            "tool_name": "list_public_pieces",
+            "client_id": "registered-client",
+            "client_ip_fingerprint": "a" * 64,
+            "outcome": "success",
+            "duration_ms": 17,
+        }
+    ]
+    assert "payload" not in json.dumps(records)
+    assert "token" not in json.dumps(records)
 
 
 @pytest.mark.django_db

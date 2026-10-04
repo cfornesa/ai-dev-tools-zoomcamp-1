@@ -27,6 +27,7 @@ from scenes.models import (
     AIRun,
     ArtPiece,
     BillingEvent,
+    MCPToolAuditEvent,
     Project,
     Project3D,
     ProjectActivity,
@@ -152,6 +153,13 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     EmailAddress.objects.create(user=user, email="owner@example.test", verified=True, primary=True)
     ProviderCredential.objects.create(owner=user, vendor="mistral", encrypted_key=b"not-a-real-key")
     ProviderCredential.objects.create(owner=user, vendor="gemini", encrypted_key=b"also-not-real")
+    mcp_audit = MCPToolAuditEvent.objects.create(
+        tool_name="get_public_project",
+        client_ip_fingerprint="b" * 64,
+        user=user,
+        outcome=MCPToolAuditEvent.Outcome.SUCCESS,
+        duration_ms=12,
+    )
 
     client = Client()
     client.force_login(user)
@@ -190,6 +198,7 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     assert not ProviderCredential.objects.filter(owner=user).exists()
     assert not Session.objects.filter(session_key=session_key).exists()
     assert not SessionMetadata.objects.filter(user=user).exists()
+    assert MCPToolAuditEvent.objects.filter(pk=mcp_audit.pk, user=user).exists()
 
     user.refresh_from_db()
     assert user.is_active is False

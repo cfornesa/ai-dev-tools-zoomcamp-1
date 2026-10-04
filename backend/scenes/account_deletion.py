@@ -193,3 +193,5 @@ def delete_account(user, *, password: str | None, confirmation: str) -> None:
     locked_user.save(
         update_fields=["username", "email", "first_name", "last_name", "is_active", "password"]
     )
+    # MCP audit events are retained for accountability and remain attached to
+    # this anonymized row; they contain no IP, payload, or credential material.

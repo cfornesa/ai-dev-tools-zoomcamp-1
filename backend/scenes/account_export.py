@@ -21,6 +21,7 @@ from scenes.account_entitlements import get_entitlement_summary
 from scenes.account_identities import list_identities
 from scenes.models import (
     ArtPiece,
+    MCPToolAuditEvent,
     Project,
     Project3D,
     ProjectActivity,
@@ -181,6 +182,17 @@ def build_account_export(user) -> dict[str, Any]:
         "entitlement": get_entitlement_summary(user),
         "subscription": _serialize_subscription(user),
         "ai_credentials": _serialize_ai_credentials(user),
+        "mcp_tool_audit": [
+            {
+                "created_at": _isoformat(event.created_at),
+                "tool_name": event.tool_name,
+                "client_id": event.client_id,
+                "client_ip_fingerprint": event.client_ip_fingerprint,
+                "outcome": event.outcome,
+                "duration_ms": event.duration_ms,
+            }
+            for event in MCPToolAuditEvent.objects.filter(user=user).order_by("-created_at", "-id")
+        ],
         "projects": [
             _serialize_project(project)
             for project in Project.all_objects.filter(owner=user)

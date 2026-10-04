@@ -40,7 +40,19 @@ const djangoProxy = {
   '/sitemap.xml': { target: backendProxyTarget, changeOrigin: false },
   '/llms.txt': { target: backendProxyTarget, changeOrigin: false },
   '/llms-full.txt': { target: backendProxyTarget, changeOrigin: false },
-  '/mcp': { target: backendProxyTarget, changeOrigin: false },
+  '/mcp': {
+    target: backendProxyTarget,
+    changeOrigin: false,
+    configure(proxy) {
+      proxy.on('proxyReq', (proxyRequest, request) => {
+        const forwardedFor = request.headers['x-forwarded-for'];
+        const clientAddress = Array.isArray(forwardedFor)
+          ? forwardedFor.join(', ')
+          : forwardedFor || request.socket.remoteAddress;
+        if (clientAddress) proxyRequest.setHeader('X-Forwarded-For', clientAddress);
+      });
+    },
+  },
 };
 
 type ShareMetadata = {

@@ -15,6 +15,7 @@ import httpx
 import pytest
 from asgiref.testing import ApplicationCommunicator
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.http import Http404
 from django.utils import timezone
 from mcp.client.session import ClientSession
@@ -34,6 +35,7 @@ from scenes.mcp.server import (
     _public_search,
     _public_thumbnail,
     _published_asset,
+    _trusted_client_ip,
     _unified_gallery_page,
     create_mcp_asgi_app,
 )
@@ -41,6 +43,7 @@ from scenes.models import (
     ArtPiece,
     ArtPieceVersion,
     Collection,
+    MCPToolAuditEvent,
     PieceIntakeAsset,
     Project,
     Project3D,
@@ -73,6 +76,8 @@ MINIMAL_SCENE_3D = json.loads(
 
 @pytest.mark.django_db(transaction=True)
 def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
+    cache.clear()
+
     async def exercise_client() -> None:
         test_application = create_mcp_asgi_app(application.django_app)
         lifespan = ApplicationCommunicator(test_application, {"type": "lifespan"})
@@ -84,6 +89,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                 headers={
                     "origin": "http://localhost:8000",
                     "cookie": "sessionid=ignored-session-cookie",
+                    "x-forwarded-for": "203.0.113.5",
                 },
             ) as http_client:
                 async with streamable_http_client(
@@ -166,6 +172,14 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                         assert pieces_page["next_cursor"] is None
                         assert pieces_page["has_more"] is False
                         assert isinstance(pieces_page["engine_catalog"], list)
+                        for _ in range(57):
+                            result = await client.call_tool("health_check")
+                            assert result.isError is not True
+                        limited = await client.call_tool("health_check")
+                        assert limited.isError is True
+                        assert "retry_after_seconds" in " ".join(
+                            block.text for block in limited.content if block.type == "text"
+                        )
                 base = "http://localhost:8000"
                 payload = {"jsonrpc": "2.0", "id": 2, "method": "tools/list"}
                 invalid_origin = await http_client.post(
@@ -217,6 +231,15 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
             await lifespan.wait()
 
     anyio.run(exercise_client)
+    audits = list(MCPToolAuditEvent.objects.order_by("id"))
+    assert len(audits) == 61
+    assert sum(event.outcome == MCPToolAuditEvent.Outcome.SUCCESS for event in audits) == 60
+    assert sum(event.outcome == MCPToolAuditEvent.Outcome.RATE_LIMITED for event in audits) == 1
+    assert all(event.duration_ms >= 0 for event in audits)
+    assert all(event.client_id is None and event.user_id is None for event in audits)
+    assert all(len(event.client_ip_fingerprint) == 64 for event in audits)
+    assert "203.0.113.5" not in json.dumps([event.client_ip_fingerprint for event in audits])
+    assert len({event.client_ip_fingerprint for event in audits}) == 1
 
 
 @pytest.mark.django_db
@@ -440,3 +463,13 @@ def test_public_2d_tools_match_rest_payloads_and_hide_ineligible_projects():
 
     rest_search = APIClient().get("/api/public/gallery/search/?q=MCP&scope=content")
     assert _public_search("MCP", "content") == rest_search.json()
+
+
+def test_mcp_client_ip_only_trusts_forwarding_from_loopback_proxy():
+    headers = [(b"x-forwarded-for", b"198.51.100.24, 127.0.0.1")]
+    assert _trusted_client_ip({"client": ("127.0.0.1", 8000), "headers": headers}) == (
+        "198.51.100.24"
+    )
+    assert _trusted_client_ip({"client": ("192.0.2.10", 8000), "headers": headers}) == (
+        "192.0.2.10"
+    )

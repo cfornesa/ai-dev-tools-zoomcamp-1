@@ -16,7 +16,15 @@ bytes encoded as base64 with media type and checksum. MCP requests
 use JSON responses and stateless transport; the endpoint does not use Django
 session cookies. The transport validates `Origin` and `Host` against Django's
 trusted origins and allowed hosts, rejects unsupported paths/methods, and caps
-request bodies at 256 KiB. Tool schemas, cursor semantics, and examples are
+request bodies at 256 KiB. Anonymous tool calls are limited to 60 per minute
+per caller IP. Vite forwards the address; Django honors `X-Forwarded-For` only
+when the immediate peer is loopback. Audit rows store a keyed, one-way IP
+fingerprint, not the raw address. A limit error uses JSON-RPC code `-32029` and includes
+`retry_after_seconds` in error data. Each tool invocation writes one audit row
+with tool, timestamp, optional registered client/user, outcome, and duration;
+tool arguments, tokens, and secrets are excluded. Audit rows for a user are
+included in that user's account export and retained against the anonymized row
+after account deletion. Tool schemas, cursor semantics, and examples are
 maintained in `docs/mcp.md`.
 
 ## Public authorship identity (#897)
@@ -329,6 +337,13 @@ cascade. This is an additive JSON export field only; it does not change the
 #945 ZIP/package export, other export sections, or existing credential
 redaction. ArtPiece activity is not included until the dependent generated-
 piece history issue is implemented.
+
+The export also includes the caller's `mcp_tool_audit` records, with timestamp,
+tool name, OAuth client id when available, a keyed client IP fingerprint,
+outcome, and duration. Request payloads, tokens, and raw client IP addresses
+are never retained in these rows.
+On account deletion, records remain attached to the anonymized retained user
+row, consistent with the account-deletion audit-retention policy.
 
 
 

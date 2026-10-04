@@ -3,17 +3,26 @@
 from __future__ import annotations
 
 import base64
+import contextvars
+import functools
+import hashlib
+import hmac
+import ipaddress
 import json
+import time
 import uuid
 from typing import Any
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
+from django.core.cache import cache
 from django.db.models import Count, Prefetch, Q, Value
 from django.db.models.functions import Coalesce
 from django.http import Http404
 from mcp.server.fastmcp import FastMCP, Image
 from mcp.server.transport_security import TransportSecuritySettings
+from mcp.shared.exceptions import McpError
+from mcp.types import ErrorData
 from rest_framework.renderers import JSONRenderer
 
 from backend.views import health_status
@@ -36,6 +45,7 @@ from scenes.models import (
     ArtPiece,
     Collection,
     CollectionItem,
+    MCPToolAuditEvent,
     PieceIntakeAsset,
     Project,
     Project3D,
@@ -64,6 +74,117 @@ from scenes.serializers import (
 from scenes.thumbnail_generation import ensure_thumbnail_for_version
 
 MAX_MCP_REQUEST_BODY_SIZE = 256 * 1024
+MCP_RATE_LIMIT_REQUESTS = 60
+MCP_RATE_LIMIT_WINDOW_SECONDS = 60
+_mcp_client_ip: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "mcp_client_ip", default="unknown"
+)
+
+
+def _trusted_client_ip(scope: dict[str, Any]) -> str:
+    """Honor X-Forwarded-For only when the immediate peer is loopback Vite."""
+    peer = scope.get("client")
+    peer_ip = peer[0] if peer else "unknown"
+    try:
+        trusted_proxy = ipaddress.ip_address(peer_ip).is_loopback
+    except ValueError:
+        trusted_proxy = False
+    if not trusted_proxy:
+        return peer_ip
+    forwarded_for = next(
+        (
+            value.decode("latin-1")
+            for name, value in scope.get("headers", [])
+            if name == b"x-forwarded-for"
+        ),
+        "",
+    )
+    if not forwarded_for:
+        return peer_ip
+    candidate = forwarded_for.split(",", maxsplit=1)[0].strip()
+    try:
+        return str(ipaddress.ip_address(candidate))
+    except ValueError:
+        return peer_ip
+
+
+def _consume_mcp_rate_limit(client_ip: str, now: float | None = None) -> int | None:
+    """Return retry seconds when the per-IP fixed-window cap has been exceeded."""
+    current_time = time.time() if now is None else now
+    bucket = int(current_time // MCP_RATE_LIMIT_WINDOW_SECONDS)
+    digest = _client_ip_fingerprint(client_ip)
+    key = f"mcp:anonymous:{digest}:{bucket}"
+    if not cache.add(key, 1, timeout=MCP_RATE_LIMIT_WINDOW_SECONDS + 1):
+        try:
+            count = cache.incr(key)
+        except ValueError:
+            cache.add(key, 1, timeout=MCP_RATE_LIMIT_WINDOW_SECONDS + 1)
+            count = 1
+    else:
+        count = 1
+    if count <= MCP_RATE_LIMIT_REQUESTS:
+        return None
+    return MCP_RATE_LIMIT_WINDOW_SECONDS - int(current_time % MCP_RATE_LIMIT_WINDOW_SECONDS)
+
+
+def _client_ip_fingerprint(client_ip: str) -> str:
+    """Make a stable keyed client identifier without retaining a raw address."""
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"), client_ip.encode("utf-8"), hashlib.sha256
+    ).hexdigest()
+
+
+def _write_mcp_audit(
+    tool_name: str, outcome: str, duration_ms: int, client_ip_fingerprint: str
+) -> None:
+    MCPToolAuditEvent.objects.create(
+        tool_name=tool_name,
+        client_id=None,
+        client_ip_fingerprint=client_ip_fingerprint,
+        user=None,
+        outcome=outcome,
+        duration_ms=duration_ms,
+    )
+
+
+def _audited_tool(tool_name: str):
+    """Rate-limit and record one payload-free audit row for every invocation."""
+
+    def decorate(function):
+        @functools.wraps(function)
+        async def invoke(*args, **kwargs):
+            started = time.monotonic()
+            outcome = MCPToolAuditEvent.Outcome.ERROR
+            try:
+                retry_after = await sync_to_async(_consume_mcp_rate_limit, thread_sensitive=True)(
+                    _mcp_client_ip.get()
+                )
+                if retry_after is not None:
+                    outcome = MCPToolAuditEvent.Outcome.RATE_LIMITED
+                    raise McpError(
+                        ErrorData(
+                            code=-32029,
+                            message=(
+                                f"MCP rate limit exceeded; retry_after_seconds={retry_after}."
+                            ),
+                            data={"retry_after_seconds": retry_after},
+                        )
+                    )
+                result = await function(*args, **kwargs)
+                outcome = MCPToolAuditEvent.Outcome.SUCCESS
+                return result
+            finally:
+                duration_ms = max(0, int((time.monotonic() - started) * 1000))
+                await sync_to_async(_write_mcp_audit, thread_sensitive=True)(
+                    tool_name,
+                    outcome,
+                    duration_ms,
+                    _client_ip_fingerprint(_mcp_client_ip.get()),
+                )
+
+        return invoke
+
+    return decorate
 
 
 def _mcp_allowed_hosts() -> list[str]:
@@ -99,6 +220,7 @@ server = FastMCP(
         "Returns status, database, and cache without connection details."
     ),
 )
+@_audited_tool("health_check")
 async def health_check() -> dict[str, str]:
     """Return the same connection-safe status as GET /health/."""
     return await sync_to_async(health_status, thread_sensitive=True)()
@@ -442,6 +564,7 @@ def _public_search(query: str, scope: str) -> dict[str, Any]:
         "Pass the returned next_cursor to continue; page_size is clamped to 1–60."
     ),
 )
+@_audited_tool("list_public_gallery")
 async def list_public_gallery(cursor: str | None = None, page_size: int = DEFAULT_PAGE_SIZE):
     return await sync_to_async(_public_gallery_page, thread_sensitive=True)(
         cursor, clamp_page_size(page_size)
@@ -455,6 +578,7 @@ async def list_public_gallery(cursor: str | None = None, page_size: int = DEFAUL
         "non-public projects return not found."
     ),
 )
+@_audited_tool("get_public_project")
 async def get_public_project(project_id: str) -> dict[str, Any]:
     return await sync_to_async(_public_project, thread_sensitive=True)(project_id)
 
@@ -463,6 +587,7 @@ async def get_public_project(project_id: str) -> dict[str, Any]:
     name="get_public_thumbnail",
     description="Read the current thumbnail of a public 2D project as MCP image content.",
 )
+@_audited_tool("get_public_thumbnail")
 async def get_public_thumbnail(project_id: str) -> Image:
     data, media_type = await sync_to_async(_public_thumbnail, thread_sensitive=True)(project_id)
     return Image(data=data, format=media_type.removeprefix("image/"))
@@ -474,6 +599,7 @@ async def get_public_thumbnail(project_id: str) -> Image:
         "List built-in scene templates visible anonymously; private templates are never included."
     ),
 )
+@_audited_tool("list_templates")
 async def list_templates() -> list[dict[str, Any]]:
     return await sync_to_async(_built_in_templates, thread_sensitive=True)()
 
@@ -485,6 +611,7 @@ async def list_templates() -> list[dict[str, Any]]:
         "with its media type and checksum."
     ),
 )
+@_audited_tool("get_published_asset")
 async def get_published_asset(project_id: str, asset_id: str) -> dict[str, str]:
     return await sync_to_async(_published_asset, thread_sensitive=True)(project_id, asset_id)
 
@@ -496,6 +623,7 @@ async def get_published_asset(project_id: str, asset_id: str) -> dict[str, str]:
         "Use the returned cursor with the same type filter."
     ),
 )
+@_audited_tool("list_public_pieces")
 async def list_public_pieces(
     gallery_type: str = "all",
     engine: str | None = None,
@@ -514,6 +642,7 @@ async def list_public_pieces(
         "private or missing projects are not found."
     ),
 )
+@_audited_tool("get_public_3d_project")
 async def get_public_3d_project(project_id: str) -> dict[str, Any]:
     return await sync_to_async(_public_3d_project, thread_sensitive=True)(project_id)
 
@@ -524,6 +653,7 @@ async def get_public_3d_project(project_id: str) -> dict[str, Any]:
         "Read metadata and the currently public version for one published generated art piece."
     ),
 )
+@_audited_tool("get_public_art_piece")
 async def get_public_art_piece(piece_id: str) -> dict[str, Any]:
     return await sync_to_async(_public_generated_piece, thread_sensitive=True)(piece_id)
 
@@ -532,6 +662,7 @@ async def get_public_art_piece(piece_id: str) -> dict[str, Any]:
     name="list_public_collections",
     description="List bounded public collection cards; sort may be newest, oldest, or item_count.",
 )
+@_audited_tool("list_public_collections")
 async def list_public_collections(
     sort: str = "newest", cursor: str | None = None, page_size: int = DEFAULT_PAGE_SIZE
 ) -> dict[str, Any]:
@@ -544,6 +675,7 @@ async def list_public_collections(
     name="get_public_collection",
     description="Read one active, published collection through its public handle and slug.",
 )
+@_audited_tool("get_public_collection")
 async def get_public_collection(handle: str, slug: str) -> dict[str, Any]:
     return await sync_to_async(_public_collection_detail, thread_sensitive=True)(handle, slug)
 
@@ -552,6 +684,7 @@ async def get_public_collection(handle: str, slug: str) -> dict[str, Any]:
     name="search_public",
     description="Search eligible public content or public accounts; results are capped at 50.",
 )
+@_audited_tool("search_public")
 async def search_public(query: str, scope: str = "content") -> dict[str, Any]:
     return await sync_to_async(_public_search, thread_sensitive=True)(query, scope)
 
@@ -589,7 +722,11 @@ class DjangoMCPApplication:
             return
 
         if scope["type"] == "http" and scope.get("path") in {"/mcp", "/mcp/"}:
-            await self.mcp_app(scope, receive, send)
+            token = _mcp_client_ip.set(_trusted_client_ip(scope))
+            try:
+                await self.mcp_app(scope, receive, send)
+            finally:
+                _mcp_client_ip.reset(token)
             return
 
         await self.django_app(scope, receive, send)

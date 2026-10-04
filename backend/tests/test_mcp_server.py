@@ -5,9 +5,11 @@ from __future__ import annotations
 import base64
 import copy
 import hashlib
+import io
 import json
 import secrets
 import uuid
+import zipfile
 from datetime import timedelta
 from pathlib import Path
 
@@ -171,6 +173,36 @@ def _enable_mistral_agent_model() -> None:
     )
 
 
+def _mcp_intake_package() -> bytes:
+    record = json.dumps(BLANK_SCENE).encode()
+    manifest = {
+        "formatVersion": 1,
+        "kind": "2d",
+        "metadata": {
+            "title": "MCP intake fixture",
+            "description": "MCP intake fixture",
+            "tags": [],
+            "visibilityIntent": "private",
+            "origin": {"appVersion": "test", "exportedAt": "2026-09-26T00:00:00Z"},
+        },
+        "records": [{"index": 0, "schemaVersion": 1, "fileIndex": 0}],
+        "mediaAssets": [],
+        "files": [
+            {
+                "index": 0,
+                "path": "files/0.json",
+                "byteSize": len(record),
+                "sha256": hashlib.sha256(record).hexdigest(),
+            }
+        ],
+    }
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as archive:
+        archive.writestr("manifest.json", json.dumps(manifest))
+        archive.writestr("files/0.json", record)
+    return output.getvalue()
+
+
 @pytest.mark.django_db(transaction=True)
 def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
     cache.clear()
@@ -253,6 +285,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "ai_create_3d_scene",
                             "ai_edit_3d_scene",
                             "ai_accept_3d_proposal",
+                            "intake_piece_package",
                         }
                         for tool in listing.tools:
                             matching_rows = [
@@ -583,6 +616,103 @@ def test_mcp_enforces_tool_scope_and_exposes_identity_only_for_token_user():
     assert identity.isError is not True
     assert identity.structuredContent["user_id"] == str(user.pk)
     assert identity.structuredContent["scopes"] == ["projects:write"]
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_piece_intake_matches_rest_and_enforces_transport_limit_and_scope(monkeypatch):
+    import scenes.piece_intake as intake
+    from scenes.models import SiteSettings
+
+    monkeypatch.setattr(intake, "get_effective_cap", lambda user, feature: 1)
+    monkeypatch.setattr(intake, "_plan_quota", lambda user: (1_000_000, 10))
+    settings = SiteSettings.get_solo()
+    settings.cloud_sync_enabled = True
+    settings.save(update_fields=["cloud_sync_enabled"])
+
+    owner = get_user_model().objects.create_user(username="mcp-piece-intake-owner")
+    token, _, _ = _create_mcp_access_token(owner, scopes=("projects:write",))
+    rest = APIClient()
+    rest.force_authenticate(owner)
+    package = _mcp_intake_package()
+    key = "mcp-intake-rest-parity"
+    rest_response = rest.post(
+        "/api/pieces/intake/",
+        {"package": io.BytesIO(package), "idempotency_key": key},
+        format="multipart",
+    )
+    assert rest_response.status_code == 201, rest_response.json()
+
+    mcp_response = _call_mcp_tool(
+        token,
+        "intake_piece_package",
+        {"package_base64": base64.b64encode(package).decode(), "idempotency_key": key},
+    )
+    assert _mcp_result_payload(mcp_response) == rest_response.json()
+    assert Project.objects.filter(owner=owner).count() == 1
+    assert SceneVersion.objects.filter(project__owner=owner).count() == 1
+
+    invalid = b"not a zip archive"
+    rest_invalid = rest.post(
+        "/api/pieces/intake/", {"package": io.BytesIO(invalid)}, format="multipart"
+    )
+    assert rest_invalid.status_code == 400
+    mcp_invalid = _call_mcp_tool(
+        token,
+        "intake_piece_package",
+        {"package_base64": base64.b64encode(invalid).decode()},
+    )
+    assert mcp_invalid.isError is True
+    assert rest_invalid.json()["detail"] in json.dumps(mcp_invalid.model_dump())
+
+    malicious_output = io.BytesIO()
+    with zipfile.ZipFile(malicious_output, "w") as archive:
+        archive.writestr("../escape.txt", "outside package")
+    malicious = malicious_output.getvalue()
+    rest_malicious = rest.post(
+        "/api/pieces/intake/", {"package": io.BytesIO(malicious)}, format="multipart"
+    )
+    mcp_malicious = _call_mcp_tool(
+        token,
+        "intake_piece_package",
+        {"package_base64": base64.b64encode(malicious).decode()},
+    )
+    assert rest_malicious.status_code == 400
+    assert mcp_malicious.isError is True
+    assert rest_malicious.json()["detail"] in json.dumps(mcp_malicious.model_dump())
+
+    from scenes.mcp.piece_intake_tools import MCP_PACKAGE_MAX_BYTES
+
+    too_large = base64.b64encode(b"x" * (MCP_PACKAGE_MAX_BYTES + 1)).decode()
+    limited = _call_mcp_tool(token, "intake_piece_package", {"package_base64": too_large})
+    assert limited.isError is True
+    assert "HTTP 413" in json.dumps(limited.model_dump())
+    assert "180 KiB" in json.dumps(limited.model_dump())
+
+    reader = get_user_model().objects.create_user(username="mcp-piece-intake-reader")
+    reader_token, _, _ = _create_mcp_access_token(reader, scopes=("projects:write", "gallery:read"))
+    foreign_target = _call_mcp_tool(
+        reader_token,
+        "intake_piece_package",
+        {
+            "package_base64": base64.b64encode(package).decode(),
+            "piece_id": rest_response.json()["public_id"],
+        },
+    )
+    assert foreign_target.isError is True
+    assert "HTTP 404" in json.dumps(foreign_target.model_dump())
+    assert "MCP intake fixture" not in json.dumps(foreign_target.model_dump())
+    gallery_reader = get_user_model().objects.create_user(
+        username="mcp-piece-intake-gallery-reader"
+    )
+    gallery_token, _, _ = _create_mcp_access_token(gallery_reader, scopes=("gallery:read",))
+    denied = _call_mcp_tool(
+        gallery_token,
+        "intake_piece_package",
+        {"package_base64": base64.b64encode(package).decode()},
+    )
+    assert denied.isError is True
+    assert "does not grant the required scope" in json.dumps(denied.model_dump())
+    assert Project.objects.filter(owner=gallery_reader).count() == 0
 
 
 @pytest.mark.django_db(transaction=True)

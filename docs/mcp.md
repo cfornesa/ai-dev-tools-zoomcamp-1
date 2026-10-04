@@ -180,6 +180,7 @@ SDK input properties; optional properties may be omitted.
 | `ai_create_3d_scene` | `ai:use` |
 | `ai_edit_3d_scene` | `ai:use` |
 | `ai_accept_3d_proposal` | `ai:use`, `projects:write` |
+| `intake_piece_package` | `projects:write` |
 
 | Tool | Input schema | Example call | Result |
 |---|---|---|---|
@@ -227,6 +228,7 @@ SDK input properties; optional properties may be omitted.
 | `ai_create_3d_scene` | `project_id: string`, `prompt: string`, `vendor?: string`, `model?: string`, `persona_id?: integer`, `target_ids?: string[]` | `ai_create_3d_scene({...})` | Unsaved 3D proposal; REST owner, schema, quota, and entitlement checks apply. |
 | `ai_edit_3d_scene` | `project_id: string`, `prompt: string`, `current_scene: object`, `base_version_id: integer or null`, `vendor?: string`, `model?: string`, `persona_id?: integer`, `target_ids?: string[]` | `ai_edit_3d_scene({...})` | Unsaved patch proposal; REST validation and stale-base checks apply. |
 | `ai_accept_3d_proposal` | `project_id: string`, `operation: string`, `scene_json: object`, `base_version_id: integer or null`, `client_request_id?: string` | `ai_accept_3d_proposal({...})` | Explicitly persists one scene3d-validated version after owner, base-version, and idempotency checks; requires both scopes. |
+| `intake_piece_package` | `package_base64: string`, optional `idempotency_key`, `piece_id`, `expected_revision` | `intake_piece_package({"package_base64": "<base64 ZIP>"})` | Imports through the REST multipart parser; decoded ZIP limit is 180 KiB for the MCP transport. Intake remains private and REST archive/security/quota checks apply. |
 
 Page sizes are clamped to 1–60. Gallery cursors are opaque, may expire, and
 are scoped to their corresponding gallery type or collection sort. Search

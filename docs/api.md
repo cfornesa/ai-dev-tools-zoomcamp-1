@@ -2080,6 +2080,13 @@ same values before accepting data; #931 intentionally does not add enforcement.
 
 POST /api/pieces/intake/ accepts an authenticated owner-scoped multipart/form-data upload with package (the #930 ZIP) and optional idempotency_key, piece_id, and expected_revision. Intake is a private server-side sync operation: it never publishes or changes visibility, even when visibilityIntent is public; public transfer remains the explicit publish path. Replaying idempotency_key is safe. piece_id appends a new immutable version and preserves history; omission creates a fresh private piece with a fresh public id. A media asset may optionally carry sourceAssetId, the stable browser-local asset identifier retained for later public-media delivery; packages without it remain valid.
 
+The MCP tool `intake_piece_package` invokes this same REST view and multipart
+parser with a base64-encoded ZIP. Its decoded ZIP limit is 180 KiB, leaving
+room for base64 and MCP protocol fields under the transport's 256 KiB request
+limit. The REST endpoint remains independently bounded by its 50 MiB archive
+limit; the smaller MCP limit is an input-transport cap. Both paths retain the
+same ZIP validation, ownership, quota, and idempotency behavior.
+
 The endpoint validates the complete archive before entering the write transaction, rejects unsafe paths, checksums, MIME declarations, executable extensions, archive limits, and image metadata, strips EXIF/GPS from accepted image assets, and enforces the owner's cloud-sync entitlement and storage quota. Failed requests leave no piece, version, media, receipt, or audit row. Successful requests create an owner-visible piece_intake audit event. The endpoint is rate limited per authenticated owner and returns privacy-preserving 404 responses for foreign or unknown piece_id values.
 
 ## Published piece media delivery (#941)

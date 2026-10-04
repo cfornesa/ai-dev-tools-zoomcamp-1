@@ -299,12 +299,5 @@
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
-  },
-  {
-    "key": "firefox|e2e/drawioEditor.spec.ts|Draw.io editor › mutates objects, renames a layer, and preserves saved draw.io state",
-    "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
   }
 ]

@@ -5919,6 +5919,7 @@ select.ai-proposal-field-full-width {
 }
 
 .public-art-piece-viewer-stage-shell {
+  position: relative;
   width: 100%;
 }
 
@@ -6841,17 +6842,28 @@ select.ai-proposal-field-full-width {
 }
 
 @media (max-width: 700px) {
-  /* Public regular pieces keep their toolbar and visitor-drawing controls in
-     document flow on phones. The stage remains tall enough to draw in, while
-     desktop retains the overlay presentation below this breakpoint. */
+  /* Keep the phone toolbar in flow below the artwork. Ordinary pieces retain
+     their declared ratio; only the interactive drawing engine needs a tall
+     touch surface. */
   .public-art-piece-stage {
+    min-height: 0;
+    height: auto;
+  }
+
+  .public-art-piece-stage > iframe {
+    height: auto !important;
+    aspect-ratio: var(--art-piece-aspect-ratio, 16 / 9);
+  }
+
+  .public-art-piece-stage[data-visitor-drawing='true'] {
     min-height: min(70vh, 26rem);
     height: auto;
     aspect-ratio: auto;
   }
 
-  .public-art-piece-stage > iframe {
+  .public-art-piece-stage[data-visitor-drawing='true'] > iframe {
     height: min(70vh, 26rem) !important;
+    aspect-ratio: auto;
   }
 
   .public-art-piece-toolbar-row {
@@ -6923,6 +6935,13 @@ select.ai-proposal-field-full-width {
   .public-art-piece-toolbar-row .piece-stage-icon-button {
     min-height: 44px;
     height: 44px;
+  }
+
+  .public-art-piece-toolbar-row .piece-stage-color-swatch {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
   }
 }
 

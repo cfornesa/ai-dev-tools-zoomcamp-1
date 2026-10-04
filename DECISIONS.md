@@ -2910,3 +2910,8 @@ updates. The remaining open backlog was not silently claimed complete.
 
 - Documented the existing `frontend/e2e/support/` contracts and linked the reference from E2E authoring standard 2. No helper API or test behavior changed. The #1174 publication confirmation helper remains spec-local because no shared publication-dialog helper exists.
 - The README export inventory and three typechecked setup recipes passed; `UV_CACHE_DIR=/private/tmp/codex-1190-uv-cache make check` passed. Linux full-matrix evidence remains owner-dispatched and pending.
+
+## 2026-10-04 — Goal 7 phone stage and toolbar rule
+
+- Apply the owner-approved two-tier contract: at ≥701px preserve the declared stage ratio (16:9 fallback); at ≤700px put the toolbar below the stage, applying the tall `min(70vh, 26rem)` drawing surface only to `c2js-interactive`.
+- Keep CSS edits to `frontend/src/index.css` serial. Keep desktop shell display toggles fixed and route-scope any #1228 clearance to unified editor panels, preserving #1158’s ≤767px in-flow behavior.

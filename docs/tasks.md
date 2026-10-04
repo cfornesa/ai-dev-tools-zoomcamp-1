@@ -26583,3 +26583,7 @@ Discovered in Linux full-matrix run [#37178806457](https://github.com/cfornesa/a
 ### 2026-10-04 — account login script-font clipping (Batch 14)
 
 Linux full-matrix run [#37172058510](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37172058510) found the login instruction paragraph clipping in the narrow script-font presentation (card child scrollWidth > clientWidth) in Chromium shard 1. Follow-up [#1229](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1229) tracks the product correction; related account styling issue [#1125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1125) is closed. The full matrix issue remains [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096).
+
+### 2026-10-04 — Goal 7 stage and toolbar geometry (#1188–#1228)
+
+Per the owner-decided phone rule, #1188 now marks only `c2js-interactive` stages for the tall drawing layout; other engines retain their declared ratio (or the 16:9 fallback), and the toolbar row is in flow below the stage at ≤700px. A new route-level Chromium scenario covers 4:3, fallback, 21:9, 9:16, and interactive fixtures at 375×812, 768×1024, and 1280×900, verifies hit targets, overflow, fullscreen, and screenshots at 375×812 and 1280×900. The existing #1083 mobile drawing-control regression passed. Local screenshot evidence is retained in `/private/tmp/goal7-playwright-1188-inspected`; Linux evidence remains pending owner dispatch. Remaining ordered issues: #1189, #1175, #1177, #1178, #1176, #1228.

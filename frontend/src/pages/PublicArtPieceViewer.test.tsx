@@ -143,4 +143,18 @@ describe('PublicArtPieceViewer stage sizing (#703)', () => {
       '--art-piece-aspect-ratio': '1200 / 800',
     });
   });
+
+  it('marks only interactive pieces as supporting visitor drawing', () => {
+    const { unmount } = renderViewer({ ...basePiece, engine: 'c2js-interactive' });
+    expect(screen.getByRole('region', { name: 'Art piece stage' })).toHaveAttribute(
+      'data-visitor-drawing',
+      'true',
+    );
+
+    unmount();
+    renderViewer({ ...basePiece, engine: 'canvas2d' });
+    expect(screen.getByRole('region', { name: 'Art piece stage' })).not.toHaveAttribute(
+      'data-visitor-drawing',
+    );
+  });
 });

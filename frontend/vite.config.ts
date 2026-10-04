@@ -49,6 +49,7 @@ type ShareMetadata = {
   canonical_path: string;
   image_url: string | null;
   gallery_items?: Array<{ title: string; path: string }>;
+  gallery_heading?: string;
 };
 
 type ShareMetadataError = { name: string; message: string } | null;
@@ -210,6 +211,8 @@ function routeDescriptor(pathname: string): { kind: string; publicId: string } |
 function siteMetadataDescriptor(pathname: string): string | null {
   if (pathname === '/' || pathname === '/home') return '/api/public/share-meta/site/home/';
   if (pathname === '/gallery') return '/api/public/share-meta/site/gallery/';
+  if (pathname === '/collections') return '/api/public/share-meta/site/collections/';
+  if (pathname === '/art-pieces/gallery') return '/api/public/share-meta/site/generated/';
   const profile = pathname.match(/^\/users\/@([^/]+)(?:\/feeds)?\/?$/);
   if (profile) {
     return `/api/public/share-meta/site/profile/${encodeURIComponent(profile[1])}/`;
@@ -318,10 +321,11 @@ function metadataTags(metadata: ShareMetadata | null, requestPath: string): stri
 function noScriptGallery(metadata: ShareMetadata | null): string {
   const items = metadata?.gallery_items;
   if (!items?.length) return '';
+  const heading = metadata.gallery_heading ?? 'Public gallery';
   const links = items
     .map(({ title, path }) => `<li><a href="${escapeHtml(path)}">${escapeHtml(title)}</a></li>`)
     .join('\n        ');
-  return `<noscript><section aria-label="Public gallery"><h1>Public gallery</h1><ul>\n        ${links}\n      </ul></section></noscript>`;
+  return `<noscript><section aria-label="${escapeHtml(heading)}"><h1>${escapeHtml(heading)}</h1><ul>\n        ${links}\n      </ul></section></noscript>`;
 }
 
 function shareMetadataPlugin(): Plugin {
@@ -397,7 +401,12 @@ function shareMetadataPlugin(): Plugin {
           ).transformIndexHtml(requestPath, html);
         }
         html = html.replace('</head>', `    ${metadataTags(metadata, requestPath)}\n  </head>`);
-        if (requestPath === '/' || requestPath === '/gallery') {
+        if (
+          requestPath === '/' ||
+          requestPath === '/gallery' ||
+          requestPath === '/collections' ||
+          requestPath === '/art-pieces/gallery'
+        ) {
           html = html.replace('</body>', `    ${noScriptGallery(metadata)}\n  </body>`);
         }
         response.statusCode = 200;

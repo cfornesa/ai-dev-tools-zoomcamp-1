@@ -147,6 +147,26 @@ def test_site_profile_collection_and_home_metadata_are_public_and_canonical(publ
     assert gallery.status_code == 200
     assert gallery.data["canonical_path"] == "/gallery"
     assert gallery.data["gallery_items"] == home.data["gallery_items"]
+    assert len(gallery.data["gallery_items"]) <= 24
+
+    collections_index = client.get("/api/public/share-meta/site/collections/")
+    assert collections_index.status_code == 200
+    assert collections_index.data["canonical_path"] == "/collections"
+    assert collections_index.data["gallery_heading"] == "Public collections"
+    assert collections_index.data["gallery_items"] == [
+        {
+            "title": 'Collection <script>alert(1)</script>',
+            "path": "/users/@share-artist/collections/featured",
+        }
+    ]
+
+    generated_gallery = client.get("/api/public/share-meta/site/generated/")
+    assert generated_gallery.status_code == 200
+    assert generated_gallery.data["canonical_path"] == "/gallery?type=generated"
+    assert generated_gallery.data["gallery_heading"] == "Generated art gallery"
+    assert generated_gallery.data["gallery_items"] == [
+        {"title": "Generated share", "path": "/users/@share-artist/pieces/share-generated"}
+    ]
 
     profile_response = client.get("/api/public/share-meta/site/profile/share-artist/")
     assert profile_response.status_code == 200
@@ -218,6 +238,26 @@ def test_gallery_fallback_hides_soft_deleted_pieces(public_records):
 
     assert response.status_code == 200
     assert all(item["title"] != project3d.title for item in response.data["gallery_items"])
+
+
+@pytest.mark.django_db(transaction=True)
+def test_generated_gallery_fallback_hides_unpublished_or_soft_deleted_pieces(public_records):
+    project, _, piece = public_records
+    PublicProfile.objects.create(user=project.owner, handle="share-artist", is_public=True)
+    client = APIClient()
+
+    piece.status = ArtPiece.Status.ARCHIVED
+    piece.save(update_fields=["status"])
+    archived = client.get("/api/public/share-meta/site/generated/")
+    assert archived.status_code == 200
+    assert archived.data["gallery_items"] == []
+
+    piece.status = ArtPiece.Status.PUBLISHED
+    piece.is_deleted = True
+    piece.save(update_fields=["status", "is_deleted"])
+    deleted = client.get("/api/public/share-meta/site/generated/")
+    assert deleted.status_code == 200
+    assert deleted.data["gallery_items"] == []
 
 
 @pytest.mark.django_db(transaction=True)

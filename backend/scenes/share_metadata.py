@@ -208,7 +208,40 @@ def _gallery_fallback_items() -> list[dict[str, str]]:
     ]
 
 
-def _site_metadata(path: str, *, include_gallery: bool = False) -> dict:
+def _collection_fallback_items() -> list[dict[str, str]]:
+    handles = {profile.user_id: profile.handle for profile in public_profiles()}
+    items = []
+    for collection in eligible_collections().filter(owner__is_active=True)[
+        :PUBLIC_GALLERY_FALLBACK_LIMIT
+    ]:
+        handle = handles.get(collection.owner_id)
+        if not handle:
+            continue
+        path = f"/users/@{quote(handle, safe='@')}/collections/{quote(collection.slug, safe='-')}"
+        items.append({"title": collection.title, "path": path})
+    return items
+
+
+def _generated_gallery_fallback_items() -> list[dict[str, str]]:
+    handles = {profile.user_id for profile in public_profiles()}
+    queryset = eligible_art_pieces().filter(
+        owner__is_active=True,
+        owner__public_profile__is_public=True,
+        owner__public_profile__handle__isnull=False,
+    )[:PUBLIC_GALLERY_FALLBACK_LIMIT]
+    return [
+        {"title": piece.title, "path": piece_viewer_path(piece, "generated")}
+        for piece in queryset
+        if piece.owner_id in handles
+    ]
+
+
+def _site_metadata(
+    path: str,
+    *,
+    gallery_items: list[dict[str, str]] | None = None,
+    gallery_heading: str | None = None,
+) -> dict:
     settings = SiteSettings.get_solo()
     metadata = {
         "kind": "site",
@@ -218,8 +251,10 @@ def _site_metadata(path: str, *, include_gallery: bool = False) -> dict:
         "canonical_path": path,
         "image_url": DEFAULT_SHARE_IMAGE_PATH,
     }
-    if include_gallery:
-        metadata["gallery_items"] = _gallery_fallback_items()
+    if gallery_items is not None:
+        metadata["gallery_items"] = gallery_items
+    if gallery_heading is not None:
+        metadata["gallery_heading"] = gallery_heading
     return metadata
 
 
@@ -315,9 +350,25 @@ class PublicSiteShareMetadataView(APIView):
 
     def get(self, request, scope, handle=None, slug=None):
         if scope == "home":
-            return Response(_site_metadata("/", include_gallery=True))
+            return Response(_site_metadata("/", gallery_items=_gallery_fallback_items()))
         if scope == "gallery":
-            return Response(_site_metadata("/gallery", include_gallery=True))
+            return Response(_site_metadata("/gallery", gallery_items=_gallery_fallback_items()))
+        if scope == "collections":
+            return Response(
+                _site_metadata(
+                    "/collections",
+                    gallery_items=_collection_fallback_items(),
+                    gallery_heading="Public collections",
+                )
+            )
+        if scope == "generated":
+            return Response(
+                _site_metadata(
+                    "/gallery?type=generated",
+                    gallery_items=_generated_gallery_fallback_items(),
+                    gallery_heading="Generated art gallery",
+                )
+            )
         if scope == "profile" and handle is not None:
             return Response(_profile_metadata(handle))
         if scope == "collection" and handle is not None and slug is not None:

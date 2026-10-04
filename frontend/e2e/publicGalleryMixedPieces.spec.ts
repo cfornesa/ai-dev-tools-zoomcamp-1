@@ -109,10 +109,21 @@ test.describe('mixed public gallery', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const project2dId = await publishFrom2D(page);
     const project3dId = await publishFrom3D(page);
-    const artPieceId = await publishGeneratedArtPiece(
-      context,
-      `Gallery generated fixture ${testInfo.project.name}`,
+    const generatedTitle = `Gallery generated fixture ${testInfo.project.name}`;
+    const artPieceId = await publishGeneratedArtPiece(context, generatedTitle);
+
+    const noJavaScriptContext = await browser.newContext({ javaScriptEnabled: false });
+    const noJavaScriptPage = await noJavaScriptContext.newPage();
+    const noJavaScriptResponse = await noJavaScriptPage.goto('/art-pieces/gallery');
+    expect(noJavaScriptResponse?.status()).toBe(200);
+    await expect(
+      noJavaScriptPage.getByRole('heading', { name: 'Generated art gallery' }),
+    ).toBeVisible();
+    await expect(noJavaScriptPage.getByRole('link', { name: generatedTitle })).toHaveAttribute(
+      'href',
+      /\/users\/@e2e_owner\/pieces\/gallery-generated-fixture/,
     );
+    await noJavaScriptContext.close();
 
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();

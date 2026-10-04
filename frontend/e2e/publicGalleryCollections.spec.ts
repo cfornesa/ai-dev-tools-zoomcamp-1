@@ -34,6 +34,19 @@ test.describe('public gallery collection mode (#565)', () => {
 
       const anonymousContext = await browser.newContext();
       const anonymousPage = await anonymousContext.newPage();
+      const noJavaScriptContext = await browser.newContext({ javaScriptEnabled: false });
+      const noJavaScriptPage = await noJavaScriptContext.newPage();
+      const noJavaScriptResponse = await noJavaScriptPage.goto('/collections');
+      expect(noJavaScriptResponse?.status()).toBe(200);
+      await expect(
+        noJavaScriptPage.getByRole('heading', { name: 'Public collections' }),
+      ).toBeVisible();
+      await expect(noJavaScriptPage.getByRole('link', { name: collection.title })).toHaveAttribute(
+        'href',
+        `/users/@${handle}/collections/${collection.slug}`,
+      );
+      await noJavaScriptContext.close();
+
       await anonymousPage.setViewportSize(viewport);
       await anonymousPage.goto('/gallery?type=collections');
       await expect(anonymousPage.getByRole('heading', { name: 'Public gallery' })).toBeVisible();

@@ -54,18 +54,38 @@ describe('vite preview share metadata (production run path)', () => {
       }
       if (
         request.url === '/api/public/share-meta/site/home/' ||
-        request.url === '/api/public/share-meta/site/gallery/'
+        request.url === '/api/public/share-meta/site/gallery/' ||
+        request.url === '/api/public/share-meta/site/collections/' ||
+        request.url === '/api/public/share-meta/site/generated/'
       ) {
+        const collection = request.url.endsWith('/collections/');
+        const generated = request.url.endsWith('/generated/');
         response.end(
           JSON.stringify({
             title: 'AugmentrART',
             description: 'Public gallery',
-            canonical_path: request.url.includes('/gallery/') ? '/gallery' : '/',
+            canonical_path: collection
+              ? '/collections'
+              : generated
+                ? '/gallery?type=generated'
+                : request.url.includes('/gallery/')
+                  ? '/gallery'
+                  : '/',
             image_url: '/favicon.svg',
+            ...(collection ? { gallery_heading: 'Public collections' } : {}),
+            ...(generated ? { gallery_heading: 'Generated art gallery' } : {}),
             gallery_items: [
               {
-                title: '<script>Gallery injection</script> & ocean',
-                path: '/users/@artist/pieces/ocean?view=public&sort=new',
+                title: collection
+                  ? 'Spring collection'
+                  : generated
+                    ? 'Generated ocean'
+                    : '<script>Gallery injection</script> & ocean',
+                path: collection
+                  ? '/users/@artist/collections/spring'
+                  : generated
+                    ? '/users/@artist/pieces/generated-ocean'
+                    : '/users/@artist/pieces/ocean?view=public&sort=new',
               },
             ],
           }),
@@ -161,6 +181,18 @@ describe('vite preview share metadata (production run path)', () => {
     expect(html).toContain('og:url" content="https://example.test/gallery"');
     expect(html).toContain('<noscript><section aria-label="Public gallery">');
     expect(html).toContain('href="/users/@artist/pieces/ocean?view=public&amp;sort=new"');
+  });
+
+  it('renders a crawlable collections index and a generated-art fallback', async () => {
+    const collections = await (await fetch(`${baseUrl}/collections`)).text();
+    expect(collections).toContain('og:url" content="https://example.test/collections"');
+    expect(collections).toContain('<h1>Public collections</h1>');
+    expect(collections).toContain('href="/users/@artist/collections/spring">Spring collection</a>');
+
+    const generated = await (await fetch(`${baseUrl}/art-pieces/gallery`)).text();
+    expect(generated).toContain('og:url" content="https://example.test/gallery?type=generated"');
+    expect(generated).toContain('<h1>Generated art gallery</h1>');
+    expect(generated).toContain('href="/users/@artist/pieces/generated-ocean">Generated ocean</a>');
   });
 
   it('injects metadata for canonical regular and immersive piece routes', async () => {

@@ -852,6 +852,17 @@ The same metadata service provides anonymous projections for the site shell:
   web server renders these links inside a `<noscript>` fallback; the React
   gallery remains the interactive view.
 
+- `GET /api/public/share-meta/site/collections/` returns the same bounded
+  `gallery_items` projection for the public collections index, ordered by
+  the index's default newest-first order and canonicalized to `/collections`.
+- `GET /api/public/share-meta/site/generated/` returns only eligible,
+  published generated-art pieces, canonicalized to `/gallery?type=generated`.
+  This serves a no-JavaScript fallback on the legacy `/art-pieces/gallery`
+  route; with JavaScript, that route keeps redirecting to the unified gallery.
+  Both projections use an optional `gallery_heading` string to label their
+  `<noscript>` section. Their `gallery_items` fields contain only public
+  titles and canonical paths, capped at 24 items.
+
 Missing or private profile/collection lookups receive generic site metadata;
 they never expose profile or collection fields. The Vite dev/preview server
 injects these projections into `/`, `/users/@<handle>`, and

@@ -92,6 +92,8 @@ def _invoke_rest_view(
 
     if response.status_code >= 400:
         raise _rest_error(response.status_code, response.data)
+    if response.data is None:
+        return None
     return _json_data(response.data)
 
 

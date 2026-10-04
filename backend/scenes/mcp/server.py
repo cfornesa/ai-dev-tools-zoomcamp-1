@@ -46,6 +46,7 @@ from scenes.gallery import (
     filter_after_gallery_cursor,
 )
 from scenes.mcp.ai_tools import register_ai_tools
+from scenes.mcp.destructive_tools import register_destructive_tools
 from scenes.mcp.oauth import MCPPrincipal, authenticate_mcp_access_token
 from scenes.mcp.piece_intake_tools import register_piece_intake_tools
 from scenes.mcp.project3d_tools import register_project3d_tools
@@ -855,6 +856,7 @@ register_project_tools(server, _audited_tool, _require_current_scopes)
 register_ai_tools(server, _audited_tool, _require_current_scopes)
 register_project3d_tools(server, _audited_tool, _require_current_scopes)
 register_piece_intake_tools(server, _audited_tool, _require_current_scopes)
+register_destructive_tools(server, _audited_tool, _require_current_scopes)
 
 
 class DjangoMCPApplication:

@@ -119,6 +119,9 @@ paths:
         AI generation and run tools require `ai:use`, and proposal acceptance
         also requires `projects:write`. Authenticated piece package intake
         requires `projects:write` and accepts at most 180 KiB decoded ZIP data.
+        Historical-version deletion requires both `destructive` and
+        `projects:write`, plus an exact project/version confirmation; project
+        deletion is not exposed until an owner-facing restore path exists.
         `health_check` and `whoami` require
         authentication only. Tool schemas,
         scope declarations, and public data eligibility are documented in

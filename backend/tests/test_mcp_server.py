@@ -286,6 +286,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "ai_edit_3d_scene",
                             "ai_accept_3d_proposal",
                             "intake_piece_package",
+                            "delete_version",
                         }
                         for tool in listing.tools:
                             matching_rows = [
@@ -713,6 +714,126 @@ def test_mcp_piece_intake_matches_rest_and_enforces_transport_limit_and_scope(mo
     assert denied.isError is True
     assert "does not grant the required scope" in json.dumps(denied.model_dump())
     assert Project.objects.filter(owner=gallery_reader).count() == 0
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_delete_version_requires_confirmation_scopes_and_owner_and_matches_rest():
+    owner = get_user_model().objects.create_user(username="mcp-delete-version-owner")
+    rest = APIClient()
+    rest.force_authenticate(owner)
+
+    def create_history(title):
+        created = rest.post("/api/projects/blank/", {"renderer": "svg"}, format="json")
+        assert created.status_code == 201
+        project_id = created.json()["id"]
+        rest.patch(
+            f"/api/projects/{project_id}/",
+            {"title": title},
+            format="json",
+        )
+        saved = rest.post(
+            f"/api/projects/{project_id}/versions/",
+            {"scene_json": copy.deepcopy(BLANK_SCENE), "origin": "manual"},
+            format="json",
+        )
+        assert saved.status_code == 201
+        return project_id, created.json()["current_version"], saved.json()["id"]
+
+    rest_project_id, rest_version_id, _ = create_history("REST delete history")
+    rest_deleted = rest.delete(f"/api/projects/{rest_project_id}/versions/{rest_version_id}/")
+    assert rest_deleted.status_code == 204
+
+    mcp_project_id, historical_id, current_id = create_history("MCP delete history")
+    token, _, _ = _create_mcp_access_token(owner, scopes=("projects:write", "destructive"))
+    confirmed = f"{mcp_project_id}:{historical_id}"
+
+    mismatch = _call_mcp_tool(
+        token,
+        "delete_version",
+        {"project_id": mcp_project_id, "version_id": historical_id, "confirm": "wrong"},
+    )
+    assert mismatch.isError is True
+    assert "HTTP 400" in json.dumps(mismatch.model_dump())
+    assert not SceneVersion.objects.get(pk=historical_id).is_deleted
+
+    deleted = _call_mcp_tool(
+        token,
+        "delete_version",
+        {"project_id": mcp_project_id, "version_id": historical_id, "confirm": confirmed},
+    )
+    assert deleted.isError is not True
+    assert deleted.structuredContent == {"result": None}
+    assert SceneVersion.objects.get(pk=historical_id).is_deleted
+    assert not SceneVersion.objects.get(pk=current_id).is_deleted
+    assert SceneVersion.objects.get(pk=rest_version_id).is_deleted
+    current = _call_mcp_tool(
+        token,
+        "delete_version",
+        {
+            "project_id": mcp_project_id,
+            "version_id": current_id,
+            "confirm": f"{mcp_project_id}:{current_id}",
+        },
+    )
+    assert current.isError is True
+    assert "cannot be soft-deleted" in json.dumps(current.model_dump())
+
+    restored = _call_mcp_tool(
+        token,
+        "restore_version",
+        {"project_id": mcp_project_id, "version_id": historical_id},
+    )
+    assert _mcp_result_payload(restored)["origin"] == "restore"
+    assert SceneVersion.objects.get(pk=historical_id).is_deleted
+
+    non_owner = get_user_model().objects.create_user(username="mcp-delete-version-non-owner")
+    non_owner_token, _, _ = _create_mcp_access_token(
+        non_owner, scopes=("projects:write", "destructive")
+    )
+    foreign = _call_mcp_tool(
+        non_owner_token,
+        "delete_version",
+        {
+            "project_id": mcp_project_id,
+            "version_id": current_id,
+            "confirm": f"{mcp_project_id}:{current_id}",
+        },
+    )
+    assert foreign.isError is True
+    assert "HTTP 404" in json.dumps(foreign.model_dump())
+    assert "MCP delete history" not in json.dumps(foreign.model_dump())
+
+    writer_without_destructive, _, _ = _create_mcp_access_token(owner, scopes=("projects:write",))
+    scope_denied = _call_mcp_tool(
+        writer_without_destructive,
+        "delete_version",
+        {
+            "project_id": mcp_project_id,
+            "version_id": current_id,
+            "confirm": f"{mcp_project_id}:{current_id}",
+        },
+    )
+    assert scope_denied.isError is True
+    assert "does not grant the required scope" in json.dumps(scope_denied.model_dump())
+
+    destructive_without_project_write, _, _ = _create_mcp_access_token(
+        owner, scopes=("destructive",)
+    )
+    project_scope_denied = _call_mcp_tool(
+        destructive_without_project_write,
+        "delete_version",
+        {
+            "project_id": mcp_project_id,
+            "version_id": current_id,
+            "confirm": f"{mcp_project_id}:{current_id}",
+        },
+    )
+    assert project_scope_denied.isError is True
+    assert "does not grant the required scope" in json.dumps(project_scope_denied.model_dump())
+
+    audit_rows = MCPToolAuditEvent.objects.filter(tool_name="delete_version")
+    assert audit_rows.count() == 6
+    assert audit_rows.filter(outcome=MCPToolAuditEvent.Outcome.SUCCESS).count() == 1
 
 
 @pytest.mark.django_db(transaction=True)

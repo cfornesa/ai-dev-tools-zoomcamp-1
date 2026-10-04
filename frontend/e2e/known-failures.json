@@ -7,13 +7,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiAuthoringSixEngine743.spec.ts|AI authoring six-engine Persona matrix (#743) › generates, saves, and reopens every engine through the Studio UI",
-    "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/aiRegionTargetExisting.spec.ts|existing generated-piece targeting (#921) › targets one existing region at 375px",
     "issue": 1171,
     "added": "2026-10-03",
@@ -183,13 +176,6 @@
   },
   {
     "key": "chromium|e2e/manualEdit3d.spec.ts|Generated 3D manual editing tools (#668) › adds, outlines, transforms, saves, and publishes Three.js and A-Frame edits",
-    "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/piece2dFill.spec.ts|Generated 2D regular stage fill (#705) › fills, resizes, preserves pointer coordinates, and supplies inspected screenshots for every 2D engine",
     "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",

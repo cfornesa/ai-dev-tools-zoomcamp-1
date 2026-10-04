@@ -26587,3 +26587,6 @@ Linux full-matrix run [#37172058510](https://github.com/cfornesa/ai-dev-tools-zo
 ### 2026-10-04 — Goal 7 stage and toolbar geometry (#1188–#1228)
 
 Per the owner-decided phone rule, #1188 now marks only `c2js-interactive` stages for the tall drawing layout; other engines retain their declared ratio (or the 16:9 fallback), and the toolbar row is in flow below the stage at ≤700px. A new route-level Chromium scenario covers 4:3, fallback, 21:9, 9:16, and interactive fixtures at 375×812, 768×1024, and 1280×900, verifies hit targets, overflow, fullscreen, and screenshots at 375×812 and 1280×900. The existing #1083 mobile drawing-control regression passed. Local screenshot evidence is retained in `/private/tmp/goal7-playwright-1188-inspected`; Linux evidence remains pending owner dispatch. Remaining ordered issues: #1189, #1175, #1177, #1178, #1176, #1228.
+
+
+#1189 — the anonymous chrome-less embed route passes its dedicated 4:3 and interactive fixture coverage at 375×812 and 1280×900; phone controls remain below artwork, desktop controls overlay the ratio-sized stage, and the route has no banner. Four screenshots were inspected. Focused evidence and the #1175-owned baseline disposition are in the Goal 7 ledger.

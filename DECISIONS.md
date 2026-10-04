@@ -2922,3 +2922,9 @@ updates. The remaining open backlog was not silently claimed complete.
 - #1223: build the MCP Apps widget now against the stable SEP-1865 / ext-apps spec and verify it with the reference host; real-client verification stays pending until the MCP server is deployed.
 - #1187: migrate the shim's consumers (#1238, #1239), then remove the shim.
 - Full-matrix run 37231625224 was dispatched by the assistant at the owner's request on head a2981785 (one run, no re-runs) as the evidence run for Goal 5b.
+
+
+## 2026-10-04 — #1237 MCP project-deletion deferral recorded
+
+- First MCP release: do not register `delete_project`; retain only historical `delete_version` behind both `destructive` and `projects:write` scopes plus exact target confirmation. The focused server registry test explicitly asserts `delete_project` is absent; the deletion test retains the scope/confirmation checks.
+- Owner-facing recovery for soft-deleted 2D projects is a separate Batch 18 product feature tracked as [#1240](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1240). No restore API or hard deletion was implemented here.

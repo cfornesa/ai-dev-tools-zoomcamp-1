@@ -2094,8 +2094,9 @@ the REST owner check, current-version protection, soft-delete behavior, and
 activity audit. The existing `restore_version` MCP operation restores a
 historical version by creating a new version; it does not undelete the source.
 MCP project deletion is not exposed because the current owner-facing project
-API has no corresponding restore route; follow-up #1237 records the owner
-decision and recovery contract.
+API has no corresponding restore route. The owner deferred `delete_project`
+from the first MCP release; a separate owner-only REST recovery feature is
+tracked in #1240 before any future MCP project-deletion decision.
 
 The endpoint validates the complete archive before entering the write transaction, rejects unsafe paths, checksums, MIME declarations, executable extensions, archive limits, and image metadata, strips EXIF/GPS from accepted image assets, and enforces the owner's cloud-sync entitlement and storage quota. Failed requests leave no piece, version, media, receipt, or audit row. Successful requests create an owner-visible piece_intake audit event. The endpoint is rate limited per authenticated owner and returns privacy-preserving 404 responses for foreign or unknown piece_id values.
 

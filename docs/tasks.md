@@ -26602,3 +26602,8 @@ Owner decisions: migrate the inert-shim consumers, then remove the shim; defer M
 | [#1238](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1238) | Vitest: remove the inert-shim click from the 31 EditorWorkspace specs | GROOMED | — | 2a |
 | [#1239](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1239) | E2E: authoringOwnershipGate owner flow must not click the inert shim | GROOMED | — | 2a |
 | [#1187](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1187) | Remove the inert shim | DEPENDENCY-BLOCKED | #1238, #1239 | 2a |
+
+
+### 2026-10-04 — Owner-only restore for soft-deleted 2D projects (#1240)
+
+The owner selected deferring MCP `delete_project` from the first release (#1237). The existing soft-delete has no owner-facing recovery path, so restore is a separate Batch 18 Stage 2b feature before any future MCP deletion decision. Criterion-ready issue [#1240](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1240) records owner-only access, privacy-preserving 404 behavior, repeated restore, and retention/purge boundaries. No project rows or production data were touched.

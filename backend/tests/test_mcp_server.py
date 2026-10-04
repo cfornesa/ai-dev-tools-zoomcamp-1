@@ -241,7 +241,8 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                     async with ClientSession(read_stream, write_stream) as client:
                         await client.initialize()
                         listing = await client.list_tools()
-                        assert {tool.name for tool in listing.tools} == {
+                        advertised_tool_names = {tool.name for tool in listing.tools}
+                        assert advertised_tool_names == {
                             "health_check",
                             "whoami",
                             "list_public_gallery",
@@ -289,6 +290,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "intake_piece_package",
                             "delete_version",
                         }
+                        assert "delete_project" not in advertised_tool_names
                         for tool in listing.tools:
                             matching_rows = [
                                 line

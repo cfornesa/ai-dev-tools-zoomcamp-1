@@ -1,5 +1,7 @@
 import { promises as fs } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
@@ -7,6 +9,12 @@ import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolveBackendProxyTarget } from './src/viteBackendTarget.js';
 import { previewCachePolicy } from './src/vitePreviewCachePolicy.js';
+import { isKnownClientRoute, routeMatchersFromAppSource } from './src/viteClientRouteMatcher.js';
+
+const frontendDirectory = dirname(fileURLToPath(import.meta.url));
+const clientRouteMatchers = routeMatchersFromAppSource(
+  readFileSync(resolve(frontendDirectory, 'src/App.tsx'), 'utf8'),
+);
 
 // Deliberately '127.0.0.1', not 'localhost': Django's runserver only ever
 // binds IPv4 (127.0.0.1:8000). On a machine where 'localhost' resolves to
@@ -436,9 +444,47 @@ const previewCachePolicyPlugin = (): Plugin => ({
   },
 });
 
+const previewUnknownRouteStatusPlugin = (): Plugin => ({
+  name: 'creatrweb-preview-unknown-route-status',
+  configurePreviewServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+      const pathname = new URL(req.url ?? '/', 'http://localhost').pathname;
+      if (
+        pathname.startsWith('/api/') ||
+        pathname === '/api' ||
+        pathname.startsWith('/accounts/') ||
+        pathname === '/accounts' ||
+        pathname.startsWith('/health/') ||
+        pathname === '/health' ||
+        ['/robots.txt', '/sitemap.xml', '/llms.txt', '/llms-full.txt'].includes(pathname) ||
+        pathname.startsWith('/assets/') ||
+        isKnownClientRoute(pathname, clientRouteMatchers) ||
+        /(?:^|\/)[^/]+\.[a-z\d]{1,12}$/i.test(pathname)
+      ) {
+        return next();
+      }
+
+      const html = await fs.readFile(
+        resolve(server.config.root, server.config.build.outDir, 'index.html'),
+      );
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Length', String(html.length));
+      res.end(req.method === 'HEAD' ? undefined : html);
+    });
+  },
+});
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), previewCachePolicyPlugin(), shareMetadataPlugin(), profileFeedProxyPlugin()],
+  plugins: [
+    react(),
+    previewCachePolicyPlugin(),
+    shareMetadataPlugin(),
+    profileFeedProxyPlugin(),
+    previewUnknownRouteStatusPlugin(),
+  ],
   server: {
     host: true,
     port: 5000,

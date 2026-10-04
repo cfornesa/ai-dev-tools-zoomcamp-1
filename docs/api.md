@@ -634,6 +634,15 @@ per sitemap response. The existing public eligibility selectors and canonical
 piece URL builder define publication/privacy boundaries. It is proxied to
 Django by the Vite dev and preview servers.
 
+## Unknown frontend routes (#1201)
+
+On the production `vite preview` run path, a request for an unknown,
+non-asset, non-API route receives the normal frontend HTML shell with HTTP
+404. Paths matching the route table in `frontend/src/App.tsx` remain HTTP
+200; the same shell still renders the client-side not-found page for unknown
+paths. Static assets, `/api`, `/accounts`, and `/health` keep their existing
+serving and proxy behavior.
+
 ## Structured AI-run plans (#656)
 
 `GET /api/ai/runs/<id>/` and the response from `POST /api/ai/runs/` expose a

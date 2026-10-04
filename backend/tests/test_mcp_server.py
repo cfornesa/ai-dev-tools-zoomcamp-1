@@ -20,6 +20,8 @@ from django.http import Http404
 from django.utils import timezone
 from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamable_http_client
+from mcp.types import TextContent, TextResourceContents
+from pydantic import AnyUrl
 from rest_framework.test import APIClient
 
 from backend.asgi import application
@@ -141,6 +143,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                         assert (
                             gallery_tool.inputSchema["properties"]["page_size"]["type"] == "integer"
                         )
+                        assert gallery_tool.description is not None
                         assert "newest-published-first" in gallery_tool.description
                         assert gallery_tool.inputSchema.get("required", []) == []
                         resources = await client.list_resources()
@@ -163,13 +166,17 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "list_public_gallery", {"page_size": 0}
                         )
                         assert gallery_result.isError is not True
-                        assert json.loads(gallery_result.content[0].text) == {
+                        gallery_content = gallery_result.content[0]
+                        assert isinstance(gallery_content, TextContent)
+                        assert json.loads(gallery_content.text) == {
                             "results": [],
                             "next_cursor": None,
                             "has_more": False,
                         }
-                        gallery_resource = await client.read_resource("gallery://public")
-                        assert json.loads(gallery_resource.contents[0].text) == {
+                        gallery_resource = await client.read_resource(AnyUrl("gallery://public"))
+                        gallery_resource_content = gallery_resource.contents[0]
+                        assert isinstance(gallery_resource_content, TextResourceContents)
+                        assert json.loads(gallery_resource_content.text) == {
                             "results": [],
                             "next_cursor": None,
                             "has_more": False,
@@ -186,7 +193,9 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                         pieces_result = await client.call_tool(
                             "list_public_pieces", {"page_size": 0}
                         )
-                        pieces_page = json.loads(pieces_result.content[0].text)
+                        pieces_content = pieces_result.content[0]
+                        assert isinstance(pieces_content, TextContent)
+                        pieces_page = json.loads(pieces_content.text)
                         assert pieces_page["results"] == []
                         assert pieces_page["next_cursor"] is None
                         assert pieces_page["has_more"] is False

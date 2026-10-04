@@ -115,3 +115,5 @@ Update this file in the same issue commit with the issue state/hash and after ev
 | Issue | State | Commit | QA matrix | Block / next action |
 |---|---|---|---|---|
 | #1218 | finished locally | `61be5eca` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1218#issuecomment-5982837075) | Contract parity, private non-owner 404/no leakage, and `gallery:read` denial passed; Linux evidence PENDING (owner dispatch). Next #1220. |
+
+| #1220 | finished locally | `f43a1f42` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1220#issuecomment-5982944164) | Six AI tools use REST handler checks; fake provider, explicit accept, foreign-target 404, scope, provider-timeout/validation/quota errors passed. Linux evidence PENDING (owner dispatch). Next #1221. |

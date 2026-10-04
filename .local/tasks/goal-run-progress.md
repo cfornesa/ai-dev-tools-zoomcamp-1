@@ -1,7 +1,14 @@
 # Continuous run — CI unblock and E2E cleanup
 
+## Supragoal update — Phase 1 / Goal 5b
+
+- **Issue #1233:** removed the now-passing WebKit per-piece BPM baseline in `a2c8c20f`; the test passes in the current source on Chromium and WebKit. The full sound-runtime files still expose a separate #430 toolbar-interception failure on both browsers; it is tracked as a branch-regression candidate and remains to diagnose.
+- **Issue #1234:** removed its now-passing Chromium six-engine offline ZIP baseline in this commit. Current checkout passed twice consecutively in 37.3s and 32.8s with the 300s timeout and all 12 bundle assertions intact. Linux evidence: [run 37231625224](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37231625224) marks the entry FIXED.
+- **Phase 1 remaining:** reproduce and bisect the 11 newly failing entries from run 37231625224 against `763f6600` → `a2981785`; repair only branch-introduced causes and keep original assertions. Dispatch A has not been used. Next: continue regressions before Phase 1 gate.
+- **Current verification environment:** isolated disposable PostgreSQL Compose project on host port 5434; current-checkout Django 8004 and Vite 5203. No production data or secrets used. Five documented carryover files remain untouched.
+
 - **Branch / PR:** `docs/backlog-reevaluation-2026-09-27` / #1094.
-- **Run order:** Goals 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15. Do not run Goal 5b; do not start #1193 or #1195.
+- **Run order:** Goals 7–15 are carryover from the prior batch. The active supragoal runs Phase 1 / Goal 5b, Dispatch A, Goals 16 → 17 → 18 → 19, then Phase 3 / Dispatch B. Do not start #1193 or #1195.
 - **Current state:** Goals 7–14 complete locally or dependency-blocked as recorded below. Goal 15/#1187 is blocked by 31 inline `EditorWorkspace` Vitest consumers and #1180's owner-flow E2E still depending on the inert shim; it remains in place. #1223 is unverified because no local MCP Apps client is connected. #1224 is committed in `d38d17ce`; post-push CI run `37227973495` passed all four required checks, the widened shard, and disposable published-routing smoke. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history. Latest commits are now on origin.
 - **Environment/evidence boundary:** disposable local Compose PostgreSQL and fresh Vite on `127.0.0.1:5202` → backend `127.0.0.1:8003`; Chromium local macOS, unsandboxed due MachPort startup denial inside sandbox. Linux evidence: `Linux evidence PENDING (owner dispatch)`.
 - **Provenance:** scoping from handoff/Claude issue contracts; implementation Codex / GPT-6, effort unavailable, substituted for the rostered service; independent QA/review not run. Track: mixed.

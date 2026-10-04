@@ -21,13 +21,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceSixEngineZip.spec.ts|Six-engine offline regular and immersive bundles (#609) › extracts and renders every engine in regular and immersive presentations offline",
-    "issue": 1234,
-    "added": "2026-10-04",
-    "expires": "2026-10-25",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/artPieceThumbnailCapture.spec.ts|Generated thumbnail service: capture artwork instead of hash-derived placeholders (#438) › creating a piece through the real Studio, and revising it from the Editor, each replace the fallback with a real capture",
     "issue": 1236,
     "added": "2026-10-03",

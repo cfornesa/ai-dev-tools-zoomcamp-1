@@ -26,7 +26,7 @@ Required order: #1171, #1185, #1186, #1181, #1182, #1183. Capture first-failure 
 
 | Issue | State | Commit | QA matrix | Blocker / next action |
 |---|---|---|---|---|
-| #1171 | test-side failures cleared; one product-owned case remains | commit pending | pending issue comment | Focused local union: 13 passed / 1 failed; sole failure is AI refinement's saved version not receiving a captured thumbnail. New #1236 is in Batch 14 and owns it; baseline entry moved to #1236. Linux evidence pending owner dispatch. Next: #1185 |
+| #1171 | test-side failures cleared; one product-owned case remains | `bc730877` | [QA matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1171#issuecomment-5979623221) | Focused local union: 13 passed / 1 failed; sole failure is AI refinement's saved version not receiving a captured thumbnail. New #1236 is in Batch 14 and owns it; baseline entry moved to #1236. Linux evidence pending owner dispatch. Next: #1185 |
 
 ## Goal 9 — public discoverability
 

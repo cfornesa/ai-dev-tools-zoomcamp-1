@@ -3750,6 +3750,17 @@ textarea:disabled {
   grid-row: 1;
 }
 
+/* Issue #1228: reserve the fixed shell display-toggle footprint only in the
+   desktop unified 2D AI editor. The AI prompt then stays left of the toggles
+   without changing their global fixed placement or the <=767px in-flow rule
+   from #1158; tablet and stacked editor layouts remain unchanged. */
+@media (min-width: 1024px) {
+  #main-content:has([data-testid='editor-ai-layer-panel']) .editor-workspace {
+    box-sizing: border-box;
+    padding-right: calc(6rem + max(1rem, env(safe-area-inset-right)) + 1rem);
+  }
+}
+
 /* Task 246 (issue #304): the 3D manual editor's own 3-panel grid
    (Preview, Outline, Tools) -- same scoping approach as `.ai-editor-
    workspace` above, avoiding the 2D manual editor's unscoped 5-row rules.

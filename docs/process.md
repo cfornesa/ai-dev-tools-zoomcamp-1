@@ -467,7 +467,7 @@ Evidence behind this section (run #1126 against run #1112, `docs/ci-failure-map-
 ### CI tiers
 | Tier | What | Blocks |
 |---|---|---|
-| 1. PR gate | `Workflow validation`, `Backend checks`, `Frontend checks`, and `Browser acceptance E2E (shard 1)` (on pull requests: the 4-spec smoke suite, 3 public-media specs, the WebKit fullscreen regression) | **Merging** (required status checks on `main`, owner action #1192) |
+| 1. PR gate | `Workflow validation`, `Backend checks`, `Frontend checks`, and `Browser acceptance E2E (shard 1)` (on pull requests: the 7-spec core smoke suite, 3 public-media specs, the WebKit fullscreen regression) | **Merging** (required status checks on `main`, owner action #1192) |
 | 2. Full matrix | 16 isolated shards on `workflow_dispatch` and the weekday schedule, reported through the **known-failure ratchet** (#1190) | Nothing by itself. Fails only on a **new** failure, on a baseline entry that now passes, or on an expired entry |
 | 3. Release | A production publish needs a ratchet-clean full run on the exact commit plus `scripts/smoke-published.sh` | **Replit publishes** |
 

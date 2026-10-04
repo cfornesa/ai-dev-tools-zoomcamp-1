@@ -477,6 +477,9 @@ jobs:
           e2e/projectLifecycle.spec.ts
           e2e/publishingAndRemix.spec.ts
           e2e/responsiveShell.spec.ts
+          e2e/offlineConflictResolution.spec.ts
+          e2e/offlineMediaTransfer.spec.ts
+          e2e/offlineSync.spec.ts
           --project=chromium
 
       - name: Run full browser acceptance suite

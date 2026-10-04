@@ -1,7 +1,7 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
 import PublicGallery from './PublicGallery';
@@ -47,6 +47,10 @@ function renderPublicGallery(initialEntries: string[] = ['/gallery']) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('PublicGallery engine labels on every piece kind (#770)', () => {
@@ -101,6 +105,36 @@ describe('PublicGallery loading/error/empty states', () => {
     await user.click(retryButton);
 
     expect(await screen.findByRole('heading', { name: 'Hand Follower' })).toBeInTheDocument();
+  });
+
+  it('times out a hanging first-page request, reports failure, and recovers on retry', async () => {
+    vi.useFakeTimers();
+    mockedFetchPublicGallery
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockRejectedValueOnce(new Error('retry still offline'))
+      .mockResolvedValueOnce({ results: [baseItem()], next_cursor: null, has_more: false });
+
+    renderPublicGallery(['/gallery?type=all']);
+
+    expect(screen.getByRole('status')).toHaveTextContent(/loading the public gallery/i);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15_000);
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(/couldn't load the public gallery/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+    expect(screen.getByRole('status')).toHaveTextContent(/loading the public gallery/i);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(/couldn't load the public gallery/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByRole('heading', { name: 'Hand Follower' })).toBeInTheDocument();
+    expect(mockedFetchPublicGallery).toHaveBeenCalledTimes(3);
   });
 
   it('shows a clear empty state when there are no public pieces', async () => {

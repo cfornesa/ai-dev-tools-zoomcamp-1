@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import {
@@ -13,6 +13,7 @@ import {
 import PieceCard from '../components/PieceCard';
 
 type InitialLoadState = 'loading' | 'error' | 'ready';
+const INITIAL_LOAD_TIMEOUT_MS = 15_000;
 
 type LoadMoreState = {
   pending: boolean;
@@ -106,6 +107,7 @@ function PublicGallery() {
     error: null,
   });
   const [engineCatalog, setEngineCatalog] = useState<PublicGalleryEngineOption[]>([]);
+  const activeFirstPageCleanup = useRef<(() => void) | null>(null);
 
   // Issue #491: recover from an invalid `type` query value by replacing it
   // with the documented default (`all`) without a blank or broken surface.
@@ -116,6 +118,7 @@ function PublicGallery() {
   }, [rawType, setSearchParams]);
 
   const loadFirstPage = useCallback(() => {
+    activeFirstPageCleanup.current?.();
     let cancelled = false;
     setInitialLoadState('loading');
     setLoadMoreState({ pending: false, error: null });
@@ -129,9 +132,20 @@ function PublicGallery() {
       : engine
         ? fetchPublicGallery(type, { engine })
         : fetchPublicGallery(type);
+    const timeout = window.setTimeout(() => {
+      if (cancelled) return;
+      cancelled = true;
+      setInitialLoadState('error');
+    }, INITIAL_LOAD_TIMEOUT_MS);
+    const cleanup = () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+    activeFirstPageCleanup.current = cleanup;
     request
       .then((page) => {
         if (cancelled) return;
+        window.clearTimeout(timeout);
         setItems(page.results);
         setNextCursor(page.next_cursor);
         setHasMore(page.has_more);
@@ -140,14 +154,16 @@ function PublicGallery() {
       })
       .catch(() => {
         if (cancelled) return;
+        window.clearTimeout(timeout);
         setInitialLoadState('error');
       });
-    return () => {
-      cancelled = true;
-    };
+    return cleanup;
   }, [type, engine, query, scope]);
 
-  useEffect(() => loadFirstPage(), [loadFirstPage]);
+  useEffect(() => {
+    loadFirstPage();
+    return () => activeFirstPageCleanup.current?.();
+  }, [loadFirstPage]);
 
   async function handleLoadMore() {
     if (!nextCursor) return;

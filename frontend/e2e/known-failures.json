@@ -112,13 +112,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/contentPanelShadow.spec.ts|SPA content panel follows each site shadow presentation (#1146)",
-    "issue": 1177,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/drawingPlane3d.spec.ts|drawing plane renders in 3D scenes (#779, #780, #785, #786) › threejs on the immersive route",
     "issue": 1178,
     "added": "2026-10-03",

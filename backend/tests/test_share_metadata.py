@@ -284,7 +284,7 @@ def test_description_updates_propagate_to_llms_gallery_and_sitemap(public_record
     llms_body = llms.content.decode()
     assert "> Fresh site description" in llms_body
     assert (
-        "- [Generated share](/users/@share-artist/pieces/propagated-generated): "
+        "- [Generated share](http://testserver/users/@share-artist/pieces/propagated-generated): "
         "Fresh SEO piece description"
     ) in llms_body
 

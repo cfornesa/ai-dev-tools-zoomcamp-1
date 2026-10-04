@@ -26546,3 +26546,7 @@ Found in the inspected `ai-2d-1280.png` screenshot from #1170: at 1280×900, fix
 ### 2026-10-03 — #1194 E2E support helper reference
 
 Implemented locally: `frontend/e2e/support/README.md` documents the exported support helpers/constants, current contracts and anti-patterns, legacy helper replacements, and three typechecked recipes; `docs/process.md` standard 2 links to it. The `support/` export-name audit passed across all 21 modules. `UV_CACHE_DIR=/private/tmp/codex-1190-uv-cache make check` passed (backend 2,012 passed / 44 skipped, Vitest 3,229 passed, ratchet 7 passed; frontend lint warnings are existing). No `known-failures.json` entries changed. The Linux full-matrix reconciliation still awaits the owner's dispatch/run ID.
+
+### 2026-10-04 — account login script-font clipping (Batch 14)
+
+Linux full-matrix run [#37172058510](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37172058510) found the login instruction paragraph clipping in the narrow script-font presentation (card child scrollWidth > clientWidth) in Chromium shard 1. Follow-up [#1229](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1229) tracks the product correction; related account styling issue [#1125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1125) is closed. The full matrix issue remains [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096).

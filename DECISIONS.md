@@ -21,6 +21,11 @@
 - #1165 focused local Compose Chromium run passed 2/2 cases (1280x900 and
   375x812); its two baseline entries are removed in the separate #1165 commit.
 
+## 2026-10-04 — #1165 profile-photo fixture isolation
+
+- Linux run [#371772](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37177255209), shard 12, showed the upload endpoint return 200, the rejected text upload return 400, and the image DELETE return 200. The DOM after deletion still had the independent seeded `profile_image_url`, so the UI correctly retained the URL-backed image control while the test expected no control and no public avatar.
+- The #1165 test now clears only the optional URL field via a minimal profile PATCH before its binary upload/removal flow. The upload, rejection, render, removal and public-avatar assertions remain unchanged. Local disposable Compose Chromium passed 2/2 at 1280x900 and 375x812. Remove only the two #1165 baseline entries; Linux confirmation of this test-data fix remains pending.
+
 ## 2026-10-03 — CI tiers: PR gate blocks, the 16-shard matrix is advisory
 
 - **Owner decisions:** merging is gated by the PR checks (Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E shard 1); the 16-shard browser matrix is advisory and reports through a known-failure ratchet (#1190) that fails only on new failures, on baseline entries that now pass, and on expired entries; all 241 E2E specs are to be audited (`docs/e2e-suite-audit.md`); Codex may edit `.github/workflows/ci.yml` for the ratchet and the fast-fail timeouts (#1191) only, in the same commit series, with no new jobs, triggers or secrets and no push, dispatch or merge.

@@ -217,6 +217,13 @@
     "count": 1
   },
   {
+    "key": "chromium|e2e/project3dThumbnailCard.spec.ts|owner 3D project card thumbnails › shows real geometry for a renderable scene and a safe retryable fallback for a failing one",
+    "issue": 1168,
+    "added": "2026-10-04",
+    "expires": "2026-10-25",
+    "count": 1
+  },
+  {
     "key": "chromium|e2e/publicDraw.spec.ts|C2.js Interactive visitor drawing (#670) › draws temporarily on regular and immersive views and captures the marks",
     "issue": 1171,
     "added": "2026-10-03",

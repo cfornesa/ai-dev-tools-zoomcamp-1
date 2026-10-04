@@ -19,10 +19,12 @@ export async function createServerProject3D(page: Page): Promise<string> {
     throw new Error('The 3D project create response did not include an id and editor_url');
   }
 
+  const editorPath = new URL(project.editor_url, page.url()).pathname.replace(/\/?$/, '/');
+  const editorApiPath = `/api${editorPath}`;
   const editorReady = page.waitForResponse(
     (editorResponse) =>
       editorResponse.request().method() === 'GET' &&
-      /\/api\/users\/@[^/]+\/edit\/[^/]+\/$/.test(new URL(editorResponse.url()).pathname),
+      new URL(editorResponse.url()).pathname === editorApiPath,
   );
   await page.goto(project.editor_url);
   await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);

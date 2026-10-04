@@ -6,8 +6,8 @@ Owner-defined scope from the active goal: #1164, then #1165, then #1173. #1174 i
 
 | Issue | URL | Milestone | Wave | Dependency | Focused command | State | Commit | Evidence / next action |
 |---|---|---:|---:|---|---|---|---|---|
-| #1164 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1164 | 14 | 1 | before #1165/#1173/#1174 | five profile/template specs, Chromium | ENGINEERING/QA | pending | classify six PATCH bodies; remove or reassign baseline entries; product flow #1230 and selector overlap #1166 remain linked |
-| #1165 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1165 | 14 | 1 | after #1164 | `profilePhotoUpload.spec.ts`, Chromium | QA | pending | local disposable Compose passed 2/2; remove its two baseline entries in issue commit |
+| #1164 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1164 | 14 | 1 | before #1165/#1173/#1174 | five profile/template specs, Chromium | QA FAIL / follow-ups linked | `cdcdefa1` | all six original response bodies classified; runtime case passes, product cases remain under #1230, parity selector cases under #1166 |
+| #1165 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1165 | 14 | 1 | after #1164 | `profilePhotoUpload.spec.ts`, Chromium | QA PASS local | pending | local disposable Compose passed 2/2; remove its two baseline entries in issue commit |
 | #1173 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1173 | 14 | 1 | after #1164 | canonical immersive/slug/collection specs, Chromium | GROOMED | pending | run after #1164; capture visible attribution text/structure and classify |
 
 Stage provenance: grooming inputs are existing criterion-ready issue bodies; no prior-stage owner is inferred here. Stage 2a is Codex / GPT-6 / effort not exposed, substituted for Opencode Go. Stage 3 second opinion: not run. Stage 4 independent QA: pending. Stage 5 is not part of this owner-scoped local E2E goal. `track: mixed` (Codex implementation; local browser evidence; Linux evidence not yet run).
@@ -39,7 +39,7 @@ CI evidence is run #1126 (`https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/a
 ## Verification and reconciliation
 
 - #1164 focused command: 6 scenarios, 1 passed / 5 failed later in their flows. Three later failure groups are already classified: #1230 (profile UI null-style save; publicProfiles + profileHandles) and #1166 (duplicate Piece controls accessible name; parity 2D/3D). Original request bodies/responses are captured above.
-- #1165 focused command: 2/2 passed at 1280x900 and 375x812 on local disposable Compose; its baseline removal is pending commit.
+- #1165 focused command: 2/2 passed at 1280x900 and 375x812 on local disposable Compose; two baseline entries removed, issue commit pending.
 - #1173 focused command: pending.
 - `make check`: pending.
 - Batch union, impact re-verification, cross-issue review, issue comments, and independent stage-4 QA: pending. Do not close issues or claim the batch gate passed until every required check is complete.

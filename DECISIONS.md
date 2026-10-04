@@ -18,6 +18,8 @@
   Health, app identity, and anonymous identity probes passed. Standard
   `make compose-preflight` did not accept the alternate-port stack because it
   encountered the prior stopped container under the base Compose config.
+- #1165 focused local Compose Chromium run passed 2/2 cases (1280x900 and
+  375x812); its two baseline entries are removed in the separate #1165 commit.
 
 ## 2026-10-03 — CI tiers: PR gate blocks, the 16-shard matrix is advisory
 

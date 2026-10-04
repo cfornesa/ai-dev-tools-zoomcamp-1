@@ -282,7 +282,7 @@ def _site_metadata(
     gallery_heading: str | None = None,
 ) -> dict:
     settings = SiteSettings.get_solo()
-    metadata = {
+    metadata: dict[str, object] = {
         "kind": "site",
         "title": settings.site_title or "AugmentrART",
         "description": settings.site_description

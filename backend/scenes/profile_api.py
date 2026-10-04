@@ -77,7 +77,7 @@ class ProfileSerializer(serializers.Serializer):
     profile_image_url = serializers.URLField(max_length=500, allow_blank=True, required=False)
     is_public = serializers.BooleanField(required=False)
     revision = serializers.IntegerField(min_value=1)
-    style_key = serializers.SlugField(max_length=48, required=False)
+    style_key = serializers.SlugField(max_length=48, required=False, allow_null=True)
     theme_config = serializers.DictField(required=False)
     palette_key = serializers.SlugField(max_length=32, required=False)
     palette_overrides = serializers.DictField(required=False)
@@ -304,7 +304,7 @@ class AccountProfileView(APIView):
                 "style_key", profile.style.key if profile.style_id else "default"
             )
             try:
-                style = ProfileStyle.objects.get(key=style_key)
+                style = ProfileStyle.objects.get(key=style_key) if style_key is not None else None
             except ProfileStyle.DoesNotExist:
                 return Response(
                     {
@@ -313,7 +313,7 @@ class AccountProfileView(APIView):
                     },
                     status=400,
                 )
-            if not style.enabled and style.pk != profile.style_id:
+            if style is not None and not style.enabled and style.pk != profile.style_id:
                 return Response(
                     {
                         "error": "validation_failed",
@@ -361,7 +361,9 @@ class AccountProfileView(APIView):
             old_handle = profile.handle
             if redirect is not None and redirect.profile_id == profile.pk:
                 redirect.delete()
-            style_changed = "style_key" in values and style.pk != profile.style_id
+            style_changed = (
+                "style_key" in values and (style.pk if style else None) != profile.style_id
+            )
             for field in (
                 "handle",
                 "style",

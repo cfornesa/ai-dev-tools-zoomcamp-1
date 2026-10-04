@@ -1039,9 +1039,11 @@ accounts (#571).
 `available_styles` catalog containing only enabled, server-managed styles.
 `PATCH /api/account/profile/` accepts `style_key`; unknown or newly disabled
 styles return field-level validation errors, while an existing assignment
-remains readable after an administrator disables it. `theme_config` remains a
-validated token-only compatibility override and cannot contain CSS, HTML, or
-JavaScript.
+remains readable after an administrator disables it. A `null` `style_key`
+clears the profile-level choice; the profile then inherits the effective site
+style, and metadata-only profile updates may send this value unchanged from
+the GET response. `theme_config` remains a validated token-only compatibility
+override and cannot contain CSS, HTML, or JavaScript.
 
 ## Vendor-aware saved AI models (#553)
 

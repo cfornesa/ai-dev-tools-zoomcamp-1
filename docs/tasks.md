@@ -26607,3 +26607,8 @@ Owner decisions: migrate the inert-shim consumers, then remove the shim; defer M
 ### 2026-10-04 — Owner-only restore for soft-deleted 2D projects (#1240)
 
 The owner selected deferring MCP `delete_project` from the first release (#1237). The existing soft-delete has no owner-facing recovery path, so restore is a separate Batch 18 Stage 2b feature before any future MCP deletion decision. Criterion-ready issue [#1240](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1240) records owner-only access, privacy-preserving 404 behavior, repeated restore, and retention/purge boundaries. No project rows or production data were touched.
+
+
+### 2026-10-04 — Public profile empty-state E2E contract (#1241)
+
+During local verification of #1230, the Account Settings PATCH returned 200 and the public profile displayed the saved metadata, but `publicProfiles.spec.ts` then expected a “Public pieces” heading despite creating no public piece or collection. Current UI renders “No public collections or pieces yet.” Criterion-ready test-only follow-up [#1241](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1241) is assigned to Batch 14; it is not implemented in this run.

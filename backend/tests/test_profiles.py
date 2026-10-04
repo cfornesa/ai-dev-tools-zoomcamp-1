@@ -13,8 +13,10 @@ from scenes.models import (
     ArtPieceVersion,
     Collection,
     CollectionItem,
+    ProfileStyle,
     PublicProfile,
     PublicProfileHandleRedirect,
+    SiteSettings,
 )
 
 
@@ -40,6 +42,39 @@ def test_owner_can_create_and_update_profile_with_revision(client):
     assert updated.json()["theme_config"]["accent"] == "#00ff00"
     assert set(updated.json()["theme_palettes"]) == {"light", "dark"}
     assert client.get("/api/users/@alice/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_profile_metadata_patch_preserves_null_style_and_inherits_site_style(client):
+    user = get_user_model().objects.create_user(username="profile-inherited-style", password="x")
+    client.force_login(user)
+    client.get(reverse("account-profile"))
+    PublicProfile.objects.filter(user=user).update(style=None)
+    profile = client.get(reverse("account-profile")).json()
+    assert profile["style_key"] is None
+
+    site = SiteSettings.get_solo()
+    site.style = ProfileStyle.objects.get(key="ocean")
+    site.save(update_fields=["style"])
+    profile = client.get(reverse("account-profile")).json()
+    expected_accent = site.style.tokens["accent"]
+    assert profile["theme_config"]["accent"] == expected_accent
+
+    response = client.patch(
+        reverse("account-profile"),
+        {
+            **profile,
+            "display_name": "Inherited Style Artist",
+            "is_public": True,
+            "style_key": None,
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["style_key"] is None
+    assert response.json()["theme_config"]["accent"] == expected_accent
+    assert PublicProfile.objects.get(user=user).style_id is None
 
 
 @pytest.mark.django_db

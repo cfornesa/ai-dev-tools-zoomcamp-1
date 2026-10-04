@@ -13,4 +13,10 @@ from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
-application = get_asgi_application()
+django_application = get_asgi_application()
+
+# The MCP module imports Django settings and services, so import it after
+# get_asgi_application() has initialized the app registry.
+from scenes.mcp.server import create_mcp_asgi_app  # noqa: E402
+
+application = create_mcp_asgi_app(django_application)

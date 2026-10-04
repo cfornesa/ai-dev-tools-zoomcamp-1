@@ -1,5 +1,17 @@
 # Public gallery API contract
 
+## Anonymous MCP endpoint (#1210)
+
+`POST /mcp/` is the anonymous Model Context Protocol Streamable HTTP endpoint.
+It currently exposes only the read-only `health_check` tool, which delegates
+to the same database/cache health probes as `GET /health/` and returns
+`status`, `database`, and `cache` availability without connection details.
+MCP requests use JSON responses and stateless transport; the endpoint does
+not use Django session cookies. The transport validates `Origin` and `Host`
+against Django's trusted origins and allowed hosts, rejects unsupported
+paths/methods, and caps request bodies at 256 KiB. Tool contracts and examples
+are maintained in `docs/mcp.md` as later tools are added.
+
 ## Public authorship identity (#897)
 
 Public piece, gallery, collection, profile, search, and feed projections retain

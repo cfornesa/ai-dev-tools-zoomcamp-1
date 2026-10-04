@@ -39,6 +39,18 @@ describe('vite preview share metadata (production run path)', () => {
     backend = createServer((request, response) => {
       const forwardedHost = request.headers['x-forwarded-host'];
       if (typeof forwardedHost === 'string') forwardedHosts.add(forwardedHost);
+      if (request.url === '/mcp/' && request.method === 'POST') {
+        response.setHeader('Content-Type', 'application/json');
+        response.statusCode = 200;
+        response.end(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            result: { tools: [{ name: 'health_check' }] },
+          }),
+        );
+        return;
+      }
       if (request.headers['x-forwarded-proto'] !== 'https' || !forwardedHost) {
         response.writeHead(301, {
           Location: `https://127.0.0.1:${backendPort}${request.url}`,
@@ -168,6 +180,20 @@ describe('vite preview share metadata (production run path)', () => {
     );
     expect(html).toContain('type="application/rss+xml"');
     expect(html).toContain('type="application/feed+json"');
+  });
+
+  it('proxies the MCP transport to Django on the production preview path', async () => {
+    const response = await fetch(`${baseUrl}/mcp/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    await expect(response.json()).resolves.toMatchObject({
+      result: { tools: [{ name: 'health_check' }] },
+    });
   });
 
   it('still injects generic tags on the home route when the backend has no record', async () => {

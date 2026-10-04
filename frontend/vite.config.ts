@@ -40,6 +40,7 @@ const djangoProxy = {
   '/sitemap.xml': { target: backendProxyTarget, changeOrigin: false },
   '/llms.txt': { target: backendProxyTarget, changeOrigin: false },
   '/llms-full.txt': { target: backendProxyTarget, changeOrigin: false },
+  '/mcp': { target: backendProxyTarget, changeOrigin: false },
 };
 
 type ShareMetadata = {

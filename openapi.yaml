@@ -106,6 +106,34 @@ security:
   - sessionCookie: []
 
 paths:
+  /mcp/:
+    post:
+      tags: [MCP]
+      operationId: publicMcpEndpoint
+      summary: Stateless anonymous MCP endpoint for public application operations
+      description: |
+        JSON Streamable HTTP MCP transport. Public tools and resources are
+        documented in `docs/mcp.md`; public project data follows the same
+        eligibility filters and serializers as the corresponding REST routes.
+        No session cookie or bearer credential is used.
+      x-access: anonymous
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: MCP JSON response or notification acknowledgement.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { description: Invalid MCP request or content type. }
+        "403": { description: Origin is not trusted. }
+        "413": { description: Request body exceeds 256 KiB. }
+        "421": { description: Host is not allowed. }
+        "405": { description: Unsupported HTTP method. }
   /api/pieces/intake/:
     post:
       tags: [Storage]

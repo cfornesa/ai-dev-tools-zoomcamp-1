@@ -260,7 +260,7 @@ describe('Preview panel stays populated across camera activation (Task 109, issu
     assertPreviewFullyRendered(1);
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    expect(screen.getByRole('button', { name: /^(?:Hide )?piece controls$/i })).toBeVisible();
     await user.click(screen.getByRole('button', { name: /^(?:Hide )?piece controls$/i }));
     const controlsToggle = await screen.findByRole('button', {
       name: /^(?:Hide )?piece controls$/i,
@@ -295,7 +295,7 @@ describe('Preview panel stays populated across camera activation (Task 109, issu
     setCameraStatus('active');
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    expect(screen.getByRole('button', { name: /^(?:Hide )?piece controls$/i })).toBeVisible();
     const controlsButton = screen.getByRole('button', {
       name: /^(?:Hide )?piece controls$/i,
     });

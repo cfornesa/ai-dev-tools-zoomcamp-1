@@ -1,6 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -168,7 +167,7 @@ afterEach(() => {
 describe('live preview runtime (Task 83, issue #83)', () => {
   it('a Follow-hand binding visibly moves a shape in the live preview as demo input changes', async () => {
     await loadWorkspace(baseScene({ bindings: [FOLLOW_HAND_BINDING] }));
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    expect(screen.getByLabelText(/Index fingertip X/i)).toBeVisible();
     // expandAllCollapsibleSections also opens the direct Piece controls disclosure.
 
     // Set the slider to its target value *before* the hand becomes
@@ -237,7 +236,7 @@ describe('live preview runtime (Task 83, issue #83)', () => {
       bindings: [FOLLOW_HAND_BINDING],
     });
     await loadWorkspace(scene);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    expect(screen.getByLabelText(/Index fingertip X/i)).toBeVisible();
     // expandAllCollapsibleSections also opens the direct Piece controls disclosure.
 
     const slider = screen.getByLabelText(/Index fingertip X/i);

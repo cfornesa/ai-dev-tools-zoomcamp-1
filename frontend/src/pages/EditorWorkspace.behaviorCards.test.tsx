@@ -97,7 +97,7 @@ async function loadReadyWorkspace() {
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
   expandAllCollapsibleSections();
-  await userEvent.setup().click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+  expect(screen.getByRole('button', { name: 'Editor tools' })).toBeVisible();
   await userEvent.setup().click(screen.getByRole('button', { name: 'Editor tools' }));
 }
 
@@ -140,7 +140,7 @@ describe('behavior cards panel', () => {
     // the ordering that used to leave `targetKey` stuck at '' forever
     // (see BehaviorCardsPanel.tsx's own comment on why this now re-syncs).
     expandAllCollapsibleSections();
-    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    expect(screen.getByRole('button', { name: 'Editor tools' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Editor tools' }));
 
     expect(screen.getByRole('button', { name: 'Add card' })).toBeDisabled();

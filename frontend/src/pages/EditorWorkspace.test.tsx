@@ -460,7 +460,7 @@ describe('EditorWorkspace responsive layout', () => {
     // as a real mobile user would tap the Layers tab before adding a shape.
     await screen.findByRole('tab', { name: 'Layers' });
     fireEvent.click(screen.getByRole('tab', { name: 'Layers' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    expect(screen.getByRole('button', { name: 'Editor tools' })).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Editor tools' }));
     await screen.findByRole('button', { name: 'Add circle' });
     fireEvent.click(screen.getByRole('button', { name: 'Add circle' }));

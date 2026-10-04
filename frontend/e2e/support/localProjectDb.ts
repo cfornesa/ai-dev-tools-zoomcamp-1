@@ -10,6 +10,15 @@ type SeedInput = {
   media?: { filename: string; mimeType: string; bytes: number[] };
 };
 
+type CreateProjectInput = {
+  ownerId: string;
+  title: string;
+  description?: string;
+  kind?: '2d' | '3d' | 'generated';
+  scene?: SceneSeed;
+  thumbnail?: { mimeType: string; bytes: number[]; updatedAt: string };
+};
+
 type OutboxRow = {
   projectId: string;
   state: string;
@@ -34,6 +43,7 @@ type TransferRow = {
 
 type DatabaseAction =
   | { kind: 'seed'; input: SeedInput }
+  | { kind: 'create-project'; input: CreateProjectInput }
   | { kind: 'read-scenes'; projectId: string }
   | { kind: 'read-outbox'; projectId: string }
   | { kind: 'put-transfer'; record: TransferRow }
@@ -59,6 +69,21 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
         db: IDBDatabase,
         ownerId: string,
         input: { projectId: string; name: string; sceneJson: Record<string, unknown> },
+      ): Promise<unknown>;
+      createProject(
+        db: IDBDatabase,
+        input: {
+          ownerId: string;
+          title: string;
+          description?: string;
+          kind?: '2d' | '3d' | 'generated';
+        },
+      ): Promise<{ id: string }>;
+      updateProject(
+        db: IDBDatabase,
+        ownerId: string,
+        projectId: string,
+        patch: { thumbnail: Blob; thumbnailUpdatedAt: string },
       ): Promise<unknown>;
       importMediaAsset(
         db: IDBDatabase,
@@ -89,6 +114,31 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
       }
 
       switch (operation.kind) {
+        case 'create-project': {
+          const { input } = operation;
+          const project = await repository.createProject(db, {
+            ownerId: input.ownerId,
+            title: input.title,
+            ...(input.description === undefined ? {} : { description: input.description }),
+            ...(input.kind === undefined ? {} : { kind: input.kind }),
+          });
+          if (input.scene) {
+            await repository.createScene(db, input.ownerId, {
+              projectId: project.id,
+              name: input.scene.name,
+              sceneJson: input.scene.sceneJson,
+            });
+          }
+          if (input.thumbnail) {
+            await repository.updateProject(db, input.ownerId, project.id, {
+              thumbnail: new Blob([new Uint8Array(input.thumbnail.bytes)], {
+                type: input.thumbnail.mimeType,
+              }),
+              thumbnailUpdatedAt: input.thumbnail.updatedAt,
+            });
+          }
+          return { id: project.id };
+        }
         case 'seed': {
           const { input } = operation;
           await repository.ensureProject(db, {

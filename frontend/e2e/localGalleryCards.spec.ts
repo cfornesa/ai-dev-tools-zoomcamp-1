@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { localProjectDb } from './support/localProjectDb.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 test.describe('Local project gallery cards (#1087)', () => {
@@ -10,81 +11,53 @@ test.describe('Local project gallery cards (#1087)', () => {
     page,
   }, testInfo) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const ids = await page.evaluate(async (owner) => {
-      const repository = (await new Function(
-        'return import("/src/storage/localProjectRepository.ts")',
-      )()) as {
-        openLocalProjectDatabase(): Promise<IDBDatabase>;
-        createProject(
-          db: IDBDatabase,
-          input: {
-            ownerId: string;
-            title: string;
-            description?: string;
-            kind?: '2d' | '3d' | 'generated';
-          },
-        ): Promise<{ id: string }>;
-        createScene(
-          db: IDBDatabase,
-          ownerId: string,
-          input: { projectId: string; name: string; sceneJson: Record<string, unknown> },
-        ): Promise<unknown>;
-        updateProject(
-          db: IDBDatabase,
-          ownerId: string,
-          projectId: string,
-          patch: { thumbnail: Blob; thumbnailUpdatedAt: string },
-        ): Promise<unknown>;
-      };
-      const db = await repository.openLocalProjectDatabase();
-      const withThumbnail = await repository.createProject(db, {
-        ownerId: owner,
+    const thumbnailSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240"><rect width="320" height="240" fill="#8b5cf6"/></svg>';
+    const { id: withThumbnail } = await localProjectDb<{ id: string }>(page, {
+      kind: 'create-project',
+      input: {
+        ownerId: fixtures.owner.username,
         title: 'Local card with preview',
         description: 'A stored local description.',
-      });
-      await repository.createScene(db, owner, {
-        projectId: withThumbnail.id,
-        name: 'Scene',
-        sceneJson: { schema_version: 1, objects: [] },
-      });
-      await repository.updateProject(db, owner, withThumbnail.id, {
-        thumbnail: new Blob(
-          [
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240"><rect width="320" height="240" fill="#8b5cf6"/></svg>',
-          ],
-          { type: 'image/svg+xml' },
-        ),
-        thumbnailUpdatedAt: new Date().toISOString(),
-      });
-      const withoutThumbnail = await repository.createProject(db, {
-        ownerId: owner,
+        scene: { name: 'Scene', sceneJson: { schema_version: 1, objects: [] } },
+        thumbnail: {
+          mimeType: 'image/svg+xml',
+          bytes: Array.from(new TextEncoder().encode(thumbnailSvg)),
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    });
+    const { id: withoutThumbnail } = await localProjectDb<{ id: string }>(page, {
+      kind: 'create-project',
+      input: {
+        ownerId: fixtures.owner.username,
         title: 'Local card without preview',
         description: '',
         kind: '3d',
-      });
-      const generated = await repository.createProject(db, {
-        ownerId: owner,
+      },
+    });
+    const { id: generated } = await localProjectDb<{ id: string }>(page, {
+      kind: 'create-project',
+      input: {
+        ownerId: fixtures.owner.username,
         title: 'Local generated route',
         kind: 'generated',
-      });
-      db.close();
-      return {
-        withThumbnail: withThumbnail.id,
-        withoutThumbnail: withoutThumbnail.id,
-        generated: generated.id,
-      };
-    }, fixtures.owner.username);
+      },
+    });
+    const ids = { withThumbnail, withoutThumbnail, generated };
 
     for (const viewport of [
       { width: 1280, height: 900 },
       { width: 375, height: 812 },
     ]) {
       await page.setViewportSize(viewport);
-      await page.goto('/gallery');
+      await page.goto('/studio');
       await expect(page.getByRole('heading', { name: 'Local card with preview' })).toBeVisible();
       await expect(page.getByText('A stored local description.')).toBeVisible();
-      await expect(page.getByText('No preview available')).toBeVisible();
-      await expect(page.getByText('Last updated')).toHaveCount(2);
+      await expect(
+        page.getByRole('img', { name: 'No preview available for Local card without preview' }),
+      ).toBeVisible();
+      await expect(page.getByText('Last updated')).toHaveCount(3);
       await expect(page.locator('html')).toHaveJSProperty('scrollWidth', viewport.width);
       await page.screenshot({
         path: testInfo.outputPath(`local-gallery-cards-${viewport.width}.png`),

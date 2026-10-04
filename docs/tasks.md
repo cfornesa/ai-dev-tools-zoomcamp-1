@@ -26460,7 +26460,7 @@ Case-to-issue map: `docs/ci-failure-map-run1126.md` (120 failed cases → childr
 | [#1178](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1178) | 3D drawing plane render: pixel-coverage threshold fails (230 vs > 271) (1 test) | GROOMED | after the 3D stage specs | 2a |
 | [#1179](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1179) | E2E: auth policy spec expects pre-#1127 login copy and a body background that moved (2 tests) | GROOMED | — | 2a |
 | [#1180](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1180) | Authoring ownership gate: non-owner lands on the owner editor URL instead of being redirected (2 tests) | GROOMED | — | 2b authorization check; P0 |
-| [#1181](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1181) | Local gallery cards spec (#1087): the card heading is not found after creation (1 test) | GROOMED | uses #1101 seeding | 2a |
+| [#1181](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1181) | Local gallery cards spec (#1087): the card heading is not found after creation (1 test) | TEST-SIDE ROUTE/LOCATOR FIXED LOCALLY | #1101 IndexedDB helper; `/studio` signed-in local cards | 2a |
 | [#1182](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1182) | Public gallery engine filter: the select does not retain c2js-interactive (2 tests) | GROOMED | — | 2a |
 | [#1183](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1183) | Sound telemetry spec: getByLabel(Key) matches two controls (1 test) | GROOMED | — | 2a |
 | [#1184](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1184) | Site content and theme admin specs: stale text and an ambiguous accent label (4 tests) | GROOMED | — | 2a |

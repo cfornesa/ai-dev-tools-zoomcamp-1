@@ -5,7 +5,9 @@
 `POST /mcp/` is the anonymous Model Context Protocol Streamable HTTP endpoint.
 It exposes read-only `health_check`, `list_public_gallery`,
 `get_public_project`, `get_public_thumbnail`, `list_templates`, and
-`get_published_asset` tools, plus `gallery://public` and
+`get_published_asset`, `list_public_pieces`, `get_public_3d_project`,
+`get_public_art_piece`, `list_public_collections`, `get_public_collection`,
+and `search_public` tools, plus `gallery://public` and
 `project://{project_id}` resources. Public project and template values use the
 same serializers and eligibility gates as their REST endpoints; the legacy
 public-project gallery retains its REST-defined 2D/3D card mix. Thumbnails
@@ -1393,6 +1395,37 @@ registered-but-not-yet-implemented engines remain visible with explicit false
 capabilities and must not be treated as runnable. The frontend uses this
 catalog for its engine control and keeps the selected engine in the shareable
 URL.
+
+## Additional anonymous public discovery endpoints (#1212)
+
+The MCP public-piece, collection, and search tools match these JSON endpoints:
+
+- `GET /api/public/projects3d/{public_id}/` returns the public 3D project
+  serializer, including its current public scene snapshot and safe version
+  summaries; a non-public or missing project returns 404.
+- `GET /api/public/art-pieces/` lists published generated-piece metadata and
+  current public versions. `GET /api/public/art-pieces/{public_id}/` returns
+  one published piece; its thumbnail is served by
+  `GET /api/public/art-pieces/{public_id}/thumbnail.png`. These endpoints use
+  `eligible_art_pieces` / `_public_piece_or_404` and `_piece_data(public=True)`.
+  Public data contains no prompt or owner id. Executable source is exposed only
+  to the same extent as the existing public generated-piece endpoint.
+- `GET /api/collections/public/` returns bounded public collection cards and
+  accepts `sort` (`newest`, `oldest`, `item_count`), `cursor`, and `page_size`.
+  `GET /api/public/collections/{handle}/{slug}/` returns an active, published
+  collection only when its owner has a public profile; historical slugs
+  redirect to the current public URL, while private or missing collections
+  return 404.
+- `GET /api/public/gallery/search/` accepts `q` (at most 100 characters) and
+  `scope` (`content` or `accounts`), returning at most 50 visibility-filtered
+  results. Account search returns public profiles only; content search reuses
+  the public project, generated-piece, and 3D eligibility selectors.
+
+The unified `GET /api/public/gallery/` remains the canonical all-kind,
+cursor-paginated piece listing (2D, 3D, generated, and collections); its
+`type`, `engine`, `cursor`, and `page_size` rules are specified above. MCP
+results preserve the REST serializers and privacy gates rather than returning
+source, prompts, emails, drafts, or owner-only fields.
 
 ## Signup-time cloud-sync consent (#524)
 

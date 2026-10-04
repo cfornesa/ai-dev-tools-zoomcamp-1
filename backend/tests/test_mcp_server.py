@@ -15,6 +15,7 @@ import httpx
 import pytest
 from asgiref.testing import ApplicationCommunicator
 from django.contrib.auth import get_user_model
+from django.http import Http404
 from django.utils import timezone
 from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamable_http_client
@@ -24,13 +25,31 @@ from backend.asgi import application
 from scenes.mcp.server import (
     MAX_MCP_REQUEST_BODY_SIZE,
     _built_in_templates,
+    _public_3d_project,
+    _public_collection_detail,
+    _public_collection_page,
     _public_gallery_page,
+    _public_generated_piece,
     _public_project,
+    _public_search,
     _public_thumbnail,
     _published_asset,
+    _unified_gallery_page,
     create_mcp_asgi_app,
 )
-from scenes.models import PieceIntakeAsset, Project, SceneVersion, Template, Thumbnail
+from scenes.models import (
+    ArtPiece,
+    ArtPieceVersion,
+    Collection,
+    PieceIntakeAsset,
+    Project,
+    Project3D,
+    PublicProfile,
+    SceneVersion,
+    SceneVersion3D,
+    Template,
+    Thumbnail,
+)
 
 BLANK_SCENE = json.loads(
     (
@@ -39,6 +58,15 @@ BLANK_SCENE = json.loads(
         / "fixtures"
         / "valid"
         / "blank.json"
+    ).read_text()
+)
+MINIMAL_SCENE_3D = json.loads(
+    (
+        Path(__file__).resolve().parent.parent.parent
+        / "schema"
+        / "fixtures3d"
+        / "valid"
+        / "minimal.json"
     ).read_text()
 )
 
@@ -71,6 +99,12 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "get_public_thumbnail",
                             "list_templates",
                             "get_published_asset",
+                            "list_public_pieces",
+                            "get_public_3d_project",
+                            "get_public_art_piece",
+                            "list_public_collections",
+                            "get_public_collection",
+                            "search_public",
                         }
                         gallery_tool = next(
                             tool for tool in listing.tools if tool.name == "list_public_gallery"
@@ -115,6 +149,23 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "next_cursor": None,
                             "has_more": False,
                         }
+                        pieces_tool = next(
+                            tool for tool in listing.tools if tool.name == "list_public_pieces"
+                        )
+                        assert set(pieces_tool.inputSchema["properties"]) == {
+                            "gallery_type",
+                            "engine",
+                            "cursor",
+                            "page_size",
+                        }
+                        pieces_result = await client.call_tool(
+                            "list_public_pieces", {"page_size": 0}
+                        )
+                        pieces_page = json.loads(pieces_result.content[0].text)
+                        assert pieces_page["results"] == []
+                        assert pieces_page["next_cursor"] is None
+                        assert pieces_page["has_more"] is False
+                        assert isinstance(pieces_page["engine_catalog"], list)
                 base = "http://localhost:8000"
                 payload = {"jsonrpc": "2.0", "id": 2, "method": "tools/list"}
                 invalid_origin = await http_client.post(
@@ -303,3 +354,89 @@ def test_public_2d_tools_match_rest_payloads_and_hide_ineligible_projects():
         "data_base64": base64.b64encode(asset_response.content).decode("ascii"),
         "checksum": asset_checksum,
     }
+
+    mixed_gallery_response = APIClient().get("/api/public/gallery/?page_size=1")
+    assert _unified_gallery_page("all", None, None, 1) == mixed_gallery_response.json()
+
+    public_3d = Project3D.objects.create(
+        owner=owner,
+        title="MCP public 3D",
+        visibility=Project3D.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    public_3d_version = SceneVersion3D.objects.create(
+        project=public_3d,
+        sequence=1,
+        scene_json=copy.deepcopy(MINIMAL_SCENE_3D),
+        created_by=owner,
+    )
+    public_3d.current_version = public_3d_version
+    public_3d.save(update_fields=["current_version"])
+    mixed_gallery_response = APIClient().get("/api/public/gallery/?page_size=1")
+    assert _unified_gallery_page("all", None, None, 1) == mixed_gallery_response.json()
+    rest_3d = APIClient().get(f"/api/public/projects3d/{public_3d.public_id}/")
+    assert rest_3d.status_code == 200
+    assert _public_3d_project(str(public_3d.public_id)) == rest_3d.json()
+    private_3d = Project3D.objects.create(owner=owner, title="MCP private 3D")
+    with pytest.raises(Http404):
+        _public_3d_project(str(private_3d.public_id))
+
+    generated = ArtPiece.objects.create(
+        owner=owner,
+        title="MCP generated piece",
+        description="Public generated metadata",
+        prompt="private prompt sentinel",
+        engine=ArtPiece.Engine.SVG,
+        status=ArtPiece.Status.PUBLISHED,
+        published_at=timezone.now(),
+    )
+    generated_version = ArtPieceVersion.objects.create(
+        piece=generated,
+        sequence=1,
+        source="<svg />",
+    )
+    generated.current_version = generated_version
+    generated.save(update_fields=["current_version"])
+    rest_generated = APIClient().get(f"/api/public/art-pieces/{generated.public_id}/")
+    assert rest_generated.status_code == 200
+    assert _public_generated_piece(str(generated.public_id)) == rest_generated.json()
+    assert "private prompt sentinel" not in json.dumps(rest_generated.json())
+    draft_piece = ArtPiece.objects.create(
+        owner=owner,
+        title="MCP generated draft",
+        prompt="draft prompt",
+        engine=ArtPiece.Engine.SVG,
+    )
+    with pytest.raises(Http404):
+        _public_generated_piece(str(draft_piece.public_id))
+
+    PublicProfile.objects.create(user=owner, handle="mcp-public-owner", is_public=True)
+    collection = Collection.objects.create(
+        owner=owner,
+        title="MCP collection",
+        description="Public collection details",
+        slug="mcp-collection",
+        visibility=Collection.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    rest_collections = APIClient().get("/api/collections/public/?page_size=1")
+    assert _public_collection_page("newest", None, 1) == rest_collections.json()
+    rest_collection = APIClient().get(
+        f"/api/public/collections/mcp-public-owner/{collection.slug}/"
+    )
+    assert rest_collection.status_code == 200
+    assert _public_collection_detail("mcp-public-owner", collection.slug) == rest_collection.json()
+    private_collection = Collection.objects.create(
+        owner=owner,
+        title="MCP private collection",
+        slug="private-collection",
+    )
+    assert str(private_collection.public_id) not in json.dumps(
+        _public_collection_page("newest", None, 60)
+    )
+
+    complete_gallery_response = APIClient().get("/api/public/gallery/?page_size=60")
+    assert _unified_gallery_page("all", None, None, 60) == complete_gallery_response.json()
+
+    rest_search = APIClient().get("/api/public/gallery/search/?q=MCP&scope=content")
+    assert _public_search("MCP", "content") == rest_search.json()

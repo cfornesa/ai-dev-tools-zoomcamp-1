@@ -766,6 +766,184 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationErrors" }
 
+  /api/public/gallery/:
+    get:
+      tags: [Public]
+      operationId: listPublicPieces
+      summary: Cursor-paginated public gallery across pieces and collections
+      description: Anonymous. Merges currently eligible 2D, 3D, generated, and collection cards in stable publication order. Never includes private scene data, prompts, email addresses, or owner-only fields.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string, enum: [all, authored, pieces, collections, generated], default: all }
+        - name: engine
+          in: query
+          schema: { type: string }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: page_size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 60, default: 24 }
+      responses:
+        "200":
+          description: One bounded page of public gallery cards and the generated engine catalog.
+          content:
+            application/json:
+              schema: { type: object, required: [results, next_cursor, has_more, engine_catalog], additionalProperties: true }
+        "400": { description: Invalid type, engine, cursor, or page size. }
+
+  /api/public/projects3d/{projectId}/:
+    get:
+      tags: [Public]
+      operationId: getPublic3DProject
+      summary: Read one currently published 3D project
+      description: Anonymous. The public 3D serializer includes the current scene snapshot and safe version summaries; private, deleted, and missing projects return the same 404.
+      x-access: anonymous
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Public 3D project payload.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "404": { description: Project is absent or not currently public. }
+
+  /api/public/art-pieces/:
+    get:
+      tags: [Public]
+      operationId: listPublicArtPieces
+      summary: List currently published generated pieces
+      description: Anonymous. Uses the canonical generated-piece eligibility gate; prompt and owner id are omitted.
+      x-access: anonymous
+      security: []
+      responses:
+        "200":
+          description: Public generated-piece metadata and public versions.
+          content:
+            application/json:
+              schema: { type: array, items: { type: object, additionalProperties: true } }
+
+  /api/public/art-pieces/{pieceId}/:
+    get:
+      tags: [Public]
+      operationId: getPublicArtPiece
+      summary: Read one currently published generated piece
+      description: Anonymous. Exposes only fields in the public generated-piece projection; private, deleted, and missing pieces return 404.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: pieceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Public generated-piece metadata and its current public version.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "404": { description: Piece is absent or not currently published. }
+
+  /api/public/art-pieces/{pieceId}/thumbnail.png:
+    get:
+      tags: [Public]
+      operationId: getPublicArtPieceThumbnail
+      summary: Read the current thumbnail for a published generated piece
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: pieceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: PNG thumbnail bytes.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404": { description: Piece is absent, unpublished, deleted, or lacks a current version. }
+
+  /api/collections/public/:
+    get:
+      tags: [Public]
+      operationId: listPublicCollections
+      summary: List bounded cards for currently published public collections
+      description: Anonymous. Supports keyset pagination and public collection sorts.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, oldest, item_count], default: newest }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: page_size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 60, default: 24 }
+      responses:
+        "200":
+          description: Public collection cards with continuation cursor.
+          content:
+            application/json:
+              schema: { type: object, required: [results, next_cursor, has_more], additionalProperties: true }
+        "400": { description: Invalid sort, cursor, or page size. }
+
+  /api/public/collections/{handle}/{slug}/:
+    get:
+      tags: [Public]
+      operationId: getPublicCollection
+      summary: Read one active public collection
+      description: Anonymous. Requires a public profile and a published, active collection; historical slugs redirect to the current public URL.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: handle
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Visibility-safe collection data and public members.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "301": { description: Historical slug redirects to the current public collection URL. }
+        "404": { description: Collection is absent, private, inactive, deleted, or owner profile is not public. }
+
+  /api/public/gallery/search/:
+    get:
+      tags: [Public]
+      operationId: searchPublicGallery
+      summary: Search public accounts or published content
+      description: Anonymous. `q` is limited to 100 characters; results are capped at 50. Account scope searches public profiles only; content scope searches eligible public 2D, 3D, and generated pieces.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 100 }
+        - name: scope
+          in: query
+          schema: { type: string, enum: [accounts, content], default: content }
+      responses:
+        "200":
+          description: Bounded public search results.
+          content:
+            application/json:
+              schema: { type: object, required: [scope, results], additionalProperties: true }
+        "400": { description: Invalid query or scope. }
+
   /api/public/projects/{projectId}/:
     get:
       tags: [Public]

@@ -9,4 +9,4 @@ COPY backend ./backend
 COPY schema ./schema
 
 WORKDIR /app/backend
-CMD ["sh", "-c", "uv run python manage.py migrate --noinput && uv run python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "uv run python manage.py migrate --noinput && uv run uvicorn backend.asgi:application --host 0.0.0.0 --port 8000"]

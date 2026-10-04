@@ -133,13 +133,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/layersPanel.spec.ts|Layers panel › pointer drag-and-drop, keyboard reorder, and a locked-layer drop rejection all land on the correct scene order",
-    "issue": 1185,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/livePreview.spec.ts|Generated-piece live preview (#669) › debounces source edits, keeps the latest frame, and preserves the last good frame on errors",
     "issue": 1171,
     "added": "2026-10-03",

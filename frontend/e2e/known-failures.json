@@ -89,12 +89,5 @@
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
-  },
-  {
-    "key": "webkit|e2e/artPieceSoundRuntime.spec.ts|Generated regular viewer: per-piece sound settings (#843) › restores settings only after activation and reset clears the per-piece key",
-    "issue": 1233,
-    "added": "2026-10-04",
-    "expires": "2026-10-25",
-    "count": 1
   }
 ]

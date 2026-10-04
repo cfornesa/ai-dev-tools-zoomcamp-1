@@ -2,7 +2,7 @@
 
 - **Branch / PR:** `docs/backlog-reevaluation-2026-09-27` / #1094.
 - **Run order:** Goals 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15. Do not run Goal 5b; do not start #1193 or #1195.
-- **Current state:** Goal 7 in progress. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
+- **Current state:** Goal 7 locally complete (with #1178 blocked on #1235); Goal 8 next. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
 - **Environment/evidence boundary:** disposable local Compose PostgreSQL and fresh Vite on `127.0.0.1:5202` → backend `127.0.0.1:8003`; Chromium local macOS, unsandboxed due MachPort startup denial inside sandbox. Linux evidence: `Linux evidence PENDING (owner dispatch)`.
 - **Provenance:** scoping from handoff/Claude issue contracts; implementation Codex / GPT-6, effort unavailable, substituted for the rostered service; independent QA/review not run. Track: mixed.
 
@@ -10,15 +10,15 @@
 
 | Issue | State | Commit | Focused evidence | QA matrix | Block / next action |
 |---|---|---|---|---|---|
-| #1188 | implemented locally | `a4cbcf7c` | public-art phone stage specs; #1083 regression; viewports 375×812, 768×1024, 1280×900 | pending batch gate | Include in Goal 7 gate; Linux pending |
-| #1189 | implemented locally | `68971664` | embed stage specs at 375×812 and 1280×900 | pending batch gate | Include in Goal 7 gate; Linux pending |
-| #1175 | implemented locally | `f9229f02` | four stage/toolbar specs; approved 44px boundary; six visible controls | pending batch gate | Include in Goal 7 gate; Linux pending |
-| #1177 | implemented locally | `3e0db079` | content-panel shadow matrix; 4 presentations × 2 themes × 2 viewports | pending batch gate | Include shared-shell specs in Goal 7 gate; Linux pending |
-| #1178 | dependency-blocked | — | strict center-pixel test fails because phone D-pad covers projected drawing center | pending diagnostic comment | Product follow-up #1235; preserve pixel assertions and rerun after #1235 |
-| #1176 | local pass / QA pending | `a611e4a8` | `npx vitest run src/export/exportStageToolbar.test.ts src/export/generateHtmlExport.test.ts src/export/generateHtmlExport3D.test.ts` — 3 files/65 passed; `E2E_BASE_URL=http://127.0.0.1:5202 E2E_FIXTURE_ENVIRONMENT=disposable-compose E2E_DOCKER_COMPOSE=true npx playwright test e2e/exportArtifacts.spec.ts --project=chromium --grep "stacks labeled actions and confines scrolling"` — 1 passed, 0 skipped at 1280×900 and 375×812; Prettier passed. Inspected both screenshots: all three 44px controls visible, no viewport overflow. | pending batch gate | Linux pending owner dispatch; run batch gate and post QA matrix |
-| #1228 | not started | — | — | pending | Read refinement and issue; reserve space only on unified editor panels, preserve #1158 |
+| #1188 | implemented / local QA passed | `a4cbcf7c` | `publicArtPiecePhoneStage.spec.ts`, `publicArtPieceMobileLayout.spec.ts`, #1083 regression; 375×812, 768×1024, 1280×900; 34-test union | [matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1188#issuecomment-5979334928) | Linux evidence pending owner dispatch |
+| #1189 | implemented / local QA passed | `68971664` | embed stage specs at 375×812 and 1280×900; 34-test union | [matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1189#issuecomment-5979334910) | Linux evidence pending owner dispatch |
+| #1175 | implemented / local QA passed | `f9229f02` | four stage/toolbar specs; 44px minimum, six visible controls; 34-test union | [matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1175#issuecomment-5979334909) | Linux evidence pending owner dispatch |
+| #1177 | implemented / local QA passed | `3e0db079` | content-panel shadow matrix; 4 presentations × 2 themes × 2 viewports; 34-test union | [matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1177#issuecomment-5979334908) | Linux evidence pending owner dispatch |
+| #1178 | dependency-blocked | — | strict center-pixel test fails because phone D-pad covers projected drawing center | [blocked matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1178#issuecomment-5979334922) | #1235 owns product occlusion fix; preserve pixel assertion and rerun after #1235 |
+| #1176 | implemented / local QA passed | `a611e4a8` | export toolbar unit suites: 3 files/65 passed; focused responsive browser case passed at 1280×900 and 375×812; included in 34-test union | [matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1176#issuecomment-5979334929) | Linux evidence pending owner dispatch |
+| #1228 | implemented / local QA passed | `48ecf0cb` | `aiPanelLayout2d.spec.ts` + `headerChrome.spec.ts` + `headerMobile.spec.ts` + `responsiveShell.spec.ts`; union 34/34; `make check`; inspected 1280×900 screenshot | [matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1228#issuecomment-5979334920) | Linux evidence pending owner dispatch |
 
-Goal 7 gate: pending union of focused specs, existing stage/toolbar regressions, `make check`, shared-surface regressions, and per-issue QA matrices. No issue is closed.
+Goal 7 status: locally complete with #1178 dependency-blocked on #1235. Eligible 34-spec Chromium union (stage/toolbar/export/shared shell/AI panel) and `make check` passed; all seven issue QA matrices are posted. The #1178 pixel assertion stays unchanged. Record `Linux evidence PENDING (owner dispatch)`. No issue is closed. Next: Goal 8, diagnose #1171, #1185, #1186, #1181, #1182, #1183.
 
 ## Goal 8 — diagnosis first
 

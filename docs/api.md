@@ -623,6 +623,17 @@ resource. It allows public routes, disallows `/api/`, `/admin`, `/account`,
 URLs on the validated request host. It is proxied to Django by the Vite dev
 and preview servers; no static crawler file is required.
 
+## Generated public sitemap (#1200)
+
+`GET /sitemap.xml` is an anonymous request-time `application/xml` sitemap
+containing `/gallery`, published CMS pages, eligible public profiles and
+collections, and canonical URLs for eligible 2D, 3D, and generated pieces.
+Entries use absolute URLs on the validated request host and the record's
+`updated_at` date as `lastmod`; deterministic output is capped at 50,000 URLs
+per sitemap response. The existing public eligibility selectors and canonical
+piece URL builder define publication/privacy boundaries. It is proxied to
+Django by the Vite dev and preview servers.
+
 ## Structured AI-run plans (#656)
 
 `GET /api/ai/runs/<id>/` and the response from `POST /api/ai/runs/` expose a

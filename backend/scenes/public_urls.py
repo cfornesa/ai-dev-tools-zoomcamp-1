@@ -22,11 +22,22 @@ def piece_viewer_path(record, kind: str) -> str:
 
 def canonical_piece_viewer_path(record) -> str | None:
     """Return the canonical path only when the record can support it."""
-    handle = (
-        PublicProfile.objects.filter(user_id=record.owner_id, is_public=True)
-        .values_list("handle", flat=True)
-        .first()
-    )
+    owner = record._state.fields_cache.get("owner")
+    if owner is None:
+        handle = (
+            PublicProfile.objects.filter(user_id=record.owner_id, is_public=True)
+            .values_list("handle", flat=True)
+            .first()
+        )
+    elif "public_profile" in owner._state.fields_cache:
+        profile = owner._state.fields_cache["public_profile"]
+        handle = profile.handle if profile is not None and profile.is_public else None
+    else:
+        handle = (
+            PublicProfile.objects.filter(user_id=record.owner_id, is_public=True)
+            .values_list("handle", flat=True)
+            .first()
+        )
     slug = getattr(record, "public_slug", None)
     if handle and slug:
         return f"/users/@{quote(handle, safe='@')}/pieces/{quote(slug, safe='-')}"

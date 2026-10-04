@@ -50,19 +50,27 @@ def _line(title: object, url: str, description: object = "") -> str:
     return f"- [{safe_title}]({url})" + (f": {safe_description}" if safe_description else "")
 
 
+def published_cms_pages():
+    """Published, non-deleted CMS pages shared with crawler indexes."""
+    return Page.objects.filter(status=Page.Status.PUBLISHED).order_by("sort_order", "title", "id")
+
+
+def public_profiles():
+    """Active profiles with public handles shared with crawler indexes."""
+    return (
+        PublicProfile.objects.filter(is_public=True, user__is_active=True, handle__isnull=False)
+        .select_related("user", "style")
+        .order_by("handle", "id")
+    )
+
+
 def _published_records() -> list[str]:
     lines: list[str] = []
-    for page in Page.objects.filter(status=Page.Status.PUBLISHED).order_by(
-        "sort_order", "title", "id"
-    )[:MAX_ITEMS]:
+    for page in published_cms_pages()[:MAX_ITEMS]:
         description = _seo_description(page.seo_config) or page.description
         lines.append(_line(page.title, f"/pages/{page.slug}", description))
 
-    profiles = (
-        PublicProfile.objects.filter(is_public=True, user__is_active=True, handle__isnull=False)
-        .select_related("user", "style")
-        .order_by("handle", "id")[:MAX_ITEMS]
-    )
+    profiles = public_profiles()[:MAX_ITEMS]
     handles = {profile.user_id: profile.handle for profile in profiles}
     for profile in profiles:
         lines.append(

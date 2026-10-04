@@ -64,6 +64,34 @@ If a requirement is ambiguous or a step would break a rule above, stop and ask t
 
 ---
 
+## Supragoal: one continuous run (owner-granted 2026-10-04)
+
+When the owner sets the supragoal, Codex works the phases below in order as ONE goal, reading each referenced "### N." section of this file for the full text, owner decisions and stop conditions. This section only adds the order, the dispatch permission and the gates. Progress is recorded in `.local/tasks/goal-run-progress.md` (goal, issues finished, commit hashes, QA links, blocked items with reasons, next step); after a context reset resume from that file and `git log`, and verify before redoing anything (`git log --oneline | rg "#<issue>"`, `gh issue view`, the focused specs).
+
+### Phase 1: reconcile and repair (Goal 5b with regression repair)
+Evidence run: `37231625224`, a workflow_dispatch on head `a2981785`. Facts: backend, frontend, workflow validation and routing smoke passed; 9 shards passed; shards 4, 5, 6, 11, 12, 14 and 16 failed. The ratchet reports 2 baselined tests that now pass (remove those entries, one commit per owning issue, citing the run URL): #1234 `artPieceSixEngineZip` and #1233 WebKit `artPieceSoundRuntime` per-piece BPM. It also reports 11 NEW failures that did not fail in the previous full run (`37178806457`, head `763f6600`; 89 commits earlier), so each is a candidate regression introduced by this branch (hard no-regression rule):
+- `chromium` and `webkit` `artPieceCameraRuntime.spec.ts` (camera starts from its own gesture, #431)
+- `chromium` `artPieceFlatSpatial.spec.ts` (Canvas2D and SVG steering, #449)
+- `chromium` `artPieceSixEngineRegular.spec.ts` (#607)
+- `chromium` and `webkit` `artPieceSoundRuntime.spec.ts` (sound and microphone runtime, #430)
+- `chromium` `piece2dFill.spec.ts` (#705)
+- `chromium` `canonicalStructuredPieceSlug.spec.ts`
+- `chromium` `project3dThumbnailCard.spec.ts`
+- `chromium` `publicPieceSurfaceContract744.spec.ts` (#744)
+Suspects (verify, do not assume): the phone stage and toolbar changes (#1175, #1188, #1189, #1228) for the generated-piece viewer specs; the crawlable-gallery, 404 and routing changes (#1197, #1198, #1201, #1203) for `canonicalStructuredPieceSlug` and `publicPieceSurfaceContract744`; unknown for `project3dThumbnailCard`. For each: reproduce locally on the current head first; bisect in a scratch worktree (never on the working branch) between `763f6600` and `a2981785`; name the commit and its issue; repair in a follow-up commit under that issue keeping the original assertion, unless an owner-decided rule (the Goal 7 phone stage rule) legitimately changed the behavior, in which case say so in the commit and on the issue. If a repair would undo an owner-decided behavior, record it, skip that item and continue. Follow Goal 5b's step 3 for the rest of the reconciliation table; post it on #1096. #1194 is already done.
+
+### Dispatch permission (supragoal only)
+Codex may run `gh workflow run CI --ref docs/backlog-reevaluation-2026-09-27` at most TWICE in the whole supragoal, each on a pushed head (verify with `git ls-remote origin refs/heads/docs/backlog-reevaluation-2026-09-27` against `git rev-parse HEAD`), and never while a previous dispatch is still running:
+- Dispatch A: after the Phase 1 repairs are pushed, to confirm them. Read the new run's ratchet summaries. If NEW failures remain that this branch caused, repair them (at most two repair rounds without a new dispatch), then STOP and report instead of continuing to Phase 2, because more feature work on top of open regressions makes bisecting harder.
+- Dispatch B: at the very end of Phase 3, after everything is pushed, to reconcile once more.
+Still NOT permitted: `gh run rerun`, dispatching on any other ref, a third dispatch, merging, closing issues, changing branch protection or repository settings.
+
+### Phase 2: the remaining goals, in order
+Goal 16 (close-out and the shim), Goal 17 (product defects), Goal 18 (remaining E2E diagnoses), Goal 19 (MCP Apps widget, reference host). Goal 13 is superseded by Goal 19 and Goal 15 by Goal 16. Goals 1 to 12 and 14 are done. Apply each goal's text exactly; soft blockers are recorded and skipped, never a reason to stop.
+
+### Phase 3: final reconciliation
+Push, confirm the four required PR checks, run Dispatch B, then repeat Goal 5b's reconciliation on that run: remove baseline entries that now pass (one commit per owning issue, citing the run URL), leave still-failing entries with their issue links, classify failures not in the baseline (regressions from this branch are repaired, at most two rounds, and reported if they persist), and post the table on #1096. Comment on #1191 with the result of its "two consecutive full runs show no new failures" criterion (Dispatch A and B). Write the final report: per goal what is done and blocked, every issue still open, the baseline count, and what the owner must do next (merge PR #1094, branch protection #1192, deploy and connect an MCP Apps client for #1223).
+
 ## Owner reference: goals to set, one at a time
 
 *This section is the owner's checklist; Codex does not set or change goals itself. Each fenced prompt is complete and can be pasted as is, in order.*

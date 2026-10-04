@@ -249,7 +249,7 @@ describe('generateScene3DBundle', () => {
     expect(css).toContain('box-shadow: 0 4px 12px rgba(0,0,0,.5)');
     expect(css).toContain('backdrop-filter: blur(4px)');
     expect(css).toContain('@media (max-width: 700px)');
-    expect(css).toContain('width: 2.5rem; height: 2.5rem');
+    expect(css).toContain('width: 44px; height: 44px');
     expect(html).not.toContain('\u2630');
     // Reset view stays reachable inside the Piece controls panel.
     expect(html.indexOf('id="piece-reset-view"')).toBeGreaterThan(

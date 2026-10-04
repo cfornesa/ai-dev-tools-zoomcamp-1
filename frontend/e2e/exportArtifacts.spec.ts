@@ -233,7 +233,7 @@ async function attachRenderedScreenshot(
 test.describe('HTML export: responsive piece action surface', () => {
   test('stacks labeled actions and confines scrolling to opened controls at desktop and mobile widths', async ({
     browser,
-  }) => {
+  }, testInfo) => {
     const context = await browser.newContext();
     const page = await context.newPage();
     interceptCdnAndTrackRequests(page);
@@ -294,6 +294,7 @@ test.describe('HTML export: responsive piece action surface', () => {
         expect(button.right).toBeLessThanOrEqual(geometry.viewportWidth);
       }
       expect(geometry.documentWidth).toBeLessThanOrEqual(geometry.viewportWidth);
+      await attachRenderedScreenshot(testInfo, page, `responsive-actions-${viewport.width}`);
 
       const controlsToggle = toolbar.getByRole('button', { name: 'Piece controls', exact: true });
       await controlsToggle.click();

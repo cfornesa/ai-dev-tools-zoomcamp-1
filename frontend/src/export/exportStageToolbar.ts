@@ -198,7 +198,7 @@ export const EXPORT_STAGE_TOOLBAR_CSS = `
 .piece-stage-icon { display: block; width: 1.25rem; height: 1.25rem; pointer-events: none; }
 @media (max-width: 700px) {
   #piece-toolbar { right: .75rem; gap: .4rem; }
-  .piece-stage-icon-button { width: 2.5rem; height: 2.5rem; }
+  .piece-stage-icon-button { width: 44px; height: 44px; }
   .piece-stage-tooltip { display: none; }
 }
 @media (hover: hover) and (pointer: fine) {

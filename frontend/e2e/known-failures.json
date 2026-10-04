@@ -105,13 +105,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/exportArtifacts.spec.ts|HTML export: responsive piece action surface › stacks labeled actions and confines scrolling to opened controls at desktop and mobile widths",
-    "issue": 1176,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/immersive3dToolbar769.spec.ts|structured 3D immersive view toolbar (#769) › exact icon row and Steer inside Piece controls",
     "issue": 1231,
     "added": "2026-10-04",

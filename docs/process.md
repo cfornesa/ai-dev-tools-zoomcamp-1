@@ -320,6 +320,9 @@ After the batch's commits are complete, QA runs once over the batch:
    suites the criteria name;
 4. every impact-matrix row re-verified, or recorded as "not affected" with the
    search evidence — including open issues outside the batch;
+   global-shell CSS edits also rerun `contentPanelShadow.spec.ts`,
+   `responsiveShell.spec.ts`, `headerMobile.spec.ts`, `publicShell.spec.ts`, and
+   `accountShell.spec.ts`;
 5. a cross-issue review that no issue's criteria were made false or
    unreachable by a sibling's change;
 6. rendered evidence at the named viewports where criteria require it.

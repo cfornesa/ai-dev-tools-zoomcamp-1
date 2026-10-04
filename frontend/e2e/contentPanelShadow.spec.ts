@@ -52,6 +52,14 @@ async function prepareRoute(
   await page.goto('/admin/content');
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
   await expect(page.locator('.content-panel').first()).toBeVisible();
+  await page.waitForFunction(() => {
+    const listLoaded = document.querySelector('.admin-page-list') !== null;
+    const emptyStateShown = Array.from(document.querySelectorAll('[role="status"]')).some(
+      (status) => status.textContent?.trim() === 'No matching content.',
+    );
+    return listLoaded || emptyStateShown;
+  });
+  await page.evaluate(() => document.fonts.ready);
 }
 
 test('SPA content panel follows each site shadow presentation (#1146)', async ({
@@ -69,6 +77,7 @@ test('SPA content panel follows each site shadow presentation (#1146)', async ({
       geometry: { x: number; y: number; width: number; height: number };
       borderColor: string;
       borderStyle: string;
+      contentRows: number;
     }
   >();
   const measurements: Array<Record<string, unknown>> = [];
@@ -125,6 +134,7 @@ test('SPA content panel follows each site shadow presentation (#1146)', async ({
                   },
                   documentWidth: root.scrollWidth,
                   viewportWidth: root.clientWidth,
+                  contentRows: panel.querySelectorAll('.admin-page-row').length,
                 };
               });
 
@@ -159,7 +169,7 @@ test('SPA content panel follows each site shadow presentation (#1146)', async ({
                       : 0.1;
                 expect(
                   Math.abs(actual.geometry[dimension] - previousLayout.geometry[dimension]),
-                  `${presentation} panel ${dimension} drift at ${key}`,
+                  `${presentation} panel ${dimension} drift at ${key}: ${previousLayout.geometry[dimension]} → ${actual.geometry[dimension]} (rows ${previousLayout.contentRows} → ${actual.contentRows})`,
                 ).toBeLessThanOrEqual(offsetBorderAllowance);
               }
               expect(actual.borderColor).toBe(previousLayout.borderColor);
@@ -169,6 +179,7 @@ test('SPA content panel follows each site shadow presentation (#1146)', async ({
                 geometry: actual.geometry,
                 borderColor: actual.borderColor,
                 borderStyle: actual.borderStyle,
+                contentRows: actual.contentRows,
               });
             }
 

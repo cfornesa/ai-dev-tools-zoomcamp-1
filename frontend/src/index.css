@@ -155,6 +155,10 @@ body,
   box-shadow: 4px 4px 0 var(--border);
 }
 
+:root[data-site-shadow='offset'] .content-panel {
+  padding-inline: calc(var(--site-density) - 1px);
+}
+
 :root[data-theme='light'] {
   color-scheme: light;
   --text: #6b6375;

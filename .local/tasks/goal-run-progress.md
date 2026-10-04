@@ -58,7 +58,7 @@ Goal 9 COMPLETE LOCALLY: #1199, #1200, #1201, #1198, #1197, #1203, #1202, and #1
 
 ## Goal 10 — public MCP server
 
-Not started. Issues #1210, #1211, #1212, #1213, #1214. Use the approved official `mcp` Python SDK; owner-approved dependency is added with `uv add mcp`; contract docs precede contract changes. Verify privacy states and run focused backend/client checks plus `make check`.
+Goal 10 progress: #1210 finished locally in commits `bf95382d` and `87d9d676`; QA matrix: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1210#issuecomment-5981208973. The official SDK is locked at 1.30.0 (`mcp<2`) because resolved 2.3.0 had removed the owner-mandated FastMCP API. Added stateless JSON Streamable HTTP, Origin/Host and request-size protections, the health tool, preview proxy, and local Compose ASGI/Uvicorn startup. Official SDK client checks and 20 preview/cache Vitest checks pass; local dev stack MCP call succeeded. Linux evidence PENDING (owner dispatch). Next: #1211. Goal 10 batch `make check` remains until all issues are complete.
 
 ## Goal 11 — security check and OAuth foundation
 

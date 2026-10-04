@@ -35,10 +35,11 @@ as base64 with media type and checksum. The endpoint uses stateless JSON
 transport and does not authenticate from Django session cookies. The transport
 validates `Origin` and `Host` against Django's
 trusted origins and allowed hosts, rejects unsupported paths/methods, and caps
-request bodies at 256 KiB. Tool calls are limited to 60 per minute per caller
-IP. Vite forwards the address; Django honors `X-Forwarded-For` only
-when the immediate peer is loopback. Audit rows store a keyed, one-way IP
-fingerprint, not the raw address. Missing, expired, revoked, or wrong-audience
+request bodies at 256 KiB. Authenticated tool calls are limited to 60 per
+minute per OAuth client and per user. Vite forwards the caller address; Django
+honors `X-Forwarded-For` only when the immediate peer is loopback. Audit rows
+store a keyed, one-way IP fingerprint, not the raw address. Missing, expired,
+revoked, or wrong-audience
 tokens return `401 invalid_token`; an under-scoped tool call returns a
 JSON-RPC `insufficient_scope` error. A limit error uses JSON-RPC code `-32029`
 and includes `retry_after_seconds` in error data. Each tool invocation writes

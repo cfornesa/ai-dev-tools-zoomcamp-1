@@ -10,10 +10,11 @@ private, unlisted, draft, soft-deleted, or otherwise ineligible content is
 not made public by MCP.
 
 The request body limit is 256 KiB. The transport validates `Origin` and
-`Host`; unsupported methods and paths are rejected. Anonymous tool calls are
-limited to 60 calls per client IP per 60-second fixed window. A rate-limit
-failure is an MCP tool error with JSON-RPC code `-32029` and
-`retry_after_seconds` in the error data. The preview proxy forwards the
+`Host`; unsupported methods and paths are rejected. Authenticated tool calls
+are limited to 60 calls per OAuth client and per user per 60-second fixed window.
+Each request also records a keyed, one-way fingerprint of the trusted caller
+IP for audit. A rate-limit failure is an MCP tool error with JSON-RPC code
+`-32029` and `retry_after_seconds` in the error data. The preview proxy forwards the
 client address, and Django honors `X-Forwarded-For` only when the immediate
 peer is loopback. Missing, expired, or wrong-audience tokens receive a
 structured `401 invalid_token`; under-scoped calls return a structured

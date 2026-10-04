@@ -82,31 +82,33 @@ MINIMAL_SCENE_3D = json.loads(
 def _create_mcp_access_token(
     user,
     *,
+    oauth_application=None,
     scopes=("gallery:read",),
     resource="http://localhost:8000/mcp",
     expires=None,
 ):
-    application = Application.objects.create(
-        name="MCP test client",
-        redirect_uris="https://client.example/callback",
-        client_type=Application.CLIENT_PUBLIC,
-        authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
-        skip_authorization=False,
-    )
+    if oauth_application is None:
+        oauth_application = Application.objects.create(
+            name="MCP test client",
+            redirect_uris="https://client.example/callback",
+            client_type=Application.CLIENT_PUBLIC,
+            authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
+            skip_authorization=False,
+        )
     token_value = secrets.token_urlsafe(32)
     token = AccessToken.objects.create(
         user=user,
-        application=application,
+        application=oauth_application,
         token="",
         token_checksum=hashlib.sha256(token_value.encode("utf-8")).hexdigest(),
         expires=expires or timezone.now() + timedelta(minutes=10),
         scope=" ".join(scopes),
         resource=[resource],
     )
-    return token_value, application, token
+    return token_value, oauth_application, token
 
 
-def _call_mcp_tools(token_value, calls):
+def _call_mcp_tools(token_value, calls, *, client_ip="203.0.113.5"):
     async def exercise():
         # The SDK session manager is single-use after lifespan shutdown.
         # Each helper invocation represents a fresh server process.
@@ -122,6 +124,7 @@ def _call_mcp_tools(token_value, calls):
                 headers={
                     "Authorization": f"Bearer {token_value}",
                     "Origin": "http://localhost:8000",
+                    "X-Forwarded-For": client_ip,
                 },
             ) as http_client:
                 async with streamable_http_client(
@@ -129,10 +132,10 @@ def _call_mcp_tools(token_value, calls):
                 ) as (read_stream, write_stream, _):
                     async with ClientSession(read_stream, write_stream) as mcp_client:
                         await mcp_client.initialize()
-                        return {
-                            name: await mcp_client.call_tool(name, arguments or {})
+                        return [
+                            await mcp_client.call_tool(name, arguments or {})
                             for name, arguments in calls
-                        }
+                        ]
         finally:
             await lifespan.send_input({"type": "lifespan.shutdown"})
             assert await lifespan.receive_output() == {"type": "lifespan.shutdown.complete"}
@@ -141,8 +144,8 @@ def _call_mcp_tools(token_value, calls):
     return anyio.run(exercise)
 
 
-def _call_mcp_tool(token_value, tool_name, arguments=None):
-    return _call_mcp_tools(token_value, [(tool_name, arguments or {})])[tool_name]
+def _call_mcp_tool(token_value, tool_name, arguments=None, *, client_ip="203.0.113.5"):
+    return _call_mcp_tools(token_value, [(tool_name, arguments or {})], client_ip=client_ip)[0]
 
 
 @pytest.mark.django_db(transaction=True)
@@ -440,7 +443,7 @@ def test_user_token_cannot_read_another_users_private_data_through_any_tool():
     ]
     results = _call_mcp_tools(bearer_token, calls)
 
-    for tool_name, result in results.items():
+    for (tool_name, _), result in zip(calls, results, strict=True):
         if tool_name in {
             "get_public_project",
             "get_public_thumbnail",
@@ -515,14 +518,49 @@ def test_mcp_enforces_tool_scope_and_exposes_identity_only_for_token_user():
         bearer_token,
         [("list_public_gallery", {"page_size": 1}), ("whoami", {})],
     )
-    gallery_result = results["list_public_gallery"]
+    gallery_result = results[0]
     assert gallery_result.isError is True
     assert "does not grant the required scope" in json.dumps(gallery_result.model_dump())
 
-    identity = results["whoami"]
+    identity = results[1]
     assert identity.isError is not True
     assert identity.structuredContent["user_id"] == str(user.pk)
     assert identity.structuredContent["scopes"] == ["projects:write"]
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_authenticated_rate_limit_is_per_oauth_client_and_user():
+    cache.clear()
+    user_a = get_user_model().objects.create_user(username="mcp-rate-user-a")
+    user_b = get_user_model().objects.create_user(username="mcp-rate-user-b")
+    token_a, client_a, _ = _create_mcp_access_token(user_a)
+    token_other_client, _, _ = _create_mcp_access_token(user_a)
+    token_other_user, _, _ = _create_mcp_access_token(user_b, oauth_application=client_a)
+
+    first_sixty = _call_mcp_tools(
+        token_a,
+        [("health_check", {}) for _ in range(60)],
+        client_ip="203.0.113.10",
+    )
+    assert all(result.isError is not True for result in first_sixty)
+
+    same_user_other_client = _call_mcp_tool(
+        token_other_client, "health_check", client_ip="203.0.113.11"
+    )
+    assert same_user_other_client.isError is True
+    assert "retry_after_seconds" in json.dumps(same_user_other_client.model_dump())
+
+    same_client_other_user = _call_mcp_tool(
+        token_other_user, "health_check", client_ip="203.0.113.12"
+    )
+    assert same_client_other_user.isError is True
+    assert "retry_after_seconds" in json.dumps(same_client_other_user.model_dump())
+
+    audits = list(MCPToolAuditEvent.objects.order_by("id"))
+    assert len(audits) == 62
+    assert sum(event.outcome == MCPToolAuditEvent.Outcome.SUCCESS for event in audits) == 60
+    assert sum(event.outcome == MCPToolAuditEvent.Outcome.RATE_LIMITED for event in audits) == 2
+    assert all(event.client_id is not None and event.user_id is not None for event in audits)
 
 
 @pytest.mark.django_db

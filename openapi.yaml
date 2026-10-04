@@ -117,7 +117,8 @@ paths:
         are ignored. Public content tools and resources require `gallery:read`;
         `health_check` and `whoami` require authentication only. Tool schemas,
         scope declarations, and public data eligibility are documented in
-        `docs/mcp.md`. Tool calls are limited to 60 per minute per client IP;
+        `docs/mcp.md`. Authenticated tool calls are limited to 60 per minute
+        per OAuth client and per user;
         rate errors use JSON-RPC code -32029 with `retry_after_seconds` in
         error data. Audit rows include OAuth client and user ids plus a keyed
         IP fingerprint; arguments, tokens, secrets, and raw IPs are not stored.

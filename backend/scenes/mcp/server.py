@@ -116,23 +116,40 @@ def _trusted_client_ip(scope: dict[str, Any]) -> str:
         return peer_ip
 
 
-def _consume_mcp_rate_limit(client_ip: str, now: float | None = None) -> int | None:
-    """Return retry seconds when the per-IP fixed-window cap has been exceeded."""
+def _consume_mcp_rate_limit(
+    client_ip: str,
+    now: float | None = None,
+    *,
+    client_id: str | None = None,
+    user_id: int | None = None,
+) -> int | None:
+    """Enforce anonymous per-IP or authenticated per-client and per-user limits."""
     current_time = time.time() if now is None else now
     bucket = int(current_time // MCP_RATE_LIMIT_WINDOW_SECONDS)
-    digest = _client_ip_fingerprint(client_ip)
-    key = f"mcp:anonymous:{digest}:{bucket}"
-    if not cache.add(key, 1, timeout=MCP_RATE_LIMIT_WINDOW_SECONDS + 1):
-        try:
-            count = cache.incr(key)
-        except ValueError:
-            cache.add(key, 1, timeout=MCP_RATE_LIMIT_WINDOW_SECONDS + 1)
-            count = 1
+    if client_id is not None and user_id is not None:
+        dimensions = [("client", client_id), ("user", str(user_id))]
     else:
-        count = 1
-    if count <= MCP_RATE_LIMIT_REQUESTS:
-        return None
-    return MCP_RATE_LIMIT_WINDOW_SECONDS - int(current_time % MCP_RATE_LIMIT_WINDOW_SECONDS)
+        dimensions = [("anonymous", client_ip)]
+
+    is_limited = False
+    for dimension, identifier in dimensions:
+        digest = hmac.new(
+            settings.SECRET_KEY.encode("utf-8"), identifier.encode("utf-8"), hashlib.sha256
+        ).hexdigest()
+        key = f"mcp:{dimension}:{digest}:{bucket}"
+        if not cache.add(key, 1, timeout=MCP_RATE_LIMIT_WINDOW_SECONDS + 1):
+            try:
+                count = cache.incr(key)
+            except ValueError:
+                cache.add(key, 1, timeout=MCP_RATE_LIMIT_WINDOW_SECONDS + 1)
+                count = 1
+        else:
+            count = 1
+        is_limited = is_limited or count > MCP_RATE_LIMIT_REQUESTS
+
+    if is_limited:
+        return MCP_RATE_LIMIT_WINDOW_SECONDS - int(current_time % MCP_RATE_LIMIT_WINDOW_SECONDS)
+    return None
 
 
 def _client_ip_fingerprint(client_ip: str) -> str:
@@ -251,7 +268,9 @@ def _audited_tool(tool_name: str, required_scopes: tuple[str, ...]):
             outcome = MCPToolAuditEvent.Outcome.ERROR
             try:
                 retry_after = await sync_to_async(_consume_mcp_rate_limit, thread_sensitive=True)(
-                    _mcp_client_ip.get()
+                    _mcp_client_ip.get(),
+                    client_id=principal.client_id if principal else None,
+                    user_id=principal.user.pk if principal else None,
                 )
                 if retry_after is not None:
                     outcome = MCPToolAuditEvent.Outcome.RATE_LIMITED

@@ -2,7 +2,7 @@
 
 - **Branch / PR:** `docs/backlog-reevaluation-2026-09-27` / #1094.
 - **Run order:** Goals 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15. Do not run Goal 5b; do not start #1193 or #1195.
-- **Current state:** Goals 7–10 complete locally (Goal 7 #1178 remains dependency-blocked on #1235; #1213 authenticated limit/audit dimensions await OAuth in Goals 11–12). Goal 10 `make check` and batch gate passed; next Goal 11. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
+- **Current state:** Goals 7–10 complete locally (Goal 7 #1178 remains dependency-blocked on #1235; #1213 authenticated limit/audit dimensions await OAuth in Goals 11–12). Goal 11 #1215 verification is locally complete; #1216 OAuth provider and #1217 bearer/scope layer are next. Goal 10 `make check` and batch gate passed. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
 - **Environment/evidence boundary:** disposable local Compose PostgreSQL and fresh Vite on `127.0.0.1:5202` → backend `127.0.0.1:8003`; Chromium local macOS, unsandboxed due MachPort startup denial inside sandbox. Linux evidence: `Linux evidence PENDING (owner dispatch)`.
 - **Provenance:** scoping from handoff/Claude issue contracts; implementation Codex / GPT-6, effort unavailable, substituted for the rostered service; independent QA/review not run. Track: mixed.
 
@@ -74,7 +74,13 @@ Goal 10 COMPLETE LOCALLY: final `UV_CACHE_DIR=/private/tmp/uv-cache-goal10 make 
 
 ## Goal 11 — security check and OAuth foundation
 
-Not started. #1215 first and alone, then #1216 and #1217. Verify anonymous/non-owner/owner access on both accept-proposal routes; any anonymous write is a stop condition and P0 filing. Use approved `django-oauth-toolkit`, PKCE S256, exact redirects, preregistered admin-only clients and owner-approved scopes.
+| Issue | State | Commit | QA matrix | Block / next action |
+|---|---|---|---|---|
+| #1215 | finished locally; no security finding | `3b74e528` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1215#issuecomment-5981822226) | Both 2D/3D accept routes reject anonymous/non-owner access with 404; anonymous 3D proves no mutation. API access map agrees with views. Linux evidence PENDING (owner dispatch). |
+| #1216 | not started | — | — | Use approved django-oauth-toolkit; implement PKCE S256, exact redirect matching, pre-registered admin-only clients, metadata/token/revocation and account connected-app UI; no dynamic registration. |
+| #1217 | not started | — | — | Depends on #1216; bearer context and scope enforcement across tools with cross-user isolation tests. |
+
+Goal 11 next: #1216, then #1217. AI entitlement/quota reuse and #1213 authenticated rate-limit/audit attribution depend on this OAuth context.
 
 ## Goal 12 — authenticated MCP tools
 

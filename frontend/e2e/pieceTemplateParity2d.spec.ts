@@ -66,7 +66,8 @@ test.describe('2D runtime template parity (#799)', () => {
     const profile = (await profileResponse.json()) as Record<string, unknown>;
     const handle = `e2e-template-${Date.now().toString(36)}`;
     const updatedProfile = await apiPatch(context, '/api/account/profile/', {
-      ...profile,
+      // Do not echo GET-only/null fields into PATCH; revision is required.
+      revision: profile.revision,
       handle,
       display_name: '2D Template Fixture',
       is_public: true,

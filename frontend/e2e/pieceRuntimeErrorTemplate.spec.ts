@@ -27,7 +27,8 @@ test.describe('Generated runtime error/ready template (#801)', () => {
     const profile = (await profileResponse.json()) as Record<string, unknown>;
     const handle = `e2e-runtime-${Date.now().toString(36)}`;
     const updatedProfile = await apiPatch(context, '/api/account/profile/', {
-      ...profile,
+      // Do not echo GET-only/null fields into PATCH; revision is required.
+      revision: profile.revision,
       handle,
       display_name: 'Runtime Template Fixture',
       is_public: true,

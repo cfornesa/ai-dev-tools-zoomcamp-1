@@ -154,13 +154,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/pieceRuntimeErrorTemplate.spec.ts|Generated runtime error/ready template (#801) › reports a throwing SVG online and in the extracted ZIP",
-    "issue": 1164,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/pieceStageSizing.spec.ts|Generated regular-piece stage sizing (#703) › keeps the canonical regular stage responsive, themed, stable, and contained",
     "issue": 1175,
     "added": "2026-10-03",
@@ -169,14 +162,14 @@
   },
   {
     "key": "chromium|e2e/pieceTemplateParity2d.spec.ts|2D runtime template parity (#799) › asserts online and Full ZIP controls for every 2D engine",
-    "issue": 1164,
+    "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
     "key": "chromium|e2e/pieceTemplateParity3d.spec.ts|3D runtime template parity (#800) › asserts online and Full ZIP controls for Three.js and A-Frame",
-    "issue": 1164,
+    "issue": 1166,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
@@ -190,14 +183,14 @@
   },
   {
     "key": "chromium|e2e/profileHandles.spec.ts|public handle lifecycle (#551) › generates, changes, validates, and redirects handles at 1280x900",
-    "issue": 1164,
+    "issue": 1230,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
   },
   {
     "key": "chromium|e2e/profileHandles.spec.ts|public handle lifecycle (#551) › generates, changes, validates, and redirects handles at 375x812",
-    "issue": 1164,
+    "issue": 1230,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
@@ -246,7 +239,7 @@
   },
   {
     "key": "chromium|e2e/publicProfiles.spec.ts|Public profiles (#520) › owner publishes profile metadata and only its public profile route is visible",
-    "issue": 1164,
+    "issue": 1230,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1

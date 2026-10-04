@@ -26439,6 +26439,7 @@ Case-to-issue map: `docs/ci-failure-map-run1126.md` (120 failed cases → childr
 |---|---|---|---|---|
 | [#1163](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1163) | E2E injection audit: identify the extra <script> element in exported artifacts (5 tests) | GROOMED | — | 2b security oracle; P0 |
 | [#1164](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1164) | E2E: PATCH /api/account/profile/ fails in profile and template-parity flows (6 tests) | GROOMED | — (resolve before #1165, #1173, #1174) | 2a/2b; P1 |
+| [#1230](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1230) | Profile settings save fails when style_key is unset | GROOMED | Blocks #1164's publicProfiles and profileHandles UI cases | 2b profile update contract; P1 |
 | [#1165](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1165) | E2E: profile photo removal leaves the Remove photo control (2 tests) | GROOMED | after #1164 | 2a |
 | [#1166](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1166) | E2E: 'Piece controls' and the sr-only 'Open piece controls menu' shim collide in toolbar specs (18 tests) | GROOMED | — | 2a |
 | [#1167](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1167) | Owner decision: remove the sr-only no-op 'Open piece controls menu' button from inline toolbars? | DECIDED (remove) | after #1166 | owner decision; implementation #1187 |

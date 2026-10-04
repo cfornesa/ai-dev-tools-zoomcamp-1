@@ -1,5 +1,24 @@
 # DECISIONS.md
 
+## 2026-10-03 — #1164 profile E2E request classification
+
+- CI run #1126 traces show the five direct E2E `PATCH /api/account/profile/`
+  fixtures copied `style_key: null` from GET. The current serializer accepts
+  an optional non-null slug, so those test requests must omit that field.
+- The sixth request, and later profile-handle UI saves, come from
+  `AccountSettings.save()` sending the GET object unchanged. Since that
+  representation has `style_key: null`, this is a product flow defect tracked
+  by #1230; retain those baseline cases under that issue.
+- The corrected direct fixture requests pass the endpoint step. The runtime
+  template case now passes locally; the 2D/3D parity cases advance to the
+  existing #1166 duplicate accessible-name failure. Keep those baseline cases
+  under #1166. No product code was changed.
+- Local E2E used the repository Compose PostgreSQL stack on temporary ports
+  8003/5100 because the user's backend occupied 8001 and Vite occupied 5000.
+  Health, app identity, and anonymous identity probes passed. Standard
+  `make compose-preflight` did not accept the alternate-port stack because it
+  encountered the prior stopped container under the base Compose config.
+
 ## 2026-10-03 — CI tiers: PR gate blocks, the 16-shard matrix is advisory
 
 - **Owner decisions:** merging is gated by the PR checks (Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E shard 1); the 16-shard browser matrix is advisory and reports through a known-failure ratchet (#1190) that fails only on new failures, on baseline entries that now pass, and on expired entries; all 241 E2E specs are to be audited (`docs/e2e-suite-audit.md`); Codex may edit `.github/workflows/ci.yml` for the ratchet and the fast-fail timeouts (#1191) only, in the same commit series, with no new jobs, triggers or secrets and no push, dispatch or merge.

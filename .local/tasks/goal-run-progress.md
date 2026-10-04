@@ -2,7 +2,7 @@
 
 - **Branch / PR:** `docs/backlog-reevaluation-2026-09-27` / #1094.
 - **Run order:** Goals 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15. Do not run Goal 5b; do not start #1193 or #1195.
-- **Current state:** Goals 7–9 complete locally (Goal 7 #1178 remains dependency-blocked on #1235). Goal 10 issues #1210–#1214 are finished locally; Goal 10 `make check` and batch gate remain. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
+- **Current state:** Goals 7–10 complete locally (Goal 7 #1178 remains dependency-blocked on #1235; #1213 authenticated limit/audit dimensions await OAuth in Goals 11–12). Goal 10 `make check` and batch gate passed; next Goal 11. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
 - **Environment/evidence boundary:** disposable local Compose PostgreSQL and fresh Vite on `127.0.0.1:5202` → backend `127.0.0.1:8003`; Chromium local macOS, unsandboxed due MachPort startup denial inside sandbox. Linux evidence: `Linux evidence PENDING (owner dispatch)`.
 - **Provenance:** scoping from handoff/Claude issue contracts; implementation Codex / GPT-6, effort unavailable, substituted for the rostered service; independent QA/review not run. Track: mixed.
 
@@ -67,8 +67,10 @@ Goal 10 gate follow-ups: #1214 type-narrowed the SDK conformance test in `2b2078
 | #1210 | finished locally | `bf95382d`, `87d9d676` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1210#issuecomment-5981208973) | Linux evidence PENDING (owner dispatch) |
 | #1211 | finished locally | `678a3fc9` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1211#issuecomment-5981311836) | Linux evidence PENDING (owner dispatch); next #1212 |
 | #1212 | finished locally | `5aa03640` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1212#issuecomment-5981391988) | Linux evidence PENDING (owner dispatch) |
-| #1213 | finished locally | `ea101afd`, `36ce3fa0`, `6de1d354` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1213#issuecomment-5981531300) | Anonymous limits/audit and lifecycle verified; client/user attribution awaits OAuth in Goals 11–12. Linux evidence PENDING (owner dispatch) |
-| #1214 | finished locally | `59b02dfa`, `2b2078d4` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1214#issuecomment-5981587605) | Tool schemas, access, examples, SDK-tested VS Code config, and OpenAPI covered; Linux evidence PENDING (owner dispatch) |
+| #1213 | anonymous portion verified; auth portion deferred | `ea101afd`, `36ce3fa0`, `6de1d354` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1213#issuecomment-5981531300), [follow-up](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1213#issuecomment-5981795869) | Integrate per-client/per-user throttling and audit identity after #1216/#1217; Linux evidence PENDING (owner dispatch) |
+| #1214 | finished locally | `59b02dfa`, `2b2078d4` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1214#issuecomment-5981587605), [follow-up](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1214#issuecomment-5981796963) | Tool schemas, access, examples, SDK-tested VS Code config, and OpenAPI covered; Linux evidence PENDING (owner dispatch) |
+
+Goal 10 COMPLETE LOCALLY: final `UV_CACHE_DIR=/private/tmp/uv-cache-goal10 make check` passed: backend 2,022 passed / 44 skipped, frontend Vitest 319 files / 3,246 passed, E2E ratchet 7/7, plus lint/format/typecheck and workflow pin check. Batch gate on #1096: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5981798777. Issue matrices are posted; issues remain open. Linux evidence PENDING (owner dispatch). Next: Goal 11 #1215.
 
 ## Goal 11 — security check and OAuth foundation
 

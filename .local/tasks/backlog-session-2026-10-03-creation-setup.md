@@ -163,3 +163,11 @@ explicitly preserved and included in the batch regression run.
   Final batch gate: **BLOCKED pending Linux matrix and green `make check`**.
 
 QA comment links: [#1168](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1168#issuecomment-5973496846), [#1169](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1169#issuecomment-5973496968), [#1170](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1170#issuecomment-5973497100), [#1166](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1166#issuecomment-5973497218), [#1174](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1174#issuecomment-5973497342), [#1225 final](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1225#issuecomment-5973661355), [#1226](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1226#issuecomment-5973497441), [#1227](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1227#issuecomment-5973497555), [#1096 final](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5973661458).
+
+## Goal 5b — #1194 E2E support helper reference (2026-10-03)
+
+- Added `frontend/e2e/support/README.md` and linked it from E2E authoring standard 2 in `docs/process.md`. The reference covers all exported support functions/constants in 21 modules, deprecations and replacement helpers, recipes for signed-in 2D/3D and anonymous public starts, stale route/locator patterns, and #1170's AI panel helper. #1174 has no shared publish-dialog helper; its `confirmPublish` remains local to `publishingAndRemix.spec.ts`.
+- `rg "export (async )?function|export const" frontend/e2e/support` name audit: PASS (all extracted function/constant names appear in README). A temporary uncommitted recipe file passed `npm --prefix frontend run typecheck` and was removed.
+- `UV_CACHE_DIR=/private/tmp/codex-1190-uv-cache make check`: PASS after formatting the README; backend 2,012 passed / 44 skipped, frontend Vitest 3,229 passed, ratchet 7 passed, typecheck and format passed; frontend lint emitted existing warnings.
+- Provenance: Codex / GPT-6, effort not surfaced; documentation implementation and same-session self-review, no independent second-opinion review. Track: mixed.
+- Full 16-shard Linux reconciliation remains pending the owner's dispatch/run ID. No baseline entries were edited; no issue was closed.

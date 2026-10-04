@@ -472,7 +472,7 @@ Ratchet rules: the baseline (`frontend/e2e/known-failures.json`) lists each curr
 
 ### E2E authoring and maintenance standards
 1. **Test a journey or a current contract, not an issue.** Name specs by feature; an issue number may appear in a comment, not as the identity. A new E2E spec needs a user journey that unit or component tests cannot cover.
-2. **Selectors go through shared helpers** (`frontend/e2e/support/`: `createServerProject2D/3D`, `openPieceControlsMenu`, the scene-Save helper, the Ask AI panel helper). A spec must not re-derive a locator that a helper owns.
+2. **Selectors go through shared helpers** (`frontend/e2e/support/`: `createServerProject2D/3D`, `openPieceControlsMenu`, the scene-Save helper, the Ask AI panel helper). A spec must not re-derive a locator that a helper owns. See the [E2E support helper reference](../frontend/e2e/support/README.md) for contracts, recipes, and stale patterns.
 3. **No unexplained magic numbers.** Pixel counts, script counts, exact ratios and copy strings need a stated rationale and tolerance next to the assertion, or an allowlist of identified items (for example script ids) instead of a bare count.
 4. **UI changes run an E2E impact search.** Any change that renames an accessible name, moves a control, changes a route or alters layout runs `rg` over `frontend/e2e` for the old name/route/selector in the batch impact analysis ("Canonical batch transaction") and updates the specs in the same batch.
 5. **Fail fast.** Do not rely on the default test timeout to detect a missing control (#1191); per-call timeouts above the config default carry a comment with the reason.

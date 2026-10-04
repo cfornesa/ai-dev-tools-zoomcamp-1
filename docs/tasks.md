@@ -26542,3 +26542,7 @@ Create-only pass; nothing implemented. Verified against the repo: no MCP code ex
 
 Found in the inspected `ai-2d-1280.png` screenshot from #1170: at 1280×900, fixed bottom-right Display settings buttons overlap the visible AI prompt textarea. The mobile behavior from #1158 is already covered; this proposed issue is limited to the desktop editor route/state.
 
+
+### 2026-10-03 — #1194 E2E support helper reference
+
+Implemented locally: `frontend/e2e/support/README.md` documents the exported support helpers/constants, current contracts and anti-patterns, legacy helper replacements, and three typechecked recipes; `docs/process.md` standard 2 links to it. The `support/` export-name audit passed across all 21 modules. `UV_CACHE_DIR=/private/tmp/codex-1190-uv-cache make check` passed (backend 2,012 passed / 44 skipped, Vitest 3,229 passed, ratchet 7 passed; frontend lint warnings are existing). No `known-failures.json` entries changed. The Linux full-matrix reconciliation still awaits the owner's dispatch/run ID.

@@ -2874,3 +2874,8 @@ updates. The remaining open backlog was not silently claimed complete.
 - **Local evidence:** the 26-spec Wave 2B Chromium union passed 51/51 on disposable Compose PostgreSQL. The 39-spec combined focused/shell/stage union passed 66/70; the four remaining tests map to Goal 7 owners #1189 (`artPieceSixEngineEmbed`), #1178 (`drawingPlane3d`), #1175 (`pieceStageSizing`), and #1188 (`pieceToolbarPlacement`). The separate #1166 Firefox case could not launch on macOS; its ratchet entry stays. No Goal 7 rules changed.
 - **Gate:** frontend typecheck/lint/format checks passed (existing lint warnings). `make check` remains red on 2,011 backend passes, 44 skips, and the existing stale CI-YAML assertion failure, followed by Vitest discovering the Node-only ratchet file as an empty suite. No workflow was dispatched; Linux evidence is pending. No issue was closed.
 - **Provenance:** Stage 2a roster Opencode Go / Kimi K2.5; actual implementer Codex / GPT-6 (effort not surfaced), substituted. Stage 4 roster Claude / Sonnet 5 / Medium was not run independently; these local results are implementation evidence only. Track: mixed.
+
+## 2026-10-03 — #1194 E2E support helper reference
+
+- Documented the existing `frontend/e2e/support/` contracts and linked the reference from E2E authoring standard 2. No helper API or test behavior changed. The #1174 publication confirmation helper remains spec-local because no shared publication-dialog helper exists.
+- The README export inventory and three typechecked setup recipes passed; `UV_CACHE_DIR=/private/tmp/codex-1190-uv-cache make check` passed. Linux full-matrix evidence remains owner-dispatched and pending.

@@ -105,20 +105,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/canonicalImmersiveStructuredPiece.spec.ts|canonical immersive structured route matches the reference chrome",
-    "issue": 1173,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/canonicalStructuredPieceSlug.spec.ts|canonical structured piece routes render at desktop and mobile sizes",
-    "issue": 1173,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/drawingPlane3d.spec.ts|drawing plane renders in 3D scenes (#779, #780, #785, #786) › threejs on the immersive route",
     "issue": 1178,
     "added": "2026-10-03",
@@ -144,20 +130,6 @@
     "issue": 1231,
     "added": "2026-10-04",
     "expires": "2026-10-25",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/immersiveCollection.spec.ts|immersive collection gallery (#557) › navigates a bounded live collection room at 1280x900",
-    "issue": 1173,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/immersiveCollection.spec.ts|immersive collection gallery (#557) › navigates a bounded live collection room at 375x812",
-    "issue": 1173,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
     "count": 1
   },
   {

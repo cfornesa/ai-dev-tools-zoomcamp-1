@@ -20,7 +20,9 @@ test.describe('immersive collection gallery (#557)', () => {
       const ownerPage = await ownerContext.newPage();
       await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
       const profile = await apiGet(ownerContext, '/api/account/profile/');
-      const handle = ((await profile.json()) as { handle: string }).handle;
+      const ownerProfile = (await profile.json()) as { handle: string; display_name: string };
+      const handle = ownerProfile.handle;
+      const expectedAttribution = `By ${ownerProfile.display_name || handle} (@${handle})`;
 
       const projects: string[] = [];
       for (const title of ['Immersive first', 'Immersive second']) {
@@ -66,7 +68,7 @@ test.describe('immersive collection gallery (#557)', () => {
       await expect(
         page.getByRole('heading', { name: `Immersive room ${viewport.width}` }),
       ).toBeVisible();
-      await expect(page.getByText('By e2e_owner', { exact: true })).toBeVisible();
+      await expect(page.getByText(expectedAttribution, { exact: true })).toBeVisible();
       await expect(
         page.getByText('A navigable immersive collection fixture.', { exact: true }),
       ).toBeVisible();

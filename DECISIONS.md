@@ -26,6 +26,11 @@
 - Linux run [#371772](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37177255209), shard 12, showed the upload endpoint return 200, the rejected text upload return 400, and the image DELETE return 200. The DOM after deletion still had the independent seeded `profile_image_url`, so the UI correctly retained the URL-backed image control while the test expected no control and no public avatar.
 - The #1165 test now clears only the optional URL field via a minimal profile PATCH before its binary upload/removal flow. The upload, rejection, render, removal and public-avatar assertions remain unchanged. Local disposable Compose Chromium passed 2/2 at 1280x900 and 375x812. Remove only the two #1165 baseline entries; Linux confirmation of this test-data fix remains pending.
 
+## 2026-10-04 — #1173 public attribution expectations
+
+- The rendered byline is a paragraph with text `By e2e_owner (@e2e_owner)` on the canonical immersive 3D route, canonical 2D/3D slug routes, and immersive collection at desktop/mobile. The shared formatter contract is `By {displayName} (@{handle})`, with the handle/username fallback; assertions now derive both pieces from profile data.
+- The first local run exposed a separate stale no-menu locator in the canonical structured route: it matched the inert `sr-only` shim. Per #1166's explicit selector contract, the assertion now targets `.piece-stage-menu-trigger` and still requires zero functional menu triggers. All four #1173 scenarios then passed locally. No product change; remove the four #1173 baseline entries. Linux browser evidence remains pending.
+
 ## 2026-10-03 — CI tiers: PR gate blocks, the 16-shard matrix is advisory
 
 - **Owner decisions:** merging is gated by the PR checks (Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E shard 1); the 16-shard browser matrix is advisory and reports through a known-failure ratchet (#1190) that fails only on new failures, on baseline entries that now pass, and on expired entries; all 241 E2E specs are to be audited (`docs/e2e-suite-audit.md`); Codex may edit `.github/workflows/ci.yml` for the ratchet and the fast-fail timeouts (#1191) only, in the same commit series, with no new jobs, triggers or secrets and no push, dispatch or merge.

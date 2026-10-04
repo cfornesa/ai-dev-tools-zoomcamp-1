@@ -42,6 +42,7 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
     profile: { display_name: string };
     pieces: Array<{ id: string; slug: string; type: string; title: string }>;
   };
+  const expectedAttribution = `By ${publicProfile.profile.display_name || profile.handle} (@${profile.handle})`;
   const piece2d = publicProfile.pieces.find((piece) => piece.id === project2d.id);
   const piece3d = publicProfile.pieces.find((piece) => piece.id === project3d.id);
   expect(piece2d?.type).toBe('2d');
@@ -63,14 +64,8 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
         anonymousPage.getByRole('heading', { name: piece2d.title, exact: true }),
       ).toBeVisible();
       await expect(anonymousPage.getByTestId('public-scene-canvas')).toBeVisible();
-      await expect(
-        anonymousPage.getByText(`By ${publicProfile.profile.display_name || profile.handle}`, {
-          exact: true,
-        }),
-      ).toBeVisible();
-      await expect(
-        anonymousPage.getByRole('button', { name: 'Open piece controls menu' }),
-      ).toHaveCount(0);
+      await expect(anonymousPage.getByText(expectedAttribution, { exact: true })).toBeVisible();
+      await expect(anonymousPage.locator('.piece-stage-menu-trigger')).toHaveCount(0);
       await expect(anonymousPage.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
       await expect(anonymousPage.getByRole('button', { name: 'Open download menu' })).toBeVisible();
       await expect(anonymousPage.getByText('Canonical structured 2D route fixture.')).toBeVisible();
@@ -81,11 +76,7 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
         anonymousPage.getByRole('heading', { name: piece3d.title, exact: true }),
       ).toBeVisible();
       await expect(anonymousPage.getByTestId('scene3d-preview-canvas-frame')).toBeVisible();
-      await expect(
-        anonymousPage.getByText(`By ${publicProfile.profile.display_name || profile.handle}`, {
-          exact: true,
-        }),
-      ).toBeVisible();
+      await expect(anonymousPage.getByText(expectedAttribution, { exact: true })).toBeVisible();
       await expect(
         anonymousPage.getByRole('button', { name: 'Open piece controls menu' }),
       ).toHaveCount(0);

@@ -32,6 +32,7 @@ test('canonical immersive structured route matches the reference chrome', async 
     profile: { display_name: string };
     pieces: Array<{ id: string; slug: string; type: string; title: string }>;
   };
+  const expectedAttribution = `By ${publicProfile.profile.display_name || profile.handle} (@${profile.handle})`;
   const piece = publicProfile.pieces.find((candidate) => candidate.id === project.id);
   if (!piece || piece.type !== '3d')
     throw new Error('Published immersive fixture was not discoverable.');
@@ -48,11 +49,7 @@ test('canonical immersive structured route matches the reference chrome', async 
       await expect(
         anonymousPage.getByRole('heading', { name: piece.title, exact: true }),
       ).toBeVisible();
-      await expect(
-        anonymousPage.getByText(`By ${publicProfile.profile.display_name || profile.handle}`, {
-          exact: true,
-        }),
-      ).toBeVisible();
+      await expect(anonymousPage.getByText(expectedAttribution, { exact: true })).toBeVisible();
       await expect(anonymousPage.getByRole('note')).toContainText('arrow keys');
       await expect(anonymousPage.getByTestId('scene3d-preview-canvas-frame')).toBeVisible();
       await expect(

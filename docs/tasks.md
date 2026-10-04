@@ -26592,3 +26592,13 @@ Per the owner-decided phone rule, #1188 now marks only `c2js-interactive` stages
 ### 2026-10-04 — Proposed owner restore decision for MCP project deletion (#1237)
 
 Goal 12/#1219 inspection found that `ProjectDetailView.delete` only sets `is_deleted` and `deleted_at`, with no owner-facing 2D project restore route. Because Goal 12 requires a restore path, #1219 will expose only the independently restorable historical-version deletion until the owner decides whether to add a project restore API or defer MCP project deletion. Proposed issue [#1237](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1237) is in Batch 18 and remains open. No project rows or production data were touched.
+
+### 2026-10-04 — Shim-removal prerequisites (#1187) and follow-up goals
+
+Owner decisions: migrate the inert-shim consumers, then remove the shim; defer MCP `delete_project` (#1237); build the MCP Apps widget against the reference host (#1223). Handoff Goals 16 to 19 cover these and the product defects #1229 to #1236.
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1238](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1238) | Vitest: remove the inert-shim click from the 31 EditorWorkspace specs | GROOMED | — | 2a |
+| [#1239](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1239) | E2E: authoringOwnershipGate owner flow must not click the inert shim | GROOMED | — | 2a |
+| [#1187](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1187) | Remove the inert shim | DEPENDENCY-BLOCKED | #1238, #1239 | 2a |

@@ -2915,3 +2915,10 @@ updates. The remaining open backlog was not silently claimed complete.
 
 - Apply the owner-approved two-tier contract: at ≥701px preserve the declared stage ratio (16:9 fallback); at ≤700px put the toolbar below the stage, applying the tall `min(70vh, 26rem)` drawing surface only to `c2js-interactive`.
 - Keep CSS edits to `frontend/src/index.css` serial. Keep desktop shell display toggles fixed and route-scope any #1228 clearance to unified editor panels, preserving #1158’s ≤767px in-flow behavior.
+
+## 2026-10-04 — Owner decisions after the Goals 7-15 run
+
+- #1237: `delete_project` is deferred in the first MCP release (option 2); only historical version deletion is exposed behind the `destructive` scope with confirmation. A project restore path is a separate product feature.
+- #1223: build the MCP Apps widget now against the stable SEP-1865 / ext-apps spec and verify it with the reference host; real-client verification stays pending until the MCP server is deployed.
+- #1187: migrate the shim's consumers (#1238, #1239), then remove the shim.
+- Full-matrix run 37231625224 was dispatched by the assistant at the owner's request on head a2981785 (one run, no re-runs) as the evidence run for Goal 5b.

@@ -360,3 +360,69 @@ Goal: remove the inert shim and wrap up.
 
 Ground rules: do not dispatch workflows, merge, or close issues. You may commit your own changes and push the current branch with a normal fast-forward push (`git push origin docs/backlog-reevaluation-2026-09-27`) after a completed batch whose make check passed; never force-push, never push another branch, a tag or main; if authentication fails use .agents/memory/github-https-credential-helper.md and never print a credential; if a push is rejected, run `git fetch origin`, report the divergence and stop. After each push, watch the PR checks with read-only commands (`gh pr checks 1094`, `gh run watch`) and repair branch-caused failures in a follow-up commit (at most two rounds); never call a failure pre-existing without checking git history. Files left uncommitted by your earlier goals (the batch ledger under .local/tasks/, DECISIONS.md, docs/tasks.md, and frontend/e2e/accountComponentStyles.spec.ts while #1162 is open) are expected: commit only your own hunks and leave the rest. If you see any other modified file that you did not change, stop and ask. Never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (for docs/tasks.md stage only your own hunks with git add -p). Linux (full-matrix) evidence is never a reason to stay blocked: when local verification passes and the PR checks are green, finish the goal, record "Linux evidence PENDING (owner dispatch)" in the QA matrix, and report; the owner dispatches the full matrix once after the waves and Goal 5b reconciles it. Stop and ask me only if: you are on the wrong branch, an unexpected file is modified, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
+
+### 16. Close-out: deferred MCP deletion and the inert shim
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: record the owner's MCP deletion decision and finish the #1187 shim removal.
+
+Owner decisions (do not relitigate): #1237 option 2: `delete_project` is deferred in the first release; only historical version deletion is exposed over MCP behind the `destructive` scope with confirmation. #1187: migrate the consumers first, then remove the shim.
+1. #1237 / #1219: record the decision in DECISIONS.md and docs/api.md (and docs/mcp.md if it lists tools), and make sure a backend test proves no project-delete tool is advertised while the version-delete tool still requires the `destructive` scope and a matching confirm argument. Post a ## QA matrix on #1237 and #1219. Do not implement project restore; it is a separate product feature, which you should file as its own issue (milestone Batch 18, matching docs/tasks.md entry) if none exists.
+2. #1238 (31 EditorWorkspace Vitest specs: stop clicking the inert shim; use the real controls; no assertion weakened), then #1239 (authoringOwnershipGate owner flow). One commit per group of specs or issue.
+3. Then #1187: run `rg "Open piece controls menu" frontend/`, confirm only real menu-mode usages remain, remove the inert shim from PieceStageToolbar.tsx, run the focused specs, `npm test`, and make check, one commit, ## QA matrix. Remove the #1180 baseline entries that now pass. #1167 is satisfied by this change.
+Post ## QA matrices and the batch gate result. Do not close issues.
+
+Ground rules: do not dispatch workflows, merge, or close issues. Pushing is permitted only as described in this goal. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
+### 17. Product defects found by the diagnoses
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: fix the product defects that Goals 7 and 8 uncovered. These issues were filed before this run and are in scope; product code changes are allowed for these issues only.
+
+Order, one commit per issue, each with a regression test and its restoration path (revert that commit). Verify first that each is still reproducible; read each issue and any refinement comment:
+1. #1230 profile settings save fails when style_key is unset (a user-facing save failure: make the backend accept the null/unset style_key as the contract allows, or fix the client payload, whichever the issue evidence supports; update docs/api.md first if the contract changes).
+2. #1229 account login copy clips at narrow width with the script font (preserve the account-page site-token styling).
+3. #1235 immersive 3D phone D-pad obscures the drawing-plane center (the D-pad and touch controls must stay usable; relocate, never hide); then #1178 (its test) once the product fix lands.
+4. #1236 AI refinement does not capture a thumbnail for its saved version (capture and upload a real thumbnail for the refined version, like the manual save path); then re-run #1171's artPieceThumbnailCapture case.
+5. #1231 diagnose the oversized immersive structured 3D toolbar (682px vs a 270px limit): classify first (locator measuring a taller region versus a real layout defect), fix the product only if it is a real defect; #1233 diagnose the WebKit per-piece Ambient BPM restore failure: classify, fix only if the evidence supports a product cause, otherwise file the cause.
+Inspect screenshots at 375x812 and 1280x900 for every CSS change and describe what you saw. Serialize edits to index.css. Remove baseline entries only when the tests pass. Run the focused specs and make check. Post a ## QA matrix on each issue and the batch gate result. Do not close issues.
+
+Ground rules: do not dispatch workflows, merge, or close issues. Pushing is permitted only as described in this goal. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
+### 18. Remaining E2E diagnoses
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: resolve the remaining test-side E2E issues.
+
+Order, one commit per issue (read each issue; classify first; fix test-side causes; file or reference a product issue for product causes and leave the baseline entry in place):
+1. #1232 periodic server draft sync produces no PUT after the controlled clock advances (distinguish a test-clock problem from a product sync problem; do not weaken the cadence assertions).
+2. #1234 keep the six-engine offline ZIP case within its current timeout (reduce its cost without dropping any engine or either presentation; do not raise the timeout as the first resort).
+3. #1186 (explicit Save scenario receives a non-ZIP download) and #1185 (three long-running specs ending in protocol or connection errors): confirm their current state against the latest evidence, classify, fix test-side causes.
+Run the focused specs and make check. Post a ## QA matrix on each issue and the batch gate result. Do not close issues.
+
+Ground rules: do not dispatch workflows, merge, or close issues. Pushing is permitted only as described in this goal. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
+### 19. MCP Apps gallery widget (revised, reference host)
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: build the in-chat gallery widget (issue #1223, tracker #1209).
+
+Owner decision (do not relitigate): build the widget now against the stable SEP-1865 / ext-apps specification (2026-01-26, researched in the comment on #1223) and verify it with the open-source reference host from the ext-apps repository. Real-client screenshots (Claude, VS Code) wait until the MCP server is deployed; leave that criterion explicitly PENDING.
+1. Implement the UI resource served by the existing MCP server (`text/html;profile=mcp-app`), using only the public tools, the narrowest sandbox and CSP, no secrets or tokens in the widget, and a plain text fallback for hosts without MCP Apps support. Reuse the exported-viewer path where possible; do not add a dependency without asking.
+2. Verify with the ext-apps reference host if it can be run locally without installing global tooling (record exactly what you ran); capture screenshots. If it cannot be run in this environment, say so and keep the criterion PENDING; do not mark #1223 verified.
+3. Add backend tests for the resource listing, content type and CSP, and confirm no tool in the widget path needs authentication.
+Run make check. Post a ## QA matrix on #1223 and the batch gate result. Do not close issues.
+
+Ground rules: do not dispatch workflows, merge, or close issues. Pushing is permitted only as described in this goal. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```

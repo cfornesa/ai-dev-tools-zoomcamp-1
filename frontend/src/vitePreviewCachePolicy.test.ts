@@ -104,9 +104,9 @@ describe('vite preview server cache headers', () => {
     expect(res.headers.get('cache-control')).toBe('no-cache');
   });
 
-  it('serves client-route fallbacks with no-cache', async () => {
+  it('serves unknown routes with the 404 shell and no-cache', async () => {
     const res = await fetch(`${baseUrl}/definitely-not-a-real-route`);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(404);
     expect(res.headers.get('cache-control')).toBe('no-cache');
   });
 

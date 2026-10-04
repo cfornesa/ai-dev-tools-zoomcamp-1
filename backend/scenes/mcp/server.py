@@ -7,15 +7,19 @@ import contextvars
 import functools
 import hashlib
 import hmac
+import io
 import ipaddress
 import json
 import time
 import uuid
 from typing import Any
+from urllib.parse import quote
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import DisallowedHost
+from django.core.handlers.asgi import ASGIRequest
 from django.db.models import Count, Prefetch, Q, Value
 from django.db.models.functions import Coalesce
 from django.http import Http404
@@ -41,6 +45,7 @@ from scenes.gallery import (
     encode_gallery_cursor,
     filter_after_gallery_cursor,
 )
+from scenes.mcp.oauth import MCPPrincipal, authenticate_mcp_access_token
 from scenes.models import (
     ArtPiece,
     Collection,
@@ -78,6 +83,9 @@ MCP_RATE_LIMIT_REQUESTS = 60
 MCP_RATE_LIMIT_WINDOW_SECONDS = 60
 _mcp_client_ip: contextvars.ContextVar[str] = contextvars.ContextVar(
     "mcp_client_ip", default="unknown"
+)
+_mcp_principal: contextvars.ContextVar[MCPPrincipal | None] = contextvars.ContextVar(
+    "mcp_principal", default=None
 )
 
 
@@ -134,26 +142,112 @@ def _client_ip_fingerprint(client_ip: str) -> str:
     ).hexdigest()
 
 
+def _mcp_resource_urls(scope: dict[str, Any]) -> tuple[str, str] | None:
+    """Use Django's trusted host and proxy-scheme rules for this request's audience."""
+    try:
+        request = ASGIRequest(scope, io.BytesIO())
+        return (
+            request.build_absolute_uri("/mcp"),
+            request.build_absolute_uri("/.well-known/oauth-protected-resource/mcp/"),
+        )
+    except DisallowedHost:
+        return None
+
+
+def _bearer_token(scope: dict[str, Any]) -> str | None:
+    authorization_values = [
+        value for name, value in scope.get("headers", []) if name.lower() == b"authorization"
+    ]
+    if len(authorization_values) != 1:
+        return None
+    scheme, separator, token = authorization_values[0].decode("latin-1").partition(" ")
+    if (
+        scheme.lower() != "bearer"
+        or not separator
+        or not token
+        or any(character.isspace() for character in token)
+    ):
+        return None
+    return token
+
+
+async def _send_auth_error(send, metadata_url: str) -> None:
+    """Return a structured OAuth error without reflecting credentials or payloads."""
+    metadata_url = quote(metadata_url, safe=":/")
+    body = json.dumps(
+        {"error": "invalid_token", "error_description": "A valid MCP bearer token is required."}
+    ).encode("utf-8")
+    challenge = (
+        'Bearer error="invalid_token", error_description="A valid MCP bearer token is required.", '
+        f'resource_metadata="{metadata_url}"'
+    )
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 401,
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"cache-control", b"no-store"),
+                (b"content-length", str(len(body)).encode("ascii")),
+                (b"www-authenticate", challenge.encode("ascii")),
+            ],
+        }
+    )
+    await send({"type": "http.response.body", "body": body})
+
+
+def _require_principal_scopes(
+    principal: MCPPrincipal | None, required_scopes: tuple[str, ...]
+) -> MCPPrincipal:
+    if principal is None:
+        raise McpError(
+            ErrorData(
+                code=-32001, message="Authentication required.", data={"error": "invalid_token"}
+            )
+        )
+    missing_scopes = sorted(set(required_scopes) - principal.scopes)
+    if missing_scopes:
+        raise McpError(
+            ErrorData(
+                code=-32003,
+                message="The access token does not grant the required scope.",
+                data={"error": "insufficient_scope", "required_scopes": missing_scopes},
+            )
+        )
+    return principal
+
+
+def _require_current_scopes(required_scopes: tuple[str, ...]) -> MCPPrincipal:
+    """Require the authenticated MCP principal and its declared tool/resource scopes."""
+    return _require_principal_scopes(_mcp_principal.get(), required_scopes)
+
+
 def _write_mcp_audit(
-    tool_name: str, outcome: str, duration_ms: int, client_ip_fingerprint: str
+    tool_name: str,
+    outcome: str,
+    duration_ms: int,
+    client_ip_fingerprint: str,
+    client_id: str | None,
+    user_id: int | None,
 ) -> None:
     MCPToolAuditEvent.objects.create(
         tool_name=tool_name,
-        client_id=None,
+        client_id=client_id,
         client_ip_fingerprint=client_ip_fingerprint,
-        user=None,
+        user_id=user_id,
         outcome=outcome,
         duration_ms=duration_ms,
     )
 
 
-def _audited_tool(tool_name: str):
-    """Rate-limit and record one payload-free audit row for every invocation."""
+def _audited_tool(tool_name: str, required_scopes: tuple[str, ...]):
+    """Authenticate scope, rate-limit and record one payload-free audit per invocation."""
 
     def decorate(function):
         @functools.wraps(function)
         async def invoke(*args, **kwargs):
             started = time.monotonic()
+            principal = _mcp_principal.get()
             outcome = MCPToolAuditEvent.Outcome.ERROR
             try:
                 retry_after = await sync_to_async(_consume_mcp_rate_limit, thread_sensitive=True)(
@@ -170,6 +264,7 @@ def _audited_tool(tool_name: str):
                             data={"retry_after_seconds": retry_after},
                         )
                     )
+                principal = _require_principal_scopes(principal, required_scopes)
                 result = await function(*args, **kwargs)
                 outcome = MCPToolAuditEvent.Outcome.SUCCESS
                 return result
@@ -180,6 +275,8 @@ def _audited_tool(tool_name: str):
                     outcome,
                     duration_ms,
                     _client_ip_fingerprint(_mcp_client_ip.get()),
+                    principal.client_id if principal else None,
+                    principal.user.pk if principal else None,
                 )
 
         return invoke
@@ -200,7 +297,10 @@ def _mcp_allowed_hosts() -> list[str]:
 
 server = FastMCP(
     "Creatrweb Public MCP",
-    instructions="Anonymous read-only MCP tools for the public Creatrweb application.",
+    instructions=(
+        "Read-only public-content tools for authenticated Creatrweb users. "
+        "Send an OAuth bearer token for the /mcp resource."
+    ),
     streamable_http_path="/mcp/",
     stateless_http=True,
     json_response=True,
@@ -220,10 +320,27 @@ server = FastMCP(
         "Returns status, database, and cache without connection details."
     ),
 )
-@_audited_tool("health_check")
+@_audited_tool("health_check", required_scopes=())
 async def health_check() -> dict[str, str]:
     """Return the same connection-safe status as GET /health/."""
     return await sync_to_async(health_status, thread_sensitive=True)()
+
+
+@server.tool(
+    name="whoami",
+    description=(
+        "Return the authenticated user's ID, username, OAuth client ID, and granted scopes."
+    ),
+)
+@_audited_tool("whoami", required_scopes=())
+async def whoami() -> dict[str, Any]:
+    principal = _require_current_scopes(())
+    return {
+        "user_id": str(principal.user.pk),
+        "username": principal.user.get_username(),
+        "client_id": principal.client_id,
+        "scopes": sorted(principal.scopes),
+    }
 
 
 def _public_gallery_page(cursor: str | None, page_size: int) -> dict[str, Any]:
@@ -564,7 +681,7 @@ def _public_search(query: str, scope: str) -> dict[str, Any]:
         "Pass the returned next_cursor to continue; page_size is clamped to 1–60."
     ),
 )
-@_audited_tool("list_public_gallery")
+@_audited_tool("list_public_gallery", required_scopes=("gallery:read",))
 async def list_public_gallery(cursor: str | None = None, page_size: int = DEFAULT_PAGE_SIZE):
     return await sync_to_async(_public_gallery_page, thread_sensitive=True)(
         cursor, clamp_page_size(page_size)
@@ -578,7 +695,7 @@ async def list_public_gallery(cursor: str | None = None, page_size: int = DEFAUL
         "non-public projects return not found."
     ),
 )
-@_audited_tool("get_public_project")
+@_audited_tool("get_public_project", required_scopes=("gallery:read",))
 async def get_public_project(project_id: str) -> dict[str, Any]:
     return await sync_to_async(_public_project, thread_sensitive=True)(project_id)
 
@@ -587,7 +704,7 @@ async def get_public_project(project_id: str) -> dict[str, Any]:
     name="get_public_thumbnail",
     description="Read the current thumbnail of a public 2D project as MCP image content.",
 )
-@_audited_tool("get_public_thumbnail")
+@_audited_tool("get_public_thumbnail", required_scopes=("gallery:read",))
 async def get_public_thumbnail(project_id: str) -> Image:
     data, media_type = await sync_to_async(_public_thumbnail, thread_sensitive=True)(project_id)
     return Image(data=data, format=media_type.removeprefix("image/"))
@@ -599,7 +716,7 @@ async def get_public_thumbnail(project_id: str) -> Image:
         "List built-in scene templates visible anonymously; private templates are never included."
     ),
 )
-@_audited_tool("list_templates")
+@_audited_tool("list_templates", required_scopes=("gallery:read",))
 async def list_templates() -> list[dict[str, Any]]:
     return await sync_to_async(_built_in_templates, thread_sensitive=True)()
 
@@ -611,7 +728,7 @@ async def list_templates() -> list[dict[str, Any]]:
         "with its media type and checksum."
     ),
 )
-@_audited_tool("get_published_asset")
+@_audited_tool("get_published_asset", required_scopes=("gallery:read",))
 async def get_published_asset(project_id: str, asset_id: str) -> dict[str, str]:
     return await sync_to_async(_published_asset, thread_sensitive=True)(project_id, asset_id)
 
@@ -623,7 +740,7 @@ async def get_published_asset(project_id: str, asset_id: str) -> dict[str, str]:
         "Use the returned cursor with the same type filter."
     ),
 )
-@_audited_tool("list_public_pieces")
+@_audited_tool("list_public_pieces", required_scopes=("gallery:read",))
 async def list_public_pieces(
     gallery_type: str = "all",
     engine: str | None = None,
@@ -642,7 +759,7 @@ async def list_public_pieces(
         "private or missing projects are not found."
     ),
 )
-@_audited_tool("get_public_3d_project")
+@_audited_tool("get_public_3d_project", required_scopes=("gallery:read",))
 async def get_public_3d_project(project_id: str) -> dict[str, Any]:
     return await sync_to_async(_public_3d_project, thread_sensitive=True)(project_id)
 
@@ -653,7 +770,7 @@ async def get_public_3d_project(project_id: str) -> dict[str, Any]:
         "Read metadata and the currently public version for one published generated art piece."
     ),
 )
-@_audited_tool("get_public_art_piece")
+@_audited_tool("get_public_art_piece", required_scopes=("gallery:read",))
 async def get_public_art_piece(piece_id: str) -> dict[str, Any]:
     return await sync_to_async(_public_generated_piece, thread_sensitive=True)(piece_id)
 
@@ -662,7 +779,7 @@ async def get_public_art_piece(piece_id: str) -> dict[str, Any]:
     name="list_public_collections",
     description="List bounded public collection cards; sort may be newest, oldest, or item_count.",
 )
-@_audited_tool("list_public_collections")
+@_audited_tool("list_public_collections", required_scopes=("gallery:read",))
 async def list_public_collections(
     sort: str = "newest", cursor: str | None = None, page_size: int = DEFAULT_PAGE_SIZE
 ) -> dict[str, Any]:
@@ -675,7 +792,7 @@ async def list_public_collections(
     name="get_public_collection",
     description="Read one active, published collection through its public handle and slug.",
 )
-@_audited_tool("get_public_collection")
+@_audited_tool("get_public_collection", required_scopes=("gallery:read",))
 async def get_public_collection(handle: str, slug: str) -> dict[str, Any]:
     return await sync_to_async(_public_collection_detail, thread_sensitive=True)(handle, slug)
 
@@ -684,7 +801,7 @@ async def get_public_collection(handle: str, slug: str) -> dict[str, Any]:
     name="search_public",
     description="Search eligible public content or public accounts; results are capped at 50.",
 )
-@_audited_tool("search_public")
+@_audited_tool("search_public", required_scopes=("gallery:read",))
 async def search_public(query: str, scope: str = "content") -> dict[str, Any]:
     return await sync_to_async(_public_search, thread_sensitive=True)(query, scope)
 
@@ -696,6 +813,7 @@ async def search_public(query: str, scope: str = "content") -> dict[str, Any]:
     mime_type="application/json",
 )
 async def public_gallery_resource() -> dict[str, Any]:
+    _require_current_scopes(("gallery:read",))
     return await sync_to_async(_public_gallery_page, thread_sensitive=True)(None, DEFAULT_PAGE_SIZE)
 
 
@@ -706,6 +824,7 @@ async def public_gallery_resource() -> dict[str, Any]:
     mime_type="application/json",
 )
 async def public_project_resource(project_id: str) -> dict[str, Any]:
+    _require_current_scopes(("gallery:read",))
     return await sync_to_async(_public_project, thread_sensitive=True)(project_id)
 
 
@@ -722,14 +841,46 @@ class DjangoMCPApplication:
             return
 
         if scope["type"] == "http" and scope.get("path") in {"/mcp", "/mcp/"}:
+            resources = _mcp_resource_urls(scope)
+            if resources is None:
+                await self._send_invalid_host(send)
+                return
+            resource_url, metadata_url = resources
+            raw_token = _bearer_token(scope)
+            principal = (
+                await sync_to_async(authenticate_mcp_access_token, thread_sensitive=True)(
+                    raw_token, resource_url
+                )
+                if raw_token is not None
+                else None
+            )
+            if principal is None:
+                await _send_auth_error(send, metadata_url)
+                return
+            principal_context_token = _mcp_principal.set(principal)
             token = _mcp_client_ip.set(_trusted_client_ip(scope))
             try:
                 await self.mcp_app(scope, receive, send)
             finally:
                 _mcp_client_ip.reset(token)
+                _mcp_principal.reset(principal_context_token)
             return
 
         await self.django_app(scope, receive, send)
+
+    async def _send_invalid_host(self, send) -> None:
+        body = b"Invalid Host header"
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 421,
+                "headers": [
+                    (b"content-type", b"text/plain; charset=utf-8"),
+                    (b"content-length", str(len(body)).encode("ascii")),
+                ],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
 
     async def _lifespan(self, receive, send) -> None:
         startup_complete = False

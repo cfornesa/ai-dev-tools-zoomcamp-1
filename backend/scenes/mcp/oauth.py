@@ -7,9 +7,51 @@ which the toolkit deliberately permits for backwards compatibility.
 
 from __future__ import annotations
 
+import hashlib
+from dataclasses import dataclass
+from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
+from oauth2_provider.models import get_access_token_model
 from oauth2_provider.oauth2_validators import OAuth2Validator
+
+
+@dataclass(frozen=True)
+class MCPPrincipal:
+    """OAuth identity and scopes bound to one authenticated MCP request."""
+
+    user: Any
+    application_id: int
+    client_id: str
+    scopes: frozenset[str]
+
+
+def authenticate_mcp_access_token(token: str, resource: str) -> MCPPrincipal | None:
+    """Resolve a live, user-bound access token for this exact MCP audience."""
+    if not token or len(token) > 4096 or any(character.isspace() for character in token):
+        return None
+    checksum = hashlib.sha256(token.encode('utf-8')).hexdigest()
+    access_token_model = get_access_token_model()
+    access_token = (
+        access_token_model.objects.select_related('user', 'application')
+        .filter(token_checksum=checksum)
+        .first()
+    )
+    if (
+        access_token is None
+        or access_token.is_expired()
+        or access_token.user is None
+        or not access_token.user.is_active
+        or access_token.application is None
+        or access_token.resource != [resource]
+    ):
+        return None
+    return MCPPrincipal(
+        user=access_token.user,
+        application_id=access_token.application_id,
+        client_id=access_token.application.client_id,
+        scopes=frozenset(access_token.scope.split()),
+    )
 
 
 class MCPOAuth2Validator(OAuth2Validator):

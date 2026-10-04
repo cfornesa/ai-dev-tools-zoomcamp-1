@@ -16,31 +16,36 @@ without creating a scene version or activity record. The 3D endpoint uses the
 same owner-only policy as the 2D endpoint; the report that it is anonymous is
 not reflected in this repository's code or OpenAPI contract.
 
-## Anonymous MCP endpoint (#1210)
+## Authenticated MCP endpoint (#1217)
 
-`POST /mcp/` is the anonymous Model Context Protocol Streamable HTTP endpoint.
-It exposes read-only `health_check`, `list_public_gallery`,
+`POST /mcp/` is the OAuth-protected Model Context Protocol Streamable HTTP
+endpoint. Every request requires a valid `Authorization: Bearer` access token;
+browser session cookies are ignored. It exposes read-only `health_check`, `whoami`, `list_public_gallery`,
 `get_public_project`, `get_public_thumbnail`, `list_templates`, and
 `get_published_asset`, `list_public_pieces`, `get_public_3d_project`,
 `get_public_art_piece`, `list_public_collections`, `get_public_collection`,
 and `search_public` tools, plus `gallery://public` and
 `project://{project_id}` resources. Public project and template values use the
 same serializers and eligibility gates as their REST endpoints; the legacy
-public-project gallery retains its REST-defined 2D/3D card mix. Thumbnails
-use MCP image content; published-asset results contain the REST response
-bytes encoded as base64 with media type and checksum. MCP requests
-use JSON responses and stateless transport; the endpoint does not use Django
-session cookies. The transport validates `Origin` and `Host` against Django's
+public-project gallery retains its REST-defined 2D/3D card mix. All current
+public content tools and resources require `gallery:read`; `health_check` and
+`whoami` require authentication but no additional scope. Thumbnails use MCP
+image content; published-asset results contain the REST response bytes encoded
+as base64 with media type and checksum. The endpoint uses stateless JSON
+transport and does not authenticate from Django session cookies. The transport
+validates `Origin` and `Host` against Django's
 trusted origins and allowed hosts, rejects unsupported paths/methods, and caps
-request bodies at 256 KiB. Anonymous tool calls are limited to 60 per minute
-per caller IP. Vite forwards the address; Django honors `X-Forwarded-For` only
+request bodies at 256 KiB. Tool calls are limited to 60 per minute per caller
+IP. Vite forwards the address; Django honors `X-Forwarded-For` only
 when the immediate peer is loopback. Audit rows store a keyed, one-way IP
-fingerprint, not the raw address. A limit error uses JSON-RPC code `-32029` and includes
-`retry_after_seconds` in error data. Each tool invocation writes one audit row
-with tool, timestamp, optional registered client/user, outcome, and duration;
-tool arguments, tokens, and secrets are excluded. Audit rows for a user are
+fingerprint, not the raw address. Missing, expired, revoked, or wrong-audience
+tokens return `401 invalid_token`; an under-scoped tool call returns a
+JSON-RPC `insufficient_scope` error. A limit error uses JSON-RPC code `-32029`
+and includes `retry_after_seconds` in error data. Each tool invocation writes
+one audit row with tool, timestamp, registered client and user, outcome, and
+duration; tool arguments, tokens, and secrets are excluded. Audit rows for a user are
 included in that user's account export and retained against the anonymized row
-after account deletion. Tool schemas, cursor semantics, and examples are
+after account deletion. Tool schemas, required scopes, cursor semantics, and examples are
 maintained in [`docs/mcp.md`](mcp.md), including every tool's input schema,
 scope, example, and a tested official-SDK client connection example.
 

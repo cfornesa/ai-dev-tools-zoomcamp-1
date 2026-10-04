@@ -109,22 +109,22 @@ paths:
   /mcp/:
     post:
       tags: [MCP]
-      operationId: publicMcpEndpoint
-      summary: Stateless anonymous MCP endpoint for public application operations
+      operationId: authenticatedMcpEndpoint
+      summary: Stateless OAuth-protected MCP endpoint for public application operations
       description: |
-        JSON Streamable HTTP MCP transport. Public tools and resources are
-        documented in `docs/mcp.md`; public project data follows the same
-        eligibility filters and serializers as the corresponding REST routes.
-        No session cookie or bearer credential is used. Anonymous tool calls
-        are limited to 60 per minute per client IP; rate errors use JSON-RPC
-        code -32029 with `retry_after_seconds` in error data. Each tool call
-        receives one payload-free audit row with a keyed client IP fingerprint.
-        `X-Forwarded-For` is honored only when the immediate peer is loopback;
-        raw client IPs are never stored. Client and user IDs are absent for
-        this anonymous-only release. See `docs/mcp.md` for every tool schema,
-        example, client setup, and resource URI.
-      x-access: anonymous
-      security: []
+        JSON Streamable HTTP MCP transport. Every request requires a valid
+        bearer token issued for this exact `/mcp` resource; session cookies
+        are ignored. Public content tools and resources require `gallery:read`;
+        `health_check` and `whoami` require authentication only. Tool schemas,
+        scope declarations, and public data eligibility are documented in
+        `docs/mcp.md`. Tool calls are limited to 60 per minute per client IP;
+        rate errors use JSON-RPC code -32029 with `retry_after_seconds` in
+        error data. Audit rows include OAuth client and user ids plus a keyed
+        IP fingerprint; arguments, tokens, secrets, and raw IPs are not stored.
+        `X-Forwarded-For` is honored only when the immediate peer is loopback.
+      x-access: oauth
+      security:
+        - mcpOAuth: []
       requestBody:
         required: true
         content:
@@ -132,11 +132,12 @@ paths:
             schema: { type: object, additionalProperties: true }
       responses:
         "200":
-          description: MCP JSON response or notification acknowledgement.
+          description: MCP JSON response, notification acknowledgement, or structured JSON-RPC tool error (including insufficient scope).
           content:
             application/json:
               schema: { type: object, additionalProperties: true }
         "400": { description: Invalid MCP request or content type. }
+        "401": { description: Missing, expired, revoked, or wrong-audience bearer token; includes a protected-resource metadata challenge. }
         "403": { description: Origin is not trusted. }
         "413": { description: Request body exceeds 256 KiB. }
         "421": { description: Host is not allowed. }

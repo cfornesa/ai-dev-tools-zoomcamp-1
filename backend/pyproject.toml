@@ -74,7 +74,7 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 # django-oauth-toolkit ships no type stubs / py.typed marker. The Django
 # plugin resolves it from INSTALLED_APPS while checking the app config too.
-module = ["backend.urls", "scenes.apps", "scenes.mcp.oauth", "scenes.mcp.oauth_applications", "scenes.mcp.oauth_api", "tests.test_mcp_oauth"]
+module = ["backend.urls", "scenes.apps", "scenes.mcp.oauth", "scenes.mcp.oauth_applications", "scenes.mcp.oauth_api", "scenes.mcp.server", "tests.test_mcp_oauth", "tests.test_mcp_server"]
 disable_error_code = ["import-untyped"]
 
 [tool.django-stubs]

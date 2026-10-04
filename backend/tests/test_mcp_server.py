@@ -6,6 +6,7 @@ import base64
 import copy
 import hashlib
 import json
+import secrets
 import uuid
 from datetime import timedelta
 from pathlib import Path
@@ -21,6 +22,7 @@ from django.utils import timezone
 from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.types import TextContent, TextResourceContents
+from oauth2_provider.models import AccessToken, Application
 from pydantic import AnyUrl
 from rest_framework.test import APIClient
 
@@ -40,6 +42,7 @@ from scenes.mcp.server import (
     _trusted_client_ip,
     _unified_gallery_page,
     create_mcp_asgi_app,
+    server,
 )
 from scenes.models import (
     ArtPiece,
@@ -76,6 +79,72 @@ MINIMAL_SCENE_3D = json.loads(
 )
 
 
+def _create_mcp_access_token(
+    user,
+    *,
+    scopes=("gallery:read",),
+    resource="http://localhost:8000/mcp",
+    expires=None,
+):
+    application = Application.objects.create(
+        name="MCP test client",
+        redirect_uris="https://client.example/callback",
+        client_type=Application.CLIENT_PUBLIC,
+        authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
+        skip_authorization=False,
+    )
+    token_value = secrets.token_urlsafe(32)
+    token = AccessToken.objects.create(
+        user=user,
+        application=application,
+        token="",
+        token_checksum=hashlib.sha256(token_value.encode("utf-8")).hexdigest(),
+        expires=expires or timezone.now() + timedelta(minutes=10),
+        scope=" ".join(scopes),
+        resource=[resource],
+    )
+    return token_value, application, token
+
+
+def _call_mcp_tools(token_value, calls):
+    async def exercise():
+        # The SDK session manager is single-use after lifespan shutdown.
+        # Each helper invocation represents a fresh server process.
+        server._session_manager = None
+        test_application = create_mcp_asgi_app(application.django_app)
+        lifespan = ApplicationCommunicator(test_application, {"type": "lifespan"})
+        await lifespan.send_input({"type": "lifespan.startup"})
+        assert await lifespan.receive_output() == {"type": "lifespan.startup.complete"}
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=test_application),
+                base_url="http://localhost:8000",
+                headers={
+                    "Authorization": f"Bearer {token_value}",
+                    "Origin": "http://localhost:8000",
+                },
+            ) as http_client:
+                async with streamable_http_client(
+                    "http://localhost:8000/mcp/", http_client=http_client
+                ) as (read_stream, write_stream, _):
+                    async with ClientSession(read_stream, write_stream) as mcp_client:
+                        await mcp_client.initialize()
+                        return {
+                            name: await mcp_client.call_tool(name, arguments or {})
+                            for name, arguments in calls
+                        }
+        finally:
+            await lifespan.send_input({"type": "lifespan.shutdown"})
+            assert await lifespan.receive_output() == {"type": "lifespan.shutdown.complete"}
+            await lifespan.wait()
+
+    return anyio.run(exercise)
+
+
+def _call_mcp_tool(token_value, tool_name, arguments=None):
+    return _call_mcp_tools(token_value, [(tool_name, arguments or {})])[tool_name]
+
+
 @pytest.mark.django_db(transaction=True)
 def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
     cache.clear()
@@ -84,6 +153,8 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
     configured_url = vscode_config["servers"]["creatrweb-public"]["url"]
     mcp_docs = (repo_root / "docs/mcp.md").read_text()
     assert vscode_config["servers"]["creatrweb-public"]["type"] == "http"
+    user = get_user_model().objects.create_user(username="mcp-authenticated-client")
+    bearer_token, oauth_application, _ = _create_mcp_access_token(user)
 
     async def exercise_client() -> None:
         test_application = create_mcp_asgi_app(application.django_app)
@@ -96,6 +167,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                 headers={
                     "origin": "http://localhost:8000",
                     "cookie": "sessionid=ignored-session-cookie",
+                    "authorization": f"Bearer {bearer_token}",
                     "x-forwarded-for": "203.0.113.5",
                 },
             ) as http_client:
@@ -112,6 +184,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                         listing = await client.list_tools()
                         assert {tool.name for tool in listing.tools} == {
                             "health_check",
+                            "whoami",
                             "list_public_gallery",
                             "get_public_project",
                             "get_public_thumbnail",
@@ -125,11 +198,12 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "search_public",
                         }
                         for tool in listing.tools:
-                            row = next(
+                            matching_rows = [
                                 line
                                 for line in mcp_docs.splitlines()
                                 if line.startswith(f"| `{tool.name}` |")
-                            )
+                            ]
+                            row = matching_rows[-1]
                             assert all(
                                 prop in row for prop in tool.inputSchema.get("properties", {})
                             )
@@ -161,6 +235,14 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "status": "ok",
                             "database": "ok",
                             "cache": "ok",
+                        }
+                        identity = await client.call_tool("whoami")
+                        assert identity.isError is not True
+                        assert identity.structuredContent == {
+                            "user_id": str(user.pk),
+                            "username": user.get_username(),
+                            "client_id": oauth_application.client_id,
+                            "scopes": ["gallery:read"],
                         }
                         gallery_result = await client.call_tool(
                             "list_public_gallery", {"page_size": 0}
@@ -200,7 +282,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                         assert pieces_page["next_cursor"] is None
                         assert pieces_page["has_more"] is False
                         assert isinstance(pieces_page["engine_catalog"], list)
-                        for _ in range(57):
+                        for _ in range(56):
                             result = await client.call_tool("health_check")
                             assert result.isError is not True
                         limited = await client.call_tool("health_check")
@@ -264,10 +346,183 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
     assert sum(event.outcome == MCPToolAuditEvent.Outcome.SUCCESS for event in audits) == 60
     assert sum(event.outcome == MCPToolAuditEvent.Outcome.RATE_LIMITED for event in audits) == 1
     assert all(event.duration_ms >= 0 for event in audits)
-    assert all(event.client_id is None and event.user_id is None for event in audits)
+    assert all(event.client_id == oauth_application.client_id for event in audits)
+    assert all(event.user_id == user.pk for event in audits)
     assert all(len(event.client_ip_fingerprint) == 64 for event in audits)
     assert "203.0.113.5" not in json.dumps([event.client_ip_fingerprint for event in audits])
     assert len({event.client_ip_fingerprint for event in audits}) == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_user_token_cannot_read_another_users_private_data_through_any_tool():
+    caller = get_user_model().objects.create_user(username="mcp-caller-a")
+    owner = get_user_model().objects.create_user(username="mcp-private-owner-b")
+    bearer_token, _, _ = _create_mcp_access_token(caller)
+    private_title = "MCP cross-user private sentinel"
+
+    private_project = Project.objects.create(
+        owner=owner,
+        title=private_title,
+        visibility=Project.Visibility.PRIVATE,
+    )
+    private_version = SceneVersion.objects.create(
+        project=private_project,
+        sequence=1,
+        scene_json=copy.deepcopy(BLANK_SCENE),
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    private_project.current_version = private_version
+    private_project.save(update_fields=["current_version"])
+    asset_id = uuid.uuid4()
+    asset_data = b"mcp-private-asset-sentinel"
+    PieceIntakeAsset.objects.create(
+        owner=owner,
+        piece_kind="2d",
+        piece_public_id=private_project.public_id,
+        source_asset_id=asset_id,
+        filename="private.bin",
+        mime_type="application/octet-stream",
+        byte_size=len(asset_data),
+        checksum=hashlib.sha256(asset_data).hexdigest(),
+        data=asset_data,
+    )
+
+    private_3d = Project3D.objects.create(owner=owner, title=private_title)
+    private_3d_version = SceneVersion3D.objects.create(
+        project=private_3d,
+        sequence=1,
+        scene_json=copy.deepcopy(MINIMAL_SCENE_3D),
+        created_by=owner,
+    )
+    private_3d.current_version = private_3d_version
+    private_3d.save(update_fields=["current_version"])
+    private_art_piece = ArtPiece.objects.create(
+        owner=owner,
+        title=private_title,
+        prompt="private prompt sentinel",
+        engine=ArtPiece.Engine.SVG,
+        status=ArtPiece.Status.DRAFT,
+    )
+    private_collection = Collection.objects.create(
+        owner=owner,
+        title=private_title,
+        slug="private-mcp-sentinel",
+    )
+    Template.objects.create(
+        owner=owner,
+        source_type=Template.SourceType.PRIVATE,
+        name=private_title,
+        category="private",
+        scene_json=copy.deepcopy(BLANK_SCENE),
+    )
+
+    calls = [
+        ("health_check", {}),
+        ("whoami", {}),
+        ("list_public_gallery", {"page_size": 60}),
+        ("get_public_project", {"project_id": str(private_project.public_id)}),
+        ("get_public_thumbnail", {"project_id": str(private_project.public_id)}),
+        (
+            "get_published_asset",
+            {"project_id": str(private_project.public_id), "asset_id": str(asset_id)},
+        ),
+        ("list_templates", {"page_size": 60}),
+        ("list_public_pieces", {"page_size": 60}),
+        ("get_public_3d_project", {"project_id": str(private_3d.public_id)}),
+        ("get_public_art_piece", {"piece_id": str(private_art_piece.public_id)}),
+        ("list_public_collections", {"page_size": 60}),
+        (
+            "get_public_collection",
+            {"handle": "mcp-private-owner-b", "slug": private_collection.slug},
+        ),
+        ("search_public", {"query": private_title, "scope": "content"}),
+    ]
+    results = _call_mcp_tools(bearer_token, calls)
+
+    for tool_name, result in results.items():
+        if tool_name in {
+            "get_public_project",
+            "get_public_thumbnail",
+            "get_published_asset",
+            "get_public_3d_project",
+            "get_public_art_piece",
+            "get_public_collection",
+        }:
+            assert result.isError is True
+        else:
+            assert result.isError is not True
+            serialized = json.dumps(result.model_dump())
+            assert private_title not in serialized
+            assert "private prompt sentinel" not in serialized
+            assert "mcp-private-asset-sentinel" not in serialized
+            if tool_name == "whoami":
+                assert result.structuredContent["user_id"] == str(caller.pk)
+                assert result.structuredContent["username"] == caller.get_username()
+                assert owner.get_username() not in serialized
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_rejects_cookie_expired_and_wrong_audience_authentication(client):
+    user = get_user_model().objects.create_user(username="mcp-auth-required")
+    client.force_login(user)
+    session_cookie = client.cookies["sessionid"].value
+    expired_token, _, _ = _create_mcp_access_token(
+        user, expires=timezone.now() - timedelta(seconds=1)
+    )
+    wrong_audience_token, _, _ = _create_mcp_access_token(
+        user, resource="https://different.example/mcp"
+    )
+    payload = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
+
+    async def exercise_invalid_credentials():
+        test_application = create_mcp_asgi_app(application.django_app)
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=test_application),
+            base_url="http://localhost:8000",
+        ) as http_client:
+            cookie_only = await http_client.post(
+                "/mcp/", json=payload, headers={"Cookie": f"sessionid={session_cookie}"}
+            )
+            assert cookie_only.status_code == 401
+            assert cookie_only.json()["error"] == "invalid_token"
+            assert "resource_metadata" in cookie_only.headers["WWW-Authenticate"]
+
+            expired = await http_client.post(
+                "/mcp/", json=payload, headers={"Authorization": f"Bearer {expired_token}"}
+            )
+            assert expired.status_code == 401
+            assert expired.json()["error"] == "invalid_token"
+            assert expired_token not in expired.text
+
+            wrong_audience = await http_client.post(
+                "/mcp/",
+                json=payload,
+                headers={"Authorization": f"Bearer {wrong_audience_token}"},
+            )
+            assert wrong_audience.status_code == 401
+            assert wrong_audience.json()["error"] == "invalid_token"
+
+    anyio.run(exercise_invalid_credentials)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_enforces_tool_scope_and_exposes_identity_only_for_token_user():
+    user = get_user_model().objects.create_user(username="mcp-project-writer")
+    bearer_token, _, _ = _create_mcp_access_token(user, scopes=("projects:write",))
+
+    results = _call_mcp_tools(
+        bearer_token,
+        [("list_public_gallery", {"page_size": 1}), ("whoami", {})],
+    )
+    gallery_result = results["list_public_gallery"]
+    assert gallery_result.isError is True
+    assert "does not grant the required scope" in json.dumps(gallery_result.model_dump())
+
+    identity = results["whoami"]
+    assert identity.isError is not True
+    assert identity.structuredContent["user_id"] == str(user.pk)
+    assert identity.structuredContent["scopes"] == ["projects:write"]
 
 
 @pytest.mark.django_db

@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from 'vite';
-import type { Plugin } from 'vite';
+import type { Plugin, ProxyOptions } from 'vite';
 import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolveBackendProxyTarget } from './src/viteBackendTarget.js';
@@ -32,7 +32,7 @@ const backendProxyTarget = resolveBackendProxyTarget(
   process.env.BROWSER_QA_BACKEND_URL,
 );
 
-const djangoProxy = {
+const djangoProxy: Record<string, ProxyOptions> = {
   '/api': { target: backendProxyTarget, changeOrigin: false },
   '/accounts': { target: backendProxyTarget, changeOrigin: false },
   '/health': { target: backendProxyTarget, changeOrigin: false },

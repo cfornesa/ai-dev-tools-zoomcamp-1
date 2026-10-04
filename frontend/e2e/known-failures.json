@@ -70,7 +70,7 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) › a published 3D project: signed-out and non-owner visitors are redirected off /projects3d/:id and /ai-projects3d/:id, at both viewports",
+    "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) › a published 3D project: signed-out and non-owner visitors cannot access the owner editor from legacy routes, at both viewports",
     "issue": 1180,
     "added": "2026-10-03",
     "expires": "2026-10-10",

@@ -94,7 +94,7 @@ Goal 11 COMPLETE LOCALLY. Batch gate: [`#1096`](https://github.com/cfornesa/ai-d
 
 ## Goal 12 — authenticated MCP tools
 
-Not started; only after Goal 11 completes #1216/#1217. Required order: #1218, #1220, #1221, #1222, #1219. Every tool needs REST contract, non-owner/not-found and scope tests; `AI_PROVIDER=fake` for AI tests.
+In progress after Goal 11. Required order: #1218, #1220, #1221, #1222, #1219. Every tool needs REST contract, non-owner/not-found and scope tests; `AI_PROVIDER=fake` for AI tests. #1218 is finished locally in `61be5eca`; focused MCP/OAuth pytest passed 13/13, Ruff check/format and focused mypy passed. QA matrix: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1218#issuecomment-5982837075. Linux evidence PENDING (owner dispatch). Next: #1220; use `AI_PROVIDER=fake` in tests.
 
 ## Goal 13 — MCP Apps gallery widget
 
@@ -111,3 +111,7 @@ Not started. Verify remaining "Open piece controls menu" references are menu-mod
 ## Per-issue progress
 
 Update this file in the same issue commit with the issue state/hash and after every goal with gate, QA links, remaining open issues, and next step. After each final push, watch PR #1094 checks using read-only commands. No workflow dispatches, merges, or issue closures.
+
+| Issue | State | Commit | QA matrix | Block / next action |
+|---|---|---|---|---|
+| #1218 | finished locally | `61be5eca` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1218#issuecomment-5982837075) | Contract parity, private non-owner 404/no leakage, and `gallery:read` denial passed; Linux evidence PENDING (owner dispatch). Next #1220. |

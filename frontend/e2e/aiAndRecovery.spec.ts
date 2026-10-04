@@ -713,6 +713,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await page.clock.install();
       await createServerProject2D(page);
       const editorUrl = page.url();
       await expandAllCollapsibleSections(page);
@@ -725,7 +726,6 @@ test.describe('Local and server draft autosave', () => {
         }
       });
 
-      await page.clock.install();
       await openAuthoringControls(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
 
@@ -806,13 +806,13 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await page.clock.install();
       const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
       const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
 
-      await page.clock.install();
       await openAuthoringControls(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await page.clock.fastForward(1700); // local debounce fires, seeding a local draft
@@ -857,10 +857,10 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      await page.clock.install();
       const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
 
-      await page.clock.install();
       await openAuthoringControls(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await page.clock.fastForward(1700);

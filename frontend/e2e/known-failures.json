@@ -14,13 +14,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiAndRecovery.spec.ts|Local and server draft autosave › explicit Save and its interaction with sync failures, periodic ticks, reopening, and Exit-without-saving",
-    "issue": 1186,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/aiAndRecovery.spec.ts|Local and server draft autosave › local debounce, periodic server-sync cadence, and page-hide keepalive all fire on schedule",
     "issue": 1232,
     "added": "2026-10-04",

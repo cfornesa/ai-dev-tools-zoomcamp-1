@@ -45,6 +45,7 @@ from scenes.gallery import (
     encode_gallery_cursor,
     filter_after_gallery_cursor,
 )
+from scenes.mcp.ai_tools import register_ai_tools
 from scenes.mcp.oauth import MCPPrincipal, authenticate_mcp_access_token
 from scenes.mcp.project_tools import register_project_tools
 from scenes.models import (
@@ -849,6 +850,7 @@ async def public_project_resource(project_id: str) -> dict[str, Any]:
 
 
 register_project_tools(server, _audited_tool, _require_current_scopes)
+register_ai_tools(server, _audited_tool, _require_current_scopes)
 
 
 class DjangoMCPApplication:

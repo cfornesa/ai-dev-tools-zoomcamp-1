@@ -45,6 +45,7 @@ from scenes.mcp.server import (
     server,
 )
 from scenes.models import (
+    AIProviderModel,
     ArtPiece,
     ArtPieceVersion,
     Collection,
@@ -157,6 +158,19 @@ def _mcp_result_payload(result):
     return json.loads(text_content)
 
 
+def _enable_mistral_agent_model() -> None:
+    AIProviderModel.objects.update_or_create(
+        vendor="mistral",
+        model_slug="mistral-small-latest",
+        defaults={
+            "display_label": "Mistral Small (test)",
+            "task_kinds": ["agent_2d", "art_piece"],
+            "agentic_supported": True,
+            "active": True,
+        },
+    )
+
+
 @pytest.mark.django_db(transaction=True)
 def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
     cache.clear()
@@ -222,6 +236,12 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "save_version",
                             "restore_version",
                             "save_version_as_template",
+                            "ai_create_scene",
+                            "ai_edit_scene",
+                            "ai_accept_proposal",
+                            "ai_start_run",
+                            "ai_get_run",
+                            "ai_generate_art_piece",
                         }
                         for tool in listing.tools:
                             matching_rows = [
@@ -232,6 +252,9 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             row = matching_rows[-1]
                             assert all(
                                 prop in row for prop in tool.inputSchema.get("properties", {})
+                            ), (
+                                f"{tool.name} schema fields missing from docs: "
+                                f"{tool.inputSchema.get('properties', {})}; row={row}"
                             )
                         gallery_tool = next(
                             tool for tool in listing.tools if tool.name == "list_public_gallery"
@@ -807,6 +830,244 @@ def test_mcp_project_tools_block_non_owner_private_access_and_enforce_scope():
     scope_results = _call_mcp_tools(caller_gallery_token, scope_calls)
     assert all(result.isError is True for result in scope_results)
     assert all("required scope" in json.dumps(result.model_dump()) for result in scope_results)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_ai_tools_match_rest_contract_and_require_explicit_accept(monkeypatch):
+    cache.clear()
+    monkeypatch.setenv("AI_PROVIDER", "fake")
+    monkeypatch.setattr("scenes.ai_api.get_effective_cap", lambda user, feature: 10)
+    monkeypatch.setattr("scenes.ai_runs.get_effective_cap", lambda user, feature: 10)
+    monkeypatch.setattr("scenes.art_piece_api.get_effective_cap", lambda user, feature: 10)
+    user = get_user_model().objects.create_user(username="mcp-ai-contract-owner")
+    token, _, _ = _create_mcp_access_token(user, scopes=("ai:use", "projects:write"))
+    rest = APIClient()
+    rest.force_authenticate(user)
+    project_response = rest.post("/api/projects/blank/", {}, format="json")
+    assert project_response.status_code == 201
+    project_id = project_response.json()["id"]
+    base_version_id = project_response.json()["current_version"]
+    _enable_mistral_agent_model()
+
+    create_body = {"prompt": "Create a cheerful sun", "vendor": "mistral"}
+    rest_create = rest.post(
+        f"/api/projects/{project_id}/ai/create-scene/", create_body, format="json"
+    )
+    cache.clear()
+    mcp_create = _mcp_result_payload(
+        _call_mcp_tool(
+            token,
+            "ai_create_scene",
+            {"project_id": project_id, **create_body},
+        )
+    )
+    assert rest_create.status_code == 200
+    assert mcp_create == rest_create.json()
+    assert mcp_create["draft"] is True
+    assert Project.objects.get(public_id=project_id).current_version_id == base_version_id
+
+    edit_body = {
+        "prompt": "Recolor the scene",
+        "current_scene": copy.deepcopy(BLANK_SCENE),
+        "base_version_id": base_version_id,
+        "vendor": "mistral",
+    }
+    rest_edit = rest.post(f"/api/projects/{project_id}/ai/edit-scene/", edit_body, format="json")
+    cache.clear()
+    mcp_edit = _mcp_result_payload(
+        _call_mcp_tool(token, "ai_edit_scene", {"project_id": project_id, **edit_body})
+    )
+    assert rest_edit.status_code == 200
+    assert mcp_edit == rest_edit.json()
+    assert mcp_edit["draft"] is True
+    assert Project.objects.get(public_id=project_id).current_version_id == base_version_id
+
+    accept_body = {
+        "operation": SceneVersion.Origin.AI_CREATE,
+        "scene_json": copy.deepcopy(mcp_create["scene"]),
+        "base_version_id": base_version_id,
+        "change_label": "Accepted MCP proposal",
+        "client_request_id": str(uuid.uuid4()),
+    }
+    rest_accept = rest.post(
+        f"/api/projects/{project_id}/ai/accept-proposal/", accept_body, format="json"
+    )
+    mcp_accept = _mcp_result_payload(
+        _call_mcp_tool(
+            token,
+            "ai_accept_proposal",
+            {"project_id": project_id, **accept_body},
+        )
+    )
+    assert rest_accept.status_code == 201
+    assert mcp_accept == rest_accept.json()
+    assert mcp_accept["origin"] == SceneVersion.Origin.AI_CREATE
+    assert Project.objects.get(public_id=project_id).current_version_id == mcp_accept["id"]
+
+    run_body = {
+        "target_type": "project",
+        "project_id": project_id,
+        "operation": "create",
+        "prompt": "Create one layer",
+        "start_request_id": str(uuid.uuid4()),
+    }
+    rest_run = rest.post("/api/ai/runs/", run_body, format="json")
+    mcp_run = _mcp_result_payload(
+        _call_mcp_tool(token, "ai_start_run", {key: value for key, value in run_body.items()})
+    )
+    assert rest_run.status_code == 201
+    assert mcp_run == rest_run.json()
+    assert mcp_run["status"] == "running"
+    rest_run_read = rest.get(f"/api/ai/runs/{mcp_run['id']}/")
+    mcp_run_read = _mcp_result_payload(
+        _call_mcp_tool(token, "ai_get_run", {"run_id": mcp_run["id"]})
+    )
+    assert rest_run_read.status_code == 200
+    assert mcp_run_read == rest_run_read.json()
+
+    art_body = {"prompt": "A tiny teal star", "library": "svg", "vendor": "mistral"}
+    rest_art = rest.post("/api/ai/art-pieces/generate/", art_body, format="json")
+    mcp_art = _mcp_result_payload(_call_mcp_tool(token, "ai_generate_art_piece", art_body))
+    assert rest_art.status_code == 200
+    assert mcp_art == rest_art.json()
+    assert isinstance(mcp_art["code"], str)
+
+    invalid = _call_mcp_tool(token, "ai_create_scene", {"project_id": project_id, "prompt": ""})
+    assert invalid.isError is True
+    assert "HTTP 400" in json.dumps(invalid.model_dump())
+
+    from ai_provider.e2e_scenario import _current_scenario
+
+    cache.clear()
+    scenario_token = _current_scenario.set("timeout")
+    try:
+        provider_failure = _call_mcp_tool(
+            token,
+            "ai_create_scene",
+            {"project_id": project_id, "prompt": "Create a scene"},
+        )
+    finally:
+        _current_scenario.reset(scenario_token)
+    provider_failure_text = json.dumps(provider_failure.model_dump())
+    assert provider_failure.isError is True
+    assert "HTTP 504" in provider_failure_text
+    assert "timeout" in provider_failure_text
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_ai_tools_preserve_private_404_and_scope_boundaries(monkeypatch):
+    cache.clear()
+    monkeypatch.setenv("AI_PROVIDER", "fake")
+    monkeypatch.setattr("scenes.ai_runs.get_effective_cap", lambda user, feature: 10)
+    owner = get_user_model().objects.create_user(username="mcp-ai-owner")
+    caller = get_user_model().objects.create_user(username="mcp-ai-caller")
+    owner_rest = APIClient()
+    owner_rest.force_authenticate(owner)
+    project_response = owner_rest.post("/api/projects/blank/", {}, format="json")
+    project_id = project_response.json()["id"]
+    version_id = project_response.json()["current_version"]
+    _enable_mistral_agent_model()
+    run_response = owner_rest.post(
+        "/api/ai/runs/",
+        {
+            "target_type": "project",
+            "project_id": project_id,
+            "operation": "create",
+            "prompt": "Private owner run",
+        },
+        format="json",
+    )
+    assert run_response.status_code == 201, run_response.json()
+    caller_token, _, _ = _create_mcp_access_token(caller, scopes=("ai:use", "projects:write"))
+
+    private_calls = [
+        (
+            "ai_create_scene",
+            {"project_id": project_id, "prompt": "Read the owner's scene"},
+        ),
+        (
+            "ai_edit_scene",
+            {
+                "project_id": project_id,
+                "prompt": "Edit it",
+                "current_scene": copy.deepcopy(BLANK_SCENE),
+                "base_version_id": version_id,
+            },
+        ),
+        (
+            "ai_accept_proposal",
+            {
+                "project_id": project_id,
+                "operation": SceneVersion.Origin.AI_CREATE,
+                "scene_json": copy.deepcopy(BLANK_SCENE),
+                "base_version_id": version_id,
+            },
+        ),
+        (
+            "ai_start_run",
+            {
+                "target_type": "project",
+                "project_id": project_id,
+                "operation": "create",
+                "prompt": "Read the owner's run target",
+            },
+        ),
+        ("ai_get_run", {"run_id": run_response.json()["id"]}),
+    ]
+    private_results = _call_mcp_tools(caller_token, private_calls)
+    assert all(result.isError is True for result in private_results)
+    assert all("HTTP 404" in json.dumps(result.model_dump()) for result in private_results)
+    assert "Private owner run" not in json.dumps(
+        [result.model_dump() for result in private_results]
+    )
+
+    gallery_token, _, _ = _create_mcp_access_token(caller, scopes=("gallery:read",))
+    ai_scope_calls = [
+        (name, args) for name, args in private_calls if name != "ai_accept_proposal"
+    ] + [
+        (
+            "ai_generate_art_piece",
+            {"prompt": "A safe test snippet", "library": "svg"},
+        )
+    ]
+    scope_results = _call_mcp_tools(gallery_token, ai_scope_calls)
+    assert all(result.isError is True for result in scope_results)
+    assert all("required scope" in json.dumps(result.model_dump()) for result in scope_results)
+
+    ai_only_token, _, _ = _create_mcp_access_token(caller, scopes=("ai:use",))
+    accept_without_write = _call_mcp_tool(
+        ai_only_token,
+        "ai_accept_proposal",
+        {
+            "project_id": project_id,
+            "operation": SceneVersion.Origin.AI_CREATE,
+            "scene_json": copy.deepcopy(BLANK_SCENE),
+            "base_version_id": version_id,
+        },
+    )
+    assert accept_without_write.isError is True
+    assert "required scope" in json.dumps(accept_without_write.model_dump())
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_ai_tools_surface_rest_quota_errors(monkeypatch):
+    cache.clear()
+    monkeypatch.setenv("AI_PROVIDER", "fake")
+    monkeypatch.setattr("scenes.ai_api.get_effective_cap", lambda user, feature: 0)
+    user = get_user_model().objects.create_user(username="mcp-ai-quota-owner")
+    token, _, _ = _create_mcp_access_token(user, scopes=("ai:use",))
+    rest = APIClient()
+    rest.force_authenticate(user)
+    project_response = rest.post("/api/projects/blank/", {}, format="json")
+    project_id = project_response.json()["id"]
+    body = {"prompt": "Create a scene", "vendor": "mistral"}
+    rest_error = rest.post(f"/api/projects/{project_id}/ai/create-scene/", body, format="json")
+    mcp_error = _call_mcp_tool(token, "ai_create_scene", {"project_id": project_id, **body})
+    assert rest_error.status_code == 429
+    assert rest_error.json()["error"] == "quota_exceeded"
+    assert mcp_error.isError is True
+    assert "HTTP 429" in json.dumps(mcp_error.model_dump())
+    assert "quota_exceeded" in json.dumps(mcp_error.model_dump())
 
 
 @pytest.mark.django_db(transaction=True)

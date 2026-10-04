@@ -39,11 +39,12 @@ def _json_data(value: Any) -> Any:
 
 
 def _rest_error(http_status: int, body: Any) -> McpError:
+    serialized_body = json.dumps(_json_data(body), ensure_ascii=False, sort_keys=True)
     if http_status == 404:
-        message = "The REST operation returned HTTP 404 Not Found."
+        message = f"The REST operation returned HTTP 404 Not Found: {serialized_body}"
         code = -32004
     else:
-        message = f"The REST operation failed with HTTP {http_status}."
+        message = f"The REST operation failed with HTTP {http_status}: {serialized_body}"
         code = -32000
     return McpError(
         ErrorData(

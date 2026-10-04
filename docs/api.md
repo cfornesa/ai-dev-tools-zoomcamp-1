@@ -28,7 +28,16 @@ endpoints; the legacy public-project gallery retains its REST-defined 2D/3D
 card mix. Public content tools and resources require `gallery:read`; owner
 project/version tools require `projects:write` (including reads, so
 `gallery:read` alone never grants private-project access). `health_check` and
-`whoami` require authentication but no additional scope. Thumbnails use MCP
+`whoami` require authentication but no additional scope. AI generation,
+editing, persistent run creation/read, and standalone art generation use
+`ai:use`; accepting a proposal also requires `projects:write`. These tools call
+the existing REST handlers, preserving their owner checks, validation,
+provider behavior, quotas, and entitlements. Create/edit return an unsaved
+proposal. Only the explicit `ai_accept_proposal` tool persists a scene, with a
+required `base_version_id` and REST validation. `ai_start_run` creates a
+persistent run without blocking on provider work; `ai_get_run` only reads its
+state. Standalone art snippets are returned as data and are never executed by
+the MCP service. Thumbnails use MCP
 image content; published-asset results contain the REST response bytes encoded
 as base64 with media type and checksum. The endpoint uses stateless JSON
 transport and does not authenticate from Django session cookies. The transport
@@ -63,6 +72,13 @@ REST HTTP status and response body in structured error data; private or
 owner-only project/version/template operations retain the REST endpoint's
 not-found boundary for foreign or unknown resources; public project reads keep
 the REST visibility policy.
+
+The authenticated MCP AI tools mirror `POST /api/projects/{projectId}/ai/create-scene/`,
+`POST /api/projects/{projectId}/ai/edit-scene/`, and
+`POST /api/projects/{projectId}/ai/accept-proposal/`; `POST /api/ai/runs/` and
+`GET /api/ai/runs/{runId}/`; and `POST /api/ai/art-pieces/generate/`. Structured
+tool errors retain the REST status and response body, including provider,
+validation, quota, and entitlement failures.
 
 ## MCP OAuth authorization server (#1216)
 

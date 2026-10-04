@@ -124,7 +124,11 @@ MCP request; a browser session cookie never substitutes for an access token.
 Every tool is authenticated and declares a scope. Public-content tools use
 `gallery:read`; owner 2D project/version tools use `projects:write` (including
 reads, so a gallery-only grant cannot read private project data); `health_check`
-and `whoami` require a valid token but no additional scope. Public data tools
+and `whoami` require a valid token but no additional scope. AI generation,
+editing, run creation/read, and standalone art generation require `ai:use`;
+accepting a proposal also requires `projects:write`. AI proposals remain
+unsaved until `ai_accept_proposal`, and persistent runs are created without
+blocking. Public data tools
 use the same eligibility rules as their REST counterpart; a missing or
 ineligible individual resource returns not found. MCP schemas below list the
 SDK input properties; optional properties may be omitted.
@@ -158,6 +162,12 @@ SDK input properties; optional properties may be omitted.
 | `save_version` | `projects:write` |
 | `restore_version` | `projects:write` |
 | `save_version_as_template` | `projects:write` |
+| `ai_create_scene` | `ai:use` |
+| `ai_edit_scene` | `ai:use` |
+| `ai_accept_proposal` | `ai:use`, `projects:write` |
+| `ai_start_run` | `ai:use` |
+| `ai_get_run` | `ai:use` |
+| `ai_generate_art_piece` | `ai:use` |
 
 | Tool | Input schema | Example call | Result |
 |---|---|---|---|
@@ -188,6 +198,12 @@ SDK input properties; optional properties may be omitted.
 | `save_version` | `project_id: string`, `scene_json: object`, `origin: string`, `change_label?: string` | `save_version({"project_id": "<uuid>", "scene_json": {}, "origin": "manual"})` | REST schema validation, immutable version creation and current-version advancement. |
 | `restore_version` | `project_id: string`, `version_id: integer` | `restore_version({"project_id": "<uuid>", "version_id": 1})` | Creates a new current version from the historical snapshot, preserving REST rules. |
 | `save_version_as_template` | `project_id: string`, `version_id: integer`, `name: string`, `category?: string`, `description?: string` | `save_version_as_template({"project_id": "<uuid>", "version_id": 1, "name": "Snapshot"})` | Creates an owner-private template snapshot through REST validation. |
+| `ai_create_scene` | `project_id: string`, `prompt: string`, `vendor?: string`, `model?: string`, `persona_id?: integer`, `target_ids?: string[]` | `ai_create_scene({"project_id": "<uuid>", "prompt": "Add a sun"})` | Unsaved scene proposal; REST owner, validation, rate, quota, and entitlement checks apply. |
+| `ai_edit_scene` | `project_id: string`, `prompt: string`, `current_scene: object`, `base_version_id: integer | null`, `vendor?: string`, `model?: string`, `persona_id?: integer`, `target_ids?: string[]` | `ai_edit_scene({...})` | Unsaved patch proposal; REST stale-base, validation, rate, quota, and entitlement checks apply. |
+| `ai_accept_proposal` | `project_id: string`, `operation: string`, `scene_json: object`, `base_version_id: integer | null`, `change_label?: string`, `client_request_id?: string` | `ai_accept_proposal({...})` | Explicitly persists one validated immutable version; requires both AI and project-write scopes. |
+| `ai_start_run` | `target_type: string`, `operation: string`, `prompt: string`, `project_id?: string`, `project3d_id?: string`, `scope?: string`, `selected_target_ids?: string[]`, `assets?: object[]`, `use_intent_notes?: boolean`, `vendor?: string`, `model?: string`, `start_request_id?: string` | `ai_start_run({...})` | Creates a persistent run and returns immediately; uses REST quota and entitlement checks. |
+| `ai_get_run` | `run_id: integer` | `ai_get_run({"run_id": 42})` | Reads only the caller's run state; does not advance or accept it. |
+| `ai_generate_art_piece` | `prompt: string`, `library: string`, `vendor?: string`, `model?: string`, `persona_id?: integer` | `ai_generate_art_piece({"prompt": "A star field", "library": "svg"})` | Returns standalone snippet data; REST credential, quota, and entitlement checks apply, and MCP does not execute it. |
 
 Page sizes are clamped to 1–60. Gallery cursors are opaque, may expire, and
 are scoped to their corresponding gallery type or collection sort. Search

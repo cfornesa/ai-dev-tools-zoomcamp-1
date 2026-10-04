@@ -3,6 +3,7 @@ import { expect, test, type TestInfo } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { expandGeneratedArtEditorTools } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -52,10 +53,12 @@ test.describe('existing generated-piece targeting (#921)', () => {
       const piece = (await created.json()) as { public_id: string };
 
       await page.goto(`/users/@${handle}/edit/${slug}`);
-      const editorToolsToggle = page.locator('button.editor-tools-mobile-toggle');
-      if (await editorToolsToggle.count()) {
-        await editorToolsToggle.click();
-        await expect(editorToolsToggle).toHaveAttribute('aria-expanded', 'true');
+      await expandGeneratedArtEditorTools(page);
+      if (viewport.width <= 1024) {
+        await expect(page.getByRole('button', { name: 'Editor tools' })).toHaveAttribute(
+          'aria-expanded',
+          'true',
+        );
         await expect(page.locator('#art-piece-editor-tools-grid')).toHaveAttribute(
           'data-collapsed',
           'false',
@@ -128,6 +131,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
         'false',
       );
     }
+    await expandGeneratedArtEditorTools(page);
     await page.locator('button[aria-label="AI edit"]').click();
     const prompt = page.getByRole('textbox', {
       name: 'Describe the revision you want to generate',
@@ -185,6 +189,7 @@ test.describe('existing generated-piece targeting (#921)', () => {
         'false',
       );
     }
+    await expandGeneratedArtEditorTools(page);
     await page.locator('button[aria-label="AI edit"]').click();
     const prompt = page.getByRole('textbox', {
       name: 'Describe the revision you want to generate',

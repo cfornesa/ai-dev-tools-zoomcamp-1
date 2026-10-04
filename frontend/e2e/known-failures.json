@@ -28,34 +28,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiRegionTargetExisting.spec.ts|existing generated-piece targeting (#921) › targets one existing region at 375px",
-    "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/artPiece2dEditor.spec.ts|2D AI editor engine modes (#618) › catalogs all 2D engines and preserves source-only editor identity through revision/save",
-    "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/artPiece3dEditor.spec.ts|3D AI editor engine modes (#620) › preserves authored Three.js and A-Frame editor identity through revision/save",
-    "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/artPieceFakeRefinement.spec.ts|fake-provider generated-piece refinement (#698) › accepts an observable AI refinement for every supported engine",
-    "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/artPieceSixEngineZip.spec.ts|Six-engine offline regular and immersive bundles (#609) › extracts and renders every engine in regular and immersive presentations offline",
     "issue": 1234,
     "added": "2026-10-04",
@@ -64,14 +36,7 @@
   },
   {
     "key": "chromium|e2e/artPieceThumbnailCapture.spec.ts|Generated thumbnail service: capture artwork instead of hash-derived placeholders (#438) › creating a piece through the real Studio, and revising it from the Editor, each replace the fallback with a real capture",
-    "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/artPieceThumbnailCapture.spec.ts|Generated thumbnail service: capture artwork instead of hash-derived placeholders (#438) › the Regenerate thumbnail button captures off-screen, a failed capture leaves the fallback until retried, and cross-user upload/public-route access stay denied",
-    "issue": 1171,
+    "issue": 1236,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
@@ -98,13 +63,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/editOutputConsistency.spec.ts|edit-to-output consistency (#671) › manual and fake-provider AI edits reach regular, immersive, and ZIP outputs",
-    "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/immersive3dToolbar769.spec.ts|structured 3D immersive view toolbar (#769) › exact icon row and Steer inside Piece controls",
     "issue": 1231,
     "added": "2026-10-04",
@@ -112,22 +70,8 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/livePreview.spec.ts|Generated-piece live preview (#669) › debounces source edits, keeps the latest frame, and preserves the last good frame on errors",
-    "issue": 1171,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/localGalleryCards.spec.ts|Local project gallery cards (#1087) › renders local metadata, thumbnails/fallbacks, and responsive cards",
     "issue": 1181,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/manualEdit3d.spec.ts|Generated 3D manual editing tools (#668) › adds, outlines, transforms, saves, and publishes Three.js and A-Frame edits",
-    "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
@@ -156,13 +100,6 @@
   {
     "key": "chromium|e2e/profileHandles.spec.ts|public handle lifecycle (#551) › generates, changes, validates, and redirects handles at 375x812",
     "issue": 1230,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/publicDraw.spec.ts|C2.js Interactive visitor drawing (#670) › draws temporarily on regular and immersive views and captures the marks",
-    "issue": 1171,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1

@@ -22,7 +22,11 @@ Goal 7 status: locally complete with #1178 dependency-blocked on #1235. Eligible
 
 ## Goal 8 — diagnosis first
 
-Not started. Required order: #1171, #1185, #1186, #1181, #1182, #1183. Capture first-failure evidence; classify and comment. Fix test-only causes; file/link product issues for product causes. Do not modify gallery markup beyond #1181/#1182. Record cause/action/status table.
+Required order: #1171, #1185, #1186, #1181, #1182, #1183. Capture first-failure evidence; classify and comment. Fix test-only causes; file/link product issues for product causes. Do not modify gallery markup beyond #1181/#1182. Record cause/action/status table.
+
+| Issue | State | Commit | QA matrix | Blocker / next action |
+|---|---|---|---|---|
+| #1171 | test-side failures cleared; one product-owned case remains | commit pending | pending issue comment | Focused local union: 13 passed / 1 failed; sole failure is AI refinement's saved version not receiving a captured thumbnail. New #1236 is in Batch 14 and owns it; baseline entry moved to #1236. Linux evidence pending owner dispatch. Next: #1185 |
 
 ## Goal 9 — public discoverability
 

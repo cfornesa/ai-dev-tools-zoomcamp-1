@@ -38,7 +38,7 @@ const FIXTURES: Fixture[] = [
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="teal" /><circle cx="400" cy="300" r="120" fill="#172554" /></svg>',
     manualMarker: '#172554',
     aiMarker: '#e76f51',
-    selector: 'svg',
+    selector: 'svg[viewBox="0 0 800 600"]',
   },
   {
     engine: 'p5js',

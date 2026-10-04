@@ -844,7 +844,12 @@ The same metadata service provides anonymous projections for the site shell:
   `GET /api/public/share-meta/site/gallery/` also return a bounded
   `gallery_items` array for no-JavaScript HTML rendering. The home response
   uses `/` as its canonical path; the gallery response uses `/gallery`.
-  Each item contains only `title` and a canonical `path`. The list includes
+  Each item contains only `title`, a canonical `path`, and an optional
+  plain-text `description` bounded to 320 characters. 2D pieces use their
+  public description; generated pieces and collections use the same
+  SEO-description/answer-summary precedence as `/llms-full.txt`, then fall
+  back to the record's description. 3D pieces may omit a description. The
+  list includes
   eligible published 2D, 3D, generated-art and public collection entries
   whose owner has an active public profile with a handle, in deterministic
   gallery order, capped at the first 24 items. Private, unlisted-profile,

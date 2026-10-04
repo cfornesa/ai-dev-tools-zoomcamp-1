@@ -23,6 +23,7 @@ test.describe('public gallery collection mode (#565)', () => {
       const handle = ((await profileResponse.json()) as { handle: string }).handle;
       const created = await apiPost(ownerContext, '/api/account/collections/', {
         title: `Gallery collection ${viewport.width}`,
+        description: 'Crawlable collection description',
       });
       expect(created.status()).toBe(201);
       const collection = (await created.json()) as { id: string; slug: string; title: string };
@@ -45,6 +46,9 @@ test.describe('public gallery collection mode (#565)', () => {
         'href',
         `/users/@${handle}/collections/${collection.slug}`,
       );
+      expect(
+        await noJavaScriptPage.locator('noscript').evaluate((element) => element.outerHTML),
+      ).toContain('Crawlable collection description');
       await noJavaScriptContext.close();
 
       await anonymousPage.setViewportSize(viewport);

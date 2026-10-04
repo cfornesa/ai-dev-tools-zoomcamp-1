@@ -123,6 +123,9 @@ test.describe('mixed public gallery', () => {
       'href',
       /\/users\/@e2e_owner\/pieces\/gallery-generated-fixture/,
     );
+    expect(
+      await noJavaScriptPage.locator('noscript').evaluate((element) => element.outerHTML),
+    ).toContain('A public gallery generated fixture.');
     await noJavaScriptContext.close();
 
     const anonymousContext = await browser.newContext();

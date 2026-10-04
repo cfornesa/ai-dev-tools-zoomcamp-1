@@ -48,7 +48,7 @@ type ShareMetadata = {
   author?: string;
   canonical_path: string;
   image_url: string | null;
-  gallery_items?: Array<{ title: string; path: string }>;
+  gallery_items?: Array<{ title: string; path: string; description?: string }>;
   gallery_heading?: string;
 };
 
@@ -319,11 +319,14 @@ function metadataTags(metadata: ShareMetadata | null, requestPath: string): stri
 }
 
 function noScriptGallery(metadata: ShareMetadata | null): string {
-  const items = metadata?.gallery_items;
-  if (!items?.length) return '';
+  if (metadata === null || !metadata.gallery_items?.length) return '';
+  const items = metadata.gallery_items;
   const heading = metadata.gallery_heading ?? 'Public gallery';
   const links = items
-    .map(({ title, path }) => `<li><a href="${escapeHtml(path)}">${escapeHtml(title)}</a></li>`)
+    .map(({ title, path, description }) => {
+      const summary = description ? `<p>${escapeHtml(description)}</p>` : '';
+      return `<li><a href="${escapeHtml(path)}">${escapeHtml(title)}</a>${summary}</li>`;
+    })
     .join('\n        ');
   return `<noscript><section aria-label="${escapeHtml(heading)}"><h1>${escapeHtml(heading)}</h1><ul>\n        ${links}\n      </ul></section></noscript>`;
 }

@@ -81,6 +81,11 @@ describe('vite preview share metadata (production run path)', () => {
                   : generated
                     ? 'Generated ocean'
                     : '<script>Gallery injection</script> & ocean',
+                description: collection
+                  ? 'Public collection description'
+                  : generated
+                    ? 'Generated piece description'
+                    : '<img src=x onerror=alert(1)>',
                 path: collection
                   ? '/users/@artist/collections/spring'
                   : generated
@@ -173,6 +178,8 @@ describe('vite preview share metadata (production run path)', () => {
     expect(html).toContain(
       '<a href="/users/@artist/pieces/ocean?view=public&amp;sort=new">&lt;script&gt;Gallery injection&lt;/script&gt; &amp; ocean</a>',
     );
+    expect(html).toContain('<p>&lt;img src=x onerror=alert(1)&gt;</p>');
+    expect(html).not.toContain('<img src=x onerror=alert(1)>');
     expect(html).not.toContain('<script>Gallery injection</script>');
   });
 

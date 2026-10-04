@@ -1,6 +1,7 @@
 """Issues #653/#654 public share metadata/image privacy contracts."""
 
 import json
+import xml.etree.ElementTree as ET
 from io import BytesIO
 from pathlib import Path
 
@@ -157,6 +158,7 @@ def test_site_profile_collection_and_home_metadata_are_public_and_canonical(publ
         {
             "title": 'Collection <script>alert(1)</script>',
             "path": "/users/@share-artist/collections/featured",
+            "description": "Collection description",
         }
     ]
 
@@ -165,7 +167,11 @@ def test_site_profile_collection_and_home_metadata_are_public_and_canonical(publ
     assert generated_gallery.data["canonical_path"] == "/gallery?type=generated"
     assert generated_gallery.data["gallery_heading"] == "Generated art gallery"
     assert generated_gallery.data["gallery_items"] == [
-        {"title": "Generated share", "path": "/users/@share-artist/pieces/share-generated"}
+        {
+            "title": "Generated share",
+            "path": "/users/@share-artist/pieces/share-generated",
+            "description": "Generated description",
+        }
     ]
 
     profile_response = client.get("/api/public/share-meta/site/profile/share-artist/")
@@ -258,6 +264,51 @@ def test_generated_gallery_fallback_hides_unpublished_or_soft_deleted_pieces(pub
     deleted = client.get("/api/public/share-meta/site/generated/")
     assert deleted.status_code == 200
     assert deleted.data["gallery_items"] == []
+
+
+@pytest.mark.django_db(transaction=True)
+def test_description_updates_propagate_to_llms_gallery_and_sitemap(public_records):
+    project, _, piece = public_records
+    PublicProfile.objects.create(user=project.owner, handle="share-artist", is_public=True)
+    piece.public_slug = "propagated-generated"
+    piece.description = "Older piece description"
+    piece.seo_config = {"description": "Fresh SEO piece description"}
+    piece.save(update_fields=["public_slug", "description", "seo_config"])
+    settings = SiteSettings.get_solo()
+    settings.site_description = "Fresh site description"
+    settings.save(update_fields=["site_description"])
+    client = APIClient()
+
+    llms = client.get("/llms-full.txt")
+    assert llms.status_code == 200
+    llms_body = llms.content.decode()
+    assert "> Fresh site description" in llms_body
+    assert (
+        "- [Generated share](/users/@share-artist/pieces/propagated-generated): "
+        "Fresh SEO piece description"
+    ) in llms_body
+
+    gallery = client.get("/api/public/share-meta/site/gallery/")
+    assert gallery.status_code == 200
+    assert gallery.data["description"] == "Fresh site description"
+    generated = next(item for item in gallery.data["gallery_items"] if item["title"] == piece.title)
+    assert generated["description"] == "Fresh SEO piece description"
+
+    sitemap = client.get("/sitemap.xml")
+    assert sitemap.status_code == 200
+    namespace = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+    entries = {
+        entry.findtext(f"{namespace}loc"): entry.findtext(f"{namespace}lastmod")
+        for entry in ET.fromstring(sitemap.content).findall(f"{namespace}url")
+    }
+    piece_url = "http://testserver/users/@share-artist/pieces/propagated-generated"
+    assert entries[piece_url] == piece.updated_at.date().isoformat()
+
+    settings.site_description = ""
+    settings.save(update_fields=["site_description"])
+    empty_site_llms = client.get("/llms-full.txt").content.decode()
+    assert "> Fresh site description" not in empty_site_llms
+    assert "\n> \n" not in empty_site_llms
 
 
 @pytest.mark.django_db(transaction=True)

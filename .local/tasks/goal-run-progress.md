@@ -40,6 +40,7 @@ Goal 8 gate passed locally. The required 61-scenario Chromium union had 60 pass 
 | Issue | Cause | Action | Status / next step |
 |---|---|---|---|
 | #1199 | Missing generated crawler directive route | Documented contract; added request-time text/plain robots view and Vite proxy; llms behavior unchanged | `a6aae25b`, focused pytest 1/1 + Ruff pass; [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1199#issuecomment-5980148898); continue #1200 |
+| #1200 | Missing public sitemap, including stable lastmod and cap | Added shared CMS/profile selectors, eligible collections/piece selectors, canonical URLs, deterministic 50k cap, and Vite proxy | `c21b0e9e`; focused crawler/llms 9/9 and shared URL consumers 85/85; [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1200#issuecomment-5980227450); continue #1201 |
 | #1171 | Test-side failures plus product thumbnail capture gap | Fixed test causes; #1236 owns product behavior and baseline | Locally complete; keep #1171 open for product follow-up |
 | #1185 | Test-side hidden-panel assumption; Linux duration/ECONNRESET not reproduced | Fixed panel setup; removed passing baselines | Local 6/6; Linux evidence pending owner dispatch |
 | #1186 | Fake-clock setup order; requested historical ZIP failure lacks trace and ZIP action in historical source | Fixed clock order; passed locally; posted evidence mismatch | Local 1/1; keep open for owner/CI evidence reconciliation |

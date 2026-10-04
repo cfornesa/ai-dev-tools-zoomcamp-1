@@ -184,6 +184,23 @@ Report after Part A and again after Part B: head SHA, run URL, each required che
 Ground rules: do not dispatch workflows, merge, or close issues. Pushing is permitted only as described in this goal. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
 ```
 
+### 5b. Baseline reconciliation and the helper README (after the owner's full-matrix dispatch)
+
+```text
+Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 branch check and its Standing rules, then do this.
+
+Goal: reconcile frontend/e2e/known-failures.json with real Linux evidence and finish the one Wave 1 item still open.
+
+State from the repository: commits already exist for #1160, #1161, #1162, #1163, #1166, #1168, #1169, #1170, #1172, #1174, #1179, #1180, #1184, #1190, #1191, #1225, #1226 and #1227 (all verified locally, Linux evidence pending); #1194 has no commit yet; #1228 is recorded but not implemented (Goal 7 owns it). The baseline still holds 49 entries: #1163 (5), #1164 (6), #1165 (2), #1166 (1, Firefox Draw.io, blocked by the host's Firefox build), #1171 (12), #1173 (4), #1175 (4), #1176, #1177, #1178, #1179 (2), #1180 (2), #1181, #1182 (2), #1183, #1185 (3), #1186.
+
+1. #1194 first (docs only, no dependency): frontend/e2e/support/README.md documenting every exported helper (include the helpers added by #1168, #1169, #1170 and #1174), the deprecated legacy helpers, recipes and stale patterns; link it from docs/process.md standard 2. Acceptance and verification are in the issue. One commit, ## QA matrix.
+2. Ask me for a full-matrix run ID only if I have not given you one in this goal's message. With a workflow_dispatch run ID for a head at or after the current branch head, read each shard's ratchet summary (`gh run view <id> --log` or the diagnostics artifacts) and produce a table: (a) baseline entries that now pass, (b) baseline entries that still fail, (c) failures not in the baseline, (d) expired or issue-less entries.
+3. For (a): remove those entries in one commit per owning issue, citing the run URL; the ratchet is designed to fail when a baseline entry passes. For (b): leave them, with the issue link. For (c): classify each (test-side, product, environment); fix nothing here, file or reference issues (milestone, matching docs/tasks.md entry). Keep the #1166 Firefox Draw.io entry unless the Linux run shows it passing. The #1180 2D owner-flow entries stay until #1187 (Goal 15).
+4. Without a run ID, do step 1 only and report that step 2 waits for my dispatch. Post a ## QA matrix on #1194 and a comment on #1096 with the reconciliation table.
+
+Ground rules: do not dispatch workflows, merge, or close issues. Pushing is permitted only as described in this goal. Two files carry expected uncommitted edits from an earlier Codex session: .local/tasks/backlog-session-2026-10-02-batch19.md and docs/tasks.md. Do NOT stop for them. Leave them as they are, never use git add -A or git commit -a, never stash, reset or discard, and stage only the paths you changed (git add <path>; for docs/tasks.md stage only your own hunks with git add -p). Stop and ask me only if: you are on the wrong branch, some other file is modified that you did not change, an action would delete or overwrite work, or the work would touch production data or secrets. For any other ambiguity, choose the conservative option, record the choice in your report, and keep going.
+```
+
 ### 6. Wave 2C — profile and publication
 
 ```text
@@ -191,7 +208,7 @@ Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 bra
 
 Goal: resolve the profile/publication E2E failures.
 
-1. Start with #1164: capture each failing request's HTTP 400 response body and classify the cause (test data, contract change, or product defect).
+1. Start with #1164 (6 baseline entries): capture each failing request's HTTP 400 response body and classify the cause (test data, contract change, or product defect).
 2. Then #1165 and #1173, which may be fixed by #1164 (#1174 moved to Goal 5 together with its product cause). Fix test-side causes. For any product cause, file a product issue (milestone, matching docs/tasks.md entry), leave its baseline entry in place with the issue link, and continue with the next issue; do not fix product code in this goal.
 3. One commit per issue, each removing its known-failures.json entries. Run the focused specs and make check.
 4. Post ## QA matrices and the batch gate result. Do not close issues.
@@ -337,7 +354,7 @@ Read docs/handoffs/codex-ci-unblock-2026-10-03.md in full, follow its Step 0 bra
 Goal: remove the inert shim and wrap up.
 
 1. Run rg "Open piece controls menu" frontend/ and confirm that only menu-mode usages remain. If any test still depends on the inert sr-only shim, list them, leave the shim in place, and report instead of removing it.
-2. Otherwise implement #1187: remove the shim, run the focused specs and make check, one commit, ## QA matrix.
+2. Otherwise implement #1187: remove the shim, run the focused specs and make check, one commit, ## QA matrix. Also remove the #1180 2D owner-flow baseline entries that #1187 resolves (see the #1180 comment) once they pass, and note that #1167 (the owner decision) is satisfied by this change.
 3. Report the final state: baseline entries remaining, issues still open (including Batch 17, #1196 to #1204, and Batch 18, #1205 to #1223), owner decisions outstanding (for example branch protection #1192, merge of PR #1094).
 4. Do not start #1193 or #1195 until I ask.
 

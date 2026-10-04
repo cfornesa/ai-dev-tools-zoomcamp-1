@@ -7,6 +7,13 @@
     "count": 1
   },
   {
+    "key": "chromium|e2e/ai2dPublication.spec.ts|AI-assisted 2D publication › publishes and returns to Draft from the stage-local control",
+    "issue": 1170,
+    "added": "2026-10-04",
+    "expires": "2026-10-25",
+    "count": 1
+  },
+  {
     "key": "chromium|e2e/aiAndRecovery.spec.ts|Local and server draft autosave › explicit Save and its interaction with sync failures, periodic ticks, reopening, and Exit-without-saving",
     "issue": 1186,
     "added": "2026-10-03",

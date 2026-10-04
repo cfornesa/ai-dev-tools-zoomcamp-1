@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlank3DProjectViaUI } from './support/createProject3d.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -93,7 +93,7 @@ test.describe('manual 3D outline selection', () => {
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlank3DProjectViaUI(page);
+    const projectId = await createServerProject3D(page);
 
     const saved = await apiPost(page.context(), `/api/projects3d/${projectId}/versions/`, {
       scene_json: FIXTURE_SCENE,
@@ -163,7 +163,6 @@ test.describe('manual 3D outline selection', () => {
     const toolbar = page
       .getByTestId('scene3d-preview-canvas-frame')
       .getByRole('toolbar', { name: 'Preview actions' });
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await toolbar.getByRole('button', { name: '3D authoring' }).click();
     await toolbar.getByRole('button', { name: 'Delete selected object' }).click();
     await expect(page.getByTestId('object-inspector')).not.toBeVisible();

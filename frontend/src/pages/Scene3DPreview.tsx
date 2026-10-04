@@ -2,11 +2,9 @@ import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 
-import CameraControl, {
-  type CameraControlProps,
-  type CameraStatus,
-} from '../components/CameraControl';
+import CameraControl, { type CameraControlProps } from '../components/CameraControl';
 import PieceStageToolbar from '../components/PieceStageToolbar';
 import StageControlsPopover from '../components/StageControlsPopover';
 import PieceStageIcon from '../components/PieceStageIcon';
@@ -22,6 +20,7 @@ import {
   createSonicEngine,
   SONIC_INSTRUMENT_OPTIONS,
   SONIC_SCALE_OPTIONS,
+  type MicEffectName,
   type SonicEngine,
   type SonicEffectName,
   type SonicEffectSettings,
@@ -30,6 +29,16 @@ import {
   type MelodicSynthSettings,
   type SonicVoice,
 } from '../audio/sonicEngine';
+
+const MIC_EFFECTS: ReadonlyArray<{ name: MicEffectName; label: string }> = [
+  { name: 'distortion', label: 'Distortion' },
+  { name: 'chorus', label: 'Chorus' },
+  { name: 'tremolo', label: 'Tremolo' },
+  { name: 'pitch_shift', label: 'Pitch shift' },
+  { name: 'bitcrusher', label: 'Bitcrusher' },
+  { name: 'flanger', label: 'Flanger' },
+  { name: 'ring_mod', label: 'Ring mod' },
+];
 import { identifyScale, noteInScale, type PitchClass, type ScaleMatch } from '../audio/scaleTheory';
 import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import { captureLiveScreenshot, screenshotFilename } from '../export/captureLiveScreenshot';
@@ -41,15 +50,19 @@ import {
   updateThreeCameraAspect,
 } from '../render/threeSceneBuilder';
 import { prefersReducedMotion } from '../render/objectAnimation';
-import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
+import type { HandSignals } from '../tracking/handSignals';
 import type { TrackingFrame } from '../tracking/types';
 import HandGestureGuideDialog from './HandGestureGuideDialog';
-import type { Scene3DDocument } from './scene3dTypes';
+import type { Object3D, Scene3DDocument, Transform3D } from './scene3dTypes';
 import { useFullscreenToggle } from './useFullscreenToggle';
 import Scene3DAFramePreview from './Scene3DAFramePreview';
+import { useScene3DCameraState } from './useScene3DCameraState';
 import { resolveScene3DRenderer } from '../validation/scene3d';
 import type { Scene3DExportVariant } from '../export/generateHtmlExport3D';
 import { normalizeSonic } from '../audio/sonicContract';
+import { resolveAmbientSample } from '../audio/ambientSampleAsset';
+import { DEFAULT_SOUND_SETTINGS, SCENE3D_DEFAULT_KEYBOARD_SCALE } from '../audio/soundSettings';
+import { useSoundSettingsState } from '../audio/useSoundSettingsState';
 
 const HAND_MOVE_PINCH_THRESHOLD = 0.75;
 const PIANO_NOTES = Object.values(PIANO_KEY_MAP);
@@ -236,7 +249,9 @@ function ThreeScenePreview({
   showScreenshotButton = true,
   showGestureControl = true,
   showSoundControl = true,
+  showEditorHelpers = false,
   flyControls = false,
+  publicStructuredViewer = false,
   screenshotBaseName,
   onDownload,
   downloadFormat = 'zip',
@@ -248,6 +263,10 @@ function ThreeScenePreview({
   pauseAnimations = false,
   onPickObject,
   renderOverlay,
+  selectedObjectId,
+  onObjectGestureStart,
+  onObjectGestureChange,
+  onObjectGestureEnd,
 }: {
   scene: Scene3DDocument;
   /** #782: holds object animations at their authored pose (e.g. while a selection's handles are shown) without freezing the camera. */
@@ -258,6 +277,12 @@ function ThreeScenePreview({
   onPickObject?: (objectId: string | null) => void;
   /** #782: selection chrome (handles, floating toolbar, precise panel) drawn over the stage in canvas-frame pixels. */
   renderOverlay?: (context: StageOverlayContext) => ReactNode;
+  /** #1012: object selected in the manual editor receives the transform gizmo. */
+  selectedObjectId?: string | null;
+  /** #1012: transient transform gesture hooks owned by the manual editor. */
+  onObjectGestureStart?: () => void;
+  onObjectGestureChange?: (object: Object3D) => void;
+  onObjectGestureEnd?: () => void;
   /** #783/#781: while true (draw mode) object animations hold their authored pose. */
   frozen?: boolean;
   showScreenshotButton?: boolean;
@@ -272,6 +297,8 @@ function ThreeScenePreview({
    * every other caller, since it changes what arrow keys do (translation
    * instead of `OrbitControls`' own built-in panning). */
   flyControls?: boolean;
+  /** Scope public-viewer toolbar placement away from editor/embed stages. */
+  publicStructuredViewer?: boolean;
   /** Stage-level download action supplied by the owning editor/viewer. */
   onDownload?: (variant?: Scene3DExportVariant) => void | Promise<void>;
   /** Artifact format used by the owning surface, for accurate menu labels. */
@@ -288,6 +315,9 @@ function ThreeScenePreview({
   /** Base name for the downloaded screenshot filename (e.g. the project
    * title) -- falls back to the scene document's own `id`. */
   screenshotBaseName?: string;
+  /** Editor-only orientation aids; never part of the authored scene graph. */
+  showEditorHelpers?: boolean;
+  /** Ambient samples are local-first and export-only; public viewers fall back to synthesis. */
 }) {
   const frozenRef = useRef(frozen);
   frozenRef.current = frozen;
@@ -300,6 +330,15 @@ function ThreeScenePreview({
   } | null>(null);
   const onPickRef = useRef(onPickObject);
   onPickRef.current = onPickObject;
+  const selectedObjectIdRef = useRef(selectedObjectId);
+  selectedObjectIdRef.current = selectedObjectId;
+  const onObjectGestureStartRef = useRef(onObjectGestureStart);
+  onObjectGestureStartRef.current = onObjectGestureStart;
+  const onObjectGestureChangeRef = useRef(onObjectGestureChange);
+  onObjectGestureChangeRef.current = onObjectGestureChange;
+  const onObjectGestureEndRef = useRef(onObjectGestureEnd);
+  onObjectGestureEndRef.current = onObjectGestureEnd;
+  const transformDraggingRef = useRef(false);
   // Bumped whenever the camera moves or the stage resizes so the overlay re-projects.
   const [, setOverlayTick] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -316,13 +355,44 @@ function ThreeScenePreview({
   const sonicEngineRef = useRef<SonicEngine | null>(null);
   if (sonicEngineRef.current === null) sonicEngineRef.current = createSonicEngine();
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [ambientSampleUnavailable, setAmbientSampleUnavailable] = useState(false);
   const [soundControlsResetKey, setSoundControlsResetKey] = useState(0);
-  const [soundVolume, setSoundVolume] = useState(50);
-  const [ambientBpm, setAmbientBpm] = useState(90);
-  const [ambientVolume, setAmbientVolume] = useState(50);
-  const [ambientMuted, setAmbientMuted] = useState(false);
-  const [ambientScale, setAmbientScale] = useState<SonicScale>('pentatonic');
-  const [keyboardVolume, setKeyboardVolume] = useState(50);
+  const {
+    soundVolume,
+    setSoundVolume,
+    ambientBpm,
+    setAmbientBpm,
+    ambientVolume,
+    setAmbientVolume,
+    ambientMuted,
+    setAmbientMuted,
+    ambientScale,
+    setAmbientScale,
+    keyboardRoot: keyboardKey,
+    setKeyboardRoot: setKeyboardKey,
+    keyboardScale,
+    setKeyboardScale,
+    keyboardTranspose: transpose,
+    setKeyboardTranspose: setTranspose,
+    followKey,
+    setFollowKey,
+    keyboardEnabled,
+    setKeyboardEnabled,
+    keyboardVolume,
+    setKeyboardVolume,
+  } = useSoundSettingsState({
+    soundVolume: DEFAULT_SOUND_SETTINGS.soundVolume * 100,
+    ambientBpm: DEFAULT_SOUND_SETTINGS.ambientBpm,
+    ambientVolume: DEFAULT_SOUND_SETTINGS.ambientVolume,
+    ambientMuted: DEFAULT_SOUND_SETTINGS.ambientMuted,
+    ambientScale: DEFAULT_SOUND_SETTINGS.ambientScale,
+    keyboardRoot: DEFAULT_SOUND_SETTINGS.keyboardRoot,
+    keyboardScale: SCENE3D_DEFAULT_KEYBOARD_SCALE,
+    keyboardTranspose: DEFAULT_SOUND_SETTINGS.keyboardTranspose,
+    followKey: DEFAULT_SOUND_SETTINGS.followKey,
+    keyboardEnabled: false,
+    keyboardVolume: DEFAULT_SOUND_SETTINGS.keyboardVolume,
+  });
   const [melodicSynthSettings, setMelodicSynthSettings] = useState<MelodicSynthSettings>({
     oscillator: 'sine',
     envelope: { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.3 },
@@ -330,10 +400,6 @@ function ThreeScenePreview({
     octaveShift: 0,
   });
   const [masterFilterCutoff, setMasterFilterCutoff] = useState(2000);
-  const [keyboardKey, setKeyboardKey] = useState<PitchClass>('C');
-  const [keyboardScale, setKeyboardScale] = useState<SonicScale>('chromatic');
-  const [transpose, setTranspose] = useState(0);
-  const [followKey, setFollowKey] = useState(false);
   const [effects, setEffects] = useState<Record<SonicEffectName, SonicEffectSettings>>({
     distortion: { enabled: false, amount: 0 },
     chorus: { enabled: false, amount: 0, rate: 4, depth: 0.5 },
@@ -372,7 +438,18 @@ function ThreeScenePreview({
       envelope: authored.extras.synth.envelope,
       octaveShift: authored.extras.synth.octave_min - 3,
     }));
-  }, [scene.sonic]);
+  }, [
+    scene.sonic,
+    setAmbientBpm,
+    setAmbientScale,
+    setKeyboardKey,
+    setKeyboardScale,
+    setTranspose,
+    setFollowKey,
+    setSoundVolume,
+    setAmbientVolume,
+    setKeyboardVolume,
+  ]);
   useEffect(() => {
     const engine = sonicEngineRef.current;
     return () => engine?.dispose();
@@ -410,6 +487,26 @@ function ThreeScenePreview({
       Object.entries(effects).forEach(([name, settings]) => {
         engine.setEffect(name as SonicEffectName, settings);
       });
+      const ambientSampleId = normalizeSonic(scene.sonic)?.extras.ambient_sample;
+      if (ambientSampleId) {
+        // Issue #847: fail soft to the synthesized ambient walk if the
+        // sample can no longer be resolved locally (e.g. cleared browser
+        // storage) -- never block sound from enabling at all.
+        resolveAmbientSample(ambientSampleId)
+          .then((blob) => {
+            if (blob) {
+              engine.setAmbientSample(blob);
+              setAmbientSampleUnavailable(false);
+            } else {
+              engine.setAmbientSample(null);
+              setAmbientSampleUnavailable(true);
+            }
+          })
+          .catch(() => {
+            engine.setAmbientSample(null);
+            setAmbientSampleUnavailable(true);
+          });
+      }
       setSoundEnabled(true);
     }
   }
@@ -444,7 +541,6 @@ function ThreeScenePreview({
   // `isEditableElement` guards exactly that. Only attached at all while
   // both sound and this toggle are on, and torn down immediately if sound
   // itself is muted (see `handleToggleSound` above).
-  const [keyboardEnabled, setKeyboardEnabled] = useState(false);
   const [pressedPianoNotes, setPressedPianoNotes] = useState<Set<string>>(new Set());
 
   const pressPianoNote = useCallback(
@@ -505,6 +601,13 @@ function ThreeScenePreview({
   // flow -- audio-only, never touches the camera.
   const [micState, setMicState] = useState<'idle' | 'requesting' | 'active' | 'error'>('idle');
   const [micFailure, setMicFailure] = useState<MicFailureCategory | null>(null);
+  const [micEffects, setMicEffects] = useState<Record<MicEffectName, boolean>>(
+    () =>
+      Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+        MicEffectName,
+        boolean
+      >,
+  );
   async function handleToggleMic() {
     const engine = sonicEngineRef.current;
     if (!engine) return;
@@ -512,6 +615,12 @@ function ThreeScenePreview({
       engine.disconnectMic();
       setMicState('idle');
       setMicFailure(null);
+      setMicEffects(
+        Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+          MicEffectName,
+          boolean
+        >,
+      );
       return;
     }
     if (!isMicSupported()) {
@@ -535,29 +644,32 @@ function ThreeScenePreview({
     }
   }
 
-  // Issue #294: "Steer the piece" -- gesture-driven camera control.
-  const [gestureControlEnabled, setGestureControlEnabled] = useState(false);
-  // The scene-rebuild effect below only re-runs when `scene`/`renderError`
-  // change, not on every `gestureControlEnabled` toggle (toggling it
-  // shouldn't tear down and rebuild the whole Three.js scene graph) -- a
-  // ref, kept in sync on every render, is what its render-loop closure
-  // actually reads, matching this codebase's existing "latest value ref"
-  // convention (e.g. `CameraControl.tsx`'s own `onFrameRef`).
-  const gestureControlEnabledRef = useRef(gestureControlEnabled);
-  gestureControlEnabledRef.current = gestureControlEnabled;
-  const handSignalExtractorRef = useRef(createHandSignalExtractor());
-  const latestHandSignalsRef = useRef<HandSignals | null>(null);
-  const previousHandSignalsRef = useRef<HandSignals | null>(null);
-  const gestureStartRef = useRef<number | null>(null);
+  const {
+    gestureControlEnabled,
+    setGestureControlEnabled,
+    gestureControlEnabledRef,
+    handSignalExtractorRef,
+    latestHandSignalsRef,
+    previousHandSignalsRef,
+    gestureStartRef,
+    thereminEnabled,
+    setThereminEnabled,
+    thereminEnabledRef,
+    gestureCameraStatus,
+    setGestureCameraStatus,
+    gestureCameraStream,
+    setGestureCameraStream,
+    gestureCameraVideoRef,
+    cameraPreviewEnabled,
+    setCameraPreviewEnabled,
+    cameraPreviewStatus,
+    setCameraPreviewStatus,
+    cameraPreviewStream,
+    setCameraPreviewStream,
+    cameraPreviewVideoRef,
+    resetGestureSignals,
+  } = useScene3DCameraState();
 
-  // Issue #309: "camera theremin" -- independently toggleable alongside
-  // "Steer the piece", sharing this same `CameraControl`/hand-tracking
-  // pipeline (see the combined mount condition below and
-  // `handleGestureFrame`'s own doc comment) rather than a second camera
-  // stream/model instance.
-  const [thereminEnabled, setThereminEnabled] = useState(false);
-  const thereminEnabledRef = useRef(thereminEnabled);
-  thereminEnabledRef.current = thereminEnabled;
   function handleToggleTheremin() {
     const engine = sonicEngineRef.current;
     if (thereminEnabled) {
@@ -569,31 +681,12 @@ function ThreeScenePreview({
     setThereminEnabled(true);
   }
 
-  // Issue #297: camera-feed overlay + opacity/mirror controls. The stream
-  // becomes available before CameraControl marks hand tracking active.
-  const [gestureCameraStatus, setGestureCameraStatus] = useState<CameraStatus>('idle');
-  const [gestureCameraStream, setGestureCameraStream] = useState<MediaStream | null>(null);
-  const gestureCameraVideoRef = useRef<HTMLVideoElement | null>(null);
-  // Issue #342: a camera preview is independently toggleable from gesture
-  // steering and theremin. It uses the existing permission/error lifecycle,
-  // but has no frame handler, so it cannot alter the scene or sound.
-  const [cameraPreviewEnabled, setCameraPreviewEnabled] = useState(false);
-  const [cameraPreviewStatus, setCameraPreviewStatus] = useState<CameraStatus>('idle');
-  const [cameraPreviewStream, setCameraPreviewStream] = useState<MediaStream | null>(null);
-  const cameraPreviewVideoRef = useRef<HTMLVideoElement | null>(null);
   const {
     opacity: cameraOverlayOpacity,
     mirrored: cameraOverlayMirrored,
     setOpacity,
     setMirrored,
   } = useCameraOverlaySettings();
-
-  function resetGestureSignals() {
-    previousHandSignalsRef.current = null;
-    latestHandSignalsRef.current = null;
-    gestureStartRef.current = null;
-    handSignalExtractorRef.current = createHandSignalExtractor();
-  }
 
   useEffect(() => {
     const videoEl = gestureCameraVideoRef.current;
@@ -609,14 +702,14 @@ function ThreeScenePreview({
     // Keep status in the dependencies so stream attachment is retried after
     // a tracking transition; the video itself mounts as soon as the stream
     // exists, without waiting for the first tracked frame.
-  }, [gestureCameraStream, gestureCameraStatus]);
+  }, [gestureCameraStream, gestureCameraStatus, gestureCameraVideoRef]);
 
   useEffect(() => {
     const videoEl = cameraPreviewVideoRef.current;
     if (!videoEl) return;
     videoEl.srcObject = cameraPreviewStream;
     if (cameraPreviewStream) void Promise.resolve(videoEl.play()).catch(() => {});
-  }, [cameraPreviewStream, cameraPreviewStatus]);
+  }, [cameraPreviewStream, cameraPreviewStatus, cameraPreviewVideoRef]);
 
   function handleGestureFrame(frame: TrackingFrame) {
     if (gestureStartRef.current === null) gestureStartRef.current = performance.now();
@@ -720,6 +813,13 @@ function ThreeScenePreview({
     const size = activeRenderer.getSize(new THREE.Vector2());
     const aspect = (size.x || 1) / (size.y || 1);
     const { scene: threeScene, camera } = buildThreeSceneGraph(scene, aspect);
+    if (showEditorHelpers) {
+      const grid = new THREE.GridHelper(20, 20, 0x64748b, 0x334155);
+      grid.name = '__editor-grid-helper';
+      const axes = new THREE.AxesHelper(5);
+      axes.name = '__editor-axes-helper';
+      threeScene.add(grid, axes);
+    }
     cameraRef.current = camera;
 
     // Issue #271: mouse-drag/touch-drag orbit, scroll/pinch zoom, and
@@ -758,6 +858,46 @@ function ThreeScenePreview({
       };
       setOverlayTick((tick) => tick + 1);
     });
+
+    // Issue #1012: the manual editor uses the existing Three.js addon rather
+    // than maintaining a second DOM transform layer. The builder preserves
+    // each object's local transform on the named mesh, so the gizmo works for
+    // grouped objects without changing the authored scene hierarchy.
+    const transformControls = new TransformControls(camera, activeRenderer.domElement);
+    const selectedNode = selectedObjectIdRef.current
+      ? threeScene.getObjectByName(selectedObjectIdRef.current)
+      : undefined;
+    if (selectedNode && selectedObjectIdRef.current) {
+      transformControls.attach(selectedNode);
+      threeScene.add(transformControls);
+    }
+    const readTransform = (node: THREE.Object3D): Transform3D => ({
+      position: { x: node.position.x, y: node.position.y, z: node.position.z },
+      rotation: {
+        x: THREE.MathUtils.radToDeg(node.rotation.x),
+        y: THREE.MathUtils.radToDeg(node.rotation.y),
+        z: THREE.MathUtils.radToDeg(node.rotation.z),
+      },
+      scale: { x: node.scale.x, y: node.scale.y, z: node.scale.z },
+      opacity: scene.objects.find((object) => object.id === node.name)?.transform.opacity ?? 1,
+    });
+    const handleTransformDragging = (event: { value: unknown }) => {
+      const dragging = event.value === true;
+      transformDraggingRef.current = dragging;
+      controls.enabled = !dragging;
+      if (dragging) onObjectGestureStartRef.current?.();
+      else if (selectedNode && selectedObjectIdRef.current) {
+        const source = scene.objects.find((object) => object.id === selectedObjectIdRef.current);
+        if (source) {
+          onObjectGestureChangeRef.current?.({
+            ...source,
+            transform: readTransform(selectedNode),
+          });
+        }
+        onObjectGestureEndRef.current?.();
+      }
+    };
+    transformControls.addEventListener('dragging-changed', handleTransformDragging);
 
     // #782: a click that is not a drag picks the scene object under the pointer (or clears the pick).
     const objectIds = new Set(scene.objects.map((object) => object.id));
@@ -945,7 +1085,7 @@ function ThreeScenePreview({
       }
       // #781: a frozen stage (draw mode) also holds the camera -- no orbit/zoom drag, fly keys, or
       // hand steering move it, so Confirm/Cancel returns to exactly the prior camera.
-      controls.enabled = !frozenRef.current;
+      controls.enabled = !frozenRef.current && !transformDraggingRef.current;
       if (!frozenRef.current) {
         if (gestureControlEnabledRef.current) applyGestureCameraControl(deltaSeconds);
         if (flyControls) applyFlyTranslation(deltaSeconds);
@@ -972,12 +1112,15 @@ function ThreeScenePreview({
       }
       pickDom.removeEventListener('pointerdown', handlePickDown);
       pickDom.removeEventListener('pointerup', handlePickUp);
+      transformControls.removeEventListener('dragging-changed', handleTransformDragging);
+      transformControls.dispose();
+      transformDraggingRef.current = false;
       controls.dispose();
       disposeThreeSceneGraph(threeScene);
       cameraRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rendererRef/renderError are refs/state read once per effect run, not reactive inputs the loop needs to resubscribe to independently of `scene`.
-  }, [scene, renderError]);
+  }, [scene, renderError, selectedObjectId, showEditorHelpers]);
 
   const cameraOverlayLive = Boolean(
     (showGestureControl && gestureControlEnabled && gestureCameraStream) ||
@@ -1015,7 +1158,10 @@ function ThreeScenePreview({
 
   if (renderError) {
     return (
-      <div ref={containerRef} className="scene3d-preview scene3d-preview-unavailable">
+      <div
+        ref={containerRef}
+        className={`scene3d-preview scene3d-preview-unavailable${publicStructuredViewer ? ' scene3d-preview--public-structured' : ''}`}
+      >
         <div role="status" aria-live="polite" data-testid="scene3d-preview-unavailable">
           <p>3D preview isn't available in this browser.</p>
           <p>
@@ -1031,6 +1177,11 @@ function ThreeScenePreview({
             onDownload={onDownload}
             downloadFormat={downloadFormat}
             capabilities={THREE_D_STAGE_CAPABILITIES}
+            fullscreenControlClassName={
+              publicStructuredViewer && toolbarMode === 'inline'
+                ? 'piece-stage-fullscreen-control'
+                : undefined
+            }
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
             editorControls={editorControls}
@@ -1041,7 +1192,11 @@ function ThreeScenePreview({
   }
 
   return (
-    <div ref={containerRef} className="scene3d-preview" data-testid="scene3d-preview">
+    <div
+      ref={containerRef}
+      className={`scene3d-preview${publicStructuredViewer ? ' scene3d-preview--public-structured' : ''}`}
+      data-testid="scene3d-preview"
+    >
       <div
         ref={canvasFrameRef}
         className="scene3d-preview-canvas-frame"
@@ -1090,6 +1245,11 @@ function ThreeScenePreview({
           onDownload={onDownload}
           downloadFormat={downloadFormat}
           capabilities={THREE_D_STAGE_CAPABILITIES}
+          fullscreenControlClassName={
+            publicStructuredViewer && toolbarMode === 'inline'
+              ? 'piece-stage-fullscreen-control'
+              : undefined
+          }
           immersiveHref={immersiveHref}
           toolbarMode={toolbarMode}
           isFullscreen={isFullscreen}
@@ -1181,23 +1341,45 @@ function ThreeScenePreview({
               )}
               {showSoundControl && soundEnabled && (
                 <div className="scene3d-sound-settings-inline">
-                  <div className="editor-camera-overlay-control">
-                    <label htmlFor="scene3d-ambient-bpm">Ambient BPM: {ambientBpm}</label>
-                    <input
-                      id="scene3d-ambient-bpm"
-                      type="range"
-                      min={40}
-                      max={220}
-                      step={1}
-                      value={ambientBpm}
-                      aria-valuetext={`${ambientBpm} BPM`}
-                      onChange={(event) => {
-                        const next = Number(event.target.value);
-                        setAmbientBpm(next);
-                        sonicEngineRef.current?.setTempo(next);
-                      }}
-                    />
-                  </div>
+                  {(() => {
+                    const ambientSampleId = normalizeSonic(scene.sonic)?.extras.ambient_sample;
+                    const ambientSampleActive =
+                      Boolean(ambientSampleId) && !ambientSampleUnavailable;
+                    return (
+                      <div className="editor-camera-overlay-control">
+                        <label htmlFor="scene3d-ambient-bpm">Ambient BPM: {ambientBpm}</label>
+                        <input
+                          id="scene3d-ambient-bpm"
+                          type="range"
+                          min={40}
+                          max={220}
+                          step={1}
+                          value={ambientBpm}
+                          aria-valuetext={`${ambientBpm} BPM`}
+                          disabled={ambientSampleActive}
+                          title={
+                            ambientSampleActive
+                              ? 'BPM has no effect while an ambient sample is playing.'
+                              : undefined
+                          }
+                          onChange={(event) => {
+                            const next = Number(event.target.value);
+                            setAmbientBpm(next);
+                            sonicEngineRef.current?.setTempo(next);
+                          }}
+                        />
+                        {ambientSampleActive && (
+                          <p role="status">BPM has no effect while an ambient sample is playing.</p>
+                        )}
+                        {ambientSampleId && ambientSampleUnavailable && (
+                          <p role="alert">
+                            The ambient sample could not be loaded; using the synthesized ambient
+                            walk instead.
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className="editor-camera-overlay-control">
                     <label htmlFor="scene3d-ambient-volume">Ambient volume: {ambientVolume}%</label>
                     <input
@@ -1669,6 +1851,26 @@ function ThreeScenePreview({
                     <p role="alert" aria-live="assertive" data-testid="mic-error">
                       {micRecoveryMessageFor(micFailure)}
                     </p>
+                  )}
+                  {micState === 'active' && (
+                    <fieldset>
+                      <legend>Microphone effects</legend>
+                      {MIC_EFFECTS.map(({ name, label }) => (
+                        <label key={name}>
+                          <input
+                            type="checkbox"
+                            checked={micEffects[name]}
+                            onChange={(event) => {
+                              const enabled = event.target.checked;
+                              if (sonicEngineRef.current?.setMicEffect(name, enabled)) {
+                                setMicEffects((current) => ({ ...current, [name]: enabled }));
+                              }
+                            }}
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </fieldset>
                   )}
                 </div>
               )}

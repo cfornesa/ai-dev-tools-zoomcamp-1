@@ -80,16 +80,21 @@ test.describe('generated immersive toolset (#691)', () => {
         '/users/@artist/pieces/sample-piece',
       );
       // Reset view lives in Piece controls, so the popover is always present on immersive surfaces.
-      await expect(page.getByRole('button', { name: 'Piece controls' })).toHaveCount(1);
+      await expect(page.getByRole('button', { name: 'Piece controls', exact: true })).toHaveCount(
+        1,
+      );
       // Steer lives inside the Piece controls popover; the guide is its own button (#766).
       await expect(page.getByRole('button', { name: /^Hand tracking$/ })).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Show hand gesture guide' })).toHaveCount(
-        engine === 'threejs' ? 1 : 0,
-      );
-      await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveCount(
-        engine === 'threejs' ? 1 : 0,
-      );
-      await expect(page.getByRole('button', { name: 'Open piece controls menu' })).toHaveCount(0);
+      // Both affordances remain visible even without the matching capability;
+      // disabled controls explain the Creator-plan boundary.
+      await expect(page.getByRole('button', { name: 'Show hand gesture guide' })).toHaveCount(1);
+      await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveCount(1);
+      // No operable Piece controls menu trigger is present on immersive pages.
+      await expect(
+        page
+          .getByRole('toolbar', { name: 'Piece actions' })
+          .locator('button.piece-stage-menu-trigger'),
+      ).toHaveCount(0);
 
       await page.setViewportSize({ width: 375, height: 812 });
       await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 375);
@@ -114,7 +119,15 @@ test.describe('generated immersive toolset (#691)', () => {
       await expect(toolbar).toBeVisible();
       const labels = await toolbar.locator('.piece-stage-toolbar-group').evaluate((group) =>
         Array.from(group.querySelectorAll(':scope > button, :scope > div > button'))
-          .filter((node) => !node.closest('[data-piece-stage-download-menu]'))
+          .filter((node) => {
+            const bounds = node.getBoundingClientRect();
+            return (
+              bounds.width > 1 &&
+              bounds.height > 1 &&
+              getComputedStyle(node).visibility === 'visible' &&
+              !node.closest('[data-piece-stage-download-menu]')
+            );
+          })
           .map((node) => node.getAttribute('aria-label') ?? ''),
       );
       expect(labels[0]).toBe('Take screenshot');

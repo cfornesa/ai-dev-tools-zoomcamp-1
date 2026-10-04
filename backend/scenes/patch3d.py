@@ -180,7 +180,7 @@ def _touched_element_path(segments: list[str]) -> tuple[str, list[str]] | None:
     return None
 
 
-def validate_patch_operations3d(
+def validate_patch_operations3d(  # noqa: C901
     patch: Any, *, scene: dict[str, Any] | None = None, prompt: str | None = None
 ) -> list[PatchOperationError]:
     """The `scene3d` counterpart of `patch.py`'s `validate_patch_operations`

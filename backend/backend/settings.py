@@ -415,6 +415,12 @@ if GITHUB_OAUTH_ENABLED:
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+# Password login protection: allauth's login endpoint remains capped at
+# 30 requests/minute per IP, while this failed-attempt counter caps one
+# normalized email at 5 failed passwords per 300 seconds. Setting the limit
+# to 0 disables the failed-password counter without changing login behavior.
+ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
+ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 300
 # Password lifecycle safety (#563): reset links never create a session, and
 # changing/setting a password invalidates the current session so the next
 # authentication is explicit. Django's token generator remains single-use;
@@ -422,7 +428,10 @@ ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_LOGIN_ON_PASSWORD_RESET = False
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 PASSWORD_RESET_TIMEOUT = 3600
-ACCOUNT_FORMS = {'signup': 'backend.forms.RecaptchaSignupForm'}
+ACCOUNT_FORMS = {
+    'login': 'backend.login_forms.LoginForm',
+    'signup': 'backend.forms.RecaptchaSignupForm',
+}
 # V1 supports Google (required), GitHub, and LinkedIn (optional,
 # environment-gated)
 # sign-in only. Both providers verify the email during their OAuth flow,
@@ -451,6 +460,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'backend.context_processors.recaptcha',
+                'backend.context_processors.site_theme',
             ],
         },
     },

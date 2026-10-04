@@ -8,7 +8,7 @@ description: Implement one criterion-ready issue whose work is mechanical or boi
 Stage 2a of the loop in `LOOP-AGENTS.md` Section 2. Read
 `.agents/skills/_shared/HANDOFF-CONTRACT.md` first.
 
-**Rostered owner:** Opencode Go — `kimi-k3` for frontend/React work,
+**Rostered owner:** Opencode Go — `kimi-k2.5` for frontend/React work,
 `qwen3.6-plus` for backend/API work. State which you selected and why; the
 choice is recorded as provenance.
 
@@ -28,8 +28,13 @@ a diff is never a terminal state.
 ## Procedure
 
 Read the issue's acceptance criteria, `AGENTS.md`, `CONSTRAINTS.md`, and
-`docs/team/software-engineer.md`. Before writing tests read
-`docs/testing-guidelines.md`; for UI work read `docs/design-system.md`.
+`docs/team/software-engineer.md`. Read `CONVENTIONS.md` and the
+`docs/conventions/<topic>.md` page(s) the issue names in its Code-quality
+checklist (`docs/task-template.md`) before implementing — naming,
+atomicity, state-scoping, and efficiency rules live there, not in memory.
+Before writing tests read `docs/conventions/testing.md`; for UI work read
+`docs/conventions/react.md`, `docs/conventions/design-ux.md`, and
+`docs/conventions/accessibility.md`.
 
 Implement the criteria and add focused regression coverage that asserts the
 criterion itself, not the implementation's shape. Run the issue's documented
@@ -61,3 +66,7 @@ attempted command, the exact failure, the impact, and the next action.
 Hand the diff and its command output to stage 3 (`second-opinion-review`) if
 that stage was requested for this issue, otherwise to stage 4
 (`qa-self-review`).
+
+## Batch context
+
+This stage runs inside a `backlog-session` batch (`docs/process.md`, "Canonical batch transaction"). Before starting, read the batch manifest and the **batch impact matrix** (the rows for this issue and every other open issue that references the same files, selectors, routes, helpers, fixtures or specs). Do not undo or contradict a sibling issue's criteria. Add any newly touched shared surface to the matrix, naming the affected open issues. The unit of your deliverable is still one atomic issue; the batch only widens what you must check, not what you may change.

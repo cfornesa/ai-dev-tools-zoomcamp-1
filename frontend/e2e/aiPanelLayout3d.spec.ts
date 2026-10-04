@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { apiPost } from './support/api.js';
+import { createServerProjectAndOpenAIProposalPanel } from './support/aiProposal.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
@@ -14,19 +14,12 @@ test.describe('3D AI panel layout (#679)', () => {
   const fixtures = requireE2EFixtures();
 
   for (const viewport of VIEWPORTS) {
-    test(`keeps fields full width at ${viewport.width}x${viewport.height}`, async ({
-      page,
-      context,
-    }) => {
+    test(`keeps fields full width at ${viewport.width}x${viewport.height}`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const created = await apiPost(context, '/api/projects3d/', {});
-      const { id } = (await created.json()) as { id: string };
-      await page.goto(`/ai-projects3d/${id}`);
-
-      const panel = page.locator('.ai-proposal-panel');
+      const { panel } = await createServerProjectAndOpenAIProposalPanel(page, '3d');
       await expect(panel).toBeVisible();
-      const prompt = page.getByLabel('Describe the scene you want to generate');
+      const prompt = panel.getByLabel('Describe the scene you want to generate');
       await expect(prompt).toHaveCSS('resize', 'vertical');
       const promptBox = await prompt.boundingBox();
       const panelBox = await panel.boundingBox();

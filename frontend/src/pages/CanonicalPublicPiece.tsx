@@ -49,6 +49,7 @@ export default function CanonicalPublicPiece() {
         authorDisplayName={profile?.display_name}
         authorHandle={profile?.handle}
         canonicalRoute
+        showRelatedProjects
       />
     );
   }

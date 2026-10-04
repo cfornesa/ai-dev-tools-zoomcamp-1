@@ -3,7 +3,7 @@
 from urllib.parse import urlparse
 
 
-def sanitize_content_seo(value):
+def sanitize_content_seo(value):  # noqa: C901
     if value in (None, {}):
         return {}
     if not isinstance(value, dict):

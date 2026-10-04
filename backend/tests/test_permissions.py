@@ -8,6 +8,7 @@ own `owner_id ==` check) has nothing enforcing it stays correct.
 """
 
 import json
+import logging
 from pathlib import Path
 
 import pytest
@@ -193,3 +194,19 @@ def test_malformed_resource_type_defaults_to_deny(owner, private_project):
     )
     assert can(owner, Action.PROJECT_READ, version) is False
     assert can(owner, Action.DRAFT_READ, private_project) is False
+
+
+@pytest.mark.django_db
+def test_require_logs_one_minimal_denial_record(anonymous, private_project, caplog):
+    caplog.set_level(logging.WARNING, logger="scenes.permissions")
+
+    with pytest.raises(PermissionDenied):
+        require(anonymous, Action.PROJECT_WRITE, private_project)
+
+    assert len(caplog.records) == 1
+    assert caplog.records[0].permission_denial == {
+        "user_id": "anonymous",
+        "action": "project.write",
+        "resource_type": "Project",
+        "resource_id": str(private_project.pk),
+    }

@@ -183,7 +183,7 @@ export default function Scene3DAFramePreview({
         })}
         <PieceStageToolbar
           ariaLabel="Preview actions"
-          className="editor-tool-group scene3d-preview-actions"
+          className="editor-tool-group scene3d-preview-actions editor-piece-stage-toolbar"
           onScreenshot={showScreenshotButton ? handleScreenshot : undefined}
           onDownload={onDownload}
           downloadFormat={downloadFormat}

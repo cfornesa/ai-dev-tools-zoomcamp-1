@@ -1,5 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
+import { useSnapSettings } from '../editor/snapSettings';
+import { snap3dTransform } from '../editor/snap3d';
+
 import {
   object3DLabel,
   light3DLabel,
@@ -96,26 +99,29 @@ function Vec3Fields({
 function TransformFields({
   transform,
   onChange,
+  snapEnabled,
 }: {
   transform: Transform3D;
   onChange: (next: Transform3D) => void;
+  snapEnabled: boolean;
 }) {
+  const update = (next: Transform3D) => onChange(snapEnabled ? snap3dTransform(next) : next);
   return (
     <>
       <Vec3Fields
         legend="Position"
         value={transform.position}
-        onChange={(position) => onChange({ ...transform, position })}
+        onChange={(position) => update({ ...transform, position })}
       />
       <Vec3Fields
         legend="Rotation"
         value={transform.rotation}
-        onChange={(rotation) => onChange({ ...transform, rotation })}
+        onChange={(rotation) => update({ ...transform, rotation })}
       />
       <Vec3Fields
         legend="Scale"
         value={transform.scale}
-        onChange={(scale) => onChange({ ...transform, scale })}
+        onChange={(scale) => update({ ...transform, scale })}
       />
       <NumberField
         label="Opacity"
@@ -238,6 +244,7 @@ function Outline3DInspector({
   onAskAiChange,
   requestedSelection,
 }: Props) {
+  const { gridEnabled, setGridEnabled } = useSnapSettings();
   const [selection, setSelectionState] = useState<Outline3DSelection>(null);
   const appliedNonce = useRef<number | null>(null);
   useEffect(() => {
@@ -470,6 +477,14 @@ function Outline3DInspector({
             </button>
           )}
         </div>
+        <label>
+          <input
+            type="checkbox"
+            checked={gridEnabled}
+            onChange={(event) => setGridEnabled(event.target.checked)}
+          />
+          Snap 3D transforms
+        </label>
 
         {selection?.kind === 'camera' && (
           <div data-testid="camera-summary">
@@ -521,6 +536,7 @@ function Outline3DInspector({
             <TransformFields
               transform={selectedGroup.transform}
               onChange={(transform) => updateGroup(selectedGroup.id, { transform })}
+              snapEnabled={gridEnabled}
             />
           </div>
         )}
@@ -557,6 +573,7 @@ function Outline3DInspector({
             <TransformFields
               transform={selectedObject.transform}
               onChange={(transform) => updateObject(selectedObject.id, { transform })}
+              snapEnabled={gridEnabled}
             />
             <fieldset>
               <legend>Material</legend>

@@ -3,7 +3,6 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -23,7 +22,7 @@ import {
   type SceneVersion,
 } from '../api/projects';
 import { useReducedMotion } from '../a11y/reducedMotion';
-import CameraControl, { type CameraStatus } from '../components/CameraControl';
+import CameraControl from '../components/CameraControl';
 import EditorPanelSwitcher, { type EditorPanelName } from '../components/EditorPanelSwitcher';
 import InkModeButton from '../components/InkModeButton';
 import PieceStageToolbar from '../components/PieceStageToolbar';
@@ -35,14 +34,6 @@ import { downloadBlob } from '../export/downloadBlob';
 import { exportRendererIdFor } from '../export/generateHtmlExport';
 import { RENDERER_LABELS } from '../export/exportCompatibility';
 import type { RenderableCameraOverlay, ScenePreview } from '../render/scenePreview';
-import {
-  generateEditableCss,
-  generateEditableHtml,
-  generateEditableJs,
-  isEditableJsUnchanged,
-  parseEditableHtmlAndCss,
-  parseEditableJs,
-} from '../export/codeGrammar';
 import {
   applyGroupDrag,
   applyMoveSnap,
@@ -69,33 +60,34 @@ import {
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { resourceOwnershipStatus } from '../auth/resourceOwnership';
 import { useAuth } from '../auth/useAuth';
-import { useCameraOverlaySettings } from '../editor/cameraOverlaySettings';
 import {
-  applyCameraOverlayAction,
   captureCameraStill,
   clampCameraOverlayGeometry,
-  getCameraOverlayLayerOrder,
-  useCameraOverlayGeometry,
-  setCameraOverlayLayerOrder,
   type CameraOverlayExport,
-  type CameraOverlayGeometry,
 } from '../editor/cameraOverlayGeometry';
 import { useSnapSettings } from '../editor/snapSettings';
 import { validateProjectMetadataForPrivateSave } from '../validation/projectMetadata';
 import { normalizeSceneLayers } from '../validation/scene';
 import { buildOutline, isEffectivelyLocked } from './sceneOutline';
 import { hitTestDrawioObjectAt } from './drawioDocument';
-import type { TrackingFrame } from '../tracking/types';
 import SnapPreferenceControl from './SnapPreferenceControl';
-import { useBeforeUnloadGuard } from './useBeforeUnloadGuard';
 import { useCloudBackupSchedule } from './useCloudBackupSchedule';
-import { saveNowBeforeClearing } from '../storage/cloudSnapshot';
 import type { CloudBackupFailure } from '../api/cloudBackupErrors';
 import { useDraftAutosave } from './useDraftAutosave';
 import { useDraftRecovery } from './useDraftRecovery';
 import { useDraftServerSync } from './useDraftServerSync';
 import { useEditorWorkspaceState } from './useEditorWorkspaceState';
 import { useIsNarrowViewport } from './useIsNarrowViewport';
+import { useAiAssistPanels } from './useAiAssistPanels';
+import { useEditSessionLifecycle } from './useEditSessionLifecycle';
+import {
+  clampPanValue,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  ZOOM_EPSILON,
+  ZOOM_STEP,
+  useCanvasViewport,
+} from './useCanvasViewport';
 import {
   codeDiagnostic,
   SceneCodeEditor,
@@ -111,8 +103,9 @@ import {
   applyInkStrokes,
   inkStrokeBudget,
 } from '../ink/sceneInk';
-import { createPreviewTrackingSource } from './previewTrackingSource';
 import { useCameraOverlayRedrawLoop } from './useCameraOverlayRedrawLoop';
+import { useCameraOverlay } from './useCameraOverlay';
+import { useCodeTabSync, type HtmlCssCodeSync, type JsCodeSync } from './useCodeTabSync';
 import { useFullscreenToggle } from './useFullscreenToggle';
 import { sceneHasActiveBehaviors, usePreviewRuntime } from './usePreviewRuntime';
 import { useSceneEditor, type SceneEditor } from './useSceneEditor';
@@ -358,66 +351,7 @@ function TopLevelPanel({
   );
 }
 
-/**
- * Issue #156: the Preview canvas's client-side zoom/pan view state — never
- * written to `workingCopy`/scene JSON (see `EditorWorkspace.tsx`'s render
- * below, which applies it purely as a CSS `transform` on `.editor-scene-
- * canvas`, never touching the scene). Bounded to a comfortable 25%-400%
- * range in 25-point-percentage steps, matching this issue's "sensible
- * range... comfortable steps" acceptance criterion.
- */
-const MIN_ZOOM = 0.25;
-const MAX_ZOOM = 4;
-const ZOOM_STEP = 0.25;
-// Floating-point tolerance for the zoom-bound disabled-button comparisons
-// below (0.25-multiples are exactly representable in binary, but this stays
-// safe against any future step-size change that isn't).
-const ZOOM_EPSILON = 1e-6;
-
-function clampZoomValue(zoom: number): number {
-  const rounded = Math.round(zoom * 100) / 100;
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, rounded));
-}
-
-/**
- * Returns the largest uniform scale that fits a canonical scene into the
- * usable (already padded) viewport area. Keeping this pure makes the layout
- * contract easy to regression-test without relying on a browser layout
- * engine, which jsdom does not provide.
- */
-export function getCanvasFitScale(
-  viewportWidth: number,
-  viewportHeight: number,
-  canvasWidth: number,
-  canvasHeight: number,
-): number {
-  if (viewportWidth <= 0 || viewportHeight <= 0 || canvasWidth <= 0 || canvasHeight <= 0) {
-    return 1;
-  }
-  return Math.min(viewportWidth / canvasWidth, viewportHeight / canvasHeight);
-}
-
-/**
- * Clamps a pan offset (raw screen pixels, applied as a CSS `translate` on
- * `.editor-scene-canvas` — see the render below) to the actual overflow of
- * the fitted scene inside the clipping viewport. This is important when a
- * wide workspace is height-limited: the fitted scene can be narrower than
- * the viewport on one axis, so using viewport dimensions alone would expose
- * dead space. At `zoom <= 1` callers reset pan to the centered position.
- */
-function clampPanValue(
-  pan: Point,
-  zoom: number,
-  viewport: { width: number; height: number },
-  contentSize?: { width: number; height: number },
-): Point {
-  const maxX = Math.max(0, ((contentSize?.width ?? viewport.width) * zoom - viewport.width) / 2);
-  const maxY = Math.max(0, ((contentSize?.height ?? viewport.height) * zoom - viewport.height) / 2);
-  return {
-    x: Math.min(maxX, Math.max(-maxX, pan.x)),
-    y: Math.min(maxY, Math.max(-maxY, pan.y)),
-  };
-}
+export { getCanvasFitScale } from './useCanvasViewport';
 
 /**
  * Task 112 (issue #143): one always-visible toolbar button — a visible
@@ -581,105 +515,6 @@ type CodeSubTab = 'json' | 'html' | 'css' | 'js';
  * means either box's text no longer matches what was last
  * generated/committed, since a Save always applies both together.
  */
-function useHtmlCssCodeSync(
-  workingCopy: SceneDocument | null,
-  onCommit: (scene: SceneDocument) => void,
-) {
-  const [htmlText, setHtmlText] = useState(() => generateEditableHtml(workingCopy));
-  const [cssText, setCssText] = useState(() => generateEditableCss(workingCopy));
-  const [errors, setErrors] = useState<string[] | null>(null);
-  const [externalChangePending, setExternalChangePending] = useState(false);
-  const htmlTextRef = useRef(htmlText);
-  const cssTextRef = useRef(cssText);
-  const lastSyncedHtmlRef = useRef(htmlText);
-  const lastSyncedCssRef = useRef(cssText);
-  const lastSyncedWorkingCopyRef = useRef(workingCopy);
-
-  useEffect(() => {
-    if (workingCopy === lastSyncedWorkingCopyRef.current) return;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    const dirty =
-      htmlTextRef.current !== lastSyncedHtmlRef.current ||
-      cssTextRef.current !== lastSyncedCssRef.current;
-    if (dirty) {
-      setExternalChangePending(true);
-      return;
-    }
-    const generatedHtml = generateEditableHtml(workingCopy);
-    const generatedCss = generateEditableCss(workingCopy);
-    lastSyncedHtmlRef.current = generatedHtml;
-    lastSyncedCssRef.current = generatedCss;
-    htmlTextRef.current = generatedHtml;
-    cssTextRef.current = generatedCss;
-    setHtmlText(generatedHtml);
-    setCssText(generatedCss);
-  }, [workingCopy]);
-
-  function onHtmlChange(value: string) {
-    htmlTextRef.current = value;
-    setHtmlText(value);
-  }
-
-  function onCssChange(value: string) {
-    cssTextRef.current = value;
-    setCssText(value);
-  }
-
-  function onReload() {
-    const generatedHtml = generateEditableHtml(workingCopy);
-    const generatedCss = generateEditableCss(workingCopy);
-    lastSyncedHtmlRef.current = generatedHtml;
-    lastSyncedCssRef.current = generatedCss;
-    htmlTextRef.current = generatedHtml;
-    cssTextRef.current = generatedCss;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    setHtmlText(generatedHtml);
-    setCssText(generatedCss);
-    setErrors(null);
-    setExternalChangePending(false);
-  }
-
-  function onSave() {
-    if (!workingCopy) return;
-    const result = parseEditableHtmlAndCss(htmlTextRef.current, cssTextRef.current, workingCopy);
-    if (!result.ok) {
-      setErrors(result.errors);
-      return;
-    }
-    setErrors(null);
-    onCommit(result.scene);
-    // Re-canonicalize both boxes from the just-applied scene so the visible
-    // text always matches what `generateEditableHtml`/`generateEditableCss`
-    // would produce for it -- this is what makes "re-save unchanged -> no
-    // diff" hold even after a save that only touched a few properties. Also
-    // mark them (and `workingCopy`) as already synced, so the `workingCopy`
-    // change this Save causes doesn't flag itself as an external change.
-    const generatedHtml = generateEditableHtml(result.scene);
-    const generatedCss = generateEditableCss(result.scene);
-    lastSyncedHtmlRef.current = generatedHtml;
-    lastSyncedCssRef.current = generatedCss;
-    htmlTextRef.current = generatedHtml;
-    cssTextRef.current = generatedCss;
-    lastSyncedWorkingCopyRef.current = result.scene;
-    setHtmlText(generatedHtml);
-    setCssText(generatedCss);
-    setExternalChangePending(false);
-  }
-
-  return {
-    htmlText,
-    cssText,
-    errors,
-    externalChangePending,
-    onHtmlChange,
-    onCssChange,
-    onSave,
-    onReload,
-  };
-}
-
-type HtmlCssCodeSync = ReturnType<typeof useHtmlCssCodeSync>;
-
 /**
  * Task 142 (issue #174): the HTML/CSS sub-tabs' Save action -- reverse-
  * parses the CURRENT text in both boxes (they're interdependent: a CSS rule
@@ -786,75 +621,6 @@ function HtmlCssCodeEditor({
  * Issue #177: the JS sub-tab's sync hook -- see `useJsonCodeSync`'s doc
  * comment for the general strategy.
  */
-function useJsCodeSync(
-  workingCopy: SceneDocument | null,
-  onCommit: (scene: SceneDocument) => void,
-) {
-  const [text, setText] = useState(() => generateEditableJs(workingCopy));
-  const [errors, setErrors] = useState<string[] | null>(null);
-  const [externalChangePending, setExternalChangePending] = useState(false);
-  const textRef = useRef(text);
-  const lastSyncedTextRef = useRef(text);
-  const lastSyncedWorkingCopyRef = useRef(workingCopy);
-
-  useEffect(() => {
-    if (workingCopy === lastSyncedWorkingCopyRef.current) return;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    if (textRef.current !== lastSyncedTextRef.current) {
-      setExternalChangePending(true);
-      return;
-    }
-    const generated = generateEditableJs(workingCopy);
-    lastSyncedTextRef.current = generated;
-    textRef.current = generated;
-    setText(generated);
-  }, [workingCopy]);
-
-  function onChange(value: string) {
-    textRef.current = value;
-    setText(value);
-  }
-
-  function onReload() {
-    const generated = generateEditableJs(workingCopy);
-    lastSyncedTextRef.current = generated;
-    textRef.current = generated;
-    lastSyncedWorkingCopyRef.current = workingCopy;
-    setText(generated);
-    setErrors(null);
-    setExternalChangePending(false);
-  }
-
-  function onSave() {
-    if (!workingCopy) return;
-    if (isEditableJsUnchanged(textRef.current, workingCopy)) {
-      setErrors(null);
-      return;
-    }
-    const result = parseEditableJs(textRef.current, workingCopy);
-    if (!result.ok) {
-      setErrors(result.errors);
-      return;
-    }
-    setErrors(null);
-    onCommit(result.scene);
-    // Re-canonicalize from the just-applied scene, matching the HTML/CSS
-    // sub-tabs' own convention, so "re-save unchanged -> no diff" holds. Also
-    // mark it (and `workingCopy`) as already synced, so the `workingCopy`
-    // change this Save causes doesn't flag itself as an external change.
-    const generated = generateEditableJs(result.scene);
-    lastSyncedTextRef.current = generated;
-    textRef.current = generated;
-    lastSyncedWorkingCopyRef.current = result.scene;
-    setText(generated);
-    setExternalChangePending(false);
-  }
-
-  return { text, errors, externalChangePending, onChange, onSave, onReload };
-}
-
-type JsCodeSync = ReturnType<typeof useJsCodeSync>;
-
 /**
  * Task 143 (issue #175; extended by task 144 / issue #176): the JavaScript
  * sub-tab. Shows a live-generated view of this scene's interaction runtime
@@ -1083,6 +849,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     const pending = panel.getPendingDetails();
     const changed =
       pending.description !== project.description ||
+      pending.brief !== (project.brief ?? '') ||
       JSON.stringify(pending.tags) !== JSON.stringify(project.tags) ||
       pending.allowRemix !== project.allow_public_remix ||
       pending.exportAttribution !== project.export_attribution;
@@ -1109,8 +876,8 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // accept, a version restore) is observed even while the Code tab isn't
   // the one currently on screen.
   const jsonCodeSync = useJsonCodeSync(workingCopy, setWorkingCopy);
-  const htmlCssCodeSync = useHtmlCssCodeSync(workingCopy, sceneEditor.commitScene);
-  const jsCodeSync = useJsCodeSync(workingCopy, sceneEditor.commitScene);
+  const htmlCssCodeSync = useCodeTabSync('html-css', workingCopy, sceneEditor.commitScene);
+  const jsCodeSync = useCodeTabSync('js', workingCopy, sceneEditor.commitScene);
   // Issue #78: the client-only snap-to-grid / alignment-guide preference —
   // see `../editor/snapSettings.ts`'s own doc comment for why this is a
   // plain external store rather than scene state.
@@ -1126,113 +893,41 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     y: AlignmentGuide | null;
   }>({ x: null, y: null });
 
-  // Task 82: observed success signals `OnboardingHints.tsx` uses to
-  // auto-clear its camera-enable/pinch hints — sourced from the same
-  // `CameraControl`/`DemoControlsPanel` instances already rendered below,
-  // not a separate tracking subscription.
-  const [cameraStatus, setCameraStatus] = useState<CameraStatus>('idle');
-  const [pinchEventCount, setPinchEventCount] = useState(0);
-
-  // Task 110 (issue #141): the live camera `MediaStream` `CameraControl`'s
-  // tracking provider already has open, forwarded here so the Preview
-  // overlay can display it via a plain <video> element — no second
-  // `getUserMedia` call. Task 118 (issue #147): `cameraOverlayOpacity`/
-  // mirrored are now persisted client-side (see `../editor/
-  // cameraOverlaySettings.ts`) instead of session-only state that reset to
-  // a hardcoded default every time the camera became active — re-enabling
-  // the camera now restores the last-chosen values.
-  const {
-    opacity: cameraOverlayOpacity,
-    mirrored: cameraOverlayMirrored,
-    setOpacity: setCameraOverlayOpacity,
-    setMirrored: setCameraOverlayMirrored,
-  } = useCameraOverlaySettings();
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
-  const cameraGeometryState = useCameraOverlayGeometry();
-  const { setGeometry: setCameraGeometry, ...cameraGeometry } = cameraGeometryState;
-  const cameraGeometryRef = useRef<CameraOverlayGeometry>(cameraGeometry);
-  cameraGeometryRef.current = cameraGeometry;
-  const cameraGestureRef = useRef<'move' | 'resize' | null>(null);
-  const cameraGestureStartRef = useRef({ x: 0, y: 0, geometry: cameraGeometry });
-  const cameraTrackingGestureRef = useRef<{
-    handId: string;
-    x: number;
-    y: number;
-  } | null>(null);
-  const [cameraLayerOrder, setCameraLayerOrder] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (cameraLayerOrder !== null || !workingCopy) return;
-    const orders = (Array.isArray(workingCopy.layers) ? workingCopy.layers : [])
-      .map((layer) => (layer as { order?: unknown }).order)
-      .filter((order): order is number => typeof order === 'number');
-    const defaultOrder = Math.max(-1, ...orders) + 1;
-    setCameraLayerOrder(getCameraOverlayLayerOrder(defaultOrder));
-  }, [cameraLayerOrder, workingCopy]);
-
-  const updateCameraLayerOrder = (order: number) => {
-    setCameraLayerOrder(order);
-    setCameraOverlayLayerOrder(order);
+  const cameraCanvas = (workingCopy?.canvas as { width?: number; height?: number } | undefined) ?? {
+    width: 800,
+    height: 600,
   };
-
-  useEffect(() => {
-    const videoEl = cameraVideoRef.current;
-    if (!videoEl) return;
-    videoEl.srcObject = cameraStream;
-    if (cameraStream) {
-      // `Promise.resolve(...)` normalizes jsdom's non-conformant
-      // `HTMLMediaElement.play()` (returns `undefined`, not a `Promise`,
-      // and logs its own "Not implemented" notice) into a real promise,
-      // so this `.catch` is safe in tests without changing real-browser
-      // behavior (where `.play()` already always returns a `Promise`).
-      void Promise.resolve(videoEl.play()).catch(() => {
-        // Autoplay can be rejected in some environments; the video element
-        // still renders (just paused) and this is not a scene-breaking
-        // failure worth surfacing as `previewError`.
-      });
-    }
-    // `cameraStream` is set via `onStreamChange` well before `cameraStatus`
-    // ever reaches 'active' (mediapipeProvider.ts acquires the stream
-    // before the recognizer is ready or any frame flows) -- but the
-    // `<video>` element below is only ever mounted while
-    // `cameraStatus === 'active'`. Without `cameraStatus` in this
-    // dependency array, this effect fires once while the element doesn't
-    // exist yet (`cameraVideoRef.current` is null, so it silently no-ops)
-    // and never fires again once `cameraStatus` finally flips to 'active'
-    // and the element actually mounts -- `srcObject` would never get set,
-    // leaving the overlay permanently blank despite a live stream. Live-
-    // verified: this exact bug reproduced (video element present with
-    // `hasSrcObject: false`) before this dependency was added.
-  }, [cameraStream, cameraStatus]);
-
-  // Task 83 (issue #83): the shared "current tracking frame" mailbox the
-  // live preview runtime loop reads from — see `previewTrackingSource.ts`'s
-  // own doc comment for why this taps into the SAME `CameraControl`/
-  // `DemoControlsPanel` frame streams already rendered below, rather than
-  // creating a second, competing `TrackingProvider` instance. Created once
-  // (`useRef`) and never replaced for the life of this component.
-  const trackingSourceRef = useRef(createPreviewTrackingSource());
-  const reducedMotion = useReducedMotion();
-
-  // Task 41: the working/saved distinction, both visual (the status text
-  // rendered below) and programmatic (this boolean, which also gates the
-  // Save button in VersionHistoryPanel). A scene with no persisted
-  // version at all (shouldn't happen once loadState is 'ready' — Task 18
-  // always creates a first version) is treated as dirty rather than
-  // silently "saved."
-  const isDirty = useMemo(
-    () =>
-      persistedVersion == null ||
-      JSON.stringify(workingCopy) !== JSON.stringify(persistedVersion.scene_json),
-    [workingCopy, persistedVersion],
+  const {
+    cameraStatus,
+    pinchEventCount,
+    setPinchEventCount,
+    cameraStream,
+    setCameraStream,
+    cameraVideoRef,
+    cameraGeometry,
+    cameraGeometryRef,
+    cameraOverlayOpacity,
+    cameraOverlayMirrored,
+    setCameraOverlayOpacity,
+    setCameraOverlayMirrored,
+    cameraLayerOrder,
+    effectiveCameraLayerOrder,
+    cameraOverlayStatus,
+    trackingSourceRef,
+    updateCameraLayerOrder,
+    handleCameraTrackingFrame,
+    beginCameraGesture,
+    moveCameraGesture,
+    endCameraGesture,
+    handleCameraKeyDown,
+    handleCameraStatusChange,
+  } = useCameraOverlay(
+    workingCopy,
+    cameraCanvas.width ?? 800,
+    cameraCanvas.height ?? 600,
+    snapSettings.gridEnabled,
   );
-
-  // Task 44: native beforeunload safeguard — registered only while
-  // `isDirty` is true, removed the instant it goes false (successful
-  // save, discard, or nothing unsaved to begin with). See
-  // `useBeforeUnloadGuard.ts` for why it never sets custom wording.
-  useBeforeUnloadGuard(isDirty);
+  const reducedMotion = useReducedMotion();
 
   // Task 44: checks for a valid active draft (local IndexedDB + server,
   // reconciled) for this project BEFORE the interactive editor panels
@@ -1276,54 +971,26 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // backup snapshot once per project load if the plan's cadence says one
   // is due -- never on its own timer, and never surfaced to the user.
   useCloudBackupSchedule(id, gatedWorkingCopy);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [exitSaving, setExitSaving] = useState(false);
-  const [exitSaveFailure, setExitSaveFailure] = useState<CloudBackupFailure | null>(null);
-
-  // Issue #112: `draftAutosave`/`draftServerSync` above already classify
-  // and record autosave/sync failures via `getLastFailure()`, but nothing
-  // read that back into the UI — a failed local or server draft write
-  // failed completely silently, which is indistinguishable from "nothing
-  // happened yet" to the person editing. Surface the most recent failure
-  // as a non-blocking, actionable status message next to the save status —
-  // the editor stays on the same route and the working copy is untouched
-  // either way.
-  //
-  // This previously re-read both controllers on a 3s `setInterval`, which
-  // made the notice's own e2e coverage race real wall-clock time against
-  // a fake-clock-driven test (a timer established at mount, before the
-  // test's `page.clock.install()`, never gets virtualized — see
-  // `frontend/e2e/aiAndRecovery.spec.ts`'s "a failing server draft sync"
-  // test, which still flaked under CI load even with a 30s budget).
-  // `onFailureChange` (`draftServerSync.ts`/`draftAutosave.ts`) notifies
-  // synchronously the moment a failure is recorded or cleared, so this
-  // reacts immediately instead of polling — no timer to race, and real
-  // users see the notice without a several-second lag.
-  const [draftFailureNotice, setDraftFailureNotice] = useState<string | null>(null);
-  useEffect(() => {
-    if (!id) {
-      setDraftFailureNotice(null);
-      return;
-    }
-    function pollFailures() {
-      const autosaveFailure = draftAutosave.getLastFailure();
-      const syncFailure = draftServerSync.getLastFailure();
-      const failure = syncFailure ?? autosaveFailure;
-      setDraftFailureNotice(
-        failure
-          ? `Recovery draft couldn't be saved (${failure.message}). Your changes are still here — try saving explicitly.`
-          : null,
-      );
-    }
-    pollFailures();
-    const unsubscribeAutosave = draftAutosave.onFailureChange(pollFailures);
-    const unsubscribeSync = draftServerSync.onFailureChange(pollFailures);
-    return () => {
-      unsubscribeAutosave();
-      unsubscribeSync();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  const {
+    isDirty,
+    showExitConfirm,
+    exitSaving,
+    exitSaveFailure,
+    draftFailureNotice,
+    openExitConfirm,
+    cancelExit,
+    handleConfirmExit,
+    attemptExit,
+    clearDraftFailureNotice,
+  } = useEditSessionLifecycle({
+    id,
+    workingCopy,
+    persistedVersion,
+    gatedWorkingCopy,
+    draftAutosave,
+    draftServerSync,
+    navigate,
+  });
 
   // Issue #95 follow-up: shared by the header's `SaveControl` (the
   // prominent, always-reachable Save action) — the only caller now that
@@ -1349,7 +1016,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     // An explicit Save just persisted the authoritative version, so a
     // stale draft-sync failure notice from before this save no longer
     // describes anything the user needs to act on.
-    setDraftFailureNotice(null);
+    clearDraftFailureNotice();
   }
 
   // Issue #159: shared by both `AIProposalPanel` instances rendered below
@@ -1377,48 +1044,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     const acceptedScene = structuredClone(normalizedScene);
     void draftAutosave.clearDraft(acceptedScene);
     void draftServerSync.deleteServerDraft(acceptedScene);
-  }
-
-  async function handleConfirmExit() {
-    // Issue #125: same default-to-`workingCopy` baseline as
-    // `handleVersionSaved` above — after this, the working copy won't
-    // change again in this component (the confirmation navigates away),
-    // so no queued/in-flight periodic write can recreate a draft even if
-    // the component hasn't fully unmounted yet.
-    // Start local cleanup before leaving, but do not make navigation wait on
-    // IndexedDB while a fake clock or a slow browser is active. The draft
-    // clear is idempotent and continues after the route transition.
-    void draftAutosave.clearDraft();
-    void draftServerSync.deleteServerDraft();
-    setShowExitConfirm(false);
-    setExitSaveFailure(null);
-    // Use the authenticated landing route explicitly. The root route is an
-    // auth-sensitive redirect, and keeping the destination concrete prevents
-    // a pending auth/provider render from leaving the browser on the editor
-    // URL after the confirmation has completed.
-    navigate('/studio');
-  }
-
-  // Issue #527: "Save now before clearing" -- attempted once, the first
-  // time the user confirms "Exit without saving," for a project opted
-  // into cloud sync. `saveNowBeforeClearing` itself decides it's a no-op
-  // (`applicable: false`) for a project that isn't cloud-synced, so this
-  // never delays or changes behavior for the common (no-sync) case. A
-  // failure never auto-proceeds -- it replaces the dialog with an
-  // explicit "Clear anyway" override (`exitSaveFailure`); only a
-  // successful checkpoint (or no applicable checkpoint at all) exits
-  // directly.
-  async function attemptExit() {
-    if (id && gatedWorkingCopy) {
-      setExitSaving(true);
-      const result = await saveNowBeforeClearing(id, gatedWorkingCopy);
-      setExitSaving(false);
-      if (result.applicable && !result.success) {
-        setExitSaveFailure(result.failure);
-        return;
-      }
-    }
-    await handleConfirmExit();
   }
 
   // Task 44: "Recover draft" loads the reconciled draft's scene as the new
@@ -1458,40 +1083,22 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   const workingCopyRef = useRef(workingCopy);
   workingCopyRef.current = workingCopy;
 
-  // Issue #156: the Preview canvas's zoom/pan view state. Purely local —
-  // never derived from or written into `workingCopy` — and reset to
-  // 100%/centered on every fresh mount (a plain `useState` initializer,
-  // not anything persisted), matching the issue's "not persisted" and
-  // "resets... on every fresh mount" acceptance criteria.
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
-  // Issue #184: `zoom` is a user multiplier over the responsive layout fit.
-  // The fit is deliberately local state, never scene state or persistence.
-  const [fitScale, setFitScale] = useState(1);
-  const fitScaleRef = useRef(fitScale);
-  fitScaleRef.current = fitScale;
-  const [viewportNode, setViewportNode] = useState<HTMLDivElement | null>(null);
-  // "Latest value" ref for `zoom`, read by the window-level drag listeners
-  // and the native (non-passive) wheel listener below — both are created
-  // once/lazily and reused across renders, so they can't close over a
-  // fresh `zoom` each render the way an inline render-scope handler can
-  // (same rationale as `sceneEditorRef`/`snapSettingsRef` above).
-  const zoomRef = useRef(zoom);
-  zoomRef.current = zoom;
-  // The clipping viewport (`.editor-scene-canvas-viewport`, `overflow:
-  // hidden` once zoomed) that pan is bounded against — see
-  // `clampPanValue`. A callback ref (matching `previewMountCallbackRef`'s
-  // own rationale below): this component early-returns for several
-  // `loadState`/`draftRecovery.status` values before the Preview panel
-  // ever renders, so a plain `useRef` + `useEffect(fn, [])` pair for the
-  // native wheel listener would attach before the node exists on the
-  // commit where it's first created, and never re-run once it finally
-  // does. The callback ref fires exactly when the node attaches/detaches,
-  // so the listener (registered `{ passive: false }`, required to
-  // `preventDefault()` a wheel event — React's own `onWheel` prop is
-  // passive by default and can't block the page's native scroll) is
-  // always attached to the real, current node.
-  const viewportRef = useRef<HTMLDivElement | null>(null);
+  // Issue #981: the canvas viewport hook owns local zoom/pan/fit state and
+  // its wheel/resize lifecycle. The dimensions ref remains shared with the
+  // camera and gesture code, which also needs the current logical canvas size.
+  const canvasSizeRef = useRef({ width: 800, height: 600 });
+  const {
+    zoom,
+    pan,
+    setPan,
+    fitScale,
+    fitScaleRef,
+    zoomRef,
+    viewportRef,
+    viewportCallbackRef,
+    applyZoomChange,
+    fitToViewport,
+  } = useCanvasViewport(canvasSizeRef);
   // Issue #171 (task 139): the Preview/canvas `<section>` itself (not the
   // inner scroll/zoom viewport `viewportRef` above tracks) — the element
   // `handleLayerRowSelect` below scrolls into view when a Layers-panel row
@@ -1528,74 +1135,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     // jsdom (unit tests) has no `scrollIntoView` implementation at all.
     el.scrollIntoView?.({ block: 'nearest' });
   }, []);
-  const wheelCleanupRef = useRef<(() => void) | null>(null);
-  const viewportCallbackRef = useCallback((node: HTMLDivElement | null) => {
-    wheelCleanupRef.current?.();
-    wheelCleanupRef.current = null;
-    viewportRef.current = node;
-    setViewportNode(node);
-    if (!node) return;
-    // Issue #156: Ctrl/Cmd+scroll-wheel is the zoom accelerator — a plain
-    // scroll (no modifier) must NOT be hijacked, so this only ever calls
-    // `preventDefault()` once the modifier check below passes.
-    const onWheel = (event: WheelEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) return;
-      event.preventDefault();
-      const next = clampZoomValue(zoomRef.current - event.deltaY * 0.001);
-      setZoom(next);
-      setPan((current) =>
-        next <= 1
-          ? { x: 0, y: 0 }
-          : clampPanValue(current, next, node.getBoundingClientRect(), {
-              width: canvasSizeRef.current.width * fitScaleRef.current,
-              height: canvasSizeRef.current.height * fitScaleRef.current,
-            }),
-      );
-    };
-    node.addEventListener('wheel', onWheel, { passive: false });
-    wheelCleanupRef.current = () => node.removeEventListener('wheel', onWheel);
-  }, []);
-
-  // Issue #184: recalculate the largest scene fit whenever the actual
-  // Preview framing box changes. ResizeObserver is preferred because panel
-  // allocation can change without a window resize; the window fallback keeps
-  // this usable in older browsers and lightweight test environments.
-  useEffect(() => {
-    if (!viewportNode) return;
-    const updateFit = () => {
-      const rect = viewportNode.getBoundingClientRect();
-      const styles = window.getComputedStyle(viewportNode);
-      const cssPixels = (value: string) => Number.parseFloat(value) || 0;
-      const horizontalPadding = cssPixels(styles.paddingLeft) + cssPixels(styles.paddingRight);
-      const verticalPadding = cssPixels(styles.paddingTop) + cssPixels(styles.paddingBottom);
-      const width = Math.max(0, rect.width - horizontalPadding);
-      const height = Math.max(0, rect.height - verticalPadding);
-      const { width: logicalWidth, height: logicalHeight } = canvasSizeRef.current;
-      const nextFit = getCanvasFitScale(width, height, logicalWidth, logicalHeight);
-      setFitScale((current) => (Math.abs(current - nextFit) < 0.0001 ? current : nextFit));
-      setPan((current) =>
-        zoomRef.current <= 1
-          ? { x: 0, y: 0 }
-          : clampPanValue(
-              current,
-              zoomRef.current,
-              { width, height },
-              {
-                width: logicalWidth * fitScaleRef.current,
-                height: logicalHeight * fitScaleRef.current,
-              },
-            ),
-      );
-    };
-    updateFit();
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(updateFit) : null;
-    observer?.observe(viewportNode);
-    window.addEventListener('resize', updateFit);
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', updateFit);
-    };
-  }, [viewportNode]);
   // Issue #111: the shape currently under the pointer, hit-tested the same
   // way `handleCanvasClick`/`handleCanvasPointerDown` do (topmost-shape-
   // wins), so hovering can show a distinct affordance from the selected
@@ -1629,8 +1168,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     setInkError(null);
     setInkSession({ snapshotUrl });
   };
-  const [cameraOverlayStatus, setCameraOverlayStatus] = useState<string | null>(null);
-
   // Issue #159: Visual/Code is a sub-toggle inside the Preview panel
   // (implementer's-call option from the issue) rather than a new entry in
   // `EditorPanelSwitcher`'s narrow-viewport tab list — Preview is never
@@ -1662,15 +1199,23 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // constraints). `aiFixSeed.nonce` (not just its `prompt` text) changes
   // on every click so `AIProposalPanel`'s seed effect fires again even for
   // two clicks describing the identical error.
-  const [showAiFixPanel, setShowAiFixPanel] = useState(false);
-  const [aiFixSeed, setAiFixSeed] = useState<{ prompt: string; nonce: number } | null>(null);
+  const {
+    showAiFixPanel,
+    aiFixSeed,
+    showAiLayerPanel,
+    aiLayerSeed,
+    openAiFixPanel,
+    closeAiFixPanel,
+    openAiLayerPanel,
+    closeAiLayerPanel,
+  } = useAiAssistPanels();
 
   // Closes the ask-AI-to-fix panel automatically once the render failure
   // it was opened for is actually resolved (a scene edit, an accepted AI
   // proposal, undo, etc.) — never left open pointing at a stale error.
   useEffect(() => {
-    if (!previewError) setShowAiFixPanel(false);
-  }, [previewError]);
+    if (!previewError) closeAiFixPanel();
+  }, [closeAiFixPanel, previewError]);
 
   // Issue #282: "Ask AI to change this" on a `LayersPanel.tsx` row —
   // mirrors #159's `showAiFixPanel`/`aiFixSeed` pair exactly (a second,
@@ -1696,11 +1241,8 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     }
   }
 
-  const [showAiLayerPanel, setShowAiLayerPanel] = useState(false);
-  const [aiLayerSeed, setAiLayerSeed] = useState<{ prompt: string; nonce: number } | null>(null);
   const handleAskAiChangeLayer = (label: string) => {
-    setAiLayerSeed({ prompt: `Change ${label}: `, nonce: Date.now() });
-    setShowAiLayerPanel(true);
+    openAiLayerPanel(`Change ${label}: `);
   };
 
   // Issue #283: unscoped, whole-scene counterpart — not tied to any
@@ -1708,8 +1250,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // user fills in, rather than naming anything (documented implementation
   // decision, per the issue's own "decide during implementation" note).
   const handleAskAiImproveScene = () => {
-    setAiLayerSeed({ prompt: 'Improve this scene: ', nonce: Date.now() });
-    setShowAiLayerPanel(true);
+    openAiLayerPanel('Improve this scene: ');
   };
 
   // Task 26: "latest value" refs so the window-level drag listeners below
@@ -1719,7 +1260,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // drag gesture began.
   const sceneEditorRef = useRef(sceneEditor);
   sceneEditorRef.current = sceneEditor;
-  const canvasSizeRef = useRef({ width: 800, height: 600 });
   const getCameraOverlay = (): RenderableCameraOverlay | undefined => {
     if (cameraStatus !== 'active' || !cameraStream || !cameraVideoRef.current) return undefined;
     const { width, height } = canvasSizeRef.current;
@@ -2152,7 +1692,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [applyZoomChange, zoomRef]);
 
   // Issue #79: vertex edit mode's two keyboard affordances that aren't
   // already covered by the generic drag-cancel/undo-redo listeners above:
@@ -2324,164 +1864,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   const canvasHeight = canvas.height ?? 600;
   canvasSizeRef.current = { width: canvasWidth, height: canvasHeight };
 
-  const updateCameraGeometry = (next: CameraOverlayGeometry, status = true) => {
-    const clamped = clampCameraOverlayGeometry(next, canvasWidth, canvasHeight);
-    cameraGeometryRef.current = clamped;
-    setCameraGeometry(clamped);
-    if (status)
-      setCameraOverlayStatus(
-        `Camera overlay: ${Math.round(clamped.width * canvasWidth)} by ${Math.round(clamped.height * canvasHeight)} pixels.`,
-      );
-  };
-
-  const handleCameraTrackingFrame = (frame: TrackingFrame) => {
-    const handFor = (handId: string) =>
-      frame.hands.find((hand) => hand.id === handId) ?? frame.hands[0];
-    const indexTip = (hand: (typeof frame.hands)[number] | undefined) => hand?.landmarks[8];
-
-    for (const event of frame.events) {
-      if (event.type === 'pinchStart' && !cameraTrackingGestureRef.current) {
-        const hand = handFor(event.handId);
-        const tip = indexTip(hand);
-        if (hand && tip) {
-          cameraTrackingGestureRef.current = { handId: hand.id, x: tip.x, y: tip.y };
-        }
-      } else if (
-        (event.type === 'pinchEnd' || event.type === 'handDisappear') &&
-        cameraTrackingGestureRef.current?.handId === event.handId
-      ) {
-        cameraTrackingGestureRef.current = null;
-      }
-    }
-
-    const gesture = cameraTrackingGestureRef.current;
-    if (!gesture) return;
-    const hand = handFor(gesture.handId);
-    const tip = indexTip(hand);
-    if (!tip) return;
-    const { width, height } = canvasSizeRef.current;
-    const next = applyCameraOverlayAction(
-      cameraGeometryRef.current,
-      {
-        type: 'move',
-        delta: { x: (tip.x - gesture.x) * width, y: (tip.y - gesture.y) * height },
-      },
-      width,
-      height,
-      snapSettings.gridEnabled,
-    );
-    updateCameraGeometry(next);
-    cameraTrackingGestureRef.current = { handId: hand?.id ?? gesture.handId, x: tip.x, y: tip.y };
-  };
-
-  const beginCameraGesture = (event: ReactPointerEvent, kind: 'move' | 'resize') => {
-    event.stopPropagation();
-    event.preventDefault();
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    cameraGestureRef.current = kind;
-    cameraGestureStartRef.current = {
-      x: event.clientX,
-      y: event.clientY,
-      geometry: cameraGeometryRef.current,
-    };
-  };
-
-  const moveCameraGesture = (event: ReactPointerEvent) => {
-    const kind = cameraGestureRef.current;
-    if (!kind) return;
-    event.stopPropagation();
-    const start = cameraGestureStartRef.current;
-    const next =
-      kind === 'move'
-        ? applyCameraOverlayAction(
-            start.geometry,
-            {
-              type: 'move',
-              delta: { x: event.clientX - start.x, y: event.clientY - start.y },
-            },
-            canvasWidth,
-            canvasHeight,
-            snapSettings.gridEnabled,
-          )
-        : applyCameraOverlayAction(
-            start.geometry,
-            { type: 'resize', deltaX: event.clientX - start.x },
-            canvasWidth,
-            canvasHeight,
-          );
-    updateCameraGeometry(next);
-  };
-
-  const endCameraGesture = (event: ReactPointerEvent) => {
-    if (!cameraGestureRef.current) return;
-    event.stopPropagation();
-    cameraGestureRef.current = null;
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
-  };
-
-  const handleCameraKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const step = event.shiftKey ? 0.05 : 0.02;
-    let next = cameraGeometryRef.current;
-    if (event.key === 'ArrowLeft')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'move', delta: { x: -canvasWidth * step, y: 0 } },
-        canvasWidth,
-        canvasHeight,
-        snapSettings.gridEnabled,
-      );
-    else if (event.key === 'ArrowRight')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'move', delta: { x: canvasWidth * step, y: 0 } },
-        canvasWidth,
-        canvasHeight,
-        snapSettings.gridEnabled,
-      );
-    else if (event.key === 'ArrowUp')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'move', delta: { x: 0, y: -canvasHeight * step } },
-        canvasWidth,
-        canvasHeight,
-        snapSettings.gridEnabled,
-      );
-    else if (event.key === 'ArrowDown')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'move', delta: { x: 0, y: canvasHeight * step } },
-        canvasWidth,
-        canvasHeight,
-        snapSettings.gridEnabled,
-      );
-    else if (event.key === '+' || event.key === '=')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'resize', deltaX: canvasWidth * step },
-        canvasWidth,
-        canvasHeight,
-      );
-    else if (event.key === '-' || event.key === '_')
-      next = applyCameraOverlayAction(
-        next,
-        { type: 'resize', deltaX: -canvasWidth * step },
-        canvasWidth,
-        canvasHeight,
-      );
-    else return;
-    event.preventDefault();
-    event.stopPropagation();
-    updateCameraGeometry(next);
-  };
-
-  const effectiveCameraLayerOrder =
-    cameraLayerOrder ??
-    Math.max(
-      0,
-      ...(Array.isArray(workingCopy?.layers)
-        ? workingCopy.layers.map((layer) => Number((layer as { order?: number }).order) || 0)
-        : [0]),
-    ) + 1;
   const renderedCameraGeometry = clampCameraOverlayGeometry(
     cameraGeometry,
     canvasWidth,
@@ -2599,29 +1981,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return null;
     return clientToCanvasPoint(rect, clientX, clientY, canvasWidth, canvasHeight);
-  }
-
-  // Issue #156: the single entry point every zoom-changing affordance (the
-  // +/- toolbar buttons below, the Ctrl/Cmd+"+"/"-"/0 keyboard shortcuts
-  // above, and the Ctrl/Cmd+scroll-wheel listener registered in
-  // `viewportCallbackRef` above) goes through — clamps the new zoom to
-  // [MIN_ZOOM, MAX_ZOOM], and either resets pan to centered (at/below
-  // 100%, where there is no overflow to pan into) or re-clamps the
-  // existing pan against the new zoom level (so zooming back down never
-  // leaves the view stuck panned past the now-smaller overflow).
-  function applyZoomChange(nextRaw: number) {
-    const next = clampZoomValue(nextRaw);
-    setZoom(next);
-    setPan((current) => {
-      if (next <= 1) return { x: 0, y: 0 };
-      const rect = viewportRef.current?.getBoundingClientRect();
-      return rect
-        ? clampPanValue(current, next, rect, {
-            width: canvasSizeRef.current.width * fitScaleRef.current,
-            height: canvasSizeRef.current.height * fitScaleRef.current,
-          })
-        : current;
-    });
   }
 
   function handleCanvasClick(event: ReactMouseEvent<HTMLDivElement>) {
@@ -3129,17 +2488,14 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
           type="button"
           className="editor-icon-button editor-exit-button"
           aria-label="Exit without saving"
-          onClick={() => setShowExitConfirm(true)}
+          onClick={openExitConfirm}
         >
           <span aria-hidden="true">✕</span>
         </button>
         {showExitConfirm && (
           <ExitWithoutSavingConfirm
             onConfirm={() => void attemptExit()}
-            onCancel={() => {
-              setShowExitConfirm(false);
-              setExitSaveFailure(null);
-            }}
+            onCancel={cancelExit}
             saving={exitSaving}
             saveFailure={exitSaveFailure}
             onClearAnyway={() => void handleConfirmExit()}
@@ -3218,8 +2574,78 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   workingCopy={workingCopy}
                   sceneEditor={sceneEditor}
                   onAssetsChange={setMediaAssets}
+                  publicationStatus={
+                    id ? (
+                      <PublishControl
+                        id={id}
+                        project={project}
+                        setProject={setProject}
+                        persistPendingDetails={persistPendingDetails}
+                        compact
+                        inline
+                      />
+                    ) : null
+                  }
                 />
               )}
+              <button type="button" onClick={handleAskAiImproveScene}>
+                Ask AI to improve this scene
+              </button>
+              <div
+                role="radiogroup"
+                aria-label="Preview view"
+                className="editor-tool-group"
+                data-testid="editor-preview-view-toggle"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={previewView === 'visual'}
+                  onClick={() => setPreviewView('visual')}
+                >
+                  Visual
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={previewView === 'code'}
+                  onClick={() => setPreviewView('code')}
+                >
+                  Code
+                </button>
+              </div>
+              <div className="editor-zoom-controls" role="group" aria-label="Zoom controls">
+                <ToolbarButton
+                  label="Zoom out"
+                  glyph="−"
+                  onClick={() => applyZoomChange(zoom - ZOOM_STEP)}
+                  disabled={zoom <= MIN_ZOOM + ZOOM_EPSILON}
+                />
+                <span
+                  className="editor-zoom-readout"
+                  data-testid="editor-zoom-readout"
+                  aria-live="polite"
+                >
+                  {Math.round(zoom * 100)}%
+                </span>
+                <ToolbarButton
+                  label="Zoom in"
+                  glyph="+"
+                  onClick={() => applyZoomChange(zoom + ZOOM_STEP)}
+                  disabled={zoom >= MAX_ZOOM - ZOOM_EPSILON}
+                />
+                <button
+                  type="button"
+                  className="editor-zoom-reset-button"
+                  onClick={() => applyZoomChange(1)}
+                  disabled={zoom === 1 && pan.x === 0 && pan.y === 0}
+                >
+                  Reset zoom
+                </button>
+                <button type="button" className="editor-zoom-reset-button" onClick={fitToViewport}>
+                  Fit to viewport
+                </button>
+              </div>
               {id && (
                 <SaveControl
                   projectId={id}
@@ -3229,9 +2655,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   compact
                 />
               )}
-              <button type="button" onClick={handleAskAiImproveScene}>
-                Ask AI to improve this scene
-              </button>
             </div>
             <button
               ref={editorToolsToggleRef}
@@ -3266,13 +2689,9 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   <button
                     type="button"
                     data-testid="ask-ai-fix-preview-error"
-                    onClick={() => {
-                      setAiFixSeed({
-                        prompt: `Fix this scene so it renders correctly. ${description}`,
-                        nonce: Date.now(),
-                      });
-                      setShowAiFixPanel(true);
-                    }}
+                    onClick={() =>
+                      openAiFixPanel(`Fix this scene so it renders correctly. ${description}`)
+                    }
                   >
                     Ask AI to fix this
                   </button>
@@ -3298,11 +2717,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
             >
               <div className="editor-ai-fix-panel-header">
                 <h4>Ask AI to fix this error</h4>
-                <button
-                  type="button"
-                  data-testid="close-ai-fix-panel"
-                  onClick={() => setShowAiFixPanel(false)}
-                >
+                <button type="button" data-testid="close-ai-fix-panel" onClick={closeAiFixPanel}>
                   Close
                 </button>
               </div>
@@ -3311,49 +2726,12 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                 workingCopy={workingCopy}
                 currentVersionId={project?.current_version ?? null}
                 mediaAssets={mediaAssets}
+                intentNote={project?.brief ?? ''}
                 seed={aiFixSeed}
                 onAccepted={handleAIProposalAccepted}
               />
             </div>
           )}
-          {/* Issue #159: the Visual/Code sub-toggle. Deliberately a
-              `role="radiogroup"`/`role="radio"` pair (the same pattern
-              `AIProposalPanel.tsx`'s own Create/Edit mode selector already
-              uses), not `role="tablist"`/`role="tab"` — `EditorPanelSwitcher.tsx`'s
-              own tablist is a hard "the only switcher, and only below
-              1024px" landmark several existing tests assert on directly
-              (e.g. `queryByRole('tablist')).not.toBeInTheDocument()` at
-              >=1024px), so a second, always-visible tablist here would
-              both violate that assertion and be genuinely confusing to
-              assistive tech (two unrelated tablists with no relationship
-              to each other). This toggle is local to the Preview panel,
-              not one of `EditorPanelSwitcher`'s `EditorPanelName` tabs —
-              Preview is never one of those (see `panelHidden` above) —
-              and stays reachable regardless of narrow/wide viewport,
-              exactly like the rest of the Preview panel already is. */}
-          <div
-            role="radiogroup"
-            aria-label="Preview view"
-            className="editor-tool-group"
-            data-testid="editor-preview-view-toggle"
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={previewView === 'visual'}
-              onClick={() => setPreviewView('visual')}
-            >
-              Visual
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={previewView === 'code'}
-              onClick={() => setPreviewView('code')}
-            >
-              Code
-            </button>
-          </div>
           {/* Issue #177: still a conditional render, not `hidden` -- see
               `CodeTab`'s doc comment for why. The sub-tabs' unsaved-edit
               state lives in the `jsonCodeSync`/`htmlCssCodeSync`/
@@ -3369,71 +2747,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
               active, but leave the stage-local editor/runtime toolbars
               reachable. Only the artwork canvas is hidden below; this keeps
               the compact overlay actions available in both sub-views. */}
-          <div>
-            {/* Issue #156: zoom in/out buttons, a live percentage readout,
-              and a reset-to-100% action. Reuses `ToolbarButton` (issue
-              #143's existing icon-button pattern — visible `aria-hidden`
-              glyph, `aria-label` for the accessible name, a CSS hover/
-              focus tooltip) rather than a new one-off control. Each
-              zoom button is disabled at its respective bound (comparing
-              with a small epsilon since `zoom` is a floating-point
-              accumulator), and the readout is `aria-live="polite"` so
-              screen-reader users hear it change without needing to
-              re-focus it after every zoom action. */}
-            <div className="editor-zoom-controls" role="group" aria-label="Zoom controls">
-              <ToolbarButton
-                label="Zoom out"
-                glyph="−"
-                onClick={() => applyZoomChange(zoom - ZOOM_STEP)}
-                disabled={zoom <= MIN_ZOOM + ZOOM_EPSILON}
-              />
-              <span
-                className="editor-zoom-readout"
-                data-testid="editor-zoom-readout"
-                aria-live="polite"
-              >
-                {Math.round(zoom * 100)}%
-              </span>
-              <ToolbarButton
-                label="Zoom in"
-                glyph="+"
-                onClick={() => applyZoomChange(zoom + ZOOM_STEP)}
-                disabled={zoom >= MAX_ZOOM - ZOOM_EPSILON}
-              />
-              <button
-                type="button"
-                className="editor-zoom-reset-button"
-                onClick={() => applyZoomChange(1)}
-                disabled={zoom === 1 && pan.x === 0 && pan.y === 0}
-              >
-                Reset zoom
-              </button>
-              <button
-                type="button"
-                className="editor-zoom-reset-button"
-                onClick={() => {
-                  const rect = viewportRef.current?.getBoundingClientRect();
-                  if (rect) {
-                    const styles = window.getComputedStyle(viewportRef.current!);
-                    const cssPixels = (value: string) => Number.parseFloat(value) || 0;
-                    const width = Math.max(
-                      0,
-                      rect.width - cssPixels(styles.paddingLeft) - cssPixels(styles.paddingRight),
-                    );
-                    const height = Math.max(
-                      0,
-                      rect.height - cssPixels(styles.paddingTop) - cssPixels(styles.paddingBottom),
-                    );
-                    setFitScale(getCanvasFitScale(width, height, canvasWidth, canvasHeight));
-                  }
-                  setZoom(1);
-                  setPan({ x: 0, y: 0 });
-                }}
-              >
-                Fit to viewport
-              </button>
-            </div>
-          </div>
           <div className="piece-stage-shell" data-testid="editor-piece-stage-shell">
             {inkSession && (
               <InkEditor
@@ -3946,11 +3259,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   controlsControl={
                     <StageControlsPopover>
                       <CameraControl
-                        onStatusChange={(status) => {
-                          setCameraStatus(status);
-                          if (status !== 'active') cameraTrackingGestureRef.current = null;
-                          trackingSourceRef.current.setCameraActive(status === 'active');
-                        }}
+                        onStatusChange={handleCameraStatusChange}
                         onFrame={(frame) => {
                           trackingSourceRef.current.reportCameraFrame(frame);
                           handleCameraTrackingFrame(frame);
@@ -4005,15 +3314,6 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                         disabled={!workingCopy}
                         onBegin={beginInk}
                       />
-                      {id ? (
-                        <PublishControl
-                          id={id}
-                          project={project}
-                          setProject={setProject}
-                          persistPendingDetails={persistPendingDetails}
-                          compact
-                        />
-                      ) : null}
                     </>
                   }
                   toolbarMode="inline"
@@ -4159,7 +3459,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   <button
                     type="button"
                     data-testid="close-ai-layer-panel"
-                    onClick={() => setShowAiLayerPanel(false)}
+                    onClick={closeAiLayerPanel}
                   >
                     Close
                   </button>
@@ -4169,6 +3469,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   workingCopy={workingCopy}
                   currentVersionId={project?.current_version ?? null}
                   mediaAssets={mediaAssets}
+                  intentNote={project?.brief ?? ''}
                   seed={aiLayerSeed}
                   onAccepted={handleAIProposalAccepted}
                 />
@@ -4295,6 +3596,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   workingCopy={workingCopy}
                   currentVersionId={project?.current_version ?? null}
                   mediaAssets={mediaAssets}
+                  intentNote={project?.brief ?? ''}
                   onAccepted={handleAIProposalAccepted}
                 />
               )}

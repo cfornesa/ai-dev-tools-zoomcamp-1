@@ -7,14 +7,27 @@
  * `manual3dPublicationLifecycle.spec.ts` now own that coverage. This file
  * keeps its remaining, still-current authoring/sound/icon-geometry
  * assertions and only drops the publication-toggle-specific ones. */
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
-import { createBlank3DProjectViaUI } from './support/createProject3d.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
+
+async function buttonPresentation(button: Locator) {
+  return button.evaluate((element) => {
+    const node = element as HTMLButtonElement;
+    const visible =
+      node.getClientRects().length > 0 && getComputedStyle(node).visibility !== 'hidden';
+    return {
+      visible,
+      accessibleName: node.getAttribute('aria-label') ?? node.innerText.trim(),
+      text: node.innerText.trim(),
+    };
+  });
+}
 
 test.describe('manual 3D editor stage chrome', () => {
   let fixtures: Fixtures;
@@ -23,15 +36,22 @@ test.describe('manual 3D editor stage chrome', () => {
     fixtures = requireE2EFixtures();
   });
 
-  test('keeps authoring and publication actions in the shared stage toolbar', async ({ page }) => {
+  test('keeps authoring and publication actions in the shared stage toolbar', async ({
+    page,
+  }, testInfo) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlank3DProjectViaUI(page);
+    await createServerProject3D(page);
 
     await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
+    const saveScene = page.getByRole('button', { name: 'Save scene', exact: true });
+    const projectSettings = page.getByRole('region', { name: 'Project settings' });
+    const askAi = projectSettings.getByRole('button', {
+      name: 'Ask AI to improve this scene',
+      exact: true,
+    });
     await expect(toolbar).toBeVisible();
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await toolbar.getByRole('button', { name: '3D authoring' }).click();
     await expect(toolbar.getByRole('group', { name: '3D authoring actions' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Add sphere' })).toBeVisible();
@@ -45,14 +65,19 @@ test.describe('manual 3D editor stage chrome', () => {
     ]) {
       await page.setViewportSize(viewport);
       await expect(toolbar).toBeVisible();
-      for (const [name, label] of [
-        ['Save scene', 'Save scene'],
-        ['Ask AI to improve this scene', 'Ask AI to improve this scene'],
-      ] as const) {
-        const action = toolbar.getByRole('button', { name, exact: true });
-        await expect(action).toBeVisible();
-        await expect(action.locator('.piece-stage-action-label')).toHaveText(label);
-      }
+      expect(await buttonPresentation(saveScene)).toEqual({
+        visible: true,
+        accessibleName: 'Save scene',
+        text: 'Save scene',
+      });
+      expect(await buttonPresentation(askAi)).toEqual({
+        visible: true,
+        accessibleName: 'Ask AI to improve this scene',
+        text: 'Ask AI to improve this scene',
+      });
+      await page.screenshot({
+        path: testInfo.outputPath(`control-locations-${viewport.width}.png`),
+      });
       const canvasMetrics = await frame.evaluate((element) => {
         const box = element.getBoundingClientRect();
         const canvas = element.querySelector('canvas');
@@ -66,10 +91,16 @@ test.describe('manual 3D editor stage chrome', () => {
       expect(canvasMetrics.width / canvasMetrics.height).toBeCloseTo(16 / 9, 1);
       expect(canvasMetrics.canvasWidth / canvasMetrics.canvasHeight).toBeCloseTo(16 / 9, 1);
     }
+    // The former fullscreen command-card containment/collision checks now
+    // cover the inline stage icon row; popover contents are excluded because
+    // they intentionally occupy a separate layer above that row.
     const mobileCommandGeometry = await toolbar
-      .locator('.piece-stage-command-card > [role="group"] .piece-stage-icon-button')
+      .getByRole('group', { name: 'Preview actions' })
+      .locator(
+        ':scope > .piece-stage-icon-button, :scope > .piece-stage-download > .piece-stage-icon-button, :scope > .piece-stage-controls > .piece-stage-icon-button',
+      )
       .evaluateAll((elements) => {
-        const card = elements[0]?.closest('.piece-stage-command-card')?.getBoundingClientRect();
+        const card = elements[0]?.closest('[role="toolbar"]')?.getBoundingClientRect();
         const visibleElements = elements.filter(
           (element) => element.getClientRects().length > 0 && !element.closest('[hidden]'),
         );
@@ -99,45 +130,50 @@ test.describe('manual 3D editor stage chrome', () => {
         expect(overlaps).toBe(false);
       }
     }
+    // The authoring disclosure is the current responsive surface for these
+    // layout checks: it remains a single column and fits without scrolling.
     const mobileCommandLayout = await toolbar
-      .getByRole('dialog')
-      .locator('.piece-stage-command-card')
-      .evaluate((card) => {
-        const group = card.querySelector(':scope > [role="group"]');
+      .locator('.editor-authoring-controls-panel')
+      .evaluate((panel) => {
+        const group = panel.querySelector('.editor-authoring-command-group');
         const groupStyle = group ? getComputedStyle(group) : null;
         return {
-          direction: groupStyle?.flexDirection,
-          iconSizes: Array.from(card.querySelectorAll('svg.piece-stage-icon')).map((icon) => {
+          columns: groupStyle?.gridTemplateColumns ?? '',
+          iconSizes: Array.from(
+            document.querySelectorAll('.scene3d-preview-actions svg.piece-stage-icon'),
+          ).map((icon) => {
             const iconStyle = getComputedStyle(icon);
             return {
               width: Number.parseFloat(iconStyle.width),
               height: Number.parseFloat(iconStyle.height),
             };
           }),
-          overflow: getComputedStyle(card).overflow,
-          scrollWidth: card.scrollWidth,
-          clientWidth: card.clientWidth,
-          scrollHeight: card.scrollHeight,
-          clientHeight: card.clientHeight,
-          scrollable: ['auto', 'scroll'].includes(getComputedStyle(card).overflowY),
+          scrollWidth: panel.scrollWidth,
+          clientWidth: panel.clientWidth,
+          scrollHeight: panel.scrollHeight,
+          clientHeight: panel.clientHeight,
+          scrollable:
+            (['auto', 'scroll'].includes(getComputedStyle(panel).overflowX) &&
+              panel.scrollWidth > panel.clientWidth) ||
+            (['auto', 'scroll'].includes(getComputedStyle(panel).overflowY) &&
+              panel.scrollHeight > panel.clientHeight),
         };
       });
-    expect(mobileCommandLayout.direction).toBe('column');
+    expect(mobileCommandLayout.columns.split(' ')).toHaveLength(1);
     expect(mobileCommandLayout.iconSizes.length).toBeGreaterThan(0);
     for (const icon of mobileCommandLayout.iconSizes) {
       expect(icon.width).toBeLessThanOrEqual(20);
       expect(icon.height).toBeLessThanOrEqual(20);
     }
-    expect(mobileCommandLayout.overflow).toBe('visible');
     expect(mobileCommandLayout.scrollWidth).toBe(mobileCommandLayout.clientWidth);
+    expect(mobileCommandLayout.scrollHeight).toBe(mobileCommandLayout.clientHeight);
     expect(mobileCommandLayout.scrollable).toBe(false);
     await toolbar.getByRole('button', { name: /close 3d authoring/i }).click();
     await page.setViewportSize({ width: 1280, height: 900 });
     const desktopCommandLayout = await toolbar
-      .getByRole('dialog')
-      .locator('.piece-stage-command-card > [role="group"]')
-      .evaluate((element) => getComputedStyle(element).flexDirection);
-    expect(desktopCommandLayout).toBe('column');
+      .locator('.editor-authoring-command-group')
+      .evaluate((element) => getComputedStyle(element).gridTemplateColumns);
+    expect(desktopCommandLayout.split(' ')).toHaveLength(1);
     await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Enable sound' })).toBeVisible();
@@ -146,6 +182,13 @@ test.describe('manual 3D editor stage chrome', () => {
     ).toBeVisible();
     await toolbar.getByRole('button', { name: 'Enable sound' }).click();
     await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
+    // Inline mode moved steering into the Piece controls disclosure. Keep the
+    // original visibility intent attached to its current rendered surface.
+    await expect(
+      toolbar
+        .getByRole('group', { name: 'Piece controls' })
+        .getByRole('button', { name: 'Steer the piece' }),
+    ).toBeVisible();
     await expect(toolbar.getByLabel('Ambient instrument')).toHaveValue('synth');
     await expect(toolbar.getByLabel('Movement instrument')).toHaveValue('synth');
     await expect(toolbar.getByLabel('Melodic instrument')).toHaveValue('synth');
@@ -158,17 +201,29 @@ test.describe('manual 3D editor stage chrome', () => {
     await expect(toolbar.getByLabel('Ambient instrument')).toHaveValue('synth');
     await expect(toolbar.getByLabel('Melodic instrument')).toHaveValue('synth');
     await toolbar.getByRole('button', { name: 'Hide piece controls' }).click();
-    await expect(toolbar.getByRole('button', { name: 'Steer the piece' })).toBeVisible();
     await expect(toolbar.getByRole('button', { name: 'Show hand gesture guide' })).toBeVisible();
-    await expect(toolbar.getByRole('link', { name: 'View immersive piece' })).toHaveAttribute(
-      'href',
-      /\/immersive\/p3d\/.+/,
-    );
+    // Inline mode exposes immersive navigation as a button that opens the
+    // destination in a new tab rather than the menu-mode anchor.
+    const immersiveAction = toolbar.getByRole('button', {
+      name: 'View immersive piece',
+      exact: true,
+    });
+    const popupPromise = page.waitForEvent('popup');
+    await immersiveAction.click();
+    const immersivePage = await popupPromise;
+    await expect(immersivePage).toHaveURL(/\/immersive\/p3d\/.+/);
+    await immersivePage.close();
     await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
-    await expect(
-      toolbar.getByRole('button', { name: 'Ask AI to improve this scene' }),
-    ).toBeVisible();
-    await expect(toolbar.getByRole('button', { name: 'Save scene' })).toBeVisible();
+    expect(await buttonPresentation(askAi)).toEqual({
+      visible: true,
+      accessibleName: 'Ask AI to improve this scene',
+      text: 'Ask AI to improve this scene',
+    });
+    expect(await buttonPresentation(saveScene)).toEqual({
+      visible: true,
+      accessibleName: 'Save scene',
+      text: 'Save scene',
+    });
     // Issue #394: no duplicate/competing publication control in this stage
     // toolbar -- the owner-facing Draft/Published disclosure lives only in
     // the editor header now.
@@ -188,8 +243,10 @@ test.describe('manual 3D editor stage chrome', () => {
       };
     });
     expect(chrome).toMatchObject({
-      top: '13.5px',
-      left: '13.5px',
+      // Inline editor mode uses a full-stage overlay host (inset: 0); the
+      // buttons themselves are checked against the stage bounds below.
+      top: '0px',
+      left: '0px',
       buttonHeight: '49.5px',
       buttonRadius: '13.5px',
     });

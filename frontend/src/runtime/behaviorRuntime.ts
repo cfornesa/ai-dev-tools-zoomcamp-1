@@ -2267,15 +2267,18 @@ export function applyRuntimeOutputsToScene(
   const groups = Array.isArray(record.groups)
     ? [...(record.groups as Record<string, unknown>[])]
     : [];
+  const shapeIndexById = new Map(shapes.map((item, index) => [item.id, index] as const));
+  const groupIndexById = new Map(groups.map((item, index) => [item.id, index] as const));
   const canvas = { ...asRecord(record.canvas) };
   let canvasChanged = false;
 
   function patchTransformOrStyle(
     list: Record<string, unknown>[],
+    indexById: ReadonlyMap<unknown, number>,
     output: ContinuousOutput,
   ): Record<string, unknown>[] {
-    const index = list.findIndex((item) => item.id === output.targetId);
-    if (index === -1) return list;
+    const index = indexById.get(output.targetId);
+    if (index === undefined) return list;
     const next = [...list];
     const item = { ...next[index] };
     if (
@@ -2301,9 +2304,9 @@ export function applyRuntimeOutputsToScene(
 
   for (const output of continuous) {
     if (output.targetScope === 'shape') {
-      nextShapes = patchTransformOrStyle(nextShapes, output);
+      nextShapes = patchTransformOrStyle(nextShapes, shapeIndexById, output);
     } else if (output.targetScope === 'group') {
-      nextGroups = patchTransformOrStyle(nextGroups, output);
+      nextGroups = patchTransformOrStyle(nextGroups, groupIndexById, output);
     } else if (output.targetScope === 'scene' && output.targetProperty === 'backgroundColor') {
       canvas.backgroundColor = output.value;
       canvasChanged = true;

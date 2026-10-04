@@ -72,9 +72,33 @@ def test_validates_and_parses_a_package_atomically() -> None:
     assert parsed["files"]["files/0.json"] == files["files/0.json"]
 
 
+def test_rejects_private_project_brief_in_portable_piece_package() -> None:
+    manifest, files = manifest_and_files()
+    manifest["brief"] = "private project intent"
+
+    with pytest.raises(PiecePackageError, match="Invalid package manifest"):
+        validate_piece_package(manifest, files)
+
+
 def test_shared_valid_manifest_fixtures_match_the_backend_schema() -> None:
     for path in sorted(PIECE_FIXTURES.glob("valid-*.json")):
         manifest = json.loads(path.read_text(encoding="utf-8"))
+        validate_piece_package(manifest, {})
+
+
+def test_generated_piece_package_rejects_private_activity_history() -> None:
+    manifest = json.loads((PIECE_FIXTURES / "valid-generated.json").read_text(encoding="utf-8"))
+    manifest["activity"] = [{"action_type": "published", "details": {"sequence": 1}}]
+
+    with pytest.raises(PiecePackageError, match="Invalid package manifest"):
+        validate_piece_package(manifest, {})
+
+
+def test_generated_piece_package_does_not_accept_private_activity_history() -> None:
+    manifest = json.loads((PIECE_FIXTURES / "valid-generated.json").read_text(encoding="utf-8"))
+    manifest["activity"] = [{"action_type": "published", "details": {"sequence": 1}}]
+
+    with pytest.raises(PiecePackageError, match="Invalid package manifest"):
         validate_piece_package(manifest, {})
 
 

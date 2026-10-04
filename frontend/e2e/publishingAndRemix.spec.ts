@@ -99,7 +99,8 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
+import { saveScene } from './support/saveScene.js';
+import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { openEditScene, openPieceControlsMenu } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -137,8 +138,8 @@ async function loginViaCurrentUI(page: Page, email: string, password: string): P
  * Unlike `interactionRuntime.spec.ts`, nothing here ever drives
  * `BehaviorCardsPanel`'s `followHand`/`reactToPinch` target select (see
  * issue #116), so there's no mount-order trap to avoid by deferring this. */
-async function createBlankProjectViaUI(page: Page): Promise<string> {
-  const projectId = await createBlankProjectViaUIBase(page);
+async function createServerProject2DWithExpandedSections(page: Page): Promise<string> {
+  const projectId = await createServerProject2DBase(page);
   await expandAllCollapsibleSections(page);
   return projectId;
 }
@@ -171,8 +172,7 @@ async function expectPublicStageChrome(page: Page) {
   await expect(toolbar).toBeVisible();
   // The public 2D stage shows its icon row inline (no hamburger since #692/#693); menu-mode shells still
   // put the same actions in a "Piece actions" dialog. Cover whichever this surface uses.
-  const inline =
-    (await toolbar.getByRole('button', { name: 'Open piece controls menu' }).count()) === 0;
+  const inline = (await toolbar.getAttribute('data-toolbar-mode')) === 'inline';
   if (!inline) await openPieceControlsMenu(page);
   await expect(toolbar.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
   await expect(toolbar.getByRole('button', { name: 'Open download menu' })).toBeVisible();
@@ -182,7 +182,7 @@ async function expectPublicStageChrome(page: Page) {
   await toolbar.getByRole('button', { name: 'Open download menu' }).click();
   await expect(toolbar.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
   const group = inline
-    ? toolbar.locator('.piece-stage-toolbar-group').first()
+    ? toolbar.getByRole('group', { name: 'Piece actions', exact: true })
     : toolbar
         .getByRole('dialog', { name: 'Piece actions' })
         .locator(".piece-stage-command-card > [role='group']");
@@ -207,25 +207,25 @@ async function expectPublicStageChrome(page: Page) {
 }
 
 function pieceActionsToolbar(page: Page) {
-  return page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
+  return page.getByRole('group', { name: 'Primary editor actions' });
+}
+
+async function openPublicationStatus(page: Page) {
+  const actions = pieceActionsToolbar(page);
+  const fileMenu = actions.getByRole('button', { name: 'File', exact: true });
+  if ((await fileMenu.getAttribute('aria-expanded')) !== 'true') await fileMenu.click();
+  return actions;
+}
+
+async function closePublicationStatus(
+  actions: ReturnType<typeof pieceActionsToolbar>,
+): Promise<void> {
+  const fileMenu = actions.getByRole('button', { name: 'File', exact: true });
+  if ((await fileMenu.getAttribute('aria-expanded')) === 'true') await fileMenu.click();
 }
 
 async function choosePublished(page: Page): Promise<void> {
-  // Issue #444: the "Publication status" disclosure (PublishControl.tsx)
-  // is itself nested behind the stage's "Open piece controls menu", same
-  // as Edit scene -- open it first or the trigger below is never visible.
-  await openPieceControlsMenu(page);
-  const toolbar = pieceActionsToolbar(page);
-  // Issue #444: StageControlsPopover's trigger toggles its own accessible
-  // name between "Publication status: Draft" (closed) and "Hide
-  // publication status: draft" (open) -- an anchored, case-insensitive
-  // regex matches exactly one of those two states while excluding the
-  // panel's own "Close publication status: draft" button (an unanchored
-  // substring match would hit that button too, a strict-mode violation).
-  const trigger = toolbar.getByRole('button', {
-    name: /^(publication status: draft|hide publication status: draft)$/i,
-  });
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  const toolbar = await openPublicationStatus(page);
   await toolbar
     .getByRole('group', { name: 'Publication status', exact: true })
     .getByRole('button', { name: 'Published', exact: true })
@@ -233,16 +233,12 @@ async function choosePublished(page: Page): Promise<void> {
 }
 
 async function chooseDraft(page: Page): Promise<void> {
-  await openPieceControlsMenu(page);
-  const toolbar = pieceActionsToolbar(page);
-  const trigger = toolbar.getByRole('button', {
-    name: /^(publication status: published|hide publication status: published)$/i,
-  });
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  const toolbar = await openPublicationStatus(page);
   await toolbar
     .getByRole('group', { name: 'Publication status', exact: true })
     .getByRole('button', { name: 'Draft', exact: true })
     .click();
+  await closePublicationStatus(toolbar);
 }
 
 /** Navigates to the given project's editor and fills in meaningful
@@ -293,6 +289,7 @@ async function confirmPublish(page: Page): Promise<void> {
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
   await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
+  await closePublicationStatus(pieceActionsToolbar(page));
 }
 
 test.describe('Publishing', () => {
@@ -307,7 +304,7 @@ test.describe('Publishing', () => {
     context,
   }) => {
     await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page); // version 1, still-default title/description
+    const projectId = await createServerProject2DWithExpandedSections(page); // version 1, still-default title/description
 
     // Add a distinguishing shape and save version 2, so "the current
     // saved version" is something concrete to check for publicly.
@@ -317,7 +314,7 @@ test.describe('Publishing', () => {
     await expect(positionX).toBeVisible();
     await positionX.fill('555');
     await positionX.blur();
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(page);
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
     // 1. Invalid metadata (still the untouched default title, still a
@@ -328,6 +325,7 @@ test.describe('Publishing', () => {
     await expect(page.getByTestId('publish-description-error')).toBeVisible();
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
     await expect(page.getByTestId('visibility-status')).toContainText('Draft (private)');
+    await closePublicationStatus(pieceActionsToolbar(page));
 
     // 2. Fix metadata, then Publish requires an explicit confirmation --
     //    the dialog names the project and only *its own* Publish button
@@ -351,6 +349,7 @@ test.describe('Publishing', () => {
       .getByRole('button', { name: 'Publish', exact: true })
       .click();
     await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
+    await closePublicationStatus(pieceActionsToolbar(page));
 
     // 3. Now reachable in the public gallery, anonymously.
     const anonContext = await context.browser()!.newContext();
@@ -388,7 +387,7 @@ test.describe('Publishing', () => {
     context,
   }) => {
     await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page); // version 1, still-default title/description
+    const projectId = await createServerProject2DWithExpandedSections(page); // version 1, still-default title/description
 
     // Type a meaningful title through the header's inline editor and a
     // meaningful description through the Details panel -- exactly the
@@ -421,6 +420,7 @@ test.describe('Publishing', () => {
 
     await dialog.getByRole('button', { name: 'Publish', exact: true }).click();
     await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
+    await closePublicationStatus(pieceActionsToolbar(page));
 
     // The Details panel itself now reflects the auto-persisted value (the
     // same PATCH "Save changes" would have sent), and the public surface
@@ -456,7 +456,7 @@ test.describe('Publishing', () => {
     context,
   }) => {
     await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
+    const projectId = await createServerProject2DWithExpandedSections(page);
     await saveMeaningfulMetadata(page, projectId, {
       title: 'Unpublish-me project',
       description: 'This project will be published, then unpublished.',
@@ -478,7 +478,9 @@ test.describe('Publishing', () => {
     expect((await apiGet(anonContext, `/api/public/projects/${projectId}/`)).status()).toBe(200);
 
     await chooseDraft(page);
+    await openPublicationStatus(page);
     await expect(page.getByTestId('visibility-status')).toContainText('Draft (private)');
+    await closePublicationStatus(pieceActionsToolbar(page));
 
     // The very next request to either public surface must already
     // reflect the change -- no caching/staleness window.
@@ -668,7 +670,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const page = await context.newPage();
     await loginViaCurrentUI(page, fixtures.owner.email, fixtures.password);
 
-    publicProjectId = await createBlankProjectViaUI(page);
+    publicProjectId = await createServerProject2DWithExpandedSections(page);
     // Task 113 (issue #144): a circle and a rectangle, each with a
     // distinct, deliberately unusual fill color unlikely to collide with
     // the canvas background/any other default color -- this is what the
@@ -683,7 +685,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     const rectFillInput = page.locator('#shape-style-fill');
     await rectFillInput.fill(rectFill);
     await rectFillInput.blur();
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(page);
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
     await saveMeaningfulMetadata(page, publicProjectId, {
       title: 'Anonymous viewer fixture project',
@@ -694,7 +696,7 @@ test.describe('Anonymous viewer: demo mode and camera-failure fallbacks', () => 
     // A second, deliberately empty-scene project (still version 1, the
     // untouched blank canvas) for the "renders an empty scene cleanly"
     // criterion.
-    emptyScenePublicProjectId = await createBlankProjectViaUI(page);
+    emptyScenePublicProjectId = await createServerProject2DWithExpandedSections(page);
     await saveMeaningfulMetadata(page, emptyScenePublicProjectId, {
       title: 'Anonymous viewer empty-scene fixture project',
       description: 'Used by the empty-scene rendering scenario.',
@@ -1315,17 +1317,22 @@ test.describe('Remix and fork', () => {
   test('remix enabled permits an authenticated atomic fork: private default, independent scene, exact source version, durable attribution', async ({
     browser,
   }) => {
+    // This end-to-end lifecycle crosses owner edit/publish, visitor fork,
+    // and anonymous public rendering; keep enough budget for those real
+    // server transitions on the loaded full-matrix runner.
+    test.setTimeout(60_000);
+
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const sourceId = await createBlankProjectViaUI(ownerPage); // version 1
+    const sourceId = await createServerProject2DWithExpandedSections(ownerPage); // version 1
 
     await openEditScene(ownerPage);
     await ownerPage.getByRole('button', { name: 'Add circle' }).click();
     const ownerPositionX = ownerPage.locator('#shape-style-positionX');
     await ownerPositionX.fill('100');
     await ownerPositionX.blur();
-    await ownerPage.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(ownerPage);
     await expect(ownerPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
     await saveMeaningfulMetadata(ownerPage, sourceId, {
@@ -1381,7 +1388,7 @@ test.describe('Remix and fork', () => {
     // recorded source version.
     await openEditScene(ownerPage);
     await ownerPage.getByRole('button', { name: 'Add circle' }).click();
-    await ownerPage.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(ownerPage);
     await expect(ownerPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 3/);
     const forkedFirstVersionAfterSourceEdit = (await (
       await apiGet(visitorContext, `/api/projects/${forkedId}/versions/${forkedVersionId}/`)
@@ -1399,7 +1406,7 @@ test.describe('Remix and fork', () => {
     await forkPositionX.fill('999');
     await forkPositionX.blur();
     await openEditScene(visitorPage);
-    await visitorPage.getByRole('button', { name: 'Save', exact: true }).click();
+    await saveScene(visitorPage);
     await expect(visitorPage.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
     // The source's own shape is completely untouched by the fork's edit
@@ -1431,7 +1438,9 @@ test.describe('Remix and fork', () => {
 
     const anonContext = await browser.newContext();
     const anonPage = await anonContext.newPage();
-    await anonPage.goto(`/p/${forkedId}`);
+    // The contract is the rendered public viewer and provenance below, not
+    // completion of every resource requested during navigation.
+    await anonPage.goto(`/p/${forkedId}`, { waitUntil: 'domcontentloaded' });
     await expect(anonPage.locator('.public-project-viewer')).toHaveAttribute(
       'data-project-kind',
       'remix',
@@ -1442,11 +1451,12 @@ test.describe('Remix and fork', () => {
 
     // Durability across a source-side change: unpublishing the SOURCE
     // must never remove the fork's attribution -- only drop the link.
-    await ownerPage.goto(`/projects/${sourceId}`);
     await chooseDraft(ownerPage);
+    await openPublicationStatus(ownerPage);
     await expect(ownerPage.getByTestId('visibility-status')).toContainText('Draft (private)');
+    await closePublicationStatus(pieceActionsToolbar(ownerPage));
 
-    await anonPage.reload();
+    await anonPage.reload({ waitUntil: 'domcontentloaded' });
     const provenanceAfterUnpublish = anonPage.getByTestId('provenance');
     await expect(provenanceAfterUnpublish).toContainText(`Remixed from ${fixtures.owner.username}`);
     await expect(
@@ -1462,7 +1472,7 @@ test.describe('Remix and fork', () => {
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const sourceId = await createBlankProjectViaUI(ownerPage);
+    const sourceId = await createServerProject2DWithExpandedSections(ownerPage);
     await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Remix-disabled source project',
       description: 'Publicly viewable, but remixing is off.',
@@ -1503,7 +1513,7 @@ test.describe('Remix and fork', () => {
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
     // Never published -- stays private for this whole test.
-    const privateId = await createBlankProjectViaUI(ownerPage);
+    const privateId = await createServerProject2DWithExpandedSections(ownerPage);
 
     const visitorContext = await browser.newContext();
     const visitorPage = await visitorContext.newPage();
@@ -1555,7 +1565,7 @@ test.describe('Fork concurrency (PostgreSQL)', () => {
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const sourceId = await createBlankProjectViaUI(ownerPage);
+    const sourceId = await createServerProject2DWithExpandedSections(ownerPage);
     await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Concurrency source project',
       description: 'Raced by two overlapping fork requests.',
@@ -1616,7 +1626,7 @@ test.describe('Fork concurrency (PostgreSQL)', () => {
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const sourceId = await createBlankProjectViaUI(ownerPage);
+    const sourceId = await createServerProject2DWithExpandedSections(ownerPage);
     await saveMeaningfulMetadata(ownerPage, sourceId, {
       title: 'Concurrency source project (no request id)',
       description: 'Raced by two overlapping fork requests without a shared idempotency key.',
@@ -1662,7 +1672,7 @@ test.describe('Authorization boundaries', () => {
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();
     await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(ownerPage);
+    const projectId = await createServerProject2DWithExpandedSections(ownerPage);
     await saveMeaningfulMetadata(ownerPage, projectId, {
       title: 'Authorization boundary project',
       description: 'Only its owner may publish or unpublish it.',

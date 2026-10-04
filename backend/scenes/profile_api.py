@@ -263,7 +263,7 @@ class AccountProfileView(APIView):
             return Response({"detail": "Profile settings are temporarily unavailable."}, status=503)
         return Response(payload)
 
-    def patch(self, request):
+    def patch(self, request):  # noqa: C901
         if not request.user.is_authenticated:
             return Response({"detail": "Authentication required."}, status=401)
         serializer = ProfileSerializer(data=request.data)

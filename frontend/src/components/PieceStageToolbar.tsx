@@ -19,6 +19,7 @@ export type PieceStageToolbarProps = {
   editorControls?: ReactNode;
   ariaLabel?: string;
   className?: string;
+  fullscreenControlClassName?: string;
   downloadFormat?: 'html' | 'zip';
   capabilities?: PieceStageCapabilities;
   /** Canonical public surfaces expose the named controls inline; legacy
@@ -58,6 +59,7 @@ export default function PieceStageToolbar({
   editorControls,
   ariaLabel = 'Piece actions',
   className,
+  fullscreenControlClassName,
   downloadFormat = 'html',
   capabilities = TWO_D_STAGE_CAPABILITIES,
   toolbarMode = 'menu',
@@ -136,7 +138,7 @@ export default function PieceStageToolbar({
     capabilities.fullscreen && onToggleFullscreen ? (
       <button
         type="button"
-        className="piece-stage-icon-button"
+        className={`piece-stage-icon-button${fullscreenControlClassName ? ` ${fullscreenControlClassName}` : ''}`}
         aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
         title={isFullscreen ? 'Exit fullscreen' : 'Expand piece to fullscreen'}
         aria-pressed={isFullscreen}

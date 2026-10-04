@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  validateProjectMetadataForLocalSave,
   validateProjectMetadataForPrivateSave,
   validateProjectMetadataForPublish,
 } from './projectMetadata';
@@ -73,5 +74,15 @@ describe('validateProjectMetadataForPublish', () => {
 
     expect(lenient.title).toBeUndefined();
     expect(strict.title).toBeDefined();
+  });
+});
+
+describe('validateProjectMetadataForLocalSave', () => {
+  it('rejects the placeholder title but permits an empty description', () => {
+    expect(
+      validateProjectMetadataForLocalSave({ title: 'Untitled animation', description: '' }),
+    ).toEqual({
+      title: ['Choose a title before saving this local project.'],
+    });
   });
 });

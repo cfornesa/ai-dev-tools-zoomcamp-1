@@ -1,5 +1,6 @@
 """DRF serializers for the scenes API (Task 13+)."""
 
+import re
 from typing import Any
 
 from django.urls import reverse
@@ -156,6 +157,11 @@ class ProjectMetadataSerializer(PublicSlugMixin, serializers.ModelSerializer):
     # Declared (not model-derived) so free text such as "My Slug!" reaches
     # `validate_public_slug` and is normalised there.
     public_slug = serializers.CharField(required=False, max_length=220)
+    brief = serializers.CharField(required=False, allow_blank=True, max_length=1500)
+
+    def validate_brief(self, value: str) -> str:
+        """Keep owner intent bounded and strip non-printing control codes."""
+        return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]", "", value)
 
     def validate_seo_config(self, value):
         try:
@@ -168,6 +174,7 @@ class ProjectMetadataSerializer(PublicSlugMixin, serializers.ModelSerializer):
         fields = [
             "title",
             "description",
+            "brief",
             "seo_config",
             "tags",
             "allow_public_remix",
@@ -177,6 +184,7 @@ class ProjectMetadataSerializer(PublicSlugMixin, serializers.ModelSerializer):
         extra_kwargs = {
             "title": {"required": False, "allow_blank": False},
             "description": {"required": False, "allow_blank": True},
+            "brief": {"required": False, "allow_blank": True, "max_length": 1500},
             "public_slug": {"required": False, "max_length": 220},
             "seo_config": {"required": False},
             "allow_public_remix": {"required": False},
@@ -246,6 +254,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "owner",
             "title",
             "description",
+            "brief",
             "seo_config",
             "tags",
             "visibility",
@@ -791,7 +800,17 @@ class SceneVersion3DSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SceneVersion3D
-        fields = ["id", "sequence", "origin", "scene_json", "created_by", "created_at"]
+        fields = [
+            "id",
+            "sequence",
+            "origin",
+            "scene_json",
+            "html_source",
+            "css_source",
+            "js_source",
+            "created_by",
+            "created_at",
+        ]
         read_only_fields = fields
 
 
@@ -993,3 +1012,18 @@ class SceneVersion3DCreateSerializer(serializers.Serializer):
     """
 
     scene_json = serializers.JSONField()
+    html_source = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    css_source = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    js_source = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+    def validate(self, attrs):
+        limit = SceneVersion3D.SOURCE_MAX_BYTES
+        for field_name in ("html_source", "css_source", "js_source"):
+            value = attrs.get(field_name)
+            if value is None:
+                attrs[field_name] = value = ""
+            if value is not None and len(value.encode("utf-8")) > limit:
+                raise serializers.ValidationError(
+                    {field_name: f"3D source must be no larger than {limit} bytes."}
+                )
+        return attrs

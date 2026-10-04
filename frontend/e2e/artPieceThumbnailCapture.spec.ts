@@ -204,6 +204,7 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       );
 
       await page.goto(`/art-pieces/${piece.public_id}/edit`);
+      await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
       await page.getByTestId('art-piece-editor-regenerate-thumbnail').click();
 
       await expect
@@ -242,6 +243,7 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       });
 
       await page.goto(`/art-pieces/${piece.public_id}/edit`);
+      await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
       await page.getByTestId('art-piece-editor-regenerate-thumbnail').click();
       // Give the failed capture attempt time to actually finish failing.
       await page.waitForTimeout(1000);
@@ -250,6 +252,7 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       );
 
       await page.unroute('**/thumbnail/');
+      await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
       await page.getByTestId('art-piece-editor-regenerate-thumbnail').click();
       await expect
         .poll(async () =>
@@ -279,6 +282,7 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       };
 
       await page.goto(`/art-pieces/${piece.public_id}/edit`);
+      await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
       await page.getByTestId('art-piece-editor-regenerate-thumbnail').click();
       await expect
         .poll(async () =>

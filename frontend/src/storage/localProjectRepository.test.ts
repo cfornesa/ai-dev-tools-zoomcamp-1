@@ -294,6 +294,31 @@ describe('localProjectRepository', () => {
     expect(updated.updatedAt).not.toBe(projectA.updatedAt);
   });
 
+  it('stores optional description and thumbnail fields with the required timestamps', async () => {
+    const db = await openLocalProjectDatabase();
+    const project = await createProject(db, {
+      ownerId: 'alice',
+      title: 'Described',
+      description: 'Initial description',
+    });
+    const described = await getProject(db, 'alice', project.id);
+    expect(described?.description).toBe('Initial description');
+
+    const thumbnail = pngBlob(8);
+    const withThumbnail = await updateProject(db, 'alice', project.id, {
+      thumbnail,
+      thumbnailUpdatedAt: '2026-09-30T00:00:00.000Z',
+    });
+    expect(withThumbnail.thumbnail).toBeDefined();
+    expect(withThumbnail.updatedAt).toBe(project.updatedAt);
+
+    const withDescription = await updateProject(db, 'alice', project.id, {
+      description: 'Updated description',
+    });
+    expect(withDescription.description).toBe('Updated description');
+    expect(withDescription.updatedAt).not.toBe(project.updatedAt);
+  });
+
   it('creates scenes ordered under a project, and updates them', async () => {
     const db = await openLocalProjectDatabase();
     const ownerId = 'alice';

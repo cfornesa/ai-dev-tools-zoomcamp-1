@@ -84,6 +84,19 @@ def test_a_feature_rich_scene_can_also_be_saved(user):
 
 
 @pytest.mark.django_db
+def test_source_projection_size_limit_is_enforced_by_model(user):
+    project = Project3D.objects.create(owner=user)
+
+    with pytest.raises(ValidationError, match="100000 bytes"):
+        SceneVersion3D.objects.create(
+            project=project,
+            sequence=1,
+            scene_json=MINIMAL_SCENE_3D,
+            html_source="x" * 100_001,
+        )
+
+
+@pytest.mark.django_db
 def test_invalid_scene_json_is_rejected_on_save(user):
     project = Project3D.objects.create(owner=user)
     bad_scene = dict(MINIMAL_SCENE_3D)

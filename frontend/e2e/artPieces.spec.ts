@@ -57,7 +57,7 @@ test.describe('Generated art pieces (#315)', () => {
     await expect(page.getByRole('toolbar', { name: 'Piece actions' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Open download menu' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Expand fullscreen' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
     const screenshotDownload = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Take screenshot' }).click();
     const screenshot = await screenshotDownload;
@@ -83,7 +83,9 @@ test.describe('Generated art pieces (#315)', () => {
     expect(fullHtml).toContain('data-action="camera"');
     expect(fullHtml).toContain('data-action="hand"');
     expect(fullHtml).not.toContain('Download full piece');
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
+    await page.getByRole('button', { name: 'Open download menu', exact: true }).click();
     const nonCameraDownload = page.waitForEvent('download');
     await page.getByRole('menuitem', { name: 'Download Non-Camera ZIP' }).click();
     const nonCameraBundle = await nonCameraDownload;
@@ -91,14 +93,22 @@ test.describe('Generated art pieces (#315)', () => {
     const nonCameraHtml = await nonCameraZip.files['index.html'].async('string');
     expect(nonCameraHtml).not.toContain('data-action="camera"');
     expect(nonCameraHtml).not.toContain('data-action="hand"');
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(page.getByRole('region', { name: 'Piece controls' })).toBeVisible();
     await page.getByRole('button', { name: 'Show hand gesture guide' }).click();
     await expect(page.getByRole('dialog', { name: 'Hand gesture guide' })).toContainText('Look');
-    await page.getByRole('link', { name: 'View immersive piece' }).click();
-    await expect(page.getByRole('heading', { name: title })).toBeVisible();
-    await expect(page.getByTitle('Immersive art piece preview')).toBeVisible();
-    await page.getByRole('link', { name: 'Back to regular viewer' }).click();
+    await page
+      .getByRole('dialog', { name: 'Hand gesture guide' })
+      .getByRole('button', { name: 'Close', exact: true })
+      .click();
+    const immersivePagePromise = context.waitForEvent('page');
+    await page.getByRole('button', { name: 'View immersive piece', exact: true }).click();
+    const immersivePage = await immersivePagePromise;
+    await immersivePage.waitForLoadState();
+    await expect(immersivePage.getByRole('heading', { name: title })).toBeVisible();
+    await expect(immersivePage.getByTitle('Immersive art piece preview')).toBeVisible();
+    await immersivePage.getByRole('link', { name: 'Back to regular viewer' }).click();
+    await expect(immersivePage.getByTitle('Art piece preview')).toBeVisible();
     await expect(page.getByTitle('Art piece preview')).toBeVisible();
   });
 });

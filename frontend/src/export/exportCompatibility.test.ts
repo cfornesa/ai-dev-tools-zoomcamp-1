@@ -43,6 +43,7 @@ describe('checkRendererCompatibility', () => {
     const scene = {
       ...BASE_SCENE,
       shapes: [
+        { id: 'image-1', type: 'image', layerId: 'layer-1', mediaAssetId: 'asset-1' },
         { id: 's1', type: 'circle', layerId: 'layer-1' },
         { id: 's2', type: 'rect', layerId: 'layer-1' },
         { id: 's3', type: 'line', layerId: 'layer-1' },
@@ -93,6 +94,7 @@ describe('checkRendererCompatibility', () => {
     const scene = {
       ...BASE_SCENE,
       shapes: [
+        { id: 'image-1', type: 'image', layerId: 'layer-1', mediaAssetId: 'asset-1' },
         { id: 's1', type: 'circle', layerId: 'layer-1' },
         { id: 's2', type: 'rect', layerId: 'layer-1' },
         { id: 's3', type: 'line', layerId: 'layer-1' },

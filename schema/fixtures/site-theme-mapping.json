@@ -1,0 +1,61 @@
+{
+  "siteTheme": {
+    "theme_palettes": {
+      "light": {
+        "background": "#f4ead3",
+        "surface": "#fff8e7",
+        "text": "#2b1e1a",
+        "muted": "#6f6258",
+        "accent": "#b8892e"
+      },
+      "dark": {
+        "background": "#071b2a",
+        "surface": "#2a1238",
+        "text": "#f8edd3",
+        "muted": "#c8bca5",
+        "accent": "#e4b95c"
+      }
+    },
+    "design_palettes": {
+      "light": { "accent_foreground": "hsl(0 0% 0%)" },
+      "dark": { "accent_foreground": "hsl(0 0% 0%)" }
+    },
+    "presentation": {
+      "font_family": "script",
+      "density": "compact",
+      "radius": "pill",
+      "border_style": "dashed",
+      "shadow": "offset",
+      "backdrop": "cosmic"
+    }
+  },
+  "expected": {
+    "light": {
+      "--bg": "#f4ead3",
+      "--code-bg": "#fff8e7",
+      "--text-h": "#2b1e1a",
+      "--text": "#6f6258",
+      "--accent": "#b8892e",
+      "--accent-foreground": "hsl(0 0% 0%)"
+    },
+    "dark": {
+      "--bg": "#071b2a",
+      "--code-bg": "#2a1238",
+      "--text-h": "#f8edd3",
+      "--text": "#c8bca5",
+      "--accent": "#e4b95c",
+      "--accent-foreground": "hsl(0 0% 0%)"
+    },
+    "presentation": {
+      "--sans": "system-ui, 'Segoe UI', Roboto, sans-serif",
+      "--site-font": "Lora, Georgia, 'Times New Roman', serif",
+      "--heading": "'Pinyon Script', Georgia, 'Times New Roman', serif",
+      "--site-density": "12px",
+      "--site-radius": "999px",
+      "--site-border-style": "dashed",
+      "data-site-font": "script",
+      "data-site-shadow": "offset",
+      "data-site-backdrop": "cosmic"
+    }
+  }
+}

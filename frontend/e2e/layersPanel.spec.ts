@@ -42,19 +42,12 @@ import { expect, test, type Browser, type Locator, type Page } from '@playwright
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
+import { saveScene } from './support/saveScene.js';
+import { createServerProject2D } from './support/createProject.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
-
-// Issue #131: "Add circle/rectangle/line/polygon" moved from the Tools
-// panel's (formerly collapsed) "Add & edit shapes" section into the
-// always-visible LayersPanel toolbar, so no section needs expanding to
-// reach them anymore.
-async function createBlankProjectViaUI(page: Page): Promise<void> {
-  await createBlankProjectViaUIBase(page);
-}
 
 function outlineList(page: Page): Locator {
   return page.getByRole('list', { name: 'Scene outline' });
@@ -176,7 +169,7 @@ test.describe('Layers panel', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       const layersRegion = page.getByRole('region', { name: 'Layers' });
       await expect(layersRegion).toBeVisible();
@@ -193,7 +186,7 @@ test.describe('Layers panel', () => {
       const page = await context.newPage();
       await page.setViewportSize({ width: 1280, height: 900 });
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       const layersRegion = page.getByRole('region', { name: 'Layers' });
       for (const panelName of ['Canvas', 'Details', 'Tools', 'Layers', 'Inspector']) {
@@ -243,7 +236,7 @@ test.describe('Layers panel', () => {
       const page = await context.newPage();
       await page.setViewportSize({ width: 1024, height: 900 });
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       const layersRegion = page.getByRole('region', { name: 'Layers' });
       const row = layersRegion.locator('.editor-outline-row-layer').first();
@@ -302,7 +295,7 @@ test.describe('Layers panel', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
@@ -332,7 +325,7 @@ test.describe('Layers panel', () => {
       const page = await context.newPage();
       await page.setViewportSize({ width: 375, height: 900 });
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
@@ -363,10 +356,11 @@ test.describe('Layers panel', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
-      // Three shapes across a group and a second layer (this task's own
-      // "creates at least three shapes across layers/groups" criterion).
+      // Three shapes across independent shape layers and a group (this
+      // task's own "creates at least three shapes across layers/groups"
+      // criterion). Issue #142 requires one top-level shape per layer.
       // Issue #427: shape/layer authoring buttons live in the "Edit scene"
       // stage popover. Its modal overlay (`piece-stage-command-overlay`)
       // covers the whole Preview region while open -- the group-selection
@@ -375,9 +369,9 @@ test.describe('Layers panel', () => {
       // Toolbar-only actions use the same responsive disclosure helper.
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add layer' }).click(); // Layer 2
-      await page.getByRole('button', { name: 'Add circle' }).click(); // Circle 1 (Layer 1)
-      await page.getByRole('button', { name: 'Add rectangle' }).click(); // Rectangle 1 (Layer 1)
-      await page.getByRole('button', { name: 'Add circle' }).click(); // Circle 2 (Layer 1)
+      await page.getByRole('button', { name: 'Add circle' }).click(); // Circle 1 (own layer)
+      await page.getByRole('button', { name: 'Add rectangle' }).click(); // Rectangle 1 (own layer)
+      await page.getByRole('button', { name: 'Add circle' }).click(); // Circle 2 (own layer)
       await closeEditScene(page);
       await assertNoDuplicateOutlineRows(page);
 
@@ -411,11 +405,11 @@ test.describe('Layers panel', () => {
       expect(kindsAfterReparent[layer2Index]).toBe('layer');
       expect(circle2Index).toBeGreaterThan(layer2Index);
 
-      // Two more loose top-level shapes on Layer 1, alongside Group 1 —
-      // the pair this test actually reorders/asserts z-order against.
+      // Two more loose top-level shapes, each on its own adjacent layer.
+      // This pair exercises the valid layer-level reorder contract from #142.
       await reopenEditScene(page);
-      await page.getByRole('button', { name: 'Add rectangle' }).click(); // Rectangle 2 (Layer 1)
-      await page.getByRole('button', { name: 'Add circle' }).click(); // Circle 3 (Layer 1)
+      await page.getByRole('button', { name: 'Add rectangle' }).click(); // Rectangle 2 (own layer)
+      await page.getByRole('button', { name: 'Add circle' }).click(); // Circle 3 (own layer)
       await closeEditScene(page);
       const rectangle2Label = 'Rectangle 2';
       const thirdCircleLabel = 'Circle 3';
@@ -424,28 +418,44 @@ test.describe('Layers panel', () => {
 
       const zBefore = await canvasZOrder(page);
       expect(zBefore.length).toBe(5); // 5 shapes created above, none deleted
-
-      // Pointer drag: move the last-added circle above Rectangle 2 (both
-      // top-level, loose, same layer -- a same-container reorder).
       const rectangle2Row = await shapeRow(page, rectangle2Label);
       const thirdCircleRow = await shapeRow(page, thirdCircleLabel!);
+      const rectangle2Id = await rectangle2Row.getAttribute('data-outline-id');
+      const thirdCircleId = await thirdCircleRow.getAttribute('data-outline-id');
+      expect(rectangle2Id).not.toBeNull();
+      expect(thirdCircleId).not.toBeNull();
+      const shapeOrderBefore = await outlineRows(page).evaluateAll((els) =>
+        els
+          .filter((el) => el.getAttribute('data-outline-kind') === 'shape')
+          .map((el) => el.getAttribute('data-outline-id')),
+      );
+
+      // Pointer drag: move the last-added circle above Rectangle 2. Each
+      // shape owns its own layer, so this reorders the two adjacent layers.
       await fireLayerDrag(page, thirdCircleRow, rectangle2Row, 0.1); // top zone: "before"
 
-      // Issue #194: the panel-to-z-order mapping inverted (top of panel is
-      // now frontmost, not backmost), which also changes where in the
-      // z-order array this same-container swap's two affected shapes land
-      // -- verified empirically (not re-derived by hand here) that they
-      // still occupy the array's last two slots, now in the *same* relative
-      // order as `zBefore`'s last two rather than the reverse.
+      // Issue #194: the panel's top row is frontmost, while the SVG DOM
+      // orders back-to-front. Moving Circle 3 above Rectangle 2 therefore
+      // reverses the pair in both representations.
       const zAfterDrag = await canvasZOrder(page);
       expect(zAfterDrag).not.toEqual(zBefore);
-      expect(zAfterDrag.slice(-2)).toEqual(zBefore.slice(-2));
+      const pairBefore = zBefore.filter((id) => id === rectangle2Id || id === thirdCircleId);
+      const pairAfterDrag = zAfterDrag.filter((id) => id === rectangle2Id || id === thirdCircleId);
+      expect(pairBefore).toHaveLength(2);
+      expect(pairAfterDrag).toEqual([...pairBefore].reverse());
+      const shapeOrderAfterDrag = await outlineRows(page).evaluateAll((els) =>
+        els
+          .filter((el) => el.getAttribute('data-outline-kind') === 'shape')
+          .map((el) => el.getAttribute('data-outline-id')),
+      );
+      expect(shapeOrderAfterDrag.indexOf(thirdCircleId)).toBeLessThan(
+        shapeOrderAfterDrag.indexOf(rectangle2Id),
+      );
       await assertNoDuplicateOutlineRows(page);
 
-      // Keyboard-only reorder: the existing Selection HUD "Move down" button
-      // swaps the same pair straight back -- the exact position a drag could
-      // also reach, reachable with no pointer at all. Shape move controls moved
-      // out of the row disclosure into the HUD, so select the shape first.
+      // Keyboard-only reorder: the selected shape's Move down command moves
+      // its layer below Rectangle 2, reversing the pointer reorder. Select
+      // the shape first because move controls live in the Selection HUD.
       const thirdCircleRowAfterDrag = await shapeRow(page, thirdCircleLabel!);
       await thirdCircleRowAfterDrag
         .getByRole('button', { name: thirdCircleLabel, exact: true })
@@ -455,28 +465,50 @@ test.describe('Layers panel', () => {
         exact: true,
       });
       await expect(moveThirdCircleDown).toBeVisible();
-      // The runtime stage rail is an intentional absolute overlay. After
-      // Playwright scrolls the HUD into view, its hit area can overlap the
-      // row while the control remains visible and keyboard-accessible.
-      if (await moveThirdCircleDown.isEnabled()) {
-        await moveThirdCircleDown.click({ force: true });
-      } else {
-        const moveThirdCircleUp = page.getByRole('button', {
-          name: `Move ${thirdCircleLabel} up`,
-          exact: true,
-        });
-        await expect(moveThirdCircleUp).toBeEnabled();
-        await moveThirdCircleUp.click({ force: true });
-      }
+      await expect(moveThirdCircleDown).toBeEnabled();
+      await moveThirdCircleDown.focus();
+      await expect(moveThirdCircleDown).toBeFocused();
+      await moveThirdCircleDown.press('Enter');
 
       const zAfterKeyboard = await canvasZOrder(page);
       expect(zAfterKeyboard).toEqual(zBefore);
+      const shapeOrderAfterKeyboard = await outlineRows(page).evaluateAll((els) =>
+        els
+          .filter((el) => el.getAttribute('data-outline-kind') === 'shape')
+          .map((el) => el.getAttribute('data-outline-id')),
+      );
+      expect(shapeOrderAfterKeyboard).toEqual(shapeOrderBefore);
+      await assertNoDuplicateOutlineRows(page);
+
+      // The restored Circle 3 layer is at the end of the layer order, so a
+      // further Move down must be unavailable. Walk it to the opposite
+      // boundary using keyboard activation, verify that Move up is disabled
+      // there, then return it to its original position before persistence
+      // checks. This covers both first/last boundaries without changing the
+      // one-top-level-shape-per-layer scene contract from #142.
+      const moveThirdCircleUp = page.getByRole('button', {
+        name: `Move ${thirdCircleLabel} up`,
+        exact: true,
+      });
+      await expect(moveThirdCircleDown).toBeDisabled();
+      await expect(moveThirdCircleUp).toBeEnabled();
+      const layerCount = await outlineList(page).locator('[data-outline-kind="layer"]').count();
+      for (let step = 0; step < layerCount && (await moveThirdCircleUp.isEnabled()); step += 1) {
+        await moveThirdCircleUp.press('Enter');
+      }
+      await expect(moveThirdCircleUp).toBeDisabled();
+      await expect(moveThirdCircleDown).toBeEnabled();
+      for (let step = 0; step < layerCount && (await moveThirdCircleDown.isEnabled()); step += 1) {
+        await moveThirdCircleDown.press('Enter');
+      }
+      await expect(moveThirdCircleDown).toBeDisabled();
+      expect(await canvasZOrder(page)).toEqual(zAfterKeyboard);
       await assertNoDuplicateOutlineRows(page);
 
       // Persisted order survives a real save + full page reload.
       const rowIdsBeforeSave = await outlineRowIds(page);
       await reopenEditScene(page);
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
       await page.reload();
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
@@ -494,7 +526,7 @@ test.describe('Layers panel', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add layer' }).click(); // Layer 2

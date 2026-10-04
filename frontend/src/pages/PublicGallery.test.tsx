@@ -284,7 +284,7 @@ describe('PublicGallery card rendering', () => {
     expect(screen.getByRole('heading', { name: 'Pinch Burst' })).toBeInTheDocument();
     expect(screen.getByText('By alice')).toBeInTheDocument();
     expect(screen.getByText('By bob')).toBeInTheDocument();
-    expect(screen.getAllByRole('presentation')).toHaveLength(2);
+    expect(screen.getAllByRole('img', { name: /^Preview of / })).toHaveLength(2);
     expect(screen.getAllByText('2D')).toHaveLength(2);
   });
 
@@ -380,7 +380,7 @@ describe('PublicGallery card rendering', () => {
     });
 
     renderPublicGallery();
-    const image = await screen.findByRole('presentation');
+    const image = await screen.findByRole('img', { name: 'Preview of Hand Follower' });
 
     image.dispatchEvent(new Event('error'));
 

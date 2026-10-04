@@ -20,23 +20,8 @@
  * database is a network resource the Playwright worker process cannot
  * reach directly.
  */
-import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-
-const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
-const BACKEND_DIR = path.join(REPO_ROOT, 'backend');
-const configuredEnvFile = process.env.E2E_ENV_FILE;
-const ENV_FILE_ARGS = configuredEnvFile
-  ? ['--env-file', configuredEnvFile]
-  : fs.existsSync(path.join(BACKEND_DIR, '.env'))
-    ? ['--env-file', '.env']
-    : [];
+import { runFixtureCommand } from './fixtureCommand.js';
 
 export function resetFixtureSessions(): void {
-  execFileSync(
-    'uv',
-    ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'reset-sessions', '--json'],
-    { cwd: BACKEND_DIR, stdio: ['ignore', 'ignore', 'inherit'] },
-  );
+  runFixtureCommand('reset-sessions');
 }

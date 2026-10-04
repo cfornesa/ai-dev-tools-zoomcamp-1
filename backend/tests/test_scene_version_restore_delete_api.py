@@ -15,7 +15,7 @@ from django.contrib.auth import get_user_model
 from django.db import connections
 from rest_framework.test import APIClient
 
-from scenes.models import Project, SceneVersion
+from scenes.models import Project, ProjectActivity, SceneVersion
 
 BLANK_SCENE = json.loads(
     (
@@ -94,6 +94,54 @@ def test_restore_creates_new_version_with_restore_origin_and_correct_parent(
 
     project.refresh_from_db()
     assert project.current_version_id == body["id"]
+
+
+@pytest.mark.django_db
+def test_restore_records_activity_with_source_sequence_and_safe_metadata(
+    owner_client, project_with_two_versions, owner
+):
+    project, source, _ = project_with_two_versions
+
+    response = owner_client.post(_restore_url(project, source))
+
+    assert response.status_code == 201
+    restored = response.json()
+    activity = ProjectActivity.objects.get(project=project)
+    assert activity.actor_id == owner.id
+    assert activity.action_type == ProjectActivity.ActionType.VERSION_RESTORED
+    assert activity.created_at is not None
+    assert activity.metadata == {
+        "version_id": restored["id"],
+        "sequence": restored["sequence"],
+        "origin": "restore",
+        "restored_from_sequence": source.sequence,
+    }
+
+
+@pytest.mark.django_db
+def test_restore_rolls_back_version_and_activity_when_transaction_fails(
+    owner_client, project_with_two_versions, monkeypatch
+):
+    project, source, _ = project_with_two_versions
+
+    class InjectedFailure(Exception):  # noqa: N818
+        pass
+
+    original_create = ProjectActivity.objects.create
+
+    def create_then_fail(**kwargs):
+        original_create(**kwargs)
+        raise InjectedFailure("simulated failure after activity insert")
+
+    monkeypatch.setattr(ProjectActivity.objects, "create", create_then_fail)
+
+    with pytest.raises(InjectedFailure):
+        owner_client.post(_restore_url(project, source))
+
+    project.refresh_from_db()
+    assert project.current_version_id is not None
+    assert SceneVersion.objects.filter(project=project).count() == 2
+    assert ProjectActivity.objects.filter(project=project).count() == 0
 
 
 @pytest.mark.django_db
@@ -203,6 +251,56 @@ def test_soft_delete_hides_eligible_non_current_version_from_history(
 
 
 @pytest.mark.django_db
+def test_soft_delete_records_one_activity_even_when_repeated(
+    owner_client, project_with_two_versions, owner
+):
+    project, version, _ = project_with_two_versions
+
+    first = owner_client.delete(_delete_url(project, version))
+    version.refresh_from_db()
+    deleted_at = version.deleted_at
+    second = owner_client.delete(_delete_url(project, version))
+    version.refresh_from_db()
+
+    assert first.status_code == second.status_code == 204
+    assert version.deleted_at == deleted_at
+    activity = ProjectActivity.objects.get(project=project)
+    assert activity.actor_id == owner.id
+    assert activity.action_type == ProjectActivity.ActionType.VERSION_DELETED
+    assert activity.created_at is not None
+    assert activity.metadata == {
+        "version_id": version.pk,
+        "sequence": version.sequence,
+        "origin": version.origin,
+    }
+
+
+@pytest.mark.django_db
+def test_soft_delete_rolls_back_version_and_activity_when_activity_insert_fails(
+    owner_client, project_with_two_versions, monkeypatch
+):
+    project, version, _ = project_with_two_versions
+
+    class InjectedFailure(Exception):  # noqa: N818
+        pass
+
+    original_create = ProjectActivity.objects.create
+
+    def create_then_fail(**kwargs):
+        original_create(**kwargs)
+        raise InjectedFailure("simulated failure after activity insert")
+
+    monkeypatch.setattr(ProjectActivity.objects, "create", create_then_fail)
+
+    with pytest.raises(InjectedFailure):
+        owner_client.delete(_delete_url(project, version))
+
+    version.refresh_from_db()
+    assert version.is_deleted is False
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
 def test_deleting_the_current_version_is_rejected(owner_client, project_with_two_versions):
     project, v1, v2 = project_with_two_versions
 
@@ -307,7 +405,7 @@ pytestmark_postgres = pytest.mark.skipif(
 @pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_restores_never_collide_on_sequence(django_db_blocker):
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-restore-user"
         )
@@ -377,7 +475,7 @@ def test_postgres_concurrent_restores_never_collide_on_sequence(django_db_blocke
 @pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_rollback_on_restore_failure_leaves_state_unchanged(django_db_blocker):
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="restore-rollback-user"
         )
@@ -391,7 +489,7 @@ def test_postgres_rollback_on_restore_failure_leaves_state_unchanged(django_db_b
         from django.db import transaction as txn
         from django.db.models import Max
 
-        class InjectedFailure(Exception):
+        class InjectedFailure(Exception):  # noqa: N818
             pass
 
         with pytest.raises(InjectedFailure):

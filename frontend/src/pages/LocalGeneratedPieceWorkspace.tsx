@@ -16,6 +16,7 @@ import {
 } from '../generative/artPieceCapabilities';
 import { captureSandboxScreenshot } from '../generative/artPieceThumbnailCapture';
 import LocalTransferConsentDialog from './LocalTransferConsentDialog';
+import LocalPublicTransferControl from './LocalPublicTransferControl';
 import {
   hasLocalTransferConsent,
   recordLocalTransferConsent,
@@ -34,6 +35,7 @@ import {
   type LocalPieceVersionRecord,
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
+import { ensureLocalThumbnail } from '../storage/localThumbnail';
 
 function payloadOf(version: LocalPieceVersionRecord | null) {
   return (version?.payload ?? {}) as {
@@ -115,6 +117,7 @@ export default function LocalGeneratedPieceWorkspace() {
       });
       const updated = await updateProject(db, owner!, id!, { title: project!.title });
       setProject(updated);
+      void ensureLocalThumbnail(updated).catch(() => undefined);
       setVersions((items) => [...items, version]);
       setCurrent(version);
       setMessage('Saved locally. Nothing was sent to the server.');
@@ -218,97 +221,104 @@ export default function LocalGeneratedPieceWorkspace() {
   }
 
   return (
-    <main className="local-generated-editor" aria-labelledby="local-generated-title">
-      <p className="eyebrow">LOCAL-ONLY GENERATED PIECE</p>
-      <h1 id="local-generated-title">{project.title}</h1>
-      <p>{payload.description ?? 'Edit and preview this generated piece locally.'}</p>
-      <section className="local-generated-preview" aria-label="Generated piece preview">
-        <iframe
-          ref={previewRef}
-          title={`${project.title} preview`}
-          sandbox="allow-scripts"
-          srcDoc={buildArtPieceSandboxDocument(source, engine, 'regular', { ink: payload.ink })}
-        />
-      </section>
-      <div className="local-generated-actions">
-        <button type="button" onClick={() => void screenshot()}>
-          Screenshot
-        </button>
-      </div>
-      <section className="local-generated-source" aria-labelledby="source-heading">
-        <h2 id="source-heading">Source</h2>
-        <textarea
-          aria-label="Generated source"
-          value={source}
-          onChange={(event) => setSource(event.target.value)}
-        />
-        <button type="button" onClick={() => void save()}>
-          Save local version
-        </button>
-        <button type="button" onClick={() => void exportPackage()}>
-          Export local package
-        </button>
-        <div className="local-generated-ai-transfer">
-          <h2>AI revision</h2>
-          <label htmlFor="local-generated-ai-prompt">Describe the local revision</label>
-          <textarea
-            id="local-generated-ai-prompt"
-            value={aiPrompt}
-            onChange={(event) => setAiPrompt(event.target.value)}
-            placeholder="Describe what you want AI to generate…"
+    <>
+      <LocalPublicTransferControl
+        project={project}
+        initialDescription={String(payload.description ?? '')}
+        onProjectUpdated={setProject}
+      />
+      <main className="local-generated-editor" aria-labelledby="local-generated-title">
+        <p className="eyebrow">LOCAL-ONLY GENERATED PIECE</p>
+        <h1 id="local-generated-title">{project.title}</h1>
+        <p>{payload.description ?? 'Edit and preview this generated piece locally.'}</p>
+        <section className="local-generated-preview" aria-label="Generated piece preview">
+          <iframe
+            ref={previewRef}
+            title={`${project.title} preview`}
+            sandbox="allow-scripts"
+            srcDoc={buildArtPieceSandboxDocument(source, engine, 'regular', { ink: payload.ink })}
           />
-          <button
-            type="button"
-            onClick={requestAiTransfer}
-            disabled={!aiPrompt.trim() || aiPending}
-          >
-            {aiPending ? 'Waiting for AI…' : 'Ask AI for a local revision'}
+        </section>
+        <div className="local-generated-actions">
+          <button type="button" onClick={() => void screenshot()}>
+            Screenshot
           </button>
         </div>
-      </section>
-      <fieldset className="local-generated-capabilities" aria-labelledby="capabilities-heading">
-        <legend id="capabilities-heading">Capabilities</legend>
-        {CAPABILITY_OPTIONS.map(({ key, label, spatialOnly }) => {
-          const unsupported =
-            (spatialOnly && !SPATIAL_LIBRARIES.has(engine)) ||
-            (key === 'download' && !ART_PIECE_ENGINE_CAPABILITIES[engine].download);
-          return (
-            <label key={key} data-testid={`local-generated-capability-${key}`}>
-              <input
-                type="checkbox"
-                checked={!unsupported && Boolean(capabilities[key])}
-                disabled={unsupported}
-                onChange={() => toggleCapability(key)}
-              />
-              {label}
-              {unsupported && ' (unavailable for this engine)'}
-            </label>
-          );
-        })}
-        <p>Capability changes are local until an explicit transfer is approved.</p>
-      </fieldset>
-      <section aria-labelledby="versions-heading">
-        <h2 id="versions-heading">Local versions</h2>
-        <ol>
-          {versions.map((version) => (
-            <li key={version.id}>
-              <button type="button" onClick={() => void restore(version.id)}>
-                Restore version {version.sequence}
-              </button>
-              {version.id === current.id ? ' (current)' : ''}
-            </li>
-          ))}
-        </ol>
-      </section>
-      {message && <p role="status">{message}</p>}
-      {consentOpen && (
-        <LocalTransferConsentDialog
-          pieceTitle={project.title}
-          onCancel={() => setConsentOpen(false)}
-          onConfirm={confirmAiTransfer}
-        />
-      )}
-      <Link to="/gallery">Back to gallery</Link>
-    </main>
+        <section className="local-generated-source" aria-labelledby="source-heading">
+          <h2 id="source-heading">Source</h2>
+          <textarea
+            aria-label="Generated source"
+            value={source}
+            onChange={(event) => setSource(event.target.value)}
+          />
+          <button type="button" onClick={() => void save()}>
+            Save local version
+          </button>
+          <button type="button" onClick={() => void exportPackage()}>
+            Export local package
+          </button>
+          <div className="local-generated-ai-transfer">
+            <h2>AI revision</h2>
+            <label htmlFor="local-generated-ai-prompt">Describe the local revision</label>
+            <textarea
+              id="local-generated-ai-prompt"
+              value={aiPrompt}
+              onChange={(event) => setAiPrompt(event.target.value)}
+              placeholder="Describe what you want AI to generate…"
+            />
+            <button
+              type="button"
+              onClick={requestAiTransfer}
+              disabled={!aiPrompt.trim() || aiPending}
+            >
+              {aiPending ? 'Waiting for AI…' : 'Ask AI for a local revision'}
+            </button>
+          </div>
+        </section>
+        <fieldset className="local-generated-capabilities" aria-labelledby="capabilities-heading">
+          <legend id="capabilities-heading">Capabilities</legend>
+          {CAPABILITY_OPTIONS.map(({ key, label, spatialOnly }) => {
+            const unsupported =
+              (spatialOnly && !SPATIAL_LIBRARIES.has(engine)) ||
+              (key === 'download' && !ART_PIECE_ENGINE_CAPABILITIES[engine].download);
+            return (
+              <label key={key} data-testid={`local-generated-capability-${key}`}>
+                <input
+                  type="checkbox"
+                  checked={!unsupported && Boolean(capabilities[key])}
+                  disabled={unsupported}
+                  onChange={() => toggleCapability(key)}
+                />
+                {label}
+                {unsupported && ' (unavailable for this engine)'}
+              </label>
+            );
+          })}
+          <p>Capability changes are local until an explicit transfer is approved.</p>
+        </fieldset>
+        <section aria-labelledby="versions-heading">
+          <h2 id="versions-heading">Local versions</h2>
+          <ol>
+            {versions.map((version) => (
+              <li key={version.id}>
+                <button type="button" onClick={() => void restore(version.id)}>
+                  Restore version {version.sequence}
+                </button>
+                {version.id === current.id ? ' (current)' : ''}
+              </li>
+            ))}
+          </ol>
+        </section>
+        {message && <p role="status">{message}</p>}
+        {consentOpen && (
+          <LocalTransferConsentDialog
+            pieceTitle={project.title}
+            onCancel={() => setConsentOpen(false)}
+            onConfirm={confirmAiTransfer}
+          />
+        )}
+        <Link to="/gallery">Back to gallery</Link>
+      </main>
+    </>
   );
 }

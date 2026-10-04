@@ -18,6 +18,10 @@ export function downloadBlob(blob: Blob, filename: string): void {
     anchor.click();
     document.body.removeChild(anchor);
   } finally {
-    URL.revokeObjectURL(url);
+    // Chromium may dispatch the download asynchronously after the synthetic
+    // click returns. Revoking the object URL in the same turn can therefore
+    // prevent the browser from ever creating the download (notably for ZIP
+    // exports). Give the navigation a task to consume the URL first.
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 }

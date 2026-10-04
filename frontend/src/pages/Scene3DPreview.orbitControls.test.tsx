@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as THREE from 'three';
 
 /**
  * Issue #271: `Scene3DPreview.test.tsx` only ever exercises the
@@ -20,16 +21,22 @@ const updateSpy = vi.fn();
 const listenToKeyEventsSpy = vi.fn();
 let lastConstructedCamera: unknown;
 let lastConstructedDomElement: unknown;
+let lastOrbitControls: { enabled: boolean } | undefined;
 let instanceCount = 0;
+let transformDraggingListener: ((event: { value?: boolean }) => void) | undefined;
+const transformAttachSpy = vi.fn();
+const transformDisposeSpy = vi.fn();
 
 vi.mock('three/examples/jsm/controls/OrbitControls.js', () => {
   class FakeOrbitControls {
     target = { set: vi.fn() };
     enableDamping = false;
+    enabled = true;
     constructor(camera: unknown, domElement: unknown) {
       instanceCount += 1;
       lastConstructedCamera = camera;
       lastConstructedDomElement = domElement;
+      lastOrbitControls = this;
     }
     listenToKeyEvents = listenToKeyEventsSpy;
     addEventListener = vi.fn();
@@ -37,6 +44,24 @@ vi.mock('three/examples/jsm/controls/OrbitControls.js', () => {
     dispose = disposeSpy;
   }
   return { OrbitControls: FakeOrbitControls };
+});
+
+vi.mock('three/examples/jsm/controls/TransformControls.js', () => {
+  class FakeTransformControls {
+    constructor() {
+      const object = new THREE.Object3D();
+      Object.assign(object, {
+        attach: transformAttachSpy,
+        addEventListener: vi.fn((event: string, listener: (value: { value?: boolean }) => void) => {
+          if (event === 'dragging-changed') transformDraggingListener = listener;
+        }),
+        removeEventListener: vi.fn(),
+        dispose: transformDisposeSpy,
+      });
+      return object;
+    }
+  }
+  return { TransformControls: FakeTransformControls };
 });
 
 vi.mock('three', async (importOriginal) => {
@@ -101,7 +126,11 @@ describe('Scene3DPreview OrbitControls wiring', () => {
     listenToKeyEventsSpy.mockClear();
     lastConstructedCamera = undefined;
     lastConstructedDomElement = undefined;
+    lastOrbitControls = undefined;
     instanceCount = 0;
+    transformDraggingListener = undefined;
+    transformAttachSpy.mockClear();
+    transformDisposeSpy.mockClear();
   });
 
   it('constructs OrbitControls against the live camera and renderer canvas', () => {
@@ -142,5 +171,40 @@ describe('Scene3DPreview OrbitControls wiring', () => {
     unmount();
 
     expect(disposeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('attaches the selected-object gizmo and commits its final transform after dragging', () => {
+    const onObjectGestureStart = vi.fn();
+    const onObjectGestureChange = vi.fn();
+    const onObjectGestureEnd = vi.fn();
+    const { unmount } = render(
+      <Scene3DPreview
+        scene={baseScene()}
+        selectedObjectId="obj-1"
+        onObjectGestureStart={onObjectGestureStart}
+        onObjectGestureChange={onObjectGestureChange}
+        onObjectGestureEnd={onObjectGestureEnd}
+      />,
+    );
+
+    expect(transformAttachSpy).toHaveBeenCalled();
+    transformDraggingListener?.({ value: true });
+    expect(onObjectGestureStart).toHaveBeenCalledOnce();
+    expect(lastOrbitControls?.enabled).toBe(false);
+    transformDraggingListener?.({ value: false });
+    expect(lastOrbitControls?.enabled).toBe(true);
+    expect(onObjectGestureChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'obj-1',
+        transform: expect.objectContaining({
+          position: { x: 0, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 },
+        }),
+      }),
+    );
+    expect(onObjectGestureEnd).toHaveBeenCalledOnce();
+    unmount();
+    expect(transformDisposeSpy).toHaveBeenCalledOnce();
   });
 });

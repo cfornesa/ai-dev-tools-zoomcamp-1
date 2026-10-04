@@ -1,12 +1,24 @@
-/** Issue #951: structured 2D editor-shell placement and responsive tools access. */
+/** Issue #977: structured 2D editor control-row placement and responsive tools access. */
 import { expect, test, type Page } from '@playwright/test';
 
+import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
+
+async function openServerBackedManualEditor(page: Page) {
+  const created = await apiPost(page.context(), '/api/projects/blank/', { renderer: 'p5' });
+  if (!created.ok()) {
+    throw new Error(`Could not create the server-backed 2D editor fixture: ${created.status()}`);
+  }
+  const project = (await created.json()) as { editor_url?: string };
+  if (!project.editor_url) throw new Error('The 2D editor fixture did not include editor_url.');
+  await page.goto(project.editor_url);
+  await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
+}
 
 async function hasNativeFullscreenSupport(page: Page) {
   return page.evaluate(
@@ -26,7 +38,7 @@ test.describe('manual 2D editor shell', () => {
 
   test('keeps primary actions in panel order and reveals tools responsively', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
+    await createServerProject2D(page);
 
     const preview = page.getByRole('region', { name: 'Preview' });
     const controlPanel = page.getByTestId('editor-control-panel');
@@ -45,14 +57,27 @@ test.describe('manual 2D editor shell', () => {
     const toolsToggle = controlPanel.getByRole('button', { name: 'Editor tools' });
 
     await expect(primary).toBeVisible();
-    await expect(primary.locator('button')).toHaveCount(3);
+    await expect(primary.locator('button')).toHaveCount(9);
     expect(
       await primary
         .locator('button')
         .evaluateAll((buttons) =>
-          buttons.map((button) => button.getAttribute('aria-label') ?? button.textContent?.trim()),
+          buttons.map(
+            (button) =>
+              button.getAttribute('aria-label') ?? button.textContent?.trim()?.replace(/^▤\s*/, ''),
+          ),
         ),
-    ).toEqual(['File', 'Save scene', 'Ask AI to improve this scene']);
+    ).toEqual([
+      'File',
+      'Ask AI to improve this scene',
+      'Visual',
+      'Code',
+      'Zoom out',
+      'Zoom in',
+      'Reset zoom',
+      'Fit to viewport',
+      'Save scene',
+    ]);
     await expect(file).toBeVisible();
     await expect(save).toBeVisible();
     await expect(askAi).toBeVisible();
@@ -84,7 +109,7 @@ test.describe('manual 2D editor shell', () => {
     browserName,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
+    await openServerBackedManualEditor(page);
 
     const stageToolbar = page.locator('.piece-stage-shell').getByRole('toolbar', {
       name: 'Piece actions',

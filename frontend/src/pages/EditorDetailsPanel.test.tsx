@@ -89,11 +89,26 @@ describe('EditorDetailsPanel', () => {
 
     expect(screen.getByLabelText(/description/i)).toHaveValue('A cool scene');
     expect(screen.getByLabelText(/tags/i)).toHaveValue('fun, demo');
+    expect(screen.getByLabelText('Intent notes (private)')).toHaveValue('');
     expect(screen.getByLabelText(/allow other users to remix/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/include "created with" attribution/i)).toBeInTheDocument();
     // thumbnail_choice is gone entirely (issue #94 point 5) — no such
     // control exists anymore.
     expect(screen.queryByLabelText(/thumbnail/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the private intent note, its guidance and live count, and clears it', async () => {
+    const user = userEvent.setup();
+    render(<Harness initialProject={baseProject({ brief: 'Keep the scene calm.' })} />);
+
+    const note = screen.getByLabelText('Intent notes (private)');
+    expect(note).toHaveValue('Keep the scene calm.');
+    expect(note).toHaveAttribute('maxLength', '1500');
+    expect(note).toHaveAccessibleDescription(/Only you see this/);
+    expect(screen.getByText('20 / 1,500 characters')).toHaveAttribute('aria-live', 'polite');
+    await user.click(screen.getByRole('button', { name: /clear intent notes/i }));
+    expect(note).toHaveValue('');
+    expect(screen.getByText('0 / 1,500 characters')).toBeInTheDocument();
   });
 
   it('uses the responsive form hook and keeps every label associated', () => {
@@ -193,15 +208,31 @@ describe('EditorDetailsPanel', () => {
       await user.clear(screen.getByLabelText(/description/i));
       await user.type(screen.getByLabelText(/description/i), 'Typed but not yet saved');
       await user.type(screen.getByLabelText(/tags/i), 'fun, demo');
+      await user.type(screen.getByLabelText('Intent notes (private)'), 'Keep it playful');
 
       expect(handleRef.current!.getPendingDetails()).toEqual({
         description: 'Typed but not yet saved',
+        brief: 'Keep it playful',
         tags: ['fun', 'demo'],
         allowRemix: false,
         exportAttribution: false,
       });
       // Nothing was PATCHed just by reading the pending values.
       expect(mockedUpdateProjectMetadata).not.toHaveBeenCalled();
+    });
+
+    it('saves the intent note through the metadata PATCH', async () => {
+      mockedUpdateProjectMetadata.mockResolvedValue(baseProject({ brief: 'Keep it playful' }));
+      const user = userEvent.setup();
+      render(<Harness initialProject={baseProject()} />);
+      await user.type(screen.getByLabelText('Intent notes (private)'), 'Keep it playful');
+      await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+      expect(await screen.findByText('Saved.')).toBeInTheDocument();
+      expect(mockedUpdateProjectMetadata).toHaveBeenCalledWith(
+        'p1',
+        expect.objectContaining({ brief: 'Keep it playful' }),
+      );
     });
 
     it('save() runs the same persist path as the "Save changes" button, including success side effects', async () => {

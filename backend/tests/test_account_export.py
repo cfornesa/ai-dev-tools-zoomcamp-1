@@ -1,18 +1,22 @@
 """Tests for the owner-scoped account data export (issue #442)."""
 
 import json
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 from django.urls import reverse
+from django.utils import timezone
 
+from scenes.account_export import build_account_export
 from scenes.models import (
     ArtPiece,
     ArtPieceVersion,
     Project,
     Project3D,
+    ProjectActivity,
     ProviderCredential,
     SceneVersion,
     SceneVersion3D,
@@ -78,7 +82,7 @@ def test_export_never_exposes_credential_key_material():
 @pytest.mark.django_db
 def test_export_includes_owned_projects_and_versions_including_soft_deleted():
     user = _make_user("owner")
-    project = Project.objects.create(owner=user, title="My animation")
+    project = Project.objects.create(owner=user, title="My animation", brief="limited palette")
     SceneVersion.objects.create(
         project=project, sequence=1, scene_json={"shapes": []}, origin=SceneVersion.Origin.MANUAL
     )
@@ -96,6 +100,7 @@ def test_export_includes_owned_projects_and_versions_including_soft_deleted():
     project_export = next(p for p in body["projects"] if p["title"] == "My animation")
     assert len(project_export["versions"]) == 1
     assert project_export["versions"][0]["scene_json"] == {"shapes": []}
+    assert project_export["brief"] == "limited palette"
     deleted_export = next(p for p in body["projects"] if p["title"] == "Deleted animation")
     assert deleted_export["is_deleted"] is True
 
@@ -109,6 +114,12 @@ def test_export_includes_owned_3d_projects_and_art_pieces():
         sequence=1,
         scene_json=_MINIMAL_SCENE_3D,
         origin=SceneVersion3D.Origin.MANUAL,
+    )
+    event = ProjectActivity.objects.create(
+        project3d=project3d,
+        actor=user,
+        action_type=ProjectActivity.ActionType.VERSION_SAVED,
+        metadata={"sequence": 1, "origin": "manual", "private_marker": "hidden"},
     )
     piece = ArtPiece.objects.create(
         owner=user,
@@ -124,6 +135,17 @@ def test_export_includes_owned_3d_projects_and_art_pieces():
 
     body = response.json()
     assert len(body["projects_3d"]) == 1
+    assert body["projects_3d"][0]["activity"] == [
+        {
+            "id": event.pk,
+            "action_type": ProjectActivity.ActionType.VERSION_SAVED,
+            "label": "Version saved",
+            "actor_display": user.username,
+            "created_at": event.created_at.isoformat(),
+            "details": {"sequence": 1, "origin": "manual"},
+        }
+    ]
+    assert b"private_marker" not in response.content
     assert body["projects_3d"][0]["title"] == "My 3D scene"
     assert len(body["projects_3d"][0]["versions"]) == 1
     assert len(body["art_pieces"]) == 1
@@ -184,3 +206,126 @@ def test_export_is_a_safe_idempotent_repeat_request():
     assert first.status_code == 200
     assert second.status_code == 200
     assert first.json()["projects"] == second.json()["projects"]
+
+
+@pytest.mark.django_db
+def test_export_includes_allowlisted_activity_for_soft_deleted_owned_project_only():
+    owner = get_user_model().objects.create_user(
+        username="activity-owner", email="owner-sentinel@example.test"
+    )
+    other = get_user_model().objects.create_user(
+        username="activity-other", email="other-owner-sentinel@example.test"
+    )
+    project = Project.objects.create(
+        owner=owner, title="Retained activity project", is_deleted=True, deleted_at=timezone.now()
+    )
+    SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json={"scene-sentinel": "preserved"},
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    foreign_project = Project.objects.create(owner=other, title="Foreign activity sentinel")
+    first = ProjectActivity.objects.create(
+        project=project,
+        actor=owner,
+        action_type=ProjectActivity.ActionType.VERSION_SAVED,
+        metadata={"sequence": 4, "origin": "manual", "unknown_marker": "must-not-export"},
+    )
+    second = ProjectActivity.objects.create(
+        project=project,
+        actor=None,
+        action_type=ProjectActivity.ActionType.AI_PROPOSAL_REJECTED,
+        metadata={"reason": "owner-rejected-sentinel", "unlisted": "must-not-export"},
+    )
+    foreign_activity = ProjectActivity.objects.create(
+        project=foreign_project,
+        actor=other,
+        action_type=ProjectActivity.ActionType.VERSION_SAVED,
+        metadata={"sequence": 999, "reason": "foreign-activity-sentinel"},
+    )
+    equal_timestamp = timezone.now() - timedelta(minutes=1)
+    ProjectActivity.objects.filter(pk__in=[first.pk, second.pk]).update(created_at=equal_timestamp)
+
+    client = Client()
+    client.force_login(owner)
+    first_response = client.get(reverse("account-data-export"))
+    second_response = client.get(reverse("account-data-export"))
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    body = first_response.json()
+    assert second_response.json()["projects"] == body["projects"]
+    assert len(body["projects"]) == 1
+    exported_project = body["projects"][0]
+    assert exported_project["is_deleted"] is True
+    assert exported_project["versions"][0]["scene_json"] == {"scene-sentinel": "preserved"}
+    assert [item["id"] for item in exported_project["activity"]] == [second.pk, first.pk]
+    rejected, saved = exported_project["activity"]
+    assert set(rejected) == {"id", "action_type", "label", "actor_display", "created_at", "details"}
+    assert rejected["action_type"] == ProjectActivity.ActionType.AI_PROPOSAL_REJECTED
+    assert (
+        rejected["label"]
+        == ProjectActivity(
+            action_type=ProjectActivity.ActionType.AI_PROPOSAL_REJECTED
+        ).get_action_type_display()
+    )
+    assert rejected["actor_display"] is None
+    assert rejected["details"] == {"reason": "owner-rejected-sentinel"}
+    assert saved["action_type"] == ProjectActivity.ActionType.VERSION_SAVED
+    assert saved["actor_display"] == owner.username
+    assert saved["details"] == {"sequence": 4, "origin": "manual"}
+    assert foreign_activity.pk not in {item["id"] for item in exported_project["activity"]}
+    assert b"other-owner-sentinel@example.test" not in first_response.content
+    assert b"Foreign activity sentinel" not in first_response.content
+    assert b"must-not-export" not in first_response.content
+
+
+@pytest.mark.django_db
+def test_export_includes_activity_only_for_the_owners_generated_pieces():
+    owner = get_user_model().objects.create_user(username="piece-export-owner")
+    other = get_user_model().objects.create_user(username="piece-export-other")
+    owner_piece = ArtPiece.objects.create(
+        owner=owner,
+        title="Owner piece",
+        prompt="private prompt",
+        engine=ArtPiece.Engine.SVG,
+        is_deleted=True,
+        deleted_at=timezone.now(),
+    )
+    foreign_piece = ArtPiece.objects.create(
+        owner=other,
+        title="Foreign piece",
+        prompt="foreign prompt",
+        engine=ArtPiece.Engine.SVG,
+    )
+    own_event = ProjectActivity.objects.create(
+        art_piece=owner_piece,
+        actor=owner,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 2, "private_internal_id": 901},
+    )
+    foreign_event = ProjectActivity.objects.create(
+        art_piece=foreign_piece,
+        actor=other,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 999},
+    )
+
+    body = build_account_export(owner)
+
+    assert len(body["art_pieces"]) == 1
+    assert body["art_pieces"][0]["is_deleted"] is True
+    assert body["art_pieces"][0]["activity"] == [
+        {
+            "id": own_event.pk,
+            "action_type": ProjectActivity.ActionType.PUBLISHED,
+            "label": "Published",
+            "actor_display": owner.username,
+            "created_at": own_event.created_at.isoformat(),
+            "details": {"sequence": 2},
+        }
+    ]
+    assert foreign_event.pk not in {
+        item["id"] for piece in body["art_pieces"] for item in piece["activity"]
+    }

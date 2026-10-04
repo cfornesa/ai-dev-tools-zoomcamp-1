@@ -1,12 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildLocal2dPiecePackage } from './localPiecePackage';
+import {
+  buildLocal2dPiecePackage,
+  measureLocalPiecePackage,
+  measureLocalPiecePackageContent,
+} from './localPiecePackage';
 
 const repository = vi.hoisted(() => ({
   getMediaBlob: vi.fn(),
   getProject: vi.fn(),
   listMediaAssetsForProject: vi.fn(),
   listScenesForProject: vi.fn(),
+  listPieceVersions: vi.fn(),
 }));
 
 const packageModule = {
@@ -51,10 +56,55 @@ describe('local piece package export', () => {
     const result = await buildLocal2dPiecePackage({} as IDBDatabase, 'alice', 'p1', packageModule);
 
     expect(result.missingAssets).toEqual([]);
+    expect(result.pieceBytes).toBe(new TextEncoder().encode(JSON.stringify(scene)).byteLength);
+    expect(result.mediaBytes).toBe(3);
+    expect(result.mediaFiles).toBe(1);
     expect(packageModule.buildPiecePackage).toHaveBeenCalledWith(
       expect.objectContaining({ kind: '2d', title: 'My / Piece' }),
     );
     expect(packageModule.parsePiecePackage).toHaveBeenCalledWith(result.bytes);
+  });
+
+  it('measures UTF-8 record payload bytes and each included media blob once', () => {
+    const records = [{ data: { label: '雪' } }, { data: { count: 2 } }];
+    const mediaByteSizes = [3, 5];
+    const recordBytes = records.reduce(
+      (total, record) => total + new TextEncoder().encode(JSON.stringify(record.data)).byteLength,
+      0,
+    );
+
+    expect(measureLocalPiecePackageContent(records, mediaByteSizes)).toEqual({
+      pieceBytes: recordBytes,
+      mediaBytes: 8,
+      mediaFiles: 2,
+    });
+    expect(recordBytes).toBeGreaterThan(
+      records.reduce((sum, record) => sum + JSON.stringify(record.data).length, 0),
+    );
+  });
+
+  it('measures local piece content without reading blob bytes or building a ZIP', async () => {
+    repository.getProject.mockResolvedValue({ id: 'p1', title: 'Measure only' });
+    repository.listScenesForProject.mockResolvedValue([
+      { id: 's1', name: 'Scene 1', position: 0, sceneJson: { label: '雪' } },
+    ]);
+    repository.listMediaAssetsForProject.mockResolvedValue([
+      { id: 'asset-1', filename: 'audio.wav', altText: '', mimeType: 'audio/wav' },
+    ]);
+    const blob = { size: 5, arrayBuffer: vi.fn() } as unknown as Blob;
+    repository.getMediaBlob.mockResolvedValue(blob);
+    packageModule.buildPiecePackage.mockClear();
+
+    const result = await measureLocalPiecePackage({} as IDBDatabase, 'alice', 'p1');
+
+    expect(result).toEqual({
+      pieceBytes: new TextEncoder().encode('{"label":"雪"}').byteLength,
+      mediaBytes: 5,
+      mediaFiles: 1,
+      missingAssets: [],
+    });
+    expect(blob.arrayBuffer).not.toHaveBeenCalled();
+    expect(packageModule.buildPiecePackage).not.toHaveBeenCalled();
   });
 
   it('reports missing media without mutating or hiding the rest of the package', async () => {

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { apiPost } from './support/api.js';
+import { createServerProjectAndOpenAIProposalPanel } from './support/aiProposal.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
@@ -14,19 +14,12 @@ test.describe('2D AI panel layout (#678)', () => {
   const fixtures = requireE2EFixtures();
 
   for (const viewport of VIEWPORTS) {
-    test(`keeps fields full width at ${viewport.width}x${viewport.height}`, async ({
-      page,
-      context,
-    }) => {
+    test(`keeps fields full width at ${viewport.width}x${viewport.height}`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const created = await apiPost(context, '/api/projects/blank/');
-      const { id } = (await created.json()) as { id: string };
-      await page.goto(`/ai-projects/${id}`);
-
-      const panel = page.locator('.ai-proposal-panel');
+      const { panel } = await createServerProjectAndOpenAIProposalPanel(page, '2d');
       await expect(panel).toBeVisible();
-      const prompt = page.getByLabel('Describe the scene you want to generate');
+      const prompt = panel.getByLabel('Describe the scene you want to generate');
       await expect(prompt).toHaveCSS('resize', 'vertical');
       const promptBox = await prompt.boundingBox();
       const panelBox = await panel.boundingBox();
@@ -46,14 +39,48 @@ test.describe('2D AI panel layout (#678)', () => {
       await expect(panel.getByRole('radiogroup')).toHaveCount(2);
       expect(await panel.locator('button').count()).toBeGreaterThanOrEqual(4);
 
-      const overflowing = await page.evaluate(
-        () => document.documentElement.scrollWidth > window.innerWidth,
-      );
-      expect(overflowing).toBe(false);
+      const overflow = await page.evaluate(() => ({
+        viewportWidth: window.innerWidth,
+        rootScrollWidth: document.documentElement.scrollWidth,
+        bodyScrollWidth: document.body.scrollWidth,
+        layoutBoxes: ['#root', '.app-shell', '#main-content', '.cosmic-starfield'].map(
+          (selector) => {
+            const element = document.querySelector<HTMLElement>(selector);
+            if (!element) return { selector, found: false };
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+              selector,
+              found: true,
+              x: rect.x,
+              right: rect.right,
+              width: rect.width,
+              overflowX: style.overflowX,
+              overflowY: style.overflowY,
+              position: style.position,
+            };
+          },
+        ),
+        overflowCandidates: [...document.querySelectorAll<HTMLElement>('*')]
+          .map((element) => ({
+            selector: `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${
+              element.className && typeof element.className === 'string'
+                ? `.${element.className.trim().split(/\s+/).join('.')}`
+                : ''
+            }`,
+            right: element.getBoundingClientRect().right,
+            width: element.getBoundingClientRect().width,
+          }))
+          .filter(({ right }) => right > window.innerWidth + 1)
+          .slice(0, 8),
+      }));
       await page.screenshot({
         path: test.info().outputPath(`ai-2d-${viewport.width}.png`),
         fullPage: true,
       });
+      expect(overflow.rootScrollWidth > overflow.viewportWidth, JSON.stringify(overflow)).toBe(
+        false,
+      );
     });
   }
 });

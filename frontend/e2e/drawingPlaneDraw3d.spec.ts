@@ -8,20 +8,23 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiGet } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
-async function openMenu(page: Page) {
+async function openAuthoringPanel(page: Page) {
   const toolbar = page.getByRole('toolbar', { name: 'Preview actions' });
-  const trigger = toolbar.getByRole('button', { name: 'Open piece controls menu' });
-  if (await trigger.isVisible().catch(() => false)) await trigger.click();
+  const authoringActions = toolbar.getByRole('group', { name: '3D authoring actions' });
+  if (!(await authoringActions.isVisible().catch(() => false))) {
+    await toolbar.getByRole('button', { name: '3D authoring', exact: true }).click();
+  }
   return toolbar;
 }
 
-async function closeMenu(page: Page) {
-  const dialog = page.getByRole('dialog', { name: 'Preview actions' });
-  if (await dialog.isVisible().catch(() => false)) {
-    await page.keyboard.press('Escape');
-    await expect(dialog).toBeHidden();
+async function closeAuthoringPanel(page: Page) {
+  const close = page.getByRole('button', { name: 'Close 3d authoring', exact: true });
+  if (await close.isVisible().catch(() => false)) {
+    await close.click();
+    await expect(page.getByRole('group', { name: '3D authoring actions' })).toBeHidden();
   }
 }
 
@@ -83,30 +86,37 @@ test.describe('3D drawing plane Draw mode (#781)', () => {
       test.setTimeout(120_000);
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      const createdResponse = page.waitForResponse(
-        (res) =>
-          res.request().method() === 'POST' && new URL(res.url()).pathname === '/api/projects3d/',
-      );
-      await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-      const projectId = ((await (await createdResponse).json()) as { id: string }).id;
-      await page.waitForURL(/\/users\/@[^/]+\/edit\/untitled-3d-scene/);
+      const projectId = await createServerProject3D(page);
       await expect(page.getByTestId('scene3d-preview-canvas')).toBeVisible();
       const frame = page.getByTestId('scene3d-preview-canvas-frame');
 
       // Add Drawing Plane -> a listed, selected object.
-      let toolbar = await openMenu(page);
-      await toolbar.getByRole('button', { name: '3D authoring', exact: true }).click();
+      let toolbar = await openAuthoringPanel(page);
       await toolbar.getByRole('button', { name: 'Add drawing plane' }).click();
-      await closeMenu(page);
+      await closeAuthoringPanel(page);
       await expect(page.getByText('Drawing plane 1').first()).toBeVisible();
       await frame.scrollIntoViewIfNeeded();
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
-      const before = await frame.screenshot({ path: testInfo.outputPath('stage-before.png') });
+      const stage = page.getByTestId('scene3d-preview');
+      const pageScrollBefore = await page.evaluate(() => ({
+        x: window.scrollX,
+        y: window.scrollY,
+      }));
+      await page.screenshot({ path: testInfo.outputPath('stage-before.png') });
+      const stageBefore = await stage.boundingBox();
+      const moveHandleBefore = await page.getByTestId('plane-handle-move').boundingBox();
+      expect(stageBefore).not.toBeNull();
+      expect(moveHandleBefore).not.toBeNull();
+      const moveHandlePositionBefore = {
+        x: moveHandleBefore!.x - stageBefore!.x,
+        y: moveHandleBefore!.y - stageBefore!.y,
+        width: moveHandleBefore!.width,
+        height: moveHandleBefore!.height,
+      };
+      const savedBeforeDraw = await savedObjects(page, projectId);
 
       // Enter Draw mode: stage frozen/hidden, ink editor face-on at the documented resolution.
-      toolbar = await openMenu(page);
+      toolbar = await openAuthoringPanel(page);
       await toolbar.getByTestId('draw-plane-button').click();
       await expect(page.getByTestId('ink-editor')).toBeVisible();
       await expect(page.getByTestId('ink-frozen-indicator')).toBeVisible();
@@ -145,14 +155,39 @@ test.describe('3D drawing plane Draw mode (#781)', () => {
       await page.getByTestId('ink-cancel').click();
       await expect(page.getByTestId('ink-editor')).toHaveCount(0);
       await expect(frame).toBeVisible();
-      await frame.scrollIntoViewIfNeeded();
-      const afterCancel = await frame.screenshot({
-        path: testInfo.outputPath('stage-after-cancel.png'),
-      });
-      expect(afterCancel.equals(before)).toBe(true);
+      await expect(page.getByTestId('plane-handle-move')).toBeVisible();
+      await expect(page.getByTestId('plane-selection-toolbar')).toBeVisible();
+      await closeAuthoringPanel(page);
+      await page.evaluate(({ x, y }) => window.scrollTo(x, y), pageScrollBefore);
+      await expect
+        .poll(() => page.evaluate(() => ({ x: window.scrollX, y: window.scrollY })))
+        .toEqual(pageScrollBefore);
+      const stageAfterCancel = await stage.screenshot();
+      await page.screenshot({ path: testInfo.outputPath('stage-after-cancel.png') });
+      const moveHandleAfter = await page.getByTestId('plane-handle-move').boundingBox();
+      const stageAfter = await stage.boundingBox();
+      expect(stageAfter).not.toBeNull();
+      expect(moveHandleAfter).not.toBeNull();
+      expect({
+        x: moveHandleAfter!.x - stageAfter!.x,
+        y: moveHandleAfter!.y - stageAfter!.y,
+        width: moveHandleAfter!.width,
+        height: moveHandleAfter!.height,
+      }).toEqual(moveHandlePositionBefore);
+      expect(await savedObjects(page, projectId)).toEqual(savedBeforeDraw);
+      if (viewport.width === 375) {
+        const layout = await page.evaluate(() => ({
+          viewportWidth: document.documentElement.clientWidth,
+          documentWidth: document.documentElement.scrollWidth,
+          stage: document.querySelector('[data-testid="scene3d-preview"]')!.getBoundingClientRect(),
+        }));
+        expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
+        expect(layout.stage.left).toBeGreaterThanOrEqual(0);
+        expect(layout.stage.right).toBeLessThanOrEqual(layout.viewportWidth);
+      }
 
       // Draw again and Confirm: the shapes land in the plane and show on the stage.
-      toolbar = await openMenu(page);
+      toolbar = await openAuthoringPanel(page);
       await toolbar.getByTestId('draw-plane-button').click();
       await page.getByTestId('ink-tool-rect').click();
       await page.getByTestId('ink-fill').check();
@@ -161,14 +196,15 @@ test.describe('3D drawing plane Draw mode (#781)', () => {
       await page.getByTestId('ink-confirm').click();
       await expect(page.getByTestId('ink-editor')).toHaveCount(0);
       await expect(frame).toBeVisible();
+      await closeAuthoringPanel(page);
       await frame.scrollIntoViewIfNeeded();
-      const after = await frame.screenshot({ path: testInfo.outputPath('stage-with-drawing.png') });
-      expect(after.equals(before)).toBe(false);
+      const after = await stage.screenshot({ path: testInfo.outputPath('stage-with-drawing.png') });
+      expect(after.equals(stageAfterCancel)).toBe(false);
 
       // Save and round-trip.
-      toolbar = await openMenu(page);
-      await toolbar.getByTestId('project3d-save-button').click();
-      await closeMenu(page);
+      toolbar = await openAuthoringPanel(page);
+      await page.getByTestId('project3d-save-button').click();
+      await closeAuthoringPanel(page);
       await expect
         .poll(
           async () =>

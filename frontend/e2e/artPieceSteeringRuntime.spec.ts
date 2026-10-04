@@ -216,7 +216,7 @@ test.describe('Generated regular viewer: hand-steering ownership and Reset (#432
     await page.goto(`/art-pieces/p/${piece.public_id}`);
     await expect(page.getByRole('heading', { name: 'Steering runtime fixture' })).toBeVisible();
     await waitForThreeJsReady(page);
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await expect(page.getByTestId('steering-status')).toContainText('Steering is off.');
     await page.getByRole('button', { name: 'Steer the piece' }).click();
     await expect(page.getByTestId('steering-status')).toContainText(
@@ -227,7 +227,7 @@ test.describe('Generated regular viewer: hand-steering ownership and Reset (#432
     await mockGrantedCamera(context);
     await page.goto(`/art-pieces/p/${piece.public_id}`);
     await waitForThreeJsReady(page);
-    await page.getByRole('button', { name: 'Piece controls' }).click();
+    await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await page.getByRole('button', { name: 'Enable camera view' }).click();
     await expect(page.getByTestId('camera-status')).toContainText('Camera is active.');
     const steerButton = page.getByRole('button', { name: 'Steer the piece' });

@@ -11,8 +11,14 @@ backend_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/backend"
 base_url="${BASE_URL:-http://localhost:5000}"
 timeout_seconds="${SMOKE_TIMEOUT_SECONDS:-15}"
 staging_smoke="${STAGING_SMOKE:-0}"
-cookie_jar="$(mktemp)"
-fixture_json="$(mktemp)"
+cookie_jar=""
+fixture_json=""
+fixture_fingerprint=""
+
+if [[ -z "${E2E_FIXTURE_ENVIRONMENT:-}" || -z "${E2E_ENV_FILE:-}" || ! -f "$E2E_ENV_FILE" ]]; then
+  printf 'Set E2E_FIXTURE_ENVIRONMENT and E2E_ENV_FILE to the explicitly selected disposable fixture target.\n' >&2
+  exit 2
+fi
 
 if [[ "$staging_smoke" == "1" ]]; then
   if [[ "$base_url" != https://* ]]; then
@@ -44,10 +50,22 @@ if [[ ! "$timeout_seconds" =~ ^[0-9]+$ ]] || (( timeout_seconds < 1 )); then
   exit 2
 fi
 
+cookie_jar="$(mktemp)"
+fixture_json="$(mktemp)"
+
 # Install cleanup only after all target-safety checks have passed. In
 # particular, rejecting a production/shared URL must never run a management
 # command against that database.
-trap 'rm -f "$cookie_jar" "$fixture_json"; (cd "$backend_dir" && uv run --env-file .env python manage.py e2e_fixtures cleanup --json) >/dev/null 2>&1 || true' EXIT
+cleanup_fixtures() {
+  local status=$?
+  rm -f "$cookie_jar" "$fixture_json"
+  if [[ -n "$fixture_fingerprint" ]]; then
+    (cd "$backend_dir" && E2E_EXPECTED_DATABASE_FINGERPRINT="$fixture_fingerprint" \
+      uv run --env-file "$E2E_ENV_FILE" python manage.py e2e_fixtures cleanup --json) >/dev/null 2>&1 || true
+  fi
+  exit "$status"
+}
+trap cleanup_fixtures EXIT
 
 get() {
   local path="$1" expected="$2"
@@ -67,10 +85,12 @@ get /api/whoami/ 401
 get /accounts/login/ 200
 
 if [[ "$staging_smoke" == "1" ]]; then
-  (cd "$backend_dir" && E2E_FIXTURE_ENVIRONMENT=disposable-staging uv run --env-file .env python manage.py e2e_fixtures create --json) >"$fixture_json"
+  [[ "$E2E_FIXTURE_ENVIRONMENT" == disposable-staging ]] || { echo 'Staging smoke requires E2E_FIXTURE_ENVIRONMENT=disposable-staging' >&2; exit 2; }
+  (cd "$backend_dir" && STAGING_SMOKE=1 uv run --env-file "$E2E_ENV_FILE" python manage.py e2e_fixtures create --json) >"$fixture_json"
 else
-  (cd "$backend_dir" && uv run --env-file .env python manage.py e2e_fixtures create --json) >"$fixture_json"
+  (cd "$backend_dir" && uv run --env-file "$E2E_ENV_FILE" python manage.py e2e_fixtures create --json) >"$fixture_json"
 fi
+fixture_fingerprint="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database_fingerprint"])' "$fixture_json")"
 email="$(cd "$backend_dir" && uv run python -c 'import json,sys; print(json.load(open(sys.argv[1]))["owner"]["email"])' "$fixture_json")"
 password="$(cd "$backend_dir" && uv run python -c 'import json,sys; print(json.load(open(sys.argv[1]))["password"])' "$fixture_json")"
 csrf="$(sed -n 's/.*name="csrfmiddlewaretoken" value="\([^"]*\)".*/\1/p' /tmp/smoke-body | head -1)"

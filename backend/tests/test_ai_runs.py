@@ -17,12 +17,14 @@ from __future__ import annotations
 import copy
 import json
 import threading
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 import scenes.ai_api as ai_api
@@ -43,7 +45,16 @@ from ai_provider.interface3d import (
 )
 from ai_provider.mistral_provider import AIEditScene3DPatchResult, AIEditScenePatchResult
 from scenes import ai_runs
-from scenes.models import AIRetryPreference, AIRun, Project, Project3D, SceneVersion, SceneVersion3D
+from scenes.models import (
+    AIRetryPreference,
+    AIRun,
+    Project,
+    Project3D,
+    ProjectActivity,
+    SceneVersion,
+    SceneVersion3D,
+    validate_activity_metadata,
+)
 from tests._postgres_routing import close_thread_connections, route_default_to_postgres_test
 
 _BLANK_SCENE_PATH = (
@@ -103,6 +114,46 @@ def test_run_scope_rejects_out_of_scope_changes_and_preserves_scene_scope_rules(
     assert ai_runs._validate_candidate_scope({"scope": "overhaul"}, before, overhaul) is None
 
 
+def test_target_scope_ignores_document_identity_but_guards_document_fields_and_order():
+    before = {
+        "id": "scene-before",
+        "canvas": {"width": 800, "height": 600},
+        "layers": [{"id": "layer-1"}],
+        "shapes": [
+            {"id": "shape-a", "type": "circle", "x": 1},
+            {"id": "shape-b", "type": "rect", "x": 1},
+        ],
+    }
+    edited = copy.deepcopy(before)
+    edited["id"] = "scene-after"
+    edited["shapes"][0]["x"] = 2
+    target_plan = {"scope": "targets", "target_ids": ["shape-a"]}
+
+    assert ai_runs._validate_candidate_scope(target_plan, before, edited) is None
+
+    edited["canvas"]["width"] = 900
+    assert ai_runs._validate_candidate_scope(target_plan, before, edited) == (
+        "target-scoped plans cannot modify document-level fields."
+    )
+
+    reordered = copy.deepcopy(before)
+    reordered["shapes"].reverse()
+    assert ai_runs._validate_candidate_scope(target_plan, before, reordered) == (
+        "target-scoped plans cannot reorder scene elements."
+    )
+
+
+def test_overhaul_treats_root_document_id_as_identity_not_removable_element():
+    before = {"id": "scene-before", "layers": [{"id": "layer-1"}], "shapes": []}
+    after = {
+        "id": "scene-after",
+        "layers": [{"id": "layer-1"}],
+        "shapes": [{"id": "shape-new", "type": "circle"}],
+    }
+
+    assert ai_runs._validate_candidate_scope({"scope": "overhaul"}, before, after) is None
+
+
 class _QueuedFakeProvider:
     """Returns one canned outcome per call, in order. Each outcome is
     either a scene dict (success) or an `AIErrorCategory` (failure). A
@@ -113,6 +164,7 @@ class _QueuedFakeProvider:
     def __init__(self, outcomes: list[dict | AIErrorCategory]) -> None:
         self._outcomes = list(outcomes)
         self.calls = 0
+        self.prompts: list[str] = []
 
     def _next_result(self, operation: AIOperation) -> AIOperationResult:
         self.calls += 1
@@ -137,12 +189,14 @@ class _QueuedFakeProvider:
         return AIOperationResult3D(operation=operation, usage=_USAGE, scene=outcome)
 
     def create_scene(self, request: AICreateSceneRequest) -> AIOperationResult:
+        self.prompts.append(request.prompt)
         return self._next_result(AIOperation.CREATE_SCENE)
 
     def edit_scene(self, request: AIEditSceneRequest) -> AIOperationResult:
         return self.edit_scene_with_patch(request).result
 
     def edit_scene_with_patch(self, request: AIEditSceneRequest) -> AIEditScenePatchResult:
+        self.prompts.append(request.prompt)
         result = self._next_result(AIOperation.EDIT_SCENE)
         if not result.success:
             return AIEditScenePatchResult(result=result)
@@ -151,9 +205,11 @@ class _QueuedFakeProvider:
         )
 
     def create_scene3d(self, request: AICreateScene3DRequest) -> AIOperationResult3D:
+        self.prompts.append(request.prompt)
         return self._next_result3d(AIOperation.CREATE_SCENE)
 
     def edit_scene3d_with_patch(self, request: AIEditScene3DRequest) -> AIEditScene3DPatchResult:
+        self.prompts.append(request.prompt)
         result = self._next_result3d(AIOperation.EDIT_SCENE)
         if not result.success:
             return AIEditScene3DPatchResult(result=result)
@@ -221,6 +277,14 @@ def _start_create_run(owner, project) -> AIRun:
     )
 
 
+def _awaiting_review_2d_run(monkeypatch, owner, project) -> AIRun:
+    _install_fake_provider(monkeypatch, [BLANK_SCENE])
+    run = _start_create_run(owner, project)
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    return run
+
+
 def _enable_retries(owner, max_retries: int = 2) -> None:
     AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=True, max_retries=max_retries)
 
@@ -236,6 +300,74 @@ def test_start_persists_structured_plan_before_provider_attempt(owner, project):
         "target_ids": [],
         "success_criteria": [{"type": "renders_nonblank", "parameters": {"target": "scene"}}],
     }
+
+
+@pytest.mark.django_db
+def test_intent_note_snapshot_is_included_in_digest_and_provider_prompt(
+    monkeypatch, owner, project
+):
+    project.brief = "Keep it warm and playful."
+    project.save(update_fields=["brief"])
+    provider = _install_fake_provider(monkeypatch, [BLANK_SCENE])
+
+    run = _start_create_run(owner, project)
+
+    assert run.intent_note == "Keep it warm and playful."
+    assert run.input_digest == ai_runs._digest({}, intent_note=run.intent_note)
+    assert run.input_digest != ai_runs._digest({})
+    assert "UNTRUSTED PROJECT INTENT NOTE" in ai_runs._augmented_prompt(run)
+    assert '"Keep it warm and playful."' in ai_runs._augmented_prompt(run)
+
+    project.brief = "Use a cold palette instead."
+    project.save(update_fields=["brief"])
+    run = ai_runs.advance_run(run)
+
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    assert "Keep it warm and playful." in provider.prompts[0]
+    assert "Use a cold palette instead." not in provider.prompts[0]
+
+
+@pytest.mark.django_db
+def test_intent_note_opt_out_keeps_legacy_prompt_and_digest(monkeypatch, owner, project):
+    project.brief = "Keep it warm and playful."
+    project.save(update_fields=["brief"])
+
+    run = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT,
+        target=project,
+        operation=AIRun.Operation.CREATE,
+        prompt="a red square",
+        use_intent_notes=False,
+    )
+
+    assert run.intent_note == ""
+    assert run.input_digest == ai_runs._digest({})
+    assert ai_runs._augmented_prompt(run) == "a red square"
+
+
+@pytest.mark.django_db
+def test_repair_attempt_uses_the_same_intent_snapshot_after_project_note_changes(
+    monkeypatch, owner, project
+):
+    project.brief = "Keep the layout spare."
+    project.save(update_fields=["brief"])
+    provider = _install_fake_provider(
+        monkeypatch, [AIErrorCategory.INVALID_STRUCTURED_OUTPUT, BLANK_SCENE]
+    )
+    _enable_retries(owner)
+    run = _start_create_run(owner, project)
+
+    run = ai_runs.advance_run(run)
+    assert run.status == AIRun.Status.RUNNING
+    project.brief = "Fill every corner."
+    project.save(update_fields=["brief"])
+    run = ai_runs.advance_run(run)
+
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    assert len(provider.prompts) == 2
+    assert all('"Keep the layout spare."' in prompt for prompt in provider.prompts)
+    assert all("Fill every corner." not in prompt for prompt in provider.prompts)
 
 
 def test_evaluate_criteria_supports_all_plan_criterion_types():
@@ -326,6 +458,14 @@ def test_add_asset_layer_run_uses_descriptor_and_preserves_existing_scene(
     )
     assert advanced.plan["scope"] == "add-layer"
     assert "only assets you may reference" in ai_runs._augmented_prompt(advanced)
+    augmented = ai_runs._augmented_prompt(advanced)
+    assert "two new records as JSON Patch operations" in augmented
+    assert "one complete layer object at /layers/-" in augmented
+    assert "one complete image shape object at /shapes/-" in augmented
+    assert "layer id must be fresh" in augmented
+    assert "do not reuse the existing base layer" in augmented
+    assert "selected asset id as an existing scene element id" in augmented
+    assert "Only modify the following existing element id(s)" not in augmented
     candidate = advanced.candidate_scene_json
     assert candidate is not None
     assert candidate["layers"][:-1] == BLANK_SCENE["layers"]
@@ -414,6 +554,69 @@ def test_add_layer_scope_rejects_foreign_media_asset_id():
     assert error == "image mediaAssetId 'asset-foreign' is not in the submitted assets."
 
 
+def test_add_layer_normalization_builds_canonical_pair_when_provider_omits_layer():
+    asset = {
+        "id": "asset-local-1",
+        "name": "Reference",
+        "mime": "image/png",
+        "width": 320,
+        "height": 240,
+    }
+    provider_candidate = copy.deepcopy(BLANK_SCENE)
+    provider_candidate["shapes"].append(
+        {
+            "id": "provider-image-1",
+            "type": "image",
+            "layerId": "layer-1",
+            "groupId": None,
+            "transform": {
+                "x": 400,
+                "y": 300,
+                "scaleX": 1,
+                "scaleY": 1,
+                "rotation": 0,
+                "opacity": 1,
+            },
+            "style": {"fill": None, "stroke": None, "strokeWidth": 0},
+            "mediaAssetId": asset["id"],
+            "altText": asset["name"],
+        }
+    )
+
+    candidate, repaired_patch = ai_runs._normalize_add_layer_candidate(
+        BLANK_SCENE,
+        provider_candidate,
+        [],
+        [asset],
+    )
+
+    assert repaired_patch is not None
+    assert len(candidate["layers"]) == len(BLANK_SCENE["layers"]) + 1
+    assert len(candidate["shapes"]) == 1
+    added_layer = candidate["layers"][-1]
+    added_shape = candidate["shapes"][-1]
+    assert added_layer["id"] != BLANK_SCENE["layers"][0]["id"]
+    assert added_shape["layerId"] == added_layer["id"]
+    assert added_shape["mediaAssetId"] == asset["id"]
+    assert ai_runs._validate_candidate_scope({"scope": "add-layer"}, BLANK_SCENE, candidate) is None
+
+
+def test_add_layer_normalization_rejects_provider_mutation_of_existing_layer():
+    asset = {"id": "asset-local-1", "name": "Reference"}
+    provider_candidate = copy.deepcopy(BLANK_SCENE)
+    provider_candidate["layers"][0]["locked"] = True
+
+    candidate, patch = ai_runs._normalize_add_layer_candidate(
+        BLANK_SCENE,
+        provider_candidate,
+        [],
+        [asset],
+    )
+
+    assert candidate == provider_candidate
+    assert patch == []
+
+
 # --- Happy path: 2D and 3D create runs --------------------------------------
 
 
@@ -456,6 +659,187 @@ def test_3d_create_run_reaches_awaiting_review(monkeypatch, owner, project3d):
 
     assert run.status == AIRun.Status.AWAITING_REVIEW
     assert run.candidate_scene_json == MINIMAL_SCENE_3D
+
+
+@pytest.mark.django_db
+def test_fake_provider_agent_create_runs_reach_review_for_both_scene_families(
+    monkeypatch, owner, project, project3d
+):
+    from ai_provider.e2e_provider import build_e2e_provider
+
+    monkeypatch.setattr(
+        ai_runs, "_provider_for_user", lambda *args, **kwargs: build_e2e_provider("success")
+    )
+    base2d = SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=BLANK_SCENE,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project.current_version = base2d
+    project.save(update_fields=["current_version"])
+    base3d = SceneVersion3D.objects.create(
+        project=project3d,
+        sequence=1,
+        scene_json=MINIMAL_SCENE_3D,
+        created_by=owner,
+        origin=SceneVersion3D.Origin.MANUAL,
+    )
+    project3d.current_version = base3d
+    project3d.save(update_fields=["current_version"])
+
+    for target_type, target in (
+        (AIRun.TargetType.PROJECT, project),
+        (AIRun.TargetType.PROJECT3D, project3d),
+    ):
+        run = ai_runs.start_run(
+            owner=owner,
+            target_type=target_type,
+            target=target,
+            operation=AIRun.Operation.CREATE,
+            prompt="create a small scene",
+        )
+        advanced = ai_runs.advance_run(run)
+        assert advanced.status == AIRun.Status.AWAITING_REVIEW, (
+            target_type,
+            advanced.error_reason,
+            advanced.validation_summary,
+        )
+        assert advanced.error_reason == ""
+
+
+@pytest.mark.django_db
+def test_fake_provider_agent_selection_edits_only_the_declared_target(
+    monkeypatch, owner, project, project3d
+):
+    from ai_provider.e2e_provider import build_e2e_provider
+
+    monkeypatch.setattr(
+        ai_runs, "_provider_for_user", lambda *args, **kwargs: build_e2e_provider("success")
+    )
+    scene2d = copy.deepcopy(BLANK_SCENE)
+    scene2d["layers"] = [
+        {"id": "layer-target", "name": "Target", "order": 0, "visible": True, "locked": False},
+        {"id": "layer-other", "name": "Other", "order": 1, "visible": True, "locked": False},
+    ]
+    scene2d["shapes"] = [
+        {
+            "id": "shape-target",
+            "type": "circle",
+            "layerId": "layer-target",
+            "groupId": None,
+            "transform": {"x": 20, "y": 20, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1},
+            "style": {"fill": "#ff0000", "stroke": None, "strokeWidth": 0},
+            "radius": 10,
+        },
+        {
+            "id": "shape-other",
+            "type": "circle",
+            "layerId": "layer-other",
+            "groupId": None,
+            "transform": {"x": 40, "y": 40, "scaleX": 1, "scaleY": 1, "rotation": 0, "opacity": 1},
+            "style": {"fill": "#00ff00", "stroke": None, "strokeWidth": 0},
+            "radius": 10,
+        },
+    ]
+    scene3d = copy.deepcopy(MINIMAL_SCENE_3D)
+    scene3d["objects"] = [
+        {
+            "id": "object-target",
+            "type": "box",
+            "groupId": None,
+            "transform": {
+                "position": {"x": 0, "y": 0, "z": 0},
+                "rotation": {"x": 0, "y": 0, "z": 0},
+                "scale": {"x": 1, "y": 1, "z": 1},
+                "opacity": 1,
+            },
+            "material": {"color": "#ff0000"},
+            "visible": True,
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+        },
+        {
+            "id": "object-other",
+            "type": "box",
+            "groupId": None,
+            "transform": {
+                "position": {"x": 2, "y": 0, "z": 0},
+                "rotation": {"x": 0, "y": 0, "z": 0},
+                "scale": {"x": 1, "y": 1, "z": 1},
+                "opacity": 1,
+            },
+            "material": {"color": "#00ff00"},
+            "visible": True,
+            "width": 1,
+            "height": 1,
+            "depth": 1,
+        },
+    ]
+
+    version2d = SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=scene2d,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project.current_version = version2d
+    project.save(update_fields=["current_version"])
+    version3d = SceneVersion3D.objects.create(
+        project=project3d,
+        sequence=1,
+        scene_json=scene3d,
+        created_by=owner,
+        origin=SceneVersion3D.Origin.MANUAL,
+    )
+    project3d.current_version = version3d
+    project3d.save(update_fields=["current_version"])
+
+    for target_type, target, target_id in (
+        (AIRun.TargetType.PROJECT, project, "shape-target"),
+        (AIRun.TargetType.PROJECT3D, project3d, "object-target"),
+    ):
+        run = ai_runs.start_run(
+            owner=owner,
+            target_type=target_type,
+            target=target,
+            operation=AIRun.Operation.EDIT_PATCH,
+            scope=AIRun.Scope.SELECTION,
+            selected_target_ids=[target_id],
+            prompt="make the selected item blue",
+        )
+        assert (
+            f"Only modify the following existing element id(s): {target_id}."
+            in ai_runs._augmented_prompt(run)
+        )
+        advanced = ai_runs.advance_run(run)
+        assert advanced.status == AIRun.Status.AWAITING_REVIEW, (
+            target_type,
+            advanced.error_reason,
+            advanced.validation_summary,
+        )
+        assert advanced.error_reason == ""
+        candidate = advanced.candidate_scene_json
+        assert candidate is not None
+        records = (
+            candidate["shapes"] if target_type == AIRun.TargetType.PROJECT else candidate["objects"]
+        )
+        color_path = "style" if target_type == AIRun.TargetType.PROJECT else "material"
+        target_record = next(record for record in records if record["id"] == target_id)
+        other_record = next(record for record in records if record["id"] != target_id)
+        assert (
+            target_record[color_path][
+                "fill" if target_type == AIRun.TargetType.PROJECT else "color"
+            ]
+            == "#3366ff"
+        )
+        assert (
+            other_record[color_path]["fill" if target_type == AIRun.TargetType.PROJECT else "color"]
+            != "#3366ff"
+        )
 
 
 @pytest.mark.django_db
@@ -976,6 +1360,344 @@ def test_full_api_lifecycle_start_advance_accept(monkeypatch, owner_client, proj
 
 
 @pytest.mark.django_db
+def test_start_run_api_snapshots_opted_in_project_note_without_serializing_it(
+    monkeypatch, owner_client, project
+):
+    project.brief = "A quiet, geometric composition."
+    project.save(update_fields=["brief"])
+    _install_fake_provider(monkeypatch, [BLANK_SCENE])
+
+    response = owner_client.post(
+        "/api/ai/runs/",
+        {
+            "target_type": "project",
+            "project_id": str(project.public_id),
+            "operation": "create",
+            "prompt": "a red square",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    run = AIRun.objects.get(pk=response.json()["id"])
+    assert run.intent_note == "A quiet, geometric composition."
+    assert "intent_note" not in response.json()
+
+
+@pytest.mark.django_db
+def test_start_run_api_opt_out_does_not_snapshot_project_note(monkeypatch, owner_client, project):
+    project.brief = "A quiet, geometric composition."
+    project.save(update_fields=["brief"])
+    _install_fake_provider(monkeypatch, [BLANK_SCENE])
+
+    response = owner_client.post(
+        "/api/ai/runs/",
+        {
+            "target_type": "project",
+            "project_id": str(project.public_id),
+            "operation": "create",
+            "prompt": "a red square",
+            "use_intent_notes": False,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    run = AIRun.objects.get(pk=response.json()["id"])
+    assert run.intent_note == ""
+    assert run.input_digest == ai_runs._digest({})
+    assert "intent_note" not in response.json()
+
+
+@pytest.mark.django_db
+def test_accept_api_records_exact_2d_activity_and_is_idempotent(
+    monkeypatch, owner, owner_client, project
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    run.change_summary = "s" * 250
+    run.save(update_fields=["change_summary"])
+
+    first = owner_client.post(
+        f"/api/ai/runs/{run.pk}/accept/", {"reason": "  Keep the blue shape.  "}, format="json"
+    )
+    second = owner_client.post(
+        f"/api/ai/runs/{run.pk}/accept/", {"reason": "retry reason is ignored"}, format="json"
+    )
+
+    assert first.status_code == second.status_code == 200
+    assert first.json()["accepted_version_id"] == second.json()["accepted_version_id"]
+    assert first.json()["status"] == second.json()["status"] == AIRun.Status.ACCEPTED
+    run.refresh_from_db()
+    activity = ProjectActivity.objects.get(project=project)
+    assert run.status == AIRun.Status.ACCEPTED
+    assert activity.actor_id == owner.id
+    assert activity.action_type == ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED
+    assert activity.metadata == {
+        "run_id": run.pk,
+        "scope": run.scope,
+        "operation": run.operation,
+        "change_summary": "s" * 200,
+        "reason": "Keep the blue shape.",
+    }
+    validate_activity_metadata(activity.metadata)
+    assert SceneVersion.objects.filter(project=project).count() == 1
+    assert ProjectActivity.objects.filter(project=project).count() == 1
+
+
+@pytest.mark.django_db
+def test_cancel_api_records_only_first_awaiting_review_2d_discard(
+    monkeypatch, owner, owner_client, project
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    first = owner_client.post(
+        f"/api/ai/runs/{run.pk}/cancel/", {"reason": "  Not what I asked for.  "}, format="json"
+    )
+    second = owner_client.post(f"/api/ai/runs/{run.pk}/cancel/", format="json")
+
+    assert first.status_code == second.status_code == 200
+    assert first.json()["status"] == second.json()["status"] == AIRun.Status.CANCELLED
+    run.refresh_from_db()
+    activity = ProjectActivity.objects.get(project=project)
+    assert run.status == AIRun.Status.CANCELLED
+    assert activity.actor_id == owner.id
+    assert activity.action_type == ProjectActivity.ActionType.AI_PROPOSAL_REJECTED
+    assert activity.metadata == {
+        "run_id": run.pk,
+        "scope": run.scope,
+        "operation": run.operation,
+        "change_summary": run.change_summary[:200],
+        "reason": "Not what I asked for.",
+    }
+    validate_activity_metadata(activity.metadata)
+    assert ProjectActivity.objects.filter(project=project).count() == 1
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        ({}, None),
+        ({"reason": None}, None),
+        ({"reason": ""}, None),
+        ({"reason": " \t\n "}, None),
+        ({"reason": "r" * 280}, "r" * 280),
+        ({"reason": "\u2003🙂\u2003"}, "🙂"),
+        ({"reason": "a\x00b\x7fc\u0085é"}, "abcé"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("endpoint", "action"),
+    [
+        ("accept", ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED),
+        ("cancel", ProjectActivity.ActionType.AI_PROPOSAL_REJECTED),
+    ],
+)
+@pytest.mark.django_db
+def test_ai_run_decision_reason_normalization_and_omitted_response_shape(
+    monkeypatch, owner, owner_client, project, payload, expected, endpoint, action
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    body = owner_client.post(f"/api/ai/runs/{run.pk}/{endpoint}/", payload, format="json")
+
+    assert body.status_code == 200
+    assert set(body.json()) == {
+        "id",
+        "status",
+        "target_type",
+        "project_id",
+        "project3d_id",
+        "operation",
+        "scope",
+        "selected_target_ids",
+        "assets",
+        "attempts",
+        "repairs",
+        "candidate_scene",
+        "candidate_patch",
+        "change_summary",
+        "plan_summary",
+        "plan",
+        "auto_retry_enabled",
+        "max_retries",
+        "retries_remaining",
+        "criterion_results",
+        "validation_summary",
+        "error_reason",
+        "usage",
+        "accepted_version_id",
+        "created_at",
+        "updated_at",
+        "deadline_at",
+        "cancelled_at",
+    }
+    activity = ProjectActivity.objects.get(project=project)
+    assert activity.action_type == action
+    assert activity.metadata.get("reason") == expected
+    assert ("reason" in activity.metadata) is (expected is not None)
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [123, True, [], {}, "🙂" * 281],
+)
+@pytest.mark.parametrize("endpoint", ["accept", "cancel"])
+@pytest.mark.django_db
+def test_ai_run_decision_rejects_non_string_and_overlong_reason(
+    monkeypatch, owner, owner_client, project, reason, endpoint
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    response = owner_client.post(
+        f"/api/ai/runs/{run.pk}/{endpoint}/", {"reason": reason}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "request_invalid"
+    assert "reason" in response.json()["detail"]
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+    run.refresh_from_db()
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+
+
+@pytest.mark.django_db
+def test_running_and_terminal_cancel_do_not_record_discard_activity(
+    monkeypatch, owner_client, owner, project
+):
+    running = _start_create_run(owner, project)
+    response = owner_client.post(f"/api/ai/runs/{running.pk}/cancel/", format="json")
+    assert response.status_code == 200
+    assert response.json()["status"] == AIRun.Status.CANCELLED
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+
+    failed = _start_create_run(owner, project)
+    failed.status = AIRun.Status.FAILED
+    failed.save(update_fields=["status"])
+    response = owner_client.post(f"/api/ai/runs/{failed.pk}/cancel/", format="json")
+    assert response.status_code == 200
+    assert response.json()["status"] == AIRun.Status.FAILED
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
+def test_invalid_and_stale_2d_acceptance_do_not_record_activity(
+    monkeypatch, owner_client, owner, project
+):
+    invalid = _start_create_run(owner, project)
+    invalid.status = AIRun.Status.AWAITING_REVIEW
+    invalid.candidate_scene_json = {"not": "a valid scene"}
+    invalid.save(update_fields=["status", "candidate_scene_json"])
+    invalid_response = owner_client.post(f"/api/ai/runs/{invalid.pk}/accept/", format="json")
+    assert invalid_response.status_code == 409
+    invalid.refresh_from_db()
+    assert invalid.status == AIRun.Status.FAILED
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+
+    base = SceneVersion.objects.create(
+        project=project,
+        sequence=1,
+        scene_json=BLANK_SCENE,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project.current_version = base
+    project.save(update_fields=["current_version"])
+    stale = _start_create_run(owner, project)
+    stale.status = AIRun.Status.AWAITING_REVIEW
+    stale.candidate_scene_json = BLANK_SCENE
+    stale.save(update_fields=["status", "candidate_scene_json"])
+    newer = SceneVersion.objects.create(
+        project=project,
+        sequence=2,
+        scene_json=BLANK_SCENE,
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+        parent=base,
+    )
+    project.current_version = newer
+    project.save(update_fields=["current_version"])
+
+    stale_response = owner_client.post(f"/api/ai/runs/{stale.pk}/accept/", format="json")
+    assert stale_response.status_code == 409
+    stale.refresh_from_db()
+    assert stale.status == AIRun.Status.FAILED
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
+def test_3d_accept_and_discard_write_activity_to_the_3d_family_only(
+    monkeypatch, owner_client, owner, project3d
+):
+    _install_fake_provider(monkeypatch, [MINIMAL_SCENE_3D, MINIMAL_SCENE_3D])
+    accepted = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT3D,
+        target=project3d,
+        operation=AIRun.Operation.CREATE,
+        prompt="create a cube",
+    )
+    accepted = ai_runs.advance_run(accepted)
+    assert accepted.status == AIRun.Status.AWAITING_REVIEW
+    accepted_response = owner_client.post(
+        f"/api/ai/runs/{accepted.pk}/accept/", {"reason": "Keep it."}, format="json"
+    )
+    assert accepted_response.status_code == 200
+
+    discarded = ai_runs.start_run(
+        owner=owner,
+        target_type=AIRun.TargetType.PROJECT3D,
+        target=project3d,
+        operation=AIRun.Operation.CREATE,
+        prompt="create another cube",
+    )
+    discarded = ai_runs.advance_run(discarded)
+    assert discarded.status == AIRun.Status.AWAITING_REVIEW
+    discard_response = owner_client.post(
+        f"/api/ai/runs/{discarded.pk}/cancel/", {"reason": "Discard it."}, format="json"
+    )
+    assert discard_response.status_code == 200
+    assert not ProjectActivity.objects.filter(project__isnull=False).exists()
+    events = list(ProjectActivity.objects.filter(project3d=project3d).order_by("id"))
+    assert [event.action_type for event in events] == [
+        ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED,
+        ProjectActivity.ActionType.AI_PROPOSAL_REJECTED,
+    ]
+    assert events[0].metadata == {
+        "run_id": accepted.pk,
+        "scope": accepted.scope,
+        "operation": accepted.operation,
+        "change_summary": accepted.change_summary[:200],
+        "reason": "Keep it.",
+    }
+    assert events[1].metadata == {
+        "run_id": discarded.pk,
+        "scope": discarded.scope,
+        "operation": discarded.operation,
+        "change_summary": discarded.change_summary[:200],
+        "reason": "Discard it.",
+    }
+
+
+@pytest.mark.parametrize("endpoint", ["accept", "cancel"])
+@pytest.mark.django_db
+def test_activity_insert_rollback_keeps_decision_transition_atomic(
+    monkeypatch, owner, owner_client, project, endpoint
+):
+    run = _awaiting_review_2d_run(monkeypatch, owner, project)
+    original_save = ProjectActivity.save
+
+    def save_then_fail(self, *args, **kwargs):
+        original_save(self, *args, **kwargs)
+        raise RuntimeError("simulated activity insert failure")
+
+    monkeypatch.setattr(ProjectActivity, "save", save_then_fail)
+    with pytest.raises(RuntimeError, match="simulated activity insert failure"):
+        owner_client.post(f"/api/ai/runs/{run.pk}/{endpoint}/", format="json")
+
+    run.refresh_from_db()
+    assert run.status == AIRun.Status.AWAITING_REVIEW
+    assert ProjectActivity.objects.filter(project=project).count() == 0
+    assert SceneVersion.objects.filter(project=project).count() == 0
+
+
+@pytest.mark.django_db
 def test_add_asset_layer_api_persists_descriptors_and_returns_candidate(
     monkeypatch, owner_client, owner, project
 ):
@@ -1058,7 +1780,7 @@ def test_postgres_concurrent_advance_calls_never_double_attempt(django_db_blocke
     proceeds and the other gets a documented 409 `advance_in_progress`.
     """
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="ai-runs-concurrent-user"
         )
@@ -1142,3 +1864,79 @@ def test_postgres_concurrent_advance_calls_never_double_attempt(django_db_blocke
         assert call_count["n"] == 1
         run.refresh_from_db(using="postgres_test")
         assert run.status == AIRun.Status.AWAITING_REVIEW
+
+
+@pytest.mark.parametrize("endpoint", ["accept", "cancel"])
+@pytestmark_postgres
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
+def test_postgres_concurrent_ai_run_decisions_write_at_most_one_activity(
+    endpoint, django_db_blocker
+):
+    with django_db_blocker.unblock():
+        user = (
+            get_user_model()
+            .objects.db_manager("postgres_test")
+            .create_user(username=f"ai-run-decision-{endpoint}")
+        )
+        project = Project.objects.using("postgres_test").create(owner=user)
+        run = AIRun.objects.using("postgres_test").create(
+            owner=user,
+            target_type=AIRun.TargetType.PROJECT,
+            project=project,
+            operation=AIRun.Operation.CREATE,
+            scope=AIRun.Scope.WHOLE_SCENE,
+            prompt="deterministic test proposal",
+            status=AIRun.Status.AWAITING_REVIEW,
+            input_digest="0" * 64,
+            candidate_scene_json=BLANK_SCENE,
+            change_summary="Concurrent proposal",
+            deadline_at=timezone.now() + timedelta(minutes=5),
+        )
+        barrier = threading.Barrier(2)
+        responses: list[tuple[int, dict]] = []
+        errors: list[BaseException] = []
+        result_lock = threading.Lock()
+
+        def decide():
+            try:
+                barrier.wait()
+                client = APIClient()
+                client.force_authenticate(user)
+                response = client.post(f"/api/ai/runs/{run.pk}/{endpoint}/", format="json")
+                with result_lock:
+                    responses.append((response.status_code, response.json()))
+            except BaseException as exc:  # preserve worker failures for the main test thread
+                with result_lock:
+                    errors.append(exc)
+            finally:
+                close_thread_connections()
+
+        with route_default_to_postgres_test():
+            workers = [threading.Thread(target=decide) for _ in range(2)]
+            for worker in workers:
+                worker.start()
+            for worker in workers:
+                worker.join(timeout=15)
+
+        assert all(not worker.is_alive() for worker in workers)
+        assert errors == []
+        assert sorted(status for status, _ in responses) == [200, 200]
+        expected_status = AIRun.Status.ACCEPTED if endpoint == "accept" else AIRun.Status.CANCELLED
+        assert all(body["status"] == expected_status for _, body in responses)
+        if endpoint == "accept":
+            assert len({body["accepted_version_id"] for _, body in responses}) == 1
+        activities = ProjectActivity.objects.using("postgres_test").filter(project_id=project.pk)
+        assert activities.count() == 1
+        activity = activities.get()
+        expected_action = (
+            ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED
+            if endpoint == "accept"
+            else ProjectActivity.ActionType.AI_PROPOSAL_REJECTED
+        )
+        assert activity.action_type == expected_action
+        assert activity.actor_id == user.pk
+        if endpoint == "accept":
+            accepted_versions = SceneVersion.objects.using("postgres_test").filter(
+                project_id=project.pk
+            )
+            assert accepted_versions.count() == 1

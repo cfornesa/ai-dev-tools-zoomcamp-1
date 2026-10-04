@@ -4,7 +4,7 @@
  *  1. On-canvas handles: a move handle (also the body), a rotate handle, corner handles that scale
  *     PROPORTIONALLY (Shift makes a corner stretch instead) and edge handles that stretch one axis.
  *  2. A small floating toolbar anchored to the selection with the common actions and one "More" overflow;
- *     on narrow (phone) stages it docks to the bottom of the stage with 44px targets.
+ *     on narrow (phone) stages it sits in a 44px-target rail directly below the stage.
  *  3. A precise-values panel opened ON DEMAND from the toolbar — never shown by default.
  *  4. Nothing here is a modal: it never blocks the canvas, and Escape dismisses it all.
  *
@@ -350,7 +350,7 @@ export default function PlaneSelectionOverlay(props: PlaneSelectionOverlayProps)
         role="toolbar"
         aria-label={`${label} actions`}
         className="plane-selection-toolbar"
-        data-dock={narrow ? 'bottom' : 'float'}
+        data-dock={narrow ? 'rail' : 'float'}
         data-dragging={dragging ? 'true' : undefined}
         data-testid="plane-selection-toolbar"
         style={toolbarStyle}

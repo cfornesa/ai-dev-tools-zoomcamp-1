@@ -184,7 +184,7 @@ test.describe('Generated regular viewer: camera composition and capture (#431)',
         await expect(
           phasePage.getByRole('heading', { name: 'Camera runtime fixture' }),
         ).toBeVisible();
-        await phasePage.getByRole('button', { name: 'Piece controls' }).click();
+        await phasePage.getByRole('button', { name: 'Piece controls', exact: true }).click();
         await expect(phasePage.getByTestId('camera-status')).toContainText('Camera is off.');
         await phasePage.getByRole('button', { name: 'Enable camera view' }).click();
         await expect(phasePage.getByTestId('camera-status')).toContainText(
@@ -194,7 +194,7 @@ test.describe('Generated regular viewer: camera composition and capture (#431)',
 
       // Unavailable: no navigator.mediaDevices.getUserMedia at all.
       await runCameraPhase('unavailable', viewport, async (phasePage) => {
-        await phasePage.getByRole('button', { name: 'Piece controls' }).click();
+        await phasePage.getByRole('button', { name: 'Piece controls', exact: true }).click();
         await phasePage.getByRole('button', { name: 'Enable camera view' }).click();
         await expect(phasePage.getByTestId('camera-status')).toContainText(
           'Camera is unavailable in this browser.',
@@ -205,7 +205,7 @@ test.describe('Generated regular viewer: camera composition and capture (#431)',
       // input, so the artwork underneath the video must still be
       // reachable at the point where the overlay visually sits.
       await runCameraPhase('granted', viewport, async (phasePage) => {
-        await phasePage.getByRole('button', { name: 'Piece controls' }).click();
+        await phasePage.getByRole('button', { name: 'Piece controls', exact: true }).click();
         await phasePage.getByRole('button', { name: 'Enable camera view' }).click();
         const disableButton = phasePage.getByRole('button', { name: 'Disable camera view' });
         await expect(disableButton).toHaveAttribute('aria-pressed', 'true');
@@ -319,7 +319,7 @@ test.describe('Generated regular viewer: camera composition and capture (#431)',
       await expect(
         fakePage.getByRole('heading', { name: 'Camera real-pipeline fixture' }),
       ).toBeVisible();
-      await fakePage.getByRole('button', { name: 'Piece controls' }).click();
+      await fakePage.getByRole('button', { name: 'Piece controls', exact: true }).click();
       await fakePage.getByRole('button', { name: 'Enable camera view' }).click();
       await expect(fakePage.getByTestId('camera-status')).toContainText('Camera is active.');
 

@@ -7,6 +7,9 @@ import * as accountExportApi from '../api/accountExport';
 import { AuthContext } from '../auth/context';
 import AccountDataExport from './AccountDataExport';
 
+const archive = vi.hoisted(() => ({ buildAccountExportArchive: vi.fn() }));
+vi.mock('../storage/accountExportArchive', () => archive);
+
 vi.mock('../api/accountExport', async () => {
   const actual =
     await vi.importActual<typeof import('../api/accountExport')>('../api/accountExport');
@@ -17,6 +20,7 @@ vi.mock('../api/accountExport', async () => {
 });
 
 const mockedFetch = vi.mocked(accountExportApi.fetchAccountExport);
+const mockedArchive = vi.mocked(archive.buildAccountExportArchive);
 
 const SIGNED_IN_USER = {
   status: 'signed-in' as const,
@@ -47,6 +51,7 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedArchive.mockReset();
   URL.createObjectURL = vi.fn(() => 'blob:mock-url');
   URL.revokeObjectURL = vi.fn();
 });
@@ -74,5 +79,28 @@ describe('AccountDataExport', () => {
       await screen.findByText('Could not generate your data export. Please try again.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('Your export has downloaded.')).not.toBeInTheDocument();
+  });
+
+  it('prepares a complete ZIP, shows its size, and downloads it after review', async () => {
+    mockedFetch.mockResolvedValue(SAMPLE_EXPORT);
+    mockedArchive.mockImplementation(async (_owner, onProgress) => {
+      onProgress?.({ completed: 1, total: 1, label: 'Finalizing ZIP' });
+      return {
+        blob: new Blob(['zip']),
+        byteSize: 1234,
+        account: SAMPLE_EXPORT,
+        packageCount: 1,
+        failures: [],
+      };
+    });
+    renderPage();
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Prepare complete ZIP' }));
+    expect(await screen.findByText(/1,234 bytes, 1 piece packages/)).toBeInTheDocument();
+    expect(mockedArchive).toHaveBeenCalledWith('alice', expect.any(Function));
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Download everything (ZIP)' }));
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
   });
 });

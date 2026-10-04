@@ -144,12 +144,18 @@ class AIEditSceneRequest:
     prompt: str
     current_scene: dict[str, Any]
     schema_version: int = SUPPORTED_SCHEMA_VERSION
+    selected_target_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.prompt or not self.prompt.strip():
             raise ValueError("prompt must be non-empty.")
         if not isinstance(self.current_scene, dict):
             raise ValueError("current_scene must be a scene JSON object.")
+        if any(
+            not isinstance(target_id, str) or not target_id
+            for target_id in self.selected_target_ids
+        ):
+            raise ValueError("selected_target_ids must contain non-empty strings.")
 
 
 @dataclass(frozen=True)

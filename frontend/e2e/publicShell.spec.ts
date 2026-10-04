@@ -6,7 +6,7 @@ test.describe('public reference shell (#645)', () => {
     await page.goto('/gallery');
 
     await expect(page.getByRole('heading', { name: 'AugmentrART' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'AugmentrART' })).toHaveAttribute('href', '/');
     await expect(page.getByRole('link', { name: 'Public gallery' })).toHaveAttribute(
       'aria-current',
       'page',
@@ -30,7 +30,7 @@ test.describe('public reference shell (#645)', () => {
     await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 375);
 
     await menuButton.click();
-    await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Login', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Public gallery' })).toHaveAttribute(
       'aria-current',
       'page',

@@ -29,6 +29,7 @@ export function parseTags(raw: string): string[] {
  * can read what's currently typed without waiting for "Save changes". */
 export type PendingDetails = {
   description: string;
+  brief: string;
   tags: string[];
   allowRemix: boolean;
   exportAttribution: boolean;
@@ -108,6 +109,7 @@ const EditorDetailsPanel = forwardRef<
   }
 >(function EditorDetailsPanel({ projectId, project, setProject, onEditorUrlChange }, ref) {
   const [description, setDescription] = useState('');
+  const [brief, setBrief] = useState('');
   const [tags, setTags] = useState('');
   const [allowRemix, setAllowRemix] = useState(false);
   const [exportAttribution, setExportAttribution] = useState(false);
@@ -117,6 +119,7 @@ const EditorDetailsPanel = forwardRef<
   useEffect(() => {
     if (!project) return;
     setDescription(project.description);
+    setBrief(project.brief ?? '');
     setTags(project.tags.join(', '));
     setAllowRemix(project.allow_public_remix);
     setExportAttribution(project.export_attribution);
@@ -136,6 +139,7 @@ const EditorDetailsPanel = forwardRef<
     try {
       const updated = await updateProjectMetadata(projectId, {
         description,
+        brief,
         tags: tagList,
         allow_public_remix: allowRemix,
         export_attribution: exportAttribution,
@@ -169,6 +173,7 @@ const EditorDetailsPanel = forwardRef<
     () => ({
       getPendingDetails: () => ({
         description,
+        brief,
         tags: parseTags(tags),
         allowRemix,
         exportAttribution,
@@ -176,7 +181,7 @@ const EditorDetailsPanel = forwardRef<
       save: persist,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [description, tags, allowRemix, exportAttribution, projectId],
+    [description, brief, tags, allowRemix, exportAttribution, projectId],
   );
 
   return (
@@ -200,6 +205,31 @@ const EditorDetailsPanel = forwardRef<
               {fieldErrors.description.join(' ')}
             </p>
           )}
+        </div>
+
+        <div>
+          <label htmlFor="project-brief">Intent notes (private)</label>
+          <textarea
+            id="project-brief"
+            value={brief}
+            maxLength={1500}
+            onChange={(e) => setBrief(e.target.value)}
+            aria-describedby="project-brief-help project-brief-count"
+          />
+          <p id="project-brief-help">
+            Only you see this. It is added to AI requests for this piece when you choose.
+          </p>
+          <p id="project-brief-count" aria-live="polite">
+            {brief.length} / 1,500 characters
+          </p>
+          <button
+            type="button"
+            onClick={() => setBrief('')}
+            disabled={!brief}
+            aria-label="Clear intent notes"
+          >
+            Clear
+          </button>
         </div>
 
         <div>

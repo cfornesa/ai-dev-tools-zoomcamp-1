@@ -473,6 +473,38 @@ def test_patch_touching_a_layer_referenced_by_name_is_allowed():
     assert validate_patch_operations(patch, scene=scene, prompt="hide the Background layer") == []
 
 
+def test_selected_target_scope_rejects_unrelated_elements_and_scene_settings():
+    scene = _scene_with_named_layers_and_shapes()
+
+    unrelated = validate_patch_operations(
+        [{"op": "replace", "path": "/shapes/1/style/fill", "value": "#ff0000"}],
+        scene=scene,
+        selected_target_ids=("shape-sun",),
+    )
+    assert any(error.reason == PatchErrorReason.TARGET_SCOPE_VIOLATION for error in unrelated)
+
+    scene_wide = validate_patch_operations(
+        [{"op": "replace", "path": "/canvas/backgroundColor", "value": "#123456"}],
+        scene=scene,
+        selected_target_ids=("shape-sun",),
+    )
+    assert any(error.reason == PatchErrorReason.TARGET_SCOPE_VIOLATION for error in scene_wide)
+
+
+def test_selected_target_scope_allows_only_selected_element():
+    scene = _scene_with_named_layers_and_shapes()
+    patch = [{"op": "replace", "path": "/shapes/0/style/fill", "value": "#ff0000"}]
+
+    assert (
+        validate_patch_operations(
+            patch,
+            scene=scene,
+            selected_target_ids=("shape-sun", "shape-moon"),
+        )
+        == []
+    )
+
+
 @pytest.mark.parametrize(
     "prompt",
     [

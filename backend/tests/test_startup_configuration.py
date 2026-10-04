@@ -134,6 +134,8 @@ def test_production_reference_import_helper_defaults_to_no_write_preview():
     assert 'reference_import_args+=(--dry-run)' in helper
     assert 'reference_import_args+=(--username "${REFERENCE_IMPORT_USERNAME}")' in helper
     assert 'reference_import_args+=(--email "${REFERENCE_IMPORT_EMAIL}")' in helper
+    assert 'REFERENCE_IMPORT_SOURCE_IDS is required' in helper
+    assert 'reference_import_args+=(--source-id "$source_id")' in helper
     assert 'import_reference_pieces import' in helper
     assert '--allow-production --json' in helper
 
@@ -162,6 +164,7 @@ def test_production_reference_import_preview_passes_dry_run_without_writing(tmp_
             "REFERENCE_IMPORT_HANDLE": "cfornesa",
             "REFERENCE_IMPORT_USERNAME": "owner",
             "REFERENCE_IMPORT_EMAIL": "owner@example.test",
+            "REFERENCE_IMPORT_SOURCE_IDS": "legacy-c2-default,legacy-c2-interactive-default",
         }
     )
     result = subprocess.run(
@@ -176,7 +179,9 @@ def test_production_reference_import_preview_passes_dry_run_without_writing(tmp_
     assert result.returncode == 0
     assert args_file.read_text().strip() == (
         "run python manage.py import_reference_pieces import "
-        "--handle cfornesa --allow-production --json --dry-run "
+        "--handle cfornesa --allow-production --json "
+        "--source-id legacy-c2-default --source-id legacy-c2-interactive-default "
+        "--dry-run "
         "--username owner --email owner@example.test"
     )
 
@@ -194,6 +199,7 @@ def test_production_reference_import_write_requires_explicit_mode(tmp_path):
             "PATH": f"{bin_dir}:{environment['PATH']}",
             "ARGS_FILE": str(args_file),
             "REFERENCE_IMPORT_MODE": "write",
+            "REFERENCE_IMPORT_SOURCE_IDS": "legacy-c2-default,legacy-c2-interactive-default",
         }
     )
     result = subprocess.run(
@@ -208,7 +214,8 @@ def test_production_reference_import_write_requires_explicit_mode(tmp_path):
     assert result.returncode == 0
     assert args_file.read_text().strip() == (
         "run python manage.py import_reference_pieces import "
-        "--handle cfornesa --allow-production --json"
+        "--handle cfornesa --allow-production --json "
+        "--source-id legacy-c2-default --source-id legacy-c2-interactive-default"
     )
 
 

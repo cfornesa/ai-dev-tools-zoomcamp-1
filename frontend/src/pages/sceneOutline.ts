@@ -39,7 +39,7 @@
  */
 import type { SceneDocument } from '../api/projects';
 import { validateScene } from '../validation/scene';
-import { getEditableShapes, shapeLabel, type Shape } from './sceneShapes';
+import { getEditableShapes, shapeLabel, shapeLabels, type Shape } from './sceneShapes';
 
 export type Layer = {
   id: string;
@@ -1034,6 +1034,7 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
   const layers = getLayers(scene).sort((a, b) => a.order - b.order);
   const groups = getGroups(scene);
   const shapes = getEditableShapes(rawShapes(scene));
+  const labelsByShapeId = shapeLabels(shapes);
   const shapesById = new Map(shapes.map((s) => [s.id, s]));
   const groupsById = new Map(groups.map((g) => [g.id, g]));
 
@@ -1052,7 +1053,7 @@ export function buildOutline(scene: SceneDocument): OutlineRow[] {
       depth,
       typeLabel: shape.type,
       shapeType: shape.type,
-      label: shapeLabel(shape, shapes),
+      label: labelsByShapeId.get(shape.id) ?? shape.id,
       visible: shape.visible ?? true,
       locked: shape.locked ?? false,
       inheritedVisible: inheritedVisible && (shape.visible ?? true),

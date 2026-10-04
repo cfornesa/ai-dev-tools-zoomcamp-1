@@ -66,7 +66,7 @@ def test_login_page_shows_github_only_when_enabled(client):
     response = client.get(reverse("account_login"))
 
     assert b"Continue with GitHub" in response.content
-    assert b"Continue with Google" in response.content
+    assert b"Continue with Google" not in response.content
 
 
 @pytest.mark.django_db
@@ -133,7 +133,7 @@ def test_successful_github_callback_creates_and_links_local_account(client, monk
     # form instead, and no account exists yet.
     assert callback_response.status_code == 302
     assert callback_response["Location"] == reverse("socialaccount_signup")
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     assert not User.objects.filter(email="newgithubuser@example.com").exists()
 
     signup_post = client.post(

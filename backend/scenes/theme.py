@@ -592,7 +592,7 @@ def effective_theme(
     return effective_theme_palettes(style_tokens, value)[mode]
 
 
-def effective_theme_palettes(style_tokens: object, overrides: object) -> dict[str, dict[str, str]]:
+def effective_theme_palettes(style_tokens: object, overrides: object) -> dict[str, dict[str, str]]:  # noqa: C901
     """Resolve independent light/dark palettes without changing legacy storage."""
     palettes = {
         "light": {

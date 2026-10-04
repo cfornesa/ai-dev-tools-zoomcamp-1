@@ -68,9 +68,13 @@ type ArchiveManifestMediaAsset = {
 type ArchiveManifestProject = {
   index: number;
   title: string;
+  description?: string;
   scenes: ArchiveManifestScene[];
   mediaAssets: ArchiveManifestMediaAsset[];
 };
+
+// Archive metadata preserves descriptions only; browser-local thumbnails are
+// derived data and are regenerated after restore.
 
 export type ArchiveManifest = {
   formatVersion: typeof ARCHIVE_FORMAT_VERSION;
@@ -178,6 +182,7 @@ export async function exportDatabaseArchive(
     manifestProjects.push({
       index: projectIndex,
       title: project.title,
+      ...(project.description === undefined ? {} : { description: project.description }),
       scenes: manifestScenes,
       mediaAssets: manifestAssets,
     });
@@ -231,6 +236,7 @@ function isManifestProject(value: unknown): value is ArchiveManifestProject {
   return (
     typeof p.index === 'number' &&
     typeof p.title === 'string' &&
+    (p.description === undefined || typeof p.description === 'string') &&
     Array.isArray(p.scenes) &&
     p.scenes.every(isManifestScene) &&
     Array.isArray(p.mediaAssets) &&
@@ -483,7 +489,11 @@ export async function restoreDatabaseArchive(
   let mediaFileCount = 0;
   try {
     for (const decoded of selected) {
-      const project = await createProject(db, { ownerId, title: decoded.meta.title });
+      const project = await createProject(db, {
+        ownerId,
+        title: decoded.meta.title,
+        description: decoded.meta.description,
+      });
       createdProjects.push(project);
       for (const scene of decoded.scenes.sort((a, b) => a.meta.position - b.meta.position)) {
         await createScene(db, ownerId, {

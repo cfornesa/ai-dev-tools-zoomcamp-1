@@ -1,6 +1,6 @@
 /**
- * Issue #462: end-to-end coverage for the 2D "Agent workflow" action at
- * `/ai-projects/:id` (`AIRunPanel.tsx`/`useAIRun.ts`), driving issue
+ * Issue #462: end-to-end coverage for the 2D "Agent workflow" action in the
+ * canonical owner editor (`AIRunPanel.tsx`/`useAIRun.ts`), driving issue
  * #461's persisted `AIRun` state machine through a real running Django +
  * Vite stack. Reuses `aiAndRecovery.spec.ts`'s exact fake-provider
  * infrastructure (`AI_PROVIDER=fake`, the `X-E2E-AI-Scenario` header, the
@@ -22,6 +22,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { apiPost } from './support/api.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -80,17 +81,16 @@ async function probeFakeAIProviderMode(context: BrowserContext, page: Page): Pro
   return response.status() === 201;
 }
 
-async function createProjectWithFixtureScene(context: BrowserContext): Promise<string> {
-  const created = await apiPost(context, '/api/projects/blank/');
-  expect(created.status()).toBe(201);
-  const { id } = (await created.json()) as { id: string };
+async function createProjectWithFixtureScene(page: Page, context: BrowserContext): Promise<void> {
+  const id = await createServerProject2D(page);
+  expect(page).toHaveURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);
   const saved = await apiPost(context, `/api/projects/${id}/versions/`, {
     scene_json: LOCKED_FOREGROUND_SCENE,
     origin: 'manual',
     change_label: 'Agent 2D e2e fixture',
   });
   expect(saved.status()).toBe(201);
-  return id;
+  await page.reload();
 }
 
 test.describe('AI 2D editor: Agent workflow (#462)', () => {
@@ -107,17 +107,16 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
     await resetAIScenario(page);
   });
 
-  test('creates a piece through a full agent run and accepts it', async ({ page, context }) => {
+  test('creates a piece through a full agent run and accepts it', async ({ page }) => {
     test.skip(
       !fakeProviderActive,
       'Server is not running with AI_PROVIDER=fake -- see AGENTS.md "End-to-end tests".',
     );
 
-    const created = await apiPost(context, '/api/projects/blank/');
-    const { id: projectId } = (await created.json()) as { id: string };
+    await createServerProject2D(page);
     await setAIScenario(page, 'success');
 
-    await page.goto(`/ai-projects/${projectId}`);
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page
@@ -133,11 +132,14 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
     await expect(page.getByTestId('ai-run-status')).toContainText(/accepted/i);
     await page.getByTestId('ai-run-start-new').click();
     await expect(page.getByTestId('ai-run-form')).toBeVisible();
-    // Accept persisted a real version -- the workspace's own preview now
-    // reflects it (still visible after switching back to the one-shot tab,
-    // proving the accepted scene actually replaced the working copy).
+    // Accept persisted a real version -- the generated shape is present in
+    // the canonical editor's Layers panel after switching back to One-shot.
     await page.getByRole('radio', { name: 'One-shot' }).click();
-    await expect(page.locator('.ai-editor-preview')).toBeVisible();
+    await expect(
+      page
+        .getByRole('region', { name: 'Layers' })
+        .getByRole('button', { name: 'AI generated circle', exact: true }),
+    ).toBeVisible();
   });
 
   test('edits only the selected foreground object while a background layer is locked', async ({
@@ -149,10 +151,10 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
       'Server is not running with AI_PROVIDER=fake -- see AGENTS.md "End-to-end tests".',
     );
 
-    const projectId = await createProjectWithFixtureScene(context);
+    await createProjectWithFixtureScene(page, context);
     await setAIScenario(page, 'success');
 
-    await page.goto(`/ai-projects/${projectId}`);
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
     await page.getByRole('radio', { name: 'Edit selected layer/object' }).click();
 
@@ -177,20 +179,16 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
     await expect(page.getByTestId('ai-run-form')).toBeVisible();
   });
 
-  test('a run that keeps failing validation ends in a terminal failed state', async ({
-    page,
-    context,
-  }) => {
+  test('a run that keeps failing validation ends in a terminal failed state', async ({ page }) => {
     test.skip(
       !fakeProviderActive,
       'Server is not running with AI_PROVIDER=fake -- see AGENTS.md "End-to-end tests".',
     );
 
-    const created = await apiPost(context, '/api/projects/blank/');
-    const { id: projectId } = (await created.json()) as { id: string };
+    await createServerProject2D(page);
     await setAIScenario(page, 'invalid_structured_output');
 
-    await page.goto(`/ai-projects/${projectId}`);
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page.getByLabel('Describe the scene you want to generate').fill('an impossible scene');
@@ -204,18 +202,16 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
 
   test('a browser reload reconnects to an awaiting-review run without another attempt', async ({
     page,
-    context,
   }) => {
     test.skip(
       !fakeProviderActive,
       'Server is not running with AI_PROVIDER=fake -- see AGENTS.md "End-to-end tests".',
     );
 
-    const created = await apiPost(context, '/api/projects/blank/');
-    const { id: projectId } = (await created.json()) as { id: string };
+    await createServerProject2D(page);
     await setAIScenario(page, 'success');
 
-    await page.goto(`/ai-projects/${projectId}`);
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page.getByLabel('Describe the scene you want to generate').fill('a simple scene');
@@ -226,6 +222,7 @@ test.describe('AI 2D editor: Agent workflow (#462)', () => {
     const statusBefore = await page.getByTestId('ai-run-status').textContent();
 
     await page.reload();
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
 
     await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 5000 });

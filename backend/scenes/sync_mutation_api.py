@@ -132,7 +132,7 @@ def _stale_conflict_response(
 class SyncMutationReceiptView(APIView):
     """Record one owner-scoped outbox operation and acknowledge safe replays."""
 
-    def post(self, request, public_id):
+    def post(self, request, public_id):  # noqa: C901
         project = _project_for_owner(request, public_id)
         if project is None:
             return Response(status=401)

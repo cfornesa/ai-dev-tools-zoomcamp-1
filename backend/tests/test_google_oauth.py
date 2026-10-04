@@ -219,7 +219,7 @@ def test_successful_callback_creates_and_links_local_account(client, monkeypatch
     # form instead, and no account exists yet.
     assert callback_response.status_code == 302
     assert callback_response["Location"] == reverse("socialaccount_signup")
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     assert not User.objects.filter(email="newuser@example.com").exists()
 
     signup_get = client.get(reverse("socialaccount_signup"))

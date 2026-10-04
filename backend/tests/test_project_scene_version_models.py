@@ -291,7 +291,7 @@ def test_postgres_trigger_blocks_raw_sql_scene_reassignment(django_db_blocker):
 @pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_trigger_blocks_current_version_from_other_project(django_db_blocker):
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="postgres-trigger-user"
         )
@@ -313,7 +313,7 @@ def test_postgres_trigger_blocks_current_version_from_other_project(django_db_bl
 @pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_trigger_blocks_soft_deleted_current_version(django_db_blocker):
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="postgres-trigger-user-2"
         )
@@ -335,7 +335,7 @@ def test_postgres_trigger_blocks_soft_deleted_current_version(django_db_blocker)
 @pytest.mark.django_db(databases=["default", "postgres_test"])
 def test_postgres_trigger_protects_current_version_from_soft_delete(django_db_blocker):
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="postgres-trigger-user-3"
         )

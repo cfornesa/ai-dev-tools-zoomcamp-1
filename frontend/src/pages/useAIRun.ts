@@ -253,6 +253,7 @@ export function useAIRun<TVersion>(
     async (
       workingCopy: AnySceneDocument | null,
       currentVersionId: number | null,
+      useIntentNotes = true,
     ): Promise<void> => {
       if (!projectId) return;
       const trimmed = prompt.trim();
@@ -321,6 +322,7 @@ export function useAIRun<TVersion>(
               }
             : {}),
           prompt: trimmed,
+          ...(targetType === 'project' ? { use_intent_notes: useIntentNotes } : {}),
           vendor,
           model: model.trim() || undefined,
           persona_id: personaId ?? undefined,
@@ -362,46 +364,52 @@ export function useAIRun<TVersion>(
    * candidate (Reject) -- both are the same server call: `cancel_run`
    * writes no creative state, and a cancelled run can never resume even
    * if an in-flight `advance` response was still on the wire. */
-  const stop = useCallback(async (): Promise<void> => {
-    if (!run) return;
-    loopTokenRef.current += 1; // stop any in-flight advance loop immediately
-    try {
-      const cancelled = await cancelAIRun(run.id);
-      if (!mountedRef.current) return;
-      setRun(cancelled);
-    } catch {
-      // Best-effort -- the loop is already stopped client-side either way.
-    } finally {
-      if (projectId) persistRunId(projectId, null);
-    }
-  }, [run, projectId]);
-
-  const accept = useCallback(async (): Promise<TVersion | null> => {
-    if (!run || !projectId) return null;
-    setAccepting(true);
-    setAcceptError(null);
-    try {
-      const accepted = await acceptAIRun(run.id);
-      if (!mountedRef.current) return null;
-      setRun(accepted);
-      if (accepted.status === 'accepted' && accepted.accepted_version_id !== null) {
-        persistRunId(projectId, null);
-        return await fetchAcceptedVersion(projectId, accepted.accepted_version_id);
+  const stop = useCallback(
+    async (reason?: string): Promise<void> => {
+      if (!run) return;
+      loopTokenRef.current += 1; // stop any in-flight advance loop immediately
+      try {
+        const cancelled = await cancelAIRun(run.id, reason);
+        if (!mountedRef.current) return;
+        setRun(cancelled);
+      } catch {
+        // Best-effort -- the loop is already stopped client-side either way.
+      } finally {
+        if (projectId) persistRunId(projectId, null);
       }
-      // A failed re-validation or stale base at Accept time -- the run's
-      // own `error_reason` (surfaced via the `run.status === 'failed'`
-      // render path) explains why; nothing to return.
-      persistRunId(projectId, null);
-      return null;
-    } catch (err) {
-      if (isAbortError(err)) return null;
-      if (!mountedRef.current) return null;
-      setAcceptError(classifyRunError(err));
-      return null;
-    } finally {
-      if (mountedRef.current) setAccepting(false);
-    }
-  }, [run, projectId, fetchAcceptedVersion]);
+    },
+    [run, projectId],
+  );
+
+  const accept = useCallback(
+    async (reason?: string): Promise<TVersion | null> => {
+      if (!run || !projectId) return null;
+      setAccepting(true);
+      setAcceptError(null);
+      try {
+        const accepted = await acceptAIRun(run.id, reason);
+        if (!mountedRef.current) return null;
+        setRun(accepted);
+        if (accepted.status === 'accepted' && accepted.accepted_version_id !== null) {
+          persistRunId(projectId, null);
+          return await fetchAcceptedVersion(projectId, accepted.accepted_version_id);
+        }
+        // A failed re-validation or stale base at Accept time -- the run's
+        // own `error_reason` (surfaced via the `run.status === 'failed'`
+        // render path) explains why; nothing to return.
+        persistRunId(projectId, null);
+        return null;
+      } catch (err) {
+        if (isAbortError(err)) return null;
+        if (!mountedRef.current) return null;
+        setAcceptError(classifyRunError(err));
+        return null;
+      } finally {
+        if (mountedRef.current) setAccepting(false);
+      }
+    },
+    [run, projectId, fetchAcceptedVersion],
+  );
 
   /** Clears a terminal run (accepted/cancelled/failed/expired) back to the
    * entry form -- e.g. after reading a failure, or starting a fresh run

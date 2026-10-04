@@ -1,10 +1,21 @@
 import { createPortal } from 'react-dom';
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
 
 import type { ArtPieceCapabilitySet, ArtPieceLibrary, CameraPlacement } from '../api/artPieces';
 import type { SonicDefaults } from '../audio/sonicContract';
 import { SONIC_ROOTS, SONIC_SCALES } from '../audio/sonicContract';
-import { createSonicEngine, type SonicEngine, type SonicNoteEvent } from '../audio/sonicEngine';
+import {
+  createSonicEngine,
+  type MicEffectName,
+  type SonicEngine,
+  type SonicNoteEvent,
+} from '../audio/sonicEngine';
+import {
+  categorizeMicError,
+  isMicSupported,
+  micRecoveryMessageFor,
+  type MicFailureCategory,
+} from '../audio/micFailure';
 import { isEditableElement, PIANO_KEY_MAP } from '../audio/pianoKeyMap';
 import { scaleNotes, transposeNote } from '../audio/scaleTheory';
 import {
@@ -26,26 +37,17 @@ import {
   type SoundSettings,
   soundSettingsFromSonic,
 } from '../audio/soundSettings';
+import { useSoundSettingsState } from '../audio/useSoundSettingsState';
 import { createHandSignalExtractor, type HandSignals } from '../tracking/handSignals';
 import { createMediaPipeTrackingProvider } from '../tracking/mediapipeProvider';
 import type { TrackingProvider, TrackingProviderError } from '../tracking/types';
 import PieceStageIcon from '../components/PieceStageIcon';
 import PieceStageToolbar from '../components/PieceStageToolbar';
 import type { PieceStageCapabilities } from '../components/pieceStageCapabilities';
+import HandGestureGuideDialog from './HandGestureGuideDialog';
 import { useFullscreenToggle } from './useFullscreenToggle';
-import {
-  visitorStrokeIntersects,
-  type VisitorPoint,
-  type VisitorStroke,
-  type VisitorTool,
-} from './visitorDrawing';
-import {
-  commitVisitorHistory,
-  createVisitorHistory,
-  redoVisitorHistory,
-  undoVisitorHistory,
-  type VisitorHistory,
-} from './visitorDrawingHistory';
+import { useVisitorDrawingOverlay } from './useVisitorDrawingOverlay';
+import type { VisitorStroke } from './visitorDrawing';
 
 // Issue #479: real camera capture and hand-tracking now run entirely in
 // this trusted parent frame (never inside the sandboxed iframe --
@@ -58,6 +60,15 @@ import {
 const HAND_PAN_SENSITIVITY = 6;
 const HAND_ZOOM_SENSITIVITY = 20;
 const WHITE_PIANO_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k'] as const;
+const MIC_EFFECTS: ReadonlyArray<{ name: MicEffectName; label: string }> = [
+  { name: 'distortion', label: 'Distortion' },
+  { name: 'chorus', label: 'Chorus' },
+  { name: 'tremolo', label: 'Tremolo' },
+  { name: 'pitch_shift', label: 'Pitch shift' },
+  { name: 'bitcrusher', label: 'Bitcrusher' },
+  { name: 'flanger', label: 'Flanger' },
+  { name: 'ring_mod', label: 'Ring mod' },
+];
 
 const PARENT_SOUND_COMMANDS = new Set([
   'toggle-sound',
@@ -75,6 +86,8 @@ const PARENT_SOUND_COMMANDS = new Set([
   'set-octave',
   'set-keyboard-enabled',
 ]);
+
+const CAPABILITY_REASON = 'Requires the Creator plan.';
 
 function noteFrequency(note: string): number | null {
   const match = /^([A-G](?:#|b)?)(-?\d+)$/.exec(note);
@@ -156,6 +169,7 @@ function PieceStageControls({
   authoredSonic,
 }: Props) {
   const resolvedCameraPlacement: CameraPlacement = cameraPlacement ?? 'overlay';
+  const handSteeringReasonId = useId();
   const authoredSoundSettings = useMemo(
     () => soundSettingsFromSonic(authoredSonic),
     [authoredSonic],
@@ -165,25 +179,47 @@ function PieceStageControls({
   );
   const initialSoundSettings = initialSoundSettingsRef.current;
   const [open, setOpen] = useState(false);
-  const [guide, setGuide] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [audioContextState, setAudioContextState] = useState<string | null>(null);
   const sonicEngineRef = useRef<SonicEngine | null>(null);
-  const [volume, setVolume] = useState(initialSoundSettings.soundVolume);
-  const [ambientBpm, setAmbientBpm] = useState(initialSoundSettings.ambientBpm);
-  const [ambientVolume, setAmbientVolume] = useState(initialSoundSettings.ambientVolume);
-  const [ambientMuted, setAmbientMuted] = useState(initialSoundSettings.ambientMuted);
-  const [ambientScale, setAmbientScale] = useState(initialSoundSettings.ambientScale);
-  const [keyboardEnabled, setKeyboardEnabled] = useState(false);
-  const [keyboardRoot, setKeyboardRoot] = useState(initialSoundSettings.keyboardRoot);
-  const [keyboardScale, setKeyboardScale] = useState(initialSoundSettings.keyboardScale);
-  const [keyboardTranspose, setKeyboardTranspose] = useState(
-    initialSoundSettings.keyboardTranspose,
-  );
-  const [followKey, setFollowKey] = useState(initialSoundSettings.followKey);
-  const [keyboardVolume, setKeyboardVolume] = useState(initialSoundSettings.keyboardVolume);
+  const {
+    soundVolume: volume,
+    setSoundVolume: setVolume,
+    ambientBpm,
+    setAmbientBpm,
+    ambientVolume,
+    setAmbientVolume,
+    ambientMuted,
+    setAmbientMuted,
+    ambientScale,
+    setAmbientScale,
+    keyboardEnabled,
+    setKeyboardEnabled,
+    keyboardRoot,
+    setKeyboardRoot,
+    keyboardScale,
+    setKeyboardScale,
+    keyboardTranspose,
+    setKeyboardTranspose,
+    followKey,
+    setFollowKey,
+    keyboardVolume,
+    setKeyboardVolume,
+  } = useSoundSettingsState({
+    soundVolume: initialSoundSettings.soundVolume,
+    ambientBpm: initialSoundSettings.ambientBpm,
+    ambientVolume: initialSoundSettings.ambientVolume,
+    ambientMuted: initialSoundSettings.ambientMuted,
+    ambientScale: initialSoundSettings.ambientScale,
+    keyboardRoot: initialSoundSettings.keyboardRoot,
+    keyboardScale: initialSoundSettings.keyboardScale,
+    keyboardTranspose: initialSoundSettings.keyboardTranspose,
+    followKey: initialSoundSettings.followKey,
+    keyboardEnabled: false,
+    keyboardVolume: initialSoundSettings.keyboardVolume,
+  });
   const [keyboardOscillator, setKeyboardOscillator] = useState(
     initialSoundSettings.keyboardOscillator,
   );
@@ -207,6 +243,14 @@ function PieceStageControls({
   const [microphoneState, setMicrophoneState] = useState<
     'off' | 'active' | 'denied' | 'unavailable'
   >('off');
+  const [microphoneFailure, setMicrophoneFailure] = useState<MicFailureCategory | null>(null);
+  const [micEffects, setMicEffects] = useState<Record<MicEffectName, boolean>>(
+    () =>
+      Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+        MicEffectName,
+        boolean
+      >,
+  );
   const [cameraState, setCameraState] = useState<
     'off' | 'active' | 'denied' | 'unavailable' | 'ended'
   >('off');
@@ -217,15 +261,6 @@ function PieceStageControls({
   const [steeringPose, setSteeringPose] = useState<{ x: number; y: number; z: number } | null>(
     null,
   );
-  const [visitorDrawOn, setVisitorDrawOn] = useState(false);
-  const [visitorTool, setVisitorTool] = useState<VisitorTool>('pencil');
-  const [visitorSize, setVisitorSize] = useState(4);
-  const [visitorColor, setVisitorColor] = useState('#ffffff');
-  const [visitorStrokes, setVisitorStrokes] = useState<VisitorStroke[]>([]);
-  const [visitorHistory, setVisitorHistory] = useState<VisitorHistory<VisitorStroke>>(() =>
-    createVisitorHistory(),
-  );
-  const [eraserPoint, setEraserPoint] = useState<VisitorPoint | null>(null);
   // Issue #479: model preparation status is now derived directly from the
   // local `TrackingProvider`'s own onFrame/onError channels -- no longer
   // reported through the sandbox at all, since hand-tracking never runs
@@ -252,11 +287,6 @@ function PieceStageControls({
   const steeringActiveRef = useRef(false);
   const commandRef = useRef<(type: string, extra?: Record<string, unknown>) => void>(() => {});
   const resetSoundSettingsRef = useRef(false);
-  const visitorOverlayRef = useRef<HTMLCanvasElement | null>(null);
-  const visitorStrokesRef = useRef<VisitorStroke[]>([]);
-  const visitorPointerIdRef = useRef<number | null>(null);
-  const activeTouchPointerIdsRef = useRef(new Set<number>());
-  const touchStrokeIndexRef = useRef<number | null>(null);
   const compositeAndDownloadScreenshotRef = useRef<
     (artworkDataUrl: string, filename: string) => Promise<void>
   >(async () => {});
@@ -264,7 +294,32 @@ function PieceStageControls({
   cameraOpacityRef.current = cameraOpacity;
   cameraStateRef.current = cameraState;
   steeringActiveRef.current = steeringState === 'active';
-  visitorStrokesRef.current = visitorStrokes;
+  const {
+    visitorDrawOn,
+    setVisitorDrawOn,
+    visitorTool,
+    setVisitorTool,
+    visitorSize,
+    setVisitorSize,
+    visitorColor,
+    setVisitorColor,
+    visitorStrokes,
+    visitorHistory,
+    eraserPoint,
+    setEraserPoint,
+    visitorOverlayRef,
+    visitorStrokesRef,
+    visitorPointerIdRef,
+    activeTouchPointerIdsRef,
+    touchStrokeIndexRef,
+    startVisitorStroke: startVisitorStrokeFromHook,
+    continueVisitorStroke: continueVisitorStrokeFromHook,
+    clearVisitorStrokes: clearVisitorStrokesFromHook,
+    handleVisitorKeyDown: handleVisitorKeyDownFromHook,
+    undoVisitorStrokes: undoVisitorStrokesFromHook,
+    redoVisitorStrokes: redoVisitorStrokesFromHook,
+    visitorPoint: visitorPointFromHook,
+  } = useVisitorDrawingOverlay({ library, stageRef });
 
   function visitorStrokeWidth(stroke: VisitorStroke, scale: number) {
     return stroke.size * scale * (stroke.tool === 'brush' ? 1.75 : 1);
@@ -322,7 +377,7 @@ function PieceStageControls({
         canvas.height,
       );
     }
-  }, []);
+  }, [visitorOverlayRef, visitorStrokesRef]);
 
   const updateVisitorOverlaySize = useCallback(() => {
     const canvas = visitorOverlayRef.current;
@@ -336,7 +391,7 @@ function PieceStageControls({
       canvas.height = height;
     }
     drawVisitorOverlay();
-  }, [drawVisitorOverlay, stageRef]);
+  }, [drawVisitorOverlay, stageRef, visitorOverlayRef]);
 
   useEffect(() => {
     if (library !== 'c2js-interactive') return;
@@ -349,117 +404,11 @@ function PieceStageControls({
     const observer = new ResizeObserver(updateVisitorOverlaySize);
     if (stageRef.current) observer.observe(stageRef.current);
     return () => observer.disconnect();
-  }, [library, stageRef, updateVisitorOverlaySize]);
+  }, [library, setVisitorColor, stageRef, updateVisitorOverlaySize]);
 
   useEffect(() => {
     drawVisitorOverlay();
   }, [drawVisitorOverlay, visitorStrokes]);
-
-  function visitorPoint(event: React.PointerEvent<HTMLCanvasElement>): VisitorPoint {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return {
-      x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
-      y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
-    };
-  }
-
-  function visitorEraseRadius(stroke?: VisitorStroke): number {
-    const stageWidth = stageRef.current?.clientWidth || 320;
-    const eraserRadius = visitorSize / (2 * stageWidth);
-    if (!stroke) return eraserRadius;
-    return eraserRadius + visitorStrokeWidth(stroke, stageWidth / 320) / (2 * stageWidth);
-  }
-
-  function commitVisitorStrokes(next: VisitorStroke[]) {
-    setVisitorHistory((history) => commitVisitorHistory(history, next));
-    visitorStrokesRef.current = next;
-    setVisitorStrokes(next);
-  }
-
-  function applyVisitorHistory(nextHistory: VisitorHistory<VisitorStroke>) {
-    setVisitorHistory(nextHistory);
-    visitorStrokesRef.current = nextHistory.present;
-    setVisitorStrokes(nextHistory.present);
-  }
-
-  function undoVisitorStrokes() {
-    applyVisitorHistory(undoVisitorHistory(visitorHistory));
-  }
-
-  function redoVisitorStrokes() {
-    applyVisitorHistory(redoVisitorHistory(visitorHistory));
-  }
-
-  function startVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
-    if (!visitorDrawOn) return;
-    if (event.pointerType === 'touch') {
-      if (activeTouchPointerIdsRef.current.size > 0) {
-        if (touchStrokeIndexRef.current !== null) {
-          const next = visitorStrokesRef.current.filter(
-            (_, index) => index !== touchStrokeIndexRef.current,
-          );
-          visitorStrokesRef.current = next;
-          setVisitorHistory((history) => ({ ...history, present: next }));
-          setVisitorStrokes(next);
-        }
-        touchStrokeIndexRef.current = null;
-        visitorPointerIdRef.current = null;
-        activeTouchPointerIdsRef.current.add(event.pointerId);
-        return;
-      }
-      activeTouchPointerIdsRef.current.add(event.pointerId);
-    }
-    event.currentTarget.setPointerCapture(event.pointerId);
-    visitorPointerIdRef.current = event.pointerId;
-    const point = visitorPoint(event);
-    if (visitorTool === 'eraser') {
-      const remaining = visitorStrokesRef.current.filter(
-        (stroke) => !visitorStrokeIntersects(stroke, point, visitorEraseRadius(stroke)),
-      );
-      if (remaining.length !== visitorStrokesRef.current.length) commitVisitorStrokes(remaining);
-      setEraserPoint(point);
-      return;
-    }
-    const stroke = {
-      points: [point],
-      tool: visitorTool,
-      size: visitorSize * (event.pressure > 0 ? 0.5 + event.pressure : 1),
-      color: visitorColor,
-    };
-    commitVisitorStrokes([...visitorStrokesRef.current, stroke]);
-    if (event.pointerType === 'touch') {
-      touchStrokeIndexRef.current = visitorStrokesRef.current.length - 1;
-    }
-  }
-
-  function continueVisitorStroke(event: React.PointerEvent<HTMLCanvasElement>) {
-    if (!visitorDrawOn || visitorPointerIdRef.current !== event.pointerId) return;
-    const point = visitorPoint(event);
-    if (visitorTool === 'eraser') {
-      const remaining = visitorStrokesRef.current.filter(
-        (stroke) => !visitorStrokeIntersects(stroke, point, visitorEraseRadius(stroke)),
-      );
-      if (remaining.length !== visitorStrokesRef.current.length) commitVisitorStrokes(remaining);
-      setEraserPoint(point);
-      return;
-    }
-    const strokes = visitorStrokesRef.current;
-    const current = strokes[strokes.length - 1]?.points;
-    if (!current) return;
-    current.push(point);
-    setVisitorStrokes([...strokes]);
-  }
-
-  function clearVisitorStrokes() {
-    if (visitorStrokesRef.current.length > 0) commitVisitorStrokes([]);
-  }
-
-  function handleVisitorKeyDown(event: React.KeyboardEvent<HTMLCanvasElement>) {
-    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') return;
-    event.preventDefault();
-    if (event.shiftKey) redoVisitorStrokes();
-    else undoVisitorStrokes();
-  }
 
   function configureParentSound(engine: SonicEngine) {
     engine.setVolume(volume * 100);
@@ -690,7 +639,7 @@ function PieceStageControls({
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [authoredSoundSettings, iframeRef, pieceId, soundOn]);
+  }, [authoredSoundSettings, iframeRef, pieceId, setKeyboardEnabled, setVolume, soundOn]);
 
   function command(type: string, extra?: Record<string, unknown>) {
     if (
@@ -747,52 +696,67 @@ function PieceStageControls({
   }
   commandRef.current = command;
 
-  const applySoundSettings = useCallback((settings: SoundSettings, applyRuntime: boolean) => {
-    setVolume(settings.soundVolume);
-    setAmbientBpm(settings.ambientBpm);
-    setAmbientVolume(settings.ambientVolume);
-    setAmbientMuted(settings.ambientMuted);
-    setAmbientScale(settings.ambientScale);
-    setKeyboardVolume(settings.keyboardVolume);
-    setKeyboardRoot(settings.keyboardRoot);
-    setKeyboardScale(settings.keyboardScale);
-    setKeyboardTranspose(settings.keyboardTranspose);
-    setFollowKey(settings.followKey);
-    setKeyboardOscillator(settings.keyboardOscillator);
-    setKeyboardFilterType(settings.keyboardFilterType);
-    setKeyboardFilterCutoff(settings.keyboardFilterCutoff);
-    setKeyboardFilterResonance(settings.keyboardFilterResonance);
-    setKeyboardAttack(settings.keyboardAttack);
-    setKeyboardDecay(settings.keyboardDecay);
-    setKeyboardSustain(settings.keyboardSustain);
-    setKeyboardRelease(settings.keyboardRelease);
-    setKeyboardOctave(settings.keyboardOctave);
-    setKeyboardEnabled(applyRuntime ? settings.keyboardEnabled : false);
-    if (!applyRuntime) return;
-    commandRef.current('set-volume', { value: settings.soundVolume });
-    commandRef.current('set-tempo', { value: settings.ambientBpm });
-    commandRef.current('set-voice-volume', { voice: 'ambient', value: settings.ambientVolume });
-    commandRef.current('set-voice-muted', { voice: 'ambient', enabled: settings.ambientMuted });
-    commandRef.current('set-scale', { value: settings.ambientScale });
-    commandRef.current('set-key', { root: settings.keyboardRoot, scale: settings.keyboardScale });
-    commandRef.current('set-transpose', { value: settings.keyboardTranspose });
-    commandRef.current('set-follow-key', { enabled: settings.followKey });
-    commandRef.current('set-voice-volume', { voice: 'melodic', value: settings.keyboardVolume });
-    commandRef.current('set-oscillator', { value: settings.keyboardOscillator });
-    commandRef.current('set-filter', {
-      filterType: settings.keyboardFilterType,
-      cutoff: settings.keyboardFilterCutoff,
-      resonance: settings.keyboardFilterResonance,
-    });
-    commandRef.current('set-envelope', {
-      attack: settings.keyboardAttack,
-      decay: settings.keyboardDecay,
-      sustain: settings.keyboardSustain,
-      release: settings.keyboardRelease,
-    });
-    commandRef.current('set-octave', { value: settings.keyboardOctave });
-    commandRef.current('set-keyboard-enabled', { enabled: settings.keyboardEnabled });
-  }, []);
+  const applySoundSettings = useCallback(
+    (settings: SoundSettings, applyRuntime: boolean) => {
+      setVolume(settings.soundVolume);
+      setAmbientBpm(settings.ambientBpm);
+      setAmbientVolume(settings.ambientVolume);
+      setAmbientMuted(settings.ambientMuted);
+      setAmbientScale(settings.ambientScale);
+      setKeyboardVolume(settings.keyboardVolume);
+      setKeyboardRoot(settings.keyboardRoot);
+      setKeyboardScale(settings.keyboardScale);
+      setKeyboardTranspose(settings.keyboardTranspose);
+      setFollowKey(settings.followKey);
+      setKeyboardOscillator(settings.keyboardOscillator);
+      setKeyboardFilterType(settings.keyboardFilterType);
+      setKeyboardFilterCutoff(settings.keyboardFilterCutoff);
+      setKeyboardFilterResonance(settings.keyboardFilterResonance);
+      setKeyboardAttack(settings.keyboardAttack);
+      setKeyboardDecay(settings.keyboardDecay);
+      setKeyboardSustain(settings.keyboardSustain);
+      setKeyboardRelease(settings.keyboardRelease);
+      setKeyboardOctave(settings.keyboardOctave);
+      setKeyboardEnabled(applyRuntime ? settings.keyboardEnabled : false);
+      if (!applyRuntime) return;
+      commandRef.current('set-volume', { value: settings.soundVolume });
+      commandRef.current('set-tempo', { value: settings.ambientBpm });
+      commandRef.current('set-voice-volume', { voice: 'ambient', value: settings.ambientVolume });
+      commandRef.current('set-voice-muted', { voice: 'ambient', enabled: settings.ambientMuted });
+      commandRef.current('set-scale', { value: settings.ambientScale });
+      commandRef.current('set-key', { root: settings.keyboardRoot, scale: settings.keyboardScale });
+      commandRef.current('set-transpose', { value: settings.keyboardTranspose });
+      commandRef.current('set-follow-key', { enabled: settings.followKey });
+      commandRef.current('set-voice-volume', { voice: 'melodic', value: settings.keyboardVolume });
+      commandRef.current('set-oscillator', { value: settings.keyboardOscillator });
+      commandRef.current('set-filter', {
+        filterType: settings.keyboardFilterType,
+        cutoff: settings.keyboardFilterCutoff,
+        resonance: settings.keyboardFilterResonance,
+      });
+      commandRef.current('set-envelope', {
+        attack: settings.keyboardAttack,
+        decay: settings.keyboardDecay,
+        sustain: settings.keyboardSustain,
+        release: settings.keyboardRelease,
+      });
+      commandRef.current('set-octave', { value: settings.keyboardOctave });
+      commandRef.current('set-keyboard-enabled', { enabled: settings.keyboardEnabled });
+    },
+    [
+      setAmbientBpm,
+      setAmbientMuted,
+      setAmbientScale,
+      setAmbientVolume,
+      setKeyboardEnabled,
+      setKeyboardRoot,
+      setKeyboardScale,
+      setKeyboardTranspose,
+      setKeyboardVolume,
+      setFollowKey,
+      setVolume,
+    ],
+  );
 
   function resetVisitorSoundSettings() {
     const settings = resetSoundSettings(pieceId, undefined, authoredSoundSettings);
@@ -925,7 +889,7 @@ function PieceStageControls({
       if (!blob) throw new Error('Could not encode the composited screenshot.');
       downloadBlob(blob, filename);
     },
-    [library],
+    [library, visitorStrokesRef],
   );
   compositeAndDownloadScreenshotRef.current = compositeAndDownloadScreenshot;
 
@@ -1019,28 +983,47 @@ function PieceStageControls({
   // for the same opaque-origin SecurityError reason camera does -- the
   // sandboxed iframe can never call getUserMedia itself.
   function handleEnableMicrophone() {
-    if (
-      typeof navigator.mediaDevices === 'undefined' ||
-      typeof navigator.mediaDevices.getUserMedia !== 'function'
-    ) {
+    setMicrophoneFailure(null);
+    if (!isMicSupported()) {
       setMicrophoneState('unavailable');
       return;
     }
-    navigator.mediaDevices
+    if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+      setMicrophoneFailure('insecure-context');
+      setMicrophoneState('unavailable');
+      return;
+    }
+    void navigator.mediaDevices
       .getUserMedia({ audio: true, video: false })
-      .then((stream) => {
+      .then(async (stream) => {
         micStreamRef.current = stream;
+        if (!soundOn) await enableParentSound();
+        const engine = sonicEngineRef.current;
+        if (!engine || engine.status !== 'active') throw new Error('Sound engine unavailable.');
+        await engine.connectMic(stream);
         setMicrophoneState('active');
+        setMicrophoneFailure(null);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        micStreamRef.current?.getTracks().forEach((track) => track.stop());
+        micStreamRef.current = null;
+        setMicrophoneFailure(categorizeMicError(error));
         setMicrophoneState('denied');
       });
   }
 
   function handleDisableMicrophone() {
+    sonicEngineRef.current?.disconnectMic();
     micStreamRef.current?.getTracks().forEach((track) => track.stop());
     micStreamRef.current = null;
     setMicrophoneState('off');
+    setMicrophoneFailure(null);
+    setMicEffects(
+      Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+        MicEffectName,
+        boolean
+      >,
+    );
   }
 
   // Releases the camera/tracking provider and microphone stream if this
@@ -1050,6 +1033,7 @@ function PieceStageControls({
   useEffect(() => {
     return () => {
       trackingProviderRef.current?.stop();
+      sonicEngineRef.current?.disconnectMic();
       micStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, []);
@@ -1071,26 +1055,26 @@ function PieceStageControls({
       setDownloadError(error instanceof Error ? error.message : 'Download failed.');
     }
   }
+  const soundAvailable = capabilities.sound === true;
   const toolbarCapabilities: PieceStageCapabilities = {
     screenshot: capabilities.screenshot !== false,
     download: capabilities.download === true ? ('zip' as const) : false,
     // The immersive surface is already the immersive view: no self-link (matrix row 3, #753).
     immersive: capabilities.immersive === true && presentation !== 'immersive',
-    sound: capabilities.sound === true,
-    // Matrix (#766): the single Piece controls popover exists whenever any of its
-    // contents (sound, mic, keyboard, camera view, Steer) is offered. Steer lives
-    // inside that popover, never as its own toolbar button.
+    // Keep the Sound affordance visible so a capability-disabled piece can
+    // explain the entitlement boundary without changing the toolbar shape.
+    sound: true,
+    // Matrix (#766): expose the shared popover only when it has a usable
+    // surface, or when immersive navigation needs its reset controls.
     pieceControls:
-      capabilities.sound === true ||
-      capabilities.camera_view === true ||
-      capabilities.microphone === true ||
+      soundAvailable ||
       capabilities.keyboard === true ||
+      capabilities.microphone === true ||
+      capabilities.camera_view === true ||
       capabilities.hand_steering === true ||
-      // Reset view lives in the popover, and a walkable immersive piece must always be able to
-      // return home, so the popover exists on immersive surfaces regardless of capabilities.
       presentation === 'immersive',
     gesture: false,
-    gestureGuide: capabilities.hand_steering === true,
+    gestureGuide: true,
     fullscreen: capabilities.fullscreen !== false,
   };
   const toolbar = (
@@ -1105,18 +1089,24 @@ function PieceStageControls({
       capabilities={toolbarCapabilities}
       toolbarMode="inline"
       soundControl={
-        toolbarCapabilities.sound ? (
+        <>
           <button
             type="button"
             className="piece-stage-icon-button"
             aria-pressed={soundOn}
             aria-label={soundOn ? 'Mute sound' : 'Unmute sound'}
+            aria-describedby={!soundAvailable ? 'piece-stage-sound-reason' : undefined}
+            disabled={!soundAvailable}
+            title={!soundAvailable ? CAPABILITY_REASON : undefined}
             onClick={() => command('toggle-sound')}
           >
             <PieceStageIcon name="sound" />
             <span className="piece-stage-action-label">Sound</span>
           </button>
-        ) : undefined
+          <span id="piece-stage-sound-reason" className="visually-hidden">
+            {!soundAvailable && CAPABILITY_REASON}
+          </span>
+        </>
       }
       controlsControl={
         toolbarCapabilities.pieceControls ? (
@@ -1149,17 +1139,11 @@ function PieceStageControls({
         ) : undefined
       }
       gestureGuide={
-        toolbarCapabilities.gestureGuide ? (
-          <button
-            type="button"
-            className="piece-stage-icon-button"
-            aria-label="Show hand gesture guide"
-            onClick={() => setGuide(true)}
-          >
-            <PieceStageIcon name="guide" />
-            <span className="piece-stage-action-label">Guide</span>
-          </button>
-        ) : undefined
+        <HandGestureGuideDialog
+          disabled={!capabilities.hand_steering}
+          disabledReasonId={handSteeringReasonId}
+          disabledReason={CAPABILITY_REASON}
+        />
       }
       visitorDrawControl={
         library === 'c2js-interactive' ? (
@@ -1249,7 +1233,7 @@ function PieceStageControls({
               type="button"
               className="piece-stage-icon-button"
               aria-label="Clear visitor drawing"
-              onClick={clearVisitorStrokes}
+              onClick={clearVisitorStrokesFromHook}
               disabled={visitorStrokes.length === 0}
             >
               <span className="piece-stage-action-label">Clear</span>
@@ -1258,7 +1242,7 @@ function PieceStageControls({
               type="button"
               className="piece-stage-icon-button"
               aria-label="Undo visitor drawing"
-              onClick={undoVisitorStrokes}
+              onClick={undoVisitorStrokesFromHook}
               disabled={visitorHistory.past.length === 0}
             >
               <span className="piece-stage-action-label">Undo</span>
@@ -1267,7 +1251,7 @@ function PieceStageControls({
               type="button"
               className="piece-stage-icon-button"
               aria-label="Redo visitor drawing"
-              onClick={redoVisitorStrokes}
+              onClick={redoVisitorStrokesFromHook}
               disabled={visitorHistory.future.length === 0}
             >
               <span className="piece-stage-action-label">Redo</span>
@@ -1318,12 +1302,12 @@ function PieceStageControls({
         <canvas
           ref={visitorOverlayRef}
           aria-label="Temporary visitor drawing overlay"
-          onPointerDown={startVisitorStroke}
-          onPointerMove={continueVisitorStroke}
+          onPointerDown={startVisitorStrokeFromHook}
+          onPointerMove={continueVisitorStrokeFromHook}
           tabIndex={0}
-          onKeyDown={handleVisitorKeyDown}
+          onKeyDown={handleVisitorKeyDownFromHook}
           onPointerEnter={(event) => {
-            if (visitorTool === 'eraser') setEraserPoint(visitorPoint(event));
+            if (visitorTool === 'eraser') setEraserPoint(visitorPointFromHook(event));
           }}
           onPointerLeave={() => setEraserPoint(null)}
           onPointerUp={(event) => {
@@ -1367,298 +1351,297 @@ function PieceStageControls({
         )}
       {open && (
         <div role="region" aria-label="Piece controls">
-          {capabilities.sound && (
-            <div role="group" aria-label="Sound">
-              <p data-testid="sound-status">
-                {soundOn
-                  ? `Sound is on at ${Math.round(volume * 100)}% volume${audioContextState ? ` (${audioContextState}).` : '.'}`
-                  : `Sound is off${audioContextState ? ` (${audioContextState})` : ''}.`}
-              </p>
-              <label htmlFor="art-piece-volume">Sound volume</label>
+          <div role="group" aria-label="Sound">
+            {!capabilities.sound && <p id="piece-stage-sound-panel-reason">{CAPABILITY_REASON}</p>}
+            <p data-testid="sound-status">
+              {soundOn
+                ? `Sound is on at ${Math.round(volume * 100)}% volume${audioContextState ? ` (${audioContextState}).` : '.'}`
+                : `Sound is off${audioContextState ? ` (${audioContextState})` : ''}.`}
+            </p>
+            <label htmlFor="art-piece-volume">Sound volume</label>
+            <input
+              id="art-piece-volume"
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volume}
+              disabled={!soundAvailable || !soundOn}
+              onChange={(event) => {
+                const value = Number(event.target.value);
+                setVolume(value);
+                command('set-volume', { value });
+              }}
+            />
+            <button type="button" onClick={resetVisitorSoundSettings} disabled={!soundAvailable}>
+              Reset sound settings
+            </button>
+            <fieldset>
+              <legend>Ambient</legend>
+              <label htmlFor="art-piece-ambient-bpm">Ambient BPM: {ambientBpm}</label>
               <input
-                id="art-piece-volume"
+                id="art-piece-ambient-bpm"
                 type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={volume}
-                disabled={!soundOn}
+                min={40}
+                max={220}
+                value={ambientBpm}
+                disabled={!soundAvailable || !soundOn}
                 onChange={(event) => {
                   const value = Number(event.target.value);
-                  setVolume(value);
-                  command('set-volume', { value });
+                  setAmbientBpm(value);
+                  command('set-tempo', { value });
                 }}
               />
-              <button type="button" onClick={resetVisitorSoundSettings}>
-                Reset sound settings
+              <label htmlFor="art-piece-ambient-volume">Ambient volume: {ambientVolume}%</label>
+              <input
+                id="art-piece-ambient-volume"
+                type="range"
+                min={0}
+                max={100}
+                value={ambientVolume}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setAmbientVolume(value);
+                  command('set-voice-volume', { voice: 'ambient', value });
+                }}
+              />
+              <label htmlFor="art-piece-ambient-muted">
+                <input
+                  id="art-piece-ambient-muted"
+                  type="checkbox"
+                  checked={ambientMuted}
+                  disabled={!soundAvailable || !soundOn}
+                  onChange={(event) => {
+                    const enabled = event.target.checked;
+                    setAmbientMuted(enabled);
+                    command('set-voice-muted', { voice: 'ambient', enabled });
+                  }}
+                />
+                Mute ambient
+              </label>
+              <label htmlFor="art-piece-ambient-scale">Scale: {ambientScale}</label>
+              <select
+                id="art-piece-ambient-scale"
+                value={ambientScale}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setAmbientScale(value as SoundSettings['ambientScale']);
+                  command('set-scale', { value });
+                }}
+              >
+                {SONIC_SCALES.map((scale) => (
+                  <option key={scale} value={scale}>
+                    {scale}
+                  </option>
+                ))}
+              </select>
+            </fieldset>
+            <fieldset>
+              <legend>Keyboard</legend>
+              <label htmlFor="art-piece-keyboard-root">Key</label>
+              <select
+                id="art-piece-keyboard-root"
+                value={keyboardRoot}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value as SoundSettings['keyboardRoot'];
+                  setKeyboardRoot(value);
+                  command('set-key', { root: value, scale: keyboardScale });
+                }}
+              >
+                {SONIC_ROOTS.map((root) => (
+                  <option key={root} value={root}>
+                    {root}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="art-piece-keyboard-scale">Scale</label>
+              <select
+                id="art-piece-keyboard-scale"
+                value={keyboardScale}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value as SoundSettings['keyboardScale'];
+                  setKeyboardScale(value);
+                  command('set-key', { root: keyboardRoot, scale: value });
+                }}
+              >
+                {SONIC_SCALES.map((scale) => (
+                  <option key={scale} value={scale}>
+                    {scale}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="art-piece-keyboard-transpose">Transpose: {keyboardTranspose}</label>
+              <input
+                id="art-piece-keyboard-transpose"
+                type="range"
+                min={-12}
+                max={12}
+                value={keyboardTranspose}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardTranspose(value);
+                  command('set-transpose', { value });
+                }}
+              />
+              <button
+                type="button"
+                aria-pressed={keyboardEnabled}
+                disabled={!soundAvailable || !soundOn}
+                onClick={() => {
+                  const enabled = !keyboardEnabled;
+                  setKeyboardEnabled(enabled);
+                  command('set-keyboard-enabled', { enabled });
+                }}
+              >
+                {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
               </button>
-              <fieldset>
-                <legend>Ambient</legend>
-                <label htmlFor="art-piece-ambient-bpm">Ambient BPM: {ambientBpm}</label>
-                <input
-                  id="art-piece-ambient-bpm"
-                  type="range"
-                  min={40}
-                  max={220}
-                  value={ambientBpm}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setAmbientBpm(value);
-                    command('set-tempo', { value });
-                  }}
-                />
-                <label htmlFor="art-piece-ambient-volume">Ambient volume: {ambientVolume}%</label>
-                <input
-                  id="art-piece-ambient-volume"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={ambientVolume}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setAmbientVolume(value);
-                    command('set-voice-volume', { voice: 'ambient', value });
-                  }}
-                />
-                <label htmlFor="art-piece-ambient-muted">
+              <label htmlFor="art-piece-keyboard-volume">Volume: {keyboardVolume}%</label>
+              <input
+                id="art-piece-keyboard-volume"
+                type="range"
+                min={0}
+                max={100}
+                value={keyboardVolume}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardVolume(value);
+                  command('set-voice-volume', { voice: 'melodic', value });
+                }}
+              />
+              <label htmlFor="art-piece-keyboard-oscillator">Oscillator</label>
+              <select
+                id="art-piece-keyboard-oscillator"
+                value={keyboardOscillator}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setKeyboardOscillator(value as SoundSettings['keyboardOscillator']);
+                  command('set-oscillator', { value });
+                }}
+              >
+                {['sine', 'square', 'sawtooth', 'triangle'].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="art-piece-keyboard-filter-type">Filter type</label>
+              <select
+                id="art-piece-keyboard-filter-type"
+                value={keyboardFilterType}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setKeyboardFilterType(value as SoundSettings['keyboardFilterType']);
+                  command('set-filter', {
+                    filterType: value,
+                    cutoff: keyboardFilterCutoff,
+                    resonance: keyboardFilterResonance,
+                  });
+                }}
+              >
+                {['lowpass', 'highpass', 'bandpass'].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="art-piece-keyboard-filter-cutoff">
+                Cutoff: {keyboardFilterCutoff}
+              </label>
+              <input
+                id="art-piece-keyboard-filter-cutoff"
+                type="range"
+                min={20}
+                max={20000}
+                step={20}
+                value={keyboardFilterCutoff}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardFilterCutoff(value);
+                  command('set-filter', {
+                    filterType: keyboardFilterType,
+                    cutoff: value,
+                    resonance: keyboardFilterResonance,
+                  });
+                }}
+              />
+              <label htmlFor="art-piece-keyboard-filter-resonance">
+                Resonance: {keyboardFilterResonance}
+              </label>
+              <input
+                id="art-piece-keyboard-filter-resonance"
+                type="range"
+                min={0.1}
+                max={20}
+                step={0.1}
+                value={keyboardFilterResonance}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardFilterResonance(value);
+                  command('set-filter', {
+                    filterType: keyboardFilterType,
+                    cutoff: keyboardFilterCutoff,
+                    resonance: value,
+                  });
+                }}
+              />
+              {(
+                [
+                  ['attack', keyboardAttack, setKeyboardAttack],
+                  ['decay', keyboardDecay, setKeyboardDecay],
+                  ['sustain', keyboardSustain, setKeyboardSustain],
+                  ['release', keyboardRelease, setKeyboardRelease],
+                ] as const
+              ).map(([field, value, setter]) => (
+                <label key={field} htmlFor={`art-piece-keyboard-${field}`}>
+                  {field}: {value}
                   <input
-                    id="art-piece-ambient-muted"
-                    type="checkbox"
-                    checked={ambientMuted}
-                    disabled={!soundOn}
+                    id={`art-piece-keyboard-${field}`}
+                    type="range"
+                    min={field === 'sustain' ? 0 : 0.001}
+                    max={field === 'sustain' ? 1 : 10}
+                    step={field === 'sustain' ? 0.01 : 0.001}
+                    value={value}
+                    disabled={!soundAvailable || !soundOn}
                     onChange={(event) => {
-                      const enabled = event.target.checked;
-                      setAmbientMuted(enabled);
-                      command('set-voice-muted', { voice: 'ambient', enabled });
+                      const next = Number(event.target.value);
+                      setter(next);
+                      command('set-envelope', {
+                        attack: field === 'attack' ? next : keyboardAttack,
+                        decay: field === 'decay' ? next : keyboardDecay,
+                        sustain: field === 'sustain' ? next : keyboardSustain,
+                        release: field === 'release' ? next : keyboardRelease,
+                      });
                     }}
                   />
-                  Mute ambient
                 </label>
-                <label htmlFor="art-piece-ambient-scale">Scale: {ambientScale}</label>
-                <select
-                  id="art-piece-ambient-scale"
-                  value={ambientScale}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setAmbientScale(value as SoundSettings['ambientScale']);
-                    command('set-scale', { value });
-                  }}
-                >
-                  {SONIC_SCALES.map((scale) => (
-                    <option key={scale} value={scale}>
-                      {scale}
-                    </option>
-                  ))}
-                </select>
-              </fieldset>
-              <fieldset>
-                <legend>Keyboard</legend>
-                <label htmlFor="art-piece-keyboard-root">Key</label>
-                <select
-                  id="art-piece-keyboard-root"
-                  value={keyboardRoot}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value as SoundSettings['keyboardRoot'];
-                    setKeyboardRoot(value);
-                    command('set-key', { root: value, scale: keyboardScale });
-                  }}
-                >
-                  {SONIC_ROOTS.map((root) => (
-                    <option key={root} value={root}>
-                      {root}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="art-piece-keyboard-scale">Scale</label>
-                <select
-                  id="art-piece-keyboard-scale"
-                  value={keyboardScale}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value as SoundSettings['keyboardScale'];
-                    setKeyboardScale(value);
-                    command('set-key', { root: keyboardRoot, scale: value });
-                  }}
-                >
-                  {SONIC_SCALES.map((scale) => (
-                    <option key={scale} value={scale}>
-                      {scale}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="art-piece-keyboard-transpose">Transpose: {keyboardTranspose}</label>
-                <input
-                  id="art-piece-keyboard-transpose"
-                  type="range"
-                  min={-12}
-                  max={12}
-                  value={keyboardTranspose}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardTranspose(value);
-                    command('set-transpose', { value });
-                  }}
-                />
-                <button
-                  type="button"
-                  aria-pressed={keyboardEnabled}
-                  disabled={!soundOn}
-                  onClick={() => {
-                    const enabled = !keyboardEnabled;
-                    setKeyboardEnabled(enabled);
-                    command('set-keyboard-enabled', { enabled });
-                  }}
-                >
-                  {keyboardEnabled ? 'Stop keyboard notes' : 'Keyboard notes'}
-                </button>
-                <label htmlFor="art-piece-keyboard-volume">Volume: {keyboardVolume}%</label>
-                <input
-                  id="art-piece-keyboard-volume"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={keyboardVolume}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardVolume(value);
-                    command('set-voice-volume', { voice: 'melodic', value });
-                  }}
-                />
-                <label htmlFor="art-piece-keyboard-oscillator">Oscillator</label>
-                <select
-                  id="art-piece-keyboard-oscillator"
-                  value={keyboardOscillator}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setKeyboardOscillator(value as SoundSettings['keyboardOscillator']);
-                    command('set-oscillator', { value });
-                  }}
-                >
-                  {['sine', 'square', 'sawtooth', 'triangle'].map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="art-piece-keyboard-filter-type">Filter type</label>
-                <select
-                  id="art-piece-keyboard-filter-type"
-                  value={keyboardFilterType}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    setKeyboardFilterType(value as SoundSettings['keyboardFilterType']);
-                    command('set-filter', {
-                      filterType: value,
-                      cutoff: keyboardFilterCutoff,
-                      resonance: keyboardFilterResonance,
-                    });
-                  }}
-                >
-                  {['lowpass', 'highpass', 'bandpass'].map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-                <label htmlFor="art-piece-keyboard-filter-cutoff">
-                  Cutoff: {keyboardFilterCutoff}
-                </label>
-                <input
-                  id="art-piece-keyboard-filter-cutoff"
-                  type="range"
-                  min={20}
-                  max={20000}
-                  step={20}
-                  value={keyboardFilterCutoff}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardFilterCutoff(value);
-                    command('set-filter', {
-                      filterType: keyboardFilterType,
-                      cutoff: value,
-                      resonance: keyboardFilterResonance,
-                    });
-                  }}
-                />
-                <label htmlFor="art-piece-keyboard-filter-resonance">
-                  Resonance: {keyboardFilterResonance}
-                </label>
-                <input
-                  id="art-piece-keyboard-filter-resonance"
-                  type="range"
-                  min={0.1}
-                  max={20}
-                  step={0.1}
-                  value={keyboardFilterResonance}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardFilterResonance(value);
-                    command('set-filter', {
-                      filterType: keyboardFilterType,
-                      cutoff: keyboardFilterCutoff,
-                      resonance: value,
-                    });
-                  }}
-                />
-                {(
-                  [
-                    ['attack', keyboardAttack, setKeyboardAttack],
-                    ['decay', keyboardDecay, setKeyboardDecay],
-                    ['sustain', keyboardSustain, setKeyboardSustain],
-                    ['release', keyboardRelease, setKeyboardRelease],
-                  ] as const
-                ).map(([field, value, setter]) => (
-                  <label key={field} htmlFor={`art-piece-keyboard-${field}`}>
-                    {field}: {value}
-                    <input
-                      id={`art-piece-keyboard-${field}`}
-                      type="range"
-                      min={field === 'sustain' ? 0 : 0.001}
-                      max={field === 'sustain' ? 1 : 10}
-                      step={field === 'sustain' ? 0.01 : 0.001}
-                      value={value}
-                      disabled={!soundOn}
-                      onChange={(event) => {
-                        const next = Number(event.target.value);
-                        setter(next);
-                        command('set-envelope', {
-                          attack: field === 'attack' ? next : keyboardAttack,
-                          decay: field === 'decay' ? next : keyboardDecay,
-                          sustain: field === 'sustain' ? next : keyboardSustain,
-                          release: field === 'release' ? next : keyboardRelease,
-                        });
-                      }}
-                    />
-                  </label>
-                ))}
-                <label htmlFor="art-piece-keyboard-octave">Octave: {keyboardOctave}</label>
-                <input
-                  id="art-piece-keyboard-octave"
-                  type="range"
-                  min={-2}
-                  max={2}
-                  value={keyboardOctave}
-                  disabled={!soundOn}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setKeyboardOctave(value);
-                    command('set-octave', { value });
-                  }}
-                />
-              </fieldset>
-            </div>
-          )}
-          {capabilities.keyboard && (
+              ))}
+              <label htmlFor="art-piece-keyboard-octave">Octave: {keyboardOctave}</label>
+              <input
+                id="art-piece-keyboard-octave"
+                type="range"
+                min={-2}
+                max={2}
+                value={keyboardOctave}
+                disabled={!soundAvailable || !soundOn}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  setKeyboardOctave(value);
+                  command('set-octave', { value });
+                }}
+              />
+            </fieldset>
+          </div>
+          <div role="group" aria-label="Keyboard">
             <p data-testid="keyboard-note-status">
               {soundOn
                 ? lastNote
@@ -1666,100 +1649,130 @@ function PieceStageControls({
                   : 'Keyboard notes available. Press A-K over the piece to play a note.'
                 : 'Turn on Sound to play keyboard notes.'}
             </p>
-          )}
+            {!capabilities.keyboard && <p id="piece-stage-keyboard-reason">{CAPABILITY_REASON}</p>}
+          </div>
           {soundOn && lastAmbientNote && (
             <p data-testid="ambient-note-status">
               Last ambient note: {lastAmbientNote.note} ({lastAmbientNote.frequency.toFixed(2)} Hz)
               at {lastAmbientNote.tempo} BPM.
             </p>
           )}
-          {capabilities.microphone && (
-            <div role="group" aria-label="Microphone">
-              <button
-                type="button"
-                aria-pressed={microphoneState === 'active'}
-                onClick={
-                  microphoneState === 'active' ? handleDisableMicrophone : handleEnableMicrophone
-                }
-              >
-                {microphoneState === 'active' ? 'Disable microphone' : 'Enable microphone'}
-              </button>
-              <p data-testid="microphone-status">
-                {microphoneState === 'active' && 'Microphone is active.'}
-                {microphoneState === 'denied' && 'Microphone access was denied.'}
-                {microphoneState === 'unavailable' && 'Microphone is unavailable in this browser.'}
-                {microphoneState === 'off' && 'Microphone is off.'}
+          <div role="group" aria-label="Live mic">
+            {!capabilities.microphone && (
+              <p id="piece-stage-microphone-reason">{CAPABILITY_REASON}</p>
+            )}
+            <button
+              type="button"
+              aria-pressed={microphoneState === 'active'}
+              aria-describedby={
+                !capabilities.microphone ? 'piece-stage-microphone-reason' : undefined
+              }
+              disabled={!capabilities.microphone}
+              onClick={
+                microphoneState === 'active' ? handleDisableMicrophone : handleEnableMicrophone
+              }
+            >
+              {microphoneState === 'active' ? 'Disable microphone' : 'Enable microphone'}
+            </button>
+            <p data-testid="microphone-status">
+              {microphoneState === 'active' && 'Microphone is active.'}
+              {microphoneState === 'denied' && 'Microphone access was denied.'}
+              {microphoneState === 'unavailable' && 'Microphone is unavailable in this browser.'}
+              {microphoneState === 'off' && 'Microphone is off.'}
+            </p>
+            {microphoneFailure && (
+              <p data-testid="microphone-recovery">{micRecoveryMessageFor(microphoneFailure)}</p>
+            )}
+            {microphoneState === 'active' && (
+              <fieldset>
+                <legend>Microphone effects</legend>
+                {MIC_EFFECTS.map(({ name, label }) => (
+                  <label key={name}>
+                    <input
+                      type="checkbox"
+                      checked={micEffects[name]}
+                      onChange={(event) => {
+                        const enabled = event.target.checked;
+                        if (sonicEngineRef.current?.setMicEffect(name, enabled)) {
+                          setMicEffects((current) => ({ ...current, [name]: enabled }));
+                        }
+                      }}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </div>
+          <div role="group" aria-label="Camera view">
+            {!capabilities.camera_view && <p id="piece-stage-camera-reason">{CAPABILITY_REASON}</p>}
+            <button
+              type="button"
+              aria-pressed={cameraState === 'active'}
+              aria-describedby={!capabilities.camera_view ? 'piece-stage-camera-reason' : undefined}
+              disabled={!capabilities.camera_view}
+              onClick={cameraState === 'active' ? handleDisableCamera : handleEnableCamera}
+            >
+              {cameraState === 'active' ? 'Disable camera view' : 'Enable camera view'}
+            </button>
+            <p data-testid="camera-status">
+              {cameraState === 'active' && 'Camera is active.'}
+              {cameraState === 'denied' && 'Camera access was denied.'}
+              {cameraState === 'unavailable' && 'Camera is unavailable in this browser.'}
+              {cameraState === 'ended' && 'Camera stream ended unexpectedly.'}
+              {cameraState === 'off' && 'Camera is off.'}
+            </p>
+            <label htmlFor="art-piece-camera-opacity">Camera overlay opacity</label>
+            <input
+              id="art-piece-camera-opacity"
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={cameraOpacity}
+              disabled={!capabilities.camera_view || cameraState !== 'active'}
+              onChange={(event) => setCameraOpacity(Number(event.target.value))}
+            />
+          </div>
+          <div role="group" aria-label="Hand steering">
+            {!capabilities.hand_steering && <p>{CAPABILITY_REASON}</p>}
+            <button
+              type="button"
+              aria-pressed={steeringState === 'active'}
+              aria-describedby={!capabilities.hand_steering ? handSteeringReasonId : undefined}
+              disabled={!capabilities.hand_steering}
+              onClick={() =>
+                command(
+                  steeringState === 'active' ? 'disable-hand-steering' : 'enable-hand-steering',
+                )
+              }
+            >
+              {steeringState === 'active' ? 'Stop steering' : 'Steer the piece'}
+            </button>
+            <p data-testid="steering-status">
+              {steeringState === 'active' && 'Steering is active.'}
+              {steeringState === 'camera-required' && 'Turn on Camera view before steering.'}
+              {steeringState === 'no-camera-registered' &&
+                'This piece has no steerable camera to control yet.'}
+              {steeringState === 'unsupported-engine' &&
+                'Hand steering is only available for 3D pieces.'}
+              {steeringState === 'off' && 'Steering is off.'}
+            </p>
+            {steeringState === 'active' && (
+              <p data-testid="hand-tracking-model-status">
+                {handTrackingModelState === 'loading' &&
+                  'Preparing hand tracking… keep your hand in view once it is ready.'}
+                {handTrackingModelState === 'ready' && 'Hand tracking is ready.'}
+                {handTrackingModelState === 'failed' &&
+                  'Hand tracking could not be prepared. Steering will not respond to gestures.'}
               </p>
-            </div>
-          )}
-          {capabilities.camera_view && (
-            <div role="group" aria-label="Camera view">
-              <button
-                type="button"
-                aria-pressed={cameraState === 'active'}
-                onClick={cameraState === 'active' ? handleDisableCamera : handleEnableCamera}
-              >
-                {cameraState === 'active' ? 'Disable camera view' : 'Enable camera view'}
-              </button>
-              <p data-testid="camera-status">
-                {cameraState === 'active' && 'Camera is active.'}
-                {cameraState === 'denied' && 'Camera access was denied.'}
-                {cameraState === 'unavailable' && 'Camera is unavailable in this browser.'}
-                {cameraState === 'ended' && 'Camera stream ended unexpectedly.'}
-                {cameraState === 'off' && 'Camera is off.'}
+            )}
+            {steeringPose && (
+              <p data-testid="steering-pose">
+                {steeringPose.x.toFixed(2)},{steeringPose.y.toFixed(2)},{steeringPose.z.toFixed(2)}
               </p>
-              <label htmlFor="art-piece-camera-opacity">Camera overlay opacity</label>
-              <input
-                id="art-piece-camera-opacity"
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={cameraOpacity}
-                disabled={cameraState !== 'active'}
-                onChange={(event) => setCameraOpacity(Number(event.target.value))}
-              />
-            </div>
-          )}
-          {capabilities.hand_steering && (
-            <div role="group" aria-label="Hand steering">
-              <button
-                type="button"
-                aria-pressed={steeringState === 'active'}
-                onClick={() =>
-                  command(
-                    steeringState === 'active' ? 'disable-hand-steering' : 'enable-hand-steering',
-                  )
-                }
-              >
-                {steeringState === 'active' ? 'Stop steering' : 'Steer the piece'}
-              </button>
-              <p data-testid="steering-status">
-                {steeringState === 'active' && 'Steering is active.'}
-                {steeringState === 'camera-required' && 'Turn on Camera view before steering.'}
-                {steeringState === 'no-camera-registered' &&
-                  'This piece has no steerable camera to control yet.'}
-                {steeringState === 'unsupported-engine' &&
-                  'Hand steering is only available for 3D pieces.'}
-                {steeringState === 'off' && 'Steering is off.'}
-              </p>
-              {steeringState === 'active' && (
-                <p data-testid="hand-tracking-model-status">
-                  {handTrackingModelState === 'loading' &&
-                    'Preparing hand tracking… keep your hand in view once it is ready.'}
-                  {handTrackingModelState === 'ready' && 'Hand tracking is ready.'}
-                  {handTrackingModelState === 'failed' &&
-                    'Hand tracking could not be prepared. Steering will not respond to gestures.'}
-                </p>
-              )}
-              {steeringPose && (
-                <p data-testid="steering-pose">
-                  {steeringPose.x.toFixed(2)},{steeringPose.y.toFixed(2)},
-                  {steeringPose.z.toFixed(2)}
-                </p>
-              )}
-            </div>
-          )}
+            )}
+          </div>
           <button type="button" onClick={() => command('reset-view')}>
             Reset view
           </button>
@@ -1767,21 +1780,6 @@ function PieceStageControls({
         </div>
       )}
       {screenshotError && <p role="alert">{screenshotError}</p>}
-      {guide && (
-        <div role="dialog" aria-label="Hand gesture guide" aria-modal="true">
-          <h3>Hand gesture guide</h3>
-          <ol>
-            <li>Look around with an open hand.</li>
-            <li>Move your hand to orbit.</li>
-            <li>Pinch to zoom.</li>
-            <li>Release to stop.</li>
-            <li>Disable steering safely from Piece controls.</li>
-          </ol>
-          <button type="button" onClick={() => setGuide(false)}>
-            Close
-          </button>
-        </div>
-      )}
     </>
   );
 }

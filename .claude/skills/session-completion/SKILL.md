@@ -5,7 +5,7 @@ description: Reconcile a complete project backlog run, its issues, memory, verif
 
 # Session completion
 
-This is a batch-level pass. It runs after backlog-session has processed every issue in the project manifest sequentially. It may not silently reduce a multi-issue run to the latest issue.
+This is a batch-level pass. It runs after backlog-session has processed every issue in the project manifest as a batch (all waves), with its batch gate recorded. It may not silently reduce a multi-issue run to the latest issue.
 
 ## Completion procedure
 
@@ -15,8 +15,10 @@ This is a batch-level pass. It runs after backlog-session has processed every is
 4. Invoke [production-readiness](../production-readiness/SKILL.md) only when all required issues are complete or when the user explicitly requests a readiness assessment. If required items remain blocked, record readiness as blocked and do not imply production readiness.
 5. Run or verify the final project-wide relevant checks. Separate local, approved-browser, CI, and production evidence; do not substitute one for another.
 6. Produce the batch rollup: discovered, completed, blocked, dependency-blocked, handed-off, and missing-terminal-status counts. Missing-terminal-status must be zero.
+6a. For the milestone(s) this batch's issues belong to: if every issue in a milestone has reached a terminal status, close that milestone and update its row in `docs/tasks-index.md`. A milestone with any non-terminal issue stays open. Do not reopen a milestone already closed by a prior session; new related work gets a new one (`docs/process.md`'s "Milestone assignment" section).
 7. Confirm the exact next action for every non-completed issue and identify the verification boundary that prevents completion.
 8. Run a routing audit against `.agents/skills/_shared/HANDOFF-CONTRACT.md`: for every processed issue, confirm the ledger records the actual stage owner (`service / model / effort`) for all five stages — scoping, implementation, optional second-opinion review, QA, and the readiness gate — with every substitution flagged, and confirm no second-opinion stage was credited to the model that wrote the diff. Report stages whose owner was not recorded as an unresolved reconciliation gap; do not backfill provenance by inference. Confirm the readiness gate ran on the rostered Opus 5/Sonnet 5 tier or on an explicitly owner-authorized GPT-5 substitution recorded in `DECISIONS.md` and the ledger.
+8a. Run a batch-impact audit: confirm the batch impact matrix exists for every wave, that every row was re-verified or has a recorded "not affected" justification with its search evidence (including open issues outside the batch), that the batch gate passed before any issue closed, and that no issue was closed on its own criteria alone while a sibling's or another open issue's criteria were affected by the same change. Report a missing matrix, an un-reverified row, or a pre-gate closure as an unresolved reconciliation gap.
 9. Run a follow-up audit: for every failed criterion, blocked command, or newly discovered defect, confirm its blocker class and that it is either covered by the current issue, linked to an existing/new issue, or explicitly classified as a non-actionable verification boundary. Record any issue-creation authorization gap and owner; no actionable work may remain only in the final narrative.
 
 ## PR and notification rule
@@ -28,7 +30,8 @@ Create or update a PR only if every issue intended for that PR has passing accep
 Return a self-contained completion report containing:
 
 - project and manifest reference;
-- per-issue terminal status and evidence links;
+- per-issue terminal status and evidence links, grouped by wave;
+- the batch impact matrix result and batch gate result for every wave;
 - final verification boundary;
 - memory and backlog reconciliation;
 - readiness result, when run;

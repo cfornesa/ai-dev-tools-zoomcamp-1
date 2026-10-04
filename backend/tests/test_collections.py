@@ -3,20 +3,27 @@
 import copy
 import io
 import json
+import uuid
+from datetime import timedelta
 from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from scenes.collections import collection_payload, public_collection_context
 from scenes.models import (
     ArtPiece,
     ArtPieceVersion,
     Collection,
     CollectionItem,
     CollectionSlugRedirect,
+    PieceIntakeAsset,
     Project,
     Project3D,
     PublicProfile,
@@ -120,6 +127,84 @@ def _create_collection(client, title="My collection"):
 
 
 @pytest.mark.django_db
+def test_collection_payload_batches_mixed_item_lookups(owner_client, owner):
+    project = _published_project(owner, "Mixed 2D")
+    second_project = _published_project(owner, "Mixed 2D second")
+    project3d = _published_project3d(owner, "Mixed 3D")
+    piece = _published_piece(owner, "Mixed generated")
+    payload = _create_collection(owner_client, "Mixed collection")
+    collection = Collection.objects.get(public_id=payload["id"])
+    CollectionItem.objects.bulk_create(
+        [
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT,
+                item_id=project.public_id,
+                position=0,
+            ),
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT3D,
+                item_id=project3d.public_id,
+                position=2,
+            ),
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.ART_PIECE,
+                item_id=piece.public_id,
+                position=3,
+            ),
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT,
+                item_id=second_project.public_id,
+                position=1,
+            ),
+        ]
+    )
+
+    with CaptureQueriesContext(connection) as queries:
+        result = collection_payload(collection, public=True)
+
+    assert [item["title"] for item in result["items"]] == [
+        "Mixed 2D",
+        "Mixed 2D second",
+        "Mixed 3D",
+        "Mixed generated",
+    ]
+    assert len(queries) <= 11
+
+
+@pytest.mark.django_db
+def test_public_collection_context_batches_profile_lookup(owner_client, owner):
+    project = _published_project(owner, "Context project")
+    for index in range(3):
+        collection = _create_collection(owner_client, f"Context collection {index}")
+        assert (
+            owner_client.post(
+                f"/api/account/collections/{collection['id']}/items/",
+                {"items": [{"kind": "project", "id": str(project.public_id)}]},
+                format="json",
+            ).status_code
+            == 200
+        )
+        assert (
+            owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+            == 200
+        )
+
+    with CaptureQueriesContext(connection) as queries:
+        result = public_collection_context("project", project.public_id)
+
+    assert [item["title"] for item in result] == [
+        "Context collection 0",
+        "Context collection 1",
+        "Context collection 2",
+    ]
+    assert len(queries) <= 1
+
+
+@pytest.mark.django_db
 def test_owner_can_create_stable_slug_and_update_collection(owner_client, owner):
     first = _create_collection(owner_client)
     second = _create_collection(owner_client)
@@ -148,6 +233,114 @@ def test_owner_can_create_stable_slug_and_update_collection(owner_client, owner)
     assert old_response.status_code == 200
     renamed_payload = next(item for item in old_response.json() if item["id"] == first["id"])
     assert renamed_payload["canonical_url"].endswith("/collections/curated-works")
+
+
+@pytest.mark.django_db
+def test_owner_can_select_published_piece_image_as_collection_cover(
+    owner_client, owner, anonymous_client
+):
+    project = _published_project(owner, "Cover source")
+    asset_id = uuid.uuid4()
+    PieceIntakeAsset.objects.create(
+        owner=owner,
+        piece_kind="2d",
+        piece_public_id=project.public_id,
+        source_asset_id=asset_id,
+        filename="cover.png",
+        mime_type="image/png",
+        byte_size=3,
+        checksum="a" * 64,
+        data=b"png",
+    )
+    collection = _create_collection(owner_client, "Covered")
+    response = owner_client.patch(
+        f"/api/account/collections/{collection['id']}/",
+        {
+            "cover": {
+                "piece_kind": "2d",
+                "piece_public_id": str(project.public_id),
+                "asset_id": str(asset_id),
+            }
+        },
+        format="json",
+    )
+    assert response.status_code == 200
+    assert response.json()["cover"]["filename"] == "cover.png"
+    assert response.json()["cover_url"] is None
+    assert owner_client.get("/api/account/collections/cover-assets/").json()[0]["asset_id"] == str(
+        asset_id
+    )
+
+    assert (
+        owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+        == 200
+    )
+    public = anonymous_client.get("/api/public/collections/collection-owner/covered/")
+    assert public.status_code == 200
+    assert public.json()["cover_url"].endswith(
+        f"/api/pieces/2d/{project.public_id}/assets/{asset_id}/"
+    )
+    cleared = owner_client.patch(
+        f"/api/account/collections/{collection['id']}/",
+        {"cover": None},
+        format="json",
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["cover"] is None
+
+
+@pytest.mark.django_db
+def test_collection_status_controls_public_visibility_and_owner_listing(
+    owner_client, anonymous_client
+):
+    collection = _create_collection(owner_client, "Status collection")
+    collection_id = collection["id"]
+    public_url = "/api/public/collections/collection-owner/status-collection/"
+
+    drafted = owner_client.patch(
+        f"/api/account/collections/{collection_id}/",
+        {"status": "draft"},
+        format="json",
+    )
+    assert drafted.status_code == 200
+    assert drafted.json()["status"] == "draft"
+    assert (
+        owner_client.post(f"/api/account/collections/{collection_id}/publish/").status_code == 200
+    )
+    assert anonymous_client.get(public_url).status_code == 404
+
+    archived = owner_client.patch(
+        f"/api/account/collections/{collection_id}/",
+        {"status": "archived"},
+        format="json",
+    )
+    assert archived.status_code == 200
+    assert archived.json()["status"] == "archived"
+    assert all(
+        item["id"] != collection_id for item in owner_client.get("/api/account/collections/").json()
+    )
+
+
+@pytest.mark.django_db
+def test_collection_comments_require_enabled_flag_and_are_rate_limited(
+    owner_client, anonymous_client
+):
+    collection = _create_collection(owner_client, "Comment collection")
+    url = "/api/public/collections/collection-owner/comment-collection/comments/"
+    assert owner_client.post(url, {"body": "blocked"}, format="json").status_code == 404
+    assert anonymous_client.post(url, {"body": "anonymous"}, format="json").status_code == 401
+
+    owner_client.patch(
+        f"/api/account/collections/{collection['id']}/",
+        {"comments_enabled": True},
+        format="json",
+    )
+    owner_client.post(f"/api/account/collections/{collection['id']}/publish/")
+    cache.clear()
+    created = owner_client.post(url, {"body": "hello"}, format="json")
+    assert created.status_code == 201
+    assert created.json()["body"] == "hello"
+    assert owner_client.post(url, {"body": "again"}, format="json").status_code == 429
 
 
 @pytest.mark.django_db
@@ -408,6 +601,225 @@ def test_public_gallery_collections_mode_is_profile_and_visibility_filtered(
     profile.is_public = False
     profile.save(update_fields=["is_public"])
     assert anonymous_client.get("/api/public/gallery/?type=collections").json()["results"] == []
+
+
+@pytest.mark.django_db
+def test_public_list_returns_newest_first_with_exact_safe_card_payload(
+    owner_client, anonymous_client, owner
+):
+    older = _create_collection(owner_client, "Older collection")
+    newer = _create_collection(owner_client, "Newer collection")
+    assert owner_client.post(f"/api/account/collections/{older['id']}/publish/").status_code == 200
+    assert owner_client.post(f"/api/account/collections/{newer['id']}/publish/").status_code == 200
+    Collection.objects.filter(public_id=older["id"]).update(published_at=timezone.now())
+    Collection.objects.filter(public_id=newer["id"]).update(
+        published_at=timezone.now() + timedelta(seconds=1)
+    )
+
+    response = anonymous_client.get("/api/collections/public/")
+
+    assert response.status_code == 200
+    assert response.json()["has_more"] is False
+    assert response.json()["next_cursor"] is None
+    assert [item["title"] for item in response.json()["results"]] == [
+        "Newer collection",
+        "Older collection",
+    ]
+    assert set(response.json()["results"][0]) == {
+        "id",
+        "title",
+        "owner_handle",
+        "cover_url",
+        "item_count",
+        "published_at",
+        "viewer_url",
+    }
+    assert response.json()["results"][0]["owner_handle"] == "collection-owner"
+    assert response.json()["results"][0]["cover_url"] is None
+    assert response.json()["results"][0]["item_count"] == 0
+    assert response.json()["results"][0]["viewer_url"].endswith("/newer-collection")
+
+
+@pytest.mark.django_db
+def test_public_list_supports_oldest_and_item_count_sort_modes(
+    owner_client, anonymous_client, owner
+):
+    oldest = _create_collection(owner_client, "Oldest collection")
+    newest = _create_collection(owner_client, "Newest collection")
+    counted = _create_collection(owner_client, "Most items collection")
+    projects = [_published_project(owner, f"Counted project {index}") for index in range(2)]
+    private_project = _published_project(owner, "Private counted project")
+    private_project.visibility = Project.Visibility.PRIVATE
+    private_project.published_at = None
+    private_project.save(update_fields=["visibility", "published_at"])
+    for collection in (oldest, newest, counted):
+        assert (
+            owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+            == 200
+        )
+    collection = Collection.objects.get(public_id=counted["id"])
+    CollectionItem.objects.bulk_create(
+        [
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT,
+                item_id=project.public_id,
+                position=index,
+            )
+            for index, project in enumerate(projects)
+        ]
+        + [
+            CollectionItem(
+                collection=collection,
+                kind=CollectionItem.Kind.PROJECT,
+                item_id=private_project.public_id,
+                position=2,
+            )
+        ]
+    )
+    now = timezone.now()
+    Collection.objects.filter(public_id=oldest["id"]).update(published_at=now)
+    Collection.objects.filter(public_id=newest["id"]).update(
+        published_at=now + timedelta(seconds=2)
+    )
+    Collection.objects.filter(public_id=counted["id"]).update(
+        published_at=now + timedelta(seconds=1)
+    )
+
+    oldest_response = anonymous_client.get("/api/collections/public/?sort=oldest")
+    assert oldest_response.status_code == 200
+    assert oldest_response.json()["results"][0]["title"] == "Oldest collection"
+
+    count_response = anonymous_client.get("/api/collections/public/?sort=item_count")
+    assert count_response.status_code == 200
+    assert count_response.json()["results"][0]["title"] == "Most items collection"
+    assert count_response.json()["results"][0]["item_count"] == 2
+
+
+@pytest.mark.django_db
+def test_public_collection_sort_and_cursor_modes_are_bound(owner_client, anonymous_client):
+    first = _create_collection(owner_client, "First")
+    second = _create_collection(owner_client, "Second")
+    for collection in (first, second):
+        assert (
+            owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+            == 200
+        )
+    response = anonymous_client.get("/api/collections/public/?sort=oldest&page_size=1")
+    assert response.status_code == 200
+    cursor = response.json()["next_cursor"]
+    assert cursor
+    mismatched = anonymous_client.get(f"/api/collections/public/?sort=newest&cursor={cursor}")
+    assert mismatched.status_code == 400
+    assert "cursor" in mismatched.json()["errors"]
+
+
+@pytest.mark.django_db
+def test_public_collection_rejects_unsupported_sort(owner_client, anonymous_client):
+    response = anonymous_client.get("/api/collections/public/?sort=views")
+    assert response.status_code == 400
+    assert response.json()["errors"]["sort"]
+
+
+@pytest.mark.django_db
+def test_public_list_cursor_round_trip_is_keyset_paginated(owner_client, anonymous_client):
+    collections = [_create_collection(owner_client, f"Collection {index}") for index in range(3)]
+    for index, collection in enumerate(collections):
+        assert (
+            owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+            == 200
+        )
+        Collection.objects.filter(public_id=collection["id"]).update(
+            published_at=timezone.now() + timedelta(seconds=index)
+        )
+
+    first = anonymous_client.get("/api/collections/public/?page_size=2")
+    assert first.status_code == 200
+    assert first.json()["has_more"] is True
+    assert first.json()["next_cursor"]
+
+    second = anonymous_client.get(
+        "/api/collections/public/", {"page_size": 2, "cursor": first.json()["next_cursor"]}
+    )
+    assert second.status_code == 200
+    assert second.json()["has_more"] is False
+    assert second.json()["next_cursor"] is None
+    first_ids = {item["id"] for item in first.json()["results"]}
+    second_ids = {item["id"] for item in second.json()["results"]}
+    assert first_ids.isdisjoint(second_ids)
+    assert len(first_ids | second_ids) == 3
+
+
+@pytest.mark.django_db
+def test_public_list_excludes_draft_archived_private_and_deleted_collections(
+    owner_client, anonymous_client
+):
+    visible = _create_collection(owner_client, "Visible collection")
+    draft = _create_collection(owner_client, "Draft collection")
+    archived = _create_collection(owner_client, "Archived collection")
+    private = _create_collection(owner_client, "Private collection")
+    deleted = _create_collection(owner_client, "Deleted collection")
+    for collection in (visible, draft, archived, private, deleted):
+        Collection.objects.filter(public_id=collection["id"]).update(published_at=timezone.now())
+    Collection.objects.filter(public_id=visible["id"]).update(
+        visibility=Collection.Visibility.PUBLIC, status=Collection.Status.ACTIVE
+    )
+    Collection.objects.filter(public_id=draft["id"]).update(
+        visibility=Collection.Visibility.PUBLIC, status=Collection.Status.DRAFT
+    )
+    Collection.objects.filter(public_id=archived["id"]).update(
+        visibility=Collection.Visibility.PUBLIC, status=Collection.Status.ARCHIVED
+    )
+    Collection.objects.filter(public_id=deleted["id"]).update(
+        visibility=Collection.Visibility.PUBLIC, is_deleted=True
+    )
+
+    response = anonymous_client.get("/api/collections/public/")
+
+    assert response.status_code == 200
+    assert [item["title"] for item in response.json()["results"]] == ["Visible collection"]
+
+
+@pytest.mark.django_db
+def test_public_list_counts_only_currently_public_collection_members(
+    owner_client, anonymous_client, owner
+):
+    first = _published_project(owner, "Public member")
+    second = _published_project(owner, "Member that becomes private")
+    collection = _create_collection(owner_client, "Counted collection")
+    assert (
+        owner_client.post(
+            f"/api/account/collections/{collection['id']}/items/",
+            {
+                "items": [
+                    {"kind": "project", "id": str(first.public_id)},
+                    {"kind": "project", "id": str(second.public_id)},
+                ]
+            },
+            format="json",
+        ).status_code
+        == 200
+    )
+    assert (
+        owner_client.post(f"/api/account/collections/{collection['id']}/publish/").status_code
+        == 200
+    )
+    second.visibility = Project.Visibility.PRIVATE
+    second.published_at = None
+    second.save(update_fields=["visibility", "published_at"])
+
+    response = anonymous_client.get("/api/collections/public/")
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["item_count"] == 1
+
+
+@pytest.mark.django_db
+def test_public_list_returns_empty_result_without_authentication(anonymous_client):
+    response = anonymous_client.get("/api/collections/public/")
+
+    assert response.status_code == 200
+    assert response.json() == {"results": [], "next_cursor": None, "has_more": False}
 
 
 @pytest.mark.django_db

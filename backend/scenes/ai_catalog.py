@@ -32,17 +32,17 @@ AGENT_TASK_KINDS: set[str] = {
 }
 
 
-class RevisionConflict(Exception):
+class RevisionConflict(Exception):  # noqa: N818
     """Raised when the caller's `expected_revision` no longer matches the
     stored row -- someone else changed it first."""
 
 
-class ValidationFailed(Exception):
+class ValidationFailed(Exception):  # noqa: N818
     """Raised for any invalid field value or unknown key. The whole write
     is rejected; nothing is partially applied."""
 
 
-class NotFound(Exception):
+class NotFound(Exception):  # noqa: N818
     """Raised when no catalog row matches the given id."""
 
 

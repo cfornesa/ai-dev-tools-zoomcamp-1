@@ -28,7 +28,7 @@
   --bg: #fff;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
-  --accent: #aa3bff;
+  --accent: #aa35ff;
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
@@ -42,7 +42,9 @@
   --site-radius: 8px;
   --site-border-style: solid;
   --site-backdrop: var(--bg);
+  --space-1: 4px;
   --space-2: 8px;
+  --space-3: 12px;
   --space-4: 16px;
   --space-6: 24px;
   --space-8: 32px;
@@ -160,7 +162,7 @@ body,
   --bg: #fff;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
-  --accent: #aa3bff;
+  --accent: #aa35ff;
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
@@ -195,6 +197,7 @@ body,
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+  overflow-x: clip;
 }
 
 /* Issue #180: editor routes use a compact shell header so the dedicated
@@ -268,6 +271,16 @@ body {
   gap: 0.5rem;
 }
 
+@media (max-width: 767px) {
+  /* Keep the shared display controls in document flow so they cannot cover
+     page content or keyboard focus at narrow widths. Match account pages. */
+  .shell-display-toggles {
+    position: static;
+    justify-content: center;
+    margin: var(--site-density) auto;
+  }
+}
+
 .shell-theme-toggle,
 .shell-motion-toggle {
   position: static;
@@ -325,6 +338,10 @@ body {
   flex: 1;
   width: 100%;
   box-sizing: border-box;
+}
+
+.app-shell > #main-content {
+  z-index: 2;
 }
 
 .app-shell-footer {
@@ -635,7 +652,7 @@ button:disabled {
 }
 
 .account-settings-input {
-  min-height: 40px;
+  min-height: 44px;
   box-sizing: border-box;
   padding: 8px 12px;
   border: 1px solid var(--border);
@@ -1003,6 +1020,7 @@ button:disabled {
   margin: 0 auto 32px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  box-shadow: var(--shadow);
   box-sizing: border-box;
 }
 
@@ -1083,9 +1101,62 @@ button:disabled {
   color: var(--text-h);
 }
 
+.continuity-cohorts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-4) 0;
+}
+
+.continuity-cohort {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.continuity-cohort h4 {
+  margin: 0 0 var(--space-3);
+  color: var(--text-h);
+}
+
+.continuity-cohort dl,
+.continuity-cohort dl > div {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.continuity-cohort dl > div {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+}
+
+.continuity-cohort dt {
+  overflow-wrap: anywhere;
+}
+
+.continuity-cohort dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.continuity-metrics details {
+  margin-top: var(--space-4);
+}
+
+.continuity-metrics summary {
+  cursor: pointer;
+  color: var(--text-h);
+}
+
 .admin-action-primary,
 .admin-action-secondary,
 .admin-action-danger {
+  min-height: 44px;
+  padding: 8px 16px;
   border-radius: 6px;
   font-weight: 700;
 }
@@ -1214,8 +1285,8 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  padding: 8px 14px;
+  min-height: 44px;
+  padding: 8px 16px;
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-h);
@@ -1656,6 +1727,10 @@ button:disabled {
   .admin-role-sections {
     grid-template-columns: 1fr;
   }
+
+  .continuity-cohorts {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .admin-console-nav,
@@ -2068,6 +2143,13 @@ code {
   font-size: 18px;
 }
 
+.project-card-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 .project-card-thumbnail,
 .project-card-thumbnail-fallback {
   width: 100%;
@@ -2227,7 +2309,7 @@ code {
 .publish-visibility-switch .publish-visibility-option {
   width: auto;
   flex: 0 0 auto;
-  min-height: 2rem;
+  min-height: 44px;
   padding: 0.25rem 0.75rem;
   border: 0;
   background: transparent;
@@ -3076,6 +3158,21 @@ code {
   gap: 8px;
 }
 
+.editor-panel-primary-actions > .editor-tool-group,
+.editor-panel-primary-actions > .editor-zoom-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.publication-status-inline {
+  display: grid;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
 .editor-panel-primary-actions > * {
   min-height: 2.5rem;
 }
@@ -3699,6 +3796,30 @@ textarea:disabled {
   font-weight: 500;
 }
 
+.version-history-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.version-history-tabs {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin: 0;
+}
+
+.version-history-tabs .editor-panel-tab {
+  box-sizing: border-box;
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 0.8em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .version-history-list {
   list-style: none;
   margin: 0;
@@ -3738,6 +3859,39 @@ textarea:disabled {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.version-comparison {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 12px;
+}
+
+.version-comparison select {
+  max-width: 100%;
+}
+
+.version-comparison-results {
+  box-sizing: border-box;
+  max-height: 320px;
+  min-width: 0;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.version-comparison-group ul {
+  margin: 4px 0 8px;
+  padding-inline-start: 20px;
+  overflow-wrap: anywhere;
+}
+
+.version-comparison-group li {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .version-delete-confirm {
@@ -4082,6 +4236,26 @@ textarea:disabled {
   width: 100%;
   max-width: 320px;
   box-sizing: border-box;
+}
+
+.art-piece-studio {
+  width: calc(100% - 48px);
+  max-width: 960px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.art-piece-studio .behavior-card-field select,
+.art-piece-studio .behavior-card-field input,
+.art-piece-studio .behavior-card-field textarea {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.art-piece-studio .behavior-card-field textarea {
+  min-height: 10rem;
+  resize: vertical;
 }
 
 .art-piece-editor-revise-panel {
@@ -4982,6 +5156,21 @@ select.ai-proposal-field-full-width {
   text-align: left;
 }
 
+.public-related-pieces {
+  margin-top: 24px;
+}
+
+.public-related-pieces > h2 {
+  margin: 0 24px;
+  color: var(--text-h);
+}
+
+@media (max-width: 600px) {
+  .public-related-pieces > h2 {
+    margin-inline: 16px;
+  }
+}
+
 /* Issue #568: collection management and canonical public collection cards. */
 .collection-management,
 .public-collection {
@@ -5056,6 +5245,36 @@ select.ai-proposal-field-full-width {
   padding-inline-start: 24px;
 }
 
+.public-collections-panel {
+  width: min(1100px, calc(100% - 32px));
+  margin: 24px auto;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.public-collections-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 0 24px;
+  padding-inline-start: 24px;
+}
+
+.public-collections-card {
+  height: 100%;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.public-collections-card h3 {
+  margin-block: 0 8px;
+}
+
+.public-collections-card p {
+  margin-block: 4px;
+}
+
 .public-collection-card {
   height: 100%;
   padding: 12px;
@@ -5104,12 +5323,14 @@ select.ai-proposal-field-full-width {
 
 @media (max-width: 700px) {
   .collection-management-layout,
-  .public-collection-grid {
+  .public-collection-grid,
+  .public-collections-grid {
     grid-template-columns: 1fr;
   }
 
   .collection-management,
-  .public-collection {
+  .public-collection,
+  .public-collections-panel {
     width: calc(100% - 20px);
   }
 }
@@ -5310,6 +5531,29 @@ select.ai-proposal-field-full-width {
   gap: 24px;
   margin: 0 0 24px;
   color: var(--text-h);
+}
+
+.public-piece-version-context > section,
+.public-piece-version-context dl,
+.public-piece-version-context ol,
+.public-piece-version-context li,
+.public-piece-version-context details {
+  min-width: 0;
+}
+
+.public-piece-version-context dt,
+.public-piece-version-context dd,
+.public-piece-version-context li,
+.public-piece-version-context summary,
+.public-piece-version-context p,
+.public-piece-version-context time {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.public-piece-version-context dd {
+  margin-inline-start: 0;
 }
 
 .public-piece-version-context h2 {
@@ -5554,6 +5798,15 @@ select.ai-proposal-field-full-width {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Issue #1114: keep the responsive canvas 16:9 while reserving a sibling row
+   for selected-plane actions that visually sit just below the frame. */
+.project3d-workspace
+  .scene3d-preview:has(.plane-selection-toolbar[data-dock='rail'])
+  .scene3d-preview-canvas-frame {
+  min-height: 0;
+  margin-bottom: 56px;
 }
 
 .scene3d-stage-toolbar {
@@ -6182,7 +6435,8 @@ select.ai-proposal-field-full-width {
 }
 
 /* Inline public viewers keep fullscreen independent from the wrapping action
-   row so it stays anchored to the stage's bottom-right corner. */
+   row so it stays anchored to the stage's bottom-right corner. Structured 3D
+   public viewers override this route-scoped position below. */
 .piece-stage-fullscreen-control {
   position: absolute;
   right: 0;
@@ -6413,6 +6667,10 @@ select.ai-proposal-field-full-width {
   pointer-events: auto;
 }
 
+.project3d-workspace .editor-piece-stage-toolbar-host > .editor-piece-stage-toolbar {
+  pointer-events: none;
+}
+
 .editor-piece-stage-toolbar > * {
   pointer-events: auto;
 }
@@ -6420,21 +6678,28 @@ select.ai-proposal-field-full-width {
 /* The editor action group and the lower text actions occupy separate overlay
    regions. Keep the named authoring trigger above the lower action rail on
    narrow stages so a disabled Save button cannot intercept its tap target. */
-.editor-piece-stage-toolbar [aria-label='Editor actions'] {
+.project3d-workspace .editor-piece-stage-toolbar [aria-label='Editor actions'] {
   position: relative;
   z-index: 3;
+  pointer-events: none;
 }
 
-.editor-piece-stage-toolbar [aria-label='Editor actions'] > .piece-stage-controls {
+.project3d-workspace
+  .editor-piece-stage-toolbar
+  [aria-label='Editor actions']
+  > .piece-stage-controls {
   position: relative;
   z-index: 4;
+  pointer-events: auto;
 }
 
-.editor-piece-stage-toolbar
+.project3d-workspace
+  .editor-piece-stage-toolbar
   [aria-label='Editor actions']
   > .piece-stage-icon-button:not([data-testid='project3d-save-button']) {
   position: relative;
   z-index: 4;
+  pointer-events: auto;
 }
 
 .editor-piece-stage-toolbar .editor-stage-text-actions {
@@ -6576,6 +6841,32 @@ select.ai-proposal-field-full-width {
 }
 
 @media (max-width: 700px) {
+  /* Public regular pieces keep their toolbar and visitor-drawing controls in
+     document flow on phones. The stage remains tall enough to draw in, while
+     desktop retains the overlay presentation below this breakpoint. */
+  .public-art-piece-stage {
+    min-height: min(70vh, 26rem);
+    height: auto;
+    aspect-ratio: auto;
+  }
+
+  .public-art-piece-stage > iframe {
+    height: min(70vh, 26rem) !important;
+  }
+
+  .public-art-piece-toolbar-row {
+    position: static;
+    inset: auto;
+    display: block;
+    padding: 0.5rem 0;
+    pointer-events: auto;
+  }
+
+  .public-art-piece-toolbar-row .piece-stage-toolbar {
+    position: static;
+    max-width: 100%;
+  }
+
   /* Hover labels are a desktop affordance: on a phone-width stage a label centred under an icon near the
      right edge would push the page wider than the viewport (a horizontal scrollbar). */
   .piece-stage-toolbar .piece-stage-tooltip {
@@ -6588,7 +6879,28 @@ select.ai-proposal-field-full-width {
   }
 
   .piece-stage-toolbar-group,
-  .editor-piece-stage-toolbar {
+  .project3d-workspace .editor-piece-stage-toolbar {
+    gap: 0.4rem;
+  }
+
+  /* Reserve the inline fullscreen target inside the narrower 3D stage. The
+     shared rule above stays viewport-independent for the 2D editor; this
+     stage-relative bound keeps the first icon row clear of fullscreen. */
+  .project3d-workspace .editor-piece-stage-toolbar {
+    max-width: calc(100% - 3.5rem);
+  }
+
+  .project3d-workspace
+    .editor-piece-stage-toolbar
+    > button[aria-label='Expand piece to fullscreen'],
+  .project3d-workspace .editor-piece-stage-toolbar > button[aria-label='Exit fullscreen'] {
+    right: -2.75rem;
+  }
+
+  .project3d-workspace .editor-piece-stage-toolbar [aria-label='Editor actions'] {
+    display: flex;
+    flex: 0 0 100%;
+    flex-wrap: wrap;
     gap: 0.4rem;
   }
 
@@ -6598,8 +6910,8 @@ select.ai-proposal-field-full-width {
     padding: 0 0.5rem;
   }
 
-  /* Fullscreen now sits inside the inline icon row (#752), so the row may use
-     the whole stage width and a 7-button set still fits one line at 375px. */
+  /* Keep menus inside the stage while the 3D toolbar row reserves space for
+     its absolutely positioned fullscreen control. */
   .piece-stage-download-menu,
   .piece-stage-controls-panel {
     width: min(20rem, calc(100vw - 2rem));
@@ -7225,6 +7537,42 @@ select.ai-proposal-field-full-width {
   align-items: flex-start;
 }
 
+/* Canonical structured 3D viewers use the stage itself as the positioning
+   area for the inline toolbar. Let empty toolbar space pass pointer input to
+   the immersive touch controls below it; the visible controls keep their own
+   hit targets. */
+.scene3d-preview--public-structured .piece-stage-toolbar[data-toolbar-mode='inline'] {
+  inset: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+.scene3d-preview--public-structured
+  .piece-stage-toolbar[data-toolbar-mode='inline']
+  .scene3d-preview-actions {
+  max-width: calc(100% - 3.5rem);
+  pointer-events: none;
+}
+
+.scene3d-preview--public-structured
+  .piece-stage-toolbar[data-toolbar-mode='inline']
+  .scene3d-preview-actions
+  :is(button, a, input, select, textarea, [role='menu'], [role='menuitem'], [role='slider']) {
+  pointer-events: auto;
+}
+
+/* The fullscreen action stays on the top row, outside its compact left-hand
+   controls, and on the far side of the stage. The action group reserves its
+   width so the two targets cannot overlap on phones. */
+.scene3d-preview--public-structured
+  .piece-stage-toolbar[data-toolbar-mode='inline']
+  .piece-stage-icon-button.piece-stage-fullscreen-control {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  bottom: auto;
+}
+
 /* Icon-only inline toolbars are ~44px wide, so a popover sized as a percentage of
    its trigger's container collapses to a sliver. Size the popovers to the viewport. */
 .piece-stage-toolbar[data-toolbar-mode='inline'] .piece-stage-controls-panel {
@@ -7251,6 +7599,42 @@ select.ai-proposal-field-full-width {
     width: auto;
     max-width: none;
   }
+}
+
+/* The manual 3D editor keeps its authoring trigger in a 44px control group.
+   While that disclosure is open, let its popover use the wider Editor actions
+   row as its containing block instead of inheriting the trigger's width. */
+@media (max-width: 700px) {
+  .project3d-workspace
+    .editor-piece-stage-toolbar
+    [aria-label='Editor actions']
+    > .piece-stage-controls:has(> .editor-authoring-controls-panel:not([hidden])) {
+    position: static;
+  }
+
+  .project3d-workspace
+    .editor-piece-stage-toolbar
+    [aria-label='Editor actions']
+    > .piece-stage-controls
+    > .editor-authoring-controls-panel {
+    top: 100%;
+    left: 0;
+    right: auto;
+    width: min(320px, calc(100vw - 48px));
+    max-width: calc(100vw - 48px);
+  }
+}
+
+.editor-authoring-controls-panel > .piece-stage-submenu-close {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  order: -1;
+  align-self: flex-end;
+  border-radius: 0.45rem;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
 }
 
 /* Issues #775/#781: shared ink editor (frozen drawing surface + contextual tool bar). */
@@ -7469,7 +7853,7 @@ select.ai-proposal-field-full-width {
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 }
 .plane-selection-outline {
   position: absolute;
@@ -7566,10 +7950,10 @@ select.ai-proposal-field-full-width {
   opacity: 0.2;
   pointer-events: none;
 }
-.plane-selection-toolbar[data-dock='bottom'] {
+.plane-selection-toolbar[data-dock='rail'] {
   left: 8px;
   right: 8px;
-  bottom: 8px;
+  bottom: -56px;
   top: auto;
   transform: none;
   justify-content: space-between;
@@ -7590,22 +7974,22 @@ select.ai-proposal-field-full-width {
   font-size: 1rem;
   cursor: pointer;
 }
-.plane-selection-toolbar[data-dock='bottom'] {
+.plane-selection-toolbar[data-dock='rail'] {
   gap: 2px;
   padding: 2px;
 }
-.plane-selection-toolbar[data-dock='bottom'] > button,
-.plane-selection-toolbar[data-dock='bottom'] .plane-more > button {
+.plane-selection-toolbar[data-dock='rail'] > button,
+.plane-selection-toolbar[data-dock='rail'] .plane-more > button {
   flex: 1 1 0;
   min-width: 0;
   min-height: 44px;
   padding: 0;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-more {
+.plane-selection-toolbar[data-dock='rail'] .plane-more {
   flex: 1 1 0;
   min-width: 0;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-more > button {
+.plane-selection-toolbar[data-dock='rail'] .plane-more > button {
   width: 100%;
 }
 .plane-selection-toolbar button[aria-pressed='true'] {
@@ -7635,7 +8019,7 @@ select.ai-proposal-field-full-width {
 .plane-selection-toolbar button:focus-visible > .plane-toolbar-label {
   opacity: 1;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-toolbar-label {
+.plane-selection-toolbar[data-dock='rail'] .plane-toolbar-label {
   display: none;
 }
 .plane-more {
@@ -7655,19 +8039,19 @@ select.ai-proposal-field-full-width {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   z-index: 5;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-more-menu {
-  /* Phone: a small bottom sheet over the docked toolbar (the stage itself is too short for a popover). */
+.plane-selection-toolbar[data-dock='rail'] .plane-more-menu {
+  /* Phone: a small bottom sheet above the fixed display controls, with the same safe-area clearance. */
   position: fixed;
   z-index: 61;
   top: auto;
   left: 8px;
   right: 8px;
-  bottom: 8px;
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 2.75rem + 0.5rem);
   flex-direction: row;
   gap: 4px;
   padding: 6px;
 }
-.plane-selection-toolbar[data-dock='bottom'] .plane-more-menu button {
+.plane-selection-toolbar[data-dock='rail'] .plane-more-menu button {
   flex: 1 1 0;
   min-height: 44px;
   justify-content: center;
@@ -7912,6 +8296,43 @@ select.ai-proposal-field-full-width {
   50% {
     opacity: 1;
   }
+}
+
+.project3d-accordion {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  margin: var(--space-4) 0;
+}
+
+.project3d-accordion-section {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--code-bg) 72%, transparent);
+}
+
+.project3d-accordion-trigger {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text-h);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project3d-accordion-trigger:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.project3d-accordion-panel {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 .editor-sound-details {

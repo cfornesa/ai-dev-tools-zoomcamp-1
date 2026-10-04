@@ -17,6 +17,7 @@ import {
   updateProjectMetadata3D,
   type Project3D,
   type SceneVersion3D,
+  type SceneVersion3DSourceInput,
 } from '../api/projects3d';
 import { resourceOwnershipStatus } from '../auth/resourceOwnership';
 import { useAuth } from '../auth/useAuth';
@@ -26,6 +27,11 @@ import {
   generateScene3DBundle,
   triggerScene3DBundleDownload,
 } from '../export/generateHtmlExport3D';
+import {
+  generateEditable3dCss,
+  generateEditable3dHtml,
+  generateEditable3dJs,
+} from '../export/codeGrammar3dTabs';
 import { downloadBlob } from '../export/downloadBlob';
 import {
   buildServer3dPiecePackage,
@@ -39,6 +45,7 @@ import Scene3DCodeEditor from './Scene3DCodeEditor';
 import Scene3DPreview from './Scene3DPreview';
 import SonicDefaultsPanel from './SonicDefaultsPanel';
 import { normalizeSonic } from '../audio/sonicContract';
+import { getAmbientSampleMetadata } from '../audio/ambientSampleAsset';
 import {
   DRAWING_PLANE_MAX_POINTS,
   DRAWING_PLANE_MAX_SHAPES,
@@ -59,7 +66,11 @@ type ExportState = { pending: boolean; error: string | null };
 
 export type Project3DWorkspaceStorage = {
   loadProject: (id: string) => Promise<{ project: Project3D; versions: SceneVersion3D[] }>;
-  saveVersion: (id: string, scene: Scene3DDocument) => Promise<SceneVersion3D>;
+  saveVersion: (
+    id: string,
+    scene: Scene3DDocument,
+    sources?: SceneVersion3DSourceInput,
+  ) => Promise<SceneVersion3D>;
   restoreVersion?: (id: string, versionId: number) => Promise<SceneVersion3D>;
   updateMetadata: (id: string, data: { title?: string }) => Promise<Project3D>;
   local?: boolean;
@@ -184,7 +195,7 @@ function Project3DWorkspace({
           project: await getProject3D(projectId),
           versions: await listSceneVersions3D(projectId),
         }),
-        saveVersion: saveSceneVersion3D,
+        saveVersion: (projectId, scene, sources) => saveSceneVersion3D(projectId, scene, sources),
         updateMetadata: updateProjectMetadata3D,
       },
     [storage],
@@ -195,6 +206,7 @@ function Project3DWorkspace({
   const [project, setProject] = useState<Project3D | null>(null);
   const [versionHistory, setVersionHistory] = useState<SceneVersion3D[]>([]);
   const [workingScene, setWorkingScene] = useState<Scene3DDocument | null>(null);
+  const [editorHelpersVisible, setEditorHelpersVisible] = useState(true);
   // Issue #234: the last-saved scene, tracked separately from
   // `workingScene` so a dirty check (`workingScene !== persistedScene`,
   // by reference -- every mutation path replaces the object wholesale,
@@ -204,6 +216,7 @@ function Project3DWorkspace({
   const [selectedOutlineItem, setSelectedOutlineItem] = useState<Outline3DSelection>(null);
   // #781: the drawing plane currently being drawn on (Draw mode), or null.
   const [drawObjectId, setDrawObjectId] = useState<string | null>(null);
+  const [ambientSampleFilename, setAmbientSampleFilename] = useState<string | undefined>(undefined);
   // #782: lets the stage (a click on an object, Escape) drive the outline selection.
   const [selectionRequest, setSelectionRequest] = useState<{
     selection: Outline3DSelection;
@@ -218,6 +231,8 @@ function Project3DWorkspace({
   const [undoStack, setUndoStack] = useState<Scene3DDocument[]>([]);
   const [redoStack, setRedoStack] = useState<Scene3DDocument[]>([]);
   const [previewView, setPreviewView] = useState<PreviewView>('visual');
+  const [webAddressOpen, setWebAddressOpen] = useState(false);
+  const [soundOpen, setSoundOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>(IDLE_SAVE_STATE);
   // Issue #290: a standalone export/download action, always against the
   // current `workingScene` (never a stale/persisted copy), so the
@@ -325,6 +340,21 @@ function Project3DWorkspace({
     };
   }, [id, projectStorage]);
 
+  const ambientSampleId = normalizeSonic(workingScene?.sonic)?.extras.ambient_sample;
+  useEffect(() => {
+    if (!id || !ambientSampleId) {
+      setAmbientSampleFilename(undefined);
+      return;
+    }
+    let cancelled = false;
+    void getAmbientSampleMetadata(id, ambientSampleId).then((asset) => {
+      if (!cancelled) setAmbientSampleFilename(asset?.filename);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, ambientSampleId]);
+
   if (loadState === 'loading') {
     return (
       <p role="status" aria-live="polite">
@@ -375,8 +405,8 @@ function Project3DWorkspace({
   if (!workingScene || !id) return null; // unreachable once loadState === 'ready'
   const currentScene = workingScene;
 
-  // Shared by both save paths in this editor (the Code tab's on-blur save,
-  // and #234's explicit outline/inspector Save button) -- syncs
+  // Shared by both save paths in this editor (the Code tab's working-scene
+  // edits and #234's explicit outline/inspector Save button) -- syncs
   // workingScene/persistedScene/project.current_version from the server's
   // exact response, matching the 2D editor's handleVersionSaved pattern.
   function handleVersionSaved(version: SceneVersion3D) {
@@ -437,7 +467,9 @@ function Project3DWorkspace({
     opacity: 1,
   };
 
-  function addObject(type: Extract<Object3DType, 'sphere' | 'plane' | 'drawingPlane'>) {
+  function addObject(
+    type: Extract<Object3DType, 'box' | 'sphere' | 'cylinder' | 'plane' | 'drawingPlane'>,
+  ) {
     const id = createId(
       type,
       currentScene.objects.map((object) => object.id),
@@ -454,37 +486,63 @@ function Project3DWorkspace({
             visible: true,
             radius: 1,
           }
-        : type === 'drawingPlane'
+        : type === 'box'
           ? {
               id,
-              name: `Drawing plane ${currentScene.objects.filter((item) => item.type === 'drawingPlane').length + 1}`,
-              type,
-              groupId: null,
-              transform: structuredClone(identityTransform),
-              material: { color: '#ffffff' },
-              visible: true,
-              width: 4,
-              height: 3,
-              doubleSided: true,
-              // #781: the documented drawing resolution (4:3, matching the default 4 x 3 plane).
-              drawing: {
-                width: DRAWING_PLANE_RESOLUTION.width,
-                height: DRAWING_PLANE_RESOLUTION.height,
-                background: '#ffffff',
-                shapes: [],
-              },
-            }
-          : {
-              id,
-              name: `Plane ${currentScene.objects.filter((item) => item.type === 'plane').length + 1}`,
+              name: `Box ${currentScene.objects.filter((item) => item.type === 'box').length + 1}`,
               type,
               groupId: null,
               transform: structuredClone(identityTransform),
               material: { color: '#7b7bd8' },
               visible: true,
-              width: 4,
-              height: 4,
-            };
+              width: 2,
+              height: 2,
+              depth: 2,
+            }
+          : type === 'cylinder'
+            ? {
+                id,
+                name: `Cylinder ${currentScene.objects.filter((item) => item.type === 'cylinder').length + 1}`,
+                type,
+                groupId: null,
+                transform: structuredClone(identityTransform),
+                material: { color: '#7b7bd8' },
+                visible: true,
+                radiusTop: 1,
+                radiusBottom: 1,
+                height: 2,
+              }
+            : type === 'drawingPlane'
+              ? {
+                  id,
+                  name: `Drawing plane ${currentScene.objects.filter((item) => item.type === 'drawingPlane').length + 1}`,
+                  type,
+                  groupId: null,
+                  transform: structuredClone(identityTransform),
+                  material: { color: '#ffffff' },
+                  visible: true,
+                  width: 4,
+                  height: 3,
+                  doubleSided: true,
+                  // #781: the documented drawing resolution (4:3, matching the default 4 x 3 plane).
+                  drawing: {
+                    width: DRAWING_PLANE_RESOLUTION.width,
+                    height: DRAWING_PLANE_RESOLUTION.height,
+                    background: '#ffffff',
+                    shapes: [],
+                  },
+                }
+              : {
+                  id,
+                  name: `Plane ${currentScene.objects.filter((item) => item.type === 'plane').length + 1}`,
+                  type,
+                  groupId: null,
+                  transform: structuredClone(identityTransform),
+                  material: { color: '#7b7bd8' },
+                  visible: true,
+                  width: 4,
+                  height: 4,
+                };
     // #781: the plane's material is lit, so in a scene with no lights at all the drawing would render
     // black. Adding the first drawing plane also adds a neutral ambient light so it shows true colours.
     const lights =
@@ -653,7 +711,12 @@ function Project3DWorkspace({
     }
     setSaveState({ pending: true, error: null });
     try {
-      const version = await projectStorage.saveVersion(id, workingScene);
+      const sources: SceneVersion3DSourceInput = {
+        html_source: generateEditable3dHtml(workingScene),
+        css_source: generateEditable3dCss(workingScene),
+        js_source: generateEditable3dJs(workingScene),
+      };
+      const version = await projectStorage.saveVersion(id, workingScene, sources);
       setSaveState(IDLE_SAVE_STATE);
       handleVersionSaved(version);
     } catch {
@@ -685,21 +748,17 @@ function Project3DWorkspace({
           setProject={setProject}
           updateMetadata={projectStorage.updateMetadata}
         />
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={!isDirty || saveState.pending}
+          data-testid="project3d-save-button"
+          aria-label={saveState.pending ? 'Saving scene' : 'Save scene'}
+        >
+          {saveState.pending ? 'Saving scene…' : 'Save scene'}
+        </button>
         {id && !projectStorage.local && (
           <PublishControl3D id={id} project={project} setProject={setProject} />
-        )}
-        {id && !projectStorage.local && (
-          <details className="piece-slug-details">
-            <summary>Web address</summary>
-            <PieceSlugField
-              current={project?.public_slug}
-              save={(slug) => updateProjectMetadata3D(id, { public_slug: slug })}
-              onSaved={(updated) => {
-                setProject((current) => (current ? { ...current, ...updated } : current));
-                if (updated.editor_url) navigate(updated.editor_url, { replace: true });
-              }}
-            />
-          </details>
         )}
         {workingScene && (
           // #771/#772: the piece's explicit rendering library. Changing it is an undoable edit
@@ -721,15 +780,6 @@ function Project3DWorkspace({
               <option value="aframe">A-Frame</option>
             </select>
           </label>
-        )}
-        {workingScene && (
-          <details className="editor-sound-details">
-            <summary>Sound</summary>
-            <SonicDefaultsPanel
-              value={normalizeSonic(workingScene.sonic)}
-              onChange={(sonic) => updateWorkingScene({ ...workingScene, sonic })}
-            />
-          </details>
         )}
         <p
           role="status"
@@ -816,7 +866,11 @@ function Project3DWorkspace({
           </div>
           {previewView === 'code' && !projectStorage.local && (
             <section aria-label="Code" role="region" data-panel="code">
-              <Scene3DCodeEditor projectId={id} scene={workingScene} onSaved={handleVersionSaved} />
+              <Scene3DCodeEditor
+                scene={workingScene}
+                sources={project?.current_version ?? undefined}
+                onChange={updateWorkingScene}
+              />
             </section>
           )}
           {drawTarget?.drawing && (
@@ -844,6 +898,12 @@ function Project3DWorkspace({
               onPickObject={(objectId) =>
                 requestSelection(objectId ? { kind: 'object', id: objectId } : null)
               }
+              selectedObjectId={
+                selectedOutlineItem?.kind === 'object' ? selectedOutlineItem.id : null
+              }
+              onObjectGestureStart={beginGesture}
+              onObjectGestureChange={changeGesture}
+              onObjectGestureEnd={endGesture}
               renderOverlay={
                 overlayObject
                   ? (stage) => (
@@ -872,6 +932,7 @@ function Project3DWorkspace({
                   : undefined
               }
               scene={workingScene}
+              showEditorHelpers={editorHelpersVisible}
               screenshotBaseName={project?.title}
               immersiveHref={id ? `/immersive/p3d/${id}` : undefined}
               toolbarMode="inline"
@@ -900,6 +961,13 @@ function Project3DWorkspace({
                       >
                         <button
                           type="button"
+                          onClick={() => setEditorHelpersVisible((visible) => !visible)}
+                          aria-pressed={editorHelpersVisible}
+                        >
+                          {editorHelpersVisible ? 'Hide grid and axes' : 'Show grid and axes'}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => addObject('sphere')}
                           aria-label="Add sphere"
                         >
@@ -911,6 +979,16 @@ function Project3DWorkspace({
                           aria-label="Add plane"
                         >
                           Add plane
+                        </button>
+                        <button type="button" onClick={() => addObject('box')} aria-label="Add box">
+                          Add box
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => addObject('cylinder')}
+                          aria-label="Add cylinder"
+                        >
+                          Add cylinder
                         </button>
                         <button
                           type="button"
@@ -972,39 +1050,81 @@ function Project3DWorkspace({
                         onBegin={() => setDrawObjectId(selectedObject()?.id ?? null)}
                       />
                     )}
-                    <span className="editor-stage-text-actions">
-                      <button
-                        type="button"
-                        className="piece-stage-icon-button"
-                        onClick={() => void handleSave()}
-                        disabled={!isDirty || saveState.pending}
-                        data-testid="project3d-save-button"
-                        aria-label={saveState.pending ? 'Saving scene' : 'Save scene'}
-                        title={saveState.pending ? 'Saving scene' : 'Save scene'}
-                      >
-                        <span aria-hidden="true">▣</span>
-                        <span className="piece-stage-action-label">Save scene</span>
-                      </button>
-                      {!projectStorage.local && (
-                        <button
-                          type="button"
-                          className="piece-stage-icon-button"
-                          onClick={handleAskAiImproveScene}
-                          aria-label="Ask AI to improve this scene"
-                          title="Ask AI to improve this scene"
-                        >
-                          <span aria-hidden="true">✦</span>
-                          <span className="piece-stage-action-label">
-                            Ask AI to improve this scene
-                          </span>
-                        </button>
-                      )}
-                    </span>
+                    <span className="editor-stage-text-actions" />
                   </span>
                 </>
               }
             />
           </div>
+        </section>
+        <section className="project3d-accordion" aria-label="Project settings">
+          {id && !projectStorage.local && (
+            <div className="project3d-accordion-section">
+              <button
+                type="button"
+                className="project3d-accordion-trigger"
+                aria-expanded={webAddressOpen}
+                aria-controls="project3d-web-address-panel"
+                onClick={() => setWebAddressOpen((open) => !open)}
+              >
+                Web address
+              </button>
+              <div
+                id="project3d-web-address-panel"
+                className="project3d-accordion-panel"
+                aria-hidden={!webAddressOpen}
+                hidden={!webAddressOpen}
+              >
+                <PieceSlugField
+                  current={project?.public_slug}
+                  save={(slug) => updateProjectMetadata3D(id, { public_slug: slug })}
+                  onSaved={(updated) => {
+                    setProject((current) => (current ? { ...current, ...updated } : current));
+                    if (updated.editor_url) navigate(updated.editor_url, { replace: true });
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          {workingScene && (
+            <div className="project3d-accordion-section">
+              <button
+                type="button"
+                className="project3d-accordion-trigger"
+                aria-expanded={soundOpen}
+                aria-controls="project3d-sound-panel"
+                onClick={() => setSoundOpen((open) => !open)}
+              >
+                Sound
+              </button>
+              <div
+                id="project3d-sound-panel"
+                className="project3d-accordion-panel"
+                aria-hidden={!soundOpen}
+                hidden={!soundOpen}
+              >
+                <SonicDefaultsPanel
+                  value={normalizeSonic(workingScene.sonic)}
+                  onChange={(sonic) => updateWorkingScene({ ...workingScene, sonic })}
+                  pieceId={id}
+                  ambientSampleFilename={ambientSampleFilename}
+                />
+              </div>
+            </div>
+          )}
+          {!projectStorage.local && (
+            <div className="project3d-accordion-section">
+              <button
+                type="button"
+                className="project3d-accordion-trigger"
+                aria-expanded={showAiPanel}
+                aria-controls="project3d-ai-improve-panel"
+                onClick={handleAskAiImproveScene}
+              >
+                Ask AI to improve this scene
+              </button>
+            </div>
+          )}
         </section>
         <Outline3DInspector
           scene={workingScene}
@@ -1019,6 +1139,7 @@ function Project3DWorkspace({
               aria-label="Ask AI to improve this scene"
               role="region"
               data-testid="project3d-ai-improve-panel"
+              id="project3d-ai-improve-panel"
             >
               <button type="button" onClick={() => setShowAiPanel(false)}>
                 Close

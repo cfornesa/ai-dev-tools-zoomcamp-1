@@ -547,7 +547,7 @@ export const mockServices: BackendServices = {
       if (!project) notFound();
       mockState.projects3d = mockState.projects3d.filter((p) => p.id !== id);
     },
-    async saveSceneVersion3D(projectId, sceneJson) {
+    async saveSceneVersion3D(projectId, sceneJson, sources) {
       const project = findProject3D(projectId);
       if (!project) notFound();
       const version = {
@@ -555,6 +555,9 @@ export const mockServices: BackendServices = {
         sequence: (project.current_version?.sequence ?? 0) + 1,
         origin: 'manual',
         scene_json: sceneJson,
+        html_source: sources?.html_source ?? '',
+        css_source: sources?.css_source ?? '',
+        js_source: sources?.js_source ?? '',
         created_by: MOCK_USER.username,
         created_at: new Date().toISOString(),
       };

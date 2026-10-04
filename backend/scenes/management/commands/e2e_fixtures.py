@@ -30,7 +30,9 @@ import base64
 import hashlib
 import json
 import os
+import re
 import uuid
+from pathlib import Path
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
@@ -70,12 +72,81 @@ PUBLIC_MEDIA_FIXTURE_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAL0lEQVR4nO3OIQEAAAgDMCpShsjUgBg3E/Ornb6kEhAQEBAQEBAQEBAQEBAQSAce0OGwlwYgyFIAAAAASUVORK5CYII="
 )
 
+DISPOSABLE_ENVIRONMENTS = {
+    "disposable-local",
+    "disposable-ci",
+    "disposable-compose",
+    "disposable-staging",
+    "disposable-test",
+}
+DISPOSABLE_DATABASE_NAME = re.compile(r"(?:^|[_-])(e2e|test|qa|disposable|staging)(?:$|[_-])", re.I)
+
+
+def _database_fingerprint() -> str:
+    """Return a non-secret identity for the selected database target."""
+    target = "\0".join(
+        str(connection.settings_dict.get(key) or "") for key in ("HOST", "PORT", "NAME")
+    )
+    return hashlib.sha256(target.encode("utf-8")).hexdigest()
+
+
+def _validate_fixture_environment(environment: str) -> None:
+    if environment not in DISPOSABLE_ENVIRONMENTS:
+        raise CommandError(
+            "Fixture mutation refused: set E2E_FIXTURE_ENVIRONMENT to an explicit "
+            "disposable target (disposable-local, disposable-ci, disposable-compose, "
+            "disposable-staging, or disposable-test)."
+        )
+    if environment == "disposable-staging" and os.environ.get("STAGING_SMOKE") != "1":
+        raise CommandError("Disposable staging fixtures require STAGING_SMOKE=1.")
+    if environment == "disposable-test":
+        if not os.environ.get("PYTEST_CURRENT_TEST") or connection.vendor != "sqlite":
+            raise CommandError("disposable-test is allowed only inside pytest using SQLite.")
+    elif environment == "disposable-compose":
+        if os.environ.get("E2E_DOCKER_COMPOSE") != "true":
+            raise CommandError("disposable-compose requires E2E_DOCKER_COMPOSE=true.")
+        if connection.settings_dict.get("NAME") != "gesture_studio":
+            raise CommandError("Compose fixture target must be the gesture_studio database.")
+
+
+def _validate_explicit_database_target() -> None:
+    env_file = os.environ.get("E2E_ENV_FILE", "")
+    if not env_file or not Path(env_file).is_absolute() or not Path(env_file).is_file():
+        raise CommandError(
+            "Fixture mutation requires an explicit E2E_ENV_FILE; backend/.env is never inferred."
+        )
+    database_name = str(connection.settings_dict.get("NAME") or "")
+    allowed_name = os.environ.get("E2E_ALLOWED_DB_NAME", "")
+    if not DISPOSABLE_DATABASE_NAME.search(database_name) and (
+        not allowed_name or database_name != allowed_name
+    ):
+        raise CommandError(
+            "Fixture mutation refused: database name must identify a disposable target "
+            "(e2e/test/qa/disposable/staging) or exactly match E2E_ALLOWED_DB_NAME."
+        )
+
+
+def _authorize_fixture_mutation(action: str) -> str:
+    environment = os.environ.get("E2E_FIXTURE_ENVIRONMENT", "")
+    _validate_fixture_environment(environment)
+    if environment not in {"disposable-test", "disposable-compose"}:
+        _validate_explicit_database_target()
+    fingerprint = _database_fingerprint()
+    expected = os.environ.get("E2E_EXPECTED_DATABASE_FINGERPRINT", "")
+    if action != "create" and not expected:
+        raise CommandError("Fixture mutation requires the database fingerprint recorded by setup.")
+    if expected and expected != fingerprint:
+        raise CommandError(
+            "Fixture mutation refused: selected database does not match the setup fingerprint."
+        )
+    return fingerprint
+
 
 def _get_or_create_user(username: str, email: str):
     from allauth.account.models import EmailAddress
     from allauth.socialaccount.models import SocialAccount
 
-    User = get_user_model()
+    User = get_user_model()  # noqa: N806
     user, _created = User.objects.update_or_create(
         username=username,
         defaults={"email": email, "is_active": True},
@@ -127,29 +198,22 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         action = options["action"]
         as_json = options["json"]
-        if (
-            os.environ.get("E2E_FIXTURE_ENVIRONMENT") == "disposable-staging"
-            and os.environ.get("STAGING_SMOKE") != "1"
-        ):
-            raise CommandError(
-                "Disposable staging fixtures require STAGING_SMOKE=1; "
-                "refusing to modify an unknown environment."
-            )
+        fingerprint = _authorize_fixture_mutation(action)
 
         if action == "create":
-            self._create(as_json)
+            self._create(as_json, fingerprint)
         elif action == "cleanup":
-            self._cleanup(as_json)
+            self._cleanup(as_json, fingerprint)
         elif action == "reset-sessions":
-            self._reset_sessions(as_json)
+            self._reset_sessions(as_json, fingerprint)
         elif action == "public-media-create":
-            self._public_media_create(as_json)
+            self._public_media_create(as_json, fingerprint)
         elif action == "public-media-cleanup":
-            self._public_media_cleanup(as_json)
+            self._public_media_cleanup(as_json, fingerprint)
         else:  # pragma: no cover - argparse already restricts choices
             raise CommandError(f"Unknown action: {action}")
 
-    def _create(self, as_json: bool):
+    def _create(self, as_json: bool, fingerprint: str):
         from django.contrib.sessions.models import Session
 
         from scenes.models import (
@@ -220,6 +284,7 @@ class Command(BaseCommand):
 
         payload = {
             "available": True,
+            "database_fingerprint": fingerprint,
             "password": E2E_PASSWORD,
             "owner": {"username": owner.username, "email": owner.email},
             "other": {"username": other.username, "email": other.email},
@@ -241,7 +306,7 @@ class Command(BaseCommand):
                 )
             )
 
-    def _reset_sessions(self, as_json: bool):
+    def _reset_sessions(self, as_json: bool, fingerprint: str):
         """Deletes every SessionMetadata (and its linked Session row)
         belonging to any fixture user. Called once per spec file whose
         tests assert on exact session counts, so the first test in that
@@ -252,7 +317,7 @@ class Command(BaseCommand):
 
         from scenes.models import SessionMetadata
 
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         usernames = [username for username, _email in E2E_USERS.values()]
         fixture_users = User.objects.filter(username__in=usernames)
         with transaction.atomic():
@@ -266,7 +331,11 @@ class Command(BaseCommand):
             if stale_keys:
                 deleted_sessions, _ = Session.objects.filter(session_key__in=stale_keys).delete()
 
-        payload = {"deleted_metadata": deleted_metadata, "deleted_sessions": deleted_sessions}
+        payload = {
+            "deleted_metadata": deleted_metadata,
+            "deleted_sessions": deleted_sessions,
+            "database_fingerprint": fingerprint,
+        }
         if as_json:
             self.stdout.write(json.dumps(payload))
         else:
@@ -276,7 +345,7 @@ class Command(BaseCommand):
                 )
             )
 
-    def _cleanup(self, as_json: bool):
+    def _cleanup(self, as_json: bool, fingerprint: str):
         from django.db.models import Q
 
         from scenes.models import (
@@ -289,7 +358,7 @@ class Command(BaseCommand):
             Scene,
         )
 
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         usernames = [username for username, _email in E2E_USERS.values()]
 
         def _owned_by_a_fixture_user(relation: str = "") -> Q:
@@ -451,7 +520,9 @@ class Command(BaseCommand):
             deleted_count, _ = User.objects.filter(_owned_by_a_fixture_user()).delete()
 
         if as_json:
-            self.stdout.write(json.dumps({"deleted": deleted_count}))
+            self.stdout.write(
+                json.dumps({"deleted": deleted_count, "database_fingerprint": fingerprint})
+            )
         else:
             self.stdout.write(
                 self.style.SUCCESS(
@@ -459,7 +530,7 @@ class Command(BaseCommand):
                 )
             )
 
-    def _public_media_create(self, as_json: bool):
+    def _public_media_create(self, as_json: bool, fingerprint: str):
         """Create one published server-backed image scene for public-media E2E tests."""
         from scenes.models import PieceIntakeAsset, Project, Scene, SceneVersion
 
@@ -547,13 +618,14 @@ class Command(BaseCommand):
             )
         result = {
             "available": True,
+            "database_fingerprint": fingerprint,
             "public_id": str(project.public_id),
             "slug": PUBLIC_MEDIA_FIXTURE_SLUG,
             "asset_id": str(source_asset_id),
         }
         self.stdout.write(json.dumps(result) if as_json else self.style.SUCCESS(json.dumps(result)))
 
-    def _public_media_cleanup(self, as_json: bool):
+    def _public_media_cleanup(self, as_json: bool, fingerprint: str):
         from scenes.models import PieceIntakeAsset, Project, Scene
 
         owner = get_user_model().objects.filter(username=E2E_USERS["owner"][0]).first()
@@ -569,5 +641,5 @@ class Command(BaseCommand):
             Scene.objects.filter(project__in=doomed).update(current_version=None)
             doomed.update(current_version=None, active_scene=None)
             doomed.delete()
-        result = {"available": True, "deleted": deleted}
+        result = {"available": True, "deleted": deleted, "database_fingerprint": fingerprint}
         self.stdout.write(json.dumps(result) if as_json else self.style.SUCCESS(json.dumps(result)))

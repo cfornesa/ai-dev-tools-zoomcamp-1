@@ -22,16 +22,22 @@ restriction on the separate `issue-scoping` stage does not apply here.
 ## One-way phase protocol
 
 Distillation is a backlog-definition phase, not a repair loop. It may run in a
-bulk pass, but it must end by naming exactly one next issue with a complete
-closure contract. The normal project order is:
+bulk pass, but it must end by naming the **ordered batch** (and waves, if any)
+of closure-ready issues, each with a complete closure contract. The normal
+project order is:
 
-`DISTILL → GROOM → ENGINEER → QA → RECONCILE → CLOSE → next issue`
+`DISTILL → GROOM → IMPACT ANALYSIS → ENGINEER → BATCH GATE (QA) → RECONCILE → CLOSE`
 
-Only `DISTILL` and `GROOM` may cover multiple issues in one pass. Once an
-issue is handed to engineering, all later phases are a single issue
-transaction. Do not start another issue, run another issue's tests, or begin
-production-readiness implementation while the current transaction lacks a
-terminal result.
+Issues are always created and groomed atomically, one closure-sized slice
+each. `DISTILL`, `GROOM` and the impact analysis cover the whole ready set;
+`ENGINEER` and the batch gate then run over that set as a batch
+(`backlog-session`; `docs/process.md`, "Canonical batch transaction"). Do not
+begin production-readiness implementation while the current batch lacks
+terminal results. Distillation's own contribution to the batch is a manifest
+that records each issue's milestone, dependencies, routing hint, and — for
+every issue — the files, selectors, routes, APIs, fixtures and specs it
+expects to touch, with the other open issues that reference them (the seed of
+the batch impact matrix).
 
 Closed issues are immutable by default. Reopening is permitted only when the
 owner explicitly authorizes reopening that specific issue in the current
@@ -85,8 +91,8 @@ This skill is a read/reconcile and backlog-definition phase. Do not implement
 product behavior, update product tests to accommodate a suspected fix, or
 close an issue while this phase is active. A failed test or observed UI gap is
 evidence to classify and capture, not permission to start fixing it. Engineering
-may begin only after the required outputs below exist and the next issue has a
-complete closure contract. If the contract is incomplete, stop at the
+may begin only after the required outputs below exist and every issue in the
+batch has a complete closure contract. If the contract is incomplete, stop at the
 backlog/documentation change and leave the item open or blocked with its next
 action.
 
@@ -100,7 +106,7 @@ to the later backlog-session engineer pass.
 1. Identify exactly one project and read its `tasks.md`, relevant plan, `docs/process.md`, and applicable acceptance criteria and constraints.
 2. Inspect the current worktree and relevant repository history without overwriting user changes.
 3. Use the authenticated GitHub connector to enumerate open issues associated with the project. Compare GitHub issues, `tasks.md`, existing memory topics, related PRs, and the user's evidence.
-4. Build or update an issue manifest containing issue number, URL, goal, dependencies, priority/order, duplicate links, scope, status, and the routing hint (intended implementation owner and rationale).
+4. Build or update an issue manifest containing issue number, URL, goal, dependencies, priority/order, duplicate links, scope, status, milestone, and the routing hint (intended implementation owner and rationale).
 5. Order work by dependencies, then backlog order, then priority. Mark already-completed, duplicate, blocked, and dependency-blocked items explicitly.
 
 ## Atomicity and closure cadence
@@ -141,13 +147,14 @@ must never treat implementation or QA as completion; each issue reaches
   until the differing revision, viewport, cache, or styling is explained;
   never close on a DOM-only observation.
 - Distillation and grooming may be performed in one bulk pass so the complete
-  backlog can be decomposed and ordered. That batching ends at the handoff:
-  backlog-session must process engineering and testing as a strict
-  per-issue transaction. Process and reconcile one closure-sized issue at a time. After its required
-  QA passes, immediately post the criterion matrix and set its GitHub status
-  (closed only when every criterion passes; otherwise open with a classified
-  blocker). Do not accumulate several hours of implementation without
-  terminalizing or handing off the current issue.
+  backlog can be decomposed and ordered. Issues stay atomic at the handoff:
+  backlog-session implements them as a batch (one commit per issue) and runs
+  QA at a batch gate that also checks every open issue the changes could
+  affect. After the gate, post each issue's criterion matrix and set its
+  GitHub status (closed only when every criterion passes and the gate is
+  green; otherwise open with a classified blocker). Do not accumulate
+  implementation without running the gate, and do not close an issue before
+  it.
 - Before handing the manifest to backlog-session, perform a completeness
   check: every actionable item has a unique issue, one route/workflow or
   capability boundary, fixed preconditions/fixtures, finite pass/fail
@@ -162,8 +169,8 @@ must never treat implementation or QA as completion; each issue reaches
   external state.
 - When an issue is blocked by a dependency or environment problem unrelated to
   the user's judgment or decision, perform a fresh task-distillation
-  reconciliation at the end of that issue before selecting the next issue.
-  Recheck duplicates, dependency order, closure criteria, blocker ownership,
+  reconciliation at the end of the batch (or wave) before selecting the next
+  batch. Recheck duplicates, dependency order, closure criteria, blocker ownership,
   and follow-up issue coverage, and record the result in the manifest and
   handoff.
 
@@ -211,6 +218,7 @@ For each gap:
 1. State the current behavior, desired behavior, evidence, and verification boundary.
 2. Identify actionable implementation items, decisions, blockers, lessons, constraints, and context; classify each blocker using the triage rules above.
 3. Reuse or update an existing GitHub issue when it covers the item. Create a new issue in the same distillation pass when the work is genuinely absent and issue creation is authorized. Link parent/child issues and state whether the parent is blocked, dependency-blocked, or handed-off.
+3a. Assign a milestone to every newly filed issue — never leave one unmilestoned. Reuse the current open milestone when this issue is a direct follow-up/discovered sub-scope of work already in it; otherwise create a new milestone (`Batch N: <theme> (<date range>)`, numbered from the highest existing batch). Full rule in `docs/process.md`'s "Milestone assignment" section. Record the milestone in the manifest alongside the issue link.
 4. Give each issue a clear goal, checkable acceptance criteria, constraints, out-of-scope links, dependencies, and exact next action.
 5. Create or update memory topics only for durable decisions, blockers, verification boundaries, lessons, constraints, actionable context, or other information needed by a later session. Link each topic to its issue(s).
 6. Reconcile issue status, backlog entry, memory topic, PR/commit evidence, blocker classification, issue-creation decision, owner, and next action before moving on.
@@ -228,6 +236,7 @@ Produce:
 - a dependency/order rationale;
 - an explicit list of unresolved blockers and verification boundaries.
 - a blocker triage and follow-up issue report showing why each blocker did or did not produce a new issue.
+- confirmation that every newly filed issue in this pass has a milestone assigned (existing-reused or newly created), with the reused/new decision stated per issue.
 
 No actionable item may be left only in prose. Every actionable follow-up must be linked to an existing or newly created issue, or explicitly marked `issue-creation-pending-authorization` with an owner and next action. No issue or memory topic may be created twice because a prior session already captured it. If external tooling is unavailable, record the attempted tool, exact failure, issue-creation decision, impact, and next action.
 
@@ -243,7 +252,8 @@ Exit only when every discovered gap is one of:
 Also do not exit into implementation until the manifest, duplicate report,
 criterion-ready issue definitions, dependency/order rationale, blocker triage,
 and verification boundaries have all been written and reconciled. The next
-phase must name exactly one groomed issue; it may not select a broad parent or
-an issue whose acceptance criteria still require a later decomposition.
+phase must name the ordered batch of groomed issues; it may not select a broad
+parent or an issue whose acceptance criteria still require a later
+decomposition.
 
-Return the manifest to the caller so backlog-session can process every remaining open issue sequentially.
+Return the manifest to the caller so backlog-session can process the remaining open issues as a batch.

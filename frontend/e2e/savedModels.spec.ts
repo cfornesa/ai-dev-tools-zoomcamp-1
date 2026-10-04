@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const VIEWPORTS = [
@@ -50,7 +50,7 @@ test.describe('vendor-aware saved AI models (#553)', () => {
       await expect(page.getByRole('heading', { name: 'Saved AI models' })).toBeVisible();
       await expect(page.getByText(/gemini: Gemini browser model/)).toBeVisible();
 
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       if (viewport.width < 768) {
         // The whole-scene AI action is in the dedicated Layers panel on the
         // narrow layout; Tools only contains editing preferences there.

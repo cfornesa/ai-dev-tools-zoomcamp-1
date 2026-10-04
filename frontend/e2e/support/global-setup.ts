@@ -26,49 +26,10 @@
  * same way -- recorded as `available: false` with the command's own error
  * output folded into the actionable message, never thrown.
  */
-import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
 import type { FullConfig } from '@playwright/test';
 
+import { resolveFixtureTarget, runFixtureCommand } from './fixtureCommand.js';
 import { writeE2EState } from './state.js';
-
-const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..', '..');
-const BACKEND_DIR = path.join(REPO_ROOT, 'backend');
-const configuredEnvFile = process.env.E2E_ENV_FILE;
-const ENV_FILE_ARGS = configuredEnvFile
-  ? ['--env-file', configuredEnvFile]
-  : fs.existsSync(path.join(BACKEND_DIR, '.env'))
-    ? ['--env-file', '.env']
-    : [];
-const fixtureCommand =
-  process.env.E2E_DOCKER_COMPOSE === 'true'
-    ? {
-        command: 'docker',
-        args: [
-          'compose',
-          '--project-name',
-          'ai-dev-tools-zoomcamp-1',
-          '--file',
-          'compose.yaml',
-          'exec',
-          '-T',
-          'backend',
-          'uv',
-          'run',
-          'python',
-          'manage.py',
-          'e2e_fixtures',
-          'create',
-          '--json',
-        ],
-      }
-    : {
-        command: 'uv',
-        args: ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'create', '--json'],
-      };
 
 const PREREQUISITES_HINT =
   'This suite requires, in order: (1) a real reachable PostgreSQL server ' +
@@ -79,11 +40,6 @@ const PREREQUISITES_HINT =
   '(4) the Vite dev server running via `npm run dev` in frontend/ (it proxies ' +
   '/api, /accounts, and /health to Django -- see frontend/vite.config.ts). ' +
   'Start all four, then run `make e2e` from the repo root.';
-
-const UV_CHILD_ENV = {
-  ...process.env,
-  UV_CACHE_DIR: process.env.UV_CACHE_DIR ?? path.join(os.tmpdir(), 'creatrweb-uv-cache'),
-};
 
 async function probeHealth(baseURL: string): Promise<{ ok: boolean; detail: string }> {
   try {
@@ -109,6 +65,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     return;
   }
 
+  // Validate the mutation boundary before probing a server. Missing or
+  // inconsistent configuration is an invocation error, not a test skip.
+  resolveFixtureTarget();
+
   const health = await probeHealth(baseURL);
   if (!health.ok) {
     writeE2EState({
@@ -119,18 +79,14 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   }
 
   try {
-    const output = execFileSync(fixtureCommand.command, fixtureCommand.args, {
-      cwd: fixtureCommand.command === 'docker' ? REPO_ROOT : BACKEND_DIR,
-      encoding: 'utf-8',
-      env: UV_CHILD_ENV,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    const output = runFixtureCommand('create');
     const lastLine = output.trim().split('\n').at(-1);
     if (!lastLine) {
       throw new Error('e2e_fixtures create --json produced no output');
     }
     const fixtures = JSON.parse(lastLine) as {
       available: true;
+      database_fingerprint: string;
       password: string;
       owner: { username: string; email: string };
       other: { username: string; email: string };
@@ -138,9 +94,19 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       admin: { username: string; email: string };
       deletable: { username: string; email: string };
     };
-    writeE2EState(fixtures);
+    if (!fixtures.database_fingerprint)
+      throw new Error('fixture create output omitted database_fingerprint');
+    const { database_fingerprint: databaseFingerprint, ...users } = fixtures;
+    writeE2EState({ ...users, databaseFingerprint });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    const stderr =
+      err && typeof err === 'object' && 'stderr' in err
+        ? String((err as { stderr?: Buffer | string }).stderr ?? '')
+        : '';
+    if (/Fixture mutation (?:refused|requires)|Disposable staging fixtures require/i.test(stderr)) {
+      throw new Error(`Unsafe E2E fixture target rejected before mutation: ${stderr || message}`);
+    }
     writeE2EState({
       available: false,
       reason:

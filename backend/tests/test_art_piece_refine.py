@@ -11,7 +11,7 @@ import scenes.art_piece_api as art_piece_api
 from ai_provider.art_piece_provider import ArtPieceRefineResult
 from ai_provider.interface import AIUsageMetadata
 from scenes import art_piece_refine
-from scenes.models import AIRetryPreference, ArtPiece, ArtPieceVersion
+from scenes.models import AIRetryPreference, ArtPiece, ArtPieceVersion, ProjectActivity
 
 SOURCE = '<canvas id="art-piece-canvas"></canvas>\n<script>const color = "red";</script>'
 USAGE = AIUsageMetadata(prompt_tokens=3, completion_tokens=5, estimated_cost_usd=0.01)
@@ -85,6 +85,8 @@ def test_refine_applies_all_edits_and_creates_immutable_current_version(monkeypa
     assert piece.current_version.sequence == 2
     assert 'color = "blue"' in piece.current_version.source
     assert piece.versions.count() == 2
+    # #1157 keeps AI refine acceptance out of the bounded manual lifecycle log.
+    assert not ProjectActivity.objects.filter(art_piece=piece).exists()
     assert provider.calls == 1
 
 

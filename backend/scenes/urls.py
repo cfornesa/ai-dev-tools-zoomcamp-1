@@ -9,6 +9,11 @@ from scenes.account_identities_api import (
     AccountIdentityUnlinkView,
 )
 from scenes.account_sessions_api import AccountSessionRevokeView, AccountSessionsView
+from scenes.activity_api import (
+    ArtPieceActivityListView,
+    Project3DActivityListView,
+    ProjectActivityListView,
+)
 from scenes.admin_content_api import (
     AdminContentAccessView,
     AdminContentActionView,
@@ -45,6 +50,7 @@ from scenes.ai_runs_api import (
     AIRunDetailView,
     AIRunListCreateView,
 )
+from scenes.ambient_sample_api import Project3DAmbientSampleView
 from scenes.api import (
     BlankProjectCreateView,
     DraftDetailView,
@@ -104,14 +110,18 @@ from scenes.cloud_backup_api import (
 from scenes.cloud_retention_api import AdminCloudRetentionPurgeView, AdminCloudRetentionView
 from scenes.cloud_sync_preference_api import AccountCloudSyncView
 from scenes.collections_api import (
+    CollectionCommentDeleteView,
+    CollectionCoverAssetListView,
     CollectionDetailView,
     CollectionItemsView,
     CollectionListCreateView,
     CollectionSnapshotView,
     CollectionVisibilityView,
+    PublicCollectionCommentsView,
     PublicCollectionDetailView,
     PublicCollectionDownloadView,
 )
+from scenes.continuity_metrics_api import AdminContinuityMetricsView
 from scenes.pages_api import PublicPageDetailView, PublicPageNavigationView
 from scenes.piece_intake_api import PiecePackageIntakeView
 from scenes.profile_api import (
@@ -123,7 +133,11 @@ from scenes.profile_api import (
 from scenes.profile_styles_api import AdminProfileStyleDetailView, AdminProfileStyleListCreateView
 from scenes.provider_credentials_api import ProviderCredentialView
 from scenes.public_asset_api import PublicPieceAssetView
-from scenes.public_search_api import PublicGallerySearchView
+from scenes.public_search_api import (
+    PublicCollectionListView,
+    PublicGallerySearchView,
+    PublicProjectRelatedListView,
+)
 from scenes.scene_conversion_api import (
     SceneConversionAcceptView,
     SceneConversionAdvanceView,
@@ -138,13 +152,28 @@ from scenes.share_metadata import (
 )
 from scenes.storage_usage_api import AccountStorageEstimateView
 from scenes.sync_mutation_api import SyncMutationReceiptView
+from scenes.unpublish_retention_api import (
+    AdminUnpublishRetentionPurgeView,
+    AdminUnpublishRetentionView,
+    MyUnpublishedPiecesView,
+)
 
 urlpatterns = [
+    path(
+        "account/collections/cover-assets/",
+        CollectionCoverAssetListView.as_view(),
+        name="collection-cover-assets",
+    ),
     path("pieces/intake/", PiecePackageIntakeView.as_view(), name="piece-package-intake"),
     path(
         "pieces/<str:kind>/<uuid:public_id>/assets/<uuid:asset_id>/",
         PublicPieceAssetView.as_view(),
         name="public-piece-asset",
+    ),
+    path(
+        "projects3d/<uuid:public_id>/ambient-sample/",
+        Project3DAmbientSampleView.as_view(),
+        name="project3d-ambient-sample",
     ),
     path("pages/", PublicPageNavigationView.as_view(), name="public-page-navigation"),
     path("pages/<slug:slug>/", PublicPageDetailView.as_view(), name="public-page-detail"),
@@ -154,6 +183,11 @@ urlpatterns = [
     path("admin/content/actions/", AdminContentActionView.as_view(), name="admin-content-action"),
     path("admin/content/access/", AdminContentAccessView.as_view(), name="admin-content-access"),
     path("admin/settings/", AdminSiteSettingsView.as_view(), name="admin-settings"),
+    path(
+        "admin/continuity-metrics/",
+        AdminContinuityMetricsView.as_view(),
+        name="admin-continuity-metrics",
+    ),
     path(
         "admin/theme-generation/",
         AdminThemeGenerationView.as_view(),
@@ -176,6 +210,11 @@ urlpatterns = [
     ),
     path("site-theme/", SiteThemeView.as_view(), name="site-theme"),
     path("public/gallery/search/", PublicGallerySearchView.as_view(), name="public-gallery-search"),
+    path(
+        "collections/public/",
+        PublicCollectionListView.as_view(),
+        name="public-collection-list",
+    ),
     path(
         "public/share-meta/<str:kind>/<uuid:public_id>/",
         PublicShareMetadataView.as_view(),
@@ -220,6 +259,21 @@ urlpatterns = [
         "admin/cloud-retention/purge/",
         AdminCloudRetentionPurgeView.as_view(),
         name="admin-cloud-retention-purge",
+    ),
+    path(
+        "admin/unpublish-retention/",
+        AdminUnpublishRetentionView.as_view(),
+        name="admin-unpublish-retention",
+    ),
+    path(
+        "admin/unpublish-retention/purge/",
+        AdminUnpublishRetentionPurgeView.as_view(),
+        name="admin-unpublish-retention-purge",
+    ),
+    path(
+        "account/unpublished-pieces/",
+        MyUnpublishedPiecesView.as_view(),
+        name="account-unpublished-pieces",
     ),
     path("billing/paypal/webhook/", PayPalWebhookView.as_view(), name="paypal-webhook"),
     path("account/billing/", AccountBillingView.as_view(), name="account-billing"),
@@ -273,6 +327,11 @@ urlpatterns = [
         name="account-collection-items",
     ),
     path(
+        "account/collections/<uuid:public_id>/comments/<int:comment_id>/",
+        CollectionCommentDeleteView.as_view(),
+        name="account-collection-comment-delete",
+    ),
+    path(
         "account/collections/<uuid:public_id>/publish/",
         CollectionVisibilityView.as_view(),
         {"public": True},
@@ -293,6 +352,11 @@ urlpatterns = [
         "public/collections/<str:handle>/<slug:slug>/",
         PublicCollectionDetailView.as_view(),
         name="public-collection-detail",
+    ),
+    path(
+        "public/collections/<str:handle>/<slug:slug>/comments/",
+        PublicCollectionCommentsView.as_view(),
+        name="public-collection-comments",
     ),
     path(
         "public/collections/<str:handle>/<slug:slug>/download/",
@@ -359,6 +423,11 @@ urlpatterns = [
         name="template-clone",
     ),
     path("projects/<uuid:public_id>/", ProjectDetailView.as_view(), name="project-detail"),
+    path(
+        "projects/<uuid:public_id>/activity/",
+        ProjectActivityListView.as_view(),
+        name="project-activity-list",
+    ),
     path("projects/<uuid:public_id>/cloud-backup/", CloudBackupView.as_view(), name="cloud-backup"),
     path(
         "projects/<uuid:public_id>/sync/mutations/",
@@ -412,6 +481,11 @@ urlpatterns = [
         "public/projects/<uuid:public_id>/",
         PublicProjectDetailView.as_view(),
         name="public-project-detail",
+    ),
+    path(
+        "public/projects/<uuid:public_id>/related/",
+        PublicProjectRelatedListView.as_view(),
+        name="public-project-related",
     ),
     path(
         "public/projects/<uuid:public_id>/thumbnail.png",
@@ -540,6 +614,11 @@ urlpatterns = [
         name="art-piece-refine-detail",
     ),
     path("art-pieces/", ArtPieceListCreateView.as_view(), name="art-piece-list-create"),
+    path(
+        "art-pieces/<uuid:public_id>/activity/",
+        ArtPieceActivityListView.as_view(),
+        name="art-piece-activity",
+    ),
     path("art-pieces/<uuid:public_id>/", ArtPieceDetailView.as_view(), name="art-piece-detail"),
     path(
         "art-pieces/<uuid:public_id>/versions/",
@@ -587,6 +666,11 @@ urlpatterns = [
         "projects3d/<uuid:public_id>/versions/",
         SceneVersion3DListCreateView.as_view(),
         name="project3d-version-list-create",
+    ),
+    path(
+        "projects3d/<uuid:public_id>/activity/",
+        Project3DActivityListView.as_view(),
+        name="project3d-activity",
     ),
     # #243: owner-facing gallery-card thumbnail (also now resolves for
     # anonymous/non-owner callers once a project is public -- issue #296

@@ -3,14 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { deleteProject3D, refreshProject3DThumbnail, type Project3D } from '../api/projects3d';
 import { originLabel } from './originLabel';
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
+import { formatDate } from './formatDate';
 
 /**
  * Gallery gap found live in production while verifying #238's fix: 3D

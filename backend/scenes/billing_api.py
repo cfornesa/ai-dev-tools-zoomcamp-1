@@ -144,7 +144,7 @@ class AccountBillingView(APIView):
             }
         )
 
-    def post(self, request):
+    def post(self, request):  # noqa: C901
         if not settings.PAYPAL_ENABLED:
             raise Http404("PayPal billing is not configured.")
         action = request.data.get("action")

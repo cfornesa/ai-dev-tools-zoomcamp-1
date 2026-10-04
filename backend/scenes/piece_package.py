@@ -40,7 +40,7 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def validate_piece_package(manifest: Any, files: dict[str, bytes]) -> None:
+def validate_piece_package(manifest: Any, files: dict[str, bytes]) -> None:  # noqa: C901
     """Validate a decoded manifest and payload map without mutating storage."""
 
     errors = sorted(_VALIDATOR.iter_errors(manifest), key=lambda error: list(error.path))

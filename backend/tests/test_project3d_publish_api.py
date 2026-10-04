@@ -5,7 +5,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from scenes.models import Project3D
+from scenes.models import Project3D, ProjectActivity
 
 
 @pytest.fixture
@@ -52,6 +52,9 @@ def test_owner_can_publish_a_project_with_the_default_title_once_it_has_a_saved_
     project = Project3D.objects.get(public_id=public_id)
     assert project.visibility == Project3D.Visibility.PUBLIC
     assert project.published_at is not None
+    event = ProjectActivity.objects.get(project3d=project)
+    assert event.action_type == ProjectActivity.ActionType.PUBLISHED
+    assert event.metadata == {"sequence": 1}
 
 
 @pytest.mark.django_db
@@ -79,6 +82,23 @@ def test_owner_can_unpublish_immediately_no_content_validation_needed(owner_clie
     project.refresh_from_db()
     assert project.visibility == Project3D.Visibility.PRIVATE
     assert project.published_at is None
+    assert set(
+        ProjectActivity.objects.filter(project3d=project).values_list("action_type", flat=True)
+    ) == {ProjectActivity.ActionType.PUBLISHED, ProjectActivity.ActionType.UNPUBLISHED}
+
+
+@pytest.mark.django_db
+def test_idempotent_publish_and_unpublish_do_not_duplicate_activity(owner_client):
+    public_id = create_project3d(owner_client)
+    owner_client.post(f"/api/projects3d/{public_id}/publish/")
+    owner_client.post(f"/api/projects3d/{public_id}/publish/")
+    owner_client.post(f"/api/projects3d/{public_id}/unpublish/")
+    owner_client.post(f"/api/projects3d/{public_id}/unpublish/")
+
+    project = Project3D.objects.get(public_id=public_id)
+    assert sorted(
+        ProjectActivity.objects.filter(project3d=project).values_list("action_type", flat=True)
+    ) == sorted([ProjectActivity.ActionType.PUBLISHED, ProjectActivity.ActionType.UNPUBLISHED])
 
 
 @pytest.mark.django_db

@@ -98,6 +98,8 @@ export type StartAIRunInput = {
   selected_target_ids?: string[];
   assets?: Array<{ id: string; name: string; mime: string; width: number; height: number }>;
   prompt: string;
+  /** #1140: 2D project intent is enabled by default and applies only to this run. */
+  use_intent_notes?: boolean;
   vendor?: 'mistral' | 'gemini' | 'deepseek';
   model?: string;
   persona_id?: number;
@@ -124,10 +126,18 @@ export function advanceAIRun(id: number, signal?: AbortSignal): Promise<AIRun> {
   return apiFetch<AIRun>(`/api/ai/runs/${id}/advance/`, { method: 'POST', signal });
 }
 
-export function cancelAIRun(id: number, signal?: AbortSignal): Promise<AIRun> {
-  return apiFetch<AIRun>(`/api/ai/runs/${id}/cancel/`, { method: 'POST', signal });
+export function cancelAIRun(id: number, reason?: string, signal?: AbortSignal): Promise<AIRun> {
+  return apiFetch<AIRun>(`/api/ai/runs/${id}/cancel/`, {
+    method: 'POST',
+    ...(reason === undefined ? {} : { body: JSON.stringify({ reason }) }),
+    signal,
+  });
 }
 
-export function acceptAIRun(id: number, signal?: AbortSignal): Promise<AIRun> {
-  return apiFetch<AIRun>(`/api/ai/runs/${id}/accept/`, { method: 'POST', signal });
+export function acceptAIRun(id: number, reason?: string, signal?: AbortSignal): Promise<AIRun> {
+  return apiFetch<AIRun>(`/api/ai/runs/${id}/accept/`, {
+    method: 'POST',
+    ...(reason === undefined ? {} : { body: JSON.stringify({ reason }) }),
+    signal,
+  });
 }

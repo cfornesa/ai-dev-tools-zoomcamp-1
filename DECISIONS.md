@@ -1,5 +1,551 @@
 # DECISIONS.md
 
+## 2026-10-03 — CI tiers: PR gate blocks, the 16-shard matrix is advisory
+
+- **Owner decisions:** merging is gated by the PR checks (Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E shard 1); the 16-shard browser matrix is advisory and reports through a known-failure ratchet (#1190) that fails only on new failures, on baseline entries that now pass, and on expired entries; all 241 E2E specs are to be audited (`docs/e2e-suite-audit.md`); Codex may edit `.github/workflows/ci.yml` for the ratchet and the fast-fail timeouts (#1191) only, in the same commit series, with no new jobs, triggers or secrets and no push, dispatch or merge.
+- **Evidence:** the PR check failed on 2 tests (#1179); main has no branch protection and no green run in the last 100; 108 of ~111 failing tests were identical in two consecutive full runs; 192 of 241 specs are per-issue probes.
+- **Owner action pending:** protect `main` with the four PR checks (#1192).
+- **Restoration:** revert the ratchet series to return to raw pass/fail; the policy text in `docs/process.md` is documentation only.
+
+## 2026-10-02 — Same-run implementation authorized for #1158 and #1159
+
+- The owner explicitly authorized implementation of #1158 and #1159 in this
+  backlog session after Claude Code refined and split the issues. This waives
+  the discovery-gate handoff for these two named issues only; it does not
+  authorize unrelated new issues or closing either issue without its own QA.
+- #1158 uses its refined recommended option: display toggles become centered
+  in-flow at widths through 767px, matching the account pages; desktop and
+  768px behavior stay fixed as before. #1159 owns the hand-gesture guide
+  portal/modal independently.
+- Keep changes on the existing PR #1094 branch; this does not create a new
+  PR or authorize a merge. Any push or CI dispatch must be tied to an
+  issue-specific evidence requirement and existing authorization.
+
+## 2026-10-02 — #1143 and #1159 QA closure records
+
+- #1143 passed its refined full-history, privacy, PostgreSQL timeout, and
+  rendered viewport criteria; QA comment 5961624588 is on the GitHub issue,
+  and authenticated update/read-after-write confirms it closed as completed.
+  The issue body still has unchecked acceptance boxes. Preserve the closed
+  record; owner approval is required before filing a corrective follow-up,
+  per the owner's earlier instruction to ask before creating new issues.
+- #1159 passed its per-issue matrix and closed as completed; QA comment
+  5961685465 records the local macOS/disposable-PostgreSQL boundary and known
+  non-trapping Tab behavior. Its checklist was reconciled to checked state and
+  the older sizing lines aligned with the controlling 28rem/min(60vh,28rem)
+  audit addendum before closure. Linux evidence remains tracked by #1096 and
+  is not claimed for #1159.
+- The #1158 shared-shell changes pass the local shared regression matrix; its
+  explicit Linux Chromium/PostgreSQL criterion remains open and will be
+  checked on the existing authorized branch/CI run. Do not merge PR #1094.
+
+## 2026-10-02 — Owner authorizes Codex to edit ci.yml for #1155 (scoped)
+
+- The owner authorized Codex to edit `.github/workflows/ci.yml` for **#1155 only**
+  (fixture environment safety), limited to wiring `E2E_FIXTURE_ENVIRONMENT` and,
+  where missing, `E2E_ENV_FILE` into existing jobs (`e2e-browser`, any job that
+  reaches Playwright global setup/teardown; `staging-authenticated-smoke` stays on
+  `disposable-staging` + `STAGING_SMOKE=1`). This supersedes the "no workflow edits
+  authorized" line in the Batch 17 ledger for #1155 alone.
+- Not authorized: other workflow edits (jobs, triggers, matrix, secrets, weakened
+  checks), landing the workflow change before the guard, or any push, dispatch or
+  merge. Restoration: revert the guard and workflow edit together.
+- Recorded on the issue body and a comment; the instruction came from the owner
+  in chat, relayed by Claude Sonnet 5.5.
+
+## 2026-10-01 — Implementation and QA move to session batches (issues stay atomic)
+
+- **Decision (owner):** issues are still created and groomed atomically, but
+  implementation and QA run in **session batches by default**, with a
+  mandatory batch impact analysis across **all open issues** and a **batch
+  gate** before any issue in the batch closes. This is the same posture
+  production-readiness and session-completion already take.
+- **Why:** closing each issue on its own criteria repeatedly produced follow-up
+  issues (shared CSS region edited by #1110/#1111/#1114/#1120, an unscoped rule
+  contradicting #1111's own "2D unchanged" criterion, #1119's wrong embed
+  premise, #1112 waiting on #1108 then #1114).
+- **Owner choices:** (1) batches form **per session regardless of milestone**,
+  milestone recorded per issue; (2) issues close **after the batch gate
+  passes**, with failing issues and their dependents staying open; (3) **one
+  commit per issue**; (4) minimal marked `AGENTS.md` edit (skills-table row and
+  one §13 bullet).
+- **Exceptions (single-issue transaction, reason recorded):** production-down
+  hotfix; a no-overlap issue that cannot share the batch environment; explicit
+  owner request; environment boundary that makes a gate impossible.
+- **Changed:** `docs/process.md` (canonical batch transaction, formation,
+  impact analysis, gate, exceptions), `docs/task-template.md` (batch ledger),
+  `docs/team/*`, `DISPATCH.md` (stage 4), `AGENTS.md`, and the `backlog-session`,
+  `qa-self-review`, `task-distillation`, `session-completion`,
+  `production-readiness`, implementation, second-opinion and scoping skills
+  (both `.claude/skills` and the `.agents/skills` mirror), plus the shared
+  handoff contract. **Unchanged:** atomic issue creation, the discovery gate,
+  separation of duties (rule 4), closed-issue immutability, stage routing and
+  provenance. **Restoration:** revert the documentation commit.
+
+## 2026-10-01 — Backlog-session agent loop for #1132
+
+- #1131 is reconciled and closed after the latest QA PASS. Started the
+  required separate PM/groom pass for #1132 before engineering. The review
+  must validate the current acceptance contract for accept/discard events,
+  optional reason sanitization, running versus awaiting-review cancellation,
+  replay/idempotency, transactional writes, 2D-only scope, API docs, exact
+  test fixture, and local evidence boundary. Stage 2b remains substituted by
+  Codex for Ollama Cloud; stage 4 will be a separate QA pass. No stage-3
+  review is claimed unless an independent model family performs it.
+
+## 2026-10-01 — #1132 stage 2b engineer pass delegated
+
+- The separate PM subagent groomed the live issue and the orchestrator
+  re-fetched it as closure-ready. Started the separate implementation-complex
+  pass against exact accept/discard/reason criteria. Rostered owner is Ollama
+  Cloud / Kimi K3; actual owner is a Codex subagent / GPT-6.1-sol, substituted.
+  Scope includes only `ai_runs_api.py`/`ai_runs.py` behavior, its named backend
+  tests, and `docs/api.md`. Engineer must not close or perform QA; separate
+  Stage 4 is required.
+
+## 2026-10-01 — #1132 stage 4 QA pass delegated
+
+- The implementation is committed as `f205906b`; the worktree is clean and
+  the engineer reports the exact focused and full backend checks passed. The
+  Stage 4 review is delegated to a separate Codex subagent / GPT-6.1-sol as a
+  substitution for Claude / Sonnet 5 / Medium. It must re-fetch #1132, inspect
+  the four-file diff and new tests as untrusted, and independently rerun the
+  exact focused and full commands. The PostgreSQL-specific concurrency tests
+  are expected to skip without `POSTGRES_TEST_DATABASE_URL`; the reviewer
+  must confirm the evidence boundary and must not close the issue.
+
+## 2026-10-01 — Backlog-session agent loop for #1133
+
+- #1132 is reconciled and closed. A fresh authenticated GitHub open-issue
+  search returned 24 open issues and confirms #1133 is eligible after #1131
+  and #1132. Started its separate PM/groom pass before engineering. The PM
+  must check endpoint/fixture specificity, permission masking, pagination and
+  allowlist behavior, export/deletion coverage, bounded query requirements,
+  exact checks, dependencies, and the local evidence boundary. Stage 2b is
+  rostered to Ollama Cloud / Kimi K3 and will be a separate Codex substitution
+  if unavailable; Stage 4 must be separate.
+- PM narrowed #1133 to the read API after finding a scope split and a conflict
+  with #443's retention policy. Duplicate checks verified #1148 is new; it is
+  a separate JSON-export follow-up dependent on #1133. The exact issue bodies
+  were fetched and confirmed open in Batch 16 before engineering begins.
+
+## 2026-10-01 — #1133 stage 2b engineer pass delegated
+
+- The separate PM pass narrowed #1133 to the private activity-read endpoint;
+  the orchestrator re-fetched the refined issue and linked follow-up #1148.
+  Began its separate implementation-complex pass. Rostered owner is Ollama
+  Cloud / Kimi K3; actual owner is a Codex subagent / GPT-6.1-sol, substituted.
+  Scope is the named API/permission/model index/migration/tests and `docs/api.md`.
+  No account export or deletion-policy behavior belongs in this transaction.
+  Stage 4 must be separate; the engineer must not close the issue.
+
+## 2026-10-01 — #1133 stage 4 QA pass delegated
+
+- Implementation commit `b1796a7f` is clean and the author reports focused,
+  full backend, and migration-consistency checks passed. A separate Codex
+  subagent / GPT-6.1-sol now performs Stage 4 as a substitution for Claude /
+  Sonnet 5 / Medium. It must re-fetch #1133, inspect the index migration and
+  entire diff/tests as untrusted, and independently rerun focused and full
+  backend checks. No production migration/publish is part of this task.
+
+## 2026-10-01 — #1133 QA reconciliation and issue-comment tooling boundary
+
+- The independent Stage 4 reviewer passed every refined criterion and
+  independently reran the exact focused test, full backend checks, migration
+  consistency check, and diff hygiene check. Evidence and the criterion matrix
+  are in `.local/tasks/backlog-session-2026-10-01-batch15.md`.
+- The GitHub comment connector is PR-shaped (`pr_number`) and its attempted
+  targeting of issue #1133 was rejected by automatic review as unsafe. Per
+  `docs/process.md`, do not retry through PR-shaped APIs; retain the complete
+  evidence locally and close through the correctly typed issue update.
+- Stage 3 was not run. No production or PostgreSQL concurrency evidence is
+  claimed. After closure, resume the refreshed backlog at #1134.
+
+## 2026-10-01 — #1134 activity navigation and PM refinement
+
+- The separate PM pass confirmed #1133 is closed, found no duplicate, and
+  narrowed UI work to the existing `VersionHistoryPanel` and #1133's typed
+  owner API. It found that pagination should be tested with a controlled
+  second page in unit tests rather than forcing 26 real fixture mutations.
+- Gallery considered three approaches: **Tabs** (separate peer views with
+  standard tab semantics), **Segmented control** (compact switch requiring
+  radio/button semantics), and **Inline disclosure** (no mode switch but
+  lengthens/crowds the mobile panel). Reframe: a combined chronological stream
+  would remove the current separation, but could replace the familiar version
+  list rather than add activity alongside it.
+- Owner selected Tabs. Keep Versions initially selected so opening the
+  existing panel retains current behavior. The live issue contract was
+  refined before implementation. No new dependency or API change is in scope.
+- Stage 2a is rostered to Opencode Go / Kimi K2.5; a Codex subagent is a
+  substitution if Opencode is unavailable. Independent Stage 4 remains
+  required after implementation.
+
+## 2026-10-01 — #1134 engineer commit and Stage 4 handoff
+
+- Stage 2a Codex substitution committed the refined tabbed Activity panel as
+  `b8359ec4cc4c85d1c58ebeae937bd1a5d2d6e79f`. Product/test scope is the typed
+  frontend activity wrapper, `VersionHistoryPanel`, its feature-slice tests,
+  and the named owner-route E2E only. No backend, schema, dependency, route,
+  API-contract, publish, or push change.
+- The engineer reports 23 focused tests passing; typecheck, lint (unrelated
+  existing warnings only), formatting, and the exact disposable-PostgreSQL
+  Chromium E2E passing with fake AI. E2E checks 1280x900 and 375x812 tab
+  states, overflow, and row/control bounds. Stage 4 treats these as untrusted
+  claims and independently reruns checks.
+- A separate Codex/GPT-6.1-sol QA pass is now delegated as a substitution for
+  Claude / Sonnet 5 / Medium. Stage 3 was not run. No closure until QA and
+  transaction reconciliation complete.
+
+## 2026-10-01 — #1134 Stage 4 returned to engineering
+
+- Independent Stage 4 verdict is FAIL solely because the explicit pre-change
+  Versions panel sizing/scroll comparison lacks an actual baseline or
+  assertion. Current desktop/mobile screenshots and overflow checks do not
+  prove unchanged vertical sizing/scroll behavior. The E2E covers restore but
+  not delete; the unchanged component suite continues to cover delete.
+- Stage 4 independently passed 23 focused tests; full frontend tests (311
+  files, 3,193 tests); typecheck, lint (warnings only), format; and the exact
+  owner-route Playwright test 1/1 on isolated local PostgreSQL with fake AI.
+  It used the approved unsandboxed retry after the initial Mac Chromium Mach
+  port denial. No product files changed in Stage 4; no CI/Linux/deployed
+  evidence is claimed.
+- The QA comment connector remains PR-shaped and unsafe for issue targeting;
+  no comment or indirect API was attempted this pass. Local criterion matrix
+  is authoritative until closure. Return #1134 to Stage 2a; do not advance the
+  backlog. Next action: implement a reproducible pre-change geometry/scroll
+  comparison at both viewports and exercise unchanged restore/delete behavior,
+  then repeat the exact gates and separate QA.
+
+## 2026-10-01 — #1134 corrective Stage 4 PASS
+
+- Correction commit `f4bd4a300d8c1fe186fbf50b192bbd195a339c39` places the
+  tabs in the existing title row and adds browser-level Delete confirmation,
+  cancel/focus restoration, and confirm coverage.
+- Independent QA reproduced parent `67daa279` with the same fixture, measured
+  desktop equality and mobile subpixel/1px rounding, and inspected both tabs
+  at desktop/mobile sizes. Focused tests, all 3,193 frontend tests, typecheck,
+  lint, format, build, and disposable-PostgreSQL owner-route Chromium E2E
+  passed. Lint/build emitted existing unrelated warnings.
+- Stage 4 returned PASS. Evidence is local macOS/disposable PostgreSQL only;
+  no Linux, CI, or deployed claim. QA is a separate Codex substitution for
+  Claude/Sonnet5/Medium; Stage 3 was not run. No issue comment was posted due
+  the connector's PR-shaped comment operation. Typed issue update closed
+  #1134 completed at 2026-10-01T18:28:20Z and read-after-write confirmed it.
+
+## 2026-10-01 — #1135 PM correction and Stage 2a dispatch
+
+- PM refreshed #1135 after #1132/#1134 closed. The old contract's one-shot
+  AI proposal controls do not use the event-writing run endpoints, so their
+  reasons could not appear in #1134 Activity. The refined scope targets the
+  2D Agent `awaiting_review` controls and enables them only from the 2D
+  caller, preserving the shared 3D workflow.
+- The issue is now finite and criterion-ready: transient optional reason,
+  trimmed/omitted request field, Unicode-aware 280-code-point boundary,
+  accessible keyboard behavior, focused tests, and disposable fake-provider
+  owner E2E through the #1134 Activity panel at desktop/mobile sizes. No
+  backend/schema/API contract or provider prompt change.
+- Stage 1 was a separate Codex/GPT-6.1-sol PM subagent (substituted: no).
+  Stage 2a was delegated to a separate Codex/GPT-6.1-sol engineer as a
+  substitution for Opencode Go/Kimi K2.7-code. Stage 3 was not requested;
+  Stage 4 remains separate and required.
+
+## 2026-10-01 — QA proxy misconfiguration and #1135 baseline boundary
+
+- During an attempted controlled parent comparison for #1135, QA set
+  `VITE_BACKEND_URL` instead of Vite's actual `BROWSER_QA_BACKEND_URL`.
+  The isolated Vite server consequently used its default proxy target
+  `127.0.0.1:8000`. The retained trace confirms two GETs and one POST to
+  `/accounts/login/` returned HTTP 200; no `/api/whoami/`, project, or AI
+  decision request occurred. The login did not complete. The POST may have
+  affected the existing backend's failed-login/rate-limit state; no persistent
+  backend/database query or cleanup was performed. QA immediately stopped
+  the servers and all retries. The attempted parent comparison is invalid.
+- Durable prevention is recorded in
+  `.agents/memory/local-postgres-browser-verification.md`: verify the exact
+  `BROWSER_QA_BACKEND_URL` target and disposable health route before browser
+  launch. No credential or connection detail is recorded.
+- #1135's first QA pass succeeded for its feature-specific checks. The old
+  `aiAgent2d`/`aiAgent3d` specs use retired routes; a parent run showed the
+  same root cause, but outcome counts differed (7 failed/1 skipped vs. 8
+  failed). PM filed #1149 for route retargeting. Do not claim these specs
+  pass. PM narrowed #1135 to the dedicated 2D reason flow plus focused 3D
+  no-field/request coverage; #1149 owns route maintenance. Separate Stage 4
+  re-read the final contract and confirmed the existing evidence satisfied
+  it. GitHub closed #1135 completed at 2026-10-01T19:50:55Z.
+- Owner clarified that remaining issues should be implemented and QA'd in
+  dependency-aware batches to reduce repeated context/setup overhead. Keep
+  per-issue acceptance matrices and evidence; this session instruction
+  overrides the default one-issue engineering/QA cadence. Do not push/publish.
+
+## 2026-10-01 — Backlog-session agent loop for #1147
+
+- The Codex orchestrator delegated the #1147 PM/groom pass to a separate
+  Codex agent. The issue is criterion-ready, test-only Stage 2a work, with
+  #1127 closed as its sole dependency. Stage 2 remains substituted by Codex
+  for Opencode Go; stage 4 is delegated to a separate Codex agent as a
+  substitution for Claude Sonnet 5/Medium and will be recorded in the
+  transaction ledger. No independent-family stage 3 is planned.
+
+## 2026-10-01 — Backlog-session agent loop for #1146
+
+- The Codex orchestrator delegated #1146 grooming to a separate Codex agent.
+  The initial issue lacked a fixed browser route and fixture; before
+  implementation its contract was extended to name authenticated
+  `/admin/content`, the seeded admin fixture, safe presentation-state restore,
+  and the 16-cell computed-style/screenshot matrix. Stage 2a remains
+  substituted by Codex for Opencode Go; stage 4 will be a separate QA pass.
+
+## 2026-10-01 — #1146 implementation and QA provenance
+
+- Implemented the groomed CSS/E2E issue in one issue-scoped commit,
+  `e68aaac5`; a separate QA pass was completed by another Codex agent.
+- Codex substituted for Opencode Go at stage 2a and Claude Sonnet 5 Medium at
+  stage 4; no independent stage 3 review ran.
+- The focused Chromium matrix and full `make check` passed. The initial
+  sandboxed Chromium launch hit the host's macOS bootstrap restriction; both
+  implementation and independent QA runs passed on the host runner.
+
+## 2026-10-01 — #1124 design chosen; LIGDOL adaptation plan distilled (Batch 16)
+
+- **#1124:** the owner chose option 1 — server-injected site presentation plus
+  a tiny inline theme script for the allauth pages. Options 2 (client fetch of
+  `/api/site-theme/`) and 3 (serve login from the React app) are rejected.
+  #1125/#1126 stay dependency-blocked on #1124.
+- **LIGDOL adaptation:** the owner asked for the best, deployment-light parts of
+  LIGDOL to be adapted without losing features or the app's character. Plan:
+  `docs/ligdol-adaptation.md`; milestone Batch 16, issues #1129-#1143. Findings
+  that shaped it: most of the "Project Graph" already exists (versions, AIRun,
+  ForkProvenance, media, ProjectActivity), but `ProjectActivity` defines 11
+  event types, writes only 3, and has no read API or UI; `AIPersona` already
+  provides account-level prompt context; there is no per-project intent, no
+  compare view, and no related-work discovery.
+- **Guardrails recorded:** additive only; no new package, vector DB, service or
+  worker; Replit schema-diff-safe changes; permissions.py for every endpoint;
+  user-controlled memory covered by export/deletion and excluded from public
+  APIs and piece packages; AI context bounded, disclosed, optional, and
+  byte-identical when empty; local-first creation unchanged.
+- **Explicit non-goals for this app:** DMs/communities/notifications/calls,
+  Context APIs, vector database, multi-agent orchestration, third-party tool
+  routing. **Deferred:** "talk to a piece" (AI quota), references-as-links (waits
+  on D2), public process sharing (waits on Slice A evidence).
+- **Owner decisions resolved 2026-10-02:** #1129 chose the per-project
+  server-side field for structured 2D Projects (D1); #1130 chose owner-only
+  activity for structured 3D projects and generated ArtPieces, sequenced as
+  #1156 then #1157 (D2). #1138-#1140 are now eligible in dependency order;
+  #1156/#1157 remain separate follow-ups.
+
+## 2026-10-01 — LIGDOL thesis revised from two architecture diagrams; login-page design parity filed
+
+- The owner supplied two LIGDOL diagrams (a layered *System Architecture* view
+  and an *orchestration* view) and directed that they carefully override the
+  existing plan. `LIGDOL_Creative_Continuity_Thesis.md` (local, gitignored per
+  `.gitignore`) was revised in place: Section 5 replaced with a layered view,
+  an orchestration view, a Mermaid diagram, a reconciliation with the old
+  five-layer model and infrastructure principles; Sections 3, 6, 7, 9, 10, 12,
+  13 amended; Appendix A logs every override. Key overrides: Canvas is now a
+  capability rather than a layer; the Project Graph is the enumerated source of
+  truth; the Intelligence layer is decomposed into an orchestrator, Discovery /
+  Creative / Judgment agents and Creative Memory; calls are demoted to a later
+  extension. Items marked "interpretation" or "working implication" are the
+  agent's reading of the diagrams, not owner statements.
+- This does **not** change the app's scope: the 2026-09-27 LIGDOL scoping
+  decision (only two compatible ideas imported; the rest deferred as a separate
+  deliberate initiative) stands. No app issues were filed from the thesis.
+- Login-page style mismatch (owner screenshot) was verified on the local stack
+  (hard-coded dark stylesheet in `backend/templates/account/base.html`, no
+  site tokens, nav, or toggles; provider buttons inconsistent because only
+  `.google` is styled) and filed as Batch 15 issues #1124-#1128.
+
+## 2026-10-01 — Owner resumes all open Batch 14 issues after Claude Code refinement
+
+- The owner stated that all currently open issues are workable because the
+  latest issues this run filed were further refined and expanded by Claude
+  Code, and authorized work on the currently open set. This supersedes earlier
+  same-run deferrals for the re-refined #1118–#1122 issues; service provenance
+  and each issue's current scope/dependency order remain binding.
+- Current open set at authorization: #1096, #1100, #1102–#1104, #1108,
+  #1110–#1112, #1114, and #1118–#1122. Codex stage-2 work is recorded as a
+  substitution when the rostered implementation service is unavailable.
+- #1118 was scoped by Codex, refined by Claude Code, then corrected during PM
+  review; its implementation is therefore recorded with both actual stage-1
+  contributors. No stage-3 review is claimed unless an independent-family
+  reviewer actually runs.
+
+## 2026-10-01 — #1119 public 2D toolbar QA and closure
+
+- Owner editor publication controls are in the primary-actions File menu's
+  Publication status group. Canonical `/p/:id` uses inline toolbar mode and
+  retains a screen-reader-only no-op menu shim; tests should assert
+  `data-toolbar-mode="inline"` rather than require that shim to be absent.
+- `/embed/p/:id` remains menu mode. Commit `e102ca19` preserves its menu and
+  privacy assertions. Independent QA passed and closed #1119; stage 3 was not
+  run, and local macOS Chromium/PostgreSQL evidence does not satisfy separate
+  Linux matrix gates owned by #1100/#1102.
+
+## 2026-10-01 — Owner choice for #1114 mobile drawing-plane controls
+
+- The owner selected the outer-rail layout after gallery review: keep the
+  rendered 3D stage at 16:9 at 375x812 and 1280x900, and place selected-plane
+  actions in a separate row below the stage on phone widths. The surrounding
+  page may grow to make room; the scene canvas must not become taller than its
+  16:9 frame. Preserve the desktop floating layout and keep rules scoped to the
+  3D editor. This supersedes the issue refinement's taller-stage option.
+
+## 2026-10-01 — Reconciliation: #1109 test-side work is permitted; #1109 closure is gated on #1111
+
+- The entry above that says #1109's implementation is "handed-off to the next
+  run" applied the pre-2026-09-30 discovery-gate wording. Under the reworded
+  `docs/process.md` rule 4 (separation of duties), Codex may implement #1109
+  because Claude (a different agent) refined its scope; no waiver was needed.
+- Codex's test-side re-homing of `manual3dStageChrome.spec.ts` (inventory
+  stays 1/53, no skips) is correct and complete; its `QA: FAIL / blocked on
+  #1111` verdict is accurate: the preserved 375x812 non-overlap assertion
+  fails on the product layout defect. No product change for #1111 exists yet.
+- Order is unchanged: #1111 -> #1110 -> rerun #1109's spec. Because Claude
+  refined #1111/#1110, the implementer of those two should be a different
+  agent (Codex or Opencode), not Claude.
+
+## 2026-09-30 — Discovery-gate rule 4 reworded as separation of duties
+
+- Approved by the owner: rule 4 in `docs/process.md` now forbids the *same
+  agent* from scoping/distilling and then implementing an issue in the same
+  run; non-implementation runs are unrestricted, and a different agent may
+  implement a same-session issue. Waivers remain per-issue and logged here.
+  `AGENTS.md` is unchanged (§11); its §13 summary still describes the older,
+  stricter wording and awaits an owner-directed edit.
+- Known gap: #1092/#1093 were scoped, implemented, and QA'd by Claude under the
+  earlier waiver; an independent stage-3 review (commits 06860c75, 5fa828f5)
+  is added to the Codex handoff.
+
+## 2026-09-30 — Owner waiver of Discovery-gate rule 4 for #1095–#1099; intent for rule 4
+
+- The owner waived rule 4 (no same-session implementation of newly filed
+  issues) for #1095–#1099 and authorized Codex to implement them as a flagged
+  stage-2 substitution (track: mixed); Claude performs QA. Dependency order
+  (#1095 → #1097 → #1096; #1098 → #1099) is not waived.
+- Stated intent: the blocker should bind only when an agent is performing an
+  implementation run; distillation, review, QA, and readiness runs are
+  unaffected. Not yet encoded — `docs/process.md` rule 4 rewording is
+  proposed in chat for approval, and `AGENTS.md` is unchanged (§11).
+
+## 2026-09-30 — Owner authorization for current open Batch 14 issues
+
+- The owner resumed the backlog goal and explicitly authorized work on all
+  currently open issues after Claude Code re-scoped them: #1096, #1100–#1104.
+  Codex may implement the criterion-ready children as flagged stage-2
+  substitutions when their rostered implementation service is unavailable.
+  This extends implementation authorization only to this current open set;
+  dependency order and each issue's owner decision points remain binding.
+- Stage 2a for #1101 is Codex / GPT-6.1-sol, substituted for Opencode Go /
+  Kimi K2.5. Stage 4 remains a separate QA pass, flagged as a substitution if
+  the rostered Claude Sonnet 5 Medium service is unavailable. No stage-3
+  review is claimed unless an independent model family performs it.
+
+## 2026-09-30 — Owner selects defer retirement for #1100
+
+- The owner approved adding server-backed project helpers and migrating the
+  six 3D specs while keeping the stale helper exports temporarily. Retire
+  those exports only after #1102–#1104 have migrated the remaining callers;
+  do not widen #1100 to all 2D callers or use staged renames.
+- Implementation commit: `91a7a553`. QA found downstream 3D toolbar and
+  mobile A-Frame failures; criterion-ready follow-ups #1106 and #1107 were
+  filed under #1096. #1100 remains open / QA FAIL pending their resolution
+  and the Linux Chromium gate.
+
+## 2026-09-30 — Owner resumes Batch 14 after #1106/#1107 refinement
+
+- After Claude Code refined the follow-ups, the owner asked Codex to work on
+  the currently open issues. This explicitly authorizes same-run work on the
+  then-open #1105–#1108, in addition to the earlier #1096/#1100–#1104
+  authorization; dependency order and issue contracts remain binding.
+- The later QA discovery #1109 was not open when this authorization was
+  given. It is filed and linked, but the discovery-gate rule keeps its
+  implementation handed-off to the next run.
+
+## 2026-10-01 — Defer mobile 3D handle UI fix from #1109
+
+- During #1107 investigation, measured the visible 375x812 drawing-plane
+  move-handle center resolving to the editor action toolbar, while desktop
+  passes. The owner chose to file a separate product issue and defer that UI
+  change; criterion-ready #1110 owns the correction and route regression.
+- #1107 remains blocked on #1110. Keep its strict movement and interaction
+  assertions unchanged until the linked fix is implemented and verified.
+
+## 2026-09-30 — Batch 14 #1096 stage-agent loop
+
+- Initiated the sequential stage-agent loop for #1096 required by
+  `docs/process.md`: a focused PM/grooming pass first, engineering only after
+  the pending fixture-architecture choice is settled, then QA after an
+  issue-scoped commit. No independent-family stage-3 reviewer is available in
+  this runtime; QA substitution provenance will be recorded. Full 16-shard CI
+  dispatch `36778653929` is running on fixed ref
+  `ef5771b77db4d4d07efe0ab0950ad0d740788a62`.
+
+## 2026-09-30 — Batch 14 #1096 full-matrix handoff
+
+- Run `36778653929` completed with all 16 E2E shards failing (205 failed
+  cases / 111 spec files, 270 passed); backend, frontend, workflow-validation,
+  and disposable routing checks passed. Shard 7 hit its 1500-second limit and
+  left 16 tests not run.
+- Filed criterion-ready follow-ups #1100 (stale 2D/3D creation fixture helpers)
+  and #1101 (four offline specs opening IndexedDB v4 instead of app schema v5).
+  Other UI/API/locator/wait failures remain unclassified. #1096 stays open as
+  HANDED-OFF pending implementation of those children and evidence-based
+  classification of residual failures.
+
+## 2026-09-30 — Batch 14 #1099 implementation dispatch
+
+- #1099 became eligible after #1098 closed. Its row measurement reads
+  browser-local project, scene/version, and media records, so stage 2 is routed
+  to implementation-complex (rostered Ollama Cloud). That service is
+  unavailable here; the owner's #1095–#1099 waiver authorizes flagged Codex
+  substitution. Stage 2 was delegated to a separate Codex task agent.
+- The owner reaffirmed expanded stored-content accounting: UTF-8 serialized
+  payload bytes plus included media bytes once, with no archive/container
+  overhead. The stage-2 handoff requires consuming #1098's shared measurement,
+  leaving API/schema/dependency behavior unchanged, and returning an
+  issue-scoped commit and exact test results for stage 4.
+
+## 2026-09-30 — Batch 14 #1098 implementation dispatch
+
+- Stage 2b was delegated to a separate Codex task agent because the rostered
+  Ollama Cloud service is unavailable; the owner waiver authorizes this
+  substitution for #1098. The expanded stored-content definition selected by
+  the owner is the implementation contract. Stage 3 is not run because no
+  independent-family reviewer is available. Stage 4 remains pending.
+
+## 2026-09-30 — Batch 14 #1098 QA and closure
+
+- The issue-scoped implementation at `61eae5bf` passed independent stage-4
+  verification of all acceptance criteria. The QA roster Claude Sonnet 5
+  Medium was unavailable; Codex/GPT-6 ran stage 4 as an explicitly flagged
+  substitution. QA comment 5920252275 was posted and #1098 closed completed.
+- No backend, API, schema, dependency, or #931 caller was changed. Local tests
+  establish the frontend measurement and the unchanged backend estimator's
+  `piece_bytes + media_bytes` semantics; no live deployment claim is made.
+
+## 2026-09-30 — Dual-track dispatch approved (Track A normalized / Track B Claude scopes, Codex reviews)
+
+- The owner approved keeping both workflows as equally supported, for
+  redundancy when usage limits bite. Track B is Claude Sonnet 5 at stage 1 and
+  Codex at stage 3; neither is a substitution. `DISPATCH.md` was updated.
+- Guardrails: stage-3 reviewer must differ in model family from the diff's
+  author; reviewer findings are verified in code before filing; per-issue
+  provenance records `track: A|B|mixed`. `AGENTS.md` was not edited (§11); the
+  optional §9 sentence awaits explicit instruction.
+
+## 2026-09-30 — Explicit fixture selection for owner-scoped production imports (#788)
+
+- The owner selected the scoped-flag approach for #788: preserve one canonical
+  reference-fixture importer, add repeatable `--source-id` selection, and
+  require explicit fixture IDs for every production invocation. The production
+  wrapper will pass only `legacy-c2-default` and
+  `legacy-c2-interactive-default` for the approved C2 refresh.
+- The previous all-six production gate remains disabled until this change is
+  deployed and a no-write preview names exactly those two fixtures. Rollback
+  is to disable the gate and redeploy the prior revision; no production write
+  occurs before the preview is independently checked.
+
 ## 2026-09-19 — Production importer must execute in the production runtime
 
 - The authorized `import_reference_pieces --allow-production` workflow was
@@ -1856,3 +2402,480 @@ production publish or data mutation is authorized by this decision.
   revision lacking the safe preview wrapper. Keep the issue open and do not
   enable the write-capable startup gate or publish without the separately
   authorized production path.
+
+## 2026-09-28 — explicit no-regression constraint
+
+- The owner explicitly requires that new feature work never regress an
+  established feature or contradict an existing specification. Preserve
+  existing behavior, add regression coverage for affected surfaces, and
+  reconcile any apparent specification conflict in a scoped issue before
+  implementation.
+
+## 2026-09-27 — backlog re-evaluation, doc reconciliation, code-health audit
+
+- Owner asked for a re-evaluation of the GitHub issue backlog
+  (consolidate/merge, refine, cut), which the owner then expanded to: add a
+  hard, standing no-regression rule with mandatory restoration safeguards;
+  audit the codebase for tangled control flow; and reconcile
+  `docs/plan.md`/`AGENTS.md` with the repo's actual and intended scope. The
+  owner explicitly directed that GitHub issues, documentation, and
+  `docs/tasks.md` be the deliverables of this pass, not a deferred report.
+- **Hard no-regression rule strengthened** (`AGENTS.md` §13): extended from
+  "new features" to every change, with a mandatory restoration/rollback path
+  requirement in issue scoping (`docs/task-template.md` gained a
+  "Regression-risk and restoration safeguard" section). This formalizes,
+  rather than duplicates, the constraint already logged above
+  (2026-09-28 entry).
+- **Issue re-evaluation:** reviewed all 25 open issues in full. None
+  qualified for consolidation or cutting as redundant — the backlog was
+  already criterion-ready and non-duplicate (confirmed by
+  `docs/distillation-2026-09-26-cross-surface-parity.md`'s stream/queue
+  structure). Owner resolved two blocking decisions in this session:
+  closed #874 (all code criteria met, remaining item tracked in #906) and
+  closed #886 (Option 1: ambient audio stays export-only/local, no new
+  public server contract; #847 updated to match; recorded in `docs/api.md`
+  and `.agents/memory/ambient-audio-export-only-delivery.md`).
+- **Documentation reconciliation:** `docs/plan.md` gained a "Scope
+  reconciliation (2026-09-27)" section. Confirmed as in-scope: 3D/A-Frame,
+  ink, admin CMS, collections, generated-art sandbox, cloud-backup/local-first
+  sync (audio/mic already confirmed in an earlier turn). Flagged, not
+  resolved: billing/PayPal/entitlements as an undocumented business-model
+  addition, and a direct contradiction between shipped ZIP export and the
+  "Explicit V1 exclusions" list's ZIP-packaging exclusion — owner decision
+  needed on both before further related issues are scoped.
+- **Code-health audit:** targeted, not sweeping — most large files are large
+  because the product is large, not because they're tangled (e.g.
+  `backend/scenes/models.py`, 2,511 lines, is declarative). Filed
+  [#978](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/978) to
+  decompose `frontend/src/pages/EditorWorkspace.tsx`'s orchestration
+  (4,366 lines) with a zero-behavior-change requirement gated on its 35
+  existing co-located tests. Did not file issues for
+  `Scene3DPreview.tsx`/`PieceStageControls.tsx`/`useSceneEditor.ts` — same
+  size pattern observed but not read deeply enough to claim real tangle.
+  Explicitly did not treat the owner-approved per-surface parity
+  duplication pattern as a tangle finding.
+- No code was changed and no literal GitHub issue was deleted in this pass;
+  closes were used as the durable, reversible substitute for deletion,
+  consistent with a standing rule against permanent data deletion that holds
+  regardless of instruction.
+
+## 2026-09-27 (continued) — owner pushback: more consolidation, atomic new issues
+
+- Owner judged the first pass insufficient: too little consolidation/closing,
+  and one umbrella code-quality issue (#978) instead of several atomic ones.
+  Re-did both with a more critical read rather than defaulting to "the
+  existing convention is deliberate, leave it":
+- **Closed #978**, replaced with 8 atomic issues (#979–#986) after reading
+  `Scene3DPreview.tsx`, `PieceStageControls.tsx`, and `useSceneEditor.ts` in
+  real depth. #984 is a genuine cross-file state-duplication finding
+  (`Scene3DPreview.tsx` and `PieceStageControls.tsx` each independently
+  reimplement the same sonic-engine/keyboard state) — the clearest true
+  tangle in the audit. `useSceneEditor.ts` was reviewed and explicitly
+  **not** issued against — one cohesive concern, not tangle.
+- **Merged #860 and #861 into #859** (closed, pointing to #859): the three
+  Chrome-verification issues were the identical checklist template repeated
+  per surface with only one line differing. #859 now carries all three
+  surfaces as separate acceptance-criteria rows.
+- **Did not merge #973/#974/#975**, after checking: unlike the #859 triplet,
+  these cite different Playwright spec files, different routing stages, and
+  #974 requires implementing a missing route (not pure verification) —
+  merging them would have made the result less atomic, not more.
+- Net effect this session: 25 open → 21 open from closures (#874, #886,
+  #860, #861), then → 29 open after filing 8 atomic replacement issues for
+  #978 (which nets to 0 itself: filed and closed same session). The open
+  count rose because #978 was one issue covering many distinct, real,
+  independently-testable fixes — splitting it into its true atomic parts is
+  the point, not a sign this pass under-consolidated; the 25-issue backlog
+  proper only shrank (dropped 4, gained 0).
+
+## 2026-09-27 (continued) — navigability, priority, and closed-issue index
+
+- Owner asked two follow-up questions: (1) are code-quality/control-flow/
+  found-defect fixes actually prioritized among open issues, and (2) can
+  closed issues be consolidated, since 932+ flat closed issues obfuscate
+  interpretability.
+- **(1) No prioritization existed.** This repo had zero milestones and no
+  priority label before now; open issues were ordered only by the feature-
+  delivery queue in `docs/distillation-2026-09-26-cross-surface-parity.md`,
+  which is dependency order, not importance — #977 (a found button-
+  placement defect) wasn't even in that queue. Created the `owner-priority`
+  label and applied it to #976, #977, #979–#986, #988: the found defects and
+  code-quality/control-flow work, ahead of feature-queue order. Documented
+  in `docs/tasks.md`'s new "Owner priority (2026-09-27)" section.
+- **(2) Closed issues themselves stay unmerged** — that's the same
+  immutability principle protecting the owner's own work; rewriting history
+  there would be the same violation in the other direction. Instead, added
+  additive-only interpretability: created 8 GitHub Milestones (weekly
+  batches, 2026-08-10 through 2026-09-28, covering all ~937 closed issues)
+  and a new `docs/tasks-index.md` pointing at them, since `docs/tasks.md`
+  itself (24,000+ lines) was part of the obfuscation problem, not a fix for
+  it. No closed issue's title, body, or evidence changed — only a milestone
+  field was added.
+- Owner explicitly confirmed doing the milestone/index work now rather than
+  scoping it as a separate follow-up issue.
+
+## 2026-09-27 (continued) — CONVENTIONS.md: multi-pillar standard + Batch 9
+
+- Owner expanded the code-quality ask into a full standing standard:
+  Python/TypeScript/React/HTML/CSS/vanilla-JS/dependencies/testing/
+  architecture/efficiency, plus WCAG accessibility, NIST-CSF security, and
+  design/UX (Nielsen's heuristics, Jakob's/Hick's/Fitt's Law). Owner
+  decisions: formalize the existing 100%-hand-rolled UI system (no
+  component library exists) rather than migrate, with room for a mixed
+  approach (an unstyled primitives library evaluated per-pattern, not a
+  blanket adoption); run a full tool-assisted sweep now, not a light
+  sample; use both a succinct root `CONVENTIONS.md` and full-depth
+  `docs/conventions/*.md` pages.
+- Full-sweep findings (all cited with file/line in the pages themselves):
+  no live exploitable security vulnerability; this app's accessibility
+  posture is genuinely strong (a shared `a11y/` hook library, 11 `jest-axe`
+  files, `docs/plan.md` naming accessibility a V1 requirement) with a
+  handful of real, narrow gaps; a real CSS bug (`--space-1`/`--space-3`
+  used but never defined, silently collapsing to 0); two real N+1 queries;
+  one real O(n²) pattern and one real per-frame linear-scan pattern, both
+  bounded by this app's own published scale ceilings (`schema/limits.json`,
+  `docs/benchmarks.md`); three real UI-consistency gaps needing an owner
+  call, not a unilateral fix.
+- Published `CONVENTIONS.md` (root) + 11 `docs/conventions/*.md` pages;
+  added pointers in `AGENTS.md` §10/§13, `docs/process.md`, `docs/
+  task-template.md`, and the `implementation-mechanical`/
+  `implementation-complex`/`qa-self-review` skills (+ `.agents/skills/`
+  mirrors) — fixed two dangling references to docs that never existed in
+  this repo (`docs/testing-guidelines.md`, `docs/design-system.md`) to
+  point at the real new pages.
+- Filed 18 new issues + edited 9 existing ones (#979–#986, #988) under a
+  new milestone, **Batch 9: CONVENTIONS.md rollout** (created open — the 8
+  historical batches are all closed). Three of the new issues are
+  owner-decision issues (entitlement-gating UI pattern, `admin-action-*`
+  vs `shell-action` shape language, unstyled-primitives-library
+  evaluation) — matching #886's options-plus-recommendation pattern, not
+  resolved unilaterally. None of the 18 have been implemented; that's
+  later work through the normal one-issue-at-a-time transaction.
+- Mid-session, plan mode re-engaged for a follow-up scope expansion
+  (2D/3D editor design standards, a collections UI, and incorporating
+  `LIGDOL_Creative_Continuity_Thesis.md`); owner explicitly directed
+  finishing this issue-filing pass first before that new plan proceeds.
+
+## 2026-09-27 (continued) — 2D/3D editor + collections parity: Batch 10
+
+- Owner asked for editor design standards (2D and 3D), a collections UI on
+  par with the `augment-humankind`/`augment-humankind-react-node` reference
+  repos, and named ideas from `LIGDOL_Creative_Continuity_Thesis.md`
+  ("@"-referenced, gitignored, read directly) to incorporate — while
+  preserving existing functionality and only adding what's simple,
+  implementable, and industry-standard.
+- Grounded the plan in a **live Chrome inspection** (owner-requested) of
+  `https://augmentrart.com/users/@cfornesa/edit/untitled-animation-2`, not
+  just code reading — confirmed the 2D toolbar problems firsthand (two
+  unrelated `StageControlsPopover` instances rendering an identical
+  hardcoded icon; `File` structurally misplaced in a different DOM region
+  than the icon row it visually sits beside; the Ask AI button's
+  stacking-context risk, already flagged in the code's own comment).
+- **LIGDOL scoping decision:** the thesis describes a full social-creative
+  network (feed, cross-project memory graph, capability routing) — an
+  order of magnitude beyond this app's V1 scope. Imported exactly two
+  compatible ideas (canvas-as-materialized-state informing the Code/Visual
+  parity standard; "bring it into a project" informing the collections
+  item-picker issue) and explicitly deferred the rest as a separate,
+  future, deliberate initiative — not silently expanded into.
+- Confirmed two already-open issues (`#977`, `#951`) already describe the
+  2D toolbar problem; cross-linked this session's root-cause findings onto
+  them via comments rather than re-filing duplicates.
+- Compared this repo's collections feature against both reference repos
+  (read-only, unmodified) and found real gaps: item picker, drag-reorder,
+  cover image, draft/archived status, comments, curated public browse.
+  Nested/sub-collections and the PHP's raw `iframe_code` field were
+  checked and explicitly **not** treated as gaps to close — the former
+  isn't supported in either reference repo either; the latter conflicts
+  with this app's sandboxed-rendering security conventions and is recorded
+  as a deliberate non-port in `docs/conventions/security.md`.
+- Filed 13 new issues under a new milestone, **Batch 10: 2D/3D editor and
+  collections parity**. Every issue that touches accessibility explicitly
+  states existing functionality (e.g. collections' Move-up/Move-down
+  buttons) is kept additive alongside the new capability (drag-and-drop),
+  not replaced — drag-and-drop alone isn't keyboard-accessible. None of the
+  13 issues have been implemented; that's later work through the normal
+one-issue-at-a-time transaction.
+
+## 2026-09-28 — Full substitution session provenance
+
+Codex/GPT-5 was explicitly authorized as a full substitution for the
+rostered backlog-session, engineering, QA, production-readiness, and
+session-completion services in this session. The session completed the #979
+camera-overlay hook extraction in commit `550089a3`, with 37 focused test
+files/425 tests plus typecheck, lint, and format-check passing. The required
+GitHub QA comment was rejected by the connector's external-publication risk
+policy; the complete evidence and boundary are recorded in
+`.local/tasks/backlog-session-2026-09-28.md`. #980 was also completed in
+`f5866d72`, and #981's canvas viewport extraction was completed in
+`a4a1e4f4`; both were locally verified and closed through typed issue-state
+updates. The remaining open backlog was not silently claimed complete.
+
+## 2026-09-28 (continued) — rectifying Codex's "backlog complete" summary
+
+- Owner relayed Codex's session summary ("Backlog goal complete... remaining
+  open issues are only blocked/dependency-ordered/owner-decision/tracking/
+  production-action/newly-filed") and asked how to rectify anything that
+  needed it. Audited independently rather than trusting the summary, per
+  this repo's own untrusted-external-input convention.
+- **Code work confirmed solid**: `#984`-`#986`, `#1017`, `#1018` all have
+  real commits matching their issue scope; full backend (1768) and frontend
+  (3079) test suites pass; no regression-rule violations found.
+- **Process/evidence gaps found and rectified**:
+  1. All 5 closures had zero GitHub-visible QA evidence — each ledger entry
+     claimed the GitHub comment tool was "rejected by the authenticated
+     connector's external-publication risk policy." Tested directly:
+     `gh issue comment` works normally. The claim did not reproduce and
+     should be treated as suspect in any future session's self-reported
+     tool failures, not accepted at face value. Backfilled real
+     criterion-matrix QA comments on all 5 issues from the accurate local
+     ledger content.
+  2. A real, currently-failing `mypy` defect in `backend/scenes/
+     collections.py` (2 errors, pre-existing since `#997`, referenced but
+     left unfixed by `#1017`) was filed as `#1021` — not fixed inline, per
+     the standing no-same-session-implementation rule.
+  3. 9 open issues were independently re-verified as actually unblocked
+     (every cited dependency confirmed CLOSED via direct `gh issue view`
+     checks, not assumed) — `#859`, `#847`, `#926`, `#913`, `#914`, `#915`,
+     `#916`, `#941`, `#945`. Corrected via comments on each; `#941`
+     unblocks its entire downstream chain.
+  4. `#976` (owner-priority, untouched) and `#1019`/`#1016`/`#1012`
+     (scoped, not blocked, simply not reached) were flagged so the next
+     round doesn't skip them on a stale "blocked" read.
+- No issue was reopened; nothing was implemented in this correction pass —
+  filing/commenting/status-correction only, consistent with the rest of
+  this session's discipline.
+
+## 2026-09-28 (continued) — current backlog goal closure and GPT-5 stage substitution
+
+- The owner-requested backlog goal resumed the 25-issue live inventory after
+  the prior incomplete handoff. #1020 and #1021 were implemented, independently
+  re-verified, commented with `## QA: PASS`, and closed as completed.
+- The active Codex/GPT-5 runtime substituted for unavailable rostered
+  implementation and QA services, and for the stage-5 readiness gate, with the
+  substitution explicitly recorded in the ledger. No second-opinion review was
+  credited to the implementing model.
+- The remaining 23 open issues retain explicit blocked, dependency-blocked, or
+  handed-off status and exact next actions; open GitHub state is intentional.
+
+## 2026-09-28 — expanded backlog child implementation pass
+
+- Owner decisions converted #995, #996, #1013, and #1019 into criterion-ready
+  child work. Children #1022–#1029, #1031, and #1033 were implemented and
+  closed after QA; #1032 remains evidence-blocked only for authenticated admin
+  browser inspection.
+- CI dispatch run `36464649615` exposed a real workflow gating defect, so #1034
+  was created under the discovery gate. Its `always()` shard-1 fix is in
+  `cd57da3a`, and fresh run `36469307875` is required to establish whether the
+  remaining timeout/failure cluster is genuine or test-infrastructure noise.
+- No production data, real-provider credential, or owner-controlled write was
+  performed. Those remain explicit user/owner decisions rather than silently
+  inferred authorization.
+
+## 2026-09-28 — #975 ZIP browser harness restoration
+
+- Restored the missing `frontend/e2e/publicMediaAssetsZip.spec.ts` referenced
+  by #975; committed as `2e4a10d7`.
+- The restored spec covers archive contents, extraction, offline static serving,
+  desktop/mobile viewport overflow, screenshots, cleanup, and runtime asset
+  requests. `make check`, Playwright discovery, Prettier, and oxlint pass.
+- The exact Chromium execution remains blocked by unavailable Compose/Django
+  health prerequisites and the local Docker daemon. QA therefore records
+  `FAIL/BLOCKED` for evidence, not a product failure; no browser claim is
+  substituted from unit tests.
+
+## 2026-10-01 — Owner authorizes #1111, #1110, and #1109 rerun
+
+- The owner explicitly authorized implementation of #1111 and #1110 after
+  issue refinement, followed by another #1109 run. This supersedes earlier
+  deferral/handoff wording for those two issue implementations in this run.
+- #1112 was discovered during #1110 verification and filed through the
+  discovery gate; it was not included in the owner's implementation scope.
+  Keep it handed off pending a later authorization/session.
+- #1109's rerun exposed real mobile authoring-panel overflow (113x714 scroll
+  extent vs 42x518 client extent at 375x812). Its issue's decision rule
+  requires owner direction before changing the UI contract or filing a
+  product/test-contract child. Keep #1109 and its dependents open meanwhile.
+- Memory-file session checkpoint remains unresolved: propose durable lessons
+  to the owner before updating MEMORY.md.
+
+
+## 2026-10-01 — #1107 closed after #1110 regression fix
+
+- The unchanged A-Frame regression spec passed three consecutive runs at both
+  required viewports after #1110 commit `4587b424`. Baseline test/expect counts
+  are unchanged at 1/11, and rendered selected/after-drag screenshots were
+  inspected. QA comment 5923071850 records the evidence; #1107 is closed.
+- #1110 remains open for the separate Three.js transform spec fixture follow-up
+  #1112. The owner has not authorized same-run implementation of #1112.
+- #1109 remains blocked on the explicit owner choice about its observed mobile
+  authoring-panel overflow.
+
+## 2026-10-01 — #1112 authorized and dependency-blocked after setup migration
+
+- The resumed goal explicitly directs implementation and closure of the open
+  issues while preserving existing functionality; implement criterion-ready
+  #1112 as a stage-2a substitution.
+- Commit `dc518652` keeps the #782 scenario unchanged but reveals stale inline
+  toolbar state in both viewports. #1108 already owns the confirmed stale
+  `Open piece controls menu`/menu-dialog close inventory, so #1112 is handed
+  off there rather than retargeted.
+- The owner selected a minimum usable mobile panel width with no horizontal
+  clipping for #1109's authoring disclosure. Revise acceptance to allow usable
+  vertical scrolling on short viewports; do not treat the current 42px panel
+  rendering as acceptable.
+
+## 2026-10-01 — #1109 product follow-up #1113
+
+- Filed criterion-ready #1113 in Batch 14 for the confirmed 3D authoring
+  panel usability defect: a minimum usable width, no horizontal overflow, and
+  vertical access to the full control list. #1109's measured 44px panel cannot
+  satisfy the owner's selected contract.
+- The owner chose the product outcome; the responsive presentation approach
+  remains subject to the repo's options-before-design checkpoint. #1113 is
+  staged but no implementation has begun. #1109, #1106, and #1108 remain
+  dependent on that implementation and subsequent QA.
+
+## 2026-10-01 — #1113 completed; resume #1109
+
+- The owner had already selected the 3D authoring panel outcome: minimum usable
+  mobile width, no horizontal clipping, and usable vertical scrolling. Applied
+  the existing compact popover pattern by anchoring the open panel to the wider
+  editor-actions row on phones. Kept the fix scoped to the 3D authoring panel.
+- Commit `db01d47d` passed its new three-viewport route regression, full frontend
+  unit suite (3,186 tests), typecheck, lint, formatting, and production build.
+  QA comment 5923798247 records rendered inspection and local evidence limits;
+  #1113 is closed.
+- The subsequent #1109 run reached a stale `Steer the piece` assertion after
+  closing Piece controls. The control now lives inside that popover in inline
+  mode; re-home the assertion there without removing its intent, then finish
+  the remaining #1109 scenario.
+
+## 2026-10-01 — #1109 closed after full inline-mode QA
+
+- Commit `b928c76e` rehomed the steering and immersive checks to their current
+  inline surfaces and updated the toolbar origin for the full-stage overlay.
+  The spec remains at 1/53 and passes 1280x900 plus 375x812 on local Chromium.
+- Stage 4 verified the exact spec, typecheck, lint, format, scope, screenshots,
+  and test-count inventory. QA comment 5923875615 records the matrix. #1109 is
+  closed; proceed to #1106's three-spec gate.
+
+## 2026-10-01 — #1108 AI 3D stage test retargeted to canonical manual editor
+
+- The owner chose to retarget `ai3dStageChrome.spec.ts` from the retired
+  `/ai-projects3d/:id` workspace to the canonical manual editor reached by that
+  legacy route, preserving checks for stage actions and moving AI/publication
+  assertions to Project settings/editor header. The focused Chromium test
+  passes; the separate AI proposal Undo failure is tracked by #1115.
+
+## 2026-10-01 — #1131 stage 1 PM audit delegated
+
+- Initiated the required separate PM subagent pass for issue #1131 after the
+  first implementation draft had been written and committed. The PM agent must
+  verify the current GitHub acceptance contract, scope, dependencies, route
+  boundaries, and verification requirements without changing product files.
+- This is a corrective separation-of-duties audit under `docs/process.md`;
+  implementation commit `b11971c0` remains provisional until subsequent
+  engineering and independent QA stages finish.
+
+## 2026-10-01 — #1131 stage 2b engineer audit delegated
+
+- Initiated a separate complex-logic engineer pass against the refined #1131
+  issue and provisional implementation commit `b11971c0`. Rostered owner is
+  Ollama Cloud / Kimi K3; actual owner is a Codex subagent / GPT-6.1-sol with
+  effort unavailable, substituted: yes. Scope is limited to the version
+  lifecycle endpoints and their focused tests; the agent may make and commit
+  only issue-scoped corrections and must not close the issue or perform QA.
+
+## 2026-10-01 — #1131 stage 4 QA delegated
+
+- Initiated the separate QA subagent pass after Stage 2b's independent
+  engineering audit. Rostered owner is Claude / Sonnet 5 / Medium; actual
+  owner is a Codex subagent / GPT-6.1-sol with effort unavailable,
+  substituted: yes. The QA agent must re-read the latest issue criteria,
+  inspect `b11971c0` as untrusted, rerun focused and full backend checks, and
+  post a criterion-matrix `## QA: PASS` or `## QA: FAIL` comment. It must not
+  modify product code or close the issue.
+
+## 2026-10-01 — #1131 returned for latency evidence
+
+- Stage 4 comment [5934945703](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131#issuecomment-5934945703)
+  passed functional criteria but failed the regression-risk check because
+  version-save latency had not been measured. Three paired 100-sample runs on
+  pytest's disposable SQLite database measured median incremental latency of
+  0.117, 0.113, and 0.109 ms; corresponding baseline-to-baseline p95 timing
+  noise was 0.502, 0.413, and 0.434 ms. These are evidence for re-review, not a
+  QA verdict. Re-enter Stage 2b for an independent protocol/evidence audit,
+  then repeat Stage 4 before closing #1131.
+
+## 2026-10-01 — #1131 latency probe method tightened
+
+- Stage 2b's independent measurement audit found that the temporary probe
+  collected all baseline control pairs before event-enabled treatment pairs
+  and mislabeled the signed median delta as an absolute delta. The first
+  measurements are not final QA evidence. Re-enter Stage 2b to correct the
+  one-off probe, interleave control and treatment pairs, and repeat the three
+  runs before Stage 4 resumes.
+
+## 2026-10-01 — #1131 Stage 4 re-review initiated
+
+- The separate Stage 2b audit validated the corrected, interleaved
+  disposable-SQLite probe in three runs: median signed effects 0.098, 0.097,
+  and 0.123 ms, each below its interleaved control p95 noise of 0.604, 0.643,
+  and 0.333 ms. The evidence is local to this test setup and is not a
+  PostgreSQL/deployment claim. Re-enter Stage 4 for a full acceptance review,
+  fresh exact backend checks, and an updated QA verdict.
+
+## 2026-10-02 — LIGDOL batch owner decisions
+
+- #1129 / D1: use an additive owner-private `Project.brief` server field for
+  server-backed structured 2D projects, capped at 1,500 characters. Local-only
+  projects remain local-first and do not gain this field until uploaded.
+- #1143: define accepted share over reviewable proposals (awaiting review,
+  accepted, or rejected); exclude provider failures and cancellations before
+  review. Preserve full history with indexed queries and a hard timeout that
+  returns a retryable unavailable response.
+- #1130 / D2: generalize ProjectActivity to structured 3D scenes and generated
+  ArtPieces with one associated project-family FK per event. #1156 and #1157
+  own the serialized implementation slices; no public activity feed is
+  authorized.
+- CI: owner authorizes pushing the existing branch and dispatching required
+  CI checks without merging. No production publish or database operation is
+  included.
+
+## 2026-10-02 — #1138/#1156 API documentation criterion disposition
+
+- The owner accepts the same-commit `docs/api.md` update as satisfying the
+  issues' “docs/api.md updated first” criterion. The implementation commit
+  does not prove chronological ordering; this is the owner's explicit
+  criterion interpretation for #1138 and #1156, not a general change to the
+  repository's API-documentation-first rule. Record and link this disposition
+  in both issue QA/closure records before any closure.
+
+## 2026-10-03 — #1196 public gallery crawlability: server-side injection plus noscript
+
+- Owner decision: the public gallery becomes crawler-visible through
+  server-side injection of a bounded, privacy-gated first-page list into the
+  SPA shell plus a `<noscript>` fallback, extending the existing production
+  injection path (#700). Build-time prerender and full SSR are rejected; no
+  new dependency. Implemented by #1197; #1203 extends it to the collections
+  and art-piece listings.
+
+## 2026-10-03 — Batch 18 MCP decisions and E2E suite curation
+
+- #1205: official `mcp` Python SDK mounted in the existing Django ASGI app; dependency approved (AGENTS.md section 8 answered on the issue).
+- #1206: django-oauth-toolkit approved; pre-registered clients only (no dynamic registration); scopes `gallery:read`, `projects:write`, `ai:use`, plus separately granted `destructive`; AI tools use the same quotas and entitlements as the web app.
+- #1219: deletion over MCP ships in the first release, behind the `destructive` scope with a matching `confirm` argument, soft-delete only, audited.
+- E2E audit decision A: all 20 E? candidates are rewritten (via #1166, #1168, #1170, #1173, #1174), none retired. Decision B: PR smoke widened with the three offline specs (#1224).
+
+## 2026-10-03 — Wave 2B local verification and #1225 geometry sampling
+
+- **Execution decision (not a new owner decision):** preserve #730's original absolute viewport-coordinate comparisons and 1px/action-count assertions; after each viewport resize, wait until two consecutive toolbar-bound samples are within 1px before recording the baseline. This addresses immediate post-resize sampling while keeping the acceptance criterion strict.
+- **Local evidence:** the 26-spec Wave 2B Chromium union passed 51/51 on disposable Compose PostgreSQL. The 39-spec combined focused/shell/stage union passed 66/70; the four remaining tests map to Goal 7 owners #1189 (`artPieceSixEngineEmbed`), #1178 (`drawingPlane3d`), #1175 (`pieceStageSizing`), and #1188 (`pieceToolbarPlacement`). The separate #1166 Firefox case could not launch on macOS; its ratchet entry stays. No Goal 7 rules changed.
+- **Gate:** frontend typecheck/lint/format checks passed (existing lint warnings). `make check` remains red on 2,011 backend passes, 44 skips, and the existing stale CI-YAML assertion failure, followed by Vitest discovering the Node-only ratchet file as an empty suite. No workflow was dispatched; Linux evidence is pending. No issue was closed.
+- **Provenance:** Stage 2a roster Opencode Go / Kimi K2.5; actual implementer Codex / GPT-6 (effort not surfaced), substituted. Stage 4 roster Claude / Sonnet 5 / Medium was not run independently; these local results are implementation evidence only. Track: mixed.
+
+## 2026-10-03 — #1194 E2E support helper reference
+
+- Documented the existing `frontend/e2e/support/` contracts and linked the reference from E2E authoring standard 2. No helper API or test behavior changed. The #1174 publication confirmation helper remains spec-local because no shared publication-dialog helper exists.
+- The README export inventory and three typechecked setup recipes passed; `UV_CACHE_DIR=/private/tmp/codex-1190-uv-cache make check` passed. Linux full-matrix evidence remains owner-dispatched and pending.

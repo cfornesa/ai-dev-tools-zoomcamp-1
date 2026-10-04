@@ -26,6 +26,7 @@ changed but not recorded, or vice versa) can never happen.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date
 
@@ -36,10 +37,11 @@ from scenes import entitlements
 from scenes.models import BillingCheckout, BillingEvent, Plan, Subscription
 from scenes.paypal_adapter import verify_webhook_signature
 
+logger = logging.getLogger("scenes.billing")
 
-class WebhookRejected(Exception):
-    """Raised only for a signature that fails verification. Nothing is
-    read or written before this check, so nothing needs to be undone."""
+
+class WebhookRejected(Exception):  # noqa: N818
+    """Raised only for a signature that fails verification."""
 
 
 @dataclass(frozen=True)
@@ -60,8 +62,41 @@ def _reject(event_id: str, event_type: str, detail: str) -> WebhookOutcome:
     return WebhookOutcome(outcome="rejected", detail=detail)
 
 
-@transaction.atomic
 def process_webhook_event(
+    *,
+    event_id: str,
+    event_type: str,
+    resource: dict,
+    headers: dict,
+    raw_body: dict,
+    actor_user_lookup,
+) -> WebhookOutcome:
+    """Verify one PayPal webhook before entering the state-change transaction."""
+    if not verify_webhook_signature(headers, raw_body):
+        source_ip = headers.get("X-Forwarded-For") or headers.get("Remote-Addr")
+        rejection = {
+            "event_id": event_id,
+            "event_type": event_type,
+            "source_ip": source_ip,
+        }
+        logger.warning(
+            "paypal.webhook.signature_rejected",
+            extra={"paypal_webhook_rejection": rejection},
+        )
+        _reject(event_id, event_type, "Webhook signature verification failed.")
+        raise WebhookRejected("Webhook signature verification failed.")
+    return _process_verified_webhook_event(
+        event_id=event_id,
+        event_type=event_type,
+        resource=resource,
+        headers=headers,
+        raw_body=raw_body,
+        actor_user_lookup=actor_user_lookup,
+    )
+
+
+@transaction.atomic
+def _process_verified_webhook_event(
     *,
     event_id: str,
     event_type: str,
@@ -80,9 +115,6 @@ def process_webhook_event(
     cross-user event impossible: nothing after activation can redirect
     an existing subscription's entitlements to a different account.
     """
-    if not verify_webhook_signature(headers, raw_body):
-        raise WebhookRejected("Webhook signature verification failed.")
-
     existing = BillingEvent.objects.filter(paypal_event_id=event_id).select_for_update().first()
     if existing is not None:
         # Idempotent: a duplicate/replayed delivery is a no-op, returning

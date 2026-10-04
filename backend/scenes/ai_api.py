@@ -416,6 +416,10 @@ _PATCH_REASON_TO_RESPONSE: dict[str, tuple[int, str]] = {
         status.HTTP_422_UNPROCESSABLE_ENTITY,
         "delete_intent_required",
     ),
+    PatchErrorReason.TARGET_SCOPE_VIOLATION: (
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        "target_scope_violation",
+    ),
 }
 
 
@@ -526,15 +530,15 @@ _current_ai_persona_prompt: ContextVar[str | None] = ContextVar(
 )
 
 
-class MissingPersonalMistralCredential(Exception):
+class MissingPersonalMistralCredential(Exception):  # noqa: N818
     """Raised before any provider call when the owner has no usable key."""
 
 
-class UnsupportedProvider(Exception):
+class UnsupportedProvider(Exception):  # noqa: N818
     """Raised when a catalogued provider has no live adapter yet."""
 
 
-def get_ai_provider() -> AISceneProvider:
+def get_ai_provider() -> AISceneProvider:  # noqa: C901
     """The single place this view constructs its provider. A real
     The request user is carried through a context variable so existing tests
     that monkeypatch this zero-argument factory remain compatible.
@@ -795,6 +799,7 @@ class AIEditSceneView(APIView):
     | Empty patch (documented policy: rejected, not a no-op success) | 422 | `"empty_patch"` |
     | Patch touches a protected field (identity/version/seed/id)    | 422  | `"protected_field"`  |
     | Patch touches an element the prompt never names (#158) | 422 | `"unreferenced_element"` |
+    | Selected-target scope violation (#1060) | 422 | `"target_scope_violation"` |
     | Patch removes/replaces without delete intent (#812) | 422 | `"delete_intent_required"` |
     | Patch targets a path outside the documented allowlist | 422 | `"invalid_patch_path"` |
     | Patch is malformed (bad op/shape/missing value) | 422  | `"malformed_patch"`      |
@@ -808,7 +813,7 @@ class AIEditSceneView(APIView):
     has no database write path at all (see module-level docstring).
     """
 
-    def post(self, request, public_id):
+    def post(self, request, public_id):  # noqa: C901
         project = _get_project_or_404(public_id)
         _require_or_404(request.user, Action.AI_EDIT_SCENE, project)
 
@@ -864,6 +869,7 @@ class AIEditSceneView(APIView):
             AIEditSceneRequest(
                 prompt=_augment_prompt_with_target_ids(prompt, target_ids),
                 current_scene=current_scene,
+                selected_target_ids=tuple(target_ids),
             )
         )
         result = outcome.result
@@ -953,7 +959,7 @@ class AIAcceptProposalRequestSerializer(serializers.Serializer):
     client_request_id = serializers.UUIDField(required=False, allow_null=True, default=None)
 
 
-class _StaleBase(Exception):
+class _StaleBase(Exception):  # noqa: N818
     """Raised inside the accept transaction to abort without creating a version."""
 
 
@@ -1030,7 +1036,7 @@ class AIAcceptProposalView(APIView):
     request is in flight, per this task's UI requirements.
     """
 
-    def post(self, request, public_id):
+    def post(self, request, public_id):  # noqa: C901
         project = _get_project_or_404(public_id)
         _require_or_404(request.user, Action.VERSION_CREATE, project)
 

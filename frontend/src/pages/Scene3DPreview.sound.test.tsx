@@ -23,6 +23,8 @@ const {
   setVolumeSpy,
   setVoiceVolumeSpy,
   setVoiceMutedSpy,
+  setAmbientSampleSpy,
+  resolveAmbientSampleSpy,
   setFilterSpy,
   setMelodicSynthSpy,
   setTempoSpy,
@@ -45,6 +47,8 @@ const {
   setVolumeSpy: vi.fn(),
   setVoiceVolumeSpy: vi.fn(),
   setVoiceMutedSpy: vi.fn(),
+  setAmbientSampleSpy: vi.fn(),
+  resolveAmbientSampleSpy: vi.fn().mockResolvedValue(null),
   setFilterSpy: vi.fn(() => true),
   setMelodicSynthSpy: vi.fn(() => ({ applied: [], unsupported: [] })),
   setTempoSpy: vi.fn(),
@@ -60,6 +64,10 @@ const {
   startCameraThereminSpy: vi.fn(),
   updateCameraThereminSpy: vi.fn(),
   stopCameraThereminSpy: vi.fn(),
+}));
+
+vi.mock('../audio/ambientSampleAsset', () => ({
+  resolveAmbientSample: resolveAmbientSampleSpy,
 }));
 
 vi.mock('../audio/sonicEngine', () => ({
@@ -98,6 +106,7 @@ vi.mock('../audio/sonicEngine', () => ({
     setVolume: setVolumeSpy,
     setVoiceVolume: setVoiceVolumeSpy,
     setVoiceMuted: setVoiceMutedSpy,
+    setAmbientSample: setAmbientSampleSpy,
     setFilter: setFilterSpy,
     setEffect: vi.fn(() => true),
     setMelodicSynth: setMelodicSynthSpy,
@@ -282,6 +291,58 @@ describe('Scene3DPreview sound control (issue #306)', () => {
     expect(setVoiceVolumeSpy).toHaveBeenCalledWith('ambient', 30);
     expect(setVoiceMutedSpy).toHaveBeenCalledWith('ambient', true);
     expect(setScaleSpy).toHaveBeenCalledWith('major');
+  });
+
+  it('resolves an authored ambient sample and disables the BPM slider while it is active (#847)', async () => {
+    resolveAmbientSampleSpy.mockResolvedValueOnce(new Blob(['bytes'], { type: 'audio/mpeg' }));
+    const scene = baseScene({ sonic: { extras: { ambient_sample: 'asset-1' } } as never });
+    render(<Scene3DPreview scene={scene} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+
+    expect(resolveAmbientSampleSpy).toHaveBeenCalledWith('asset-1');
+    await vi.waitFor(() => expect(setAmbientSampleSpy).toHaveBeenCalled());
+    expect(setAmbientSampleSpy).toHaveBeenCalledWith(expect.any(Blob));
+    expect(screen.getByLabelText(/Ambient BPM/)).toBeDisabled();
+    expect(screen.getByText('BPM has no effect while an ambient sample is playing.')).toBeVisible();
+  });
+
+  it('does not resolve an ambient sample remotely on public surfaces (#1067)', async () => {
+    const scene = baseScene({ sonic: { extras: { ambient_sample: 'asset-remote' } } as never });
+    render(<Scene3DPreview scene={scene} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+
+    expect(resolveAmbientSampleSpy).toHaveBeenCalledWith('asset-remote');
+  });
+
+  it('falls back to the synthesized ambient walk when the sample cannot be resolved', async () => {
+    resolveAmbientSampleSpy.mockResolvedValueOnce(null);
+    const scene = baseScene({ sonic: { extras: { ambient_sample: 'missing-asset' } } as never });
+    render(<Scene3DPreview scene={scene} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+
+    await vi.waitFor(() => expect(setAmbientSampleSpy).toHaveBeenCalledWith(null));
+    expect(screen.getByLabelText(/Ambient BPM/)).toBeEnabled();
+    expect(await screen.findByText(/ambient sample could not be loaded/)).toBeVisible();
+  });
+
+  it('leaves the BPM slider enabled and never resolves a sample when none is authored', async () => {
+    render(<Scene3DPreview scene={baseScene()} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    await user.click(screen.getByRole('button', { name: 'Enable sound' }));
+    await user.click(screen.getByRole('button', { name: 'Piece controls' }));
+
+    expect(resolveAmbientSampleSpy).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/Ambient BPM/)).toBeEnabled();
   });
 
   it('adjusts every keyboard synth control and the master filter through the engine API', async () => {

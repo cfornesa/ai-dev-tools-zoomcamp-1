@@ -314,7 +314,7 @@ class _ScenePlan:
     canvas_opacity: float = 1.0
 
 
-def _build_scene_plan(scene: dict) -> _ScenePlan:
+def _build_scene_plan(scene: dict) -> _ScenePlan:  # noqa: C901
     """Validates `scene`, then builds an ordered draw tree.
 
     Mirrors `sceneDrawPlan.ts`'s `buildScenePlan`: layers in ascending

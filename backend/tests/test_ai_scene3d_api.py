@@ -22,7 +22,7 @@ from rest_framework.test import APIClient
 
 import scenes.ai_api as ai_api
 from ai_provider.mistral_provider import MistralSceneProvider
-from scenes.models import Project3D, SceneVersion3D
+from scenes.models import Project3D, ProjectActivity, SceneVersion3D
 
 _FIXTURE_PATH = (
     Path(__file__).resolve().parent.parent.parent
@@ -353,6 +353,9 @@ def test_accept_creates_a_version_and_advances_current_version(owner_client, pro
 
     project.refresh_from_db()
     assert project.current_version_id == body["id"]
+    activity = ProjectActivity.objects.get(project3d=project)
+    assert activity.action_type == ProjectActivity.ActionType.AI_PROPOSAL_ACCEPTED
+    assert activity.metadata == {"sequence": 1, "origin": "ai_create"}
 
 
 @pytest.mark.django_db
@@ -372,6 +375,7 @@ def test_accept_is_idempotent_via_client_request_id(owner_client, project):
     assert second.status_code == 200
     assert first.json()["id"] == second.json()["id"]
     assert SceneVersion3D.objects.filter(project=project).count() == 1
+    assert ProjectActivity.objects.filter(project3d=project).count() == 1
 
 
 @pytest.mark.django_db

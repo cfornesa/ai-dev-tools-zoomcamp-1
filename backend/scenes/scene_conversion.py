@@ -101,11 +101,11 @@ class SceneConversionError(Exception):
         super().__init__(message or self.code)
 
 
-class RunNotFound(SceneConversionError):
+class RunNotFound(SceneConversionError):  # noqa: N818
     code = "not_found"
 
 
-class QuotaExceeded(SceneConversionError):
+class QuotaExceeded(SceneConversionError):  # noqa: N818
     code = "quota_exceeded"
 
     def __init__(self, cap: int) -> None:
@@ -113,35 +113,35 @@ class QuotaExceeded(SceneConversionError):
         self.cap = cap
 
 
-class RateLimited(SceneConversionError):
+class RateLimited(SceneConversionError):  # noqa: N818
     code = "rate_limited"
 
 
-class MissingCredential(SceneConversionError):
+class MissingCredential(SceneConversionError):  # noqa: N818
     code = "missing_credential"
 
 
-class InvalidTarget(SceneConversionError):
+class InvalidTarget(SceneConversionError):  # noqa: N818
     code = "invalid_target"
 
 
-class NotRunning(SceneConversionError):
+class NotRunning(SceneConversionError):  # noqa: N818
     code = "not_running"
 
 
-class AdvanceInProgress(SceneConversionError):
+class AdvanceInProgress(SceneConversionError):  # noqa: N818
     code = "advance_in_progress"
 
 
-class NotAwaitingReview(SceneConversionError):
+class NotAwaitingReview(SceneConversionError):  # noqa: N818
     code = "not_awaiting_review"
 
 
-class StaleBase(SceneConversionError):
+class StaleBase(SceneConversionError):  # noqa: N818
     code = "stale_base"
 
 
-class AgenticNotSupported(SceneConversionError):
+class AgenticNotSupported(SceneConversionError):  # noqa: N818
     code = "agentic_not_supported"
 
 
@@ -278,7 +278,7 @@ def start_conversion(
     return run
 
 
-def advance_conversion(run: SceneConversionRun) -> SceneConversionRun:
+def advance_conversion(run: SceneConversionRun) -> SceneConversionRun:  # noqa: C901
     now = timezone.now()
 
     with transaction.atomic():

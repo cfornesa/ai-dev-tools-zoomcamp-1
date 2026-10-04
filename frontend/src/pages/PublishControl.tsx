@@ -87,12 +87,14 @@ function PublishControl({
   setProject,
   persistPendingDetails,
   compact = false,
+  inline = false,
 }: {
   id: string;
   project: Project | null;
   setProject: Dispatch<SetStateAction<Project | null>>;
   persistPendingDetails: () => Promise<PersistDetailsResult>;
   compact?: boolean;
+  inline?: boolean;
 }) {
   const [showPublishConfirm, setShowPublishConfirm] = useState(false);
   const [publishState, setPublishState] = useState<'idle' | 'publishing' | 'unpublishing'>('idle');
@@ -243,6 +245,10 @@ function PublishControl({
       )}
     </>
   );
+
+  if (compact && inline) {
+    return <div className="publication-status-inline">{publicationPanel}</div>;
+  }
 
   if (compact) {
     return (

@@ -241,6 +241,11 @@ const routes: Route[] = [
       mockServices.projects3d.saveSceneVersion3D(
         p.projectId,
         (body as { scene_json: never }).scene_json,
+        body as {
+          html_source?: string | null;
+          css_source?: string | null;
+          js_source?: string | null;
+        },
       ),
   },
   {

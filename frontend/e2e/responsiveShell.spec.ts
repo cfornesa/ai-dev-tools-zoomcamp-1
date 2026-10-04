@@ -1,9 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
+import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
-import { openPieceControlsMenu } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -12,8 +11,8 @@ type Fixtures = Extract<E2EState, { available: true }>;
 /** Mirrors `projectLifecycle.spec.ts`'s/`publishingAndRemix.spec.ts`'s own
  * identically-named helper (each spec file keeps its own copy rather than
  * sharing one, per this suite's existing convention). */
-async function createBlankProjectViaUI(page: Page): Promise<string> {
-  const projectId = await createBlankProjectViaUIBase(page);
+async function createServerProject2DWithExpandedSections(page: Page): Promise<string> {
+  const projectId = await createServerProject2DBase(page);
   await expandAllCollapsibleSections(page);
   return projectId;
 }
@@ -41,20 +40,10 @@ async function publishProjectViaUI(
   await page.getByRole('button', { name: 'Save changes' }).click();
   await expect(page.getByText('Saved.')).toBeVisible();
 
-  // Issue #450: mirrors publishingAndRemix.spec.ts's own `choosePublished`
-  // -- the "Publish" action moved behind the stage's "Publication status"
-  // disclosure, itself nested behind "Open piece controls menu" (#444).
-  // An anchored, case-insensitive regex matches the trigger's closed
-  // ("Publication status: Draft") and open ("Hide publication status:
-  // draft") accessible names while excluding the popover's own "Close
-  // publication status: draft" button, which an unanchored substring
-  // match would otherwise also hit.
-  await openPieceControlsMenu(page);
-  const toolbar = page.locator('.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]');
-  const trigger = toolbar.getByRole('button', {
-    name: /^(publication status: draft|hide publication status: draft)$/i,
-  });
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+  // Publication status is a primary editor action in the current editor.
+  const toolbar = page.getByRole('group', { name: 'Primary editor actions' });
+  const fileMenu = toolbar.getByRole('button', { name: 'File', exact: true });
+  if ((await fileMenu.getAttribute('aria-expanded')) !== 'true') await fileMenu.click();
   await toolbar
     .getByRole('group', { name: 'Publication status', exact: true })
     .getByRole('button', { name: 'Published', exact: true })
@@ -176,9 +165,10 @@ test.describe('Responsive app shell', () => {
       await expectVisibleAndInViewport(
         page.getByRole('navigation', { name: 'Primary navigation' }),
       );
-      await expectVisibleAndInViewport(
-        page.getByRole('button', { name: /Use (reduced|full) motion/i }),
-      );
+      const displayToggles = page.locator('.shell-display-toggles');
+      const motion = displayToggles.getByRole('button', { name: /Use (reduced|full) motion/i });
+      await expect(displayToggles).toHaveCSS('position', 'static');
+      await expect(motion).toBeVisible();
       // Task #572: '/' now resolves anonymous visitors to the public
       // gallery instead of a standalone Home surface with its own
       // Google-specific sign-in CTA. The gallery's content panel is real,
@@ -187,6 +177,8 @@ test.describe('Responsive app shell', () => {
       // asserted visible.
       await expect(page.locator('.content-panel')).toBeVisible();
       await expectVisibleAndInViewport(page.getByRole('heading', { name: 'Public gallery' }));
+      await motion.scrollIntoViewIfNeeded();
+      await expectVisibleAndInViewport(motion);
       await expectNoHorizontalOverflow(page);
     });
 
@@ -322,6 +314,7 @@ test.describe('Responsive app shell', () => {
         await expectVisibleAndInViewport(accountLink);
         await expectVisibleAndInViewport(logoutButton);
         await expectVisibleAndInViewport(motion);
+        await expect(page.locator('.shell-display-toggles')).toHaveCSS('position', 'fixed');
         await expectNoOverlap(title, navigation);
         await expectNoOverlap(title, accountLink);
         await expectNoOverlap(title, logoutButton);
@@ -336,6 +329,9 @@ test.describe('Responsive app shell', () => {
         await expectVisibleAndInViewport(navigation);
         await expectVisibleAndInViewport(accountLink);
         await expectVisibleAndInViewport(logoutButton);
+        await expect(motion).toBeVisible();
+        await expect(page.locator('.shell-display-toggles')).toHaveCSS('position', 'static');
+        await motion.scrollIntoViewIfNeeded();
         await expectVisibleAndInViewport(motion);
         await expectNoOverlap(title, navigation);
         await expectNoOverlap(title, accountLink);
@@ -425,7 +421,7 @@ test.describe('Responsive app shell', () => {
         const context = await browser.newContext();
         const page = await context.newPage();
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
-        await createBlankProjectViaUI(page);
+        await createServerProject2DWithExpandedSections(page);
 
         await page.setViewportSize(NARROW_VIEWPORT);
         await page.goto('/');
@@ -450,7 +446,7 @@ test.describe('Responsive app shell', () => {
         const context = await browser.newContext();
         const page = await context.newPage();
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
-        const projectId = await createBlankProjectViaUI(page);
+        const projectId = await createServerProject2DWithExpandedSections(page);
         await publishProjectViaUI(
           page,
           projectId,

@@ -33,7 +33,9 @@ result *likely*; it is not a security control.
 from __future__ import annotations
 
 import json
+import os
 import re
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -83,6 +85,9 @@ AFRAME_CDN_URL = f"https://cdn.jsdelivr.net/npm/aframe@{AFRAME_VERSION}/dist/afr
 
 DEFAULT_MODEL = "mistral-small-latest"
 REQUEST_TIMEOUT_MS = 20_000
+ART_PIECE_MAX_REPAIRS = 2
+ART_PIECE_ESCALATION_MODEL = ""
+ART_PIECE_DEADLINE_MS = 60_000
 
 # A self-contained art-piece snippet is expected to be far smaller than a
 # full scene JSON document; this is a raw pre-parse safety net (independent
@@ -93,6 +98,14 @@ MAX_RAW_RESPONSE_BYTES = 200_000
 # any stray markdown fence/whitespace the model might still emit despite
 # being told not to.
 MAX_SNIPPET_CHARS = 150_000
+ART_PIECE_MAX_TOKENS = MAX_SNIPPET_CHARS // 4
+
+# Rollback switch for the inline-script contract. The frontend sandbox remains
+# the security boundary; this only controls whether the generator's shape
+# validator accepts the new source form.
+ART_PIECE_ALLOW_INLINE_SCRIPT = True
+ART_PIECE_EXTRACT = True
+ART_PIECE_RUBRIC = "structural"
 
 _ESTIMATED_PROMPT_COST_PER_1K = 0.002
 _ESTIMATED_COMPLETION_COST_PER_1K = 0.006
@@ -129,23 +142,29 @@ gestures: `window.__registerArtPieceCamera({ getPose: function () { return { x: 
 y: camera.position.y, z: camera.position.z }; }, setPose: function (x, y, z) { \
 camera.position.set(x, y, z); camera.lookAt(0, 0, 0); } });` -- replace `camera` with whatever \
 variable name you gave your camera. Always include this call; omitting it leaves hand-gesture \
-steering with nothing to control."""
+steering with nothing to control.
+- For a sun/planet/moon orbital system, create a planet `THREE.Group` and parent the planet \
+mesh to it; parent the moon to the planet group and derive the moon's world position from the \
+planet's current position plus a faster local orbit. Enable the renderer's shadow map and set \
+both `castShadow` and `receiveShadow` on the visible meshes and the sun light."""
 
 # Issue #199 (A-Frame extension): like SVG, this is declarative markup
 # only -- A-Frame's own built-in geometry/material/animation components
-# cover most generative-art use cases without any custom JavaScript, and
-# skipping script execution entirely keeps this library's trust surface
-# as small as SVG's.
-_AFRAME_SYSTEM_PROMPT = """You generate the markup for a single generative-art piece using ONLY \
-A-Frame's declarative HTML (no custom JavaScript, no <script> tags). The A-Frame library is \
+# cover most generative-art use cases without custom JavaScript. Inline
+# component code is permitted where the prompt requires it; external scripts
+# remain forbidden.
+_AFRAME_SYSTEM_PROMPT = """You generate the markup for a single generative-art piece using \
+A-Frame's \
+HTML. One inline <script> is permitted for custom component lifecycle code and event listeners; \
+never use a script src attribute. The A-Frame library is \
 already loaded -- do not reference a version or write a <script src="..."> for it. Follow \
 these rules exactly:
 
 - Respond with ONLY the raw markup -- no prose, no explanation, no markdown code fences before \
 or after it.
 - Output exactly one <a-scene id="art-piece-scene" embedded> element and its children (entities, \
-primitives like <a-box>/<a-sphere>/<a-cylinder>/<a-plane>, lights, camera) and nothing else: no \
-<html>, <head>, <body>, <!DOCTYPE>, or <script> element of any kind.
+primitives like <a-box>/<a-sphere>/<a-cylinder>/<a-plane>, lights, camera, and at most one inline \
+<script>) and nothing else: no <html>, <head>, <body>, or <!DOCTYPE>.
 - Include an <a-camera> (or a camera-carrying <a-entity>) positioned so the generated geometry is \
 actually visible, and any lighting needed to see the geometry -- do not rely on A-Frame's default \
 lighting alone if the scene has custom materials.
@@ -167,11 +186,15 @@ positive-Z axis looking back toward the origin -- do not rotate it to lie flat u
 actually describes a floor, ground, or table the shape sits on, and if it does, tilt the camera \
 downward (e.g. rotation="-45 0 0" on the camera entity) so it looks down at the flat shape \
 instead of across it.
-- Any animation must use A-Frame's built-in `animation` component (e.g. \
-animation="property: rotation; to: 0 360 0; loop: true; dur: 4000") -- never JavaScript.
+- Any animation should use A-Frame's built-in `animation` component (e.g. \
+animation="property: rotation; to: 0 360 0; loop: true; dur: 4000") unless custom inline \
+JavaScript is required by the prompt.
 - Never reference an external resource: no `src` pointing at a URL for any asset, texture, or \
 model, no <a-assets> item loaded from a remote path. Every color/material must be defined \
-inline via A-Frame's own material/color attributes."""
+inline via A-Frame's own material/color attributes.
+- For a custom interaction prompt, register the custom component with lifecycle code and an event \
+listener, attach it to the relevant entity, and update the named targets together on every \
+trigger."""
 
 
 @dataclass(frozen=True)
@@ -190,7 +213,7 @@ class ArtPieceResult:
     def __post_init__(self) -> None:
         if (self.code is None) == (self.error is None):
             raise ValueError("ArtPieceResult must carry exactly one of `code` or `error`.")
-        if self.code is None and (self.regions or self.warnings):
+        if self.code is None and self.regions:
             raise ValueError("ArtPieceResult errors cannot carry region metadata.")
 
 
@@ -252,20 +275,23 @@ class ArtPieceProvider:
         prompt: str,
         temperature: float,
         messages: list[dict[str, str]] | None = None,
+        max_tokens: int = ART_PIECE_MAX_TOKENS,
+        model: str | None = None,
     ):
         if self.vendor == "mistral":
             return self.client.chat.complete(
-                model=self.model,
+                model=model or self.model,
                 messages=messages
                 or [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=temperature,
+                max_tokens=max_tokens,
                 timeout_ms=self.timeout_ms,
             )
         return self.client.generate(
-            model=self.model,
+            model=model or self.model,
             system_instruction=(
                 "\n\n".join(
                     message["content"]
@@ -276,6 +302,7 @@ class ArtPieceProvider:
             ),
             prompt=prompt,
             response_schema={"type": "string"},
+            max_output_tokens=max_tokens,
         )
 
     @staticmethod
@@ -316,7 +343,7 @@ class ArtPieceProvider:
             ),
         )
 
-    def generate(self, prompt: str, library: str) -> ArtPieceResult:
+    def generate(self, prompt: str, library: str) -> ArtPieceResult:  # noqa: C901
         zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
         if library not in SUPPORTED_LIBRARIES:
             # Defense in depth: `ArtPieceGenerateRequestSerializer` already
@@ -345,95 +372,124 @@ class ArtPieceProvider:
             messages.append({"role": "system", "content": self.persona_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        try:
-            response = self._complete(
-                system_prompt=system_prompt,
-                prompt=prompt,
-                temperature=0.7,
-                messages=messages,
-            )
-        except httpx.TimeoutException:
-            return self._error_result(
-                zero_usage,
-                AIProviderTimeoutError(f"Mistral did not respond within {self.timeout_ms}ms."),
-            )
-        except httpx.HTTPError:
-            return self._error_result(
-                zero_usage,
-                AIProviderRejectionError(
-                    f"{self.vendor.title()} request failed (network/connection error)."
-                ),
-            )
-        except (
-            AIProviderTimeoutError,
-            AIProviderCancelledError,
-            AIProviderQuotaError,
-            AIProviderRejectionError,
-        ) as exc:
-            return self._error_result(zero_usage, exc)
-        except Exception as exc:  # Mistral SDK error types (lazy-imported below)
-            if self.vendor != "mistral":
-                raise
-            from mistralai.client.errors import MistralError
+        max_repairs = _bounded_int_env("ART_PIECE_MAX_REPAIRS", ART_PIECE_MAX_REPAIRS, minimum=0)
+        deadline_ms = _bounded_int_env("ART_PIECE_DEADLINE_MS", ART_PIECE_DEADLINE_MS, minimum=1)
+        escalation_model = os.environ.get(
+            "ART_PIECE_ESCALATION_MODEL", ART_PIECE_ESCALATION_MODEL
+        ).strip()
+        deadline = time.monotonic() + deadline_ms / 1000
+        attempt_evidence: list[str] = []
+        total_usage = zero_usage
+        repair_prompt = prompt
 
-            if not isinstance(exc, MistralError):
-                raise  # a genuine bug, not a documented provider condition
-
-            status = getattr(exc, "status_code", None)
-            if status == 429:
+        for attempt in range(max_repairs + 1):
+            if time.monotonic() >= deadline:
+                return self._timeout_result(total_usage, attempt_evidence, deadline_ms=deadline_ms)
+            model = (
+                escalation_model
+                if attempt == max_repairs and attempt > 0 and escalation_model
+                else self.model
+            )
+            try:
+                response = self._complete(
+                    system_prompt=system_prompt,
+                    prompt=repair_prompt,
+                    temperature=0.7,
+                    messages=messages[:-1] + [{"role": "user", "content": repair_prompt}],
+                    model=model,
+                )
+            except httpx.TimeoutException:
+                return self._timeout_result(total_usage, attempt_evidence, deadline_ms=deadline_ms)
+            except httpx.HTTPError:
                 return self._error_result(
-                    zero_usage,
-                    AIProviderQuotaError(
-                        "Mistral reported its account/API rate limit or quota was exceeded."
+                    total_usage,
+                    AIProviderRejectionError(
+                        f"{self.vendor.title()} request failed (network/connection error)."
                     ),
                 )
-            if status in (408, 504):
+            except (
+                AIProviderTimeoutError,
+                AIProviderCancelledError,
+                AIProviderQuotaError,
+                AIProviderRejectionError,
+            ) as exc:
+                return self._error_result(total_usage, exc)
+            except Exception as exc:  # Mistral SDK error types (lazy-imported below)
+                if self.vendor != "mistral":
+                    raise
+                from mistralai.client.errors import MistralError
+
+                if not isinstance(exc, MistralError):
+                    raise
+                status = getattr(exc, "status_code", None)
+                if status == 429:
+                    return self._error_result(
+                        total_usage,
+                        AIProviderQuotaError(
+                            "Mistral reported its account/API rate limit or quota was exceeded."
+                        ),
+                    )
+                if status in (408, 504):
+                    return self._timeout_result(
+                        total_usage,
+                        attempt_evidence,
+                        f"Mistral reported a request timeout (status {status}).",
+                    )
                 return self._error_result(
-                    zero_usage,
-                    AIProviderTimeoutError(
-                        f"Mistral reported a request timeout (status {status})."
-                    ),
+                    total_usage,
+                    AIProviderRejectionError(f"Mistral provider request failed (status {status})."),
                 )
-            return self._error_result(
-                zero_usage,
-                AIProviderRejectionError(f"Mistral provider request failed (status {status})."),
-            )
 
-        usage = self._response_usage(response)
+            usage = self._response_usage(response)
+            total_usage = _sum_usage(total_usage, usage)
+            try:
+                content = self._response_content(
+                    response, unwrap_json_string=self.vendor != "mistral"
+                )
+            except (AttributeError, IndexError, TypeError):
+                return self._error_result(
+                    total_usage,
+                    AIProviderRejectionError("Mistral response contained no message content."),
+                )
 
-        try:
-            content = self._response_content(response, unwrap_json_string=self.vendor != "mistral")
-        except (AttributeError, IndexError, TypeError):
-            return self._error_result(
-                usage, AIProviderRejectionError("Mistral response contained no message content.")
-            )
+            text = content if isinstance(content, str) else str(content)
+            raw_bytes = len(text.encode("utf-8"))
+            if raw_bytes > MAX_RAW_RESPONSE_BYTES:
+                return ArtPieceResult(
+                    usage=total_usage,
+                    error=(
+                        f"{RESPONSE_TOO_LARGE_PREFIX}Mistral's response was {raw_bytes} bytes, "
+                        f"exceeding the {MAX_RAW_RESPONSE_BYTES}-byte limit."
+                    ),
+                    warnings=attempt_evidence,
+                )
 
-        text = content if isinstance(content, str) else str(content)
-        raw_bytes = len(text.encode("utf-8"))
-        if raw_bytes > MAX_RAW_RESPONSE_BYTES:
-            return ArtPieceResult(
-                usage=usage,
-                error=(
-                    f"{RESPONSE_TOO_LARGE_PREFIX}Mistral's response was {raw_bytes} bytes, "
-                    f"exceeding the {MAX_RAW_RESPONSE_BYTES}-byte limit."
-                ),
-            )
+            snippet = extract_snippet(text, library)
+            snippet_ok, snippet_reason = _looks_like_snippet(snippet, library, prompt)
+            showcase_ok, showcase_reason = _looks_like_requested_showcase(snippet, prompt, library)
+            reason = snippet_reason or showcase_reason
+            if len(snippet) > MAX_SNIPPET_CHARS:
+                reason = "snippet_too_large"
+            if snippet_ok and showcase_ok and not reason:
+                regions = parse_regions(snippet, library)
+                warnings = attempt_evidence + ([] if regions else ["missing_layer_markers"])
+                return ArtPieceResult(
+                    usage=total_usage, code=snippet, regions=regions, warnings=warnings
+                )
 
-        snippet = _strip_markdown_fence(text).strip()
-        if not _looks_like_snippet(snippet, library) or len(snippet) > MAX_SNIPPET_CHARS:
-            return ArtPieceResult(
-                usage=usage,
-                error=(
-                    f"{EMPTY_OR_MALFORMED_PREFIX}The generated output was empty or did not "
-                    f"look like a valid {library} snippet. Try rephrasing the prompt."
-                ),
-            )
+            reason = reason or "invalid_snippet"
+            attempt_evidence.append(f"attempt={attempt + 1} reason={reason} model={model}")
+            if attempt >= max_repairs:
+                return ArtPieceResult(
+                    usage=total_usage,
+                    error=f"{EMPTY_OR_MALFORMED_PREFIX}{reason}",
+                    warnings=attempt_evidence,
+                )
+            repair_prompt = _repair_prompt(prompt, library, snippet, reason)
 
-        regions = parse_regions(snippet, library)
-        warnings = [] if regions else ["missing_layer_markers"]
-        return ArtPieceResult(usage=usage, code=snippet, regions=regions, warnings=warnings)
+        return self._timeout_result(total_usage, attempt_evidence, deadline_ms=deadline_ms)
 
-    def refine(
+    def refine(  # noqa: C901
         self,
         instruction: str,
         source: str,
@@ -518,6 +574,50 @@ class ArtPieceProvider:
     def _error_result(usage: AIUsageMetadata, exc: Exception) -> ArtPieceResult:
         return ArtPieceResult(usage=usage, error=str(exc))
 
+    @staticmethod
+    def _timeout_result(
+        usage: AIUsageMetadata,
+        evidence: list[str],
+        message: str | None = None,
+        deadline_ms: int = ART_PIECE_DEADLINE_MS,
+    ) -> ArtPieceResult:
+        return ArtPieceResult(
+            usage=usage,
+            error=message or f"Mistral did not respond within {deadline_ms}ms.",
+            warnings=evidence,
+        )
+
+
+def _bounded_int_env(name: str, default: int, *, minimum: int) -> int:
+    try:
+        value = int(os.environ.get(name, str(default)))
+    except ValueError:
+        return default
+    return max(minimum, value)
+
+
+def _sum_usage(first: AIUsageMetadata, second: AIUsageMetadata) -> AIUsageMetadata:
+    prompt_tokens = first.prompt_tokens + second.prompt_tokens
+    completion_tokens = first.completion_tokens + second.completion_tokens
+    return AIUsageMetadata(
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        estimated_cost_usd=(
+            (prompt_tokens / 1000) * _ESTIMATED_PROMPT_COST_PER_1K
+            + (completion_tokens / 1000) * _ESTIMATED_COMPLETION_COST_PER_1K
+        ),
+    )
+
+
+def _repair_prompt(original_prompt: str, library: str, previous_output: str, reason: str) -> str:
+    return (
+        f"Repair the previous {library} art-piece output for this request: {original_prompt}\n\n"
+        f"Validation reason code: {reason}\n"
+        "Fix only that structural problem. Return only the complete corrected raw snippet; "
+        "do not add prose or markdown fences. Previous output:\n"
+        f"{previous_output}"
+    )
+
 
 def _strip_markdown_fence(text: str) -> str:
     """Best-effort removal of a stray ```html/```/``` wrapper -- the system
@@ -533,18 +633,62 @@ def _strip_markdown_fence(text: str) -> str:
     return stripped.strip()
 
 
-def _looks_like_snippet(snippet: str, library: str) -> bool:
+def _with_leading_layer_markers(text: str, match: re.Match[str]) -> str:
+    """Keep contiguous layer annotations immediately before an extracted span."""
+
+    lines = text[: match.start()].splitlines(keepends=True)
+    first_marker = len(lines)
+    while first_marker > 0:
+        line = lines[first_marker - 1]
+        if re.fullmatch(r"[ \t]*(?://[ \t]*@layer[^\n]*|<!--[ \t]*@layer.*?-->)[ \t\r\n]*", line):
+            first_marker -= 1
+            continue
+        break
+    if first_marker == len(lines):
+        return match.group(1).strip()
+    return ("".join(lines[first_marker:]) + match.group(1)).strip()
+
+
+def extract_snippet(text: str, library: str) -> str:
+    """Recover the first plausible generated snippet from model wrapper prose."""
+
+    if not ART_PIECE_EXTRACT:
+        return _strip_markdown_fence(text)
+
+    fenced = re.search(r"```[^\n`]*\n(.*?)```", text, flags=re.DOTALL)
+    if fenced:
+        return fenced.group(1).strip()
+
+    tag_pairs = {
+        "svg": (r"<svg\b", r"</svg>"),
+        "aframe": (r"<a-scene\b", r"</a-scene>"),
+    }
+    pair = tag_pairs.get(library)
+    if pair:
+        match = re.search(f"({pair[0]}.*?{pair[1]})", text, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            return _with_leading_layer_markers(text, match)
+
+    if library == "canvas2d":
+        match = re.search(r"(<canvas\b.*?</script>)", text, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            return _with_leading_layer_markers(text, match)
+    elif library in {"p5js", "c2js", "c2js-interactive"}:
+        match = re.search(r"(window\.sketch\s*=.*)", text, flags=re.IGNORECASE | re.DOTALL)
+        if match:
+            return _with_leading_layer_markers(text, match)
+
+    return _strip_markdown_fence(text)
+
+
+def _legacy_looks_like_snippet(snippet: str, library: str, prompt: str = "") -> bool:
     if not snippet:
         return False
     lowered = snippet.lower()
     if library == "canvas2d":
         return "<canvas" in lowered and "<script" in lowered
     if library == "svg":
-        # Per the system prompt, this is inert markup only -- a "<script"
-        # anywhere means the model didn't follow the no-JavaScript rule,
-        # rejected the same as a missing "<svg" rather than passed through
-        # to the (still-safe, but not what was asked for) sandbox.
-        return "<svg" in lowered and "<script" not in lowered
+        return "<svg" in lowered and _allows_inline_script(lowered, prompt)
     if library == "threejs":
         # Plain JavaScript expected -- reject anything that looks like the
         # model wrapped its own markup/script tag around the code (the
@@ -557,9 +701,287 @@ def _looks_like_snippet(snippet: str, library: str) -> bool:
         return "window.sketch" in lowered and "p.setup" in lowered
     if library in {"c2js", "c2js-interactive"}:
         return "window.sketch" in lowered and "startframe" in lowered
-    # aframe: declarative markup only, matching SVG's inert-markup
-    # rejection of any "<script" tag.
-    return "<a-scene" in lowered and "<script" not in lowered
+    if "<a-scene" not in lowered:
+        return False
+    # Inline component code is allowed for every A-Frame prompt. The sandbox's
+    # opaque origin and CSP still contain that code; external script URLs
+    # remain rejected here.
+    if "<script" not in lowered:
+        return True
+    return _allows_inline_script(lowered, prompt)
+
+
+def _allows_inline_script(lowered: str, prompt: str) -> bool:
+    if re.search(r"<script\b[^>]*\bsrc\s*=", lowered) is not None:
+        return False
+    if ART_PIECE_ALLOW_INLINE_SCRIPT:
+        return True
+    return "light-switch" in prompt.casefold() and "aframe.registercomponent" in lowered
+
+
+def _looks_like_snippet(  # noqa: C901
+    snippet: str, library: str, prompt: str = ""
+) -> tuple[bool, str | None]:
+    if ART_PIECE_RUBRIC == "legacy":
+        legacy_ok = _legacy_looks_like_snippet(snippet, library, prompt)
+        return (legacy_ok, None) if legacy_ok else (False, "invalid_snippet")
+    if not snippet:
+        return False, "empty_snippet"
+    lowered = snippet.lower()
+    if library == "canvas2d":
+        if "<canvas" not in lowered:
+            return False, "missing_canvas_root"
+        if "<script" not in lowered:
+            return False, "missing_canvas_script"
+        return True, None
+    if library == "svg":
+        if "<svg" not in lowered:
+            return False, "missing_svg_root"
+        if re.search(r"<script\b[^>]*\bsrc\s*=", lowered):
+            return False, "script_src_external"
+        return True, None
+    if library == "threejs":
+        if "three." not in lowered:
+            return False, "missing_threejs_marker"
+        if any(marker in lowered for marker in ("<script", "<html", "<canvas")):
+            return False, "threejs_wrapped_markup"
+        return True, None
+    if library == "p5js":
+        if "window.sketch" not in lowered:
+            return False, "missing_p5_sketch"
+        if "p.setup" not in lowered:
+            return False, "missing_p5_setup"
+        return True, None
+    if library in {"c2js", "c2js-interactive"}:
+        if "window.sketch" not in lowered:
+            return False, "missing_c2_sketch"
+        if "startframe" not in lowered:
+            return False, "missing_start_frame"
+        return True, None
+    if "<a-scene" not in lowered:
+        return False, "missing_aframe_root"
+    if "<script" in lowered and not _allows_inline_script(lowered, prompt):
+        return False, "script_src_external"
+    return True, None
+
+
+def _legacy_looks_like_requested_showcase(snippet: str, prompt: str, library: str) -> bool:
+    """Reject generic fallbacks for the two fixed showcase prompts only."""
+
+    prompt_words = prompt.casefold()
+    lowered = snippet.casefold()
+    if library == "threejs" and all(word in prompt_words for word in ("sun", "planet", "moon")):
+        required_groups = "three.group" in lowered or "new three.group" in lowered
+        required_hierarchy = "planet" in lowered and "moon" in lowered
+        required_world_position = "getworldposition" in lowered or (
+            "planet.position" in lowered and "moon.position" in lowered
+        )
+        required_shadows = all(
+            marker in lowered for marker in ("shadowmap", "castshadow", "receiveshadow")
+        )
+        return (
+            required_groups and required_hierarchy and required_world_position and required_shadows
+        )
+    if library == "aframe" and "light-switch" in prompt_words:
+        return (
+            all(
+                marker in lowered
+                for marker in (
+                    "aframe.registercomponent",
+                    "addeventlistener",
+                    "light-switch",
+                    "lamp",
+                    "emissive",
+                )
+            )
+            and lowered.count("lamp") >= 2
+        )
+    if library == "p5js" and all(
+        word in prompt_words for word in ("particles", "gravity", "collision")
+    ):
+        required_state = all(
+            marker in lowered for marker in ("particles", "mass", "radius", "velocity")
+        )
+        required_loop = "p.draw" in lowered and lowered.count("for") >= 2
+        required_physics = any(marker in lowered for marker in ("dist(", "distance", "gravity"))
+        required_stability = any(marker in lowered for marker in ("constrain", "clamp", "limit"))
+        return required_state and required_loop and required_physics and required_stability
+    if library in {"c2js", "c2js-interactive"} and all(
+        word in prompt_words for word in ("recursive", "fractal", "tree")
+    ):
+        required_recursion = "function" in lowered and lowered.count("function") >= 1
+        required_self_call = any(
+            marker in lowered for marker in ("drawtree(", "branch(", "fractal(", "recursive(")
+        )
+        required_base_case = any(
+            marker in lowered for marker in ("depth <=", "depth<", "level <=", "level<")
+        )
+        required_render = "startframe" in lowered and any(
+            marker in lowered for marker in ("lineto", "stroke", "fill", "drawtree", "branch")
+        )
+        return required_recursion and required_self_call and required_base_case and required_render
+    if library == "c2js-interactive" and all(
+        word in prompt_words for word in ("paint", "stroke", "undo", "redo")
+    ):
+        required_state = all(marker in lowered for marker in ("strokes", "points", "color"))
+        required_input = any(
+            marker in lowered for marker in ("pointerdown", "pointermove", "touchstart")
+        )
+        required_history = "undo" in lowered and "redo" in lowered
+        required_blending = any(
+            marker in lowered for marker in ("globalcompositeoperation", "globalalpha", "alpha")
+        )
+        return required_state and required_input and required_history and required_blending
+    if library == "svg" and (
+        "animated gauge" in prompt_words
+        or "progress-ring" in prompt_words
+        or "progress ring" in prompt_words
+    ):
+        required_structure = all(
+            marker in lowered
+            for marker in (
+                "<svg",
+                "viewbox",
+                "<circle",
+                "<clippath",
+                "<lineargradient",
+                "stroke-dasharray",
+                "stroke-dashoffset",
+            )
+        )
+        required_references = "clip-path" in lowered and "url(#" in lowered
+        required_animation = any(
+            marker in lowered for marker in ("<animate", "@keyframes", "animation:")
+        )
+        required_circumference = any(
+            marker in lowered for marker in ("circumference", "2π", "2*pi", "2 * pi", "2 * π")
+        )
+        return (
+            required_structure
+            and required_references
+            and required_animation
+            and required_circumference
+        )
+    return True
+
+
+def _looks_like_requested_showcase(  # noqa: C901
+    snippet: str, prompt: str, library: str
+) -> tuple[bool, str | None]:
+    if ART_PIECE_RUBRIC == "legacy":
+        legacy_ok = _legacy_looks_like_requested_showcase(snippet, prompt, library)
+        return (legacy_ok, None) if legacy_ok else (False, "showcase_structure_mismatch")
+
+    prompt_words = prompt.casefold()
+    lowered = snippet.casefold()
+    checks: tuple[tuple[bool, str], ...]
+    if library == "threejs" and all(word in prompt_words for word in ("sun", "planet", "moon")):
+        checks = (
+            ("three.group" in lowered or "new three.group" in lowered, "missing_group_hierarchy"),
+            ("planet" in lowered and "moon" in lowered, "missing_orbital_entities"),
+            (
+                "getworldposition" in lowered or "planet.position" in lowered,
+                "missing_relative_orbit",
+            ),
+            (
+                all(marker in lowered for marker in ("shadowmap", "castshadow", "receiveshadow")),
+                "missing_shadows",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if library == "aframe" and any(word in prompt_words for word in ("click", "gaze", "switch")):
+        checks = (
+            ("aframe.registercomponent" in lowered, "missing_registerComponent"),
+            ("addeventlistener" in lowered, "missing_event_listener"),
+            (
+                any(
+                    marker in lowered
+                    for marker in ("emissive", "setattribute", "intensity", "material")
+                ),
+                "missing_light_mutation",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if (
+        library == "p5js"
+        and any(word in prompt_words for word in ("gravity", "attract"))
+        and any(word in prompt_words for word in ("collision", "bounce"))
+    ):
+        checks = (
+            (
+                all(marker in lowered for marker in ("particles", "mass", "radius", "velocity")),
+                "missing_particle_state",
+            ),
+            ("p.draw" in lowered and lowered.count("for") >= 2, "missing_particle_loop"),
+            (
+                any(marker in lowered for marker in ("dist(", "distance", "gravity")),
+                "missing_gravity",
+            ),
+            (
+                any(marker in lowered for marker in ("constrain", "clamp", "limit")),
+                "missing_stability_guard",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if library == "c2js" and "fractal" in prompt_words and "tree" in prompt_words:
+        checks = (
+            ("function" in lowered, "missing_recursive_function"),
+            (
+                any(marker in lowered for marker in ("drawtree(", "branch(", "fractal(")),
+                "missing_recursive_call",
+            ),
+            (
+                any(marker in lowered for marker in ("depth<", "depth <=", "level<", "level <=")),
+                "missing_recursion_base_case",
+            ),
+            (
+                "startframe" in lowered
+                and any(marker in lowered for marker in ("lineto", "stroke", "fill")),
+                "missing_fractal_render",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if library == "c2js-interactive" and all(
+        word in prompt_words for word in ("paint", "stroke", "undo", "redo")
+    ):
+        checks = (
+            (
+                all(marker in lowered for marker in ("strokes", "points", "color")),
+                "missing_stroke_state",
+            ),
+            (
+                any(marker in lowered for marker in ("pointerdown", "pointermove", "touchstart")),
+                "missing_paint_input",
+            ),
+            ("undo" in lowered and "redo" in lowered, "missing_history_controls"),
+            (
+                any(
+                    marker in lowered
+                    for marker in ("globalcompositeoperation", "globalalpha", "alpha")
+                ),
+                "missing_blending",
+            ),
+        )
+        return next(((False, reason) for ok, reason in checks if not ok), (True, None))
+    if library == "svg" and any(
+        word in prompt_words for word in ("gauge", "speedometer", "progress-ring", "progress ring")
+    ):
+        if "lineargradient" not in lowered and "radialgradient" not in lowered:
+            return False, "missing_gradient"
+        if "<clippath" not in lowered or "clip-path" not in lowered:
+            return False, "missing_clip_path"
+        if not any(marker in lowered for marker in ("<animate", "@keyframes", "animation:")):
+            return False, "missing_animation"
+        script_math = re.search(
+            r"<script\b.*?(getattribute\s*\(.*?['\"]r|gettotallength|2\s*\*\s*(?:math\.)?pi\s*\*)",
+            lowered,
+            flags=re.DOTALL,
+        )
+        if not script_math:
+            return False, "missing_runtime_circumference"
+        if re.search(r"stroke-dasharray\s*=\s*['\"]\s*\d+(?:\.\d+)?\s*['\"]", lowered):
+            return False, "hardcoded_dash_value"
+    return True, None
 
 
 def parse_regions(code: str, library: str) -> list[dict[str, int | str]]:

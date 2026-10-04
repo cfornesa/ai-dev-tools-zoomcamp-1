@@ -8,9 +8,9 @@
  */
 import { expect, test } from '@playwright/test';
 
-import { apiPatch } from './support/api.js';
+import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -31,7 +31,7 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
       if (index === 0) {
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
       }
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       expect(projectId).toBeTruthy();
       if (!projectId) continue;
 
@@ -40,18 +40,10 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
         description: 'A public 2D stage control fixture.',
       });
       expect(metadata.ok()).toBe(true);
+      const published = await apiPost(page.context(), `/api/projects/${projectId}/publish/`);
+      expect(published.status()).toBe(200);
       await page.reload();
-
-      const ownerToolbar = page.locator(
-        '.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]',
-      );
-      await ownerToolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-      await ownerToolbar.getByRole('button', { name: 'Publication status: Draft' }).click();
-      await ownerToolbar.getByRole('button', { name: 'Published', exact: true }).click();
-      await page
-        .getByRole('alertdialog')
-        .getByRole('button', { name: 'Publish', exact: true })
-        .click();
+      await page.getByRole('button', { name: 'File', exact: true }).click();
       await expect(page.getByTestId('visibility-status')).toContainText('Published (public)');
 
       const anonymousContext = await browser.newContext();
@@ -81,9 +73,7 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
           await expect(
             toolbar.getByRole('button', { name: 'Expand piece to fullscreen' }),
           ).toBeVisible();
-          await expect(
-            toolbar.getByRole('button', { name: 'Open piece controls menu' }),
-          ).toHaveCount(0);
+          await expect(toolbar).toHaveAttribute('data-toolbar-mode', 'inline');
         }
         await toolbar.getByRole('button', { name: 'Open download menu' }).click();
         await expect(toolbar.getByRole('menuitem', { name: 'Download Full' })).toBeVisible();
@@ -138,13 +128,11 @@ test.describe('anonymous public 2D route stage chrome (#378/#386)', () => {
       await anonymousContext.close();
 
       await page.goto(`/projects/${projectId}`);
-      const ownerMenu = page.locator(
-        '.piece-stage-shell [role="toolbar"][aria-label="Piece actions"]',
-      );
-      await ownerMenu.getByRole('button', { name: 'Open piece controls menu' }).click();
-      await ownerMenu.getByRole('button', { name: /Publication status: Published/ }).click();
-      await ownerMenu
-        .locator('.publication-status-controls-panel')
+      const fileMenu = page.getByRole('button', { name: 'File', exact: true });
+      await fileMenu.click();
+      const filePopover = page.getByRole('menu', { name: 'File menu' });
+      await filePopover
+        .getByRole('group', { name: 'Publication status' })
         .getByRole('button', { name: 'Draft', exact: true })
         .click();
       await expect(page.getByTestId('visibility-status')).toContainText('Draft (private)');

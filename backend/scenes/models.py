@@ -269,6 +269,11 @@ class Collection(models.Model):
         PRIVATE = "private", "Private"
         PUBLIC = "public", "Public"
 
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        DRAFT = "draft", "Draft"
+        ARCHIVED = "archived", "Archived"
+
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="collections"
@@ -280,6 +285,16 @@ class Collection(models.Model):
     visibility = models.CharField(
         max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
     )
+    status = models.CharField(
+        max_length=8, choices=Status.choices, default=Status.ACTIVE, db_index=True
+    )
+    comments_enabled = models.BooleanField(default=False)
+    # Polymorphic reference to a server-retained image from a published piece.
+    # This deliberately mirrors PieceIntakeAsset's public delivery contract
+    # instead of introducing a second collection-only blob store.
+    cover_piece_kind = models.CharField(max_length=16, blank=True, default="")
+    cover_piece_public_id = models.UUIDField(null=True, blank=True)
+    cover_asset_id = models.UUIDField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -302,6 +317,24 @@ class Collection(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+class CollectionComment(models.Model):
+    """Authenticated visitor comment on a public collection (#1018)."""
+
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name="comments")
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="collection_comments"
+    )
+    body = models.TextField(max_length=2000)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def __str__(self) -> str:
+        return f"Comment by {self.author_id} on {self.collection_id}"
 
 
 class CollectionSlugRedirect(models.Model):
@@ -385,6 +418,31 @@ class CloudRetentionPolicy(models.Model):
 
     @classmethod
     def get_solo(cls) -> "CloudRetentionPolicy":
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class UnpublishRetentionPolicy(models.Model):
+    """Singleton lifecycle policy for unpublished 2D/3D/generated pieces
+    (#944). Deliberately a sibling of `CloudRetentionPolicy`, not a shared
+    field on it — that model governs cloud-*backup* remote-copy states
+    (`CloudBackupProject`), a different lifecycle from a piece's own
+    visibility/publish state."""
+
+    unpublished_grace_days = models.PositiveIntegerField(
+        default=30, validators=[MaxValueValidator(3650)]
+    )
+    revision = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+
+    def __str__(self) -> str:
+        return f"Unpublish retention policy (revision {self.revision})"
+
+    @classmethod
+    def get_solo(cls) -> "UnpublishRetentionPolicy":
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
 
@@ -906,6 +964,9 @@ class Project(models.Model):
     title = models.CharField(max_length=200, default="Untitled animation")
     public_slug = models.SlugField(max_length=220, default="", blank=True)
     description = models.TextField(default="", blank=True)
+    # Issue #1138: owner-private creative intent for server-backed 2D work.
+    # Public serializers and piece packages deliberately do not include it.
+    brief = models.TextField(max_length=1500, blank=True, default="")
     # Issue #588: bounded content SEO/AEO overrides for canonical public
     # project pages. Validation belongs to the owner-facing serializer;
     # keeping the persisted value defaultable makes this additive for legacy
@@ -951,6 +1012,14 @@ class Project(models.Model):
     # (`scenes/gallery.py`) both need: a sort key that doesn't move under a
     # project already sitting on some page of gallery results.
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Issue #944: when this project most recently *stopped* being public,
+    # set by `ProjectUnpublishView` and cleared back to `None` by
+    # `ProjectPublishView` on restore (republish). Governs unpublish-
+    # retention purge eligibility (`scenes/unpublish_retention.py`) — a
+    # project is purge-eligible once `unpublished_at` plus the policy's
+    # `unpublished_grace_days` has passed, unless the owner republishes
+    # first (which clears this field again).
+    unpublished_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     # Issue #510: which of this project's `Scene`s is currently being
@@ -1065,6 +1134,11 @@ class CloudSyncPreference(models.Model):
     consent_version = models.CharField(max_length=64, blank=True)
     consent_text = models.TextField(blank=True)
     consented_at = models.DateTimeField(null=True, blank=True)
+    # Issue #946: distinguishes an owner-driven administrative grant (the
+    # one-time `grandfather_accounts` command) from ordinary user-given
+    # consent via `AccountCloudSyncView` above -- blank for every row that
+    # went through the normal user-facing consent flow.
+    consent_source = models.CharField(max_length=64, blank=True, default="")
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
@@ -1647,7 +1721,27 @@ class ProjectActivity(models.Model):
         AI_PROPOSAL_REJECTED = "ai_proposal_rejected", "AI proposal rejected"
         EXPORTED = "exported", "Exported"
 
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="activity")
+    project = models.ForeignKey(
+        Project,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="activity",
+    )
+    project3d = models.ForeignKey(
+        "scenes.Project3D",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="activity",
+    )
+    art_piece = models.ForeignKey(
+        "scenes.ArtPiece",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="activity",
+    )
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -1661,9 +1755,50 @@ class ProjectActivity(models.Model):
     class Meta:
         ordering = ["-created_at"]
         verbose_name_plural = "project activity"
+        indexes = [
+            models.Index(
+                fields=["project", "-created_at", "-id"],
+                name="sc_pa_project_created_id_idx",
+            ),
+            models.Index(
+                fields=["project3d", "-created_at", "-id"],
+                name="sc_pa_p3d_created_id_idx",
+            ),
+            models.Index(
+                fields=["art_piece", "-created_at", "-id"],
+                name="sc_pa_piece_created_id_idx",
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    (
+                        models.Q(project__isnull=False, project3d__isnull=True)
+                        & models.Q(art_piece__isnull=True)
+                    )
+                    | (
+                        models.Q(project__isnull=True, project3d__isnull=False)
+                        & models.Q(art_piece__isnull=True)
+                    )
+                    | (
+                        models.Q(project__isnull=True, project3d__isnull=True)
+                        & models.Q(art_piece__isnull=False)
+                    )
+                ),
+                name="sc_pa_exactly_one_family",
+            ),
+        ]
 
     def __str__(self) -> str:
-        return f"{self.project_id}: {self.action_type}"
+        family_id = next(
+            (
+                family_id
+                for family_id in (self.project_id, self.project3d_id, self.art_piece_id)
+                if family_id is not None
+            ),
+            None,
+        )
+        return f"{family_id}: {self.action_type}"
 
     def save(self, *args, **kwargs):
         validate_activity_metadata(self.metadata)
@@ -1880,6 +2015,9 @@ class Project3D(models.Model):
         max_length=10, choices=Visibility.choices, default=Visibility.PRIVATE
     )
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Issue #944: unpublish-retention parity with the 2D `Project` above —
+    # see its `unpublished_at` field doc for the full contract.
+    unpublished_at = models.DateTimeField(null=True, blank=True, db_index=True)
     current_version = models.ForeignKey(
         "scenes.SceneVersion3D",
         null=True,
@@ -1931,6 +2069,8 @@ class Project3D(models.Model):
 
 
 class SceneVersion3D(models.Model):
+    SOURCE_MAX_BYTES = 100_000
+
     class Origin(models.TextChoices):
         MANUAL = "manual", "Manual"
         # Issue #232: the 3D counterpart of SceneVersion's AI_CREATE/AI_EDIT.
@@ -1946,6 +2086,12 @@ class SceneVersion3D(models.Model):
     project = models.ForeignKey(Project3D, on_delete=models.CASCADE, related_name="versions")
     sequence = models.PositiveIntegerField()
     scene_json = models.JSONField()
+    # #1036: preserve the human-readable source projections alongside the
+    # canonical validated JSON snapshot. Empty strings preserve compatibility
+    # for pre-migration JSON-only versions and are never exposed publicly.
+    html_source = models.TextField(default="", blank=True)
+    css_source = models.TextField(default="", blank=True)
+    js_source = models.TextField(default="", blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -1994,6 +2140,16 @@ class SceneVersion3D(models.Model):
         return f"3d:{self.project_id} v{self.sequence}"
 
     def save(self, *args, **kwargs):
+        for field_name in ("html_source", "css_source", "js_source"):
+            source = getattr(self, field_name)
+            if source is not None and len(source.encode("utf-8")) > self.SOURCE_MAX_BYTES:
+                raise ValidationError(
+                    {
+                        field_name: [
+                            f"3D source must be no larger than {self.SOURCE_MAX_BYTES} bytes."
+                        ]
+                    }
+                )
         result = validate_scene3d(self.scene_json)
         if not result.valid:
             raise ValidationError(
@@ -2075,6 +2231,10 @@ class ArtPiece(models.Model):
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    # Issue #944: unpublish-retention parity with `Project`/`Project3D` —
+    # set by `ArtPieceDetailView.patch` on any PUBLISHED→other transition,
+    # cleared on a transition back to PUBLISHED.
+    unpublished_at = models.DateTimeField(null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -2316,6 +2476,9 @@ class AIRun(models.Model):
     # candidate image shape's mediaAssetId field.
     assets = models.JSONField(default=list, blank=True)
     prompt = models.TextField()
+    # A bounded, private snapshot of Project.brief used by every attempt in
+    # this run. Kept separate from the owner's prompt and omitted from APIs.
+    intent_note = models.TextField(max_length=1500, blank=True, default="")
     vendor = models.CharField(max_length=32, default="mistral")
     model_id = models.CharField(max_length=100, blank=True, default="")
     persona_id = models.PositiveIntegerField(null=True, blank=True)

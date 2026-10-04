@@ -2,11 +2,28 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   actOnThemeGeneration,
+  fetchContinuityMetrics,
   fetchThemeGenerationAttempts,
   generateThemeDraft,
 } from './adminSettings';
 
 afterEach(() => vi.unstubAllGlobals());
+
+describe('continuity metrics API (#1143)', () => {
+  it('loads aggregate cohorts through the admin endpoint', async () => {
+    const payload = { cohorts: [] };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify(payload), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchContinuityMetrics()).resolves.toEqual(payload);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/continuity-metrics/',
+      expect.objectContaining({ method: 'GET', credentials: 'include' }),
+    );
+  });
+});
 
 describe('theme generation API', () => {
   it('loads attempts and sends bounded generation fields', async () => {

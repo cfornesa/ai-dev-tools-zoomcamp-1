@@ -480,13 +480,11 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
     globals: false,
-    // Task 65 (issue #65): frontend/e2e/ holds the Playwright suite, which
-    // vitest's default include pattern would otherwise also try to run as
-    // unit tests (it imports '@playwright/test', not vitest, and needs a
-    // real running server -- see playwright.config.ts). Exclude it here
-    // the same way vitest's own default `exclude` already excludes
-    // node_modules/dist/etc.
-    exclude: [...configDefaults.exclude, 'e2e/**'],
+    // Playwright browser specs need a real server, while the E2E ratchet
+    // tests use Node's built-in test runner. Keep both out of Vitest's
+    // default unit-test discovery; package.json runs the ratchet tests via
+    // `node --test` as part of `npm test`.
+    exclude: [...configDefaults.exclude, 'e2e/**', 'scripts/**'],
     // Issues #302/#864: the full suite contains many interaction-heavy
     // jsdom files. Vitest's unrestricted worker pool makes otherwise-fast
     // EditorWorkspace and route-fixture tests exceed their timeout under

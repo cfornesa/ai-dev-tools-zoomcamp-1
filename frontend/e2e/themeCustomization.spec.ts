@@ -18,8 +18,10 @@ test.describe('Theme customization (#521)', () => {
       theme_config: Record<string, string>;
     };
     const themeForm = page.getByRole('form', { name: 'Site title settings' });
-    await expect(themeForm.getByLabel('accent', { exact: true })).toBeVisible();
-    await themeForm.getByLabel('accent', { exact: true }).fill('#00ff00');
+    const themeTokens = themeForm.getByRole('group', { name: 'Site theme tokens' });
+    const accent = themeTokens.getByLabel('accent', { exact: true });
+    await expect(accent).toBeVisible();
+    await accent.fill('#00ff00');
     await themeForm.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(themeForm.getByText('Global site metadata saved.')).toBeVisible();
     await apiPatch(context, '/api/admin/settings/', {

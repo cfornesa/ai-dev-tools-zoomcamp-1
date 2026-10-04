@@ -123,8 +123,8 @@ class _AuthenticatedGitHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(response_body)
 
-    do_GET = _serve_git
-    do_POST = _serve_git
+    do_GET = _serve_git  # noqa: N815
+    do_POST = _serve_git  # noqa: N815
 
     def log_message(self, *_args: object) -> None:
         return

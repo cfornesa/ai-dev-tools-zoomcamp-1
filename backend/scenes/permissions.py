@@ -12,9 +12,12 @@ authenticated-non-owner, plus whatever a resource's own public/remix
 flags allow.
 """
 
+import logging
 from enum import StrEnum
 
 from scenes.models import ArtPiece, EditSessionDraft, Project, Project3D, Template
+
+logger = logging.getLogger("scenes.permissions")
 
 
 class Action(StrEnum):
@@ -24,6 +27,7 @@ class Action(StrEnum):
     PROJECT_DELETE = "project.delete"
     PROJECT_PUBLISH = "project.publish"
     PROJECT_EXPORT = "project.export"
+    PROJECT_ACTIVITY_READ = "project.activity.read"
     CLOUD_BACKUP_READ = "cloud_backup.read"
     CLOUD_BACKUP_WRITE = "cloud_backup.write"
     PROJECT_FORK = "project.fork"
@@ -59,15 +63,17 @@ class Action(StrEnum):
     PROJECT3D_DELETE = "project3d.delete"
     # Issue #296: publish/unpublish parity with PROJECT_PUBLISH -- owner-only.
     PROJECT3D_PUBLISH = "project3d.publish"
+    PROJECT3D_ACTIVITY_READ = "project3d.activity.read"
     # Issue #719: explicitly retry/reconcile the current 3D card thumbnail.
     PROJECT3D_THUMBNAIL_REFRESH = "project3d.thumbnail_refresh"
     ART_PIECE_CREATE = "art_piece.create"
     ART_PIECE_READ = "art_piece.read"
     ART_PIECE_WRITE = "art_piece.write"
     ART_PIECE_DELETE = "art_piece.delete"
+    ART_PIECE_ACTIVITY_READ = "art_piece.activity.read"
 
 
-class PermissionDenied(Exception):
+class PermissionDenied(Exception):  # noqa: N818
     """Raised by require() when can() returns False."""
 
 
@@ -93,6 +99,7 @@ _OWNER_ONLY_PROJECT_ACTIONS = frozenset(
         Action.PROJECT_DELETE,
         Action.PROJECT_PUBLISH,
         Action.PROJECT_EXPORT,
+        Action.PROJECT_ACTIVITY_READ,
         Action.CLOUD_BACKUP_READ,
         Action.CLOUD_BACKUP_WRITE,
         Action.VERSION_READ,
@@ -125,12 +132,13 @@ _OWNER_ONLY_PROJECT3D_ACTIONS = frozenset(
         Action.PROJECT3D_WRITE,
         Action.PROJECT3D_DELETE,
         Action.PROJECT3D_PUBLISH,
+        Action.PROJECT3D_ACTIVITY_READ,
         Action.PROJECT3D_THUMBNAIL_REFRESH,
     }
 )
 
 
-def can(user, action: Action, resource=None) -> bool:
+def can(user, action: Action, resource=None) -> bool:  # noqa: C901
     """Return whether `user` may perform `action` on `resource`. Default deny."""
     if action == Action.PROJECT_CREATE:
         return _is_authenticated(user)
@@ -145,7 +153,11 @@ def can(user, action: Action, resource=None) -> bool:
             _is_authenticated(user) and resource.owner_id == user.id
         )
 
-    if action in (Action.ART_PIECE_WRITE, Action.ART_PIECE_DELETE):
+    if action in (
+        Action.ART_PIECE_WRITE,
+        Action.ART_PIECE_DELETE,
+        Action.ART_PIECE_ACTIVITY_READ,
+    ):
         return (
             isinstance(resource, ArtPiece)
             and _is_authenticated(user)
@@ -207,4 +219,11 @@ def can(user, action: Action, resource=None) -> bool:
 def require(user, action: Action, resource=None) -> None:
     """Like can(), but raises PermissionDenied instead of returning False."""
     if not can(user, action, resource):
+        denial = {
+            "user_id": str(getattr(user, "id", None)) if _is_authenticated(user) else "anonymous",
+            "action": str(action),
+            "resource_type": type(resource).__name__ if resource is not None else None,
+            "resource_id": str(getattr(resource, "pk", None)) if resource is not None else None,
+        }
+        logger.warning("permissions.denied", extra={"permission_denial": denial})
         raise PermissionDenied(f"{action.value} denied for this user/resource.")

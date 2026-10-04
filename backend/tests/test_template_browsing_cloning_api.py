@@ -173,6 +173,7 @@ def test_clone_own_private_template_succeeds(owner_client, private_template):
 
     assert response.status_code == 201
     assert response.json()["title"] == "Alice's private template"
+    assert response.json()["brief"] == ""
 
 
 @pytest.mark.django_db
@@ -213,7 +214,7 @@ def test_postgres_rollback_on_injected_failure_leaves_no_records(django_db_block
 
         from django.db import transaction as txn
 
-        class InjectedFailure(Exception):
+        class InjectedFailure(Exception):  # noqa: N818
             pass
 
         with pytest.raises(InjectedFailure):

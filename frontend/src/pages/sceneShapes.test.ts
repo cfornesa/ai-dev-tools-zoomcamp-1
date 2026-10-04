@@ -8,6 +8,8 @@ import {
   hitTestTopmostShapeAt,
   shapeBounds,
   shapeLabel,
+  shapeLabels,
+  shapeTypeDisplayName,
   type ShapeType,
 } from './sceneShapes';
 
@@ -268,5 +270,27 @@ describe('shapeLabel', () => {
     expect(shapeLabel(shape, [shape])).toBe('Hero');
     expect(shapeLabel({ ...shape, name: '   ' }, [shape])).toBe('Circle 1');
     expect(shapeLabel({ ...shape, name: 'x'.repeat(201) }, [shape])).toBe('Circle 1');
+  });
+});
+
+describe('shapeLabels', () => {
+  it('matches the full-list shapeLabel output for a maximum-size shape list', () => {
+    const types: ShapeType[] = ['circle', 'rect', 'line', 'path', 'image'];
+    const all = Array.from({ length: 200 }, (_, index) =>
+      createShape(types[index % types.length], 'layer-1', CANVAS),
+    );
+    const labels = shapeLabels(all);
+    const counts = new Map<ShapeType, number>();
+
+    expect(all.map((shape) => labels.get(shape.id))).toEqual(
+      all.map((shape) => {
+        const ordinal = (counts.get(shape.type) ?? 0) + 1;
+        counts.set(shape.type, ordinal);
+        return `${shapeTypeDisplayName(shape.type)} ${ordinal}`;
+      }),
+    );
+    expect(all.map((shape) => labels.get(shape.id))).toEqual(
+      all.map((shape) => shapeLabel(shape, all)),
+    );
   });
 });

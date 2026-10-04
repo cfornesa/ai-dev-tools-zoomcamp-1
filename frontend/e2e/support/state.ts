@@ -23,6 +23,7 @@ export type FixtureUser = {
 export type E2EState =
   | {
       available: true;
+      databaseFingerprint: string;
       password: string;
       owner: FixtureUser;
       other: FixtureUser;

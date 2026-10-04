@@ -1,33 +1,38 @@
 import { expect, test } from '@playwright/test';
 
+async function readThemeState(page: import('@playwright/test').Page) {
+  return page.locator('html').evaluate((root) => ({
+    theme: root.dataset.theme,
+    preference: root.dataset.themePreference,
+  }));
+}
+
 test.describe('visitor theme preference (#644)', () => {
   test('persists light/dark/system choices across routes and reloads', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.addInitScript(() => {
-      if (!localStorage.getItem('augmentrart:theme-preference:v1')) {
-        localStorage.setItem('augmentrart:theme-preference:v1', 'dark');
-      }
-    });
     await page.goto('/');
 
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    const toggle = page.getByRole('button', { name: 'Switch to light mode' });
-    await expect(toggle).toBeVisible();
-    await expect(page.getByRole('combobox', { name: 'Color mode preference' })).toHaveValue('dark');
+    await expect.poll(() => readThemeState(page)).toEqual({ theme: 'dark', preference: 'system' });
+    await expect(page.getByRole('button', { name: 'Switch to light mode' })).toBeVisible();
 
-    await page.getByRole('combobox', { name: 'Color mode preference' }).selectOption('light');
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-    await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'light');
+    await page.getByRole('button', { name: 'Switch to light mode' }).click();
+    await expect.poll(() => readThemeState(page)).toEqual({ theme: 'light', preference: 'light' });
     await page.reload();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await expect.poll(() => readThemeState(page)).toEqual({ theme: 'light', preference: 'light' });
 
     await page.goto('/gallery');
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await expect.poll(() => readThemeState(page)).toEqual({ theme: 'light', preference: 'light' });
+    await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+    await expect.poll(() => readThemeState(page)).toEqual({ theme: 'dark', preference: 'dark' });
+    await page.reload();
+    await expect.poll(() => readThemeState(page)).toEqual({ theme: 'dark', preference: 'dark' });
 
-    await page.getByRole('combobox', { name: 'Color mode preference' }).selectOption('system');
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.emulateMedia({ colorScheme: 'light' });
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await page.evaluate(() => localStorage.removeItem('augmentrart:theme-preference:v1'));
+    await page.reload();
+    await expect.poll(() => readThemeState(page)).toEqual({ theme: 'light', preference: 'system' });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect.poll(() => readThemeState(page)).toEqual({ theme: 'dark', preference: 'system' });
   });
 
   test('pre-paint preference applies on a shell-less immersive route', async ({ page }) => {

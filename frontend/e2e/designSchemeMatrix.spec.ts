@@ -110,7 +110,19 @@ test.describe('Design-scheme evidence matrix (#655)', () => {
             );
             await page.goto(route.path);
             await expect(page.locator('html')).toHaveAttribute('data-theme', mode);
-            await expect(page.locator('.reduced-motion-status')).toContainText('reduced');
+            const displaySettings = page.getByRole('complementary', { name: 'Display settings' });
+            const motionToggle = displaySettings.getByRole('button', {
+              name: /Use (reduced|full) motion/i,
+            });
+            if ((await motionToggle.getAttribute('aria-pressed')) !== 'true') {
+              if ((await motionToggle.getAttribute('aria-label')) === 'Use full motion') {
+                await motionToggle.click();
+              }
+              await displaySettings.getByRole('button', { name: 'Use reduced motion' }).click();
+            }
+            await expect(
+              displaySettings.getByRole('button', { name: 'Use full motion' }),
+            ).toHaveAttribute('aria-pressed', 'true');
 
             const style = await page.locator('html').evaluate((element) => ({
               font: element.dataset.siteFont ?? 'default',

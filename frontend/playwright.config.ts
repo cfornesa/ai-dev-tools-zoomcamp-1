@@ -55,7 +55,9 @@ export default defineConfig({
   globalSetup: './e2e/support/global-setup.ts',
   globalTeardown: './e2e/support/global-teardown.ts',
   use: {
+    actionTimeout: 10_000,
     baseURL,
+    navigationTimeout: 20_000,
     trace: 'retain-on-failure',
     // Every scenario logs in explicitly through the real /accounts/login/
     // form (see e2e/support/auth.ts) rather than relying on a shared

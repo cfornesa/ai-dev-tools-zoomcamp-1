@@ -1,14 +1,243 @@
 """Anonymous public gallery search, separated by account/content scope (#581)."""
 
-from django.db.models import Q
+import base64
+import binascii
+from datetime import datetime
+from urllib.parse import quote
+
+from django.db.models import Count, Prefetch, Q, Value
+from django.db.models.functions import Coalesce
+from django.http import Http404
+from django.utils.dateparse import parse_datetime
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from scenes.art_piece_persistence import eligible_art_pieces
-from scenes.gallery import eligible_projects, eligible_projects3d
-from scenes.models import PublicProfile
+from scenes.collections import _cover_payload, _thumbnail_url
+from scenes.gallery import (
+    DEFAULT_PAGE_SIZE,
+    clamp_page_size,
+    eligible_collections,
+    eligible_projects,
+    eligible_projects3d,
+)
+from scenes.models import Collection, CollectionItem, Project, PublicProfile
+from scenes.permissions import Action, can
+from scenes.piece_engine import resolve_scene2d_engine
 from scenes.public_identity import public_author_handle, public_author_name
 from scenes.serializers import PublicGalleryItemSerializer
+
+COLLECTION_SORTS = frozenset(("newest", "oldest", "item_count"))
+
+
+def _encode_collection_cursor(sort: str, collection: Collection) -> str:
+    count = getattr(collection, "_index_item_count", None)
+    if collection.published_at is None:
+        raise ValueError("cannot cursor a collection without a publication timestamp")
+    raw = "|".join(
+        (
+            "collections",
+            sort,
+            str(count) if sort == "item_count" else "",
+            collection.published_at.isoformat(),
+            str(collection.id),
+        )
+    )
+    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
+
+
+def _decode_collection_cursor(value: str) -> tuple[str, int, datetime, int]:
+    try:
+        decoded = base64.urlsafe_b64decode(value.encode("ascii")).decode("utf-8")
+        prefix, sort, count_raw, published_at_raw, id_raw = decoded.split("|", 4)
+        published_at = parse_datetime(published_at_raw)
+        if prefix != "collections" or sort not in COLLECTION_SORTS or published_at is None:
+            raise ValueError
+        count = int(count_raw) if sort == "item_count" else 0
+        return sort, count, published_at, int(id_raw)
+    except (ValueError, TypeError, UnicodeDecodeError, binascii.Error) as exc:
+        raise ValueError("invalid collection cursor") from exc
+
+
+def _after_collection_cursor(queryset, sort: str, count: int, published_at, object_id: int):
+    if sort == "newest":
+        return queryset.filter(
+            Q(published_at__lt=published_at) | Q(published_at=published_at, id__lt=object_id)
+        )
+    if sort == "oldest":
+        return queryset.filter(
+            Q(published_at__gt=published_at) | Q(published_at=published_at, id__gt=object_id)
+        )
+    return queryset.filter(
+        Q(_index_item_count__lt=count)
+        | Q(_index_item_count=count, published_at__lt=published_at)
+        | Q(
+            _index_item_count=count,
+            published_at=published_at,
+            id__lt=object_id,
+        )
+    )
+
+
+def _public_collection_index_payloads(collections):
+    """Build the fixed, visibility-safe card payload for public collections.
+
+    Collection membership is polymorphic, so the eligible ids are fetched in
+    three bounded batches for the page rather than resolving each item with
+    an N+1 query. The public gallery page is capped at ``MAX_PAGE_SIZE`` by
+    the caller, which keeps these set-membership checks bounded by the same
+    public gallery scale as the existing collection listing.
+    """
+    item_rows = [
+        item
+        for collection in collections
+        for item in getattr(collection, "_public_index_items", [])
+    ]
+    item_ids_by_kind = {
+        kind: {item.item_id for item in item_rows if item.kind == kind}
+        for kind in CollectionItem.Kind.values
+    }
+    eligible_ids_by_kind = {
+        CollectionItem.Kind.PROJECT: set(
+            eligible_projects()
+            .filter(public_id__in=item_ids_by_kind[CollectionItem.Kind.PROJECT])
+            .values_list("public_id", flat=True)
+        ),
+        CollectionItem.Kind.PROJECT3D: set(
+            eligible_projects3d()
+            .filter(public_id__in=item_ids_by_kind[CollectionItem.Kind.PROJECT3D])
+            .values_list("public_id", flat=True)
+        ),
+        CollectionItem.Kind.ART_PIECE: set(
+            eligible_art_pieces()
+            .filter(public_id__in=item_ids_by_kind[CollectionItem.Kind.ART_PIECE])
+            .values_list("public_id", flat=True)
+        ),
+    }
+    payloads = []
+    for collection in collections:
+        explicit_cover = _cover_payload(collection, public=True)
+        fallback_cover = next(
+            (
+                _thumbnail_url(item.kind, item.item_id)
+                for item in getattr(collection, "_public_index_items", [])
+                if item.item_id in eligible_ids_by_kind[item.kind]
+            ),
+            None,
+        )
+        public_item_count = sum(
+            item.item_id in eligible_ids_by_kind[item.kind]
+            for item in getattr(collection, "_public_index_items", [])
+        )
+        handle = public_author_handle(collection.owner)
+        payloads.append(
+            {
+                "id": str(collection.public_id),
+                "title": collection.title,
+                "owner_handle": handle,
+                "cover_url": (explicit_cover or {}).get("url") or fallback_cover,
+                "item_count": public_item_count,
+                "published_at": collection.published_at,
+                "viewer_url": (
+                    f"/users/@{handle}/collections/{collection.slug}" if handle else None
+                ),
+            }
+        )
+    return payloads
+
+
+class PublicCollectionListView(APIView):
+    """Anonymous public collection index with bounded, cursor-safe sorting (#1030)."""
+
+    authentication_classes: list = []
+    permission_classes: list = []
+
+    def get(self, request):
+        sort = request.query_params.get("sort", "newest")
+        if sort not in COLLECTION_SORTS:
+            return Response(
+                {"errors": {"sort": ["Must be one of: newest, oldest, item_count."]}},
+                status=400,
+            )
+        page_size_raw = request.query_params.get("page_size")
+        if page_size_raw is not None:
+            try:
+                page_size = clamp_page_size(int(page_size_raw))
+            except ValueError:
+                return Response(
+                    {"errors": {"page_size": ["Must be a positive integer."]}}, status=400
+                )
+        else:
+            page_size = DEFAULT_PAGE_SIZE
+
+        queryset = (
+            eligible_collections()
+            .filter(status=Collection.Status.ACTIVE)
+            .prefetch_related(
+                Prefetch(
+                    "items",
+                    queryset=CollectionItem.objects.only("collection_id", "kind", "item_id"),
+                    to_attr="_public_index_items",
+                )
+            )
+        )
+        if sort == "item_count":
+            public_item_count = sum(
+                (
+                    Coalesce(
+                        Count(
+                            "items",
+                            filter=Q(
+                                items__kind=kind,
+                                items__item_id__in=eligible_queryset.values("public_id"),
+                            ),
+                            distinct=True,
+                        ),
+                        Value(0),
+                    )
+                    for kind, eligible_queryset in (
+                        (CollectionItem.Kind.PROJECT, eligible_projects()),
+                        (CollectionItem.Kind.PROJECT3D, eligible_projects3d()),
+                        (CollectionItem.Kind.ART_PIECE, eligible_art_pieces()),
+                    )
+                )
+            )
+            queryset = queryset.annotate(_index_item_count=public_item_count)
+            queryset = queryset.order_by("-_index_item_count", "-published_at", "-id")
+        elif sort == "oldest":
+            queryset = queryset.order_by("published_at", "id")
+        else:
+            queryset = queryset.order_by("-published_at", "-id")
+
+        cursor = request.query_params.get("cursor")
+        if cursor:
+            try:
+                cursor_sort, cursor_count, cursor_published_at, cursor_id = (
+                    _decode_collection_cursor(cursor)
+                )
+                if cursor_sort != sort:
+                    raise ValueError
+            except ValueError:
+                return Response({"errors": {"cursor": ["Invalid or expired cursor."]}}, status=400)
+            queryset = _after_collection_cursor(
+                queryset, sort, cursor_count, cursor_published_at, cursor_id
+            )
+
+        page = list(queryset[: page_size + 1])
+        has_more = len(page) > page_size
+        page = page[:page_size]
+        next_cursor = None
+        if has_more and page:
+            last = page[-1]
+            next_cursor = _encode_collection_cursor(sort, last)
+
+        return Response(
+            {
+                "results": _public_collection_index_payloads(page),
+                "next_cursor": next_cursor,
+                "has_more": has_more,
+            }
+        )
 
 
 class PublicGallerySearchView(APIView):
@@ -69,5 +298,95 @@ class PublicGallerySearchView(APIView):
                 "results": PublicGalleryItemSerializer(
                     [(kind, record) for _, kind, record in candidates[:50]], many=True
                 ).data,
+            }
+        )
+
+
+class _RelatedProjectCardSerializer(PublicGalleryItemSerializer):
+    """Reuse gallery fields with batched identity and canonical URL lookups."""
+
+    def _profile(self, obj):
+        _, project = self._entry(obj)
+        return self.context["profiles"].get(project.owner_id)
+
+    def get_owner(self, obj) -> str:
+        _, project = self._entry(obj)
+        profile = self._profile(obj)
+        if profile is not None:
+            display_name = (profile.display_name or "").strip()
+            if display_name:
+                return display_name
+            handle = (profile.handle or "").strip().lstrip("@")
+            if handle:
+                return handle
+        return project.owner.get_username()
+
+    def get_owner_handle(self, obj) -> str | None:
+        profile = self._profile(obj)
+        handle = (profile.handle or "").strip().lstrip("@") if profile else ""
+        return handle or None
+
+    def get_viewer_url(self, obj) -> str:
+        _, project = self._entry(obj)
+        if not isinstance(project, Project):
+            raise TypeError("Related public card must be a 2D project.")
+        profile = self._profile(obj)
+        if profile and profile.is_public and profile.handle and project.public_slug:
+            return (
+                f"/users/@{quote(profile.handle, safe='@')}/pieces/"
+                f"{quote(project.public_slug, safe='-')}"
+            )
+        return f"/p/{project.public_id}"
+
+
+class PublicProjectRelatedListView(APIView):
+    """Return a bounded metadata-ranked set of related published 2D pieces (#1141)."""
+
+    def get(self, request, public_id):
+        source = eligible_projects().filter(public_id=public_id).first()
+        if source is None or not can(request.user, Action.PROJECT_READ, source):
+            raise Http404
+
+        def tags_for(project: Project) -> set[str]:
+            tags = project.tags if isinstance(project.tags, list) else []
+            return {tag for tag in tags if isinstance(tag, str)}
+
+        source_tags = tags_for(source)
+        source_renderer = resolve_scene2d_engine(source.current_version.scene_json)
+        # The gallery queryset already enforces published/current/non-deleted
+        # eligibility. Its recency order plus this slice makes the candidate
+        # cap portable across PostgreSQL and SQLite without JSON contains.
+        candidates = list(eligible_projects().exclude(pk=source.pk)[:200])
+        profiles_by_owner = {
+            profile.user_id: profile
+            for profile in PublicProfile.objects.filter(
+                user_id__in={project.owner_id for project in candidates}
+            ).only("user_id", "handle", "display_name", "is_public")
+        }
+        # Tags are capped at 10 per project; with 200 candidates, scoring is
+        # bounded by 2,000 candidate tag checks plus a 200-item sort.
+        ranked = []
+        for candidate in candidates:
+            shared_tags = len(source_tags & tags_for(candidate))
+            renderer_match = (
+                resolve_scene2d_engine(candidate.current_version.scene_json) == source_renderer
+            )
+            if shared_tags or renderer_match:
+                ranked.append(
+                    (
+                        shared_tags,
+                        renderer_match,
+                        candidate.published_at,
+                        str(candidate.public_id),
+                        candidate,
+                    )
+                )
+        ranked.sort(key=lambda item: item[:4], reverse=True)
+        results = [("2d", item[4]) for item in ranked[:6]]
+        return Response(
+            {
+                "results": _RelatedProjectCardSerializer(
+                    results, many=True, context={"profiles": profiles_by_owner}
+                ).data
             }
         )

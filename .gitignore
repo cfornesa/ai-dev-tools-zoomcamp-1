@@ -15,3 +15,10 @@ db.sqlite3
 # gitignored there) -- a node_modules/ at the repo root only ever means an
 # npm/npx command accidentally ran from the wrong working directory.
 node_modules/
+
+# Issue #946: grandfather_accounts's default rollback-file path (when
+# --rollback-file isn't explicitly given) lands in the current working
+# directory; never commit one, it contains per-account prior state.
+grandfather_rollback_*.json
+
+LIGDOL_Creative_Continuity_Thesis.md

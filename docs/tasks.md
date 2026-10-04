@@ -1,10 +1,253 @@
 # AugmentrART Backlog
 
+## 2026-10-03 — #1096 atomic E2E contract follow-ups filed
+
+The owner authorized filing novel cases and splitting #1096's independent
+subtasks into atomic issues, while deferring implementation until Claude Code
+completes refinement. Three source-verified test-contract follow-ups were
+created in open milestone Batch 14:
+
+- [#1160](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1160) —
+  update the account-settings action count to 12 and explicitly retain
+  “Retained unpublished pieces” (`accountSettings.spec.ts`; stale #548-era
+  expectation, with #944 preserved).
+- [#1161](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1161) —
+  update the account-settings keyboard reorder assertions for the current
+  eight sections and persisted reorder flow (`accountSettingsReorder.spec.ts`,
+  `accountSettingsLayout.spec.ts`; preserve closed #555/#677).
+- [#1162](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1162) —
+  allow the Chromium CSSOM representation of the existing 0.01ms reduced-motion
+  transition while retaining the motion-toggle and full-motion assertions
+  (`accountComponentStyles.spec.ts`; preserve closed #1125).
+
+All three are Stage 2a test maintenance; no product or test code was changed.
+The parent [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096)
+remains open and QA FAIL: this filing addresses only these three evidenced
+contracts, not the unclassified failures elsewhere in run #1126. Claude Code
+should refine the new issue wording and duplicate/scope relationships before
+implementation resumes. Full evidence and outstanding classifications are in
+the [batch 19 ledger](../.local/tasks/backlog-session-2026-10-02-batch19.md).
+
+## 2026-10-02 — #1139 responsive QA setup fix
+
+Run #1085's Linux browser evidence identified the mobile #1139 failure: its
+E2E switched to 375px without expanding the independent Details disclosure.
+Commit `2250eae3` opened Details at each viewport and after reload. Run #1089
+showed that this still raced the responsive tab switch, so commit `75476cfe`
+waited for the Details region and checked `aria-expanded` before toggling.
+Run #1091 confirmed both viewport checks now pass but found the test's publish
+fixture lacked the title/description required by the publication contract
+(HTTP 400). The next test-only correction adds valid fixture metadata before
+publishing; it does not change product behavior or weaken privacy assertions.
+TypeScript, lint, formatting, Playwright discovery (1 test), and
+`git diff --check` passed locally. Keep #1139 open pending Linux verification
+of the fixture correction. The test now attaches viewport screenshots at
+1280px and 375px so the required visual review can use the same authenticated
+E2E state; inspect both attachments from the next Linux run. Remaining
+batch-gate evidence is also pending.
+
+## 2026-10-02 — Batch 19 current-head QA run #1085
+
+Pushed `635d1213a35a296cd8b59ef0fdc49176b847eaad` to the authorized
+`docs/backlog-reevaluation-2026-09-27` branch and dispatched [full CI run
+#1085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37004726979).
+Workflow validation, backend checks, frontend checks (3,228/3,228 Vitest
+tests), and disposable routing smoke passed; the full 16-shard browser matrix
+failed. Detailed shard 14 and shard 16 failures and exact links are recorded in
+[batch 19](../.local/tasks/backlog-session-2026-10-02-batch19.md). The other
+shards still require per-failure first-cause classification against the open
+issue manifest and discovery gate. Local `make check` also passed (backend
+2,012 passed / 44 skipped; frontend 3,228 passed). #1139's save/reload behavior
+was manually confirmed in Chrome, while its public privacy and 1280x900 / 375x812
+rendered checks remain pending; local Playwright Chromium could not start due a
+macOS MachPort permission failure. The batch gate remains FAIL, all GitHub
+issues remain open, and no merge or deployment was performed.
+
+## 2026-09-28 — corrected continuation
+
+The prior final reconciliation over-gated several workable issues. The local
+Compose/browser boundary is available and was used to close #941 and its
+follow-ups #973–#975 in commit `d6fb73c9`, including a real ZIP export fix for
+image assets. #1032 was closed after authenticated admin checks at both
+1280x900 and 375x812. #859 remains open only because its six-engine thumbnail
+workflow revealed the missing 2D editor regeneration affordance; that concrete
+dependency is now tracked in #1047, alongside the matching-ref CI evidence
+requirement in #1034. #1035/#1036 were later re-opened by the owner with the
+explicit requirement that human-readable HTML/CSS/JS source remain persistent
+alongside JSON. #847 is now actionable after #941/#957 closed.
+
+## 2026-09-28 — final backlog-session reconciliation
+
+The current backlog-session batch has been reconciled against GitHub and the
+working tree. Closed in this batch are #1012, #1019, #1020, #1021, #1022–#1031,
+#1033, #906, and #1030, each with issue-scoped commits and QA evidence where
+implementation was in scope. The remaining open issues have terminal
+blocked, dependency-blocked, or owner-run/verification-boundary records in
+`.local/tasks/backlog-session-2026-09-28.md`; they are not treated as
+production-ready merely because the local gate passes.
+
+The final local `make check` passed: 1,778 backend tests passed / 39 skipped,
+3,111 frontend tests passed, and action-pin, lint, format, typecheck, build,
+and mypy checks passed. #1034's remote CI run is not admissible for this
+checkout because it executed a divergent remote SHA and failed independent
+frontend/backend/browser steps. #1035 and #1036 were subsequently authorized
+for implementation under the owner's settled HTML/CSS/JS + JSON contract.
+
+## 2026-09-28 — owner-requested backlog goal final refresh
+
+The live 25-issue inventory was processed through the backlog-session gates.
+#1020 (light accent contrast) closed after commit `83131c3f`, focused/full
+frontend checks, rendered local Chrome inspection, and `## QA: PASS`.
+#1021 (collections mypy repair) closed after commit `5887d2a1`, full backend
+and frontend checks, `make check`, and `## QA: PASS`. The remaining 23 issues
+are intentionally open with authenticated reconciliation comments and terminal
+blocked/dependency-blocked/handed-off status; see
+`.local/tasks/backlog-session-2026-09-28.md`. Production readiness is
+`NO-GO/BLOCKED` because owner/dependency/browser/deployment gates remain.
+
+The #975 public-media ZIP verification harness was restored in commit
+`2e4a10d7`; local checks pass, but its required Chromium/Compose execution is
+still blocked by unavailable Docker/Django health prerequisites. The issue
+remains open with `## QA: FAIL` and an exact Linux/Compose next action.
+
+## 2026-09-28 — owner-workability reconciliation pass (second pass, same date)
+
+External feedback summarized the prior pass's 23 open issues using only two
+of the backlog's three terminal-status buckets (handed-off,
+dependency-blocked), silently dropping six plain owner-decision-blocked
+issues from its accounting. `docs/process.md` now states all three statuses
+explicitly. This pass closed #987/#988 (tracking parents whose children were
+already all closed), resolved every outstanding owner decision in chat
+(#995, #996, #1013, #1019, #1016, #906, #1004, #1005, #1006), filed twelve
+new milestone-assigned child/follow-up issues (#1022-#1033, none implemented
+per the discovery-gate rule), chained vague blockers to the concrete #941
+upstream issue across #847/#941/#942/#944/#945/#946/#1016, documented
+(without executing) the owner-hands-on next steps for #788/#906/#926, and
+dispatched the existing CI e2e workflow for real Linux/Chromium evidence on
+the #973/#974/#859/#975 verification-boundary cluster. That dispatch (run
+36464649615) did not reach its target specs: shard 3 hit its 25-minute
+`globalTimeout` before `publicMediaAssets*.spec.ts`, and shard 1 (holding
+#859's five specs) had its full-suite step skipped entirely by a preceding
+WebKit fullscreen/Escape regression failure. It also failed Backend checks
+in CI only (reproduces clean locally against the identical lockfile) and
+Frontend checks. Filed as new discovery issue #1034 with acceptance criteria
+to fix the CI gating/timeout and re-dispatch; #973/#974/#859/#975 remain open,
+now pointed at #1034. Full per-issue detail:
+`.local/tasks/backlog-session-2026-09-28.md`'s "Owner-workability
+reconciliation pass" section.
+
+## 2026-09-28 — expanded backlog implementation pass
+
+The newly filed child issues #1022–#1029, #1031, and #1033 were implemented,
+verified with authenticated QA PASS comments, and closed. Their tracking
+parents #995, #996, #1013, and #1019 were rolled up and closed. The integrated
+repository gate passed with backend 1,773 passed / 39 skipped and frontend 300
+files / 3,110 tests, plus lint, format, typecheck, build, and mypy.
+
+#1032 remains open only for authenticated admin browser evidence. #1034 fixes
+the CI shard gating defect mechanically in `cd57da3a`; fresh run
+`36469307875` is still the authoritative evidence source for the remaining
+public-media/browser matrix and timeout triage.
+
+This file is the full, chronological, per-issue ledger — not something to
+scroll through for orientation. For a themed jump-in point (GitHub
+Milestones grouping the ~937 closed issues by the week they closed, added
+2026-09-27), start at [`docs/tasks-index.md`](tasks-index.md) instead.
+
 ## 2026-09-26 — active follow-up batch
 
 - [#823](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/823) — **CLOSED / QA PASS:** public collection item count and complete ZIP download; local Compose/Chromium evidence and full checks are recorded in the issue comment.
 - [#928](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/928) — **CLOSED / QA PASS:** normative local-first storage contract documentation; full `make check` passed and dependent implementation issues remain linked.
 - [#954](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/954) — **CLOSED / QA PASS:** Replit production reference-import execution path. Added the disabled-by-default startup helper with safe preview mode and explicit write mode; local command-capture tests and full `make check` passed. #788 remains the separate owner-authorized production data action.
+
+## 2026-09-28 — 3D code-tab QA and regression follow-up
+
+| Issue | Transaction | Result / next action |
+| --- | --- | --- |
+| [#1055](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1055) | `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Product criteria pass on commit `5693128c`; focused tests, typecheck, build, authenticated desktop/mobile browser evidence, and the full frontend gate pass after #1059. Closed with QA comment. |
+| [#1056](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1056) | `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Product/focused criteria pass on commit `80a5df00`; focused backend/frontend tests and full `make check` pass. Closed with QA comment after #1059 resolved the prior full-gate failure. |
+| [#1059](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1059) | `PROPOSED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `12ee91b4` stabilizes the AdminSettings loader effect on primitive auth dependencies. Focused test, typecheck, and full frontend suite pass (307 files / 3,168 tests). Closed with QA comment. |
+
+## 2026-09-29 — #1069 CI regression stabilization
+
+| Issue | Transaction | Result / next action |
+| --- | --- | --- |
+| [#1069](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1069) | `PROPOSED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `ab28ad58` stabilizes generated-piece browser interactions and parent-frame microphone fixtures while preserving visible disabled capability gates. The exact affected Compose Chromium command passes 19/19; `make check` passes; final-ref shard-5 retries `109381538877` and `109383930732` both pass. Closed with QA comment; #1071 separately fixed the PostgreSQL cache race. |
+| [#1070](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1070) | `PROPOSED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `a1e02203` routes parent-frame MediaStreams through Tone's UserMedia context/registry path, preserves cleanup, and adds explicit fake-device permission plus active/deactivate assertions. `make check`, focused sound-runtime Chromium, and the #1069 affected set pass locally; CI shard 5 passes all four microphone scenarios twice from the final commit. Closed with QA comment; shard-level six-engine failure was subsequently isolated and resolved under #1069/#1071. |
+| [#1071](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1071) | `PROPOSED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `76abe2b7` replaces PostgreSQL DatabaseCache's read-then-insert race with conflict-aware insertion. Focused Compose/PostgreSQL tests pass 5/5 with no duplicate-key diagnostics; `make check` passes. Linux CI run `36557751947` confirms the shared-quota step passes without duplicate-key output; remaining browser failures are the separately tracked #1069/#859 matrix and closed #520/#645/#744 contracts. Closed with QA comment; no closed issue was reopened. |
+
+## 2026-09-29 — 3D source persistence implementation
+
+| Issue | Transaction | Result / next action |
+| --- | --- | --- |
+| [#1035](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1035) | `OWNER DECISION → CHILDREN QA → RECONCILIATION → CLOSED` | Q1/Q2/Q3 are recorded; #1052–#1055 are all closed with implementation/QA evidence. Tracking parent closed as completed. |
+| [#1036](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1036) | `OWNER DECISION (Option B) → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commits `950999fc` and `0f395fc7` add bounded persisted HTML/CSS/JS source fields, migration `0108`, owner-only API exposure, source parsing/live synchronization, and legacy JSON compatibility. Focused tests, `npm run build`, migration drift, full `make check`, Compose migration, and authenticated rendered browser save/reload evidence at 1280x900 and 375x812 pass. Closed with QA comment. |
+
+## 2026-09-29 — readiness and completion reconciliation
+
+The dependency chain for #1059 → #1055/#1056 is now closed. The exact
+focused checks, full `make check`, Compose preflight, and local health result
+all pass. Production-readiness remains **BLOCKED / NOT PRODUCTION-READY**
+because 17 open issues remain: #788, #859, #926, #1040–#1046,
+and #1061–#1067. The complete readiness assessment is recorded in
+`.local/tasks/production-readiness-2026-09-29.md`; the batch completion report
+is in `.local/tasks/session-completion-2026-09-29.md`.
+
+Readiness also discovered a stale ambient-audio contract: `docs/api.md` and
+the durable decision still describe export-only delivery while closed #1056
+implements public server delivery. Criterion-ready follow-up
+[#1067](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1067) owns
+the owner decision and contract/memory reconciliation; #1056 remains closed
+and is not reopened.
+
+[#1067](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1067) is now
+implemented under the owner-confirmed export-only decision: the legacy
+ambient upload route is a non-writing `410 Gone` compatibility shim, public
+viewers no longer resolve ambient samples remotely, and the shared public
+asset route rejects ambient-sample references while preserving ordinary
+published media. Owner re-confirmed export-only in chat on 2026-09-29.
+Focused checks and full `make check` pass. Rollback: `git revert` of the
+#1067 commit restores #1056 public delivery.
+
+The #1060 transaction reached QA with its scoped backend behavior passing, but
+the required full frontend gate reproduced an unrelated AdminSettings failure
+twice. Closed [#1068](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1068)
+fixed the dirty-draft overwrite; #1060 then passed its follow-up full gate and
+was closed with QA evidence.
+
+The #1066 transaction is implemented on commit `08df1b27`: the canonical SVG
+prompt now specifies the animated gauge contract and the provider rejects
+rubric-failing gauge fallbacks. Focused tests, lint/format, the full backend
+suite (1,818 passed / 39 skipped), frontend typecheck, and the full frontend
+suite (3,168 passed) are green. Its real-Mistral/public-browser rubric remains
+owner-run evidence, so #1066 stays open. #1067's owner-decision hold was resolved
+on 2026-09-29 (export-only confirmed); #1056 was not reopened.
+
+## 2026-09-28 — live-provider QA follow-ups
+
+| Issue | Transaction | Result / next action |
+| --- | --- | --- |
+| [#926](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/926) | `GROOMED → ENGINEERING/QA` | Local provider dependency cleared. Two bounded live Case-A attempts violated the selected `@Hills` scope; issue remains open and is linked to implementation defect #1060. Cases B/C were not started after the repeated scope failure. |
+| [#1041](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1041) | `GROOMED → ENGINEERING/QA` | Three bounded Three.js generations failed the rubric (blank, generic cube, blank). No artifact was published; issue remains open and is linked to #1061. |
+| [#1060](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1060) | `GROOMED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `61fd250d` enforces selected-target scope at patch validation; #1068 fixed the unrelated full-suite AdminSettings overwrite, after which 92 focused backend tests, frontend typecheck, and 3,168 frontend tests passed. Closed with follow-up QA comment. |
+| [#1068](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1068) | `PROPOSED → ENGINEERING → QA → RECONCILIATION → CLOSED` | Commit `bf980992` preserves dirty unpublished-retention edits during parent refresh; focused 6-test suite, typecheck, and full 3,168-test frontend suite passed. Closed with QA comment. |
+| [#1061](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1061) | `PROPOSED → ENGINEERING → QA` | Commit `c64236b0` adds targeted orbital-showcase prompt guidance and deterministic generic-fallback rejection. Focused provider tests, full backend (1,808 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live Mistral desktop/mobile evidence remains owner-run and additional quota is explicitly out of scope; a disposable local check confirmed `e2e_owner` has no Mistral credential, so the issue remains open. |
+| [#1062](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1062) | `PROPOSED → ENGINEERING → QA` | Commit `b38e75a1` adds targeted A-Frame light-switch guidance and deterministic empty/static-fallback rejection. Focused provider tests, full backend (1,810 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live Mistral desktop/mobile evidence remains owner-run and additional quota is explicitly out of scope; the disposable local `e2e_owner` account has no Mistral credential, so the issue remains open. |
+| [#1063](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1063) | `PROPOSED → ENGINEERING → QA` | Commit `70c778d0` adds targeted p5.js N-body guidance and deterministic generic-fallback rejection. Focused provider/prompt tests, full backend (1,812 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live Mistral 60-second visual/stability evidence remains owner-run and additional quota is explicitly out of scope; the disposable local `e2e_owner` account has no Mistral credential, so the issue remains open. |
+| [#1064](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1064) | `PROPOSED → ENGINEERING → QA` | Commit `08257b8d` adds targeted C2.js recursive-fractal guidance and deterministic empty/static-fallback rejection. Focused provider/prompt tests, full backend (1,814 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live Mistral desktop/mobile visual evidence remains owner-run and additional quota is explicitly out of scope; the disposable local `e2e_owner` account has no Mistral credential, so the issue remains open. |
+| [#1065](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1065) | `PROPOSED → ENGINEERING → QA` | Commit `e164c471` adds targeted C2.js Interactive paint-tool guidance and deterministic blank/static-fallback rejection. Focused provider/prompt tests, full backend (1,816 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live interactive browser evidence remains owner-run; the disposable local `e2e_owner` account has no Mistral credential, so the issue remains open. |
+| [#1066](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1066) | `PROPOSED → ENGINEERING → QA` | Commit `08df1b27` adds targeted SVG animated-gauge guidance and deterministic rubric-failure rejection. Focused provider/prompt tests (23 passed), full backend (1,818 passed / 39 skipped), frontend typecheck, and full frontend (3,168 passed) pass. Live Mistral/public-browser evidence remains owner-run; the disposable local `e2e_owner` account has no Mistral credential, so the issue remains open. |
+| [#1061](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1061) | `PROPOSED` | Discovery-gate follow-up for blank/generic Three.js showcase output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1042](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1042) | `GROOMED → ENGINEERING/QA` | Three bounded A-Frame generations produced an empty preview; no artifact was published. Linked implementation follow-up #1062. |
+| [#1043](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1043) | `GROOMED → ENGINEERING/QA` | Three bounded p5.js generations produced a generic single-circle fallback; no artifact was published. Linked implementation follow-up #1063. |
+| [#1062](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1062) | `PROPOSED` | Discovery-gate follow-up for empty/static-only A-Frame output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1063](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1063) | `PROPOSED` | Discovery-gate follow-up for generic p5.js fallback output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1044](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1044) | `GROOMED → ENGINEERING/QA` | Three bounded C2.js generations produced an empty preview; no artifact was published. Linked implementation follow-up #1064. |
+| [#1045](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1045) | `GROOMED → ENGINEERING/QA` | Three bounded C2.js Interactive generations produced an empty preview with no paint controls or undo/redo behavior; no artifact was published. Linked implementation follow-up #1065. |
+| [#1046](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1046) | `GROOMED → ENGINEERING/QA` | Three bounded SVG generations produced an empty preview; no artifact was published. Linked implementation follow-up #1066. |
+| [#1064](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1064) | `PROPOSED` | Discovery-gate follow-up for empty procedural C2.js output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1065](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1065) | `PROPOSED` | Discovery-gate follow-up for empty C2.js Interactive paint-tool output; filed with bounded evidence and validation criteria. Deferred from this session. |
+| [#1066](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1066) | `PROPOSED` | Discovery-gate follow-up for empty SVG animated-gauge output; filed with bounded evidence and validation criteria. Deferred from this session. |
 
 ## 2026-09-24 — active follow-up batch (#747, #748, #788, #798–#808)
 
@@ -24078,3 +24321,2228 @@ microphone behavior remain `VALID WITH GAPS` and link to their open follow-ups.
 - [#929](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/929) — **CLOSED / QA PASS:** version-tagged visitor sound overrides, generated-runtime protection, and browser-storage audit; full `make check` passed.
 - [#930](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/930) — **CLOSED / QA PASS:** portable piece-package v1 schema, mirrored validators, ZIP round trips, checksums, limits, and #512/#526 compatibility readers; full `make check` passed.
 - [#931](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/931) — **CLOSED / QA PASS:** separate admin-editable private/public storage caps, read-only transfer estimates, and JSON/CSV usage reporting; full `make check` passed.
+
+## 2026-09-27 — backlog re-evaluation, documentation reconciliation, and code-health audit
+
+A full re-evaluation pass (not a normal implementation batch): re-checked all
+25 then-open issues against a corrected `docs/plan.md`, reconciled
+`docs/plan.md`/`AGENTS.md` against roughly a dozen shipped feature domains
+they never documented, added a hard owner-mandated no-regression rule
+(`AGENTS.md` §13, `docs/task-template.md`), and ran a targeted code-tangle
+audit. Full findings and rationale live in this session's transcript;
+summarized here per the discovery-gate/reconciliation convention.
+
+**Issue re-evaluation outcome:** of the 25 open issues, 0 were consolidated
+or cut as redundant — full-body review found every one is already
+criterion-ready, non-duplicate, and either actively queued
+(`docs/distillation-2026-09-26-cross-surface-parity.md` streams A–G) or
+correctly blocked pending an owner decision/authorization. Two issues that
+were specifically blocked on an owner decision were resolved in this
+session:
+
+- [#874](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/874) — **CLOSED**, owner-confirmed 2026-09-27: all code/layout criteria were already implemented and verified; the remaining production-data item stays tracked in #906 (owner authorization required, not run in this session).
+- [#886](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/886) — **CLOSED**, owner decision recorded: Option 1 (export-only/local ambient audio delivery, no new public server contract). See `docs/api.md` ("Owner-uploaded ambient audio (#886)") and `.agents/memory/ambient-audio-export-only-delivery.md`. [#847](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/847) updated to match the narrowed scope.
+
+**Documentation reconciliation:** `docs/plan.md` gained a "Scope reconciliation (2026-09-27)" section confirming 3D/A-Frame, ink, audio (already confirmed), admin CMS, collections, the generated-art sandbox, and cloud-backup/local-first sync as in-scope shipped domains, and flagging two items the owner still needs to decide: billing/PayPal/entitlements as a business-model addition, and a direct contradiction between shipped ZIP export and the "Explicit V1 exclusions" list's "Fully offline/bundled HTML or ZIP dependency packaging" line. `AGENTS.md`'s layout section was corrected (stale `ProjectMetadataForm`/`EditorPlaceholder` component names removed; the app/module list now matches what's on disk).
+
+**Code-health audit → filed as 8 atomic issues (revised 2026-09-27, per owner
+feedback that the first pass under-delivered and code-quality work should be
+many small atomic issues, not one umbrella):** the initial single umbrella
+issue #978 was closed and replaced after reading `Scene3DPreview.tsx`,
+`PieceStageControls.tsx`, and `useSceneEditor.ts` in enough depth to find
+concrete evidence, not just size — including a real cross-file state
+duplication (#984), the clearest tangle finding of the audit.
+
+| Issue | Scope | Routing | Status |
+|---|---|---|---|
+| ~~#978~~ | Umbrella "decompose EditorWorkspace.tsx" | — | CLOSED / superseded by #979–#983 |
+| [#979](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/979) | `EditorWorkspace.tsx`: extract camera-overlay state into a hook | 2b | PROPOSED / criterion-ready |
+| [#980](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/980) | `EditorWorkspace.tsx`: extract HTML/CSS/JS code-tab sync into a hook | 2b | PROPOSED / criterion-ready |
+| [#981](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/981) | `EditorWorkspace.tsx`: extract canvas viewport (zoom/pan/fit) into a hook | 2b | PROPOSED / criterion-ready |
+| [#982](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/982) | `EditorWorkspace.tsx`: extract AI-assist panel state into a hook | 2a | PROPOSED / criterion-ready |
+| [#983](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/983) | `EditorWorkspace.tsx`: extract edit-session lifecycle state into a hook | 2b | PROPOSED / criterion-ready |
+| [#984](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/984) | Deduplicate sonic-engine/keyboard state shared by `Scene3DPreview.tsx` and `PieceStageControls.tsx` — a real duplication, not just size | 2b | PROPOSED / criterion-ready |
+| [#985](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/985) | `Scene3DPreview.tsx`: extract gesture/theremin/camera-preview state into hooks | 2b | PROPOSED / criterion-ready |
+| [#986](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/986) | `PieceStageControls.tsx`: extract visitor-drawing-overlay state into a hook | 2b | PROPOSED / criterion-ready |
+
+`useSceneEditor.ts` (1,721 lines) was read at the same depth and found
+**not** to be a tangle finding: it's one large hook covering one cohesive
+concern (selection, undo/redo, transforms, layers, groups, graph nodes — all
+scene-editing operations), the same "big but not tangled" pattern as
+`backend/scenes/models.py`. No issue filed for it. The per-surface
+duplication pattern (regular/embed/immersive/download × render engines) was
+explicitly excluded from "untangle" findings — it is owner-approved
+deliberate architecture per `docs/piece-surface-parity.md` et al.
+
+**Issue-count consolidation (2026-09-27):** re-reading the 25 open issues'
+full bodies for genuine merge candidates (not just theme similarity) found
+two triplets that were byte-for-byte the same checklist template repeated
+per surface, and merged them:
+- [#859](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/859) — now covers immersive, embed, and both ZIP variants as separate acceptance-criteria rows. #860 and #861 closed, pointing here.
+- #973/#974/#975 were reviewed for the same treatment and **not** merged: each cites a different dedicated Playwright spec file and a different routing stage, and #974 additionally requires implementing a missing route (not pure verification like #973/#975) — merging would have reduced atomicity rather than improved it, the opposite of what this pass is for.
+
+**Navigability (2026-09-27, no scope change):** linked #942/#944/#945/#946/#973/#974/#975 as real GitHub sub-issues of #941 (their existing "Parent" text field, now structural). Filed two tracking-only parents — [#987](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/987) (Stream E microphone: #911–#916) and [#988](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/988) (code-health decomposition: #979–#986) — each with its children linked as GitHub sub-issues so the open-issue list collapses under 3 parents instead of reading as 21 flat rows. No child's scope, criteria, or verification changed.
+
+## Owner priority (2026-09-27)
+
+This repo had no priority mechanism before now — no milestone, no priority
+label; open issues were ordered only by feature-delivery dependency (the
+"Queue position" streams in `docs/distillation-2026-09-26-cross-surface-parity.md`),
+which is not the same as importance. The owner confirmed code quality,
+control-flow cleanliness, and known UI/interaction defects (e.g. button
+placement) should be worked **ahead of** feature-queue order. Created the
+`owner-priority` GitHub label and applied it to:
+
+- [#976](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/976), [#977](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/977) — found UI/routing defects (missing canonical route; control-bar button placement/inert controls), not new features.
+- [#979](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/979)–[#986](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/986) and their tracker [#988](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/988) — the code-quality/control-flow decomposition work from this session's audit.
+
+This label marks *what* to prioritize; it does not itself reorder the
+feature-queue streams (A–G) in the distillation doc, which still govern
+their own internal sequencing. Anything newly found with the same character
+(a control-flow tangle, a button/UI placement defect, an inconsistency) should
+get this label as it's filed, not just these ten.
+
+## 2026-09-27 (continued) — CONVENTIONS.md rollout: Milestone Batch 9
+
+A full-sweep, multi-pillar conventions audit (code quality, WCAG-aligned
+accessibility, NIST-CSF-aligned security, design/UX) produced
+[`CONVENTIONS.md`](../CONVENTIONS.md) plus 11 `docs/conventions/*.md` pages,
+and 18 new issues + edits to 9 existing ones (#979–#986, #988). All are
+filed under the new **Batch 9: CONVENTIONS.md rollout** milestone (created
+open — Batch 1–8 are all closed/historical), per the milestone-assignment
+rule this session added to `docs/process.md`.
+
+| Issue | Scope | Kind |
+|---|---|---|
+| [#989](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/989) | Duplicate `cryptography` entry in `backend/pyproject.toml` | mechanical |
+| [#990](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/990) | `fflate`/`jszip` overlap | investigative |
+| [#991](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/991) | `PieceCard.tsx` alt-text inconsistency | mechanical/owner-priority |
+| [#992](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/992) | Undefined `--space-1`/`--space-3` CSS tokens (real bug) | mechanical/owner-priority |
+| [#993](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/993) | 44px/40px/32px touch-target split | 2a |
+| [#994](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/994) | Contrast-ratio target + audit | 2a |
+| [#995](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/995) | Tracking: dependency-vulnerability scanning in CI | tracking |
+| [#996](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/996) | Tracking: incremental ruff `C90`/`N` + TS `strict` rollout | tracking |
+| [#997](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/997) | Two N+1s in `collections.py` | 2b |
+| [#998](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/998) | `behaviorRuntime.ts`'s per-frame `findIndex` → `Map` | 2b |
+| [#999](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/999) | `sceneShapes.ts`'s `shapeLabel` O(n²) | 2a |
+| [#1000](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1000) | Login-endpoint rate-limit/lockout | 2b/owner-priority |
+| [#1001](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1001) | Log permission denials in `permissions.py` | 2a/owner-priority |
+| [#1002](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1002) | Log PayPal webhook signature failures | 2b/owner-priority |
+| [#1003](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1003) | Route `canonical_piece_api.py`'s inline check through `permissions.py` | 2b |
+| [#1004](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1004) | **Owner-decision:** entitlement-gating UI pattern | owner-decision |
+| [#1005](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1005) | **Owner-decision:** `admin-action-*` vs `shell-action` shape language | owner-decision |
+| [#1006](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1006) | **Owner-decision:** unstyled primitives library for dialog/menu/radio-group | owner-decision |
+
+No live exploitable security vulnerability was found (see
+`docs/conventions/security.md`) — everything above is a process/architecture
+gap or a real-but-bounded defect, each with its own regression-risk/
+restoration-path section per `AGENTS.md` §13. None of these issues have
+been implemented yet; that follows later through the normal one-issue-at-
+
+## 2026-09-28 — backlog-session terminal reconciliation
+
+The current open inventory was rechecked against GitHub after the corrected
+owner-input interpretation. Well-scoped implementation issues were treated as
+actionable; an issue is classified as blocked only where the next step needs a
+concrete upstream contract, owner-run production action, owner credential, or
+external publication boundary. #1035 and #1036 were explicitly excluded from
+this run at the owner's direction and remain handed off to active Claude Code
+scoping work.
+
+| Terminal class | Issues | Boundary / next action |
+|---|---|---|
+| Closed with implementation and QA | #941, #973, #974, #975, #1016, #1037, #1038, #1039, #1047, #945 | Evidence and QA comments are on the linked issues; full `make check` passes. |
+| Handed off / do not touch | #1035, #1036 | Claude Code is actively scoping the HTML/CSS/JS editor and 3D persistence work. |
+| Owner/source contract | #1048 | New deferred schema/API issue for 2D+3D human-readable HTML/CSS/JS views and JSON synchronization; owner review required. |
+| Owner/provider verification | #926, #1040–#1046 | Local Compose is healthy, but the supported local account has no Mistral credential; no production secret is copied or entered. |
+| Verification/publication boundary | #859, #1034 | #859 still needs runtime/CI evidence; #1034 needs matching-ref CI publication, and the safety boundary rejected the attempted push. |
+| Dependency/contract | #847, #942, #944 | #847 needs a generated/3D piece-to-local-audio binding; #942 needs the local public-transfer contract before retention can build on it. |
+| Owner-run production action | #788, #946 | Approved flows remain owner-run; production writes and unpublished deployment provenance are not agent actions. #946 also follows #942/#944. |
+
+The required final gates are recorded in
+`.local/tasks/production-readiness-2026-09-28-final.md` and
+`.local/tasks/session-completion-2026-09-28-final.md`.
+
+## 2026-09-27 (continued) — 2D/3D editor and collections parity: Batch 10
+
+A live Chrome inspection of `/users/@cfornesa/edit/untitled-animation-2`
+plus a code audit of the 2D editor toolbar, the manual 3D editor, and a
+collections comparison against the read-only reference repos
+`augment-humankind` (PHP) and `augment-humankind-react-node` produced 13
+new issues under a new milestone, **Batch 10: 2D/3D editor and collections
+parity**, plus cross-linking comments on the two already-open issues
+(`#977`, `#951`) that already describe the 2D toolbar problem. Two
+compatible ideas from `LIGDOL_Creative_Continuity_Thesis.md` were folded in
+narrowly (canvas-as-materialized-state informing the Code/Visual parity
+standard; "bring it into a project" informing the collections item-picker
+issue) — the thesis's larger social/memory-graph scope was explicitly
+deferred, not adopted.
+
+| Issue | Scope | Kind |
+|---|---|---|
+| [#1007](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1007) | Fix `StageControlsPopover`'s hardcoded icon | 2a/owner-priority |
+| [#1008](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1008) | Fix Ask AI button's stacking-context risk | 2a/owner-priority |
+| [#1009](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1009) | 3D editor: ground grid + axes helper | 2a |
+| [#1010](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1010) | 3D editor: missing box/cylinder creation buttons | 2a |
+| [#1011](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1011) | 3D editor: snapping | 2b |
+| [#1012](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1012) | 3D editor: draggable transform gizmo (new-dependency question flagged) | 2b |
+| [#1013](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1013) | Tracking: 3D code-grammar (raw JSON → `codeGrammar.ts`-equivalent) | tracking |
+| [#1014](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1014) | Collections: item picker | 2b/owner-priority |
+| [#1015](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1015) | Collections: drag-and-drop reorder (additive, not replacing Move-up/down) | 2a |
+| [#1016](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1016) | Collections: cover image (manual) | 2b |
+| [#1017](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1017) | Collections: draft/archived status | 2b |
+| [#1018](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1018) | Collections: comments | 2b |
+| [#1019](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1019) | Collections: curated public browse/search | 2b |
+
+**Deliberately not ported:** `augment-humankind`'s raw user-supplied
+`iframe_code` field for collections — a free-text iframe surface conflicts
+with this app's sandboxed-rendering security conventions. Recorded in
+`docs/conventions/security.md`'s new "Deliberate non-ports" section rather
+than silently omitted. `#823` (item count, complete download bundle) was
+already tracked and is not re-filed. Nested/sub-collections were checked
+against both reference repos and found unsupported in either — not a gap.
+None of the 13 issues have been implemented yet.
+
+## 2026-09-28 — Codex substitution backlog transaction
+
+The live inventory contained 62 open issues. Production data actions #788
+and #906 and owner-decision issues #1004–#1006 remain blocked; #976 remains
+blocked pending the irreversible public-route confirmation. The first
+unblocked owner-priority transaction, #979, was implemented and locally QA
+verified by Codex as the authorized substitution for the rostered engineering
+and QA services. Commit `550089a3` extracts `useCameraOverlay` from
+`EditorWorkspace.tsx`; 37 test files/425 tests, typecheck, lint, and
+format-check passed. The required GitHub QA comment was rejected by the
+connector's external-publication risk policy, so the complete evidence and
+the publication boundary are recorded in
+`.local/tasks/backlog-session-2026-09-28.md`; no workaround was attempted.
+Issue #980 then centralized code-tab synchronization in `f5866d72`; its
+35-file/399-test EditorWorkspace matrix, typecheck, lint, and format-check
+passed. It was reconciled and closed with the same connector publication
+boundary recorded in the ledger.
+Issue #981 then extracted the canvas viewport lifecycle into
+`useCanvasViewport` in `a4a1e4f4`; its 35-file/399-test EditorWorkspace
+matrix, typecheck, quiet lint, format-check, and diff-check passed. The live
+Chrome check was unavailable because no running local stack/browser session
+was provided; this was recorded as an environment boundary. It was
+reconciled and closed with the same connector publication boundary recorded
+in the ledger.
+
+## 2026-09-28 — two issue-scoping corrections during the Codex backlog run
+
+Codex (running this session's backlog-session/QA/production-readiness/
+session-completion substitution) correctly stopped rather than deciding
+architecture silently, and correctly filed a new discovery rather than
+implementing it in the same session — both per the standing rules added
+2026-09-27/28. Both issues re-scoped/re-verified against current source and
+made criterion-ready for the next round:
+
+- **[#984](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/984)**
+  — Codex found the original premise inaccurate: `PieceStageControls.tsx`
+  does not contain `effects`/`voiceInstruments`-as-state/piano-press
+  tracking; those exist only in `Scene3DPreview.tsx`.
+  `PieceStageControls.tsx` uses a command-dispatch model instead. Re-verified
+  against source and narrowed to the real overlap: ~10 shared scalar
+  ambient/keyboard fields declared separately in both files (matching the
+  existing canonical `SoundSettings` type in `frontend/src/audio/
+  soundSettings.ts`, which `Scene3DPreview.tsx` doesn't use — it hardcodes a
+  drifting second copy of the same defaults). Rewritten to extract only
+  those fields via a shared hook with an injected apply-callback, explicitly
+  not touching `PieceStageControls.tsx`'s command-dispatch architecture.
+- **[#1020](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1020)**
+  — filed by Codex as the correct follow-up to closed `#994`'s contrast
+  audit (light `--accent`/`--bg` at 4.39:1, below the 4.5:1 floor). Original
+  body lacked acceptance criteria/regression-safeguard/discovery-gate
+  sections. Re-verified every real consumer of bare `--accent` in
+  `index.css` (not just the two `#994` originally sampled) and found 3 more
+  real text usages (`--profile-accent` fallback on public profile/collection
+  headings) plus 2 accent-as-background-with-white-text sites
+  (`.admin-action-primary`, `.profile-feed-actions` hover/focus) that need
+  re-verification, not assumption, once `--accent` changes. Cross-linked to
+  the still-open `#1005` (admin-action-* shape reconciliation) since they
+  touch the same selector for different reasons.
+
+## 2026-09-28 (continued) — rectifying Codex's backlog-session summary
+
+Codex ran an ~83-minute, ~1M-token backlog-session/QA/production-readiness/
+session-completion pass and reported "Backlog goal complete... remaining
+open issues are only blocked, dependency-ordered, owner-decision,
+tracking/follow-up, production-action, or newly filed work." Per this
+repo's own untrusted-external-input convention, that summary was
+independently audited rather than accepted. **The code work itself held
+up**: `#984`-`#986`, `#1017`, `#1018` all have real, correctly-scoped
+commits (`#984` specifically matches its 2026-09-27 corrected scope, not
+the old incorrect one); full test suites pass (1768 backend, 3079
+frontend, 0 failures); no regression-rule violations found across the 17
+code-touching commits; `git status` clean.
+
+**Rectified:**
+- **QA evidence backfilled** on all 5 closed issues (`#984`-`#986`,
+  `#1017`, `#1018`) — each was closed via a typed state update with no
+  GitHub-visible QA comment, citing "the authenticated connector's
+  external-publication risk policy" rejecting the comment. That claim did
+  **not reproduce**: `gh issue comment` posted normally in this follow-up
+  session. Real criterion-matrix comments, drawn from
+  `.local/tasks/backlog-session-2026-09-28.md`'s actual ledger entries,
+  were posted to all 5 issues.
+- **Filed [#1021](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1021)**
+  for 2 pre-existing `mypy` errors in `backend/scenes/collections.py`
+  (inherited from `#997`, referenced-but-unfixed by `#1017`'s own ledger
+  entry) that currently fail `make check`/`backend-typecheck` for anyone
+  running it. `owner-priority`, Batch 9.
+- **Corrected false "blocked" status on 9 issues** (`#859`, `#847`, `#926`,
+  `#913`, `#914`, `#915`, `#916`, `#941`, `#945`) — every dependency each
+  one cites was independently re-verified as CLOSED via `gh issue view
+  --json state`, not assumed. `#941` is the root of the entire
+  `#942`/`#944`/`#946`/`#973`/`#974`/`#975` chain, so unblocking it
+  unblocks that whole downstream sequence.
+- **Flagged `#976`** (owner-priority, no blocker text, never touched) and
+  **`#1019`/`#1016`/`#1012`** (fully scoped, no blocker text, simply not
+  reached before the session ended) so the next round doesn't skip them
+  under a stale "blocked" assumption.
+
+**Not rectified / still real:** `#1021` itself is filed, not fixed (per
+the standing no-same-session-implementation rule — this correction pass
+discovered it, so it's deferred to the next round like everything else).
+
+## 2026-09-29 — #859 isolated CI retry and discovery follow-up
+
+The isolated retry of #859's Browser acceptance E2E shard 5 completed with
+14 failures across generated-piece immersive/runtime, owner-editing,
+refinement, regular-viewer, and sound/microphone scenarios. The six-engine
+embed, immersive, thumbnail, and ZIP scenarios passed, but the six-engine
+regular canonical viewer timed out, so #859 remains open. The failures hit
+closed feature contracts and therefore were not edited inline. Per the
+discovery gate, criterion-ready [#1069](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1069)
+was filed in Batch 11 for root-cause reproduction and deterministic CI
+stabilization. The full evidence and workflow verdict are recorded in the
+#859 QA comment; no production data or credentials were used.
+
+## 2026-09-29 — Phase 1 backlog session completion (#1073, #1074, #1075, #1072, #859)
+
+The requested ordered batch is terminalized. Each implementation issue was
+implemented in its routed surface, independently QA-reviewed, given a
+criterion-matrix GitHub QA comment, verified with `make check`, and closed
+before the next issue began. The rostered external implementation/review
+services were unavailable in this session; the required substitutions were
+recorded in each QA transaction and were not credited as fresh-eyes review.
+
+| Issue | Result | Commit / verification evidence |
+|---|---|---|
+| #1073 | CLOSED | `a9bd601a`; focused dev-account tests 5 passed; `make check` green; QA comment 5895492746. |
+| #1074 | CLOSED | `4027dc29`; focused dev-account/e2e-fixture tests 12 passed; `make check` green; QA comment 5895597736. |
+| #1075 | CLOSED | `bbeeccef`; live-provider workflow doc plus persistent-account memory decision; `make check` green; QA comment 5895700411. |
+| #1072 | CLOSED | `5b537b5e`; AccountSettings 401/400/500 tests 18 passed; `make check` green; QA comment 5895827449. |
+| #859 | CLOSED | Verification-only closure against existing six-engine local Compose Chromium evidence, re-verified in active Chrome; QA comment 5895870046. Current CI rerun 36557751947 was recorded as a browser-shard boundary, not closure evidence. |
+
+No production data, live Mistral provider, passwords, or API keys were used.
+Skipped owner-run/credential-gated issues remain intentionally untouched:
+#788, #926, #1040–#1046, and #1061–#1066. The next action is the owner-run
+Phase 2 live-provider setup documented in `docs/live-provider-testing.md`.
+
+## 2026-09-30 — Phase 2 live-provider QA reconciliation
+
+The local disposable Compose run was completed within the owner-authorized
+real-provider boundary. #1041 and deterministic follow-up #1061 closed with
+browser evidence. #1042–#1046 and follow-ups #1062–#1066 remain open with
+explicit dependency, rubric, or verification terminal status; exact matrices
+and next actions are in `.local/tasks/backlog-session-2026-09-30-phase2.md`.
+#926 remains open for its unreached live cases despite the implementation fix
+in #1060. #1069's browser-shard follow-up is now closed. #788 was not touched
+because it is a production-data owner-run action.
+
+The full `make check` gate passed (backend 1830 passed / 39 skipped; frontend
+307 files / 3170 tests). The temporary live-provider backend container was
+removed after the run and the normal Compose backend was restored.
+
+## 2026-09-30 — Phase 2 terminal reconciliation
+
+The live-provider batch was reconciled after the deterministic follow-ups and
+the natural-language C2 Interactive publication. The completed issues are
+#1041, #1043, #1044, #1045, #1061, #1062, #1063, #1064, #1065, and #1066;
+their issue comments contain criterion matrices and exact verification
+evidence. #1042 and #1046 remain **blocked** after fresh bounded local runs
+again failed at the provider-output boundary. #926 remains **blocked** after
+two local Chrome agent-workflow runs reached a correctly scoped `shape-hills`
+plan but both ended with `repeated_invalid_output`; its criterion matrix and
+next action are in QA comment 5903417419. #788 remains **owner-run** because
+it requires a production-only data action and was intentionally untouched.
+
+Final local gate: `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed
+(backend 1830 passed / 39 skipped; frontend 307 files / 3170 tests). The
+remaining work is not production-ready: it requires owner/provider decisions
+or an owner-run production action. No production data, passwords, or API-key
+values were used.
+
+## Owner report 2026-09-30: generation reliability, studio/mobile UX, local-project parity
+
+Source: Codex live QA result for #1042/#1046 plus owner screenshots. Classified
+as implementation-defects (generator contract, layout, missing local
+metadata); the "terminal BLOCKED" status of #1042/#1046 is superseded — see
+their 2026-09-30 comments. All items `PROPOSED`, filed only (Discovery gate
+rule 4), not implemented in the discovering session. Plan file:
+`~/.claude/plans/linear-meandering-wombat.md`.
+
+| Issue | Milestone | Routing | Depends on |
+|---|---|---|---|
+| [#1076](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1076) allow inline script in SVG/A-Frame contract | Batch 11 | 2b | — |
+| [#1077](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1077) robust snippet extraction | Batch 11 | 2a | — |
+| [#1078](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1078) reason-coded structural validation | Batch 11 | 2b | #1076, #1077 |
+| [#1079](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1079) bounded repair loop + max_tokens | Batch 11 | 2b | #1078 |
+| [#1080](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1080) offline failing-output corpus | Batch 11 | 2a | #1077–#1079 |
+| [#1081](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1081) human-style QA prompt guideline | Batch 11 | docs | — |
+| [#1082](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1082) studio full-width form/textarea | Batch 12 | 2a | — |
+| [#1083](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1083) viewer stage size + controls at 375px | Batch 12 | 2a | — |
+| [#1084](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1084) wrap long prompt text at 375px | Batch 12 | 2a | — |
+| [#1085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1085) local description/thumbnail fields | Batch 12 | 2b | — |
+| [#1086](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1086) client-side local thumbnails | Batch 12 | 2b | #1085 |
+| [#1087](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1087) gallery local card parity | Batch 12 | 2a | #1085, #1086 |
+| [#1088](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1088) edit title/description locally | Batch 12 | 2a | #1085 |
+
+Re-scoped (not closed): #1042, #1046, #1040 now depend on #1076–#1080 and use
+a #1081 prompt. Untouched: #926, #788. Suggested next groomed issue: #1076.
+
+## 2026-09-30 — Production-readiness audit and session-completion (GitHub backlog empty)
+
+Result: **NOT PRODUCTION-READY / BLOCKED**, even though the pre-audit inventory
+showed 0 open issues (1,071 closed). Stage owner for this gate: Claude Sonnet
+5.5 (rostered Sonnet 5 tier), no substitution. Earlier ledger lines that say
+17 open issues remain (#788, #859, #926, #1040–#1046, #1061–#1066) are
+superseded: all were closed by 2026-09-30 (#788 with production evidence,
+#926/#859 with bounded live/local evidence).
+
+| Dimension | Evidence | Result |
+|---|---|---|
+| Published (production) | `PUBLISHED_APP_URL=https://animate.creatrweb.com scripts/smoke-published.sh`: health ok, `/`, anonymous whoami 401, login form all PASS | PASS (anonymous smoke only) |
+| Local checks at HEAD 8c9d9298 | `make -k check`: frontend lint/typecheck/build + 308 files / 3,180 tests pass; action-pin, backend lint, mypy pass; **backend-format-check FAIL** (`scenes/ai_runs.py`, `tests/test_ai_runs.py`); **backend 3 failed / 1,873 passed / 39 skipped** (`test_fake_asset_layer_replay_is_vendor_neutral[mistral|gemini|deepseek]`, `empty_patch`) | FAIL |
+| CI | Branch is 59+ commits ahead of origin; last remote runs (2026-09-29, e.g. 36557751947) predate HEAD and failed. No CI evidence exists for HEAD | VERIFICATION BOUNDARY (push is owner-authorized; not done) |
+
+Follow-ups (filed only, per Discovery gate rule 4; not implemented):
+[#1092](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1092)
+backend format-check failure; [#1093](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1093)
+provider-matrix asset-layer replay regression. Both are in Batch 13.
+
+Session-completion housekeeping: 26 closed issues lacking a milestone
+(#788, #847, #859, #906, #911–#916, #926, #941, #942, #944–#946, #973–#977,
+#1070, #1071, #1089–#1091) were back-filled into new Batch 13; Batches 9–12
+(0 open issues each) were closed; `docs/tasks-index.md` updated. Next action:
+engineer #1092 and #1093, re-run `make check`, push the branch for a matching-ref
+CI run, then re-run this readiness gate.
+
+### 2026-09-30 addendum — #1092/#1093 closed under owner waiver
+
+The owner explicitly waived Discovery-gate rule 4 for these two issues only.
+Both are CLOSED with QA PASS comments; `make check` at the resulting HEAD
+passes (backend 1,876 passed / 39 skipped; frontend 3,180 passed). Batch 13
+is closed. Local gate is now **PASS**; readiness remains **BOUNDED**: the
+branch is unpushed (no matching-ref CI run) and only the anonymous production
+smoke has been run. Next action: owner pushes the branch and confirms CI.
+
+### 2026-09-30 — matching-ref CI result (owner-requested push)
+
+Pushed `900fe968` and dispatched CI run 36765070532. **CI FAILED**: Backend
+checks, workflow validation and disposable published-routing smoke passed;
+Frontend checks failed (1 of 3,180 tests) and all 16 browser shards failed
+(208 failed tests across 110 spec files in the shard logs; the earlier
+~280-spec estimate was inaccurate). Local `make check` and CI therefore disagree; readiness stays
+**BLOCKED** (matching-ref CI boundary). Filed under Discovery gate rule 4
+(not implemented; the earlier waiver covered only #1092/#1093) in
+Batch 14: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095 (Gallery test timezone dependence), https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096 (E2E matrix failure),
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097 (WebKit fullscreen step). Next action: engineer them, redispatch CI.
+
+### 2026-09-30 — task-distillation pass after PR #1094 CI and Codex review
+
+PR #1094 run 36768736784 (head ebaf6637): Backend/workflow/smoke pass; Frontend
+fails only #1095; browser shard 1 fails only the WebKit step (#1097), which
+skips the smoke and full browser suites, so the PR run hides the ~280 failures
+(#1096) seen in dispatched run 36765070532. Codex review found a verified
+double-count of local media in storage-estimate preflight: https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 (public
+publish, 3 call sites) and https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 (sync upload, depends on the former). Both are
+in Batch 14, filed only (not implemented). Suggested order: #1095, #1097, then
+#1096 (re-run), with https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098 -> https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099 independent of CI. PR #1094 merge advice
+unchanged: wait.
+
+### 2026-09-30 — Batch 14 transaction #1095
+
+[#1095](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1095) is
+CLOSED / completed with QA PASS. Commit `c7545b8f` replaces the Gallery test's
+host-timezone-specific date literal with the output of the shared
+`formatDate` utility; product rendering is unchanged. The focused test and the
+full 3,180-test frontend suite pass under both `TZ=UTC` and
+`TZ=America/Los_Angeles`. `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check`
+also passes. The QA comment records the criterion matrix and provenance.
+
+Remaining Batch 14 order: #1097 → #1096, then #1098 → #1099. The owner
+selected expanded-content accounting for #1098: count the package's
+uncompressed piece/version content and media once, matching backend stored
+usage; #1099 inherits those semantics. Stage-5 readiness remains a batch
+gate and has not run.
+
+### 2026-09-30 — Batch 14 transaction #1097
+
+[#1097](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097) is
+CLOSED / completed with QA PASS. The cause was test fixture drift: the
+focused fullscreen spec used a server-project response wait after the
+Gallery's p5 action had switched to a local-only route. Commit `8d0d50e4`
+corrected that mismatch and exposed a second setup mismatch in CI: the local
+workspace has no fullscreen toolbar. Commit `ef5771b7` uses the existing
+`apiPost('/api/projects/blank/')` helper and opens the canonical editor route.
+The focused WebKit step passed on Linux in PR CI run 36776824640, job
+110096727130. Fullscreen/Escape assertions and shared helpers are unchanged.
+Local Mac browser launches fail at the host Mach-port boundary and are not
+used as pass evidence. `npx prettier --check`, `npm run typecheck`, and
+`git diff --check` pass; the isolated QA DB was dropped. QA comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1097#issuecomment-5919537401.
+
+Continue with #1096; the later 16-shard run must still reconcile every other
+browser failure. PR run 36776824640 only verifies the named WebKit step plus
+its PR gate; it is not claimed as full-matrix evidence.
+
+### 2026-09-30 — Batch 14 quota contract grooming (#1098 → #1099)
+
+The owner selected expanded stored-content accounting for
+[#1098](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098):
+`pieceBytes` counts expanded UTF-8 serialized piece/version payloads while
+excluding media and ZIP/manifest/container overhead; `mediaBytes` counts
+the included media blob bytes once; total is their sum. File counts remain
+one piece plus each included media asset. The #1098 issue now records this
+contract, affected call sites, acceptance fixtures, exact verification
+commands, and the constraint to keep the backend estimator unchanged.
+[#1099](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099) has
+been re-groomed to consume that same shared measurement for both aggregate
+preview and per-row private-quota checks. It became eligible when #1098
+closed and is the current engineering transaction. The owner reaffirmed
+expanded stored-content accounting; the private sync path must use the shared
+record-plus-media measurement without ZIP/container bytes or media
+double-counting.
+
+### 2026-09-30 — Batch 14 #1096 full-matrix handoff
+
+[#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096)
+remains open as a tracking issue. Baseline run 36765070532 recorded 208
+failed tests across 110 spec files, with backend/workflow/published-routing
+smoke passing and one frontend test failure. The current fixed-ref run
+36778653929 completed on `ef5771b77db4d4d07efe0ab0950ad0d740788a62`: all 16
+Linux browser full-suite steps failed, with 205 failed tests across 111 spec
+files and 270 passed. Workflow validation, backend checks, frontend checks,
+and disposable published-routing smoke passed. Shard 1's targeted WebKit
+Escape and public-media steps passed. Shard 7 hit the 1500-second suite/
+teardown limit; 16 tests did not run.
+
+Two actionable fixture causes were evidenced and filed in milestone 14:
+[#1100](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100)
+covers the stale 2D/3D server-backed creation helpers after Gallery creation
+moved local-first;
+[#1101](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101)
+covers ten offline cases in four specs that request IndexedDB v4 while the
+application schema is v5. No open duplicates were found. Other route/API,
+UI assertion, strict-locator, wait, and timeout failures remain without
+evidence-backed first-cause classification; logs do not support treating all
+of them as one defect. The 1500-second timeout is directly evidenced for
+shard 7, but this pass did not prove that increasing the CI limit would fix
+the underlying suite. No product code changed. Next owner action: implement
+#1100 and #1101 while preserving assertions, rerun the full Linux matrix, and
+continue classifying residual failures. #1096 is HANDED-OFF, not closed.
+This repeats the non-smoke E2E drift class in
+`.agents/memory/e2e-spec-drift-outside-smoke-suite.md`; it does not reopen
+#1069 or #859. Stage-4 review is QA FAIL because residual failures remain
+unclassified; QA comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5920587069.
+
+### 2026-10-01 — #1096 failed-spec child reconciliation
+
+Re-read the per-shard logs for run 36778653929 and matched the failed-test
+summary entries to the open child issues. In addition to #1100/#1101 and the
+helper-migration series (#1102–#1104), `public3dProportions.spec.ts` is owned
+by [#1144](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1144),
+and the `aiAgent2d.spec.ts` / `aiAgent3d.spec.ts` legacy-route cases are owned
+by [#1149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1149).
+The exact run reports 205 failed tests across 111 specs and 270 passed; these
+later child assignments do not cover all remaining failures. The #1096 issue
+body was updated to list both child assignments and remains open. Authenticated
+GitHub fetches on 2026-10-01 confirmed #1096, #1144, and #1149 are open. The
+local host has no Docker daemon, and no push/CI dispatch was performed; a new
+Linux/PostgreSQL matrix is still required after child work is implemented.
+
+### 2026-09-30 — Batch 14 #1098 implementation handoff
+
+The owner-selected expanded-content contract is implemented in the shared
+local package measurement and the three public-publish preflight paths. The
+measurement separates UTF-8 serialized record bytes from included media blob
+bytes and counts media files from blobs actually included. #1098 passed QA and
+was closed completed at `61eae5bf`; the QA comment is
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1098#issuecomment-5920252275.
+Focused tests (4 files / 21 tests), frontend typecheck, full frontend suite
+(309 files / 3,183 tests), lint, Prettier, commit diff checks, and backend
+estimator tests (3 tests) passed after implementation. See the Batch 14 ledger
+for full stage provenance and evidence boundaries.
+
+### 2026-09-30 — Batch 14 #1099 sync implementation and QA
+
+[#1099](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099)
+consumes the #1098 shared expanded-content measurement for local sync offer
+preview and per-row upload preflight. Serialized UTF-8 scene/version payload
+bytes and included media blob bytes are counted once each; preview measures
+blob sizes without building the ZIP. Aggregate and per-row estimates now
+share this measure and matching file counts. Commit `8b0cd0ae` passed focused
+tests (2 files / 6 tests), frontend typecheck, the full frontend suite (310
+files / 3,186 tests), changed-file Prettier check, and commit diff check. QA
+passed and the issue was closed completed; QA comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1099#issuecomment-5920683714.
+No memory change. Batch 14 readiness remains pending because #1096 and the
+handed-off #1100/#1101 work are unresolved.
+
+Final local `UV_CACHE_DIR=/tmp/ai-dev-tools-uv-cache make check` passed:
+backend lint/format/typecheck, 1,876 backend tests (39 environment-gated
+skips), frontend lint/format/typecheck, and 3,186 frontend tests across 310
+files. The batch currently has 4 completed issues and 3 handed-off issues
+(#1096, #1100, #1101), with no missing terminal statuses. Stage-5 readiness
+is blocked/not run while those issues remain unresolved; #1096's full Linux
+browser matrix still has residual unclassified failures beyond the two
+fixture causes tracked in #1100/#1101. The Batch 14 ledger records issue
+states, evidence, routing audit, and each remaining owner/next action.
+
+### 2026-09-30 — distillation of Codex-filed #1100/#1101 (Batch 14)
+
+Verified against HEAD `ef5771b7` (run 36778653929): stale creation helpers
+(`createBlankProjectViaUI`/`createBlank3DProjectViaUI`, 22 spec files) and v4
+IndexedDB fixtures (5 sites in 4 offline specs; app `DB_VERSION = 5`, v5 adds
+the `versions` store). Refined/split: [#1100](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100)
+(helpers + 3D callers, 2a), [#1102](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1102) (single-purpose
+2D specs, 2a, after #1100), [#1103](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1103) (four multi-call
+2D specs, 2a, after #1100), [#1104](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1104) (lifecycle/publishing/
+responsive, 2b, after #1100, owner-decision point), [#1101](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101)
+(real-schema offline seeding, 2a, independent). Parent #1096 stays open for
+residual failure classification. Suggested next issue: #1100.
+
+### 2026-09-30 — Batch 14 #1101 IndexedDB v5 fixture implementation and QA
+
+[#1101](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101)
+replaced all six hard-coded v4 opens across the five setup blocks and one
+read-only outbox inspection helper with
+[`localProjectDb.ts`](../frontend/e2e/support/localProjectDb.ts). The shared
+helper uses the app's own repository module, asserts the `versions` store and
+`meta.schemaVersion === DB_VERSION`, seeds stable project IDs and scenes, and
+uses IDs returned by `importMediaAsset` for transfer fixtures. It does not
+navigate the active Playwright page. No product/API/schema/dependency/workflow
+files changed.
+
+Commit `0e3640a5` passed the focused offline Chromium suite (16/16) on local
+PostgreSQL-backed Django + Vite using disposable `gesture_studio_test`; the
+account-switch case also passed 20/20 repeats (10 per viewport). Typecheck,
+lint (existing warnings only), format check, and diff check passed. Test and
+expectation counts stayed at ownership 4/16, media 2/4, conflict 1/4, sync
+2/4. Four temporary assertion inversions failed on the expected assertion and
+were fully restored. QA PASS comment:
+https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1101#issuecomment-5921248449.
+Issue #1101 is CLOSED / completed.
+
+The initial intermediate 15/16 run exposed an intermittent post-logout
+`loginViaUI` timeout: the anonymous Public Gallery was shown instead of the
+login form. This is separate from the v5 fixture change and is tracked by new
+milestone-14 issue
+[#1105](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1105).
+It was not fixed by widening timeouts. The account-switch case passed in the
+subsequent full 16-case run and in 20 repeats, but #1105 remains open for a
+root-cause investigation. It is handed off to the next session per the
+discovery gate.
+
+At this checkpoint, #1100 still awaits the owner's architecture choice;
+#1102–#1104 depend on #1100 and stay dependency-blocked. #1096 remains open
+until the creation-helper chain, the #1105 handoff, and residual full-matrix
+failure classification are reconciled.
+
+### 2026-09-30 — Batch 14 #1100 server-backed 3D helper and QA handoff
+
+The owner selected defer retirement for [#1100](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100): add server-backed helpers and migrate six 3D callers now; retain the old exports until #1102–#1104 migrate all remaining callers, then retire them in #1104. Commit `91a7a553` adds the typed 2D/3D server helper functions and changes only helper imports/setup calls in the six scoped specs. The API responses are status-checked, must contain the real id and canonical `editor_url`, and the page navigates to that editor URL. No application source or API contract changed.
+
+Typecheck, lint (existing warnings), formatting, and diff checks pass. Against local disposable PostgreSQL-backed Django/Vite, the exact six-spec Chromium command produced 3 passes and 4 failures. The three toolbar-locator failures and the 375x812 A-Frame drag failure were separately filed as criterion-ready [#1106](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1106) and [#1107](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1107) under parent #1096. Test/expect counts were unchanged in all six specs. QA comment 5921704822 is `## QA: FAIL`; #1100 remains open until those follow-ups are resolved and the required Linux Chromium command passes. Parent #1096 received comment 5921705496. The complete matrix after this change and Linux verification were not run; local Docker is unavailable and no workflow-dispatch tool is exposed. Production readiness and session completion remain pending.
+
+### 2026-09-30 — distillation of Codex-filed #1106/#1107 (Batch 14)
+
+Verified against HEAD after `91a7a553`. #1106: the 3D editor toolbar is inline
+(`Project3DWorkspace.tsx:938`); the "Open piece controls menu" hamburger is not
+rendered there (only an sr-only shim for the 2D `Piece actions` toolbar), so
+three specs time out — fix to direct buttons. #1107: mobile-only drag failure
+in `drawingPlaneAframe796.spec.ts`; reframed as investigation-first with four
+ranked hypotheses and a stop-and-file rule for product defects. New
+[#1108](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108): audit remaining stale locators
+(`unifiedEditor3d.spec.ts:34` suspected). #1100 remains QA-FAIL/HANDED-OFF until #1106/#1107 land.
+
+### 2026-09-30 — Batch 14 #1106 locator patch and QA handoff
+
+The owner resumed work after #1106/#1107 were refined and authorized the then-open follow-ups. For #1106, Codex replaced the nonexistent menu opener with the direct inline-toolbar buttons in the three scoped specs. Commit `1ea89aaa` changes only those three E2E files; test/expect counts remain camera preview 1/3, outline selection 1/28, and stage chrome 1/53. `npm run typecheck`, `npm run lint` (existing warnings), `npm run format:check`, and `git diff --check` passed.
+
+Against isolated local PostgreSQL database `codex_qa_20260930_1106`, Django, Vite, and macOS Chromium, the correctly configured Playwright run passed camera preview and outline selection (the latter at both 1280x900 and 375x812). `manual3dStageChrome.spec.ts` passed the direct 3D authoring opener, then failed at an unchanged expectation that Save scene is inside the Preview actions toolbar. The captured snapshot shows Save scene in the editor header and Ask AI in Project settings. This is test drift from later control-placement changes, not evidence of a missing product control. New criterion-ready [#1109](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1109) captures the test-only reconciliation; it was filed in milestone 14 and is handed off under the discovery gate. QA comment [5921928116](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1106#issuecomment-5921928116) is `## QA: FAIL`; #1106 remains open / HANDED-OFF until #1109 is resolved and all three specs pass. Parent #1096 received comment [5921927346](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5921927346).
+
+The initial Playwright attempt omitted `E2E_ENV_FILE` and seeded the default local DB while Django used the isolated DB; its login failures are invalid evidence. The corrected run aligned fixture setup/teardown with the isolated database. Teardown reported `deleted: 0`; the isolated DB and temporary env file were removed, and both local servers were stopped. No Linux matrix or production evidence is claimed. The discovery reconciliation found no open duplicate for #1109; closed #367 and #1038 describe historical UI placement work and remain untouched. Current open set: #1096, #1100, #1102–#1109 (10 issues); production readiness and session completion remain pending.
+
+### 2026-09-30 — distillation of Codex-filed #1109 (Batch 14)
+
+[#1109](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1109) verified and refined. Save scene
+(header, `project3d-save-button`, disabled until dirty) and Ask AI (Project
+settings accordion trigger, server-backed projects only) are each asserted in
+two places in `manual3dStageChrome.spec.ts`, not one; the downstream geometry
+assertions use menu-mode `piece-stage-command-card` markup that the inline 3D
+toolbar does not render and have never executed since #1106, so the issue now
+requires running to completion, re-homing with intent preserved, and an
+owner-decision stop rule for layouts with no inline equivalent. Order:
+#1109 → #1106 closure → #1108 → six-spec gate → #1100.
+
+### 2026-10-01 — Batch 14 #1107 product hit-target follow-up
+
+Investigated #1107 against an isolated local PostgreSQL-backed Django/Vite stack in macOS Chromium. The required `--repeat-each=3` run passed both desktop runs and failed all three 375x812 runs at the unchanged `> 10` px centroid movement assertion. A focused diagnostic measured DPR 1 and a 315x180 CSS/backing canvas, so the screenshot-pixel scale hypothesis is not supported. At mobile, the 34x34 move-handle center was `(187.5, 90)` with the stage scrolled to `scrollY=376`; `document.elementFromPoint(187.5, 90)` resolved to the `Editor actions` toolbar group rather than the visible handle. This is a product hit-target/stacking defect, not a test-coordinate or measurement defect. No change to the #1107 assertions remains in the working diff. Criterion-ready [#1110](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1110) was filed in Batch 14 to repair mobile handle reachability and preserve route-level coverage. #1107 is blocked on #1110; parent #1096 and #1100 remain open pending the required Linux verification.
+
+### 2026-09-30 — distillation of Codex-filed #1110 (Batch 14)
+
+[#1110](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1110) is the product-fix child of #1107
+(`elementFromPoint` at the move handle returned the `Editor actions` group at
+375x812). Source analysis: `.editor-piece-stage-toolbar > *{pointer-events:auto}`
+plus `[aria-label='Editor actions']{z-index:3}` ties with
+`.plane-selection-overlay{z-index:3}`, and the group grows under the
+`max-width:600px` rule once `.editor-stage-text-actions` becomes static. Refined
+with a confirm-first evidence step, narrow-fix constraints (2D toolbar shares
+the CSS; earlier tap-target regressions documented in index.css), a
+fail-before/pass-after regression test, and explicit verification commands.
+Order: #1110 → rerun #1107's spec (closes #1107).
+
+### 2026-09-30 — sequencing correction: #1111 collides with #1110
+
+Codex filed [#1111](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1111) (inline `Preview actions`
+buttons overlap at 375px; likely the absolute fullscreen rule at `index.css`
+~6589 over the wrapped icon row). It shares the `.editor-piece-stage-toolbar`
+CSS region with [#1110](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1110), and #1109's geometry
+assertions need #1111. #1110 was reworked: dependency-blocked by #1111, evidence
+re-run after #1111, combined contract (no rectangle overlap AND handle
+hit-tests), single implementer, separate commits. Order: #1109 (test-side, in
+progress by Codex) -> #1111 -> #1110 -> rerun #1109 spec -> #1106/#1108 ->
+#1107 -> #1100 six-spec gate. #1111's body was left untouched (Codex may be
+editing it); the analysis was added as a comment.
+
+### 2026-09-30 — refinement of #1111 after Codex finished filing
+
+[#1111](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1111) refined to criterion-ready. The reported
+rectangles match `.editor-piece-stage-toolbar > button[aria-label='Expand
+piece to fullscreen']{position:absolute; top:.75rem; right:.75rem}` (icon row
+y=384, fullscreen y=396, i.e. exactly 12 px), and the row's `max-width:
+calc(100vw - 5rem)` is viewport- not stage-relative. Regression test goes in a
+new spec (`inlineStageToolbarGeometry.spec.ts`) to avoid colliding with
+#1109's in-progress edits to `manual3dStageChrome.spec.ts`. Order unchanged:
+#1109 test-side -> #1111 -> #1110 -> rerun #1109 -> #1106/#1108 -> #1107 -> #1100.
+
+### 2026-10-01 — Batch 14 #1109 QA handoff and mobile layout issue
+
+#1109 was implemented test-only in `frontend/e2e/manual3dStageChrome.spec.ts`. The two Save scene checks now target the server-backed editor header and the two Ask AI checks target the button in Project settings; each checks visibility, accessible name, and rendered text. The single-test/expect counts remain 1/53 from `91a7a553`. The original menu-card geometry assertions were rehomed to the current Preview actions inline icon group and 3D authoring popover, retaining containment, non-overlap, icon sizing, single-column, and no-scroll checks. `npm run typecheck`, `npm run lint` (existing warnings), `npm run format:check`, and `git diff --check` pass.
+
+The exact Chromium run against isolated local PostgreSQL, Django (`AI_PROVIDER=fake`), Vite, and macOS Chromium reaches the preserved 375x812 overlap assertion and fails: Piece controls `{x:238,y:384,right:282,bottom:424}` overlaps Expand piece to fullscreen `{x:265,y:396,right:309,bottom:436}` by 17x28 pixels. Screenshots at 1280x900 and 375x812 were saved and visually inspected; the mobile rendering visibly crowds the stage controls. Per the user's choice, the test remains strict and the product fix is deferred to criterion-ready [#1111](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1111). QA comment [5922300106](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1109#issuecomment-5922300106) records `## QA: FAIL`; #1109 is blocked pending #1111. #1106 cannot close, and #1108 remains dependency-blocked until #1106 reconciles.
+
+The same resumed batch investigated #1107 separately. Its 3-repeat local Chromium run passed desktop 3/3 and failed mobile 3/3. On mobile, the visible 34x34 move handle at center `(187.5,90)` was covered by the Editor actions toolbar group; DPR 1 and a 315x180 CSS/backing canvas rule out the pixel-scale hypothesis. New product issue [#1110](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1110) owns that correction and regression. The owner chose to defer the UI fix. #1107 comment [5922170725](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1107#issuecomment-5922170725) records the measurement and blocked status. Parent #1096 comment [5922300346](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5922300346) links both follow-ups. No Linux CI evidence is claimed.
+
+### 2026-10-01 — #1111 / #1110 implementation and #1109 re-review
+
+The owner authorized implementing #1111 and #1110, then rerunning #1109. #1111 commit `efb5d494` separates the mobile inline toolbar controls. #1110 commit `4587b424` adds project3D-scoped responsive pointer-event/layout rules for the A-Frame action group and a focused route test covering A-Frame and Three.js at 375x812 and 1280x900. The combined focused routes passed 2/2; the unchanged #796 regression passed 6/6 with `--repeat-each=3`; affected component coverage passed 8 files / 72 tests. Typecheck, lint (exit 0, existing warnings), format check, and `git diff --check` passed. Browser evidence is local macOS Chromium against isolated local PostgreSQL, Django (`AI_PROVIDER=fake`), and Vite; no Linux CI or deployment evidence is claimed.
+
+QA comment [5922994330](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1110#issuecomment-5922994330) records #1110 as FAIL/blocked because the still-required `drawingPlaneTransform782.spec.ts` fixture waits for a server-backed project creation endpoint while the current UI creates a local-only piece. Discovery search found no duplicate, so proposed #1112 was filed to migrate only that test setup; it is handed off and not implemented under the current authorization. #1110 and #1107 remain open. A 2D fullscreen/Escape scenario passes; the remaining legacy 2D primary-shell/layer smoke timeouts are tracked by #1102/#1103.
+
+A source audit found `.editor-piece-stage-toolbar` is shared by `EditorWorkspace.tsx` and 3D. The CSS added for #1111/#1110 is now scoped under `.project3d-workspace`. The correction and incomplete 2D compatibility gate are recorded in #1111 comment [5922996204](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1111#issuecomment-5922996204); #1111 stays open pending #1102/#1103 and the complete two-viewport 2D comparison.
+
+The requested #1109 rerun reaches the mobile no-scroll acceptance check after the toolbar fix but still fails. At 375x812 the re-homed `.editor-authoring-controls-panel` measures 44x520 CSS px, with scroll dimensions 113x714 against client dimensions 42x518. The test now measures actual scrollability in both axes; `overflow:auto` alone is not treated as a failure. This is a real overflow finding, not a pass. #1109's issue contract says to stop and ask the owner when the old menu-mode layout has no equivalent and the intent is unclear. No product change is included in the test-only scope. #1109 remains open, and dependent #1106/#1108/#1100 gates remain pending owner direction and the later Linux matrix.
+
+
+### 2026-10-01 — #1107 post-fix stability QA and closure
+
+After #1110 commit `4587b424`, reran the untouched #1107 spec on a fresh disposable PostgreSQL-backed Django/Vite stack with local macOS Chromium. The exact `--repeat-each=3` command passed all six runs: desktop 3/3 and mobile 3/3. `drawingPlaneAframe796.spec.ts` is byte-identical to base `91a7a553` and remains 1 test / 11 expectations. Selected and after-drag screenshots at both viewports were inspected; mobile now visibly moves the selected plane. Typecheck, lint (exit 0, existing warnings), format check, and diff check passed. QA comment [5923071850](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1107#issuecomment-5923071850) records `## QA: PASS`; #1107 is closed completed. This closes only #1107; #1110 remains open because its separate Three.js `drawingPlaneTransform782` fixture is blocked on proposed #1112. Parent #1096 comment updated.
+
+### 2026-10-01 — #1112 setup migration and QA dependency
+
+Committed `dc518652` changes only `frontend/e2e/drawingPlaneTransform782.spec.ts`, using the existing server-backed 3D helper while preserving the transform scenario. Current/base test and expect counts are 1/26. Typecheck, lint (exit 0; existing warnings), format, and diff checks pass. The exact post-commit PostgreSQL-backed Chromium run enters both viewports but desktop fails at the resize readout after the obsolete menu close path leaves the 3D authoring disclosure open; mobile times out because the inline Export button intercepts the floating Rotate action. These toolbar/menu interactions fall within #1108's existing audit scope; comments [5923459297](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1112#issuecomment-5923459297) and [5923468318](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5923468318) record the QA matrix and dependency. #1112 stays open / QA FAIL / dependency-blocked on #1108; rerun after #1108.
+
+### 2026-10-01 — #1109 mobile panel product follow-up
+
+The owner selected a minimum usable mobile width and no horizontal clipping, with vertical scrolling allowed to reach controls on short screens. The 44px panel measured in #1109 is a product usability failure, so criterion-ready [#1113](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1113) was filed in milestone 14 for a 3D-only responsive layout and dedicated route regression at 375×812 and 1280×900. #1109 remained QA FAIL / dependency-blocked on #1113 at this checkpoint; comment [5923543939](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1109#issuecomment-5923543939) records the owner direction. The follow-up was subsequently implemented and closed after route-level QA under the next transaction below.
+
+### 2026-10-01 — #1113 implementation and QA closure
+
+Commit `db01d47d` scopes the responsive popover to the 3D editor's authoring panel and keeps its close action visible during vertical scroll. New `frontend/e2e/mobile3dAuthoringPanel.spec.ts` proves the issue assertion fails against the original 44px width, then checks 1280×900, 375×812, and a 375×360 scroll stress case. The committed route regression passes; at mobile the panel is 320px wide with 30px left / 25px right gutters and horizontal scroll extent 318/318. At short height, the test verifies vertical overflow, scrolls to the final action, hit-tests the close control, and closes the panel. Rendered screenshots at desktop/mobile and the short-height stress viewport were inspected.
+
+Post-commit `npm run typecheck`, `npm run lint` (exit 0; existing warnings), `npm run format:check`, `git diff HEAD^ HEAD --check`, `npm test` (310 files / 3,186 tests passed), and `npm run build` passed. The build reports existing chunk-size and ineffective dynamic-import warnings. Evidence is local macOS Chromium with disposable local PostgreSQL, Django, and Vite only; no Linux or deployment evidence is claimed. QA comment [5923798247](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1113#issuecomment-5923798247) records the criterion matrix and provenance; #1113 is closed completed.
+
+The dependent #1109 stage-chrome rerun advanced past the fixed panel and exposed stale inline assertions for `Steer the piece`, immersive navigation, and the full-stage toolbar host origin. Those assertions were rehomed to the current rendered controls without losing their intent; no new product gap was asserted.
+
+### 2026-10-01 — #1109 final stage-chrome reconciliation and QA
+
+Commit `b928c76e` changes only `frontend/e2e/manual3dStageChrome.spec.ts`. It moves the steering visibility assertion into the Piece controls disclosure where inline mode renders it; replaces the menu-mode immersive anchor check with a click on the current inline button and an asserted popup destination; and updates the origin check for the full-stage overlay host while retaining stage containment. The earlier Save scene / Ask AI region checks and toolbar geometry rehoming remain intact. Test/expect counts match base `91a7a553` at 1/53 with no skipped, deleted, or weakened assertions.
+
+The post-commit Chromium spec passes 1/1 and completes at 1280×900 and 375×812 against disposable local PostgreSQL, Django, and Vite. Typecheck and format pass; lint exits 0 with existing repository warnings; `git diff HEAD^ HEAD --check` passes. Screenshots at both viewports were inspected. QA comment [5923875615](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1109#issuecomment-5923875615) records the criterion matrix and assertion mapping. Evidence is local macOS only; no Linux/deployed evidence is claimed. #1109 is closed completed. Next dependency order is #1106 → #1108 → #1100's Linux six-spec gate.
+
+### 2026-10-01 — #1106 three-spec QA and closure
+
+After #1113 and #1109 closed, the exact #1106 Chromium command passed all three specs against the running local Django/Vite app with disposable PostgreSQL: `cameraPreview3d.spec.ts`, `manual3dOutlineSelection.spec.ts`, and `manual3dStageChrome.spec.ts` (3 passed). Existing viewport variants passed at 1280×900 and 375×812; the camera preview retained its existing 1280×900 viewport. Test/expect counts match base `91a7a553` at 1/3, 1/28, and 1/53, and the stale menu opener is absent. Typecheck, format, diff checks pass; lint exits 0 with existing warnings. Rendered stage-chrome and outline screenshots were inspected at both viewport sizes. QA comment [5923931785](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1106#issuecomment-5923931785) records the matrix and provenance. Evidence is local macOS Chromium only; the Linux six-spec gate remains #1100's acceptance evidence. #1106 is closed completed; next is #1108, on which #1112 depends.
+
+### 2026-10-01 — analysis of #1112 (drawingPlaneTransform782 server-backed setup)
+
+[#1112](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1112): setup migration (`dc518652`, 1 test / 26
+expects preserved) is correct; its QA FAIL is accurate and the status is
+HANDED-OFF, dependency-blocked on [#1108](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108). Root cause of the
+residual failures is a stale **close** path (`closeMenu` only dismisses a
+menu-mode dialog, so the inline `3D authoring` popover stays open); `openMenu`
+is already a no-op. #1108's inventory was extended (comment) with
+`drawingPlaneTransform782.spec.ts`, its twin `drawingPlaneDraw3d.spec.ts`, and
+the fix pattern (`/close 3d authoring/i` toggle). If the mobile
+`Export piece package` pointer intercept survives a closed popover, file a new
+product issue of #1110's class instead of editing this setup-only issue.
+Order: #1108 -> rerun #1112's unchanged spec -> close #1112.
+
+### 2026-10-01 — Batch 14 #1114 mobile drawing-plane action hit target
+
+During the #1108/#1112 browser audit, the 375x812 Three.js transform scenario
+still times out after the inline 3D authoring popover is closed. At the
+Rotate horizontal button center (`x=60.35`, `y=524`),
+`document.elementFromPoint` returns Export piece package. The Rotate
+horizontal rectangle is `{x:40,y:502,w:40.7,h:44}`; Export piece package is
+`{x:30,y:502.9,w:44,h:40,z-index:4}`; the intersection is about 34x40 CSS
+pixels. At 1280x900, the transform scenario passes. Criterion-ready
+[#1114](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1114) is
+filed in Batch 14 as a separate product hit-target issue, dependent on the
+#1108 audit and #1112 setup migration. Preserve #1112's transform assertions;
+#1114 owns the layout fix and a before/after mobile route regression.
+
+PM readiness update: the #1108 audit is reconciled and #1112's server-backed
+fixture is already committed, so #1114 has no remaining dependency on #1108
+and gates #1112 plus #1110's final verification. The issue now defines
+cross-group geometry scope (selected-plane toolbar vs. inline 3D editor
+toolbar) and lists exact commands for its new geometry spec, repeated #796,
+#782, existing 2D specs/component tests, 3D stage geometry, and static checks.
+The owner selected the outer-rail approach: keep the measured scene frame at
+16:9 at 375x812 and 1280x900, put the selected-plane action toolbar in a
+separate row below the frame on narrow stages, and keep the desktop floating
+layout. The selection is recorded in `DECISIONS.md` and the issue body.
+
+### 2026-10-01 — #1108 inline-toolbar audit QA and follow-ups
+
+Commit `006ca3b2` migrates confirmed 3D editor toolbar interactions to direct
+inline controls, updates the AI stage test to the canonical manual editor per
+the owner's choice, and preserves every changed file's base test/expect
+counts. Frontend typecheck, lint (exit 0 with existing warnings), format
+check, and `git diff --check` pass. The focused local PostgreSQL/Chromium
+scenarios pass for #1108's AI stage redirect, Draw3d, ZIP, public material
+warnings, sound, and unified editor cases. #1108 remains open / QA FAIL:
+`drawingPlaneTransform782` still has a mobile pointer collision tracked by
+[#1114](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1114),
+`aiDrawingPlane784` reaches a later Undo/Precise-values failure now tracked by
+[#1115](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1115), and
+`privatePieceToolbar773` exposes an outdated generated-art icon list
+[#1116](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1116) plus
+a local-first 2D setup gap [#1117](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1117).
+Its full current 45 textual locator hits, mode classification, QA matrix,
+commands, and provenance are in issue comment
+[#5924809184](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5924809184).
+Evidence is local macOS Chromium/PostgreSQL only; no Linux or deployment
+evidence is claimed. #1110 and #1111 remain open: their remaining acceptance
+gates depend on the 2D fixture work (#1102/#1103) and #1112/#1114 transform
+verification, so local implementation alone is not closure evidence.
+
+### 2026-10-01 — #1116 private/public generated toolbar contract
+
+Commit `cc1333d1` updates the generated-art toolbar contract with the two
+currently rendered controls, “Unmute sound” and “Show hand gesture guide”.
+The exact same six labels were captured for the owner/private and published
+states at 1280x900 and 375x812. The focused PostgreSQL/Chromium scenario
+passed; typecheck, lint (existing warnings), format check, and diff check
+passed. Fixture, publish transition, screenshots, equality checks, editor
+checks, and test/assertion counts were preserved. QA evidence is issue comment
+[#5925025517](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1116#issuecomment-5925025517);
+#1116 is closed completed.
+
+### 2026-10-01 — #1117 private 2D editor toolbar setup
+
+Commit `07229189` switches the private structured 2D stage test to the
+existing server-backed fixture helper and its canonical editor route. The
+current editor uses a visible inline `Piece actions` group; the old hidden
+menu shim is a no-op, so the test now checks visibility of the real toolbar
+and group while retaining the Screenshot-first / Fullscreen-last assertions.
+The focused PostgreSQL/Chromium scenario passed for its 3D and 2D stages.
+Test/expect counts remain 3/20; typecheck, lint (existing warnings), format
+check, and diff check passed. QA evidence is issue comment
+[#5925076078](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1117#issuecomment-5925076078);
+#1117 is closed completed.
+
+### 2026-10-01 — #1115 AI drawing-plane Undo and selection regression
+
+Commit `b73e0ada` removes the E2E scenario's Escape press after Undo, which
+had deselected the drawing plane before the test tried to open Precise values.
+The test now verifies selection remains and the editor's unsaved working copy
+shows Width 4 and Height 3 after Undo. The pre-change timeout was reproduced
+at 1280x900 and 375x812; the complete fake-AI Chromium/PostgreSQL spec passes
+4/4. Test count remains 3 and expect count increases from 17 to 19. Typecheck,
+lint (existing warnings), format check, and diff check passed. QA evidence is
+issue comment
+[#5925178093](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1115#issuecomment-5925178093);
+#1115 is closed completed.
+
+### 2026-10-01 — #1102 single-purpose 2D helper migration QA
+
+Commit `f3b6f53b` replaces the stale helper in nine scoped E2E files (10
+server-backed 2D calls and the final 3D call in `pieceSlugEdit750.spec.ts`).
+The diff is limited to helper imports and setup calls; all per-file test and
+expect counts match base. The exact local macOS Chromium/PostgreSQL batch ran
+13 scenarios: 4 passed, 9 failed. Failures were classified into current
+private 2D control contracts (#1118), public/embed control contracts (#1119),
+a 375px 2D ink hit-target product defect (#1120), and a stale 3D Web address
+locator (#1121). The helper migration is correct but #1102 remains QA FAIL
+until those consumers pass and its Linux Chromium criterion is run. QA record:
+[#5925343335](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1102#issuecomment-5925343335).
+
+The four new criterion-ready issues are filed in Batch 14 and linked above.
+Per `docs/process.md`'s owner-mandated separation of duties, an issue filed
+and scoped by this agent cannot be implemented by the same agent in this run;
+they are proposed handoffs for a different agent/run. Continue with independent
+pre-existing open work while keeping #1102 and its dependents open.
+
+- [#1118](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1118) — private 2D inline toolbar E2E contract; PROPOSED.
+- [#1119](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1119) — public/plain/embed 2D toolbar E2E contract; PROPOSED.
+- [#1120](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1120) — 375px 2D ink action hit target; PROPOSED, depends on #1118.
+- [#1121](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121) — current 3D Web address button selector in slug E2E; CLOSED / QA PASS after #1123.
+
+### 2026-10-01 — #1108 private toolbar rerun and #1122 handoff
+
+After #1115–#1117 closed, the full `privatePieceToolbar773.spec.ts` run
+passed its generated-art parity case and private 3D/2D editor-stage case
+(2/2), then failed the distinct #790 owner regular-view scenario: Gallery
+creation navigated to `/local-projects/:id` while the test waited for the
+canonical server-backed edit route. New criterion-ready issue
+[#1122](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1122)
+records the two helper migrations while preserving the owner privacy checks.
+QA follow-up [#5925426967](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5925426967)
+updates #1108; it stays QA FAIL pending #1114 and #1122.
+
+### 2026-10-01 — generated-piece slug test setup follow-up (PROPOSED)
+
+The #1121 full scenario reaches the generated-piece route after passing the
+structured 3D slug/API/title assertions, but its `piece-slug-field` is hidden
+because `ArtPieceEditor` keeps that form inside the collapsed description
+panel. The scenario currently navigates directly to the generated piece and
+expects the field visible without activating the panel. Backlog search found
+no duplicate in GitHub or the local task records. Proposed scope: update the
+existing generated-piece fixture path in `frontend/e2e/pieceSlugEdit750.spec.ts`
+to activate the visible **Toggle description panel** control before checking
+and editing the slug; preserve canonical URL transition and test/expect counts.
+This is test-only setup and does not imply a product visibility change.
+
+- **Milestone:** Batch 14: matching-ref CI stabilization (2026-09-30).
+- **Status:** CLOSED / QA PASS; [GitHub issue #1123](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1123), milestone 14.
+- **Evidence:** focused #1121 Chromium/PostgreSQL run passed the 3D slug,
+  canonical route, API readback, and title-independence assertions, then failed
+  at the generated-piece slug field visibility check. Rendered snapshot shows
+  the current `Toggle description panel` button and hidden form.
+- **Outcome:** commit `abdf25a7` activates the current description-panel
+  control before slug assertions; independent QA passed the focused scenario
+  1/1 and full spec 2/2, with 2 tests / 12 expectations unchanged. QA comment
+  [#5925979847](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1123#issuecomment-5925979847);
+  issue #1123 closed.
+
+The #1121 Web address correction is committed as `e73cea76`. After #1123
+activated the generated-piece description panel, its focused scenario passed
+1/1 and the complete `pieceSlugEdit750.spec.ts` passed 2/2; full Vitest passed
+310 files / 3,186 tests. Test/expect counts remain 2/12. Final independent QA
+comment [#5926038646](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1121#issuecomment-5926038646)
+records PASS; #1121 is closed. Evidence is local macOS Chromium/PostgreSQL.
+
+### 2026-10-01 — #1122 private owner-view fixture migration (CLOSED)
+
+Commit `977746de` replaces the local-first Gallery creation step in the #790
+private owner-view test with existing server-backed 3D and 2D helpers. The
+focused Chromium/PostgreSQL scenario passed 1/1, exercising both owner routes
+and anonymous privacy checks at 1280x900 and 375x812; test/expect counts remain
+3/20. Typecheck, lint (existing warnings), format, and diff checks passed.
+Independent QA comment
+[#5926110585](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1122#issuecomment-5926110585)
+records PASS; #1122 is closed. Evidence is local macOS Chromium/PostgreSQL.
+
+### 2026-10-01 — distillation of Codex-filed #1114, #1118–#1121 (Batch 14)
+
+Refinement sections were appended to each body (original text preserved).
+Key findings: **#1119** — its claim that the embed route is inline is
+wrong (`embed/p/:id` renders `PublicProjectViewer` with default
+`toolbarMode='menu'`); only the owner/`/p` steps are stale. **#1118** — reuse
+the inline-aware `openPieceControlsMenu` helper; `inkLayer2d` 375x812 stays
+blocked on #1120. **#1114** — now ready (stale #1108 dependency removed);
+hypothesis: the bottom-docked plane toolbar (`NARROW_STAGE_PX = 480`) collides
+with the stacked inline toolbar rows in the ≈180 px mobile stage; extends
+`inlineStageToolbarGeometry.spec.ts`; gates #1112. **#1120** — 2D twin of #1111;
+step 0 checks whether the intercept predates `efb5d494`. **#1121** — pure
+locator fix at `pieceSlugEdit750.spec.ts:85`, run to the end for further drift.
+New defect found (recorded on #1111, not a new issue): an **unscoped**
+`.editor-piece-stage-toolbar{max-width:calc(100% - 3.5rem)}` at `index.css`
+~6737 (inside `@media (max-width:700px)`) contradicts #1111's "2D unchanged"
+criterion. Order: #1118/#1119/#1121 and #1114/#1120 in two lanes (tests vs
+CSS, never two runs on the same files); then #1112, #1102, #1110, #1111, #1096.
+
+### 2026-10-01 — resumed Batch 14 after Claude Code refinement
+
+The owner authorized work on all currently open issues after Claude Code
+refined and expanded the latest follow-ups. The live open set at resumption is
+#1096, #1100, #1102–#1104, #1108, #1110–#1112, #1114, and #1118–#1122.
+Implementation provenance and issue dependency order remain recorded in
+`DECISIONS.md` and `.local/tasks/backlog-session-2026-09-30-batch14.md`.
+
+The latest six-spec #1100 rerun passed 7/7 locally on macOS Chromium against
+disposable PostgreSQL; counts, scope, typecheck, lint, format, and diff checks
+also pass. #1100 remains open / QA FAIL only because its Linux Chromium
+acceptance gate is still required (QA comment 5925601911); #1102–#1104 remain
+blocked on that gate.
+
+For #1118, PM review corrected the Claude refinement's mistaken StageChrome
+test ordinal. The private 2D editor fixes are committed as `533a3ce2`; the
+focused three-spec batch passed 4/4, desktop ink passed 1/1, and full frontend
+Vitest passed 310 files / 3,186 tests. Test titles/counts remain unchanged.
+The 375px ink hit-target remains assigned to #1120. The #692 publication and
+anonymous-route scenario in `legacy2dToolset.spec.ts` is not private-editor
+coverage and has been moved to the existing #1119 public-route transaction.
+QA comment 5925639191 records #1118 as PASS and the issue is closed. For
+#1119, commit `e102ca19` retargets owner publication through File → Publication
+status, validates canonical public inline mode via `data-toolbar-mode`, and
+keeps the embed menu path unchanged. The focused Chromium/PostgreSQL run passed
+3/3, a responsive rerun passed 1/1, and independent full Vitest passed 310
+files / 3,186 tests. Test/expect counts remain 1/10, 1/12, and 1/24. QA comment
+5925829513 records PASS; issue #1119 is closed. Next independent test-lane work
+is #1121; product CSS issues #1114/#1120 remain a separate lane.
+
+### 2026-10-01 — Batch 15: account-page (allauth) design parity
+
+Owner reported that `/accounts/login/` does not match the rest of the site.
+Verified on the local stack (computed styles, side by side with `/gallery`):
+the page is a server-rendered allauth template with a hard-coded dark
+stylesheet, so it ignores the light/dark/system preference and the admin site
+palette/presentation; it has no navigation, theme or motion toggle, or skip
+link; and provider buttons are inconsistent (only `.google` has the secondary
+style). Filed, in dependency order, milestone Batch 15 (open):
+[#1124](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1124) theme/token plumbing (stage 2b, design options with
+recommendation); [#1125](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1125) component styles (after #1124);
+[#1126](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1126) header/nav/footer/toggles (after #1124);
+[#1127](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1127) provider-neutral copy and divider (independent);
+[#1128](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1128) regression coverage (after #1124-#1126). All
+guard the `loginViaUI` selectors and the allauth POST forms. #1124 is implemented
+on commits `2c3056d7`, `8cdeb84f`, and `3646959e`; its local QA matrix and full
+`make check` pass. GitHub QA comment 5930214077 records PASS and #1124 is closed
+as completed. The transaction and remaining open-issue manifest are recorded
+in `.local/tasks/backlog-session-2026-10-01-batch15.md`. #1125's local styling
+and visual QA are complete; a computed-style gap between the SPA content
+panel and its soft-shadow token was filed as [#1146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146)
+and deferred to its own transaction. #1126 is now closed after commit
+`f8630dc5`, the site-shell/navigation/theme-motion implementation, and QA
+PASS comment [5932016119](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1126#issuecomment-5932016119).
+The nav links come from the published `/api/pages/` projection; small-screen
+links wrap, while the controls move below content to avoid overlap. #1127 and
+#1128 are eligible; process #1127 first per the batch manifest.
+
+### 2026-10-01 — Task distillation: LIGDOL adaptation (Batch 16)
+
+Manifest and rationale: [docs/ligdol-adaptation.md](ligdol-adaptation.md). Distilled by Claude
+Sonnet 5.5 (Medium, task-distillation profile); no product code or tests changed.
+
+| Issue | Slice | Routing | Depends on | Status |
+|---|---|---|---|---|
+| [#1129](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1129) | D1 owner decision: where intent notes live | owner | — | OWNER-DECISION-PENDING |
+| [#1130](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1130) | D2 owner decision: history beyond 2D | owner | — | OWNER-DECISION-PENDING |
+| [#1131](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1131) | A1 write version lifecycle events | 2b | — | CLOSED / completed (GitHub verified 2026-10-01 16:03:04Z) |
+| [#1132](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1132) | A2 write AI accept/discard events + optional reason | 2b | — | CLOSED / completed (GitHub verified 2026-10-01 16:30:32Z) |
+| [#1133](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1133) | A3 owner-only activity read API | 2b | A1, A2 | CLOSED / completed (GitHub verified 2026-10-01 17:08:13Z; issue-comment connector unavailable) |
+| [#1134](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1134) | A4 Project history UI | 2a | A3 | CLOSED / completed (GitHub verified 2026-10-01 18:28:20Z) |
+| [#1135](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1135) | A5 optional "why" note in AI panel | 2a | A2, A4 | CLOSED / completed (GitHub verified 2026-10-01 19:50:55Z; #1149 owns legacy route retargeting) |
+| [#1136](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1136) | B1 scene diff summary function | 2a | — | CLOSED / completed (GitHub verified 2026-10-01 21:14:55Z) |
+| [#1137](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1137) | B2 Compare versions UI | 2a | B1 | CLOSED / completed (GitHub verified 2026-10-01 21:14:58Z) |
+| [#1138](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138) | M1 intent note field/API/export | 2b | D1 | DEPENDENCY-BLOCKED |
+| [#1139](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1139) | M2 intent note editor UI | 2a | M1 | DEPENDENCY-BLOCKED |
+| [#1140](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1140) | M3 bounded, disclosed AI context | 2b | M1 | DEPENDENCY-BLOCKED |
+| [#1141](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1141) | C1 related-pieces query | 2a | — | CLOSED / completed (GitHub verified 2026-10-01 21:15:01Z) |
+| [#1142](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1142) | C2 "More like this" row | 2a | C1 | CLOSED / completed (GitHub verified 2026-10-01 21:51:22Z) |
+| [#1143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1143) | E1 owner-only continuity metrics (P3) | 2b | A1, A2, A3 | PM GROOMING REQUIRED (A1–A3 verified closed; metric definition and bounded aggregate contract still need refinement) |
+| [#1148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1148) | Add project activity to owner JSON export | 2b | #1133 | CLOSED / completed (GitHub verified 2026-10-01 21:15:04Z) |
+
+Current live-state reconciliation (authenticated GitHub fetch, 2026-10-01):
+#1131–#1137 and #1141–#1142, #1148 are closed/completed; #1129–#1130 and
+#1138–#1140, #1143–#1144, #1149 remain open. #1143's implementation
+dependencies (#1131–#1133) are closed; its contract still needs PM grooming.
+Independent starters: A1/A2/A3, B1, and C1 are complete. Duplicate check: no existing open or closed issue covers
+project activity wiring, a history UI, version comparison, intent notes, or related pieces
+(searched titles for activity/timeline/brief/memory/compare/related/recommend/process).
+The activity export extension is filed as #1148 after checking #442, #443,
+#945, repository task files, and GitHub issue search; it depends on #1133.
+Also recorded: #1124 design decision (option 1). Batch 15's #1124 is ready to implement.
+
+### 2026-10-01 — #1114 QA reconciliation
+
+The #1114 implementation is locally correct for its 3D-specific criteria, but
+the full QA verdict is **FAIL / dependency-blocked** because the required 2D
+regression batch is 2/8: `manual2dStageChrome` passes 2/2, while all three
+`interactionRuntime` and all three `layersPanel` scenarios time out before
+their feature assertions. The shared `createBlankProjectViaUI` setup waits at
+`frontend/e2e/support/createProject.ts:54` for the canonical editor request,
+but the current local-first flow lands on `/studio`. This is the stale 2D
+fixture migration tracked by #1103 (prerequisite #1100), not a 3D CSS failure.
+
+All #1114-specific gates pass: selected-plane geometry 2/2 at 375x812 and
+1280x900 (16:9 stage, mobile rail below, no overflow/overlap, controls hit-test
+correctly); #796 repeat 3 passes 6/6; unchanged #782 transform spec passes
+2/2; `manual3dStageChrome` 1/1; EditorWorkspace component tests 37/37; and
+typecheck/lint/format/diff checks pass. Focused screenshots were inspected at
+both sizes. Local macOS Chromium used disposable PostgreSQL, Django :8001, and
+Vite :5001; no Linux or deployment result is claimed. The new mobile Delete
+menu assertion is in `inlineStageToolbarGeometry.spec.ts`, and
+`drawingPlaneTransform782.spec.ts` is restored byte-identical to the pre-`04a5b1ff`
+version. The adjustment is commit `9c42f60b`.
+
+Keep #1114 open. Next: complete #1100's Linux six-spec gate, then #1103's
+server-backed multi-call 2D setup migration; rerun #1114's exact grouped 2D
+command and full matrix. QA evidence was appended to the issue body because
+the available issue-comment connector only targets pull requests.
+
+### 2026-10-01 — #1111 / #1120 shared-toolbar QA reconciliation
+
+The newly added 2D geometry case reproduced the 375px ink/fullscreen
+intersection on the current tree before the scoped-selector correction; the
+same case passed on the pre-#1111 tree, confirming a regression introduced by
+the shared CSS change rather than a pre-existing 2D defect. Scoped
+`max-width: calc(100% - 3.5rem)` to
+`.project3d-workspace .editor-piece-stage-toolbar` in `frontend/src/index.css`.
+The affected check is `inlineStageToolbarGeometry2d.spec.ts`.
+
+Current browser evidence on the disposable PostgreSQL stack (Django :8003,
+Vite :5003, local macOS Chromium): the new 2D geometry spec passes 2/2 at
+375x812 and 1280x900, every visible control is pairwise separate and
+hit-testable, the 375px Draw ink action opens the ink editor, and screenshots
+were inspected at both sizes. `inkLayer2d.spec.ts` passes 2/2 with its full
+stroke/erase/undo/redo/save/reload/cancel coverage. The #1111 3D geometry spec
+passes 2/2, `manual2dStageChrome` and `manual3dStageChrome` pass 2/2 and 1/1,
+and #796 passes 6/6 across three repetitions. EditorWorkspace focused tests
+pass 37/37; typecheck and format pass; lint exits 0 with existing repository
+warnings. LayersPanel first two cases time out in the shared project setup
+before their feature assertions, tracked by #1103 (blocked on #1100/Linux).
+No 2D behavior change is retained; its baseline layout is restored. QA is
+therefore PASS for #1120's mobile product criterion and #1111's 2D compatibility
+criterion, while #1111 remains QA-blocked pending the complete 2D regression
+gate in #1103. Screenshots are retained under ignored
+`frontend/test-results/`.
+
+### 2026-10-01 — Proposed #1144: public 3D E2E fixture migration
+
+During the #1108 locator inventory, the public 3D hand-gesture guide and
+proportions specs were confirmed to navigate to `/local-projects/:id` while
+waiting for the retired `/projects3d/:id` route. Their public-viewer menu
+locator is valid (`PublicProject3DViewer` defaults to menu mode); both tests
+fail before reaching that route. Filed [#1144](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1144)
+as a setup-only follow-up, dependent on #1100's server-helper contract. It is
+PROPOSED and awaits external refinement; no product tests or source files were
+changed for this follow-up.
+
+### 2026-10-01 — Proposed #1145: 3D ink cancel loses mobile selection
+
+The full #1108 Chromium/PostgreSQL batch captured a mismatch in the unchanged
+`drawingPlaneDraw3d.spec.ts` cancel assertion at 375x812: before entering Draw
+mode, the stage screenshot shows the drawing plane selected with transform
+handles; after cancel, the plane handles are absent, so exact screenshot
+equality fails. The desktop scenario passes. This may be a mobile selection
+state defect or a test expectation that should compare durable scene state;
+verify current behavior and preserve the unconfirmed-drawing cancellation
+contract before changing either. Duplicate search covered `docs/tasks.md`,
+`.local/tasks/`, and open GitHub issue search. Filed
+[#1145](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1145),
+milestone Batch 14, as PROPOSED and linked to parent #1096. Per separation of
+duties, hand to another agent after external refinement; no implementation in
+this discovery run.
+
+### 2026-10-01 — #1108 QA rerun and remaining blockers
+
+The earlier nine-spec PostgreSQL-backed Chromium run on the current
+implementation reported 17 passed and 3 failed. `aiDrawingPlane784` had a
+strict-mode ambiguity because `scene3d-preview-canvas-frame` matched the
+original and proposal preview, and its 375x812 accepted-proposal case timed
+out when `Precise values` was intercepted by the open 3D authoring close
+control. `drawingPlaneDraw3d` passed desktop but its 375x812 cancel screenshot
+differed: selected handles visible before Draw were gone after Cancel. The
+selection finding is #1145; the mobile toolbar interception belongs to #1114.
+The stale manual-editor hit `project3dLifecycle.spec.ts:54` remains unreachable
+due to obsolete/local-first creation setup; the public 3D guide/proportions
+setup gap is tracked by #1144.
+
+A fresh `npx playwright test e2e/aiDrawingPlane784.spec.ts --project=chromium`
+attempt failed before test setup because bundled macOS headless Chromium was
+denied `bootstrap_check_in` (permission 1100). This is an environment boundary
+and does not erase the earlier test failures. QA remains FAIL; see issue
+comment [#5928938966](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5928938966).
+The issue remains open. Rerun its full gate on Linux Chromium/PostgreSQL after
+#1114 and fixture follow-ups reconcile. Stage 2a and stage 4 were Codex
+substitutions; stage 3 not run; no Linux/deployment evidence is claimed.
+
+Final rerun after issue-scoped commits `5e0cc907` and `15a5a86f` completed the
+exact #1108 nine-spec batch at 19/20. The #784 file passes 4/4 at desktop and
+mobile after selecting the main editor Preview region (the AI proposal embeds
+a second scene preview) and explicitly closing the authoring disclosure before
+using Precise values. #782 passes at both viewports, #773 passes 3/3 including
+the owner private regular-view route, and all remaining named cases pass. The
+only failure is #781's mobile cancel screenshot mismatch; its separate
+selection-restoration follow-up is #1145. Typecheck, lint (exit 0 with existing
+warnings), format check, and diff check pass. QA comment
+[#5929141148](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5929141148)
+supersedes the interim 17/20 matrix. #1108 remains open / QA FAIL, dependent on
+#1145 and lifecycle fixture migration #1104.
+
+### 2026-10-01 — #1100 six-spec local QA rerun
+
+Re-ran #1100's exact six-file Chromium command on the disposable PostgreSQL
+stack (Django `AI_PROVIDER=fake`, Vite :5003, local macOS Chromium): **7/7
+passed**, including A-Frame drag at both viewports and immersive/public route
+parity. Static checks (`npm run typecheck`, `npm run lint` with existing
+warnings, `npm run format:check`, `git diff --check`) pass on the current
+tree. The setup-only change from `91a7a553` remains within the named E2E files
+and helpers. QA is still FAIL / verification-boundary blocked because #1100
+explicitly requires Linux Chromium/PostgreSQL; this local result does not
+replace that evidence. QA comment
+[#5929203583](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100#issuecomment-5929203583)
+records provenance and the next action. Keep #1100 open; #1102–#1104 remain
+blocked until the exact Linux command passes.
+
+### 2026-10-01 — #1145 3D drawing-plane Cancel QA reconciliation
+
+#1145 is complete and closed with state reason `completed`; QA PASS comment
+[#5932448095](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1145#issuecomment-5932448095)
+records the matrix and local evidence boundary. The #1108 audit's original
+frame-only screenshot mismatch did not reproduce as a product defect: a
+viewport capture showed the selection handles restored after Cancel. The
+Playwright assertion now captures full mobile viewport screenshots and checks
+the selected handle's stage-local position plus deep equality of server-backed
+scene data before/after cancellation. Confirm/save/reload remains covered. The
+375x812 and 1280x900 scenarios pass; desktop/mobile screenshots were inspected;
+the mobile stage and document have no horizontal overflow. Implementation is
+test-only in `frontend/e2e/drawingPlaneDraw3d.spec.ts` (`2e9da3b8`, followed by
+format-only commit `b5613875`). Full frontend unit suite passes 310 files /
+3,187 tests. The prior #1108 QA comment remains a record of what was known then;
+rerun #1108's full acceptance separately because its other fixture dependency
+on #1104 is still outstanding.
+
+### 2026-10-01 — #1108 locator audit QA reconciliation
+
+#1108 is complete and closed with QA PASS comment
+[#5932612079](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1108#issuecomment-5932612079).
+After #1145 closed, its exact nine-spec Chromium/PostgreSQL batch passed 20/20.
+The mobile transform scenario now passes, the current stale-inline locator
+inventory is classified, and the nine-spec implementation commit preserves its
+test and expectation counts. Later assertions in AI proposal and drawing-cancel
+specs belong to their own child fixes and are additive. Manual lifecycle editor
+hits remain unreachable before #1104's fixture migration; public 3D guide and
+proportions setup is separately tracked by #1144. Those unverified setup routes
+were left untouched rather than counted as passing. Typecheck, lint, format,
+and all 3,187 frontend unit tests pass. Evidence is local macOS Chromium and
+disposable PostgreSQL; no Linux or deployment result is claimed.
+# 2026-10-01 — #1127 login provider guidance closed
+
+Issue #1127 closed completed after QA PASS comment
+[#5932906647](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1127#issuecomment-5932906647).
+Commit `7efd8596` adds provider-neutral login and closed-signup guidance, an
+accessible divider and named provider group, deterministic alphabetical
+provider ordering, and mobile/desktop light/dark Playwright coverage. The
+focused authentication tests passed 42 cases; the backend suite passed 1,883
+with 39 skips. Frontend lint, Prettier, typecheck, and 3,187 tests passed after
+temporarily moving the ignored generated `frontend/.pytest_cache/README.md`
+that causes the aggregate `make check` formatting step to fail. Visual
+screenshots and the Chrome accessibility tree were inspected locally. Signup
+behavior, form fields, actions, CSRF, and provider POST flows were preserved.
+
+## 2026-10-01 — Follow-up #1147 proposed from #1128 regression QA
+
+During the #1128 account browser regression batch,
+`frontend/e2e/accountShell.spec.ts` failed because its helper-copy assertion
+still expects “New here?” after #1127 changed the login copy. The page itself
+renders, and #1128's new login/signup route matrix passes; this is an existing
+test-contract mismatch outside #1128's new-spec scope. Filed and linked
+[#1147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1147) as a
+criterion-ready test-only follow-up. The backlog discovery rule defers its
+implementation to a later transaction.
+
+## 2026-10-01 — #1128 account design parity coverage closed
+
+Issue #1128 closed completed after QA PASS comment
+[#5933282991](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1128#issuecomment-5933282991).
+Test-only implementation `19f9411b` adds a 16-cell login/closed-signup route,
+viewport, and theme-preference matrix with contrast, style-token, overflow,
+keyboard, and preference-persistence checks. All 16 screenshots were attached
+to test results and visually inspected. The new focused Chromium spec passes;
+`make frontend-check` passes lint, formatting, typecheck, and 3,187 tests.
+The broader related account batch had one stale #1126 shell-copy assertion
+failure from #1127's new wording; criterion-ready test follow-up #1147 owns
+that correction and is deferred to a later transaction.
+
+### 2026-10-01 — #1147 account shell copy assertion closed
+
+Issue [#1147](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1147)
+closed completed after QA PASS comment
+[#5933568932](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1147#issuecomment-5933568932).
+Commit `1ca91017` replaces only the obsolete “New here?” Playwright locator
+with an exact-text assertion for the provider-neutral login guidance. The
+account shell's mobile layout, navigation, login, theme persistence, and
+logout assertions remain unchanged. The focused local Chromium scenario passed
+1/1; typecheck, lint, Prettier, and `make frontend-check` passed (310 files /
+3,187 tests). Screenshots at 375×812 and 1280×900 were inspected. Evidence is
+local disposable PostgreSQL + macOS Chromium; no Linux or deployment result is
+claimed. Stage 2a and stage 4 were Codex substitutions; stage 3 was not run.
+
+### 2026-10-01 — #1146 groomed for implementation
+
+[#1146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146) was
+discovered while verifying #1125. PM review found that its original issue
+named the CSS selector and variants but not one route/fixture or a screenshot
+matrix. A refined closure contract is now appended to the issue: authenticated
+`/admin/content`, seeded application-admin fixture, first visible
+`.content-panel`, and computed-style/screenshot checks for none/soft/offset/
+default across light/dark and 1280×900/375×812. The test must snapshot and
+restore presentation settings in `finally` using the disposable local test
+database; no published/shared database or deployment evidence applies.
+The change is limited to `frontend/src/index.css` and a focused
+`frontend/e2e/contentPanelShadow.spec.ts`; Stage 2a. #1125 is already closed
+and no dependency or duplicate was found. Next action: implement #1146, run
+its focused browser regression and `UV_CACHE_DIR=/tmp/codex-uv-cache make
+check`, then perform a separate QA pass.
+
+### 2026-10-01 — #1146 SPA content panel shadow token closed
+
+Issue [#1146](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146)
+was implemented in `e68aaac5` and closed completed after QA PASS comment
+[#5934137286](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1146#issuecomment-5934137286).
+The CSS applies `box-shadow: var(--shadow)` to the base `.content-panel`; the
+existing `none` token and `offset` override continue to determine their own
+treatments. The focused browser regression checked all 16 presentation,
+theme, and viewport states at `/admin/content`, restored admin settings in a
+`finally` block, and passed on local host Chromium. Screenshots showed no
+visible border, radius, layout, or horizontal-clipping regression.
+
+`UV_CACHE_DIR=/tmp/codex-uv-cache make check` passed: backend 1,883 passed / 39
+skipped, frontend 310 files / 3,187 tests passed, plus lint/format/type checks.
+The QA reviewer independently repeated the browser test and full check. Stage
+2a and stage 4 were Codex substitutions; stage 3 was not run. Evidence is
+local only; no deployment claim applies. Next backlog issue selection follows
+the refreshed dependency order in `.local/tasks/backlog-session-2026-10-01-batch15.md`.
+
+### 2026-10-01 — #1100 QA refresh and dependency distillation
+
+After #1106 and #1107 closed, the exact #1100 six-spec command was rerun on
+the local disposable PostgreSQL/macOS Chromium stack and passed 7/7. Per-file
+`test()`/`expect()` counts remain identical to `ef5771b7`; typecheck, lint,
+format, and scoped diff checks pass. The independent QA review remains
+**FAIL / verification-boundary blocked** because the acceptance contract
+requires Linux Chromium/PostgreSQL. Docker has no running daemon on this host,
+and the implementation ref is unpushed; no push was authorized. Latest QA
+comment [#5934294294](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1100#issuecomment-5934294294)
+records the per-criterion matrix. Parent #1096 received refreshed child status
+in comment
+[#5934302482](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5934302482).
+No new issue was found; #1101, #1106, and #1107 already cover the identified
+fixture causes. #1102–#1104, #1112, and #1144 remain dependency-blocked.
+
+Fresh GitHub enumeration found 25 open issues. The first independent,
+criterion-ready item is #1131; its transactional version-event work does not
+depend on the blocked E2E helper series or the #1129/#1130 owner decisions.
+The current transaction ledger and dependency rationale are recorded in
+`.local/tasks/backlog-session-2026-10-01-batch15.md`.
+
+### 2026-10-01 — Proposed #1149: retarget AI Agent browser specs
+
+QA of #1135 reproduced stale route setup in both
+`frontend/e2e/aiAgent2d.spec.ts` and `frontend/e2e/aiAgent3d.spec.ts`: the old
+`/ai-projects/:id` and `/ai-projects3d/:id` URLs redirect to manual editors,
+where the Agent workflow control is absent. The 2D failure also reproduces at
+the parent revision. Duplicate review found no current owner: #1100–#1104 cover
+their enumerated helper-migration files; #1144 covers two public 3D viewer
+specs; #1096 is only the full-matrix tracking parent. Historical feature
+issues #462/#463 are closed and remain unchanged. Filed
+[#1149](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1149) in
+Batch 16, parented to #1096 and dependent on #1100's server-backed helper
+contract. It preserves the distinct 2D locked-background/editable-foreground
+and 3D cube/sphere AI Agent fixtures and scenarios, requires unchanged
+test/expect counts, and provides an exact Linux Chromium/PostgreSQL command.
+Status is PROPOSED and handed off for a later transaction; no product or test
+code was changed in this discovery pass.
+
+### 2026-10-01 — Process change: batched implementation and QA (dry run on the open backlog)
+
+Rules: `docs/process.md` "Canonical batch transaction" (owner-mandated 2026-10-01;
+`DECISIONS.md`). Dry run of the new impact analysis on the 23 open issues
+(search of paths, selectors, specs and docs in issue bodies; proposal only, to be
+rebuilt by the PM pass of the next session). It surfaced these collisions that the
+per-issue model would have discovered after closure:
+
+| Shared surface | Open issues | PM-pass resolution |
+|---|---|---|
+| `frontend/src/index.css` inline-toolbar region, `drawingPlaneAframe796` / `drawingPlaneTransform782` / `manual3dStageChrome` / `inlineStageToolbarGeometry` specs | #1110, #1111, #1114 (and #1100, #1112 as spec consumers) | One implementer, serial commits: #1111 → #1114 → #1110; re-verify the 2D shared-toolbar specs for the unscoped `max-width` rule flagged on #1111 |
+| `manual2dStageChrome.spec.ts`, `layersPanel.spec.ts`, `interactionRuntime.spec.ts`, `public2dRouteStageChrome.spec.ts` | #1102, #1103, #1110, #1111, #1114, #1142 | #1102/#1103 first (setup), then product CSS issues re-verify these specs; #1142 touches the public spec after #1102 |
+| `AIProposalPanel.tsx` | #1135 (reason UI) and #1140 (intent-note disclosure) | #1135 before #1140; #1135 leaves a clean extension point |
+| `docs/api.md`, `ProjectActivity` / export | #1138, #1141, #1143, #1148, #1130 | `docs/api.md` edits serialized; #1148 before #1143 |
+| `e2e/aiAgent2d.spec.ts`, `aiAgent3d.spec.ts` | #1135, #1149 | #1149 owns legacy-route retargeting; #1135 uses its dedicated reason E2E and does not rerun the recorded failing specs |
+
+Proposed waves (milestones recorded per issue, not bounding): **Wave 1** (3D toolbar + 3D
+E2E, Batch 14): #1111, #1114, #1110, #1112, #1144, then the #1100 gate. **Wave 2** (2D E2E
+creation, Batch 14/16): #1102, #1103, #1104, #1149, parent #1096. **Wave 3** (project
+history/compare/discovery, Batch 16): #1148, #1135, #1136 → #1137, #1141 → #1142.
+Skipped and listed: #1129, #1130 (owner decisions), #1138-#1140 (blocked by #1129), #1143
+(depends on activity data). Each wave ends with the full batch gate before any issue closes.
+
+### 2026-10-01 — Wave C implementation and independent QA
+
+Implemented #1136 (`93dfe777`), #1141 (`a1050763`), #1148 (`db102898`), and dependent #1137
+(`cb164ecc`) in issue-scoped commits. The shared Stage 4 QA passed all four: focused frontend
+18 tests, backend 5 + 9 tests, compare/activity Chromium E2E 2/2 on a disposable PostgreSQL
+stack, and one `UV_CACHE_DIR=/tmp/uv-cache-wavec make check` (backend 1,942 passed / 41
+skipped; frontend 314 files / 3,212 tests; lint, format, and typecheck passed with existing
+Oxlint warnings). Active Chrome inspection at 1280×900 and 375×812 found no horizontal overflow
+and verified internal scrolling for long comparison results. Disposable fixtures and services
+were removed. Stage 3 was not run. GitHub confirms #1136, #1137, #1141, and #1148 are
+`closed/completed`, each verified by fetching the issue after its closure update. See
+`.local/tasks/backlog-session-2026-10-01-wave-c-transaction.md`. #1142 is now unblocked but
+requires review against #1102's public-route fixture migration; #1143 remains in grooming.
+
+### 2026-10-01 — Wave D #1142 implementation and closure
+
+Implemented “More like this” on the regular canonical public 2D piece route using #1141's
+bounded related-project API and the existing public gallery card. Empty/error responses add
+no section; the async request begins after the canonical content renders. Route inclusion is an
+explicit opt-in so the canonical immersive 2D viewer, embed, and owner editor do not issue the
+related request or render the row. Commits: `7a4c7bb6` and the route-scope correction
+`1eb8b1ab`.
+
+Independent Stage 4 passed the focused 44 tests, the new related-pieces and unchanged
+`public2dRouteStageChrome` Chromium E2E specs (2/2), active Chrome at 1280×900 and 375×812,
+and one `UV_CACHE_DIR=/tmp/uv-cache-1142 make check` (backend 1,942 passed / 41 skipped;
+frontend 315 files / 3,217 tests; lint, format, typecheck and build passed). The first manual
+immersive observation used a stale isolated Vite process; QA restarted that disposable server,
+confirmed its served module included the fix, then repeated the route check and E2E on the fixed
+tree. QA cleaned its database, services, fixtures, and task-created Chrome tabs. Stage 3 was
+not run. GitHub #1142 is `closed/completed`, confirmed with a post-update fetch at
+2026-10-01 21:51:22Z. #1102's separate Linux CI gate remains unverified; no Linux evidence is
+claimed for #1142.
+
+### 2026-10-01 — #1103 multi-call E2E setup migration and QA
+
+Commit `f98a564d` migrates the four named multi-call specs to #1100's explicit
+server-backed 2D helper. All helper calls/imports/definitions in
+`aiAndRecovery.spec.ts`, `layersPanel.spec.ts`, `interactionRuntime.spec.ts`,
+and `exportConfigDialog.spec.ts` now use the server-backed helper; the export
+setup wrapper preserves its section expansion. Diff is limited to fixture
+setup and helper references. Per-file `test()`/`expect()` counts are unchanged:
+9/101, 4/55, 4/66, 4/26.
+
+Static checks pass: typecheck; lint exits 0 with existing repository warnings;
+format check; Playwright lists all 17 focused Chromium tests; `git diff
+--check`. A local disposable PostgreSQL/Django/Vite run used `AI_PROVIDER=fake`
+and executed all cases without skips: **11 passed, 6 failed, 0 skipped**.
+Failures reached contracts outside #1103's setup-only scope:
+
+- [#1150](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1150):
+  AI recovery and export tests seek an exact `Save` button; rendered editor
+  exposes `Save scene` in Primary editor actions.
+- [#1151](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1151):
+  interaction-runtime scenarios seek a hidden `Reduced` radio after closing
+  its control menu and a `Piece actions` / `Edit scene` trigger no longer
+  exposed on the canonical manual-editor route.
+- [#1152](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1152):
+  Layers panel keyboard reorder did not restore canvas z-order after pointer
+  reordering two top-level shapes on the same layer; this is a follow-up to
+  closed #127/#194, which remain unchanged.
+
+All three new issues use open milestone 14 and are linked from parent #1096.
+Per the discovery separation rule, they are handed to a later transaction and
+are not implemented here. #1103 remains open / QA FAIL. Linux Chromium and the
+full 16-shard matrix were not run; Docker is unavailable and no remote dispatch
+or push was authorized. GitHub #1103 and #1096 bodies were refreshed and
+read-after-write verified; both remain open. The focused test server used a
+new loopback-only database `codex_qa_batch17_1103`; cleanup is recorded in the
+session ledger.
+
+The #1143 time-window discussion is also reconciled: the owner rejects a
+90-day cutoff because quiet projects must retain full historical context.
+Keep lifetime activity visible. The owner selected an indexed full-history
+query with a hard timeout and retryable unavailable response; implementation
+is paused at the owner's request while they evaluate delivery/failure risk.
+
+### 2026-10-01 — #1104 lifecycle/publishing fixture migration and GitHub state audit
+
+Commit `ddd46cde` migrates project lifecycle, publishing/remix and populated
+responsive-gallery setup to the server-backed 2D fixture. Test and expectation
+counts are unchanged. Local PostgreSQL Chromium result: **7 passed, 12 failed,
+3 did not run** (the anonymous-viewer dependent tests did not run after their
+shared `beforeAll` failed). Current Save-control failures are tracked by #1150;
+the publication-status locator failures are tracked by #1153. Static checks
+and test discovery pass, but the issue remains open / QA FAIL pending the
+follow-up fixes and Linux gate.
+
+Read-after-write GitHub audit on 2026-10-01 fetched all 21 active Batch 17
+issues (#1096, #1100, #1102–#1104, #1110–#1112, #1114, #1129–#1130,
+#1138–#1140, #1143–#1144, #1149–#1153): all report `open`, with no closed
+timestamp. The previous closure references for #1118–#1123, #1136–#1137,
+#1141–#1142, #1148, #127 and #194 were separately fetched and do report
+`closed`. Local implementation commits and QA notes are not GitHub issue
+closures; keep these state categories explicit in all future rollups.
+
+### 2026-10-02 — #1104, #1150, and #1153 re-verification
+
+The #1104 template-clone scenario now follows its actual local-first
+destination (`/local-projects/:id`). It verifies the template's scene payload
+in IndexedDB, saves a supported local scene-name change, then creates a second
+clone and confirms distinct project/scene records with the original template
+baseline. This preserves clone-independence coverage without trying to use
+the server editor's canvas/version controls on the local editor route.
+
+On the disposable local PostgreSQL/Django/Vite stack, `AI_PROVIDER=fake`:
+
+- #1104's full three-spec Chromium command passed **22/22, 0 skipped**, including
+  publishing, fork concurrency, and populated 375px responsive-gallery checks.
+- #1150's expanded four-spec command passed **30/30, 0 skipped**. The exact
+  Save-locator inventory now has only three hits, all unrelated admin-settings
+  or theme-form Save buttons; scene-save consumers use `support/saveScene.ts`.
+  The focused AI draft-save/exit workflow also passed after replacing its
+  retired menu-close button with `closePieceControlsMenu`.
+- Frontend typecheck, lint (exit 0, existing warnings), and format check pass.
+
+The required Linux Chromium/PostgreSQL CI gates remain unavailable from this
+macOS session. Therefore #1104, #1150, and #1153 remain open pending their
+Linux criteria; no closure is claimed. The local changes are recorded in
+issue-scoped commits before the batch QA comment.
+
+### 2026-10-02 — #1102 rerun after follow-up fixes
+
+After #1118–#1121 closed, #1102's exact nine-spec local Chromium/PostgreSQL
+command passed **13/13**, 0 failed, 0 skipped. Its separate WebKit
+fullscreen/Escape regression passed **1/1**. Linux Chromium remains the
+issue's explicit closure gate; #1102 stays open pending that evidence.
+
+### [#1155](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1155) — E2E fixture environment safety
+
+- **Goal:** Ensure Playwright fixture creation and teardown can mutate only a
+  database explicitly identified as disposable. The current Playwright
+  global setup silently falls back to `backend/.env`; a missed
+  `E2E_ENV_FILE` therefore seeded and cleaned fixtures in the local
+  development database during Batch 17 QA.
+- **Acceptance criteria:**
+  - [ ] `global-setup.ts`, `global-teardown.ts`, and `e2e_fixtures` fail closed
+    unless the selected environment explicitly opts into a disposable E2E
+    database; do not silently use `backend/.env` as a fallback.
+  - [ ] A rejected/missing opt-in writes no users, projects, versions, or
+    other fixture records and reports an actionable prerequisite message.
+  - [ ] Teardown runs only after successful setup and targets the same
+    explicitly selected disposable database as setup.
+  - [ ] The disposable CI and staging fixture flows retain their existing
+    behavior with the required marker and safe target checks.
+  - [ ] Backend command tests prove rejection leaves fixture records
+    unchanged; a disposable PostgreSQL browser smoke proves create/test/
+    cleanup works end to end.
+  - [ ] Frontend typecheck, lint, and format checks pass; the full Linux
+    Chromium/PostgreSQL E2E gate remains the closure criterion.
+- **Regression risk:** An overly broad guard could block legitimate isolated
+  CI/staging runs; a weak guard could still seed or delete persistent data.
+- **Restoration path:** Revert the guard and environment wiring together;
+  restore the prior flow only when the target database is explicitly
+  disposable.
+- **Applicable conventions:** `docs/conventions/security.md` (fail-closed
+  environment/data boundary), `docs/conventions/testing.md`, and
+  `docs/conventions/architecture.md` (environment-driven monolith setup).
+- **Milestone:** Batch 14; parent tracker #1096.
+- **Status:** HANDED-OFF after local QA; #1155's Linux Chromium/PostgreSQL gate remains open as a verification boundary.
+- **Evidence:** Initial E2E run omitted `E2E_ENV_FILE`; global setup used
+  the default local env file while the app server used an isolated test DB.
+  The fixture lifecycle then reset and removed the deterministic test users
+  and their dependent test-owned records from the default local database.
+  Corrected browser runs aligned fixture setup/teardown with the isolated DB.
+- **Implementation choice:** The owner authorized #1155 after Claude Code
+  refined it. Option 1 is recorded in issue comment
+  [#5944562693](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1155#issuecomment-5944562693). The implementation is commit
+  `70d30d9b8ac8a5014462db0f712ce36fab548a91`; QA is recorded in
+  [comment #5944937281](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1155#issuecomment-5944937281).
+  A single fixture-command resolver now governs the five mutating actions;
+  Python validates the explicit disposable target and fingerprints the
+  database so later mutations match setup. The scoped CI edit only wires the
+  marker and env file into existing E2E and staging jobs. `AGENTS.md` remains
+  unedited; its operator note will be proposed in the QA issue comment.
+- **QA evidence:** Backend full suite 1,982 passed / 41 skipped; targeted
+  fixture, dev-account, and browser-harness regressions 56 passed. Frontend
+  full Vitest 3,223 passed; typecheck, lint, and format passed. A temporary
+  isolated PostgreSQL cluster completed `projectLifecycle.spec.ts` on
+  installed Chrome 6/6, and teardown left zero fixture users/projects/
+  versions. A rollback replay accepted an unmarked fixture lifecycle on the
+  pre-guard command; the guarded command rejected the same call without
+  writing rows. Ruff, mypy, actionlint, action pin, shell syntax, and diff
+  checks passed. Docker is unavailable locally, and the required Linux gate
+  was not dispatched.
+- **Next action:** Re-run the Linux Chromium/PostgreSQL E2E gate (including
+  the impacted 16-shard matrix) after the authorized branch is available to
+  CI; close #1155 only if that gate passes. No push or workflow dispatch was
+  authorized in this session.
+
+### 2026-10-02 — #1103 residuals after #1151 owner decision
+
+The owner approved #1151's current shell motion toggle and behavior checks,
+explicitly dropping only the unavailable exact status-message assertion. The
+four-spec local Chromium/PostgreSQL rerun passed **16/17, 0 skipped**. All
+three `interactionRuntime.spec.ts` scenarios passed; the only failure was
+#1152's keyboard order assertion at `layersPanel.spec.ts:466`, whose fixture
+assumes two shapes may share one layer despite the still-current #142 scene
+contract. The combined run's #1150 Exit-without-saving case passed on a
+focused rerun (1/1). GitHub #1151's local QA comment is recorded at
+[issue comment](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1151#issuecomment-5944384906);
+the issue remains open pending Linux Chromium/PostgreSQL evidence.
+
+No #1152 source or test change was made because its approved desired behavior
+conflicts with #142's one-shape-per-layer invariant; the owner has been asked
+whether to preserve or expand that contract. #1103 remains QA FAIL until this
+is resolved and its required Linux matrix runs.
+
+### 2026-10-02 — #1103 trace-based setup correction
+
+The current-head full matrix (run #1105, exact SHA `a3d53bce`) exposed three
+`aiAndRecovery.spec.ts` failures for #1103. Trace/network review found that the
+cancel/reopen scenario navigated back through the legacy `/projects/:id` shim
+instead of the canonical editor URL returned by the current server-backed
+helper; it now captures and reuses that URL without changing its assertions.
+The local/server-conflict reload was waiting on Chromium's native
+`beforeunload` dialog; commit `24197488` accepts that dialog in the test setup
+and asserts its type before checking the existing recovery prompt. Test titles
+and prior assertions are preserved; one setup assertion is added. The
+explicit-exit scenario still timed out at 90 seconds after reaching the
+Gallery, so it remains unresolved and has not been characterized as fixed.
+
+`npm run typecheck`, `npm run lint` (exit 0 with existing warnings),
+`npm run format:check`, `npx playwright test --list e2e/aiAndRecovery.spec.ts`
+(7 tests discovered), and `git diff --check` pass. The exact browser command
+was not run locally because `make compose-preflight` reports the Docker daemon
+unavailable and the running local database is not verified disposable. #1103
+remains open / QA FAIL; next run its documented four-spec Chromium command
+against a verified disposable PostgreSQL stack, diagnose the remaining timeout,
+and include it in the shared Linux gate.
+
+### 2026-10-02 — 3D toolbar batch closures
+
+After the shared server-backed 2D setup, the 3D/mobile local regression union
+passed **9/9, 0 skipped**; the unchanged #796 A-Frame case also passed
+`--repeat-each=3` (**6/6**). `drawingPlaneTransform782.spec.ts` passed both
+viewports (**2/2**), `manual3dStageChrome.spec.ts` passed (**1/1**), 2D toolbar
+geometry passed (**2/2**), focused EditorWorkspace component tests passed
+(**37/37**), and typecheck/lint/format checks passed. The four-spec #1103
+regression remained **16/17** because of the independent #1152 layer-order
+contract failure.
+
+GitHub QA comments and read-after-write verification closed #1112, #1110,
+#1111, and #1114 on 2026-10-02. The comments preserve the local-only evidence
+and keep the #1096 Linux matrix open. Current open count after these closures:
+19 issues. #1151 remains open for its Linux gate; #1152 remains paused for the
+owner's scene-contract decision.
+# 2026-10-02 — Active backlog-session continuation (Batch 19)
+
+The authenticated open-issue inventory is 21 issues (#1096, #1100, #1102–#1104,
+#1129–#1130, #1138–#1140, #1143–#1144, #1149–#1157). The current impact matrix,
+implementation/QA evidence, stage provenance, and remaining gates are recorded
+in [`.local/tasks/backlog-session-2026-10-02-batch19.md`](../.local/tasks/backlog-session-2026-10-02-batch19.md).
+No issues were closed by this continuation. The #1140 implementation is pushed
+to PR #1094. Stale run 36977291895 targets `8100a4b9`; corrected full 16-shard
+run 36977977163 and current-SHA PR run 36977676552 target `9db8a584` and are
+in progress. #1139's required rendered checks at 1280x900 and 375x812 remain
+outstanding, so the intent-note batch has not passed QA/reconciliation.
+
+### 2026-10-02 — Updated current-ref batch gate (run #1085)
+
+On product SHA `635d1213`, Linux run [#1085](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37004726979) passed workflow validation, backend, frontend, and disposable published-routing smoke; all 16 browser shards failed. The intent-note E2E for #1140 passed 1/1 in shard 3. The full failure review remains incomplete: additional first causes in shards 1–5 and 14–16 are recorded in `.local/tasks/backlog-session-2026-10-02-batch19.md`; they include old account-setting contracts, stale AI creation routes, legacy AI panel selectors, and generated-piece viewport/control assertions. Do not count those as failures of the current issue batch without owner/duplicate reconciliation. The shared #1096 matrix gate remains FAIL, and the verified open issue inventory remains 21; no issue was closed during this continuation.
+
+### 2026-10-02 — #1139 screenshot artifact correction
+
+Linux run #1094 (`37012212894`, SHA `95c8e359`) passed both #1139 viewport
+scenarios (1280x900 and 375x812), including save/reload and public-route
+privacy. Its shard-12 artifact did not contain those images: Playwright's
+`test.info().attach({ body })` output uses a hidden attachment directory,
+which the existing GitHub artifact upload omits. The test now also writes
+screenshots into its visible per-test result directory and attaches by path.
+Typecheck, lint (existing warnings), format, and E2E discovery passed. A fresh
+Linux run is required before #1139 QA passes. The desktop image showed the
+field and helper text in the right-side Details panel; the 375px image showed
+the responsive stage/tabs but captured the page before scrolling down to the
+field. The test now scrolls the field into view before taking each screenshot
+so the artifact demonstrates the target metadata control at both widths. A
+fresh artifact must be inspected; the batch matrix remains red and
+reconciliation incomplete.
+
+The current-head #1098 Linux run (`37016152439`, SHA `b8138d1a`) uploaded
+visible 1280px and 375px captures. Both show the private intent field; the
+mobile field is in view and neither layout clips horizontally. The focused
+#1139 test reached its privacy-fixture publish step but received HTTP 400:
+saving the Details form cleared the description previously set through the API.
+The test now fills the description in the same form before saving. Formatting,
+lint, typecheck, and Playwright discovery pass; this correction needs a fresh
+Linux run before #1139 can pass QA. Run #1098's browser matrix remains red on
+multiple unrelated historical contracts.
+
+After that run exposed a fixture-only publish failure in #1139, commit
+`46d0696d` fills the meaningful description through the Details form before
+saving the private note. Format, lint (with existing repository warnings),
+typecheck, and Playwright test discovery pass locally. The correction is pushed
+to PR #1094, and manual Linux workflow [#1100](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37018043361)
+was dispatched on the exact commit; its Linux browser verdict is pending.
+
+#### Final #1100 run reconciliation
+
+The completed Linux full-matrix run #1100
+([Actions run](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37018043361))
+targeted exact SHA `46d0696d5fcf9a2f73fa2ef0487f1e9df1992d4a`. Backend,
+frontend (316 files / 3,228 tests), workflow validation, and disposable
+published-routing smoke passed. All 16/16 E2E shards failed: 127 failed cases
+across 80 unique spec files (125 Chromium, one Firefox, one WebKit). The shared batch gate remains FAIL. A current-run
+`## QA: FAIL` summary was posted to #1096 as comment `5954772551`; no issue was
+closed.
+
+In this run, #1139's focused privacy test passed 1/1 in shard 12 and artifact
+`11232007438` was visually inspected at 1280×900 and 375×812; the private
+field/helper is visible without horizontal clipping. Comment `5954588513`
+records issue QA PASS, but #1139 remains open pending the shared gate. #1140's
+`aiIntentNotes.spec.ts` passed 1/1 in shard 3. #1100's six named 3D helper
+specs passed 7/7. These targeted passes do not substitute for the red full
+matrix.
+
+Four #1103 scenarios failed in `aiAndRecovery.spec.ts`: the pre-debounce
+IndexedDB assertion found the canonical editor's already-seeded local draft;
+the explicit-save/reopen case timed out at 90 seconds, and two recovery cases
+timed out at 30 seconds while the page remained on “Opening the canonical
+editor…”. The artifacts prove these symptoms but not yet the hydration stall's
+first cause. Inspect the traces and isolate the helper's initial draft state
+while preserving #1103's setup-only scope and all assertions. #1103 remains QA
+FAIL. Reconcile all 127 cases across 80 spec files under #1096 before closing
+any batch issue.
+
+Run #1100 also passed the Linux `interactionRuntime.spec.ts` and
+`layersPanel.spec.ts` suites (3/3 each). #1152 received a criterion-level
+`## QA: PASS` comment (`5955170400`) and remains open pending #1096 impact
+reconciliation. #1151 remains QA-incomplete because its refined contract
+requires inspected motion-toggle screenshots at 1280x900 and 375x812; those
+images were not retained in the run artifact.
+
+The #1151 E2E now saves four visible artifacts for the reduced/full motion
+toggle at 1280x900 and 375x812. Typecheck, lint (exit 0 with existing
+warnings), format check, Playwright discovery (3 tests), and diff checks pass.
+The exact local browser run is not attempted against the currently running
+server because its database target is not verified as disposable. Commit and
+fresh Linux/PostgreSQL artifact inspection are pending; see the Batch 19
+ledger.
+
+PR run #1101 (`37021439341`, exact SHA `df0146f9f65d4c4146a3a94f2496ae5e6c634ffd`)
+passed workflow validation, backend, frontend (316 files / 3,228 tests), and
+disposable published-routing smoke. Its browser smoke gate ran 24 tests (21
+passed, 3 failed), so the full browser suite was skipped. Failures were two
+stale `authPolicy.spec.ts` dark-shell assertions with no open duplicate after
+search, plus the atomic-fork `.public-project-viewer[data-project-kind="remix"]`
+lookup already within #1104. The closed #516 auth-shell contract is preserved;
+no new issue was filed pending owner approval. This is not full-matrix
+evidence. The current batch ledger records the first-cause review and the
+macOS Chromium launch boundary for the separate export-injection assertion.
+
+After adding the four screenshot attachments for #1151, commit `6b29711c` was
+pushed under existing authorization and the full manual CI workflow was
+dispatched in the active Chrome session as run [#1103](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37024873824)
+on exact SHA `6b29711c55dcfb113e832f50687917990cf9371a`. Workflow validation
+and disposable published-routing smoke passed; backend, frontend, and all 16
+browser shards were still running at the latest status read. This is fresh
+#1151 screenshot and current-head matrix evidence. The prior #1096 FAIL gate
+and no-closure rule remain until completion and full failure reconciliation.
+# 2026-10-02 — Current-head #1151 viewport evidence rerun
+
+Commit `a3d53bce` changes the #1151 screenshot helper to retain viewport-sized
+captures. Typecheck, lint (exit 0 with existing warnings), format check,
+Playwright discovery (3 tests), and `git diff --check` passed locally. The
+user-authorized manual Linux full matrix [run #1105](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37027709237)
+completed on exact SHA `a3d53bce507ad86414b68e508bf6738c6c199545`. All 16
+browser shards failed: 126 cases (124 Chromium, one Firefox, one WebKit), 387
+passed, and 22 skipped across 82 unique failing spec files. Backend, frontend
+(316 files / 3,228 Vitest tests), workflow validation, and disposable
+published-routing smoke passed. Shard 9 artifact 11235739026 contains all
+four inspected #1151 captures at exactly 1280×900 and 375×812; all three
+`interactionRuntime.spec.ts` tests passed with zero skips. Comment 5956057113
+records issue-level PASS; #1151 remains open. Parent #1096's current FAIL is
+comment 5956065653. The batch gate remains FAIL pending full issue-impact
+reconciliation; no issue is closed.
+
+### #1104 saved-source navigation follow-up — 2026-10-02
+
+The #1105 Linux trace shows the remix-attribution scenario timing out in
+`page.goto` when it returns the owner to the source after the source was saved
+and published. The trace does not establish whether a native `beforeunload`
+dialog caused the hang. Commit `88b4085f` captures the canonical editor URL
+from the server-backed setup and adds a one-shot handler that accepts and
+asserts a `beforeunload` dialog if present, before continuing the original
+Draft/publication and attribution assertions. This is a setup-only change;
+no scenario or existing assertion was removed. Typecheck, lint (exit 0 with
+existing warnings), format check, Playwright discovery (13 tests), and
+`git diff --check` passed. Local browser execution was not attempted because
+the running database is not verified disposable. The change is pushed to the
+authorized branch; fresh Linux Chromium/PostgreSQL evidence remains pending.
+Keep #1104 open and QA FAIL until the focused three-spec suite and shared
+matrix pass; if the dialog does not occur, return the cause to trace diagnosis.
+
+### #1104 correction after current Linux trace — 2026-10-02
+
+The current Linux run [#1116](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37042132246)
+completed `publishingAndRemix.spec.ts` in shard 15 and isolated the failure:
+the 32.9-second atomic-fork lifecycle reached the new assertion expecting a
+`beforeunload` dialog, but the dialog array was empty. The source editor was
+already open on that project, so navigating back and requiring a dialog was
+an incorrect test assumption introduced during QA. Removed the unnecessary
+navigation and dialog expectation; retained the 60-second budget for the
+multi-account lifecycle, all original scenario assertions, and exact original
+counts (16 tests / 164 expects, compared with the pre-QA-fix version). Static
+verification passes (`npm run typecheck`, `npm run lint` with existing
+warnings, `npm run format:check`, Playwright discovery: 13 tests,
+`git diff --check`). Browser verification of this correction remains pending;
+the current run predates it. #1104 remains open until the focused three-spec
+Linux Chromium check passes.
+
+### 2026-10-02 — Close completed foundation and decision issues
+
+The owner called out that the batch had become over-focused on full-matrix CI
+as a metric. Reconciled and closed three issues on GitHub whose own acceptance
+criteria were independently complete:
+
+- #1100: all six server-backed 3D helper scenarios passed in Linux Chromium
+  run #1074; its setup-only diff, preserved test inventories, and scope were
+  already QA-verified. The unrelated failures in the broader matrix are owned
+  by separate open issues and do not invalidate #1100's criteria.
+- #1129: the owner-selected D1 storage decision is recorded in
+  `DECISIONS.md`, and the dependent #1138–#1140 contracts follow it.
+- #1130: the owner-selected generalized history decision is recorded in
+  `DECISIONS.md` and `docs/ligdol-adaptation.md`; separate, milestoned follow-
+  ups #1156 and #1157 implement its two families.
+
+Follow-up reconciliation also closed #1139, #1140, and #1152 as completed on
+GitHub, using their existing issue-specific QA records: #1139's inspected
+desktop/mobile screenshots and Linux E2E; #1140's backend and fake-provider
+E2E contracts; and #1152's three Linux Layers-panel cases. The #1152 code SHA
+is an ancestor of the recorded Linux run. The open count is now 15.
+
+The issue-specific QA PASS for #1151 also satisfies its motion-toggle
+acceptance independently: the tested source SHA is an ancestor of run #1105,
+all three Linux Chromium scenarios passed, and the desktop/mobile reduced/full
+motion screenshots were inspected. #1151 is now closed/completed on GitHub;
+the open count was 14.
+
+The current Linux run #1116 also passed all nine #1102 Chromium spec files,
+plus its Linux WebKit fullscreen/Escape case. The spec results were
+reconciled from their completed shard logs; all three scenarios in
+`layersPanel.spec.ts` passed, all listed #1102 cases passed, and the remaining
+matrix failures were in unrelated files. A `## QA: PASS` criterion matrix was
+posted as comment 5958177716, and #1102 is now closed/completed on GitHub. The
+live open count is 13.
+
+The same run executed all eight #1149/#1154 fake-provider Agent cases on Linux
+Chromium/PostgreSQL: four 2D and four 3D scenarios, with 0 skips. Create,
+selected-object edit, terminal validation, and reload/reconnection passed in
+both domains. #1149 received `## QA: PASS` comment 5958321151 and
+#1154 received `## QA: PASS` comment 5958310474; both are closed/completed on
+GitHub. The open count is now 11.
+
+The same run verified the #1150 shared Save helper across its owned paths:
+AI draft Save, historical-version export, project lifecycle save, and
+publishing setup all reached their save assertions. The four-file matrix had
+27/30 passed, 3 failed, 0 skipped; each failure was isolated to #1103 recovery
+timeout flows or #1104's incorrect dialog expectation. GitHub comment
+5958366885 records the per-criterion boundary; #1150 is now closed/completed
+and the open count is 10.
+
+### #1103 recovery-suite time budget — 2026-10-02
+
+Run #1116's Linux shard 3 exposed two time-budget failures inside the
+unchanged `aiAndRecovery.spec.ts` scenarios: the Cancel/Discard/Recover test
+reached its final recovery-prompt check at 30 seconds, and the expired/corrupt/
+unauthorized/conflict test reached its final conflict flow at the same default
+limit. All assertions remain intact; all four multi-call setup migration
+specs remain unchanged in scope. Added per-test budgets of 60 seconds and 90
+seconds to these two multi-project scenarios. `npm run typecheck`, lint (exit
+0 with existing repository warnings), format check, Playwright discovery (7
+tests), `git diff --check`, and assertion inventory passed; test/expect counts
+remain 9/102. Browser re-verification is pending on disposable Linux
+PostgreSQL. #1103 remains open.
+
+This does not mark #1096 or the full browser batch complete; the remaining
+open issues retain their own incomplete criteria and need focused work and QA.
+
+### 2026-10-02 — #1144 viewport evidence capture
+
+Added retained desktop (1280x900) and mobile (375x812) screenshots for the
+public 3D viewer and hand-gesture guide to their two existing E2E specs. The
+guide checks document width at both sizes; the proportion test continues to
+check 16:9 frame/canvas ratios and overflow before capturing each viewport.
+Test titles and scenario count are unchanged; expectation counts are now
+15 (guide; baseline 13) and 12 (proportions; baseline 12). Typecheck, lint
+(existing repository warnings), format check, Playwright discovery (2 tests),
+and `git diff --check` pass. Linux PostgreSQL execution and visual screenshot
+inspection remain required before #1144 can close.
+
+### 2026-10-02 — #1104 completed
+
+Linux run [#1117](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37045559174)
+ran the full #1104 three-spec Chromium scope against disposable PostgreSQL:
+all 22 issue-owned scenarios passed with zero skips or failures. This included
+lifecycle save/history/restore, publication, atomic fork and provenance,
+PostgreSQL fork concurrency, and the 375px responsive gallery. The combined
+CI smoke job's two failures were both `authPolicy.spec.ts` assertions, outside
+#1104's scope. The QA matrix is comment
+[#5958690593](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1104#issuecomment-5958690593);
+GitHub issue #1104 is closed as completed. The parent #1096 and unrelated
+issues remain open.
+
+### 2026-10-02 — #1153 completed
+
+The #1153 locator correction is in commit `230a8788`; both publisher helpers
+select the current visible control within the authenticated Primary editor
+actions group. In Linux run [#1117](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37045559174),
+all 13 Publishing/Remix and 3 Responsive shell scenarios passed against
+disposable PostgreSQL, including the 375px populated-gallery path. The QA
+matrix is comment
+[#5958787980](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1153#issuecomment-5958787980);
+GitHub issue #1153 is closed as completed. The unrelated #1096 matrix remains
+open.
+
+### 2026-10-02 — #1143 admin-panel screenshot capture
+
+The existing admin settings E2E flow now captures the continuity panel at
+1280x900 and 375x812 using Playwright's disposable `e2e_admin` fixture. It
+waits for the populated or privacy-suppressed state, opens the metric
+definitions, and writes retained panel screenshots. It does not create or
+change user/project records for the capture. Typecheck, lint (existing
+repository warnings), format check, test discovery (6 tests), and
+`git diff --check` pass. Linux PostgreSQL execution and visual inspection
+remain pending before #1143 can close.
+
+### 2026-10-02 — #1157 completed on issue-owned criteria
+
+The QA review closed GitHub issue [#1157](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1157)
+as completed after rechecking its full refined contract. QA PASS comment
+[#5959139975](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1157#issuecomment-5959139975)
+records the three-family constraint and populated-row reversible migration,
+lifecycle and eventless-path behavior, concurrent idempotent publication,
+owner-only history, export/privacy boundaries, and 2D/3D regressions. The
+current-head Linux backend job passed 2,012 tests with 44 environment-gated
+skips; migration drift check reports no changes. The separate full 16-shard
+run #1116 ran on descendant `fba45bc`, which contains #1157's implementation.
+Its aggregate failure remains tracked by #1096; that shared score did not
+override the passing evidence for #1157's own contract, and no #1096 closure
+is claimed.
+
+### 2026-10-02 — #1103 local recovery setup correction
+
+Retargeted `aiAndRecovery.spec.ts` to the current `openEditScene` and
+`closeEditScene` helpers after the retired piece-menu trigger was intercepted
+by the stage toolbar. No test title or assertion was removed or weakened.
+The exact four-spec Chromium run against a fresh disposable PostgreSQL
+database passed 17/17 with no skips; the fake-provider AI and PostgreSQL
+concurrency scenarios executed. Typecheck, lint (existing warnings), format,
+Playwright discovery, and `git diff --check` passed. Linux Chromium remains an
+explicit #1103 acceptance criterion; keep it open until that test result is
+recorded. This criterion-specific result does not depend on #1096's aggregate
+16-shard verdict.
+
+### 2026-10-02 — #1158/#1159 mobile overlay implementation batch
+
+Owner authorized same-run implementation after Claude Code refined the
+issues. The atomic split is now reflected in both issue records: #1158 owns
+the shared shell display toggles covering page content; #1159 owns the
+hand-gesture guide dialog. For #1158, use the issue's recommended centered
+in-flow placement through 767px, matching the existing account-page pattern;
+desktop and 768px behavior remain unchanged. For #1159, use a document-body
+portal and a colocated stylesheet, matching exported-guide sizing. #1159 is
+closed after its criterion QA; #1158 stays open pending its Linux acceptance.
+No #1096 aggregate result substitutes for per-issue evidence.
+
+## 2026-10-02 — #1143 and #1159 issue closure reconciliation
+
+Authenticated GitHub read-after-write confirms #1143 and #1159 are closed as
+completed; the open issue list is now #1096, #1103, #1138, #1144, #1155,
+#1156, and #1158. QA PASS comments: [#1143](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1143#issuecomment-5961624588)
+and [#1159](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1159#issuecomment-5961685465).
+#1159's eleven acceptance boxes were checked before closure, and its sizing
+criteria were aligned with the issue's controlling audit addendum.
+
+#1143's rendered evidence and QA are complete, but its issue-body checkboxes
+were left unchecked when it was closed. Preserve that historical issue; the
+backlog closure-integrity rule calls for a corrective follow-up rather than
+reopening/editing it. The owner previously asked for approval before filing
+new issues, so follow-up creation is pending that approval. Next action: ask
+whether to file a checklist-reconciliation follow-up; meanwhile proceed with
+independent open issues. #1158 has passed its local shared-shell matrix; its
+Linux Chromium/PostgreSQL criterion remains pending and is next in the CI run.
+
+### 2026-10-02 — #1144 issue-specific Linux QA closure
+
+Closed GitHub issue [#1144](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1144)
+after all six scoped criteria passed. Focused Linux Chromium/PostgreSQL tests
+passed on authorized run #1122 / SHA `13d57ea`: `handGestureGuide.spec.ts`
+1/1 (shard 8) and `public3dProportions.spec.ts` 1/1 (shard 13). Local
+disposable-PostgreSQL E2E passed 2/2; retained 1280x900 and 375x812 screenshots
+were visually inspected. At the helper-migration commit the guide/proportions
+expectation inventory stayed 13/12; the #1144 screenshot commit added two guide
+viewport assertions, so its final #1144-specific inventory was 15/12. Later
+#1159 work extended the same guide scenario further. Frontend typecheck, lint,
+and format checks passed; no product source, backend, schema, dependency, or
+workflow files changed. The GitHub checklist was checked, QA PASS was posted,
+and read-after-write verified the issue is closed. Unrelated failures in the
+16-shard run remain tracked under #1096.
+
+The run also passed #1158's focused `adminSettings.spec.ts` controls, desktop/
+mobile/breakpoint behavior, and named responsive-shell, public-shell, header,
+and theme-parity regressions. `accountShell.spec.ts` hit a Playwright screenshot
+capture protocol error in shard 2; a targeted rerun is in progress.
+`aiAndRecovery.spec.ts` still has two autosave failures under #1103 (shard 3),
+so #1103 stays open. Run #1122 is complete with 16/16 browser shards failing
+(112 failed, 392 passed, 22 skipped). Workflow validation, backend, frontend,
+disposable published-routing smoke, public-media, and WebKit fullscreen checks
+passed; the matrix's remaining cases stay under #1096.
+
+### 2026-10-02 — #1158 issue-level closure and batch inventory
+
+Closed GitHub issue [#1158](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1158) as completed at 2026-10-02T22:21:16Z after posting the QA PASS comment. The focused Linux Chromium/PostgreSQL `adminSettings.spec.ts` scenarios passed 7/7 on shard 2; responsive shell, header, public shell, account shell/theme regression checks, and Linux frontend checks passed on the cited shards. Retained 375×812 and 1280×900 screenshots were inspected. For the restoration criterion, an isolated disposable PostgreSQL run with the mobile in-flow override temporarily removed reproduced the overlap at 375×812 (`metric definition 4 remains unobscured`, expected false, received true); the original CSS was restored immediately and has no diff. The full matrix remains failed under #1096 and was not used as a substitute for scoped evidence.
+
+Authenticated GitHub enumeration now shows five open issues: #1096, #1103, #1138, #1155, and #1156. #1096 is a triage parent, not an implementation target. Keep each child tied to its own acceptance evidence; next focus on issue-specific remediation/QA and close independently passing issues without waiting for an unrelated aggregate matrix verdict.
+
+### 2026-10-02 — #1103 shard-3 failure detail and disposition needed
+
+Current-head Linux run #1122 (SHA `13d57ea`, which is an ancestor of this
+checkout) fails two `aiAndRecovery.spec.ts` autosave scenarios. The first,
+`local debounce, periodic server-sync cadence, and page-hide keepalive all fire
+on schedule`, fails at the unchanged pre-debounce assertion: after advancing
+fake time by 1,000ms, `readLocalDraft` returns an initial empty scene with
+`changeSummary: "No changes detected"`, although the tested circle edit has
+not happened. This contradicts the test's assumption that no local draft
+exists before the first edit. The database log also shows `unique_draft_scope`
+conflicts during concurrent sync, but the current `_upsert_draft` explicitly
+catches that insert race and retries under a row lock; the SQL error alone is
+not evidence of an uncaught race.
+
+The second test, `explicit Save and its interaction with sync failures,
+periodic ticks, reopening, and Exit-without-saving`, times out at 90 seconds;
+its attached trace reports a corrupt ZIP, preventing useful trace inspection.
+The first cause remains unknown. #1103 is constrained to setup-only changes
+and preserving every test title/assertion, so no product code or assertion was
+changed. No matching open issue was found for the pre-edit initial-draft
+behavior. Owner disposition is needed before creating a product follow-up or
+changing the test contract; until then #1103 and #1096 remain open.
+
+### 2026-10-02 — #1155 current-head Linux QA closure
+
+Re-audited #1155 against the 12 original/refined acceptance criteria. The issue's configured option and five environment values were recorded before implementation; one shared fixture resolver covers all five TypeScript entry points; each of five mutating actions is exercised against six invalid environment selections; allowed values, unavailable-setup teardown, recorded fingerprint, isolated positive PostgreSQL smoke, restoration behavior, and operator/workflow wiring have evidence in the implementation and existing QA comments. I strengthened `backend/tests/test_e2e_fixtures_command.py` so each rejected action now snapshots every row in the isolated SQLite test database, catching updates/deletes/inserts beyond the previously enumerated tables.
+
+Verification after that test change: `UV_CACHE_DIR=/tmp/codex-qa1155-uv-cache uv run pytest tests/test_e2e_fixtures_command.py -q` → 41 passed; Ruff lint and format checks for the file passed; `git diff --check` passed. Existing local isolated-PostgreSQL positive browser smoke passed, with a read-only post-teardown audit finding no fixture users, email/social rows, projects/versions, 3D projects, art pieces/versions, activity, or AI runs. Prior isolated restoration proof showed that the pre-guard command accepted unmarked create/cleanup; the guarded command rejects unmarked create with an actionable error and makes no fixture changes.
+
+The authorized Linux run #1122 on SHA `13d57ea` includes the #1155 guard and explicit workflow configuration. Its issue-specific `projectLifecycle.spec.ts` scenarios passed 6/6 in disposable PostgreSQL/Chromium on shard 13, including the exact blank-canvas create/save/reload smoke; backend checks passed (2,012 passed / 44 skipped) and Linux frontend checks passed (3,229 tests). The complete 16-shard matrix remains failed on unrelated browser cases tracked under #1096. The failed aggregate result does not represent a #1155 guard failure: the focused Linux project lifecycle, frontend resolver, backend guard suite, and explicit fixture environment passed. The GitHub issue checklist and new QA PASS comment were reconciled before closure; the issue is closed completed on GitHub.
+
+### 2026-10-02 — Fresh batch QA refresh for #1138 and #1156
+
+At current local HEAD `346eeee2`, `UV_CACHE_DIR=/tmp/codex-progress-20261002-cache make check` completed successfully: workflow pin validation, backend Ruff lint/format, mypy, backend pytest (2,056 collected), frontend lint/format/typecheck, and Vitest (316 files / 3,229 tests). `DJANGO_SETTINGS_MODULE=backend.test_settings uv run python manage.py makemigrations --check --dry-run` reported no model drift; `git diff --check` passed.
+
+Fresh criterion matrices were posted through the active Chrome session: [#1138 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138#issuecomment-5962714826) and [#1156 QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1156#issuecomment-5962707997). Their local implementation criteria pass. Both retain the explicit `docs/api.md updated first` criterion; implementation and documentation are in one commit, so Git history cannot prove the sequence. Owner disposition remains pending. Linux run #1122 exercised the dependent batch after #1156/#1157 landed, but its 16-shard matrix failed; residual causes remain tracked under #1096. No closure is claimed.
+
+At that refresh, the live open issue inventory remained #1096, #1103, #1138, and #1156. #1096 was parent triage; #1103 still awaited its later QA reconciliation. The subsequent closure is recorded below.
+
+### 2026-10-02 — #1103 QA pass and GitHub closure
+
+Closed [#1103](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1103)
+as completed after its stale QA FAIL notes were superseded by the current
+criterion matrix in [comment 5963116281](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1103#issuecomment-5963116281)
+and all six GitHub acceptance checkboxes were reconciled. The focused local
+Chromium/PostgreSQL command passed 17/17 with `AI_PROVIDER=fake`, 0 failed and
+0 skipped. The issue-owned Linux cases passed 17/17 across shards 3, 8, and 9
+in run #1124 at `85340d2d2a78a325186e1e1920c73874e2edcb3c`. The full 16-shard
+run remains red on unrelated browser failures tracked by parent #1096; no
+#1103-owned failure appeared. GitHub read-after-write confirmed `closed` with
+reason `completed` and all six criteria checked. Current open inventory:
+#1096, #1138, and #1156. The latter two still await owner disposition on their
+docs-first chronology criterion.
+
+### 2026-10-03 — Focused intent/activity QA refresh
+
+At checkout `78ee6c79`, the combined #1138/#1156 backend regression union
+passed **241 tests with 9 skips** in 24.74s (SQLite/test settings). It covered
+private intent-note validation/privacy/package/export/deletion, sync/backup
+exclusions, unchanged 2D activity, structured 3D activity and lifecycle
+writers, AIRun behavior, and the continuity-metrics regression. PostgreSQL-
+only cases were skipped; no PostgreSQL claim is made for this run.
+
+PR smoke run #1125 on the same SHA passed backend, frontend, workflow, and
+disposable published-routing checks. Its one browser shard failed the two
+previously identified `authPolicy.spec.ts` checks (missing signup-policy copy
+and transparent body background). Run #1124 also exposes an untracked
+`project3dThumbnailCard.spec.ts` setup failure: it waits for the retired
+`/projects3d/:id` route instead of using the existing canonical 3D helper.
+The failure is within #1096 triage; follow-up filing is pending owner choice.
+
+Current GitHub open inventory is #1096, #1138, and #1156. #1138/#1156 await
+owner disposition on `docs/api.md updated first` because their documentation
+and implementation share a commit. #1103's closure is recorded above; no
+issue closed in this QA refresh.
+
+
+### 2026-10-03 — #1138/#1156 QA pass and GitHub closure
+
+The owner accepted the same-commit API-documentation update for #1138 and
+#1156; `DECISIONS.md` records that limited criterion interpretation. Current
+QA PASS comments: [#1138](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1138#issuecomment-5963533424)
+and [#1156](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1156#issuecomment-5963549414).
+Both acceptance checklists were reconciled and GitHub read-after-write
+confirmed both issues closed as completed.
+
+Evidence: combined focused backend regression union 241 passed / 9 skipped
+(SQLite test settings); current-head `make check` previously passed backend
+2,012 / 44 skipped, frontend lint/format/typecheck, and Vitest 3,229;
+`makemigrations --check --dry-run` found no drift. Linux run 37076051935 ran
+all 16 shards after #1156/#1157; aggregate failures remain assigned to #1096,
+with no #1138/#1156-owned case reported. This remains a red full matrix and
+does not claim a local PostgreSQL or Replit publish result. Authenticated live
+open inventory is now #1096 only; that issue remains open as the full-matrix
+triage parent, with residual first-cause classification and owner disposition
+for any separate follow-up still outstanding.
+### 2026-10-03 — #1096 current-head matrix QA FAIL
+
+The owner-authorized full Linux `workflow_dispatch` run
+[#1126](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/actions/runs/37081997610)
+completed on branch `docs/backlog-reevaluation-2026-09-27` at exact HEAD
+`78ee6c7997cc4e19bc574db49f3f83f065ab08fb`. Workflow validation passed;
+backend passed (2,012 passed / 44 skipped), frontend passed (316 files /
+3,229 tests), and disposable published-routing smoke passed. All 16 browser
+acceptance shards failed and 16 diagnostic artifacts were uploaded. The
+production/hosted-push/staging-authenticated jobs were skipped as expected
+for this manual dispatch. No production publish or shared-database action
+was performed.
+
+Observed examples include account-action count drift (11 expected / 12
+rendered), account and Layers keyboard-reorder failures, toolbar tests seeing
+additional visible controls, a Publish button intercepted by the application
+footer, AI panel/route and plan-review timeouts, generated-piece engine and
+runtime behavior, public/immersive 3D layout and camera behavior, theme and
+responsive assertions, and Firefox draw.io interactions intercepted by the
+piece-stage shell. These are symptoms only: every failing test still needs a
+first-cause classification (test/fixture drift, product behavior, or runner)
+and reconciliation against existing issues. No novel follow-up issue was
+filed. Per the owner's prior instruction, seek disposition after presenting
+the reconciled discrepancies; #1096 remains open / QA FAIL, with the full
+failure-to-issue map and any owner-authorized follow-ups as next actions.
+
+The criterion matrix and evidence boundary were posted as [#1096 QA comment
+5963808831](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-5963808831).
+The issue was visibly left open. Current aggregate evidence does not satisfy
+the tracker’s per-test classification or residual issue/owner/next-action
+criteria.
+
+### 2026-10-03 — CI run #1126 child issues of #1096 (Batch 14)
+
+Case-to-issue map: `docs/ci-failure-map-run1126.md` (120 failed cases → children; #1160-#1162 are recorded above). Each entry mirrors a GitHub issue (Discovery gate: backlog entry and issue linked both ways).
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1163](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1163) | E2E injection audit: identify the extra <script> element in exported artifacts (5 tests) | GROOMED | — | 2b security oracle; P0 |
+| [#1164](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1164) | E2E: PATCH /api/account/profile/ fails in profile and template-parity flows (6 tests) | GROOMED | — (resolve before #1165, #1173, #1174) | 2a/2b; P1 |
+| [#1165](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1165) | E2E: profile photo removal leaves the Remove photo control (2 tests) | GROOMED | after #1164 | 2a |
+| [#1166](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1166) | E2E: 'Piece controls' and the sr-only 'Open piece controls menu' shim collide in toolbar specs (18 tests) | GROOMED | — | 2a |
+| [#1167](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1167) | Owner decision: remove the sr-only no-op 'Open piece controls menu' button from inline toolbars? | DECIDED (remove) | after #1166 | owner decision; implementation #1187 |
+| [#1168](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1168) | E2E: migrate remaining 3D lifecycle specs from Gallery-click creation to the server-backed helper (11 tests) | GROOMED | #1100 helper (closed) | 2a |
+| [#1169](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1169) | E2E: migrate public 3D camera/toolbar specs from Gallery-click creation to the server-backed helper (3 tests) | GROOMED | after #1168 | 2a |
+| [#1225](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1225) | Public structured-3D toolbar placement blocks immersive touch controls | IMPLEMENTED LOCALLY / LINUX PENDING | discovered by #1169 | 2b product geometry |
+| [#1226](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1226) | Cosmic site backdrop creates horizontal overflow at 768px | IMPLEMENTED LOCALLY / LINUX PENDING | discovered by #1170 | 2b shell geometry |
+| [#1227](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1227) | App-shell footer intercepts public stage download menu at phone width | IMPLEMENTED LOCALLY / LINUX PENDING | discovered by #1166; related #1174 | 2b shell geometry |
+| [#1170](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1170) | E2E: retarget AI panel specs from legacy AI routes and removed creation menu items to the unified editor (14 tests) | GROOMED | #1149 helper (closed) | 2a + stop rule |
+| [#1171](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1171) | E2E: generated-art studio editor specs never reach their first control (12 tests) — diagnose first cause | GROOMED | diagnosis first | 2b diagnosis |
+| [#1172](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1172) | E2E: shell chrome specs expect the removed header color-mode and reduced-motion controls (10 tests) | GROOMED | after #1158 (closed) | 2a + stop rule |
+| [#1173](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1173) | E2E: public piece pages no longer show the expected 'By e2e_owner' byline (4 tests) | GROOMED | after #1164 | 2a |
+| [#1174](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1174) | E2E: the publish confirmation dialog cannot be completed in two publication specs (4 tests) | GROOMED | after #1164 | 2a/2b |
+| [#1175](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1175) | Generated-piece stage specs expect the pre-phone-layout geometry (≤700px) (4 tests) | DEPENDENCY-BLOCKED | #1188, #1189 | 2a |
+| [#1176](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1176) | HTML export: labelled action buttons are 40px wide where the spec requires >= 44px (1 test) | GROOMED | — | 2a |
+| [#1177](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1177) | Content panel shadow spec: offset panel height drifts by 306px at 375x812 dark (new in run #1126) | GROOMED | bisect first; P1 possible regression | 2a |
+| [#1178](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1178) | 3D drawing plane render: pixel-coverage threshold fails (230 vs > 271) (1 test) | GROOMED | after the 3D stage specs | 2a |
+| [#1179](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1179) | E2E: auth policy spec expects pre-#1127 login copy and a body background that moved (2 tests) | GROOMED | — | 2a |
+| [#1180](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1180) | Authoring ownership gate: non-owner lands on the owner editor URL instead of being redirected (2 tests) | GROOMED | — | 2b authorization check; P0 |
+| [#1181](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1181) | Local gallery cards spec (#1087): the card heading is not found after creation (1 test) | GROOMED | uses #1101 seeding | 2a |
+| [#1182](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1182) | Public gallery engine filter: the select does not retain c2js-interactive (2 tests) | GROOMED | — | 2a |
+| [#1183](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1183) | Sound telemetry spec: getByLabel(Key) matches two controls (1 test) | GROOMED | — | 2a |
+| [#1184](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1184) | Site content and theme admin specs: stale text and an ambiguous accent label (4 tests) | GROOMED | — | 2a |
+| [#1185](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1185) | E2E: three long-running specs end in protocol or connection errors after their timeouts (3 tests) | GROOMED | diagnosis first | 2b diagnosis |
+| [#1186](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1186) | aiAndRecovery: explicit Save scenario receives a non-ZIP download (1 test, new in run #1126) | GROOMED | new in run #1126 | 2a |
+| [#1187](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1187) | Remove the inert 'Open piece controls menu' shim from inline toolbars (after consumers migrate) | DEPENDENCY-BLOCKED | #1166 and all consumer migrations | 2a (wide) |
+| [#1188](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1188) | Public regular generated-piece page on phones: declared ratio, tall stage only for interactive drawing, toolbar below | GROOMED | —; serialize with #1177 | 2a, owner-decided |
+| [#1189](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1189) | Embed route on phones follows the same stage and toolbar rule (after #1188) | DEPENDENCY-BLOCKED | #1188 | 2a |
+
+Owner decisions of 2026-10-03: #1167 remove the inert shim (→ #1187); #1175 two-tier phone specs, toolbar below the stage, tall phone stage only for `c2js-interactive` (→ #1188, #1189). #1096 stays open until a full 16-shard Linux run is green or every remaining failure has an owner and next action.
+
+#1225 is a structured-3D public-viewer product finding from #1169: at 1440px the fullscreen control was in the stage's left half, and at 375px the toolbar intercepted immersive D-pad clicks. Local CSS commits `61cdf839`/`607fcb8c` corrected route-scoped placement while preserving other inline toolbar routes. Final test follow-up `7fe006cd` waits for stable post-resize geometry and then retains absolute viewport-coordinate comparisons, 1px tolerances, and action-count assertions; it supersedes the intermediate relative-stage measurement in `2a27b0c6`. The 39-spec/70-scenario Chromium union passed 66 scenarios; the four failures are the separately owned Goal 7 issues #1175/#1178/#1188/#1189. Linux verification remains pending. This is separate from generated-art routes covered by those Goal 7 issues.
+
+#1226 is a site-shell backdrop finding from #1170: at 768x1024 the decorative cosmic layers extended the document's scroll width 6px beyond the viewport in 2D, and the same responsive criterion failed in 3D. The decorative container clipping fix is locally verified by the final 51-scenario Chromium union; reduced-motion and low-power behavior were preserved. Linux verification remains pending.
+
+#1227 is a public generated-3D viewer finding from #1166: at 375x812 the app-shell footer intercepted the visible Full ZIP menu item's click in #742's export step. The shell stacking fix and #1174's related publication-dialog fix pass in the final local Chromium union, including #742's real download/ZIP assertions. Linux verification remains pending.
+
+### 2026-10-03 — CI tiers: PR gate blocks, 16-shard matrix is advisory (#1096)
+
+Owner decisions: PR gate (Workflow validation, Backend checks, Frontend checks, Browser acceptance E2E shard 1) blocks merging; the full matrix is advisory through a known-failure ratchet (no skipped or weakened tests); audit all 241 specs; Codex may edit ci.yml for the ratchet and fast-fail timeouts only. Rules: `docs/process.md` "CI tiers and E2E suite standards". #1179 is first priority (the only failures in the blocking PR check).
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1190](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1190) | CI: known-failure ratchet so the 16-shard matrix fails only on new problems | GROOMED | —; first | 2b (CI gate semantics); Codex, ci.yml authorization scoped to #1190/#1191 |
+| [#1191](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1191) | E2E: fail fast on missing controls (actionTimeout and navigationTimeout) | DEPENDENCY-BLOCKED | after #1190 | 2a |
+| [#1192](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1192) | Owner action: protect main with the PR gate checks | OWNER-ACTION-PENDING | — | owner |
+
+- 2026-10-03 — E2E suite audit (241 specs, 536 tests): `docs/e2e-suite-audit.md` (proposal, nothing deleted). Findings: 70 specs (144 tests) fail in all three analysed full runs, 106 specs pass in all; 8 of 14 core-journey specs fail in every run; 196 specs are per-issue probes; 20 rewrite-or-retire candidates await the owner. Follow-ups to file after approval: class F lower-level coverage audit; `frontend/e2e` helper README plus a check for helper-owned locators. Owner decisions pending: retire vs rewrite for the E? candidates; PR-smoke widening; branch protection (#1192).
+
+- 2026-10-03 — E2E audit follow-ups approved by the owner: [#1193](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1193) class F audit (analysis doc, any run other than the scoping run; after most migration children); [#1194](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1194) helper README (docs, 2a, no dependency); [#1195](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1195) ratcheted helper-use check (2a, depends on #1194, wired into `npm run lint`, no workflow edit). Suggested order: #1179, then #1190/#1191 (Codex), #1194 in parallel, migration children by shared-file batches, #1193, then #1195.
+
+### 2026-10-03 — Batch 17: public discoverability (Muse AI finding)
+
+Finding: `/gallery` returns only the SPA shell (HTTP 200, no noscript); `/robots.txt` and `/sitemap.xml` also return the shell; unknown paths return 200. `/llms.txt` and `/llms-full.txt` are already generated per request (#585) and correct. Milestone: Batch 17 (new; unrelated to the Batch 14 CI work). Goals 1-9 do not cover this; handoff Goal 10 does, after Goal 8 and the owner's #1196 decision.
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1196](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1196) | Owner decision: how the public gallery becomes crawlable (injection, prerender, or SSR) | DECIDED 2026-10-03: server-side injection + noscript | — | owner |
+| [#1197](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1197) | Crawlable public gallery: link-bearing content for /gallery without JavaScript | GROOMED | after Goal 8 (decision #1196 made) | 2b |
+| [#1198](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1198) | Public gallery: bounded loading state with timeout and retry | GROOMED | — | 2a |
+| [#1199](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1199) | Generated robots.txt | GROOMED | — | 2b |
+| [#1200](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1200) | Generated sitemap.xml of public URLs | GROOMED | — | 2b |
+| [#1201](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1201) | Unknown public URLs return 404 instead of 200 | GROOMED (verify first) | — | 2b |
+| [#1202](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1202) | Guard: description changes propagate to llms, sitemap and gallery listing | DEPENDENCY-BLOCKED | #1197, #1199, #1200 | 2a |
+| [#1203](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1203) | Crawlable collections index and art-piece gallery listings | DEPENDENCY-BLOCKED | #1197 | 2b |
+| [#1204](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1204) | llms.txt: evaluate absolute URLs instead of relative links | GROOMED (evaluation) | — | 2a |
+
+### 2026-10-03 — Batch 18: MCP extension surface (Muse AI handoff)
+
+Create-only pass; nothing implemented. Verified against the repo: no MCP code exists; `openapi.yaml` has 35 paths / 44 operations and one `sessionCookie` scheme. Discrepancies recorded in the issues: the reported anonymous `acceptAIProposal3D` is `x-access: owner` in this repo and the view 404s non-owners (#1215); `openapi.yaml`'s public surface is 2D only while `urls.py` also serves public 3D, art-piece and collection endpoints (#1212). Muse's three proposed issues are kept as trackers (#1207 to #1209) over atomic children, per the atomic-sizing rule. Milestone: Batch 18. Handoff goals 10 to 13.
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1205](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1205) | Owner decision: MCP server stack, hosting and dependency approval | DECIDED 2026-10-03: official mcp SDK in Django ASGI | — | owner |
+| [#1206](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1206) | Owner decision: OAuth 2.1 provider approach and scope model | DECIDED 2026-10-03: django-oauth-toolkit, pre-registered clients | — | owner |
+| [#1207](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1207) | MCP public read-only gallery tools (tracker) | BLOCKED | #1205 | tracker |
+| [#1208](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1208) | OAuth provider and authenticated MCP tools (tracker) | BLOCKED | #1206, #1210 | tracker |
+| [#1209](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1209) | MCP Apps gallery widget (tracker) | BLOCKED | #1207 | tracker |
+| [#1210](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1210) | MCP server scaffold with health tool | GROOMED (decision #1205 made) | — | 2b |
+| [#1211](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1211) | Public MCP tools and resources for 2D projects and templates | DEPENDENCY-BLOCKED | #1210 | 2b |
+| [#1212](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1212) | Public MCP tools for 3D, generated pieces and collections | DEPENDENCY-BLOCKED | #1210 | 2b |
+| [#1213](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1213) | MCP rate limiting and audit logging | DEPENDENCY-BLOCKED | #1210 | 2b |
+| [#1214](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1214) | Document the MCP surface (openapi.yaml, api.md, mcp.md) | GROOMED | grows with the others | 2a |
+| [#1215](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1215) | Verify the 3D accept-proposal access level | GROOMED | — | 2b |
+| [#1216](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1216) | OAuth 2.1 provider | DEPENDENCY-BLOCKED | #1206, #1210 | 2b complex |
+| [#1217](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1217) | MCP bearer auth, scopes and isolation tests | DEPENDENCY-BLOCKED | #1216 | 2b complex |
+| [#1218](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1218) | Authenticated tools: 2D projects and versions | DEPENDENCY-BLOCKED | #1217 | 2b |
+| [#1219](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1219) | Destructive tools behind a separate scope | DEPENDENCY-BLOCKED | #1217, #1218 | 2b |
+| [#1220](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1220) | Authenticated AI tools | DEPENDENCY-BLOCKED | #1217, #1218, #1215 | 2b complex |
+| [#1221](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1221) | Authenticated 3D mirror tools | DEPENDENCY-BLOCKED | #1217, #1215, #1218 | 2b |
+| [#1222](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1222) | MCP tool for piece package intake | DEPENDENCY-BLOCKED | #1217 | 2b |
+| [#1223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1223) | MCP Apps gallery and viewer widget | DEPENDENCY-BLOCKED | #1211, #1212 | 2b |
+
+- 2026-10-03 — Owner decisions: E2E audit decision A (20 E? candidates rewritten, none retired) and B (PR smoke widened): [#1224](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1224) CI: add the three offline core-journey specs to the PR smoke set (GROOMED; depends on #1179 and the PR gate green; scoped ci.yml authorization).
+
+### Proposed follow-up — Desktop shell display toggles and AI prompt overlap (#1228)
+
+| Issue | Task | Status | Depends on | Routing |
+|---|---|---|---|---|
+| [#1228](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1228) | Desktop shell display toggles obscure the unified editor AI prompt | PROPOSED | discovered by #1170; related to closed #1158 | Batch 14; 2b shell/accessibility |
+
+Found in the inspected `ai-2d-1280.png` screenshot from #1170: at 1280×900, fixed bottom-right Display settings buttons overlap the visible AI prompt textarea. The mobile behavior from #1158 is already covered; this proposed issue is limited to the desktop editor route/state.
+
+
+### 2026-10-03 — #1194 E2E support helper reference
+
+Implemented locally: `frontend/e2e/support/README.md` documents the exported support helpers/constants, current contracts and anti-patterns, legacy helper replacements, and three typechecked recipes; `docs/process.md` standard 2 links to it. The `support/` export-name audit passed across all 21 modules. `UV_CACHE_DIR=/private/tmp/codex-1190-uv-cache make check` passed (backend 2,012 passed / 44 skipped, Vitest 3,229 passed, ratchet 7 passed; frontend lint warnings are existing). No `known-failures.json` entries changed. The Linux full-matrix reconciliation still awaits the owner's dispatch/run ID.

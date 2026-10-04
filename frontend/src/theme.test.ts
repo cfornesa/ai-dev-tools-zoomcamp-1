@@ -5,8 +5,11 @@ import {
   persistThemePreference,
   readThemePreference,
   resolveThemeMode,
+  siteThemePresentation,
+  type SiteThemeTokens,
   THEME_STORAGE_KEY,
 } from './theme';
+import mappingFixture from '../../schema/fixtures/site-theme-mapping.json';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -16,6 +19,22 @@ beforeEach(() => {
 });
 
 describe('theme preference', () => {
+  it('maps site palette and presentation tokens to the shared fixture contract', () => {
+    for (const mode of ['light', 'dark'] as const) {
+      const result = siteThemePresentation(mappingFixture.siteTheme as SiteThemeTokens, mode);
+      expect(result.variables['--bg']).toBe(mappingFixture.expected[mode]['--bg']);
+      expect(result.variables['--code-bg']).toBe(mappingFixture.expected[mode]['--code-bg']);
+      expect(result.variables['--text-h']).toBe(mappingFixture.expected[mode]['--text-h']);
+      expect(result.variables['--text']).toBe(mappingFixture.expected[mode]['--text']);
+      expect(result.variables['--accent']).toBe(mappingFixture.expected[mode]['--accent']);
+    }
+    const result = siteThemePresentation(mappingFixture.siteTheme as SiteThemeTokens, 'light');
+    for (const [name, value] of Object.entries(mappingFixture.expected.presentation)) {
+      if (name.startsWith('--')) expect(result.variables[name]).toBe(value);
+      else expect(result.attributes[name as keyof typeof result.attributes]).toBe(value);
+    }
+  });
+
   it('defaults to system and applies explicit modes to the document root', () => {
     expect(readThemePreference()).toBe('system');
     expect(applyThemePreference('dark')).toBe('dark');

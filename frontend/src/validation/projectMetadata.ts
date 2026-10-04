@@ -64,3 +64,15 @@ export function validateProjectMetadataForPublish(data: ProjectMetadataForValida
 
   return errors;
 }
+
+/** Local-only projects may keep an empty description, but the placeholder
+ * title is not useful once an owner explicitly saves project details. */
+export function validateProjectMetadataForLocalSave(
+  data: ProjectMetadataForValidation,
+): FieldErrors {
+  const errors = validateProjectMetadataForPrivateSave(data);
+  if (data.title?.trim() === PLACEHOLDER_TITLE) {
+    errors.title = ['Choose a title before saving this local project.'];
+  }
+  return errors;
+}

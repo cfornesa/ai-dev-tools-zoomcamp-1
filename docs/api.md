@@ -29,6 +29,21 @@ current cloud-backup API covers structured 2D projects only; public media for
 server copy or transfer must document its state transition and consent record
 before implementation.
 
+## Owner-uploaded ambient audio (#886)
+
+Owner-uploaded ambient audio samples (`ambient_sample`, #847) have **no
+public server delivery contract**. The sample plays only in the authoring
+browser (from the existing local media asset, no new upload pipeline) and is
+bundled into the piece's downloaded ZIP export; public viewers, embeds, and
+immersive views fall back to the existing synthesized ambient voice with a
+status message. This is deliberate (owner decision, Option 1 of #886,
+reconciled by #1067) — do not add a public asset endpoint for this audio
+without a new owner-decision issue. The retired compatibility upload route
+returns `410 Gone` and does not write server data; the shared public asset
+route also rejects an ambient-sample reference while continuing to serve
+ordinary published piece media. See
+`.agents/memory/ambient-audio-export-only-delivery.md`.
+
 ## Authored per-piece sound contract (#833)
 
 Structured 2D and 3D scene documents may carry an optional `sonic` object
@@ -160,11 +175,143 @@ keep their current slug; no migration.
 
 `GET /api/projects3d/<public_id>/versions/` returns the authenticated owner's
 complete immutable `SceneVersion3D` history in ascending sequence order. The
-existing POST save contract on the same path is unchanged. Anonymous users,
+`POST` on the same path accepts `scene_json` plus optional `html_source`,
+`css_source`, and `js_source` projections. Each source is an empty string for
+legacy JSON-only versions and is limited to 100,000 UTF-8 bytes. The saved projections
+are an immutable snapshot of the human-readable HTML/CSS/JS surfaces; the
+canonical validated `scene_json` remains the renderer/runtime representation,
+and the editor synchronizes all four surfaces before creating one new version.
+Anonymous users,
 non-owners, deleted projects, and unknown ids receive the existing 404-style
 authorization boundary; the response uses the existing
-`SceneVersion3DSerializer` shape and does not expose this owner history to
-public viewers.
+`SceneVersion3DSerializer` shape, including the three source fields only on
+owner-scoped responses, and does not expose those fields through public
+viewers. Existing JSON-only versions remain readable with empty source fields.
+The migration is reversible before deployment by dropping these three additive
+columns; because that rollback discards saved source text, a deployment must
+retain a database backup/export before applying it. No public payload or
+existing JSON snapshot is changed by the migration.
+
+## Owner-only 2D project activity (#1133)
+
+`GET /api/projects/<public_id>/activity/` returns one server-backed 2D
+project's activity to its owner, including when the project is public or
+soft-deleted within its existing retention period. `public_id` is the
+project's public UUID; internal project IDs are never returned. Anonymous and
+non-owner requests receive the same `404` response as an unknown UUID.
+
+The response is `{ "results": [...], "next_cursor": <opaque string|null> }`.
+Each result contains only `id`, `action_type`, `label`, `actor_display`,
+`created_at`, and `details`. `label` is the declared action's display label;
+`actor_display` is the actor username or `null`. Details project only the
+present `sequence`, `origin`, `restored_from_sequence`, `run_id`, `scope`,
+`operation`, `change_summary`, and `reason` metadata fields. Email, actor
+IDs, internal project IDs, unknown metadata, and arbitrary metadata values
+are not exposed.
+
+Results are ordered by `created_at DESC, id DESC`. `limit` defaults to 25 and
+must be an integer from 1 through 100. A page reads at most `limit + 1`
+activity rows. `next_cursor` is an opaque continuation bound to that
+project's public UUID and the last returned row's timestamp and ID; malformed
+or cross-project cursors return `400` with `{"errors":{"cursor":["Invalid
+cursor."]}}`. Invalid limits return `400` with
+`{"errors":{"limit":["Must be an integer from 1 to 100."]}}`.
+
+This is a private owner API only. Public project responses, piece payloads,
+and piece-package serializers do not include activity. The event query is
+supported by an index on `(project_id, created_at DESC, id DESC)`. Activity
+for a soft-deleted project remains readable by its owner until the existing
+retention policy hard-purges the project and its cascading activity rows.
+
+## Owner-only structured 3D project activity (#1156)
+
+`GET /api/projects3d/<public_id>/activity/` returns the authenticated owner's
+bounded activity page for a server-backed structured 3D project. It uses the
+same result fields, metadata allowlist, ordering, page limits, and privacy-
+preserving 404 boundary documented for 2D activity above. Its opaque cursor
+is bound to both the 3D project and the 3D activity family; a 2D cursor is
+invalid on this route. Soft-deleted projects remain readable during the
+existing retention period, and hard deletion cascades their activity rows.
+
+Explicit 3D version saves record `version_saved` with only `sequence` and
+`origin`; accepted AI proposals (one-shot or Agent run) record
+`ai_proposal_accepted`, while rejecting an Agent proposal records
+`ai_proposal_rejected`. Publishing and unpublishing record one event only
+when visibility changes, with `sequence` on publish and no details on
+unpublish. Initial creation, package import, 2D-to-3D conversion, and
+AI-generated version creation do not emit a second save event. There is no
+3D version restore/delete endpoint or one-shot AI rejection endpoint, so
+those events are not applicable. Activity remains private and is absent from
+public 3D payloads, gallery/search/embed responses, piece packages, and cloud
+backup manifests.
+Migration `0112` adds the nullable 3D association, its descending activity
+index, and the exact-one-family constraint after migration `0111`. Reversing
+`0112` drops 3D activity rows while preserving all existing 2D rows, then
+restores the 2D-only schema. After deployment, follow the issue's restoration
+path and retain the nullable columns rather than rolling back stored history.
+
+## Owner-only generated ArtPiece activity (#1157)
+
+`GET /api/art-pieces/<public_id>/activity/` returns the authenticated owner's
+bounded activity page for a server-backed generated ArtPiece. It uses the
+same result fields, metadata allowlist, ordering, page limits, and
+privacy-preserving 404 boundary documented for 2D activity above. Its opaque
+cursor is bound to both the ArtPiece public UUID and the ArtPiece activity
+family; cursors from 2D or structured 3D routes are invalid here. A
+soft-deleted piece remains readable during its existing retention period, and
+hard deletion cascades its activity rows.
+
+Explicit version saves record `version_saved` with only `sequence` and
+`origin`. Actual publish and unpublish status transitions record `published`
+with `sequence`, and `unpublished` with no details; unchanged status writes no
+event. Initial creation, package import, and accepted AI refinement runs do
+not emit activity. There are no version restore/delete routes. Event metadata
+never includes prompts, source code, scene content, credentials, email, or
+internal IDs. The activity log is owner-private and is absent from public
+pages, gallery/search, embed and public API payloads, portable piece packages,
+and cloud backup manifests. Account JSON export includes it only under the
+authenticated owner's generated pieces.
+
+Migration `0113` adds a nullable ArtPiece association, descending activity
+index, and the exact-one-family constraint after `0112`. Reversing `0113`
+drops ArtPiece activity rows while preserving 2D and 3D rows, then restores
+the two-family schema.
+
+## Private project intent notes (#1138)
+
+The owner-scoped `GET /api/projects/<public_id>/` and `PATCH
+/api/projects/<public_id>/` contract includes `brief`, a private intent note
+for server-backed 2D projects. The owner may set it to a string up to 1,500
+characters or clear it with an empty string. Over-limit input returns the
+standard field validation `400`; control characters are stripped before
+storage. Existing local-only projects do not use this server field.
+
+`brief` is excluded from every public project serializer, gallery/search
+projection, embed/immersive response, piece/package export, ZIP export,
+fork, template clone, and cloud backup/sync payload. It is included in the
+owner's account JSON export and cleared when account deletion is requested.
+After a Replit Publish containing this migration, verify `brief` exists on
+the actual production `scenes_project` table (for example through
+`information_schema.columns`); `django_migrations` is not a valid success
+signal for Replit's schema-diff publish path.
+
+### Activity in the owner JSON account export (#1148)
+
+`GET /api/account/export/` adds an `activity` array to each owned 2D and
+structured 3D project. The rows use the #1133 projection: exactly `id`, `action_type`,
+`label`, `actor_display`, `created_at`, and `details`. Events are newest-first
+by `created_at DESC, id DESC`; `actor_display` is the actor username or `null`.
+`details` contains only present `sequence`, `origin`,
+`restored_from_sequence`, `run_id`, `scope`, `operation`,
+`change_summary`, and `reason` fields. The export remains owner-scoped and
+repeatable. Activity is included for soft-deleted projects during their
+existing retention period and disappears with the existing hard-purge
+cascade. This is an additive JSON export field only; it does not change the
+#945 ZIP/package export, other export sections, or existing credential
+redaction. ArtPiece activity is not included until the dependent generated-
+piece history issue is implemented.
+
+
 
 ## Art-piece ink layer (#776)
 
@@ -290,6 +437,12 @@ marked with the stable `source_id`/`reference_import` marker, preserves
 non-reference `ArtPiece` rows, and is idempotent. The owner-only browser
 refresh flow may subsequently replace a fixture raster through the same
 version-bound upload contract.
+
+Production invocations must provide an explicit repeated `--source-id`
+allowlist; the production wrapper refuses to run without
+`REFERENCE_IMPORT_SOURCE_IDS`. This prevents a bounded owner-authorized
+refresh, such as #788's two C2 fixtures, from implicitly importing the full
+six-fixture matrix.
 
 ## Share-metadata diagnostic (`#717`)
 
@@ -512,6 +665,20 @@ Existing layers and shapes must remain deep-equal. Unknown asset ids,
 multiple new layers, existing-layer changes, and image shapes without a
 submitted descriptor are rejected before the run reaches review.
 
+## AI-run project intent context (#1140)
+
+`POST /api/ai/runs/` accepts optional boolean `use_intent_notes` for a
+server-backed 2D `project`; it defaults to `true`. When enabled and
+`Project.brief` is non-empty, the run stores a bounded private snapshot and
+adds it as explicitly untrusted context to every provider attempt, including
+repair attempts. The snapshot is not included in run API responses or account
+exports and is cleared on account deletion. 3D runs ignore this option. The
+2D editor discloses the character count and offers a per-request exclusion
+toggle. The note is bounded to 1,500 characters (about 400 tokens); this
+adds no provider call and does not change quota behavior. With an empty note
+or `use_intent_notes: false`, the provider prompt and `input_digest` remain
+byte-identical to the existing behavior.
+
 ## AI-run plan evaluation and retries (#657)
 
 Each run snapshots the owner's `AIRetryPreference` at start as
@@ -531,6 +698,33 @@ Failed attempts never populate `candidate_scene` or `candidate_patch`; only a
 fully passing attempt can be accepted. Cancellation and exhausted retry
 budgets are terminal. The run quota counter is charged once for every provider
 call, including failed and automatically retried calls.
+
+## 2D AI-run acceptance and discard history (#1132)
+
+The owner may include an optional `reason` in
+`POST /api/ai/runs/<id>/accept/` or `POST /api/ai/runs/<id>/cancel/`:
+
+```json
+{"reason":"The proposal matches the intended update."}
+```
+
+The value must be a string of at most 280 Unicode code points as submitted.
+The server removes Unicode control characters (General Category `Cc`), trims
+surrounding whitespace, preserves other Unicode, and omits a normalized empty
+value. Missing, `null`, empty, or whitespace-only values are also absent. A
+non-string or overlong value returns HTTP 400 with the standard field-error
+shape; overlong values are rejected rather than truncated. Omitting `reason`
+keeps the endpoint's existing response JSON and status behavior unchanged.
+
+Successful acceptance of a 2D proposal records one `ai_proposal_accepted`
+project activity. The first explicit cancel while a 2D run is awaiting review
+records one `ai_proposal_rejected` activity. Both entries identify the
+authenticated owner and contain only `run_id`, `scope`, `operation`, a
+`change_summary` capped at 200 characters, and optional normalized `reason`.
+Running/terminal cancellation, internal cancellation/failure, failed or stale
+acceptance, and all 3D runs do not create these events. Event creation is
+atomic with the corresponding run/version transition and retries do not
+duplicate events.
 
 ## Generated art-piece refinement (#658)
 
@@ -904,6 +1098,26 @@ forward-compatible persistence. Their regular, immersive, and downloadable
 surfaces use the runtime adapters; embed and editor consumers remain
 capability-gated until their dependent contracts are implemented. Existing
 four-engine rows and identifier-based routes remain compatible.
+
+### Related published 2D pieces (#1141)
+
+`GET /api/public/projects/<public_id>/related/` returns
+`{"results": [...]}` with at most six anonymous public gallery cards for
+other eligible, published 2D projects. The source must itself be currently
+published, have a current version, and not be soft-deleted; otherwise the
+route returns the same `404` boundary as public project detail. Candidates
+come from the 200 newest eligible 2D projects (excluding the source), which
+bounds the portable Python-side scoring without database-specific JSON
+containment. A candidate qualifies when it shares at least one tag or its
+current scene uses the same renderer as the source. Results sort by shared
+tag count descending, renderer match first, publication time descending, then
+public project id descending. No match yields `{"results": []}`. Each item
+uses the unified public gallery card projection (`id`, `kind`, `title`,
+`owner`, `owner_handle`, `published_at`, `thumbnail_url`, `viewer_url`, and
+applicable engine metadata); private project fields, owner email, activity,
+drafts, intent notes, and scene data are excluded. Candidate loading uses one
+bounded query with related owner/version records preloaded, avoiding N+1
+queries.
 
 ### Public gallery search (#581)
 
@@ -1667,3 +1881,36 @@ foreign, unknown, and unsupported-kind lookups all return `404` without
 revealing whether an asset exists. Successful responses send the retained MIME
 type, `X-Content-Type-Options: nosniff`, `Cache-Control: public, immutable`,
 `Access-Control-Allow-Origin: *`, and the stored checksum.
+
+## Owner-only project continuity metrics (#1143)
+
+`GET /api/admin/continuity-metrics/` is an additive, read-only endpoint for
+application administrators. It returns only aggregate cohorts for each
+owner's first, second, and third server-backed 2D `Project`, ordered by
+`created_at` then primary key. Lifetime projects and proposal activity are
+included, including soft-deleted projects still represented in the database;
+there is no date cutoff. The response contains no user, project, prompt, or
+scene identifiers or content. The response is
+`{"cohorts":[{"project_position":1,"suppressed":true,"metrics":null}]}`.
+Each of positions 1–3 always has a cohort row. Cohorts with fewer than five
+distinct owners suppress all metric values with `suppressed: true` and
+`metrics: null`; others return `proposals_per_project`, `accepted_share`, and
+`median_time_to_accept_seconds` under `metrics`. `accepted_share` is `null`
+when that cohort has no reviewable proposals; the median is `null` when no
+project in that cohort has both required timestamps.
+
+A reviewable proposal is an `AIRun` in `awaiting_review` or `accepted`, or a
+recorded `AI_PROPOSAL_REJECTED` event for a 2D project. Provider failures and
+cancellations before review are excluded. Accepted share is accepted proposals
+divided by all reviewable proposals. Proposals per project includes projects
+with zero reviewable proposals. Median time includes only projects with both a
+first run and an accepted proposal; the duration is from the first run's
+`created_at` to the acceptance activity's `created_at`.
+
+The full-history aggregate runs on demand using existing project, run, and
+activity foreign-key indexes. PostgreSQL enforces a five-second statement
+timeout for the aggregate. If the database cancels it, the endpoint returns a
+retryable `503` and no partial or truncated metrics. No history window,
+background job, cache, or schema change is part of this contract. This
+endpoint covers structured 2D projects only; 3D and generated-piece activity
+are not included.

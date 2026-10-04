@@ -391,6 +391,25 @@ export function shapeLabel(shape: Shape, allShapes: Shape[]): string {
   return `${shapeTypeDisplayName(shape.type)} ${ordinal}`;
 }
 
+/** Builds all labels for a full shape list in one pass. The outline, Shapes
+ * list, and behavior-card target picker use this to avoid repeating the
+ * same-type scan once per shape. */
+export function shapeLabels(allShapes: Shape[]): Map<string, string> {
+  const counts = new Map<ShapeType, number>();
+  const labels = new Map<string, string>();
+  for (const shape of allShapes) {
+    const ordinal = (counts.get(shape.type) ?? 0) + 1;
+    counts.set(shape.type, ordinal);
+    const customName = typeof shape.name === 'string' ? shape.name.trim() : '';
+    if (customName.length > 0 && customName.length <= 200) {
+      labels.set(shape.id, customName);
+      continue;
+    }
+    labels.set(shape.id, `${shapeTypeDisplayName(shape.type)} ${ordinal}`);
+  }
+  return labels;
+}
+
 /**
  * Task 26: direct-manipulation geometry and mutation helpers for the
  * preview's pointer-driven move/resize/rotate handles.

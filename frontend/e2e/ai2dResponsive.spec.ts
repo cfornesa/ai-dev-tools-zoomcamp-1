@@ -1,6 +1,7 @@
 /** Issue #326: the AI-assisted 2D editor must contain its preview on phones. */
 import { expect, test } from '@playwright/test';
 
+import { createServerProjectAndOpenAIProposalPanel } from './support/aiProposal.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
@@ -19,15 +20,12 @@ test.describe('AI-assisted 2D responsive editor', () => {
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create an AI-assisted animation' }).click();
-    await page.waitForURL(/\/ai-projects\/[^/]+$/);
+    await createServerProjectAndOpenAIProposalPanel(page, '2d');
 
-    const workspace = page.locator('.ai-editor-workspace');
+    const workspace = page.locator('.editor-workspace');
     await expect(workspace).toBeVisible();
     const geometry = await page.evaluate(() => {
-      const canvas = document.querySelector('.ai-editor-workspace .piece-stage-shell > canvas');
+      const canvas = document.querySelector('[data-testid="scene-canvas"]');
       if (!(canvas instanceof HTMLElement)) return null;
       const rect = canvas.getBoundingClientRect();
       return {

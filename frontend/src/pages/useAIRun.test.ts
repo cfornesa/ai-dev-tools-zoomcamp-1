@@ -208,10 +208,10 @@ describe('useAIRun', () => {
     await waitFor(() => expect(result.current.run?.status).toBe('running'));
 
     await act(async () => {
-      await result.current.stop();
+      await result.current.stop('Choose the other direction.');
     });
 
-    expect(mockedCancel).toHaveBeenCalledWith(1);
+    expect(mockedCancel).toHaveBeenCalledWith(1, 'Choose the other direction.');
     expect(result.current.run?.status).toBe('cancelled');
     expect(window.localStorage.getItem('gesture-studio:ai-run:p1')).toBeNull();
   });
@@ -248,10 +248,11 @@ describe('useAIRun', () => {
 
     let accepted: SceneVersion | null = null;
     await act(async () => {
-      accepted = await result.current.accept();
+      accepted = await result.current.accept('Keep the new motion.');
     });
 
     expect(accepted).toEqual(version);
+    expect(mockedAccept).toHaveBeenCalledWith(1, 'Keep the new motion.');
     expect(mockedGetSceneVersion).toHaveBeenCalledWith('p1', 55);
     expect(window.localStorage.getItem('gesture-studio:ai-run:p1')).toBeNull();
   });

@@ -29,7 +29,12 @@ did not name. Do not run QA or the readiness gate, and do not close the issue.
 Read the issue's acceptance criteria, `AGENTS.md`, `CONSTRAINTS.md`,
 `docs/team/software-engineer.md`, and **every cited source-of-truth document**
 — legacy code, business-logic docs, `docs/benchmarks.md` for runtime and
-`schema/limits.json` caps — before writing anything.
+`schema/limits.json` caps — before writing anything. Read `CONVENTIONS.md`
+and the `docs/conventions/<topic>.md` page(s) the issue names in its
+Code-quality checklist — for complex-logic issues this is most often
+`docs/conventions/efficiency.md` (data-structure scale justification),
+`docs/conventions/security.md`, or `docs/conventions/python.md`'s
+env-var-discipline section.
 
 When translating existing behavior, the cited source is authoritative. Add
 focused regression coverage that asserts the criterion, and run the issue's
@@ -60,3 +65,7 @@ attempted command, the exact failure, the impact, and the next action.
 Hand the diff and its command output to stage 3 (`second-opinion-review`) if
 that stage was requested for this issue, otherwise to stage 4
 (`qa-self-review`).
+
+## Batch context
+
+This stage runs inside a `backlog-session` batch (`docs/process.md`, "Canonical batch transaction"). Before starting, read the batch manifest and the **batch impact matrix** (the rows for this issue and every other open issue that references the same files, selectors, routes, helpers, fixtures or specs). Do not undo or contradict a sibling issue's criteria. Add any newly touched shared surface to the matrix, naming the affected open issues. The unit of your deliverable is still one atomic issue; the batch only widens what you must check, not what you may change.

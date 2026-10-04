@@ -13,7 +13,13 @@ from rest_framework.views import APIView
 
 from scenes.art_piece_persistence import eligible_art_pieces, regenerate_thumbnail
 from scenes.collections import _item_record
-from scenes.gallery import eligible_collections, eligible_projects, eligible_projects3d
+from scenes.gallery import (
+    GALLERY_KIND_RANK,
+    eligible_collections,
+    eligible_projects,
+    eligible_projects3d,
+)
+from scenes.llms import public_profiles
 from scenes.models import (
     ArtPieceThumbnail,
     CollectionItem,
@@ -31,6 +37,7 @@ SHARE_IMAGE_WIDTH = 1200
 SHARE_IMAGE_HEIGHT = 630
 KINDS = frozenset({"2d", "3d", "generated"})
 DEFAULT_SHARE_IMAGE_PATH = "/favicon.svg"
+PUBLIC_GALLERY_FALLBACK_LIMIT = 24
 
 
 def _record_or_404(kind: str, public_id: str):
@@ -130,9 +137,80 @@ def _collection_image(collection) -> str:
     return candidates[0][1] if candidates else DEFAULT_SHARE_IMAGE_PATH
 
 
-def _site_metadata(path: str) -> dict[str, str | None]:
+def _gallery_fallback_items() -> list[dict[str, str]]:
+    """Return the bounded, crawlable first page using crawler privacy gates."""
+    handles = {profile.user_id: profile.handle for profile in public_profiles()}
+    candidates: list[tuple[datetime, int, int, str, str]] = []
+
+    for kind, queryset in (
+        (
+            "2d",
+            eligible_projects().filter(
+                owner__is_active=True,
+                owner__public_profile__is_public=True,
+                owner__public_profile__handle__isnull=False,
+            )[:PUBLIC_GALLERY_FALLBACK_LIMIT],
+        ),
+        (
+            "3d",
+            eligible_projects3d().filter(
+                owner__is_active=True,
+                owner__public_profile__is_public=True,
+                owner__public_profile__handle__isnull=False,
+            )[:PUBLIC_GALLERY_FALLBACK_LIMIT],
+        ),
+        (
+            "generated",
+            eligible_art_pieces().filter(
+                owner__is_active=True,
+                owner__public_profile__is_public=True,
+                owner__public_profile__handle__isnull=False,
+            )[:PUBLIC_GALLERY_FALLBACK_LIMIT],
+        ),
+    ):
+        for record in queryset:
+            published_at = record.published_at
+            if not handles.get(record.owner_id) or published_at is None:
+                continue
+            path = piece_viewer_path(record, kind)
+            candidates.append(
+                (
+                    published_at,
+                    -GALLERY_KIND_RANK[kind],
+                    record.pk,
+                    record.title,
+                    path,
+                )
+            )
+
+    for collection in eligible_collections().filter(owner__is_active=True)[
+        :PUBLIC_GALLERY_FALLBACK_LIMIT
+    ]:
+        published_at = collection.published_at
+        if not handles.get(collection.owner_id) or published_at is None:
+            continue
+        handle = handles[collection.owner_id]
+        path = f"/users/@{quote(handle, safe='@')}/collections/{quote(collection.slug, safe='-')}"
+        candidates.append(
+            (
+                published_at,
+                -GALLERY_KIND_RANK["collection"],
+                collection.pk,
+                collection.title,
+                path,
+            )
+        )
+
+    candidates.sort(key=lambda item: item[:3], reverse=True)
+    return [
+        {"title": title, "path": path}
+        for _, _, _, title, path in candidates[:PUBLIC_GALLERY_FALLBACK_LIMIT]
+    ]
+
+
+def _site_metadata(path: str, *, include_gallery: bool = False) -> dict:
     settings = SiteSettings.get_solo()
-    return {
+    metadata = {
         "kind": "site",
         "title": settings.site_title or "AugmentrART",
         "description": settings.site_description
@@ -140,6 +218,9 @@ def _site_metadata(path: str) -> dict[str, str | None]:
         "canonical_path": path,
         "image_url": DEFAULT_SHARE_IMAGE_PATH,
     }
+    if include_gallery:
+        metadata["gallery_items"] = _gallery_fallback_items()
+    return metadata
 
 
 def _profile_metadata(handle: str) -> dict[str, str | None]:
@@ -234,7 +315,9 @@ class PublicSiteShareMetadataView(APIView):
 
     def get(self, request, scope, handle=None, slug=None):
         if scope == "home":
-            return Response(_site_metadata("/"))
+            return Response(_site_metadata("/", include_gallery=True))
+        if scope == "gallery":
+            return Response(_site_metadata("/gallery", include_gallery=True))
         if scope == "profile" and handle is not None:
             return Response(_profile_metadata(handle))
         if scope == "collection" and handle is not None and slug is not None:

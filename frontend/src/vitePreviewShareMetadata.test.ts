@@ -52,6 +52,26 @@ describe('vite preview share metadata (production run path)', () => {
         response.end(JSON.stringify({ status: 'ok' }));
         return;
       }
+      if (
+        request.url === '/api/public/share-meta/site/home/' ||
+        request.url === '/api/public/share-meta/site/gallery/'
+      ) {
+        response.end(
+          JSON.stringify({
+            title: 'AugmentrART',
+            description: 'Public gallery',
+            canonical_path: request.url.includes('/gallery/') ? '/gallery' : '/',
+            image_url: '/favicon.svg',
+            gallery_items: [
+              {
+                title: '<script>Gallery injection</script> & ocean',
+                path: '/users/@artist/pieces/ocean?view=public&sort=new',
+              },
+            ],
+          }),
+        );
+        return;
+      }
       if (request.url?.startsWith('/api/public/share-meta/site/profile/')) {
         response.end(
           JSON.stringify({
@@ -129,6 +149,18 @@ describe('vite preview share metadata (production run path)', () => {
     const html = await (await fetch(`${baseUrl}/`)).text();
     expect(html).toContain('og:title');
     expect(html).toContain('https://example.test/');
+    expect(html).toContain('<noscript><section aria-label="Public gallery">');
+    expect(html).toContain(
+      '<a href="/users/@artist/pieces/ocean?view=public&amp;sort=new">&lt;script&gt;Gallery injection&lt;/script&gt; &amp; ocean</a>',
+    );
+    expect(html).not.toContain('<script>Gallery injection</script>');
+  });
+
+  it('injects canonical link-bearing gallery content into a no-JavaScript shell', async () => {
+    const html = await (await fetch(`${baseUrl}/gallery`)).text();
+    expect(html).toContain('og:url" content="https://example.test/gallery"');
+    expect(html).toContain('<noscript><section aria-label="Public gallery">');
+    expect(html).toContain('href="/users/@artist/pieces/ocean?view=public&amp;sort=new"');
   });
 
   it('injects metadata for canonical regular and immersive piece routes', async () => {

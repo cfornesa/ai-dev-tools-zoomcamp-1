@@ -94,7 +94,13 @@ def public_records(db):
 
 @pytest.mark.django_db(transaction=True)
 def test_site_profile_collection_and_home_metadata_are_public_and_canonical(public_records):
-    project, _, _ = public_records
+    project, project3d, piece = public_records
+    project.public_slug = "share-2d"
+    project.save(update_fields=["public_slug"])
+    project3d.public_slug = "share-3d"
+    project3d.save(update_fields=["public_slug"])
+    piece.public_slug = "share-generated"
+    piece.save(update_fields=["public_slug"])
     PublicProfile.objects.create(
         user=project.owner,
         handle="share-artist",
@@ -127,6 +133,20 @@ def test_site_profile_collection_and_home_metadata_are_public_and_canonical(publ
     assert home.data["title"] == "Configured Site"
     assert home.data["canonical_path"] == "/"
     assert home.data["image_url"] == "/favicon.svg"
+    assert {(item["title"], item["path"]) for item in home.data["gallery_items"]} == {
+        ('2D "share" <script>alert(1)</script>', "/users/@share-artist/pieces/share-2d"),
+        ("3D share", "/users/@share-artist/pieces/share-3d"),
+        ("Generated share", "/users/@share-artist/pieces/share-generated"),
+        (
+            'Collection <script>alert(1)</script>',
+            "/users/@share-artist/collections/featured",
+        ),
+    }
+
+    gallery = client.get("/api/public/share-meta/site/gallery/")
+    assert gallery.status_code == 200
+    assert gallery.data["canonical_path"] == "/gallery"
+    assert gallery.data["gallery_items"] == home.data["gallery_items"]
 
     profile_response = client.get("/api/public/share-meta/site/profile/share-artist/")
     assert profile_response.status_code == 200
@@ -148,6 +168,56 @@ def test_site_profile_collection_and_home_metadata_are_public_and_canonical(publ
     assert missing.status_code == 200
     assert missing.data["title"] == "Configured Site"
     assert "Artist" not in json.dumps(missing.data)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_gallery_fallback_hides_private_pieces(public_records):
+    project, _, _ = public_records
+    PublicProfile.objects.create(user=project.owner, handle="share-artist", is_public=True)
+    project.visibility = Project.Visibility.PRIVATE
+    project.save(update_fields=["visibility"])
+
+    response = APIClient().get("/api/public/share-meta/site/gallery/")
+
+    assert response.status_code == 200
+    assert all(item["title"] != project.title for item in response.data["gallery_items"])
+
+
+@pytest.mark.django_db(transaction=True)
+def test_gallery_fallback_hides_pieces_for_unlisted_profiles(public_records):
+    project, _, _ = public_records
+    PublicProfile.objects.create(user=project.owner, handle="share-artist", is_public=False)
+
+    response = APIClient().get("/api/public/share-meta/site/gallery/")
+
+    assert response.status_code == 200
+    assert response.data["gallery_items"] == []
+
+
+@pytest.mark.django_db(transaction=True)
+def test_gallery_fallback_hides_draft_generated_pieces(public_records):
+    project, _, piece = public_records
+    PublicProfile.objects.create(user=project.owner, handle="share-artist", is_public=True)
+    piece.status = ArtPiece.Status.DRAFT
+    piece.save(update_fields=["status"])
+
+    response = APIClient().get("/api/public/share-meta/site/gallery/")
+
+    assert response.status_code == 200
+    assert all(item["title"] != piece.title for item in response.data["gallery_items"])
+
+
+@pytest.mark.django_db(transaction=True)
+def test_gallery_fallback_hides_soft_deleted_pieces(public_records):
+    project, project3d, _ = public_records
+    PublicProfile.objects.create(user=project.owner, handle="share-artist", is_public=True)
+    project3d.is_deleted = True
+    project3d.save(update_fields=["is_deleted"])
+
+    response = APIClient().get("/api/public/share-meta/site/gallery/")
+
+    assert response.status_code == 200
+    assert all(item["title"] != project3d.title for item in response.data["gallery_items"])
 
 
 @pytest.mark.django_db(transaction=True)

@@ -840,6 +840,18 @@ The same metadata service provides anonymous projections for the site shell:
   public collection title, description, canonical path, and the first real
   member thumbnail when available.
 
+- `GET /api/public/share-meta/site/home/` and
+  `GET /api/public/share-meta/site/gallery/` also return a bounded
+  `gallery_items` array for no-JavaScript HTML rendering. The home response
+  uses `/` as its canonical path; the gallery response uses `/gallery`.
+  Each item contains only `title` and a canonical `path`. The list includes
+  eligible published 2D, 3D, generated-art and public collection entries
+  whose owner has an active public profile with a handle, in deterministic
+  gallery order, capped at the first 24 items. Private, unlisted-profile,
+  draft, deleted and otherwise ineligible content is omitted. The frontend
+  web server renders these links inside a `<noscript>` fallback; the React
+  gallery remains the interactive view.
+
 Missing or private profile/collection lookups receive generic site metadata;
 they never expose profile or collection fields. The Vite dev/preview server
 injects these projections into `/`, `/users/@<handle>`, and

@@ -49,13 +49,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/authoringWorkflow740.spec.ts|reference-style authoring workflow (#740) › creates, publishes, views, downloads, and refines 2D/3D pieces",
-    "issue": 1185,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/drawingPlane3d.spec.ts|drawing plane renders in 3D scenes (#779, #780, #785, #786) › threejs on the immersive route",
     "issue": 1178,
     "added": "2026-10-03",
@@ -114,13 +107,6 @@
   {
     "key": "chromium|e2e/publicGalleryEngine.spec.ts|public gallery engine filter (#564) › derives supported engines and persists the filter at 375x812",
     "issue": 1182,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/publicPieceSurfaceContract744.spec.ts|public generated-piece surface contract matrix (#744) › keeps route consumers aligned with one published current version",
-    "issue": 1185,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1

@@ -57,7 +57,16 @@ test.describe('Local project gallery cards (#1087)', () => {
       await expect(
         page.getByRole('img', { name: 'No preview available for Local card without preview' }),
       ).toBeVisible();
-      await expect(page.getByText('Last updated')).toHaveCount(3);
+      await expect(
+        page
+          .locator('article.project-card')
+          .filter({
+            has: page.getByRole('heading', {
+              name: /^(Local card with preview|Local card without preview|Local generated route)$/,
+            }),
+          })
+          .getByText('Last updated'),
+      ).toHaveCount(3);
       await expect(page.locator('html')).toHaveJSProperty('scrollWidth', viewport.width);
       await page.screenshot({
         path: testInfo.outputPath(`local-gallery-cards-${viewport.width}.png`),

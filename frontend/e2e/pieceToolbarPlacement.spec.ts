@@ -7,7 +7,7 @@ import { requireE2EFixtures } from './support/prerequisites.js';
 test.describe('regular generated-piece toolbar placement (#706)', () => {
   const e2eFixtures = requireE2EFixtures();
 
-  test('keeps controls above the stage, wraps mobile targets, and overlays only in fullscreen', async ({
+  test('overlays desktop controls and places phone controls below the artwork', async ({
     browser,
   }, testInfo) => {
     test.setTimeout(90_000);
@@ -57,29 +57,45 @@ test.describe('regular generated-piece toolbar placement (#706)', () => {
 
       const row = page.getByTestId('regular-piece-toolbar-row');
       const stage = page.getByRole('region', { name: 'Art piece stage' });
+      const iframe = page.getByTitle('Art piece preview');
       const toolbar = row.getByRole('toolbar', { name: 'Piece actions' });
       await expect(toolbar).toBeVisible();
-      await expect(page.getByTitle('Art piece preview')).toBeVisible();
+      await expect(iframe).toBeVisible();
 
       const rowBox = await row.boundingBox();
       const stageBox = await stage.boundingBox();
+      const frameBox = await iframe.boundingBox();
+      const toolbarBox = await toolbar.boundingBox();
       expect(rowBox).not.toBeNull();
       expect(stageBox).not.toBeNull();
-      expect(rowBox!.y + rowBox!.height).toBeLessThanOrEqual(stageBox!.y + 1);
+      if (!rowBox || !stageBox || !frameBox || !toolbarBox) {
+        throw new Error('The stage, iframe, toolbar row, and toolbar must have visible boxes.');
+      }
+      expect({
+        phoneBelowArtwork: viewport.label !== 'mobile' || rowBox.y >= frameBox.y + frameBox.height,
+        desktopToolbarOverlaysStage:
+          viewport.label === 'mobile' ||
+          (toolbarBox.x >= stageBox.x &&
+            toolbarBox.x + toolbarBox.width <= stageBox.x + stageBox.width &&
+            toolbarBox.y >= stageBox.y &&
+            toolbarBox.y + toolbarBox.height <= stageBox.y + stageBox.height),
+      }).toEqual({ phoneBelowArtwork: true, desktopToolbarOverlaysStage: true });
 
-      const targets = toolbar.locator('button:visible, a:visible');
+      const targets = toolbar.locator('button:visible:not(.sr-only), a:visible:not(.sr-only)');
       const targetCount = await targets.count();
-      expect(targetCount).toBe(4);
+      expect(targetCount).toBe(6);
       for (let index = 0; index < targetCount; index += 1) {
         const box = await targets.nth(index).boundingBox();
         expect(box).not.toBeNull();
-        expect(box!.height).toBeGreaterThanOrEqual(viewport.label === 'mobile' ? 44 : 40);
+        expect(Math.min(box!.width, box!.height)).toBeGreaterThanOrEqual(
+          viewport.label === 'mobile' ? 44 : 40,
+        );
       }
 
       if (viewport.label === 'mobile') {
         const toolbarBox = await toolbar.boundingBox();
         expect(toolbarBox).not.toBeNull();
-        expect(toolbarBox!.height).toBeGreaterThan(44);
+        expect(toolbarBox!.height).toBeGreaterThanOrEqual(44);
       }
 
       await page.screenshot({

@@ -56,20 +56,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/artPieceSixEngineEmbed.spec.ts|Six-engine chrome-less embeds (#615) › renders each engine in the shared embed runtime at both viewports",
-    "issue": 1175,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/artPieceSixEngineRegular.spec.ts|Six-engine regular canonical viewer (#607) › renders every engine through the slug route at both fixed viewports",
-    "issue": 1175,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/artPieceSixEngineZip.spec.ts|Six-engine offline regular and immersive bundles (#609) › extracts and renders every engine in regular and immersive presentations offline",
     "issue": 1234,
     "added": "2026-10-04",
@@ -154,13 +140,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/pieceStageSizing.spec.ts|Generated regular-piece stage sizing (#703) › keeps the canonical regular stage responsive, themed, stable, and contained",
-    "issue": 1175,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/pieceTemplateParity2d.spec.ts|2D runtime template parity (#799) › asserts online and Full ZIP controls for every 2D engine",
     "issue": 1166,
     "added": "2026-10-03",
@@ -170,13 +149,6 @@
   {
     "key": "chromium|e2e/pieceTemplateParity3d.spec.ts|3D runtime template parity (#800) › asserts online and Full ZIP controls for Three.js and A-Frame",
     "issue": 1166,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/pieceToolbarPlacement.spec.ts|regular generated-piece toolbar placement (#706) › keeps controls above the stage, wraps mobile targets, and overlays only in fullscreen",
-    "issue": 1175,
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1

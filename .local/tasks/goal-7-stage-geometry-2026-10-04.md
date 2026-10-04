@@ -13,7 +13,7 @@
 |---|---|---:|---:|---|---|---|---|---|---|---|
 | #1188 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1188 | Batch 14 | 1 | `docs/tasks.md` Goal 7 | none | Public regular phone stage CSS and drawing predicate | LOCAL PASS / QA pending | Codex / Codex / not run / pending / pending | yes (2a) | batch gate and matrix pending; Linux owner dispatch pending |
 | #1189 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1189 | Batch 14 | 1 | `docs/tasks.md` Goal 7 | #1188 | Embed route behavior and screenshots | LOCAL PASS / QA pending | Codex / Codex / not run / pending / pending | yes (2a) | batch gate and matrix pending; Linux owner dispatch pending |
-| #1175 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1175 | Batch 14 | 1 | `docs/tasks.md` Batch 14 map | #1188 and #1189 | Migrate four stage/toolbar E2E cases to owner two-tier contract | GROOMED | Codex / Codex / not run / pending / pending | yes (2b) | implement after product routes |
+| #1175 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1175 | Batch 14 | 1 | `docs/tasks.md` Batch 14 map | #1188 and #1189 | Migrate four stage/toolbar E2E cases to owner two-tier contract | LOCAL PASS / QA pending | Codex / Codex / not run / pending / pending | yes (2b) | batch gate and matrix pending; Linux owner dispatch pending |
 | #1177 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1177 | Batch 14 | 1 | `docs/tasks.md` Batch 14 map | serialize with #1188 shared CSS | Bisect 306px shell panel drift | GROOMED | Codex / Codex / not run / pending / pending | yes (2a; escalate on CSS regression) | measure cause before changing shell CSS |
 | #1178 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1178 | Batch 14 | 1 | `docs/tasks.md` Batch 14 map | after #1175 | 3D drawing-plane pixel coverage cause | GROOMED | Codex / Codex / not run / pending / pending | yes (2a) | record canvas/projection evidence; preserve threshold intent |
 | #1176 | https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1176 | Batch 14 | 1 | `docs/tasks.md` Batch 14 map | none; ordered here by owner | Export action 44px target defect | GROOMED | Codex / Codex / not run / pending / pending | yes (2a) | fix export output and unit test |
@@ -49,4 +49,13 @@
 - **Observed behavior:** at 375px the ordinary 4:3 iframe and interactive tall iframe both have the toolbar row below artwork, 44px action targets, no overlap or horizontal overflow; at 1280px both remain ratio-sized with overlay controls and no app banner. Embed sandbox attributes were not changed.
 - **Sequencing:** `artPieceSixEngineEmbed.spec.ts` is a #1175-owned baseline case and still contains the pre-migration fixed-ratio assertion for the interactive fixture. Preserve that entry here; rerun it after #1175 applies the approved two-tier expectation.
 - **Baseline:** no #1189-owned `known-failures.json` entry; the #1175 entries remain until #1175.
+- **QA matrix / batch gate:** pending until whole batch gate. Linux evidence pending owner dispatch.
+
+## #1175 evidence
+
+- **Cause / provenance:** commit `64b03f53` introduced the phone toolbar-in-flow rule and taller stage treatment before the owner refined that treatment to `c2js-interactive` only. Four baseline cases retained obsolete fixed-ratio / above-stage expectations after #1188 and #1189 implemented the current contract.
+- **Focused browser:** `E2E_BASE_URL=http://127.0.0.1:5201 E2E_FIXTURE_ENVIRONMENT=disposable-compose E2E_DOCKER_COMPOSE=true npx playwright test e2e/artPieceSixEngineRegular.spec.ts e2e/artPieceSixEngineEmbed.spec.ts e2e/pieceStageSizing.spec.ts e2e/pieceToolbarPlacement.spec.ts --project=chromium` — 4 passed, 0 failed, 0 skipped. Screenshots for mobile and desktop surfaces were inspected; regular and embed routes retain desktop overlays, phone controls below artwork, 44px targets, and interactive-only tall stage. The toolbar placement case retains exact count (now six visible controls) and target-size assertions.
+- **Static:** Prettier check passed on all four changed specs. Test and expectation call counts match base per file (tests: 1 each; expects: 12, 16, 19, 18 respectively).
+- **Baseline:** removed exactly the four #1175-owned entries from `frontend/e2e/known-failures.json`; no other entries changed.
+- **Commit:** pending.
 - **QA matrix / batch gate:** pending until whole batch gate. Linux evidence pending owner dispatch.

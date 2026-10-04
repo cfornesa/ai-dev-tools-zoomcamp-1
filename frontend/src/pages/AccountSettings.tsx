@@ -42,6 +42,7 @@ import {
 import { useAuth } from '../auth/useAuth';
 import DesignPreview from '../components/DesignPreview';
 import type { DesignPalettes, PresentationOptions } from '../api/adminSettings';
+import ConnectedMcpAppsSettings from './ConnectedMcpAppsSettings';
 
 const MIN_MAX_RETRIES = 1;
 const MAX_MAX_RETRIES = 10;
@@ -58,6 +59,7 @@ const DEFAULT_SECTION_ORDER = [
   'cloudSync',
   'profile',
   'management',
+  'connectedApps',
   'credentials',
   'models',
   'personas',
@@ -376,6 +378,14 @@ function AccountSettings() {
               </Link>
             </li>
           </ul>
+        </section>
+      ),
+    },
+    connectedApps: {
+      label: 'Connected MCP apps',
+      content: (
+        <section className="account-settings-card">
+          <ConnectedMcpAppsSettings />
         </section>
       ),
     },

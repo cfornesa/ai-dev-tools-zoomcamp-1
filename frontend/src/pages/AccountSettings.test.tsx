@@ -540,8 +540,10 @@ describe('AccountSettings', () => {
 
     await user.click(screen.getByRole('button', { name: 'Expand Automatic retry' }));
     await screen.findByRole('heading', { name: 'Automatic retry' });
-    const moveRetryUp = screen.getByRole('button', { name: 'Move Automatic retry up' });
-    for (let i = 0; i < 7; i += 1) await user.click(moveRetryUp);
+    const sectionCount = document.querySelectorAll('[data-settings-section]').length;
+    for (let i = 0; i < sectionCount - 1; i += 1) {
+      await user.click(screen.getByRole('button', { name: 'Move Automatic retry up' }));
+    }
     await user.click(screen.getAllByRole('button', { name: 'Collapse' })[0]);
 
     const order = Array.from(document.querySelectorAll('[data-settings-section]')).map((element) =>

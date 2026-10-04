@@ -122,6 +122,11 @@ from scenes.collections_api import (
     PublicCollectionDownloadView,
 )
 from scenes.continuity_metrics_api import AdminContinuityMetricsView
+from scenes.mcp.oauth_api import (
+    AccountConnectedApplicationRevokeView,
+    AccountConnectedApplicationsView,
+    AdminOAuthApplicationsView,
+)
 from scenes.pages_api import PublicPageDetailView, PublicPageNavigationView
 from scenes.piece_intake_api import PiecePackageIntakeView
 from scenes.profile_api import (
@@ -159,6 +164,21 @@ from scenes.unpublish_retention_api import (
 )
 
 urlpatterns = [
+    path(
+        'account/connected-apps/',
+        AccountConnectedApplicationsView.as_view(),
+        name='account-connected-apps',
+    ),
+    path(
+        'account/connected-apps/<int:application_id>/',
+        AccountConnectedApplicationRevokeView.as_view(),
+        name='account-connected-app-revoke',
+    ),
+    path(
+        'admin/oauth-applications/',
+        AdminOAuthApplicationsView.as_view(),
+        name='admin-oauth-applications',
+    ),
     path(
         "account/collections/cover-assets/",
         CollectionCoverAssetListView.as_view(),

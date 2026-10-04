@@ -2,7 +2,7 @@
 
 - **Branch / PR:** `docs/backlog-reevaluation-2026-09-27` / #1094.
 - **Run order:** Goals 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15. Do not run Goal 5b; do not start #1193 or #1195.
-- **Current state:** Goals 7–10 complete locally (Goal 7 #1178 remains dependency-blocked on #1235; #1213 authenticated limit/audit dimensions await OAuth in Goals 11–12). Goal 11 #1215 verification is locally complete; #1216 OAuth provider and #1217 bearer/scope layer are next. Goal 10 `make check` and batch gate passed. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
+- **Current state:** Goals 7–10 complete locally (Goal 7 #1178 remains dependency-blocked on #1235; #1213 authenticated limit/audit dimensions await OAuth in Goals 11–12). Goal 11 #1215 is complete. #1216 implementation and final full `make check` passed locally; recording its commit and QA matrix, then proceed to #1217. Goal 10 `make check` and batch gate passed. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
 - **Environment/evidence boundary:** disposable local Compose PostgreSQL and fresh Vite on `127.0.0.1:5202` → backend `127.0.0.1:8003`; Chromium local macOS, unsandboxed due MachPort startup denial inside sandbox. Linux evidence: `Linux evidence PENDING (owner dispatch)`.
 - **Provenance:** scoping from handoff/Claude issue contracts; implementation Codex / GPT-6, effort unavailable, substituted for the rostered service; independent QA/review not run. Track: mixed.
 
@@ -77,10 +77,19 @@ Goal 10 COMPLETE LOCALLY: final `UV_CACHE_DIR=/private/tmp/uv-cache-goal10 make 
 | Issue | State | Commit | QA matrix | Block / next action |
 |---|---|---|---|---|
 | #1215 | finished locally; no security finding | `3b74e528` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1215#issuecomment-5981822226) | Both 2D/3D accept routes reject anonymous/non-owner access with 404; anonymous 3D proves no mutation. API access map agrees with views. Linux evidence PENDING (owner dispatch). |
-| #1216 | not started | — | — | Use approved django-oauth-toolkit; implement PKCE S256, exact redirect matching, pre-registered admin-only clients, metadata/token/revocation and account connected-app UI; no dynamic registration. |
+| #1216 | implementation complete; commit and QA link pending | pending | pending | `make check` passed after exact-match loopback callback regression coverage; provider suite 4/4. Approved django-oauth-toolkit, PKCE S256, exact redirects, pre-registered admin-only clients, metadata/token/revocation and connected-app access; no dynamic registration. Linux evidence PENDING (owner dispatch). |
 | #1217 | not started | — | — | Depends on #1216; bearer context and scope enforcement across tools with cross-user isolation tests. |
 
-Goal 11 next: #1216, then #1217. AI entitlement/quota reuse and #1213 authenticated rate-limit/audit attribution depend on this OAuth context.
+Goal 11 next: record #1216 commit and QA matrix, then implement #1217. AI entitlement/quota reuse and #1213 authenticated rate-limit/audit attribution depend on this OAuth context.
+
+### Goal 11 impact matrix — #1216 OAuth provider (pre-implementation)
+
+| Surface | Planned change | Related issues | Required re-verification |
+|---|---|---|---|
+| `backend/backend/settings.py`, `backend/backend/urls.py`, `backend/backend/asgi.py` | Install OAuth Toolkit, add authorization/token/metadata/revocation routes and strict OAuth settings | #1217 consumes resource metadata and bearer token audience; #1218–#1222 consume scopes; #1213 adds authenticated client/user attribution and throttles | Settings checks, endpoint tests, authorization-code/PKCE/refresh/revoke flow, metadata audience, migrations, full backend suite |
+| `backend/scenes` OAuth provider/admin/account API and existing account settings frontend | Pre-registered-client management guarded by `is_application_admin`; expose and revoke the signed-in user's grants | #1217 integrates MCP bearer auth; #1219 uses separate destructive scope; #1213 audit identity | Admin denial matrix, cross-user grant isolation, account revoke takes effect next request, frontend tests |
+| `docs/api.md`, `openapi.yaml`, `docs/mcp.md`, `docs/dependencies.md` | Document OAuth contract before route changes, scopes, audience, registration policy, dependency rationale and test client setup | #1217–#1223 consume this contract | Parse OpenAPI; ensure no dynamic registration/password/implicit flow advertised |
+| `backend/pyproject.toml`, `backend/uv.lock`, OAuth additive migration | Add owner-approved `django-oauth-toolkit` and its tables | #1217–#1222; deploy schema-diff behavior | Locked install, migration consistency, disposable PostgreSQL migration/test only |
 
 ## Goal 12 — authenticated MCP tools
 

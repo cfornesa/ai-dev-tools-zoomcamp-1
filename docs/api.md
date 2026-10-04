@@ -44,6 +44,32 @@ after account deletion. Tool schemas, cursor semantics, and examples are
 maintained in [`docs/mcp.md`](mcp.md), including every tool's input schema,
 scope, example, and a tested official-SDK client connection example.
 
+## MCP OAuth authorization server (#1216)
+
+The MCP protected resource identifier is `https://<validated-request-host>/mcp` and
+advertises authorization-server metadata through RFC 9728 at
+`/.well-known/oauth-protected-resource/mcp/`; RFC 8414 metadata is available
+at the domain-root well-known authorization-server route. Clients use the
+authorization-code grant with PKCE `S256` only. Redirect URIs must exactly
+match the pre-registered application. Implicit, password, client-credentials,
+and public dynamic-registration flows are unavailable. OAuth applications
+are created only by an application administrator, using the application's
+admin authorization boundary through `POST /api/admin/oauth-applications/`
+(a same-origin session request with CSRF protection). This accepts exact
+HTTPS redirect URIs or loopback-only HTTP URIs and returns a public client ID,
+never a client secret. No dynamic-registration route is mounted.
+
+Supported scopes are `gallery:read`, `projects:write`, `ai:use`, and
+`destructive`. Consent to `destructive` is explicit and separate from the
+other scopes. `resource` must identify the MCP resource; issued tokens are
+restricted to that audience. Access tokens are short-lived and refresh tokens
+rotate. `POST /oauth/revoke_token/` revokes a token immediately. A signed-in
+user can inspect `GET /api/account/connected-apps/` and revoke their own
+application's authorization with
+`DELETE /api/account/connected-apps/{applicationId}/`; this revokes their
+grants and tokens for that application only. No client secret or token is
+returned after creation or written to logs.
+
 ## Public authorship identity (#897)
 
 Public piece, gallery, collection, profile, search, and feed projections retain

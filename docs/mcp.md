@@ -42,6 +42,36 @@ public endpoint needs no credentials:
 See [VS Code's MCP server configuration guide](https://code.visualstudio.com/docs/agent-customization/mcp-servers)
 for where to place this file and how to start the configured server.
 
+## Register an authenticated client
+
+OAuth clients are pre-registered; there is no public dynamic-registration
+endpoint. An application administrator can register a native/public client
+with the session-authenticated `POST /api/admin/oauth-applications/` endpoint
+(same-origin session cookie and CSRF header). Submit a `name` and one or more
+exact `redirect_uris`; HTTPS callbacks are accepted, plus HTTP callbacks on
+loopback hosts for native clients. The response contains the client ID and
+never returns a client secret. Do not use the toolkit's application
+registration or dynamic registration endpoints; they are not mounted.
+
+External clients discover the issuer at
+`/.well-known/oauth-authorization-server` and the protected resource at
+`/.well-known/oauth-protected-resource/mcp/`. The resource identifier is
+`https://<application-host>/mcp`. Authorization uses the existing allauth
+browser session and displays a consent page for the requested scopes. Only
+authorization code with PKCE `S256` is supported. Request the exact `resource`
+indicator above and one or more of `gallery:read`, `projects:write`, `ai:use`,
+and `destructive`; request `destructive` separately so the user can make that
+approval explicitly. Access tokens last 15 minutes; refresh tokens rotate and
+expire after 30 days of inactivity. Tokens are audience-bound to `/mcp` and
+stored hashed at rest. `POST /oauth/revoke_token/` revokes a token.
+
+Users can review the app name, approved scopes, and last authorization in the
+**Connected MCP apps** section of account settings. Revocation removes that
+user's access and refresh tokens for the selected client, effective on the
+next MCP request. It does not affect another user's authorization for the same
+pre-registered client. AI operations retain the web application's entitlement
+and quota rules.
+
 The following runnable Python example uses the official MCP SDK client. It
 initializes a session, discovers the tools, and calls the anonymous health
 tool. The same SDK client and VS Code configuration are exercised by

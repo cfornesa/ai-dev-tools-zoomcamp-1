@@ -1,5 +1,32 @@
 # Dependency and asset licenses
 
+## Django OAuth Toolkit (`django-oauth-toolkit`) (#1206/#1216)
+
+The owner approved this provider in #1206 for per-user OAuth authorization to
+the MCP resource. The package runs inside Django and does not send runtime
+requests or user data to its publisher. OAuth applications are registered in
+advance by an application administrator; public/dynamic client registration
+is deliberately disabled. The integration uses authorization code with
+PKCE S256, exact redirect URI matching, short-lived resource-audience access
+tokens, rotating refresh tokens, and the toolkit's revocation/discovery
+endpoints. The package also supplies additive authorization, grant, and token
+tables.
+
+- **What breaks if the package is abandoned or changes incompatibly:** MCP
+  OAuth discovery, authorization, token issuance/refresh, and revocation stop
+  working until the provider integration is updated; anonymous public MCP
+  reads and ordinary web-session routes remain separate.
+- **Self-hosting/rollback alternative:** maintain a fork of the provider or
+  replace its views/validator behind the documented OAuth endpoint contract;
+  hand-rolling authorization-code and token security is not an acceptable
+  rollback.
+- **Section 8 answer / approval:** the owner approved `django-oauth-toolkit`
+  including its database tables in #1206 on 2026-10-03, specified
+  pre-registered clients only, and directed this issue to add it with
+  `uv add django-oauth-toolkit`.
+- **Version:** locked by `uv add` to a release compatible with this project's
+  Django and Python versions; verify the resolved version in `backend/uv.lock`.
+
 ## Official Model Context Protocol Python SDK (`mcp`) (#1205)
 
 The owner approved the official `mcp` Python SDK in issue #1205 for the

@@ -2,7 +2,7 @@
 
 - **Branch / PR:** `docs/backlog-reevaluation-2026-09-27` / #1094.
 - **Run order:** Goals 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15. Do not run Goal 5b; do not start #1193 or #1195.
-- **Current state:** Goals 7–10 complete locally (Goal 7 #1178 remains dependency-blocked on #1235; #1213 authenticated limit/audit dimensions await OAuth in Goals 11–12). Goal 11 #1215 is complete. #1216 implementation and final full `make check` passed locally; recording its commit and QA matrix, then proceed to #1217. Goal 10 `make check` and batch gate passed. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
+- **Current state:** Goals 7–10 complete locally (Goal 7 #1178 remains dependency-blocked on #1235; #1213 authenticated limit/audit dimensions await OAuth in Goals 11–12). Goal 11 #1215 and #1216 are complete locally; #1216 commit `a14fba3e` and its QA matrix are recorded. Proceed to #1217 bearer authentication, scope enforcement and tool cross-user isolation. Goal 10 `make check` and batch gate passed. Stage 0 branch check passed: expected branch; handoff commit `0d1a2942` is in branch history; branch is ahead of origin. Do not push until goals are finished/blocked and their `make check`/PR-check conditions are met.
 - **Environment/evidence boundary:** disposable local Compose PostgreSQL and fresh Vite on `127.0.0.1:5202` → backend `127.0.0.1:8003`; Chromium local macOS, unsandboxed due MachPort startup denial inside sandbox. Linux evidence: `Linux evidence PENDING (owner dispatch)`.
 - **Provenance:** scoping from handoff/Claude issue contracts; implementation Codex / GPT-6, effort unavailable, substituted for the rostered service; independent QA/review not run. Track: mixed.
 
@@ -77,10 +77,10 @@ Goal 10 COMPLETE LOCALLY: final `UV_CACHE_DIR=/private/tmp/uv-cache-goal10 make 
 | Issue | State | Commit | QA matrix | Block / next action |
 |---|---|---|---|---|
 | #1215 | finished locally; no security finding | `3b74e528` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1215#issuecomment-5981822226) | Both 2D/3D accept routes reject anonymous/non-owner access with 404; anonymous 3D proves no mutation. API access map agrees with views. Linux evidence PENDING (owner dispatch). |
-| #1216 | implementation complete; commit and QA link pending | pending | pending | `make check` passed after exact-match loopback callback regression coverage; provider suite 4/4. Approved django-oauth-toolkit, PKCE S256, exact redirects, pre-registered admin-only clients, metadata/token/revocation and connected-app access; no dynamic registration. Linux evidence PENDING (owner dispatch). |
-| #1217 | not started | — | — | Depends on #1216; bearer context and scope enforcement across tools with cross-user isolation tests. |
+| #1216 | finished locally | `a14fba3e` | [QA](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1216#issuecomment-5982341408) | `make check` passed after exact-match loopback callback regression coverage; provider suite 4/4. Approved django-oauth-toolkit, PKCE S256, exact redirects, pre-registered admin-only clients, metadata/token/revocation and connected-app access; no dynamic registration. Linux evidence PENDING (owner dispatch). |
+| #1217 | in progress | — | — | Depends on #1216; add bearer context, per-tool scope enforcement and cross-user isolation across every tool; reject missing/expired/wrong-audience/under-scoped tokens and ignore session cookies. |
 
-Goal 11 next: record #1216 commit and QA matrix, then implement #1217. AI entitlement/quota reuse and #1213 authenticated rate-limit/audit attribution depend on this OAuth context.
+Goal 11 next: implement #1217. AI entitlement/quota reuse and #1213 authenticated rate-limit/audit attribution depend on this OAuth context.
 
 ### Goal 11 impact matrix — #1216 OAuth provider (pre-implementation)
 

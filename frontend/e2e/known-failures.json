@@ -21,6 +21,13 @@
     "count": 1
   },
   {
+    "key": "chromium|e2e/aiAndRecovery.spec.ts|Local and server draft autosave › local debounce, periodic server-sync cadence, and page-hide keepalive all fire on schedule",
+    "issue": 1232,
+    "added": "2026-10-04",
+    "expires": "2026-10-25",
+    "count": 1
+  },
+  {
     "key": "chromium|e2e/aiRegionTargetExisting.spec.ts|existing generated-piece targeting (#921) › targets one existing region at 375px",
     "issue": 1171,
     "added": "2026-10-03",

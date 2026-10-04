@@ -91,13 +91,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) › a published 3D project: signed-out and non-owner visitors cannot access the owner editor from legacy routes, at both viewports",
-    "issue": 1180,
-    "added": "2026-10-03",
-    "expires": "2026-10-10",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/authoringWorkflow740.spec.ts|reference-style authoring workflow (#740) › creates, publishes, views, downloads, and refines 2D/3D pieces",
     "issue": 1185,
     "added": "2026-10-03",

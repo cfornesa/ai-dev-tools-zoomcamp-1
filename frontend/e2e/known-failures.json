@@ -84,20 +84,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/publicGalleryEngine.spec.ts|public gallery engine filter (#564) › derives supported engines and persists the filter at 1280x812",
-    "issue": 1182,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
-    "key": "chromium|e2e/publicGalleryEngine.spec.ts|public gallery engine filter (#564) › derives supported engines and persists the filter at 375x812",
-    "issue": 1182,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/publicProfiles.spec.ts|Public profiles (#520) › owner publishes profile metadata and only its public profile route is visible",
     "issue": 1230,
     "added": "2026-10-03",

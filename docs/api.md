@@ -25,7 +25,8 @@ with tool, timestamp, optional registered client/user, outcome, and duration;
 tool arguments, tokens, and secrets are excluded. Audit rows for a user are
 included in that user's account export and retained against the anonymized row
 after account deletion. Tool schemas, cursor semantics, and examples are
-maintained in `docs/mcp.md`.
+maintained in [`docs/mcp.md`](mcp.md), including every tool's input schema,
+scope, example, and a tested official-SDK client connection example.
 
 ## Public authorship identity (#897)
 

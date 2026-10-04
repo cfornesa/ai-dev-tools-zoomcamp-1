@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "creatrweb-public": {
+      "type": "http",
+      "url": "https://<application-host>/mcp/"
+    }
+  }
+}

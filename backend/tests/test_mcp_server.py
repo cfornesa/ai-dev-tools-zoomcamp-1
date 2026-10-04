@@ -77,6 +77,11 @@ MINIMAL_SCENE_3D = json.loads(
 @pytest.mark.django_db(transaction=True)
 def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
     cache.clear()
+    repo_root = Path(__file__).resolve().parents[2]
+    vscode_config = json.loads((repo_root / "docs/examples/mcp.json").read_text())
+    configured_url = vscode_config["servers"]["creatrweb-public"]["url"]
+    mcp_docs = (repo_root / "docs/mcp.md").read_text()
+    assert vscode_config["servers"]["creatrweb-public"]["type"] == "http"
 
     async def exercise_client() -> None:
         test_application = create_mcp_asgi_app(application.django_app)
@@ -92,9 +97,14 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                     "x-forwarded-for": "203.0.113.5",
                 },
             ) as http_client:
-                async with streamable_http_client(
-                    "http://localhost:8000/mcp/", http_client=http_client
-                ) as (read_stream, write_stream, _):
+                client_url = configured_url.replace(
+                    "https://<application-host>", "http://localhost:8000"
+                )
+                async with streamable_http_client(client_url, http_client=http_client) as (
+                    read_stream,
+                    write_stream,
+                    _,
+                ):
                     async with ClientSession(read_stream, write_stream) as client:
                         await client.initialize()
                         listing = await client.list_tools()
@@ -112,6 +122,15 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "get_public_collection",
                             "search_public",
                         }
+                        for tool in listing.tools:
+                            row = next(
+                                line
+                                for line in mcp_docs.splitlines()
+                                if line.startswith(f"| `{tool.name}` |")
+                            )
+                            assert all(
+                                prop in row for prop in tool.inputSchema.get("properties", {})
+                            )
                         gallery_tool = next(
                             tool for tool in listing.tools if tool.name == "list_public_gallery"
                         )

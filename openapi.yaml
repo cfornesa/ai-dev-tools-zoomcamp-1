@@ -120,7 +120,9 @@ paths:
         code -32029 with `retry_after_seconds` in error data. Each tool call
         receives one payload-free audit row with a keyed client IP fingerprint.
         `X-Forwarded-For` is honored only when the immediate peer is loopback;
-        raw client IPs are never stored.
+        raw client IPs are never stored. Client and user IDs are absent for
+        this anonymous-only release. See `docs/mcp.md` for every tool schema,
+        example, client setup, and resource URI.
       x-access: anonymous
       security: []
       requestBody:
@@ -207,42 +209,6 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HealthResponse" }
-
-  /mcp/:
-    post:
-      tags: [MCP]
-      operationId: mcpStreamableHttp
-      summary: Model Context Protocol Streamable HTTP endpoint
-      description: |
-        Anonymous, stateless JSON-response MCP transport. This initial
-        release exposes only the `health_check` tool, which delegates to
-        `GET /health/`. Session cookies are ignored. Requests with invalid
-        Origin/Host, unsupported method/path, or bodies larger than 256 KiB
-        are rejected. See `docs/mcp.md` for the MCP tool schema.
-      x-access: anonymous
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              description: MCP JSON-RPC request envelope.
-              additionalProperties: true
-      responses:
-        "200":
-          description: MCP JSON-RPC response.
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
-        "400": { description: Malformed MCP request. }
-        "403": { description: Request Origin is not permitted. }
-        "404": { description: Unknown MCP route. }
-        "405": { description: HTTP method is not supported. }
-        "413": { description: MCP request body exceeds the transport limit. }
-        "421": { description: Request Host is not permitted. }
 
   /api/whoami/:
     get:

@@ -1,0 +1,117 @@
+# Public MCP server
+
+`POST /mcp/` exposes the public, read-only Model Context Protocol surface over
+Streamable HTTP. The endpoint is stateless and returns JSON responses. No
+session cookie, bearer token, or OAuth scope is required. The MCP tools call
+the same public selectors and serializers as the corresponding REST APIs;
+private, unlisted, draft, soft-deleted, or otherwise ineligible content is
+not made public by MCP.
+
+The request body limit is 256 KiB. The transport validates `Origin` and
+`Host`; unsupported methods and paths are rejected. Anonymous tool calls are
+limited to 60 calls per client IP per 60-second fixed window. A rate-limit
+failure is an MCP tool error with JSON-RPC code `-32029` and
+`retry_after_seconds` in the error data. The preview proxy forwards the
+client address, and Django honors `X-Forwarded-For` only when the immediate
+peer is loopback. Audit records contain timestamp, tool, optional client and
+user IDs, outcome, duration, and a keyed one-way IP fingerprint; arguments,
+results, tokens, secrets, and raw IP addresses are not stored. User audit
+records appear in account export and remain attached to the anonymized user
+row after deletion. Client and user IDs are currently absent because this
+release has only anonymous tools; authenticated attribution is added with the
+OAuth work in Goals 11–12.
+
+## Connect a client
+
+For Visual Studio Code, copy [`docs/examples/mcp.json`](examples/mcp.json) to
+`.vscode/mcp.json` and replace `<application-host>` with the application host.
+This configuration uses VS Code's documented remote HTTP server shape. The
+public endpoint needs no credentials:
+
+```json
+{
+  "servers": {
+    "creatrweb-public": {
+      "type": "http",
+      "url": "https://<application-host>/mcp/"
+    }
+  }
+}
+```
+
+See [VS Code's MCP server configuration guide](https://code.visualstudio.com/docs/agent-customization/mcp-servers)
+for where to place this file and how to start the configured server.
+
+The following runnable Python example uses the official MCP SDK client. It
+initializes a session, discovers the tools, and calls the anonymous health
+tool. The same SDK client and VS Code configuration are exercised by
+`backend/tests/test_mcp_server.py` against the Django ASGI application.
+
+```python
+import asyncio
+
+import httpx
+from mcp.client.session import ClientSession
+from mcp.client.streamable_http import streamable_http_client
+
+
+async def main():
+    async with httpx.AsyncClient() as http_client:
+        async with streamable_http_client(
+            "https://<application-host>/mcp/", http_client=http_client
+        ) as (read_stream, write_stream, _):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                tools = await session.list_tools()
+                print([tool.name for tool in tools.tools])
+                health = await session.call_tool("health_check")
+                print(health.structuredContent)
+
+
+asyncio.run(main())
+```
+
+The client should retry a rate-limited tool call only after the reported
+`retry_after_seconds`. No `Authorization` or `Cookie` header is needed or
+used by the current public tool set.
+
+## Tools
+
+All 12 tools are anonymous and read-only. Every tool uses the same public
+eligibility rules as its REST counterpart; a missing or ineligible individual
+resource returns not found. MCP schemas below list the SDK input properties;
+optional properties may be omitted.
+
+| Tool | Input schema | Example call | Result |
+|---|---|---|---|
+| `health_check` | `{}` | `health_check()` | Safe database/cache status without connection details. |
+| `list_public_gallery` | `cursor?: string \| null`, `page_size?: integer` (default 24, clamped 1–60) | `list_public_gallery({"page_size": 10})` | One newest-first page of the legacy public 2D/3D project gallery, `next_cursor`, and `has_more`. |
+| `get_public_project` | `project_id: string` | `get_public_project({"project_id": "<public-uuid>"})` | Full public 2D project payload. |
+| `get_public_thumbnail` | `project_id: string` | `get_public_thumbnail({"project_id": "<public-uuid>"})` | Current thumbnail as MCP image content. |
+| `list_templates` | `{}` | `list_templates()` | Built-in templates visible to anonymous users. |
+| `get_published_asset` | `project_id: string`, `asset_id: string` | `get_published_asset({"project_id": "<public-uuid>", "asset_id": "<asset-uuid>"})` | Public retained asset as base64, media type, and checksum. |
+| `list_public_pieces` | `gallery_type?: string` (default `all`; `all`, `authored`, `pieces`, `collections`, `generated`), `engine?: string \| null`, `cursor?: string \| null`, `page_size?: integer` (default 24, clamped 1–60) | `list_public_pieces({"gallery_type": "generated", "page_size": 12})` | Unified public 2D/3D/generated/collection cards as selected, cursor metadata, and engine catalog. Cursor must be reused with the same gallery type. |
+| `get_public_3d_project` | `project_id: string` | `get_public_3d_project({"project_id": "<public-uuid>"})` | Public 3D project and public scene data. |
+| `get_public_art_piece` | `piece_id: string` | `get_public_art_piece({"piece_id": "<public-uuid>"})` | Metadata and current public version of a published generated piece. |
+| `list_public_collections` | `sort?: string` (default `newest`; `newest`, `oldest`, `item_count`), `cursor?: string \| null`, `page_size?: integer` (default 24, clamped 1–60) | `list_public_collections({"sort": "item_count"})` | One bounded page of active public collections and cursor metadata. Reuse a cursor with the same sort. |
+| `get_public_collection` | `handle: string`, `slug: string` | `get_public_collection({"handle": "<public-handle>", "slug": "<collection-slug>"})` | Active published collection detail. |
+| `search_public` | `query: string`, `scope?: string` (default `content`; `content` or `accounts`) | `search_public({"query": "landscape", "scope": "content"})` | Up to 50 eligible public content or public-account results. Query is limited to 100 characters. |
+
+Page sizes are clamped to 1–60. Gallery cursors are opaque, may expire, and
+are scoped to their corresponding gallery type or collection sort. Search
+returns an empty result for an empty query and rejects a query longer than 100
+characters or an unsupported scope.
+
+## Resources
+
+| URI | Content |
+|---|---|
+| `gallery://public` | First bounded page of the public legacy 2D project gallery. |
+| `project://{project_id}` | Public 2D project by UUID; private and missing projects are not found. |
+
+## Related contracts
+
+- [`docs/api.md`](api.md) records the `/mcp/` transport, privacy, throttling,
+  audit, and account-lifecycle contract.
+- [`openapi.yaml`](../openapi.yaml) documents the HTTP endpoint. MCP tool and
+  resource schemas are discovered through the MCP protocol.

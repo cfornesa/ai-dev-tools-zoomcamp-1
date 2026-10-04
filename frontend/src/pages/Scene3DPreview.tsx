@@ -1899,73 +1899,73 @@ function ThreeScenePreview({
           gestureGuide={showGestureControl ? <HandGestureGuideDialog /> : undefined}
           editorControls={editorControls}
         />
-        {flyControls && (
-          <div className="scene3d-touch-dpad" role="region" aria-label="Immersive touch navigation">
-            <div className="scene3d-touch-dpad-directions" aria-label="Move through piece">
-              {(
-                [
-                  ['ArrowUp', 'Move forward', '↑'],
-                  ['ArrowLeft', 'Move left', '←'],
-                  ['ArrowDown', 'Move backward', '↓'],
-                  ['ArrowRight', 'Move right', '→'],
-                ] as const
-              ).map(([key, label, glyph]) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-label={label}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    dispatchFlyKey(key, 'keydown');
-                  }}
-                  onPointerUp={() => releaseFlyKey(key)}
-                  onPointerCancel={() => releaseFlyKey(key)}
-                  onPointerLeave={() => releaseFlyKey(key)}
-                  onClick={(event) => {
-                    // Native button keyboard activation emits click with no
-                    // pointer detail. Pointer clicks already use the held
-                    // press/release handlers above, so avoid dispatching the
-                    // travel key twice for those clicks.
-                    if (event.detail !== 0) return;
-                    dispatchFlyKey(key, 'keydown');
-                    releaseFlyKey(key);
-                  }}
-                >
-                  {glyph}
-                </button>
-              ))}
-            </div>
-            <div className="scene3d-touch-dpad-zoom" aria-label="Zoom view">
-              {(
-                [
-                  ['ZoomIn', 'Zoom in', '+'],
-                  ['ZoomOut', 'Zoom out', '−'],
-                ] as const
-              ).map(([key, label, glyph]) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-label={label}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    dispatchFlyKey(key, 'keydown');
-                  }}
-                  onPointerUp={() => releaseFlyKey(key)}
-                  onPointerCancel={() => releaseFlyKey(key)}
-                  onPointerLeave={() => releaseFlyKey(key)}
-                  onClick={(event) => {
-                    if (event.detail !== 0) return;
-                    dispatchFlyKey(key, 'keydown');
-                    releaseFlyKey(key);
-                  }}
-                >
-                  {glyph}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+      {flyControls && (
+        <div className="scene3d-touch-dpad" role="region" aria-label="Immersive touch navigation">
+          <div className="scene3d-touch-dpad-directions" aria-label="Move through piece">
+            {(
+              [
+                ['ArrowUp', 'Move forward', '↑'],
+                ['ArrowLeft', 'Move left', '←'],
+                ['ArrowDown', 'Move backward', '↓'],
+                ['ArrowRight', 'Move right', '→'],
+              ] as const
+            ).map(([key, label, glyph]) => (
+              <button
+                key={key}
+                type="button"
+                aria-label={label}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  dispatchFlyKey(key, 'keydown');
+                }}
+                onPointerUp={() => releaseFlyKey(key)}
+                onPointerCancel={() => releaseFlyKey(key)}
+                onPointerLeave={() => releaseFlyKey(key)}
+                onClick={(event) => {
+                  // Native button keyboard activation emits click with no
+                  // pointer detail. Pointer clicks already use the held
+                  // press/release handlers above, so avoid dispatching the
+                  // travel key twice for those clicks.
+                  if (event.detail !== 0) return;
+                  dispatchFlyKey(key, 'keydown');
+                  releaseFlyKey(key);
+                }}
+              >
+                {glyph}
+              </button>
+            ))}
+          </div>
+          <div className="scene3d-touch-dpad-zoom" aria-label="Zoom view">
+            {(
+              [
+                ['ZoomIn', 'Zoom in', '+'],
+                ['ZoomOut', 'Zoom out', '−'],
+              ] as const
+            ).map(([key, label, glyph]) => (
+              <button
+                key={key}
+                type="button"
+                aria-label={label}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  dispatchFlyKey(key, 'keydown');
+                }}
+                onPointerUp={() => releaseFlyKey(key)}
+                onPointerCancel={() => releaseFlyKey(key)}
+                onPointerLeave={() => releaseFlyKey(key)}
+                onClick={(event) => {
+                  if (event.detail !== 0) return;
+                  dispatchFlyKey(key, 'keydown');
+                  releaseFlyKey(key);
+                }}
+              >
+                {glyph}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {screenshotError && (
         <p role="alert" aria-live="assertive" data-testid="screenshot-error">
           {screenshotError}

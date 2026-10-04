@@ -162,6 +162,48 @@ test.describe('drawing plane renders in 3D scenes (#779, #780, #785, #786)', () 
                   .locator('canvas.a-canvas');
           await expect(canvas).toBeVisible({ timeout: 30_000 });
           await page.waitForTimeout(2500);
+          if (route === 'immersive') {
+            const geometry = await page.evaluate(() => {
+              const frame = document.querySelector('[data-testid="scene3d-preview-canvas-frame"]')!;
+              const controls = document.querySelector('.scene3d-touch-dpad')!;
+              const panel = controls.closest('[data-panel="preview"]')!;
+              const frameBounds = frame.getBoundingClientRect();
+              const controlsBounds = controls.getBoundingClientRect();
+              const panelBounds = panel.getBoundingClientRect();
+              const centre = {
+                x: frameBounds.x + frameBounds.width / 2,
+                y: frameBounds.y + frameBounds.height / 2,
+              };
+              return {
+                frame: {
+                  x: frameBounds.x,
+                  y: frameBounds.y,
+                  width: frameBounds.width,
+                  height: frameBounds.height,
+                },
+                controls: {
+                  x: controlsBounds.x,
+                  y: controlsBounds.y,
+                  width: controlsBounds.width,
+                  height: controlsBounds.height,
+                },
+                panelBottom: panelBounds.bottom,
+                centre,
+                overlaps:
+                  centre.x >= controlsBounds.x &&
+                  centre.x <= controlsBounds.right &&
+                  centre.y >= controlsBounds.y &&
+                  centre.y <= controlsBounds.bottom,
+              };
+            });
+            expect(geometry.overlaps).toBe(false);
+            expect(geometry.controls.y + geometry.controls.height).toBeLessThanOrEqual(
+              geometry.panelBottom + 1,
+            );
+            const controls = page.getByRole('region', { name: 'Immersive touch navigation' });
+            await expect(controls.getByRole('button')).toHaveCount(6);
+            await expect(controls).toBeVisible();
+          }
           const pixels = await readPixels(page, canvas);
           // Centre is inside the green rectangle: green dominates.
           expect(pixels.centre[1]).toBeGreaterThan(pixels.centre[0] + 50);
@@ -171,6 +213,41 @@ test.describe('drawing plane renders in 3D scenes (#779, #780, #785, #786)', () 
           await page.screenshot({
             path: testInfo.outputPath(`drawing-${engine}-${route}-${viewport.width}.png`),
           });
+          if (route === 'immersive') {
+            const controls = page.getByRole('region', { name: 'Immersive touch navigation' });
+            const moveForward = controls.getByRole('button', { name: 'Move forward' });
+            await page.evaluate(() => {
+              const testWindow = window as typeof window & { __flyKeyEvents?: string[] };
+              testWindow.__flyKeyEvents = [];
+              window.addEventListener('keydown', (event) => {
+                if (event instanceof KeyboardEvent && event.key === 'ArrowUp') {
+                  testWindow.__flyKeyEvents?.push('keydown');
+                }
+              });
+              window.addEventListener('keyup', (event) => {
+                if (event instanceof KeyboardEvent && event.key === 'ArrowUp') {
+                  testWindow.__flyKeyEvents?.push('keyup');
+                }
+              });
+            });
+            await moveForward.click();
+            await expect
+              .poll(() =>
+                page.evaluate(
+                  () => (window as typeof window & { __flyKeyEvents?: string[] }).__flyKeyEvents,
+                ),
+              )
+              .toEqual(['keydown', 'keyup']);
+            await moveForward.focus();
+            await page.keyboard.press('Enter');
+            await expect
+              .poll(() =>
+                page.evaluate(
+                  () => (window as typeof window & { __flyKeyEvents?: string[] }).__flyKeyEvents,
+                ),
+              )
+              .toEqual(['keydown', 'keyup', 'keydown', 'keyup']);
+          }
         }
       });
     }

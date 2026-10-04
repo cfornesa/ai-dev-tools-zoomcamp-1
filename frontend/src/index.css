@@ -7470,6 +7470,23 @@ select.ai-proposal-field-full-width {
   line-height: 1;
 }
 
+@media (max-width: 600px) {
+  .immersive-project3d-viewer:not(.immersive-project3d-viewer--embed)
+    > [data-panel='preview']:has(.scene3d-touch-dpad) {
+    display: block;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .scene3d-preview:has(.scene3d-touch-dpad) .scene3d-touch-dpad {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    width: max-content;
+    margin: 0.75rem 0 0;
+  }
+}
+
 .scene3d-touch-dpad-directions button:first-child {
   grid-column: 2;
 }

@@ -26,7 +26,8 @@ Required order: #1171, #1185, #1186, #1181, #1182, #1183. Capture first-failure 
 
 | Issue | State | Commit | QA matrix | Blocker / next action |
 |---|---|---|---|---|
-| #1171 | test-side failures cleared; one product-owned case remains | `bc730877` | [QA matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1171#issuecomment-5979623221) | Focused local union: 13 passed / 1 failed; sole failure is AI refinement's saved version not receiving a captured thumbnail. New #1236 is in Batch 14 and owns it; baseline entry moved to #1236. Linux evidence pending owner dispatch. Next: #1185 |
+| #1171 | test-side failures cleared; one product-owned case remains | `bc730877` | [QA matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1171#issuecomment-5979623221) | Focused local union: 13 passed / 1 failed; sole failure is AI refinement's saved version not receiving a captured thumbnail. New #1236 is in Batch 14 and owns it; baseline entry moved to #1236. Linux evidence pending owner dispatch. Next after #1185: #1186 |
+| #1185 | test-side hidden-panel cause corrected locally; Linux cause/duration evidence pending | `028e3e9b` | [QA matrix](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1185#issuecomment-5979684768) | Focused local run: 6/6 passed; removed two #1185 baseline rows (the layers row was previously removed in `053d5c54`). The #740 trace first showed collapsed compact tools and description panel; revision panel also required explicit opening. Local run did not reproduce ECONNRESET; two-run Linux classification and passing-step duration remain pending owner dispatch. Next: #1186 |
 
 ## Goal 9 — public discoverability
 

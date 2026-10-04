@@ -20,15 +20,14 @@ not reflected in this repository's code or OpenAPI contract.
 
 `POST /mcp/` is the OAuth-protected Model Context Protocol Streamable HTTP
 endpoint. Every request requires a valid `Authorization: Bearer` access token;
-browser session cookies are ignored. It exposes read-only `health_check`, `whoami`, `list_public_gallery`,
-`get_public_project`, `get_public_thumbnail`, `list_templates`, and
-`get_published_asset`, `list_public_pieces`, `get_public_3d_project`,
-`get_public_art_piece`, `list_public_collections`, `get_public_collection`,
-and `search_public` tools, plus `gallery://public` and
-`project://{project_id}` resources. Public project and template values use the
-same serializers and eligibility gates as their REST endpoints; the legacy
-public-project gallery retains its REST-defined 2D/3D card mix. All current
-public content tools and resources require `gallery:read`; `health_check` and
+browser session cookies are ignored. It exposes authenticated health/identity
+tools, public read tools, owner 2D project/version tools, and
+`gallery://public` / `project://{project_id}` resources. Public project and
+template values use the same serializers and eligibility gates as their REST
+endpoints; the legacy public-project gallery retains its REST-defined 2D/3D
+card mix. Public content tools and resources require `gallery:read`; owner
+project/version tools require `projects:write` (including reads, so
+`gallery:read` alone never grants private-project access). `health_check` and
 `whoami` require authentication but no additional scope. Thumbnails use MCP
 image content; published-asset results contain the REST response bytes encoded
 as base64 with media type and checksum. The endpoint uses stateless JSON
@@ -49,6 +48,21 @@ included in that user's account export and retained against the anonymized row
 after account deletion. Tool schemas, required scopes, cursor semantics, and examples are
 maintained in [`docs/mcp.md`](mcp.md), including every tool's input schema,
 scope, example, and a tested official-SDK client connection example.
+
+The authenticated 2D project/version tools mirror these REST operations:
+`list_my_projects` (`GET /api/projects/`), `create_project` (`POST
+/api/projects/`), `create_blank_project` (`POST /api/projects/blank/`),
+`get_project` (`GET /api/projects/{projectId}/`),
+`update_project_metadata` (`PATCH /api/projects/{projectId}/`),
+`publish_project` / `unpublish_project`, `fork_project` (`POST
+/api/public/projects/{projectId}/fork/`), `clone_template` (`POST
+/api/templates/{templateId}/clone/`), `list_versions` / `save_version`
+(`GET`/`POST /api/projects/{projectId}/versions/`), `get_version`,
+`restore_version`, and `save_version_as_template`. MCP tool errors retain the
+REST HTTP status and response body in structured error data; private or
+owner-only project/version/template operations retain the REST endpoint's
+not-found boundary for foreign or unknown resources; public project reads keep
+the REST visibility policy.
 
 ## MCP OAuth authorization server (#1216)
 

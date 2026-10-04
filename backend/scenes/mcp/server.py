@@ -46,6 +46,7 @@ from scenes.gallery import (
     filter_after_gallery_cursor,
 )
 from scenes.mcp.oauth import MCPPrincipal, authenticate_mcp_access_token
+from scenes.mcp.project_tools import register_project_tools
 from scenes.models import (
     ArtPiece,
     Collection,
@@ -845,6 +846,9 @@ async def public_gallery_resource() -> dict[str, Any]:
 async def public_project_resource(project_id: str) -> dict[str, Any]:
     _require_current_scopes(("gallery:read",))
     return await sync_to_async(_public_project, thread_sensitive=True)(project_id)
+
+
+register_project_tools(server, _audited_tool, _require_current_scopes)
 
 
 class DjangoMCPApplication:

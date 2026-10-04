@@ -148,6 +148,15 @@ def _call_mcp_tool(token_value, tool_name, arguments=None, *, client_ip="203.0.1
     return _call_mcp_tools(token_value, [(tool_name, arguments or {})], client_ip=client_ip)[0]
 
 
+def _mcp_result_payload(result):
+    assert result.isError is not True
+    if result.structuredContent is not None:
+        structured = result.structuredContent
+        return structured["result"] if set(structured) == {"result"} else structured
+    text_content = next(block.text for block in result.content if isinstance(block, TextContent))
+    return json.loads(text_content)
+
+
 @pytest.mark.django_db(transaction=True)
 def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
     cache.clear()
@@ -199,6 +208,20 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
                             "list_public_collections",
                             "get_public_collection",
                             "search_public",
+                            "list_my_projects",
+                            "create_project",
+                            "create_blank_project",
+                            "get_project",
+                            "update_project_metadata",
+                            "publish_project",
+                            "unpublish_project",
+                            "fork_project",
+                            "clone_template",
+                            "list_versions",
+                            "get_version",
+                            "save_version",
+                            "restore_version",
+                            "save_version_as_template",
                         }
                         for tool in listing.tools:
                             matching_rows = [
@@ -526,6 +549,264 @@ def test_mcp_enforces_tool_scope_and_exposes_identity_only_for_token_user():
     assert identity.isError is not True
     assert identity.structuredContent["user_id"] == str(user.pk)
     assert identity.structuredContent["scopes"] == ["projects:write"]
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_project_tools_match_rest_contract():
+    cache.clear()
+    user = get_user_model().objects.create_user(username="mcp-project-contract-owner")
+    bearer_token, _, _ = _create_mcp_access_token(user, scopes=("projects:write",))
+    rest = APIClient()
+    rest.force_authenticate(user)
+
+    rest_list = rest.get("/api/projects/")
+    assert rest_list.status_code == 200
+    assert _mcp_result_payload(_call_mcp_tool(bearer_token, "list_my_projects")) == rest_list.json()
+
+    rest_bare = rest.post("/api/projects/", {}, format="json")
+    mcp_bare = _mcp_result_payload(_call_mcp_tool(bearer_token, "create_project"))
+    assert rest_bare.status_code == 201
+    assert set(mcp_bare) == set(rest_bare.json())
+    assert mcp_bare["owner"] == rest_bare.json()["owner"] == user.username
+    assert mcp_bare["current_version"] is None
+
+    request_id = str(uuid.uuid4())
+    blank_body = {"renderer": "svg", "client_request_id": request_id}
+    rest_blank = rest.post("/api/projects/blank/", blank_body, format="json")
+    mcp_blank = _mcp_result_payload(
+        _call_mcp_tool(bearer_token, "create_blank_project", blank_body)
+    )
+    assert rest_blank.status_code == 201
+    assert mcp_blank == rest_blank.json()
+    project_id = rest_blank.json()["id"]
+
+    rest_project = rest.get(f"/api/projects/{project_id}/")
+    mcp_project = _mcp_result_payload(
+        _call_mcp_tool(bearer_token, "get_project", {"project_id": project_id})
+    )
+    assert rest_project.status_code == 200
+    assert mcp_project == rest_project.json()
+
+    metadata = {
+        "title": "MCP contract project",
+        "description": "A sufficiently meaningful project description.",
+        "brief": "Private project intent",
+        "allow_public_remix": True,
+    }
+    rest_update = rest.patch(f"/api/projects/{project_id}/", metadata, format="json")
+    mcp_update = _mcp_result_payload(
+        _call_mcp_tool(
+            bearer_token,
+            "update_project_metadata",
+            {"project_id": project_id, "metadata": metadata},
+        )
+    )
+    assert rest_update.status_code == 200
+    assert mcp_update["title"] == rest_update.json()["title"] == metadata["title"]
+    assert mcp_update["brief"] == rest_update.json()["brief"] == metadata["brief"]
+    assert mcp_update["visibility"] == rest_update.json()["visibility"]
+
+    version_id = rest_blank.json()["current_version"]
+    rest_version = rest.get(f"/api/projects/{project_id}/versions/{version_id}/")
+    mcp_version = _mcp_result_payload(
+        _call_mcp_tool(
+            bearer_token,
+            "get_version",
+            {"project_id": project_id, "version_id": version_id},
+        )
+    )
+    assert rest_version.status_code == 200
+    assert mcp_version == rest_version.json()
+
+    rest_versions = rest.get(f"/api/projects/{project_id}/versions/")
+    mcp_versions = _mcp_result_payload(
+        _call_mcp_tool(bearer_token, "list_versions", {"project_id": project_id})
+    )
+    assert rest_versions.status_code == 200
+    assert mcp_versions == rest_versions.json()
+
+    scene_json = copy.deepcopy(BLANK_SCENE)
+    scene_json["renderer"] = {"preferred": "svg"}
+    save_body = {"scene_json": scene_json, "origin": "manual", "change_label": "MCP save"}
+    rest_saved = rest.post(f"/api/projects/{project_id}/versions/", save_body, format="json")
+    mcp_saved = _mcp_result_payload(
+        _call_mcp_tool(
+            bearer_token,
+            "save_version",
+            {"project_id": project_id, **save_body},
+        )
+    )
+    assert rest_saved.status_code == 201
+    assert mcp_saved["scene_json"] == rest_saved.json()["scene_json"] == scene_json
+    assert mcp_saved["origin"] == rest_saved.json()["origin"] == "manual"
+    assert mcp_saved["change_label"] == rest_saved.json()["change_label"] == "MCP save"
+
+    rest_restored = rest.post(f"/api/projects/{project_id}/versions/{version_id}/restore/")
+    mcp_restored = _mcp_result_payload(
+        _call_mcp_tool(
+            bearer_token,
+            "restore_version",
+            {"project_id": project_id, "version_id": version_id},
+        )
+    )
+    assert rest_restored.status_code == 201
+    assert mcp_restored["scene_json"] == rest_restored.json()["scene_json"]
+    assert mcp_restored["origin"] == rest_restored.json()["origin"] == "restore"
+    assert mcp_restored["parent"] == rest_restored.json()["parent"] == version_id
+
+    template_body = {"name": "MCP version snapshot", "category": "test"}
+    rest_template = rest.post(
+        f"/api/projects/{project_id}/versions/{version_id}/save-as-template/",
+        template_body,
+        format="json",
+    )
+    mcp_template = _mcp_result_payload(
+        _call_mcp_tool(
+            bearer_token,
+            "save_version_as_template",
+            {"project_id": project_id, "version_id": version_id, **template_body},
+        )
+    )
+    assert rest_template.status_code == 201
+    assert mcp_template["source_type"] == rest_template.json()["source_type"] == "private"
+    assert mcp_template["name"] == rest_template.json()["name"] == template_body["name"]
+    assert mcp_template["category"] == rest_template.json()["category"] == template_body["category"]
+
+    rest_publish = rest.post(f"/api/projects/{project_id}/publish/")
+    mcp_publish = _mcp_result_payload(
+        _call_mcp_tool(bearer_token, "publish_project", {"project_id": project_id})
+    )
+    assert rest_publish.status_code == 200
+    assert mcp_publish["visibility"] == rest_publish.json()["visibility"] == "public"
+    assert mcp_publish["id"] == rest_publish.json()["id"] == project_id
+
+    fork_body = {"client_request_id": str(uuid.uuid4())}
+    rest_fork = rest.post(f"/api/public/projects/{project_id}/fork/", fork_body, format="json")
+    mcp_fork = _mcp_result_payload(
+        _call_mcp_tool(
+            bearer_token,
+            "fork_project",
+            {"project_id": project_id, **fork_body},
+        )
+    )
+    assert rest_fork.status_code == 201
+    assert mcp_fork == rest_fork.json()
+
+    template_id = rest_template.json()["id"]
+    rest_clone = rest.post(f"/api/templates/{template_id}/clone/")
+    mcp_clone = _mcp_result_payload(
+        _call_mcp_tool(bearer_token, "clone_template", {"template_id": template_id})
+    )
+    assert rest_clone.status_code == 201
+    assert mcp_clone["owner"] == rest_clone.json()["owner"] == user.username
+    assert mcp_clone["title"] == rest_clone.json()["title"] == template_body["name"]
+    assert mcp_clone["scenes"][0]["name"] == rest_clone.json()["scenes"][0]["name"]
+
+    rest_unpublish = rest.post(f"/api/projects/{project_id}/unpublish/")
+    mcp_unpublish = _mcp_result_payload(
+        _call_mcp_tool(bearer_token, "unpublish_project", {"project_id": project_id})
+    )
+    assert rest_unpublish.status_code == 200
+    assert mcp_unpublish["visibility"] == rest_unpublish.json()["visibility"] == "private"
+
+    rest_projects = rest.get("/api/projects/")
+    mcp_projects = _mcp_result_payload(_call_mcp_tool(bearer_token, "list_my_projects"))
+    assert mcp_projects == rest_projects.json()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_project_tools_block_non_owner_private_access_and_enforce_scope():
+    owner = get_user_model().objects.create_user(username="mcp-private-project-owner")
+    caller = get_user_model().objects.create_user(username="mcp-private-project-caller")
+    owner_rest = APIClient()
+    owner_rest.force_authenticate(owner)
+    project_response = owner_rest.post("/api/projects/blank/", {}, format="json")
+    project_id = project_response.json()["id"]
+    private_title = "MCP private project sentinel"
+    owner_rest.patch(f"/api/projects/{project_id}/", {"title": private_title}, format="json")
+    version_id = project_response.json()["current_version"]
+    template = Template.objects.create(
+        owner=owner,
+        source_type=Template.SourceType.PRIVATE,
+        name="MCP private template sentinel",
+        category="private",
+        scene_json=copy.deepcopy(BLANK_SCENE),
+    )
+    caller_token, _, _ = _create_mcp_access_token(caller, scopes=("projects:write",))
+
+    private_calls = [
+        ("get_project", {"project_id": project_id}),
+        (
+            "update_project_metadata",
+            {"project_id": project_id, "metadata": {"title": "forged update"}},
+        ),
+        ("publish_project", {"project_id": project_id}),
+        ("unpublish_project", {"project_id": project_id}),
+        ("fork_project", {"project_id": project_id}),
+        ("clone_template", {"template_id": str(template.public_id)}),
+        ("list_versions", {"project_id": project_id}),
+        ("get_version", {"project_id": project_id, "version_id": version_id}),
+        (
+            "save_version",
+            {
+                "project_id": project_id,
+                "scene_json": copy.deepcopy(BLANK_SCENE),
+                "origin": "manual",
+            },
+        ),
+        ("restore_version", {"project_id": project_id, "version_id": version_id}),
+        (
+            "save_version_as_template",
+            {"project_id": project_id, "version_id": version_id, "name": "forged"},
+        ),
+    ]
+    non_owner_results = _call_mcp_tools(caller_token, private_calls)
+    assert all(result.isError is True for result in non_owner_results)
+    assert all("HTTP 404" in json.dumps(result.model_dump()) for result in non_owner_results)
+    serialized_errors = json.dumps([result.model_dump() for result in non_owner_results])
+    assert private_title not in serialized_errors
+    assert "MCP private template sentinel" not in serialized_errors
+
+    caller_projects = _mcp_result_payload(_call_mcp_tool(caller_token, "list_my_projects"))
+    assert private_title not in json.dumps(caller_projects)
+    created = _mcp_result_payload(_call_mcp_tool(caller_token, "create_project"))
+    assert created["owner"] == caller.username
+    created_blank = _mcp_result_payload(_call_mcp_tool(caller_token, "create_blank_project", {}))
+    assert created_blank["owner"] == caller.username
+
+    caller_gallery_token, _, _ = _create_mcp_access_token(caller, scopes=("gallery:read",))
+    scope_calls = [
+        ("list_my_projects", {}),
+        ("create_project", {}),
+        ("create_blank_project", {}),
+        ("get_project", {"project_id": project_id}),
+        (
+            "update_project_metadata",
+            {"project_id": project_id, "metadata": {"title": "no"}},
+        ),
+        ("publish_project", {"project_id": project_id}),
+        ("unpublish_project", {"project_id": project_id}),
+        ("fork_project", {"project_id": project_id}),
+        ("clone_template", {"template_id": str(template.public_id)}),
+        ("list_versions", {"project_id": project_id}),
+        ("get_version", {"project_id": project_id, "version_id": version_id}),
+        (
+            "save_version",
+            {
+                "project_id": project_id,
+                "scene_json": copy.deepcopy(BLANK_SCENE),
+                "origin": "manual",
+            },
+        ),
+        ("restore_version", {"project_id": project_id, "version_id": version_id}),
+        (
+            "save_version_as_template",
+            {"project_id": project_id, "version_id": version_id, "name": "no"},
+        ),
+    ]
+    scope_results = _call_mcp_tools(caller_gallery_token, scope_calls)
+    assert all(result.isError is True for result in scope_results)
+    assert all("required scope" in json.dumps(result.model_dump()) for result in scope_results)
 
 
 @pytest.mark.django_db(transaction=True)

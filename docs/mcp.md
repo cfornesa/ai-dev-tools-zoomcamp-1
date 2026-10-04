@@ -121,12 +121,13 @@ MCP request; a browser session cookie never substitutes for an access token.
 
 ## Tools
 
-All 13 tools are read-only. Every tool is authenticated and declares a scope;
-public-content tools use `gallery:read`, while `health_check` and `whoami`
-have no additional scope requirement. Public data tools use the same
-eligibility rules as their REST counterpart; a missing or ineligible
-individual resource returns not found. MCP schemas below list the SDK input
-properties; optional properties may be omitted.
+Every tool is authenticated and declares a scope. Public-content tools use
+`gallery:read`; owner 2D project/version tools use `projects:write` (including
+reads, so a gallery-only grant cannot read private project data); `health_check`
+and `whoami` require a valid token but no additional scope. Public data tools
+use the same eligibility rules as their REST counterpart; a missing or
+ineligible individual resource returns not found. MCP schemas below list the
+SDK input properties; optional properties may be omitted.
 
 | Tool | Required OAuth scope |
 |---|---|
@@ -143,6 +144,20 @@ properties; optional properties may be omitted.
 | `list_public_collections` | `gallery:read` |
 | `get_public_collection` | `gallery:read` |
 | `search_public` | `gallery:read` |
+| `list_my_projects` | `projects:write` |
+| `create_project` | `projects:write` |
+| `create_blank_project` | `projects:write` |
+| `get_project` | `projects:write` |
+| `update_project_metadata` | `projects:write` |
+| `publish_project` | `projects:write` |
+| `unpublish_project` | `projects:write` |
+| `fork_project` | `projects:write` |
+| `clone_template` | `projects:write` |
+| `list_versions` | `projects:write` |
+| `get_version` | `projects:write` |
+| `save_version` | `projects:write` |
+| `restore_version` | `projects:write` |
+| `save_version_as_template` | `projects:write` |
 
 | Tool | Input schema | Example call | Result |
 |---|---|---|---|
@@ -159,6 +174,20 @@ properties; optional properties may be omitted.
 | `list_public_collections` | `sort?: string` (default `newest`; `newest`, `oldest`, `item_count`), `cursor?: string \| null`, `page_size?: integer` (default 24, clamped 1–60) | `list_public_collections({"sort": "item_count"})` | One bounded page of active public collections and cursor metadata. Reuse a cursor with the same sort. |
 | `get_public_collection` | `handle: string`, `slug: string` | `get_public_collection({"handle": "<public-handle>", "slug": "<collection-slug>"})` | Active published collection detail. |
 | `search_public` | `query: string`, `scope?: string` (default `content`; `content` or `accounts`) | `search_public({"query": "landscape", "scope": "content"})` | Up to 50 eligible public content or public-account results. Query is limited to 100 characters. |
+| `list_my_projects` | `{}` | `list_my_projects()` | The caller's own 2D project list using `ProjectSerializer`. |
+| `create_project` | `{}` | `create_project()` | Bare private project without an initial scene version, matching REST. |
+| `create_blank_project` | `renderer?: string`, `client_request_id?: string` | `create_blank_project({"renderer": "svg", "client_request_id": "<uuid>"})` | Private project with an initial blank version; preserves REST renderer defaults and idempotency. |
+| `get_project` | `project_id: string` | `get_project({"project_id": "<uuid>"})` | Owner project serializer; private/non-owner or missing projects return not found. |
+| `update_project_metadata` | `project_id: string`, `metadata: object` | `update_project_metadata({"project_id": "<uuid>", "metadata": {"title": "New title"}})` | REST metadata validation and response; visibility remains controlled by publish tools. |
+| `publish_project` | `project_id: string` | `publish_project({"project_id": "<uuid>"})` | Publishes only after REST meaningful-metadata and saved-version checks. |
+| `unpublish_project` | `project_id: string` | `unpublish_project({"project_id": "<uuid>"})` | Makes the caller's project private, retaining its history. |
+| `fork_project` | `project_id: string`, `client_request_id?: string` | `fork_project({"project_id": "<public-uuid>", "client_request_id": "<uuid>"})` | REST public/remix eligibility, independent version copy, provenance and idempotency. |
+| `clone_template` | `template_id: string` | `clone_template({"template_id": "<template-uuid>"})` | Clones a readable template into a private project using the REST validation/copy behavior. |
+| `list_versions` | `project_id: string` | `list_versions({"project_id": "<uuid>"})` | Owner-only, non-deleted version summaries. |
+| `get_version` | `project_id: string`, `version_id: integer` | `get_version({"project_id": "<uuid>", "version_id": 1})` | Full version snapshot; a cross-project version ID follows REST not-found behavior. |
+| `save_version` | `project_id: string`, `scene_json: object`, `origin: string`, `change_label?: string` | `save_version({"project_id": "<uuid>", "scene_json": {}, "origin": "manual"})` | REST schema validation, immutable version creation and current-version advancement. |
+| `restore_version` | `project_id: string`, `version_id: integer` | `restore_version({"project_id": "<uuid>", "version_id": 1})` | Creates a new current version from the historical snapshot, preserving REST rules. |
+| `save_version_as_template` | `project_id: string`, `version_id: integer`, `name: string`, `category?: string`, `description?: string` | `save_version_as_template({"project_id": "<uuid>", "version_id": 1, "name": "Snapshot"})` | Creates an owner-private template snapshot through REST validation. |
 
 Page sizes are clamped to 1–60. Gallery cursors are opaque, may expire, and
 are scoped to their corresponding gallery type or collection sort. Search

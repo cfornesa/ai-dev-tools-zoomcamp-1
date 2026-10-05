@@ -392,7 +392,7 @@ test.describe('Generated regular viewer: per-piece sound settings (#843)', () =>
   }) => {
     await loginViaUI(page, fixture.owner.email, fixture.password);
     const created = await apiPost(context, '/api/art-pieces/', {
-      title: 'Sound settings persistence fixture',
+      title: `Sound settings persistence fixture ${Date.now()}`,
       description: 'A disposable fixture for per-piece visitor settings.',
       prompt: 'red rectangle',
       engine: 'canvas2d',
@@ -413,7 +413,26 @@ test.describe('Generated regular viewer: per-piece sound settings (#843)', () =>
     await page.goto(`/art-pieces/p/${piece.public_id}`);
     await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await page.getByRole('button', { name: 'Unmute sound' }).click();
-    await page.getByLabel(/Ambient BPM/).fill('120');
+    const ambientBpm = page.getByLabel(/Ambient BPM/);
+    await expect(page.getByRole('button', { name: 'Mute sound' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(ambientBpm).toBeEnabled();
+    // Range-input fill is not consistently applied by Playwright across
+    // browser engines. Adjust the slider with its keyboard control so the
+    // test proves a user change, then wait for the persisted override before
+    // the reload that verifies restoration.
+    await ambientBpm.focus();
+    let bpm = Number(await ambientBpm.inputValue());
+    while (bpm !== 120) {
+      const nextBpm = bpm + Math.sign(120 - bpm);
+      await ambientBpm.press(nextBpm > bpm ? 'ArrowRight' : 'ArrowLeft');
+      const updatedBpm = Number(await ambientBpm.inputValue());
+      expect(updatedBpm).toBe(nextBpm);
+      bpm = updatedBpm;
+    }
+    await expect(ambientBpm).toHaveValue('120');
     await page.getByLabel(/Ambient volume/).fill('30');
     await page.getByLabel(/^Scale:/).selectOption('dorian');
     await page
@@ -430,22 +449,63 @@ test.describe('Generated regular viewer: per-piece sound settings (#843)', () =>
       piece.public_id,
     );
     expect(storedBeforeReload).not.toBeNull();
+    await expect
+      .poll(async () => {
+        const raw = await page.evaluate(
+          (publicId) => localStorage.getItem(`creatr.sound.${publicId}`),
+          piece.public_id,
+        );
+        if (!raw) return null;
+        const stored = JSON.parse(raw) as { overrides?: { ambientBpm?: number } };
+        return stored.overrides?.ambientBpm ?? null;
+      })
+      .toBe(120);
+    const recordSoundState = async (phase: string) => {
+      const slider = await page.getByLabel(/Ambient BPM/).evaluate((element) => {
+        const input = element as HTMLInputElement;
+        return { value: input.value, disabled: input.disabled };
+      });
+      const storedOverrides = await page.evaluate((publicId) => {
+        const raw = localStorage.getItem(`creatr.sound.${publicId}`);
+        if (!raw) return null;
+        const stored = JSON.parse(raw) as { overrides?: unknown };
+        return stored.overrides ?? null;
+      }, piece.public_id);
+      console.info(
+        'PER_PIECE_SOUND_SETTINGS_STATE',
+        JSON.stringify({ phase, storedOverrides, slider }),
+      );
+    };
+    await recordSoundState('before-reload');
 
     await page.reload();
     await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
+    await recordSoundState('after-reload-before-activation');
+    await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    await expect(page.getByLabel(/Ambient BPM/)).toBeDisabled();
     await expect(page.getByLabel(/Ambient BPM/)).toHaveValue('120');
     await expect(page.getByLabel(/Ambient volume/)).toHaveValue('30');
     await expect(page.getByLabel(/^Scale:/)).toHaveValue('dorian');
     const keyboard = page.getByRole('group', { name: 'Keyboard' });
     await expect(keyboard.getByLabel('Oscillator')).toHaveValue('square');
     await expect(keyboard.getByLabel(/Octave:/)).toHaveValue('1');
-    await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
-
     await page.getByRole('button', { name: 'Unmute sound' }).click();
+    await expect(page.getByRole('button', { name: 'Mute sound' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await recordSoundState('after-activation');
+    await expect(page.getByLabel(/Ambient BPM/)).toBeEnabled();
+    await expect(page.getByLabel(/Ambient BPM/)).toHaveValue('120');
+    await expect(page.getByLabel(/Ambient volume/)).toHaveValue('30');
+    await expect(page.getByLabel(/^Scale:/)).toHaveValue('dorian');
+    await expect(keyboard.getByLabel('Oscillator')).toHaveValue('square');
+    await expect(keyboard.getByLabel(/Octave:/)).toHaveValue('1');
     await page.getByRole('button', { name: 'Reset sound settings' }).click();
+    await recordSoundState('after-reset');
     await expect(page.getByLabel(/Ambient BPM/)).toHaveValue('90');
     await expect(page.getByLabel(/Ambient volume/)).toHaveValue('50');
     await expect(page.getByLabel(/^Scale:/)).toHaveValue('pentatonic');

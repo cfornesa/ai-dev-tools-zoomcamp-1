@@ -156,6 +156,10 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
           (await fetchThumbnailBytes(context, piece.public_id)).equals(fallbackReference),
         )
         .toBe(false);
+      const captured = await fetchThumbnailBytes(context, piece.public_id);
+      expect(captured.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+      expect(captured.readUInt32BE(16)).toBe(320);
+      expect(captured.readUInt32BE(20)).toBe(240);
 
       // The original version's own thumbnail was never touched by the
       // new version's capture -- each version's thumbnail is independent.
@@ -164,13 +168,21 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
         `/api/art-pieces/${piece.public_id}/versions/`,
       );
       expect(originalStillFallback.status()).toBe(200);
-      // Re-fetch via the piece-level route is only ever "current" -- prove
-      // independence directly against the ORIGINAL version's own row by
-      // requesting a regenerate (reset-to-fallback) on it being impossible
-      // through the piece-level endpoint (it always targets current);
-      // instead confirm structurally: piece.current_version_id moved to
-      // the new version, and the original id is preserved unmodified in
-      // the version list.
+      const versionsAfterCapture = (await originalStillFallback.json()) as Array<{
+        id: number;
+        sequence: number;
+        thumbnail_is_fallback: boolean;
+      }>;
+      const originalVersion = versionsAfterCapture.find(
+        (version) => version.id === piece.current_version.id,
+      );
+      const acceptedVersion = versionsAfterCapture.find((version) => version.id === newVersion!.id);
+      expect(originalVersion).toBeDefined();
+      expect(acceptedVersion).toBeDefined();
+      expect(originalVersion!.thumbnail_is_fallback).toBe(true);
+      expect(acceptedVersion!.thumbnail_is_fallback).toBe(false);
+
+      // The piece-level route serves only the current version.
       const refreshedPiece = await apiGet(context, `/api/art-pieces/${piece.public_id}/`);
       const refreshedPieceData = (await refreshedPiece.json()) as {
         current_version: { id: number };

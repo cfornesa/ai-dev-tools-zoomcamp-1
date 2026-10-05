@@ -29,7 +29,10 @@ import {
   ART_PIECE_IFRAME_SANDBOX,
   ART_PIECE_SANDBOX_MESSAGE_SOURCE,
 } from '../generative/artPieceSandbox';
-import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
+import {
+  captureAndUploadArtPieceThumbnail,
+  captureArtPieceThumbnailFromSource,
+} from '../generative/artPieceThumbnailCapture';
 import MentionPromptField from './MentionPromptField';
 import { buildArtPieceTargetOptionsForPiece } from './artPieceTargets';
 import ArtPieceEditorToolAvailability from '../components/ArtPieceEditorToolAvailability';
@@ -479,6 +482,15 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
             'The refinement did not produce a valid revision; the stored source is unchanged.',
         );
         return;
+      }
+      if (result.accepted_version_id !== null) {
+        void captureArtPieceThumbnailFromSource(
+          piece.public_id,
+          result.accepted_version_id,
+          result.candidate_source,
+          piece.engine,
+          piece.current_version?.ink,
+        );
       }
       setReviseCode(result.candidate_source);
       setPreviewCode(result.candidate_source);

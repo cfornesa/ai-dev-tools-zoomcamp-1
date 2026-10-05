@@ -26612,3 +26612,14 @@ The owner selected deferring MCP `delete_project` from the first release (#1237)
 ### 2026-10-04 — Public profile empty-state E2E contract (#1241)
 
 During local verification of #1230, the Account Settings PATCH returned 200 and the public profile displayed the saved metadata, but `publicProfiles.spec.ts` then expected a “Public pieces” heading despite creating no public piece or collection. Current UI renders “No public collections or pieces yet.” Criterion-ready test-only follow-up [#1241](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1241) is assigned to Batch 14; it is not implemented in this run.
+
+### 2026-10-05 — PR deployment-check gate (#1248)
+
+Replit build at `a9ec5a7c` failed before npm install/build because
+`manage.py check --deploy` raised `oauth2_provider.E003`. The PR backend job
+runs lint, format, typing, and tests but does not exercise the production-like
+deployment check. Criterion-ready follow-up [#1248](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1248)
+tracks running that check in CI with disposable safe values, failing on any
+warning/error, and regression coverage that proves the gate catches a broken
+configuration. Assigned to Batch 14 (matching-ref CI stabilization), Stage
+2a. Scope is CI/test harness only; no production credentials or database.

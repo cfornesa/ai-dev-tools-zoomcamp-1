@@ -929,7 +929,13 @@ test.describe('Local and server draft autosave', () => {
       // projects that have never opted in remain covered by the unit-level
       // 404/no-op contract for saveNowBeforeClearing.
       const cloudFailure = page.getByRole('alertdialog', { name: 'Could not save to the cloud' });
-      if (await cloudFailure.isVisible().catch(() => false)) {
+      const exitOutcome = await Promise.race([
+        page
+          .waitForURL(/\/(?:studio|gallery)?$/, { timeout: 5000 })
+          .then(() => 'navigated'),
+        cloudFailure.waitFor({ state: 'visible', timeout: 5000 }).then(() => 'needs-override'),
+      ]);
+      if (exitOutcome === 'needs-override') {
         await cloudFailure.getByRole('button', { name: 'Clear anyway' }).click();
       }
       // `navigate('/')` immediately resolves through Home.tsx; authenticated

@@ -51,6 +51,11 @@ def get_bool_env(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def oauth_redirect_uri_schemes(debug: bool) -> list[str]:
+    """Allow native-app loopback redirects only in local development."""
+    return ['http', 'https'] if debug else ['https']
+
+
 def get_csrf_trusted_origins() -> list[str]:
     """Read explicit browser origins allowed to make unsafe same-site requests.
 
@@ -358,7 +363,7 @@ OAUTH2_PROVIDER = {
     'ROTATE_REFRESH_TOKEN': True,
     'REFRESH_TOKEN_REUSE_PROTECTION': True,
     'ALLOW_URI_WILDCARDS': False,
-    'ALLOWED_REDIRECT_URI_SCHEMES': ['http', 'https'],
+    'ALLOWED_REDIRECT_URI_SCHEMES': oauth_redirect_uri_schemes(DEBUG),
     'ALLOW_LOCALHOST_LOOPBACK': False,
     'COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT': True,
     'COMPLIANT_BCP_RFC9700_PASSWORD_GRANT': True,

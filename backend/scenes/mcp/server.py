@@ -12,8 +12,10 @@ import ipaddress
 import json
 import time
 import uuid
+from contextlib import AsyncExitStack
+from pathlib import Path
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 from asgiref.sync import sync_to_async
 from django.conf import settings
@@ -28,6 +30,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcp.shared.exceptions import McpError
 from mcp.types import ErrorData
 from rest_framework.renderers import JSONRenderer
+from starlette.middleware.cors import CORSMiddleware
 
 from backend.views import health_status
 from scenes.art_piece_persistence import _piece_data, _public_piece_or_404, eligible_art_pieces
@@ -91,6 +94,9 @@ _mcp_client_ip: contextvars.ContextVar[str] = contextvars.ContextVar(
 )
 _mcp_principal: contextvars.ContextVar[MCPPrincipal | None] = contextvars.ContextVar(
     "mcp_principal", default=None
+)
+_mcp_public_app_origin: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "mcp_public_app_origin", default=None
 )
 
 
@@ -335,6 +341,137 @@ server = FastMCP(
         allowed_origins=list(settings.CSRF_TRUSTED_ORIGINS),
     ),
 )
+
+PUBLIC_CONTENT_UI_URI = "ui://creatrweb/public-content"
+PUBLIC_CONTENT_UI_META = {
+    "ui": {
+        "csp": {
+            "connectDomains": [],
+            "resourceDomains": [],
+            "frameDomains": [],
+            "baseUriDomains": [],
+        },
+        "permissions": {},
+        "prefersBorder": True,
+    }
+}
+
+# This separate server intentionally registers only anonymous, read-only public
+# content tools. The existing `/mcp/` app above remains bearer-token protected.
+public_apps_server = FastMCP(
+    "Creatrweb Public Gallery App",
+    instructions=(
+        "Show eligible public Creatrweb gallery or 2D project content. "
+        "This endpoint has no owner, write, AI, or authenticated tools."
+    ),
+    streamable_http_path="/mcp/apps/",
+    stateless_http=True,
+    json_response=True,
+    max_request_body_size=MAX_MCP_REQUEST_BODY_SIZE,
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=_mcp_allowed_hosts(),
+        allowed_origins=list(settings.CSRF_TRUSTED_ORIGINS),
+    ),
+)
+
+
+def _anonymous_public_app_tool(tool_name: str):
+    """Rate-limit and audit a public-content-only UI tool without OAuth identity."""
+
+    def decorate(function):
+        @functools.wraps(function)
+        async def invoke(*args, **kwargs):
+            started = time.monotonic()
+            outcome = MCPToolAuditEvent.Outcome.ERROR
+            client_ip = _mcp_client_ip.get()
+            try:
+                retry_after = await sync_to_async(_consume_mcp_rate_limit, thread_sensitive=True)(
+                    client_ip
+                )
+                if retry_after is not None:
+                    outcome = MCPToolAuditEvent.Outcome.RATE_LIMITED
+                    raise McpError(
+                        ErrorData(
+                            code=-32029,
+                            message=(
+                                f"MCP rate limit exceeded; retry_after_seconds={retry_after}."
+                            ),
+                            data={"retry_after_seconds": retry_after},
+                        )
+                    )
+                result = await function(*args, **kwargs)
+                outcome = MCPToolAuditEvent.Outcome.SUCCESS
+                return result
+            finally:
+                await sync_to_async(_write_mcp_audit, thread_sensitive=True)(
+                    tool_name,
+                    outcome,
+                    max(0, int((time.monotonic() - started) * 1000)),
+                    _client_ip_fingerprint(client_ip),
+                    None,
+                    None,
+                )
+
+        return invoke
+
+    return decorate
+
+
+@public_apps_server.tool(
+    name="show_public_gallery",
+    description=(
+        "Display one bounded page of eligible public gallery cards. "
+        "Returns JSON text for clients without MCP Apps support."
+    ),
+    meta={"ui": {"resourceUri": PUBLIC_CONTENT_UI_URI, "visibility": ["model"]}},
+)
+@_anonymous_public_app_tool("show_public_gallery")
+async def show_public_gallery(page_size: int = 12) -> dict[str, Any]:
+    """Return public gallery cards and the validated host origin for viewer links."""
+    origin = _mcp_public_app_origin.get()
+    if origin is None:
+        raise McpError(ErrorData(code=-32603, message="Public app request origin is unavailable."))
+    return {
+        **await sync_to_async(_unified_gallery_page, thread_sensitive=True)(
+            "all", None, None, clamp_page_size(page_size)
+        ),
+        "site_origin": origin,
+    }
+
+
+@public_apps_server.tool(
+    name="show_public_project",
+    description=(
+        "Display a read-only view of one published public 2D project. "
+        "Private or unavailable projects return not found; JSON text is retained as a fallback."
+    ),
+    meta={"ui": {"resourceUri": PUBLIC_CONTENT_UI_URI, "visibility": ["model"]}},
+)
+@_anonymous_public_app_tool("show_public_project")
+async def show_public_project(project_id: str) -> dict[str, Any]:
+    """Return public project detail and its canonical viewer URL."""
+    origin = _mcp_public_app_origin.get()
+    if origin is None:
+        raise McpError(ErrorData(code=-32603, message="Public app request origin is unavailable."))
+    project = await sync_to_async(_public_project, thread_sensitive=True)(project_id)
+    return {
+        "project": project,
+        "viewer_url": f"{origin}{project['viewer_url']}",
+        "site_origin": origin,
+    }
+
+
+@public_apps_server.resource(
+    PUBLIC_CONTENT_UI_URI,
+    name="public_content_widget",
+    description="Sandboxed public gallery and published 2D project presentation.",
+    mime_type="text/html;profile=mcp-app",
+    meta=PUBLIC_CONTENT_UI_META,
+)
+async def public_content_widget() -> str:
+    """Serve the self-contained app; its CSP needs no external origins or permissions."""
+    return Path(__file__).with_name("public_content_widget.html").read_text(encoding="utf-8")
 
 
 @server.tool(
@@ -862,9 +999,17 @@ register_destructive_tools(server, _audited_tool, _require_current_scopes)
 class DjangoMCPApplication:
     """Dispatch MCP transport requests and ASGI lifespan to the SDK app."""
 
-    def __init__(self, django_app: Any, mcp_app: Any) -> None:
+    def __init__(
+        self,
+        django_app: Any,
+        mcp_app: Any,
+        public_apps_app: Any,
+        public_apps_lifespan_app: Any,
+    ) -> None:
         self.django_app = django_app
         self.mcp_app = mcp_app
+        self.public_apps_app = public_apps_app
+        self.public_apps_lifespan_app = public_apps_lifespan_app
 
     async def __call__(self, scope, receive, send) -> None:
         if scope["type"] == "lifespan":
@@ -897,6 +1042,24 @@ class DjangoMCPApplication:
                 _mcp_principal.reset(principal_context_token)
             return
 
+        if scope["type"] == "http" and scope.get("path") in {
+            "/mcp/apps",
+            "/mcp/apps/",
+        }:
+            resources = _mcp_resource_urls(scope)
+            if resources is None:
+                await self._send_invalid_host(send)
+                return
+            origin = urlsplit(resources[0])
+            origin_token = _mcp_public_app_origin.set(f"{origin.scheme}://{origin.netloc}")
+            client_ip_token = _mcp_client_ip.set(_trusted_client_ip(scope))
+            try:
+                await self.public_apps_app(scope, receive, send)
+            finally:
+                _mcp_client_ip.reset(client_ip_token)
+                _mcp_public_app_origin.reset(origin_token)
+            return
+
         await self.django_app(scope, receive, send)
 
     async def _send_invalid_host(self, send) -> None:
@@ -916,7 +1079,13 @@ class DjangoMCPApplication:
     async def _lifespan(self, receive, send) -> None:
         startup_complete = False
         try:
-            async with self.mcp_app.router.lifespan_context(self.mcp_app):
+            async with AsyncExitStack() as stack:
+                await stack.enter_async_context(self.mcp_app.router.lifespan_context(self.mcp_app))
+                await stack.enter_async_context(
+                    self.public_apps_lifespan_app.router.lifespan_context(
+                        self.public_apps_lifespan_app
+                    )
+                )
                 while True:
                     message = await receive()
                     if message["type"] == "lifespan.startup":
@@ -939,4 +1108,23 @@ class DjangoMCPApplication:
 
 def create_mcp_asgi_app(django_app: Any) -> DjangoMCPApplication:
     """Create the production ASGI router for the Django and MCP applications."""
-    return DjangoMCPApplication(django_app, server.streamable_http_app())
+    public_apps_lifespan_app = public_apps_server.streamable_http_app()
+    public_apps_app = CORSMiddleware(
+        public_apps_lifespan_app,
+        allow_origins=list(settings.CSRF_TRUSTED_ORIGINS),
+        allow_methods=["GET", "POST"],
+        allow_headers=[
+            "accept",
+            "content-type",
+            "last-event-id",
+            "mcp-protocol-version",
+            "mcp-session-id",
+        ],
+        expose_headers=["mcp-protocol-version", "mcp-session-id"],
+    )
+    return DjangoMCPApplication(
+        django_app,
+        server.streamable_http_app(),
+        public_apps_app,
+        public_apps_lifespan_app,
+    )

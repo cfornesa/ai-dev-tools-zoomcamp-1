@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Creatrweb public gallery</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+        background: light-dark(#f8fafc, #111827);
+        color: light-dark(#172033, #e5e7eb);
+        font-synthesis: none;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 1rem; }
+      main { max-width: 68rem; margin: 0 auto; }
+      h1 { margin: 0 0 0.25rem; font-size: 1.25rem; }
+      .muted { color: light-dark(#5b6474, #aab3c2); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+      .card, .panel { min-width: 0; padding: 0.9rem; border: 1px solid light-dark(#d7dce5, #364152); border-radius: 0.75rem; background: light-dark(#fff, #1b2432); }
+      .card h2 { margin: 0 0 0.35rem; font-size: 1rem; overflow-wrap: anywhere; }
+      .card p, .panel p { margin: 0.3rem 0; }
+      button { min-height: 2.75rem; margin-top: 0.65rem; padding: 0.55rem 0.8rem; border: 1px solid light-dark(#68758a, #65748a); border-radius: 0.5rem; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+      button:focus-visible { outline: 3px solid #5b9bff; outline-offset: 2px; }
+      .preview { display: block; width: 100%; max-height: 30rem; margin: 1rem 0; border: 1px solid light-dark(#d7dce5, #364152); border-radius: 0.5rem; background: #fff; }
+      .summary { white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main aria-live="polite">
+      <h1 id="heading">Creatrweb public content</h1>
+      <p id="status" class="muted">Waiting for public content…</p>
+      <section id="content" aria-label="Public content" hidden></section>
+    </main>
+    <script>
+      (() => {
+        const NS = 'http://www.w3.org/2000/svg';
+        let nextId = 2;
+        const heading = document.getElementById('heading');
+        const status = document.getElementById('status');
+        const content = document.getElementById('content');
+
+        function element(name, text, className) {
+          const node = document.createElement(name);
+          if (text !== undefined) node.textContent = String(text);
+          if (className) node.className = className;
+          return node;
+        }
+
+        function number(value, fallback = 0, min = -5000, max = 5000) {
+          const parsed = Number(value);
+          return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+        }
+
+        function safeColor(value, fallback) {
+          return typeof value === 'string' && (/^#[\da-f]{3,8}$/i.test(value) || value === 'none' || value === 'transparent')
+            ? value
+            : fallback;
+        }
+
+        function viewerButton(urlValue, originValue) {
+          let viewer;
+          let origin;
+          try {
+            origin = new URL(originValue);
+            viewer = new URL(urlValue, origin);
+          } catch {
+            return null;
+          }
+          if (!['http:', 'https:'].includes(origin.protocol) || viewer.origin !== origin.origin) return null;
+          const button = element('button', 'Open full project viewer');
+          button.addEventListener('click', () => {
+            window.parent.postMessage({
+              jsonrpc: '2.0',
+              id: nextId++,
+              method: 'ui/open-link',
+              params: { url: viewer.href },
+            }, '*');
+          });
+          return button;
+        }
+
+        function renderGallery(data) {
+          heading.textContent = 'Public gallery';
+          status.textContent = `${data.results.length} public item${data.results.length === 1 ? '' : 's'} on this page`;
+          const grid = element('div', undefined, 'grid');
+          for (const item of data.results) {
+            const card = element('article', undefined, 'card');
+            card.append(element('h2', item.title || 'Untitled public work'));
+            card.append(element('p', item.owner || 'Public creator', 'muted'));
+            card.append(element('p', `${item.kind || item.renderer || 'Public work'}${item.engine ? ` · ${item.engine}` : ''}`, 'muted'));
+            const open = viewerButton(item.viewer_url, data.site_origin);
+            if (open) card.append(open);
+            grid.append(card);
+          }
+          if (data.has_more) grid.append(element('p', 'More public work is available in the next gallery page.', 'muted'));
+          content.replaceChildren(grid);
+          content.hidden = false;
+        }
+
+        function renderStaticScene(project) {
+          const scene = project.current_version && project.current_version.scene_json;
+          if (!scene || !scene.canvas || !Array.isArray(scene.shapes)) return null;
+          const width = number(scene.canvas.width, 800, 16, 4096);
+          const height = number(scene.canvas.height, 600, 16, 4096);
+          const svg = document.createElementNS(NS, 'svg');
+          svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+          svg.setAttribute('role', 'img');
+          svg.setAttribute('aria-label', `Static preview of ${project.title || 'public project'}`);
+          svg.classList.add('preview');
+          const background = document.createElementNS(NS, 'rect');
+          background.setAttribute('width', String(width));
+          background.setAttribute('height', String(height));
+          background.setAttribute('fill', safeColor(scene.canvas.backgroundColor, '#ffffff'));
+          svg.append(background);
+
+          const layers = new Map((scene.layers || []).map((layer) => [layer.id, layer]));
+          for (const shape of scene.shapes.slice(0, 250)) {
+            if (shape.visible === false || layers.get(shape.layerId)?.visible === false) continue;
+            const transform = shape.transform || {};
+            const group = document.createElementNS(NS, 'g');
+            group.setAttribute('transform', `translate(${number(transform.x)} ${number(transform.y)}) rotate(${number(transform.rotation, 0, -3600, 3600)}) scale(${number(transform.scaleX, 1, -100, 100)} ${number(transform.scaleY, 1, -100, 100)})`);
+            group.setAttribute('opacity', String(number(transform.opacity, 1, 0, 1)));
+            const shapeNode = document.createElementNS(NS, shape.type === 'circle' ? 'circle' : shape.type === 'rect' ? 'rect' : shape.type === 'line' ? 'line' : shape.type === 'path' ? 'path' : 'g');
+            const style = shape.style || {};
+            shapeNode.setAttribute('fill', safeColor(style.fill, 'none'));
+            shapeNode.setAttribute('stroke', safeColor(style.stroke, 'none'));
+            shapeNode.setAttribute('stroke-width', String(number(style.strokeWidth, 1, 0, 100)));
+            if (shape.type === 'circle') {
+              shapeNode.setAttribute('r', String(number(shape.radius, 1, 0.1, 5000)));
+            } else if (shape.type === 'rect') {
+              const w = number(shape.width, 1, 0.1, 5000);
+              const h = number(shape.height, 1, 0.1, 5000);
+              shapeNode.setAttribute('x', String(-w / 2));
+              shapeNode.setAttribute('y', String(-h / 2));
+              shapeNode.setAttribute('width', String(w));
+              shapeNode.setAttribute('height', String(h));
+              shapeNode.setAttribute('rx', String(number(shape.cornerRadius, 0, 0, 1000)));
+            } else if (shape.type === 'line') {
+              shapeNode.setAttribute('x1', '0'); shapeNode.setAttribute('y1', '0');
+              shapeNode.setAttribute('x2', String(number(shape.x2))); shapeNode.setAttribute('y2', String(number(shape.y2)));
+              shapeNode.setAttribute('fill', 'none');
+            } else if (shape.type === 'path' && Array.isArray(shape.points) && shape.points.length) {
+              const points = shape.points.slice(0, 2000).map((point) => `${number(point.x)} ${number(point.y)}`);
+              shapeNode.setAttribute('d', `M ${points.join(' L ')}${shape.closed ? ' Z' : ''}`);
+            } else {
+              continue;
+            }
+            group.append(shapeNode);
+            svg.append(group);
+          }
+          return svg;
+        }
+
+        function renderProject(data) {
+          const project = data.project || data;
+          heading.textContent = project.title || 'Public project';
+          status.textContent = project.owner ? `By ${project.owner}` : 'Published public project';
+          const panel = element('article', undefined, 'panel');
+          if (project.description) panel.append(element('p', project.description));
+          if (project.tags && project.tags.length) panel.append(element('p', `Tags: ${project.tags.join(', ')}`, 'muted'));
+          const preview = renderStaticScene(project);
+          if (preview) panel.append(preview);
+          else panel.append(element('p', 'This public project has no supported static scene preview. Open its full viewer to explore it.', 'muted'));
+          if (project.current_version && project.current_version.scene_json) {
+            const scene = project.current_version.scene_json;
+            panel.append(element('p', `${(scene.shapes || []).length} scene element${(scene.shapes || []).length === 1 ? '' : 's'} · ${scene.canvas?.width || '—'} × ${scene.canvas?.height || '—'}`, 'muted'));
+          }
+          const open = viewerButton(data.viewer_url || project.viewer_url, data.site_origin);
+          if (open) panel.append(open);
+          content.replaceChildren(panel);
+          content.hidden = false;
+        }
+
+        function renderResult(result) {
+          try {
+            let data = result.structuredContent;
+            if (!data) {
+              const text = (result.content || []).find((item) => item.type === 'text')?.text;
+              data = JSON.parse(text || '{}');
+            }
+            if (Array.isArray(data.results)) renderGallery(data);
+            else if (data.project || data.current_version) renderProject(data);
+            else throw new Error('This tool result did not contain public gallery or project data.');
+          } catch (error) {
+            status.textContent = error instanceof Error ? error.message : 'Public content could not be rendered.';
+            content.hidden = true;
+          }
+        }
+
+        window.addEventListener('message', (event) => {
+          if (event.source !== window.parent || !event.data || event.data.jsonrpc !== '2.0') return;
+          if (event.data.id === 1 && event.data.result) {
+            const variables = event.data.result.hostContext?.styles?.variables;
+            if (variables && typeof variables === 'object') {
+              for (const name of ['--color-background-primary', '--color-text-primary', '--color-text-secondary']) {
+                if (typeof variables[name] === 'string') document.documentElement.style.setProperty(name, variables[name]);
+              }
+            }
+            window.parent.postMessage({ jsonrpc: '2.0', method: 'ui/notifications/initialized' }, '*');
+          } else if (event.data.method === 'ui/notifications/tool-result') {
+            renderResult(event.data.params || {});
+          } else if (event.data.method === 'ui/notifications/tool-cancelled') {
+            status.textContent = 'The public content request was cancelled.';
+          } else if (event.data.method === 'ui/notifications/host-context-changed') {
+            const theme = event.data.params?.theme;
+            if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
+          }
+        });
+
+        window.parent.postMessage({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'ui/initialize',
+          params: {
+            protocolVersion: '2024-11-05',
+            appInfo: { name: 'Creatrweb public content', version: '1.0.0' },
+            appCapabilities: { availableDisplayModes: ['inline'] },
+          },
+        }, '*');
+      })();
+    </script>
+  </body>
+</html>

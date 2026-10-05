@@ -26532,7 +26532,7 @@ Create-only pass; nothing implemented. Verified against the repo: no MCP code ex
 | [#1220](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1220) | Authenticated AI tools | DEPENDENCY-BLOCKED | #1217, #1218, #1215 | 2b complex |
 | [#1221](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1221) | Authenticated 3D mirror tools | DEPENDENCY-BLOCKED | #1217, #1215, #1218 | 2b |
 | [#1222](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1222) | MCP tool for piece package intake | DEPENDENCY-BLOCKED | #1217 | 2b |
-| [#1223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1223) | MCP Apps gallery and viewer widget | DEPENDENCY-BLOCKED | #1211, #1212 | 2b |
+| [#1223](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1223) | MCP Apps gallery and viewer widget | IMPLEMENTED; real-client screenshots pending deployment | #1211, #1212 | 2b |
 
 - 2026-10-03 — Owner decisions: E2E audit decision A (20 E? candidates rewritten, none retired) and B (PR smoke widened): [#1224](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1224) CI: add the three offline core-journey specs to the PR smoke set (GROOMED; depends on #1179 and the PR gate green; scoped ci.yml authorization).
 

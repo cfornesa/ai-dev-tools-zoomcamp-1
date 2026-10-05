@@ -45,6 +45,7 @@ from scenes.mcp.server import (
     _trusted_client_ip,
     _unified_gallery_page,
     create_mcp_asgi_app,
+    public_apps_server,
     server,
 )
 from scenes.models import (
@@ -114,9 +115,10 @@ def _create_mcp_access_token(
 
 def _call_mcp_tools(token_value, calls, *, client_ip="203.0.113.5"):
     async def exercise():
-        # The SDK session manager is single-use after lifespan shutdown.
+        # The SDK session managers are single-use after lifespan shutdown.
         # Each helper invocation represents a fresh server process.
         server._session_manager = None
+        public_apps_server._session_manager = None
         test_application = create_mcp_asgi_app(application.django_app)
         lifespan = ApplicationCommunicator(test_application, {"type": "lifespan"})
         await lifespan.send_input({"type": "lifespan.startup"})
@@ -159,6 +161,43 @@ def _mcp_result_payload(result):
         return structured["result"] if set(structured) == {"result"} else structured
     text_content = next(block.text for block in result.content if isinstance(block, TextContent))
     return json.loads(text_content)
+
+
+def _call_public_apps(calls):
+    async def exercise():
+        server._session_manager = None
+        public_apps_server._session_manager = None
+        test_application = create_mcp_asgi_app(application.django_app)
+        lifespan = ApplicationCommunicator(test_application, {"type": "lifespan"})
+        await lifespan.send_input({"type": "lifespan.startup"})
+        assert await lifespan.receive_output() == {"type": "lifespan.startup.complete"}
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=test_application),
+                base_url="http://localhost:8000",
+                headers={"Origin": "http://localhost:8000", "X-Forwarded-For": "203.0.113.5"},
+            ) as http_client:
+                async with streamable_http_client(
+                    "http://localhost:8000/mcp/apps/", http_client=http_client
+                ) as (read_stream, write_stream, _):
+                    async with ClientSession(read_stream, write_stream) as mcp_client:
+                        await mcp_client.initialize()
+                        tools = await mcp_client.list_tools()
+                        resources = await mcp_client.list_resources()
+                        resource = await mcp_client.read_resource(
+                            AnyUrl("ui://creatrweb/public-content")
+                        )
+                        results = [
+                            await mcp_client.call_tool(name, arguments or {})
+                            for name, arguments in calls
+                        ]
+                        return tools, resources, resource, results
+        finally:
+            await lifespan.send_input({"type": "lifespan.shutdown"})
+            assert await lifespan.receive_output() == {"type": "lifespan.shutdown.complete"}
+            await lifespan.wait()
+
+    return anyio.run(exercise)
 
 
 def _enable_mistral_agent_model() -> None:
@@ -448,6 +487,91 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
     assert all(len(event.client_ip_fingerprint) == 64 for event in audits)
     assert "203.0.113.5" not in json.dumps([event.client_ip_fingerprint for event in audits])
     assert len({event.client_ip_fingerprint for event in audits}) == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_anonymous_mcp_apps_exposes_only_public_content_and_sandboxed_widget():
+    cache.clear()
+    owner = get_user_model().objects.create_user(username="mcp-app-public-owner")
+    public = Project.objects.create(
+        owner=owner,
+        title="MCP app public project",
+        visibility=Project.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    version = SceneVersion.objects.create(
+        project=public,
+        sequence=1,
+        scene_json=copy.deepcopy(BLANK_SCENE),
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    public.current_version = version
+    public.save(update_fields=["current_version"])
+    private = Project.objects.create(
+        owner=owner,
+        title="MCP app private project",
+        visibility=Project.Visibility.PRIVATE,
+        published_at=None,
+    )
+    private_version = SceneVersion.objects.create(
+        project=private,
+        sequence=1,
+        scene_json=copy.deepcopy(BLANK_SCENE),
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    private.current_version = private_version
+    private.save(update_fields=["current_version"])
+
+    tools, resources, resource, results = _call_public_apps(
+        [
+            ("show_public_gallery", {"page_size": 12}),
+            ("show_public_project", {"project_id": str(public.public_id)}),
+            ("show_public_project", {"project_id": str(private.public_id)}),
+        ]
+    )
+
+    assert {tool.name for tool in tools.tools} == {"show_public_gallery", "show_public_project"}
+    assert all(
+        tool.meta["ui"]
+        == {
+            "resourceUri": "ui://creatrweb/public-content",
+            "visibility": ["model"],
+        }
+        for tool in tools.tools
+    )
+    assert {str(item.uri) for item in resources.resources} == {"ui://creatrweb/public-content"}
+    assert resources.resources[0].mimeType == "text/html;profile=mcp-app"
+    widget_content = resource.contents[0]
+    assert isinstance(widget_content, TextResourceContents)
+    assert widget_content.mimeType == "text/html;profile=mcp-app"
+    assert widget_content.meta["ui"]["csp"] == {
+        "connectDomains": [],
+        "resourceDomains": [],
+        "frameDomains": [],
+        "baseUriDomains": [],
+    }
+    assert widget_content.meta["ui"]["permissions"] == {}
+    assert "window.parent.postMessage" in widget_content.text
+    assert "tools/call" not in widget_content.text
+    assert "<script src=" not in widget_content.text
+    assert "<iframe" not in widget_content.text.lower()
+
+    gallery = _mcp_result_payload(results[0])
+    assert [item["id"] for item in gallery["results"]] == [str(public.public_id)]
+    assert gallery["site_origin"] == "http://localhost:8000"
+    project_result = _mcp_result_payload(results[1])
+    assert project_result["project"]["id"] == str(public.public_id)
+    assert project_result["site_origin"] == "http://localhost:8000"
+    assert project_result["viewer_url"].startswith("http://localhost:8000/")
+    assert results[2].isError is True
+    audit_rows = MCPToolAuditEvent.objects.filter(
+        tool_name__in=("show_public_gallery", "show_public_project")
+    )
+    assert audit_rows.count() == 3
+    assert not audit_rows.filter(user__isnull=False).exists()
+    assert not audit_rows.filter(client_id__isnull=False).exists()
 
 
 @pytest.mark.django_db(transaction=True)

@@ -52,6 +52,29 @@ for client configuration details.
 See [VS Code's MCP server configuration guide](https://code.visualstudio.com/docs/agent-customization/mcp-servers)
 for where to place this file and how to start the configured server.
 
+## Anonymous public-content apps endpoint (#1223)
+
+`POST /mcp/apps/` is a separate, anonymous MCP Apps surface. It exposes only
+`show_public_gallery` and `show_public_project`; both return public REST
+content through the same eligibility checks, plus a plain JSON text fallback.
+The tools are rate-limited to 60 calls per trusted caller IP per minute and
+write payload-free audit rows with no user/client identity. The linked
+`ui://creatrweb/public-content` resource is `text/html;profile=mcp-app`; its
+CSP declares no network, external resource, or nested-frame origins, and it
+requests no browser permissions. The widget renders only the tool result,
+never calls MCP tools itself, and sends a validated same-site viewer URL to the
+host only when the user selects “Open full project viewer.” The endpoint has
+no owner, write, AI, or token-related tools. The existing `/mcp/` endpoint and
+its OAuth requirements are unchanged.
+Browser CORS preflight is restricted to origins listed in
+`CSRF_TRUSTED_ORIGINS`.
+
+For local transport verification, run the Django ASGI entry point (for
+example, `cd backend && uv run --with uvicorn uvicorn backend.main:app
+--host 127.0.0.1 --port 8000`) and include the reference host's exact origin
+in `CSRF_TRUSTED_ORIGINS`. Django's `manage.py runserver` serves the WSGI
+application and does not dispatch these MCP routes.
+
 ## Register an authenticated client
 
 OAuth clients are pre-registered; there is no public dynamic-registration
@@ -134,8 +157,10 @@ use the same eligibility rules as their REST counterpart; a missing or
 ineligible individual resource returns not found. MCP schemas below list the
 SDK input properties; optional properties may be omitted.
 
-| Tool | Required OAuth scope |
+| Tool | Required OAuth scope / endpoint |
 |---|---|
+| `show_public_gallery` | None; anonymous `/mcp/apps/` endpoint. |
+| `show_public_project` | None; anonymous `/mcp/apps/` endpoint. |
 | `health_check` | None beyond a valid bearer token. |
 | `whoami` | None beyond a valid bearer token. |
 | `list_public_gallery` | `gallery:read` |
@@ -185,6 +210,8 @@ SDK input properties; optional properties may be omitted.
 
 | Tool | Input schema | Example call | Result |
 |---|---|---|---|
+| `show_public_gallery` | `page_size?: integer` (default 12, clamped 1–60) | `show_public_gallery({"page_size": 8})` | Eligible public 2D/3D/generated/collection cards and viewer origin; also linked to the public content UI. |
+| `show_public_project` | `project_id: string` | `show_public_project({"project_id": "<public-uuid>"})` | Published public 2D project detail, scene preview data, and same-site viewer URL; also linked to the public content UI. |
 | `health_check` | `{}` | `health_check()` | Safe database/cache status without connection details. |
 | `whoami` | `{}` | `whoami()` | Authenticated user ID, username, client ID, and granted scopes. |
 | `list_public_gallery` | `cursor?: string \| null`, `page_size?: integer` (default 24, clamped 1–60) | `list_public_gallery({"page_size": 10})` | One newest-first page of the legacy public 2D/3D project gallery, `next_cursor`, and `has_more`. |
@@ -241,12 +268,13 @@ characters or an unsupported scope.
 
 | URI | Content |
 |---|---|
+| `ui://creatrweb/public-content` | No authentication; `text/html;profile=mcp-app`, resource CSP blocks network, external resources, and nested frames; no browser permissions. |
 | `gallery://public` | `gallery:read`; first bounded page of the public legacy 2D project gallery. |
 | `project://{project_id}` | `gallery:read`; public 2D project by UUID; private and missing projects are not found. |
 
 ## Related contracts
 
-- [`docs/api.md`](api.md) records the `/mcp/` transport, privacy, throttling,
+- [`docs/api.md`](api.md) records both `/mcp/` and `/mcp/apps/` transport, privacy, throttling,
   audit, and account-lifecycle contract.
 - [`openapi.yaml`](../openapi.yaml) documents the HTTP endpoint. MCP tool and
   resource schemas are discovered through the MCP protocol.

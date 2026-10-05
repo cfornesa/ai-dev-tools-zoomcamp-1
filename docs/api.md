@@ -16,6 +16,25 @@ without creating a scene version or activity record. The 3D endpoint uses the
 same owner-only policy as the 2D endpoint; the report that it is anonymous is
 not reflected in this repository's code or OpenAPI contract.
 
+## Anonymous MCP Apps public-content endpoint (#1223)
+
+`POST /mcp/apps/` is an isolated, anonymous, read-only MCP Apps endpoint for
+public gallery and project presentation. It lists only `show_public_gallery`
+and `show_public_project`, linked to the `ui://creatrweb/public-content` HTML
+resource using the stable SEP-1865 / ext-apps contract
+(`text/html;profile=mcp-app`). The tools reuse the same eligibility selectors
+and public serializers as the anonymous REST gallery and public-project
+routes; private, unlisted, draft, and deleted content remains unavailable.
+There are no owner, write, AI, or authenticated tools on this endpoint. Its UI
+uses only tool-result data and makes no tool calls. Text content remains
+available to hosts without MCP Apps support. Requests retain the MCP body
+limit and host/origin validation. Browser requests are CORS-enabled only for
+configured trusted origins. Anonymous tool calls are limited to 60 per
+trusted caller IP per minute and audited without user or client identity.
+The endpoint never accepts or returns OAuth tokens, session cookies, secrets,
+or owner-private data. Resource CSP declares no network, nested frame, or
+external resource domains and requests no browser permissions.
+
 ## Authenticated MCP endpoint (#1217)
 
 `POST /mcp/` is the OAuth-protected Model Context Protocol Streamable HTTP

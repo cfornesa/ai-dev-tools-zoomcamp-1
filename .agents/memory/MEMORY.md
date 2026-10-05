@@ -29,6 +29,7 @@
 - [Mistral credential rotation](mistral-credential-rotation.md) — Retain prior Fernet roots during controlled credential re-encryption before retiring them.
 - [Allauth JWT runtime dependency](allauth-jwt-runtime-dependency.md) — Pin PyJWT explicitly because the installed allauth release imports jwt during OAuth callback validation without declaring it.
 - [Browser-facing CSRF origin](browser-facing-csrf-origin.md) — Same-origin browser POSTs must trust the Vite origin, not only Django's internal backend port.
+- [MCP ASGI local verification](mcp-asgi-local-verification.md) — MCP routes are mounted only in the ASGI wrapper; Django's WSGI `runserver` returns 404 for them, and browser hosts need an explicitly trusted origin.
 - [GitHub HTTPS credential helper](github-https-credential-helper.md) — A valid GIT_URL secret may need an explicit one-command Git credential helper to bypass stale HTTPS credentials.
 - [Published-app checkpoint commits](published-app-checkpoint-commits.md) — Treat “Published your App” commits as disposable checkpoints during Git reconciliation; preserve meaningful ancestor work and drop checkpoint-only divergence.
 - [Ignored tracked task files](ignored-tracked-task-files.md) — Some tracked .local task files are ignored by default; force-stage the intended incoming version when resolving modify/delete conflicts.

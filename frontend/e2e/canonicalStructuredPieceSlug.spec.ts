@@ -52,6 +52,9 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
 
   const anonymousContext = await browser.newContext();
   const anonymousPage = await anonymousContext.newPage();
+  const featuredAttribution = anonymousPage.locator(
+    '.public-project-viewer > header > .public-project-attribution',
+  );
   try {
     for (const viewport of [
       { width: 1280, height: 900 },
@@ -64,7 +67,8 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
         anonymousPage.getByRole('heading', { name: piece2d.title, exact: true }),
       ).toBeVisible();
       await expect(anonymousPage.getByTestId('public-scene-canvas')).toBeVisible();
-      await expect(anonymousPage.getByText(expectedAttribution, { exact: true })).toBeVisible();
+      await expect(featuredAttribution).toHaveCount(1);
+      await expect(featuredAttribution).toHaveText(expectedAttribution);
       await expect(anonymousPage.locator('.piece-stage-menu-trigger')).toHaveCount(0);
       await expect(anonymousPage.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
       await expect(anonymousPage.getByRole('button', { name: 'Open download menu' })).toBeVisible();
@@ -76,7 +80,8 @@ test('canonical structured piece routes render at desktop and mobile sizes', asy
         anonymousPage.getByRole('heading', { name: piece3d.title, exact: true }),
       ).toBeVisible();
       await expect(anonymousPage.getByTestId('scene3d-preview-canvas-frame')).toBeVisible();
-      await expect(anonymousPage.getByText(expectedAttribution, { exact: true })).toBeVisible();
+      await expect(featuredAttribution).toHaveCount(1);
+      await expect(featuredAttribution).toHaveText(expectedAttribution);
       await expect(
         anonymousPage.getByRole('button', { name: 'Open piece controls menu' }),
       ).toHaveCount(0);

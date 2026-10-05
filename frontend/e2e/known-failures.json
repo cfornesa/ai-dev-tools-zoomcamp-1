@@ -21,13 +21,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/drawingPlane3d.spec.ts|drawing plane renders in 3D scenes (#779, #780, #785, #786) › threejs on the immersive route",
-    "issue": 1178,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/pieceTemplateParity2d.spec.ts|2D runtime template parity (#799) › asserts online and Full ZIP controls for every 2D engine",
     "issue": 1166,
     "added": "2026-10-03",

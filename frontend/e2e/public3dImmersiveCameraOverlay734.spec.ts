@@ -80,7 +80,11 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
         );
         const videoBox = videoElement?.getBoundingClientRect();
         const toolbarElement = frameElement.querySelector<HTMLElement>('.piece-stage-toolbar');
-        const dpadElement = frameElement.querySelector<HTMLElement>('.scene3d-touch-dpad');
+        // Issue #1235 places the phone D-pad below the canvas frame while
+        // keeping it in the preview's stacking context. Read the sibling
+        // control from the preview so this remains a real z-index check.
+        const dpadElement =
+          frameElement.parentElement?.querySelector<HTMLElement>('.scene3d-touch-dpad');
         return {
           frame: { x: frameBox.x, y: frameBox.y, width: frameBox.width, height: frameBox.height },
           video: videoBox

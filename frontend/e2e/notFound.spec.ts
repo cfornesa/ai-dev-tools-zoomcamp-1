@@ -60,7 +60,10 @@ test.describe('Not found SPA view', () => {
       await expect(galleryLink).toHaveAttribute('href', '/gallery');
 
       await homeLink.click();
-      await expect(page).toHaveURL('/');
+      // The root route is auth-aware: anonymous visitors land on the public
+      // gallery. Wait for that final destination instead of racing the
+      // intermediate `/` history entry while RootRedirect resolves.
+      await expect(page).toHaveURL('/gallery?type=all');
 
       await page.goto('/definitely-not-a-real-route');
       await galleryLink.click();

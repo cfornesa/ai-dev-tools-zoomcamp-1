@@ -7,7 +7,10 @@ import hashlib
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
+from django.conf import settings as django_settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.test import override_settings
 from django.urls import reverse
 from oauth2_provider.models import (
     AccessToken,
@@ -15,6 +18,7 @@ from oauth2_provider.models import (
     RefreshToken,
 )
 
+from backend.settings import oauth_redirect_uri_schemes
 from scenes.models import ApplicationAdmin
 
 pytestmark = pytest.mark.django_db
@@ -36,6 +40,34 @@ def _make_application(name='Desktop MCP client', redirect_uri=REDIRECT_URI):
         authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
         skip_authorization=False,
     )
+
+
+@pytest.mark.parametrize('debug', [True, False])
+def test_redirect_uri_schemes_follow_development_and_production_policy(debug):
+    provider_settings = {
+        **django_settings.OAUTH2_PROVIDER,
+        'ALLOWED_REDIRECT_URI_SCHEMES': oauth_redirect_uri_schemes(debug),
+    }
+    with override_settings(DEBUG=debug, OAUTH2_PROVIDER=provider_settings):
+        secure = Application(
+            name='HTTPS callback',
+            redirect_uris='https://client.example/callback',
+            client_type=Application.CLIENT_PUBLIC,
+            authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
+        )
+        secure.full_clean()
+
+        loopback = Application(
+            name='HTTP loopback callback',
+            redirect_uris='http://127.0.0.1:43123/callback',
+            client_type=Application.CLIENT_PUBLIC,
+            authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
+        )
+        if debug:
+            loopback.full_clean()
+        else:
+            with pytest.raises(ValidationError, match='redirect uri URI Validation error'):
+                loopback.full_clean()
 
 
 def _authorize(

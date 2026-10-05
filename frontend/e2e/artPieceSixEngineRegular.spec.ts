@@ -56,6 +56,11 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
     page,
     context,
   }, testInfo: TestInfo) => {
+    // The complete 12-route matrix took 25.1s locally; allow 60s on slower
+    // CI workers while keeping the timeout bounded well below the default
+    // suite-wide limit.
+    test.setTimeout(60_000);
+
     await loginViaUI(page, e2eFixtures.owner.email, e2eFixtures.password);
     const profileResponse = await apiGet(context, '/api/account/profile/');
     expect(profileResponse.ok()).toBe(true);

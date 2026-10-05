@@ -8,7 +8,9 @@ import * as projectsApi from '../api/projects';
 import * as projects3dApi from '../api/projects3d';
 import * as profileApi from '../api/profile';
 import * as authModule from '../auth/useAuth';
+import { formatDate } from '../components/formatDate';
 import * as repository from '../storage/localProjectRepository';
+import * as localThumbnail from '../storage/localThumbnail';
 import Gallery from './Gallery';
 
 vi.mock('../api/projects');
@@ -16,6 +18,7 @@ vi.mock('../api/projects3d');
 vi.mock('../api/profile');
 vi.mock('../auth/useAuth');
 vi.mock('../storage/localProjectRepository');
+vi.mock('../storage/localThumbnail');
 
 const mockedListProjects = vi.mocked(projectsApi.listProjects);
 const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
@@ -27,6 +30,7 @@ const mockedCreateLocal = vi.mocked(repository.createProject);
 const mockedCreateScene = vi.mocked(repository.createScene);
 const mockedCreateLocal3D = vi.mocked(repository.createLocal3DProject);
 const mockedListLocal = vi.mocked(repository.listProjectsForOwner);
+const mockedEnsureLocalThumbnail = vi.mocked(localThumbnail.ensureLocalThumbnail);
 const localDb = { close: vi.fn() } as unknown as IDBDatabase;
 
 function baseProject3D(overrides: Partial<projects3dApi.Project3D> = {}): projects3dApi.Project3D {
@@ -97,6 +101,7 @@ beforeEach(() => {
   mockedListProjects3D.mockResolvedValue([]);
   mockedOpenLocal.mockResolvedValue(localDb);
   mockedListLocal.mockResolvedValue([]);
+  mockedEnsureLocalThumbnail.mockResolvedValue(null);
   mockedCreateLocal.mockResolvedValue({
     id: 'local-new',
     ownerId: 'alice',
@@ -129,6 +134,94 @@ beforeEach(() => {
 });
 
 describe('Gallery loading/error/empty/populated states', () => {
+  it('renders local cards with metadata, fallback, and lazy thumbnail backfill', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedListLocal.mockResolvedValue([
+      {
+        id: 'local-with-thumbnail',
+        ownerId: 'alice',
+        title: 'Local illustrated piece',
+        description: 'A local description',
+        thumbnail: new Blob(['png'], { type: 'image/png' }),
+        sceneOrder: [],
+        activeSceneId: null,
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-02T00:00:00Z',
+        kind: 'generated',
+        versionOrder: [],
+        currentVersionId: null,
+      },
+      {
+        id: 'local-without-thumbnail',
+        ownerId: 'alice',
+        title: 'Local empty piece',
+        description: '',
+        sceneOrder: [],
+        activeSceneId: null,
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-03T00:00:00Z',
+        kind: '3d',
+        versionOrder: [],
+        currentVersionId: null,
+      },
+    ]);
+
+    renderGallery();
+
+    expect(
+      await screen.findByRole('heading', { name: 'Local illustrated piece' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('A local description')).toBeInTheDocument();
+    expect(screen.getByText('AI')).toBeInTheDocument();
+    expect(screen.getByText('Generated')).toBeInTheDocument();
+    expect(screen.getAllByText('Local only')).toHaveLength(2);
+    await waitFor(() =>
+      expect(
+        screen.getByRole('img', { name: 'Preview of Local illustrated piece' }),
+      ).toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole('img', { name: 'No preview available for Local empty piece' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(`Last updated ${formatDate('2026-01-02T00:00:00Z')}`),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Open local editor' })[0]).toHaveAttribute(
+      'href',
+      '/local-generated/local-with-thumbnail',
+    );
+    expect(mockedEnsureLocalThumbnail).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'local-without-thumbnail' }),
+    );
+  });
+
+  it('includes local 3D projects in the 3D renderer filter', async () => {
+    mockedListProjects.mockResolvedValue([]);
+    mockedListLocal.mockResolvedValue([
+      {
+        id: 'local-3d',
+        ownerId: 'alice',
+        title: 'Local 3D project',
+        sceneOrder: [],
+        activeSceneId: null,
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-02',
+        kind: '3d',
+        versionOrder: [],
+        currentVersionId: null,
+      },
+    ]);
+
+    renderGallery();
+    await screen.findByRole('heading', { name: 'Local 3D project' });
+    await userEvent.setup().selectOptions(screen.getByLabelText('Renderer'), '3d');
+    expect(screen.getByRole('heading', { name: 'Local 3D project' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open local editor' })).toHaveAttribute(
+      'href',
+      '/local-projects-3d/local-3d',
+    );
+  });
+
   it('shows a loading status while projects are being fetched', () => {
     mockedListProjects.mockReturnValue(new Promise(() => {})); // never resolves
 

@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "creatrweb-public": {
+      "type": "http",
+      "url": "https://<application-host>/mcp/",
+      "oauth": {
+        "clientId": "<pre-registered-client-id>"
+      }
+    }
+  }
+}

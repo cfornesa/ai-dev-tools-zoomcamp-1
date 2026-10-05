@@ -389,7 +389,7 @@ class _Camera:
         return (screen_x, screen_y)
 
 
-def _draw_faces(scene: dict, camera: _Camera) -> list[tuple[float, str, list, tuple]]:
+def _draw_faces(scene: dict, camera: _Camera) -> list[tuple[float, str, list, tuple]]:  # noqa: C901
     """Returns a list of `(depth, kind, payload, rgba)` draw commands,
     unsorted -- caller sorts by depth (descending: far to near)."""
     groups_by_id = {g["id"]: g for g in scene.get("groups") or []}
@@ -504,7 +504,7 @@ def _draw_faces(scene: dict, camera: _Camera) -> list[tuple[float, str, list, tu
     return commands
 
 
-def render_scene3d_thumbnail(scene: dict) -> Image.Image:
+def render_scene3d_thumbnail(scene: dict) -> Image.Image:  # noqa: C901
     """Renders `scene` (a validated `scene3d` document) directly at
     `CARD_WIDTH`x`CARD_HEIGHT`. Raises `Thumbnail3DRenderError` for
     anything that stops it from producing a well-formed image."""

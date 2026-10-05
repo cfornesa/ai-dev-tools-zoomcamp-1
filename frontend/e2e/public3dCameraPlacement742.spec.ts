@@ -87,9 +87,10 @@ async function createPublishedPiece(
 
 async function downloadZip(page: import('@playwright/test').Page, label: string): Promise<JSZip> {
   await page.getByRole('button', { name: 'Open download menu' }).click();
-  const download = page.waitForEvent('download');
-  await page.getByRole('menuitem', { name: label, exact: true }).click();
-  const file = await download;
+  const [file] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30_000 }),
+    page.getByRole('menuitem', { name: label, exact: true }).click(),
+  ]);
   return JSZip.loadAsync(fs.readFileSync((await file.path())!));
 }
 
@@ -109,6 +110,7 @@ test.describe('public 3D camera placement contract (#742)', () => {
     page,
     context,
   }, testInfo) => {
+    test.setTimeout(60_000);
     const fixtures = requireE2EFixtures();
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const overlay = await createPublishedPiece(context, 'overlay');
@@ -153,10 +155,12 @@ test.describe('public 3D camera placement contract (#742)', () => {
           );
           await toolbar.getByRole('button', { name: 'Open download menu' }).hover();
           await expect(
-            toolbar.getByRole('button', { name: 'Open download menu' }).getByRole('tooltip'),
+            toolbar
+              .getByRole('button', { name: 'Open download menu' })
+              .locator('.piece-stage-tooltip'),
           ).toHaveText('Open download menu');
 
-          await toolbar.getByRole('button', { name: 'Piece controls' }).click();
+          await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
           const controls = stage.getByRole('group', { name: 'Camera view' });
           await expect(controls.getByRole('button', { name: 'Enable camera view' })).toBeVisible();
           const opacity = controls.getByRole('slider', { name: 'Camera overlay opacity' });

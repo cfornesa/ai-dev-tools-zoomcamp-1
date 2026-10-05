@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { apiGet } from './support/api.js';
+import { apiGet, apiPatch } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
@@ -25,7 +25,23 @@ test.describe('profile photo upload and removal (#824)', () => {
       const ownerPage = await ownerContext.newPage();
       await loginViaUI(ownerPage, fixtures.owner.email, fixtures.password);
       const profile = await apiGet(ownerContext, '/api/account/profile/');
-      const handle = ((await profile.json()) as { handle: string }).handle;
+      const currentProfile = (await profile.json()) as {
+        handle: string;
+        profile_image_url: string;
+        revision: number;
+      };
+      if (currentProfile.profile_image_url) {
+        const clearedUrl = await apiPatch(ownerContext, '/api/account/profile/', {
+          revision: currentProfile.revision,
+          profile_image_url: '',
+        });
+        if (clearedUrl.status() !== 200) {
+          throw new Error(
+            `Could not clear the fixture profile image URL (${clearedUrl.status()}).`,
+          );
+        }
+      }
+      const handle = currentProfile.handle;
 
       await ownerPage.setViewportSize(viewport);
       await ownerPage.goto('/account/settings');

@@ -7,7 +7,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiGet } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { createServerProject2D } from './support/createProject.js';
 import {
   closePieceControlsMenu,
   openEditScene,
@@ -85,7 +85,7 @@ test.describe('structured 2D ink layer (#775)', () => {
     }) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
 
       await openInk(page);
       await expect(page.getByTestId('ink-frozen-indicator')).toBeVisible();
@@ -133,7 +133,7 @@ test.describe('structured 2D ink layer (#775)', () => {
 
       // Save, then the saved scene has ONE ink group with the strokes.
       await openEditScene(page);
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await page.getByRole('button', { name: 'Save scene', exact: true }).click();
       await closePieceControlsMenu(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version/);
       const scene = await savedScene(page, projectId);

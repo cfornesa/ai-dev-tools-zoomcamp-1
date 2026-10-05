@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from scenes.art_piece_persistence import _piece_data
 from scenes.gallery import eligible_projects, eligible_projects3d
 from scenes.models import ArtPiece, Project, Project3D, PublicProfile, SceneVersion, SceneVersion3D
+from scenes.permissions import Action, can
 from scenes.serializers import (
     Project3DSerializer,
     ProjectSerializer,
@@ -50,7 +51,7 @@ def _public_art_piece_versions(piece):
 class PublicPieceBySlugView(APIView):
     permission_classes: list = []
 
-    def get(self, request, handle, piece_slug):
+    def get(self, request, handle, piece_slug):  # noqa: C901
         try:
             profile = _profile_or_404(handle, request)
         except PublicProfile.DoesNotExist as exc:
@@ -58,15 +59,16 @@ class PublicPieceBySlugView(APIView):
         owner = profile.user
         is_owner = request.user.is_authenticated and request.user.pk == owner.pk
 
-        def own_or_public(model_manager, public_queryset):
+        def own_or_public(model_manager, public_queryset, action):
             """The public record, or (owner only, #790) their own private one."""
             record = public_queryset.filter(owner=owner, public_slug=piece_slug)
             found = record.first()
-            if found is None and is_owner:
-                found = model_manager.filter(
-                    owner=owner, public_slug=piece_slug, is_deleted=False
-                ).first()
-            return found
+            if found is not None and can(request.user, action, found):
+                return found
+            found = model_manager.filter(
+                owner=owner, public_slug=piece_slug, is_deleted=False
+            ).first()
+            return found if found is not None and can(request.user, action, found) else None
 
         def with_edit_url(payload: dict) -> dict:
             if is_owner:
@@ -82,6 +84,7 @@ class PublicPieceBySlugView(APIView):
                     to_attr="_public_version_summaries",
                 )
             ),
+            Action.PROJECT_READ,
         )
         if project:
             return Response(
@@ -103,6 +106,7 @@ class PublicPieceBySlugView(APIView):
                     to_attr="_public_version_summaries",
                 )
             ),
+            Action.PROJECT3D_READ,
         )
         if project3d:
             return Response(

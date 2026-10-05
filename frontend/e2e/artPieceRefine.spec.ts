@@ -8,6 +8,15 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+async function openAiEdit(page: import('@playwright/test').Page): Promise<void> {
+  const toolsToggle = page.getByRole('button', { name: 'Editor tools', exact: true });
+  if ((page.viewportSize()?.width ?? 1280) <= 1024) {
+    await expect(toolsToggle).toBeVisible();
+    await toolsToggle.click();
+  }
+  await page.getByRole('button', { name: 'AI edit', exact: true }).click();
+}
+
 test.describe('generated art-piece refinement (#663)', () => {
   const fixtures = requireE2EFixtures() as Fixtures;
 
@@ -43,6 +52,7 @@ test.describe('generated art-piece refinement (#663)', () => {
       expect(created.status()).toBe(201);
 
       await page.goto(`/users/@${profile.handle}/edit/${slug}`);
+      await openAiEdit(page);
       const prompt = page.getByRole('textbox', {
         name: 'Describe the revision you want to generate',
       });
@@ -101,6 +111,7 @@ test.describe('generated art-piece refinement (#663)', () => {
     const piece = (await created.json()) as { public_id: string };
 
     await page.goto(`/users/@${profile.handle}/edit/${slug}`);
+    await openAiEdit(page);
     const prompt = page.getByRole('textbox', {
       name: 'Describe the revision you want to generate',
     });

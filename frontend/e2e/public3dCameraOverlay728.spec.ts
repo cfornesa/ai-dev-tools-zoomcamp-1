@@ -3,6 +3,7 @@ import { chromium, expect, test } from '@playwright/test';
 
 import { apiGet } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -19,19 +20,9 @@ test.describe('public 3D camera overlay geometry (#728)', () => {
     page,
   }, testInfo) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    const createdResponse = page.waitForResponse(
-      (response) =>
-        response.url().endsWith('/api/projects3d/') && response.request().method() === 'POST',
-    );
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    const created = await createdResponse;
-    expect(created.status()).toBe(201);
-    const { id: projectId } = (await created.json()) as { id: string };
-    await page.waitForURL(/\/users\/@[^/]+\/edit\/untitled-3d-scene(?:-\d+)?$/);
+    const projectId = await createServerProject3D(page);
     expect(projectId).toBeTruthy();
-    if (!projectId) throw new Error('Could not determine the created 3D project id.');
+    expect(page.url()).toMatch(/\/users\/@[^/]+\/edit\/[^/]+$/);
 
     await page
       .getByRole('group', { name: 'Publication status' })

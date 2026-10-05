@@ -98,7 +98,7 @@ describe('"Take screenshot" (2D manual editor, issue #285)', () => {
     expandAllCollapsibleSections();
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
+    expect(screen.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Take screenshot' }));
 
     await waitFor(() => expect(mockedDownloadBlob).toHaveBeenCalledTimes(1));

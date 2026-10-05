@@ -60,6 +60,7 @@ function ImmersiveProject3DViewer({
   const [searchParams] = useSearchParams();
   const isEmbed = searchParams.get('embed') === '1';
   const isCmsEmbed = isEmbed && searchParams.get('cms') === '1';
+  const isCanonicalRoute = window.location.pathname.startsWith('/users/@');
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [project, setProject] = useState<PublicProject3D | null>(initialProject ?? null);
   const [shareCopyStatus, setShareCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
@@ -231,6 +232,7 @@ function ImmersiveProject3DViewer({
             flyControls
             onDownload={(variant) => void handleDownload(variant)}
             toolbarMode="inline"
+            publicStructuredViewer={isCanonicalRoute}
           />
         )}
       </section>

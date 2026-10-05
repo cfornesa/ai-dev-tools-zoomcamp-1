@@ -1,7 +1,23 @@
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
+import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
+import { ApiError } from '../api/client';
+import { intakePiecePackage } from '../api/pieceIntake';
+import {
+  getProject as getRemoteProject,
+  getSceneVersion,
+  publishProject,
+  type PublishValidationErrorBody,
+  type Project,
+} from '../api/projects';
+import { fetchStorageEstimate } from '../api/storageUsage';
+import {
+  validateProjectMetadataForPublish,
+  validateProjectMetadataForLocalSave,
+  type FieldErrors,
+} from '../validation/projectMetadata';
 import { ConflictResolutionPanel } from '../components/ConflictResolutionPanel';
 import { MutationRecoveryPanel } from '../components/MutationRecoveryPanel';
 import { MediaTransferRecoveryPanel } from '../components/MediaTransferRecoveryPanel';
@@ -11,12 +27,14 @@ import {
   type LocalPiecePackageResult,
 } from '../storage/localPiecePackage';
 import { getFolderBridgeStatus, writeArchiveFile } from '../storage/folderArchiveBridge';
+import { ensureLocalThumbnail } from '../storage/localThumbnail';
 import { appendRecoveryDraft, getLatestRecoveryDraft } from '../storage/localRecovery';
 import {
   getProject,
   listMediaAssetsForProject,
   listScenesForProject,
   openLocalProjectDatabase,
+  updateProject,
   updateScene,
   type LocalMediaAssetRecord,
   type LocalProjectRecord,
@@ -42,6 +60,11 @@ import {
   saveMediaTransfer,
 } from '../storage/mediaTransferRepository';
 import { resumeMediaTransfer, type MediaTransferRecord } from '../storage/mediaTransfer';
+import {
+  collectMediaAssetIds,
+  summarizeLocalPublicUpdate,
+  type LocalPublicUpdateDiff,
+} from '../storage/localPublicUpdate';
 import LocalProject3DWorkspace from './LocalProject3DWorkspace';
 import LocalCloudSyncControl from './LocalCloudSyncControl';
 
@@ -56,6 +79,178 @@ function downloadBlob(blob: Blob, filename: string): void {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function LocalProjectDetailsPanel({
+  project,
+  onSaved,
+}: {
+  project: LocalProjectRecord;
+  onSaved: (project: LocalProjectRecord) => void;
+}) {
+  const [title, setTitle] = useState(project.title);
+  const [description, setDescription] = useState(project.description ?? '');
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [saving, setSaving] = useState(false);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextErrors = validateProjectMetadataForLocalSave({ title });
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    setSaving(true);
+    try {
+      const db = await openLocalProjectDatabase();
+      const updated = await updateProject(db, project.ownerId, project.id, {
+        title: title.trim(),
+        description,
+      });
+      db.close();
+      onSaved(updated);
+    } catch {
+      setErrors({ form: ['Could not save local project details. Please try again.'] });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form
+      className="editor-details-form"
+      aria-label="Local project details"
+      onSubmit={(event) => void save(event)}
+      noValidate
+    >
+      <div>
+        <label htmlFor="local-project-title">Title</label>
+        <input
+          id="local-project-title"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          aria-invalid={errors.title ? true : undefined}
+          aria-describedby={errors.title ? 'local-project-title-error' : undefined}
+        />
+        {errors.title && (
+          <p id="local-project-title-error" role="alert">
+            {errors.title.join(' ')}
+          </p>
+        )}
+      </div>
+      <div>
+        <label htmlFor="local-project-description">Description</label>
+        <textarea
+          id="local-project-description"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+        />
+      </div>
+      {errors.form && <p role="alert">{errors.form.join(' ')}</p>}
+      <button type="submit" disabled={saving}>
+        {saving ? 'Saving…' : 'Save project details'}
+      </button>
+    </form>
+  );
+}
+
+/**
+ * Issue #942: the "make this local-only piece public" transfer. Unlike
+ * `PublishControl.tsx`'s `PublishConfirmDialog` (which publishes an
+ * already-server-backed project with a title/description assumed valid),
+ * a local-only piece may have no description at all yet, so this dialog
+ * collects and validates title/description inline rather than requiring a
+ * separate local details-editing feature first.
+ */
+function MakePublicDialog({
+  initialTitle,
+  initialDescription,
+  busy,
+  onConfirm,
+  onCancel,
+  actionLabel = 'Publish',
+  headingLabel = 'Make',
+  changeSummary,
+}: {
+  initialTitle: string;
+  initialDescription: string;
+  busy: boolean;
+  onConfirm: (title: string, description: string) => void;
+  onCancel: () => void;
+  actionLabel?: string;
+  headingLabel?: string;
+  changeSummary?: string;
+}) {
+  const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onCancel);
+  const [title, setTitle] = useState(initialTitle);
+  const [description, setDescription] = useState(initialDescription);
+  const errors: FieldErrors = validateProjectMetadataForPublish({ title, description });
+  const canConfirm = Object.keys(errors).length === 0;
+  return (
+    <div
+      ref={dialogRef}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+      role="alertdialog"
+      aria-labelledby="make-public-title"
+      aria-describedby="make-public-description"
+      className="publish-confirm-dialog"
+    >
+      <h4 id="make-public-title">
+        {headingLabel} &quot;{title || 'this piece'}&quot; public?
+      </h4>
+      <p id="make-public-description">
+        This piece and its media currently exist only in this browser. Publishing uploads them to
+        the server and makes them visible to anyone with the link or in the public gallery. Copies,
+        embeds, and caches of a published piece can&apos;t be recalled once shared. Uploads use TLS
+        in transit but are not end-to-end encrypted — the server can read the content. Image
+        location metadata is removed before upload.
+      </p>
+      {changeSummary && (
+        <p aria-label="Changes since last public copy">
+          Changes since last public copy: {changeSummary}
+        </p>
+      )}
+      <label htmlFor="make-public-title-input">Title</label>
+      <input
+        id="make-public-title-input"
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        disabled={busy}
+      />
+      {errors.title && (
+        <p role="alert" className="field-error">
+          {errors.title.join(' ')}
+        </p>
+      )}
+      <label htmlFor="make-public-description-input">Description</label>
+      <textarea
+        id="make-public-description-input"
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+        disabled={busy}
+      />
+      {errors.description && (
+        <p role="alert" className="field-error">
+          {errors.description.join(' ')}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={() => onConfirm(title, description)}
+        disabled={!canConfirm || busy}
+      >
+        {busy ? 'Publishing…' : actionLabel}
+      </button>
+      <button type="button" onClick={onCancel} disabled={busy}>
+        Cancel
+      </button>
+    </div>
+  );
 }
 
 function LocalEditorWorkspace() {
@@ -81,6 +276,18 @@ function LocalEditorWorkspace() {
   } | null>(null);
   const [syncRecovery, setSyncRecovery] = useState<MutationOutboxRecord | null>(null);
   const [pausedMediaTransfers, setPausedMediaTransfers] = useState<MediaTransferRecord[]>([]);
+  const [showMakePublic, setShowMakePublic] = useState(false);
+  const [showProjectDetails, setShowProjectDetails] = useState(false);
+  const [makePublicBusy, setMakePublicBusy] = useState(false);
+  const [makePublicResult, setMakePublicResult] = useState<{
+    state: 'over-quota' | 'error';
+    detail: string;
+  } | null>(null);
+  const [publicUpdate, setPublicUpdate] = useState<{
+    remoteProject: Project;
+    diff: LocalPublicUpdateDiff;
+  } | null>(null);
+  const [publicUpdateBusy, setPublicUpdateBusy] = useState(false);
   const sessionGeneration =
     auth.status === 'signed-in' ? getMutationSessionGeneration(auth.user.username) : undefined;
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId) ?? null;
@@ -216,6 +423,203 @@ function LocalEditorWorkspace() {
       }
     } finally {
       db.close();
+    }
+  }
+
+  async function preparePublicUpdate() {
+    if (auth.status !== 'signed-in' || !id || !project?.remotePublicId) return;
+    setMakePublicResult(null);
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      const remoteProject = await getRemoteProject(project.remotePublicId);
+      const remoteVersion = project.remoteVersion ?? remoteProject.current_version;
+      if (remoteVersion === null) throw new Error('The published piece has no saved version.');
+      const [remoteScene, localScenes] = await Promise.all([
+        getSceneVersion(project.remotePublicId, remoteVersion),
+        listScenesForProject(db, id),
+      ]);
+      const localScene =
+        localScenes.find((scene) => scene.id === project.activeSceneId) ??
+        localScenes.at(-1) ??
+        null;
+      if (!localScene) throw new Error('The local piece has no scene to publish.');
+      const localMediaIds = new Set<string>();
+      for (const scene of localScenes) collectMediaAssetIds(scene.sceneJson, localMediaIds);
+      const diff = summarizeLocalPublicUpdate(
+        remoteScene.scene_json,
+        localScene.sceneJson,
+        collectMediaAssetIds(remoteScene.scene_json),
+        localMediaIds,
+      );
+      setPublicUpdate({
+        remoteProject,
+        diff,
+      });
+    } catch (error) {
+      setMakePublicResult({
+        state: 'error',
+        detail: error instanceof Error ? error.message : 'Could not compare the public copy.',
+      });
+    } finally {
+      db?.close();
+    }
+  }
+
+  async function handlePublicUpdateConfirm(titleValue: string, descriptionValue: string) {
+    if (
+      auth.status !== 'signed-in' ||
+      !id ||
+      !project?.remotePublicId ||
+      project.remoteVersion === null ||
+      project.remoteVersion === undefined
+    ) {
+      return;
+    }
+    setPublicUpdateBusy(true);
+    setMakePublicResult(null);
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      const built = await buildLocal2dPiecePackage(
+        db,
+        auth.user.username,
+        id,
+        undefined,
+        descriptionValue,
+        titleValue,
+      );
+      if (built.missingAssets.length > 0) {
+        setMakePublicResult({
+          state: 'error',
+          detail: 'Missing local media; export or repair it before publishing.',
+        });
+        return;
+      }
+      const estimate = await fetchStorageEstimate({
+        pieceBytes: built.pieceBytes,
+        mediaBytes: built.mediaBytes,
+        pieceFiles: 1,
+        mediaFiles: built.mediaFiles,
+      });
+      if (!estimate.fits.public) {
+        setMakePublicResult({
+          state: 'over-quota',
+          detail: `Over quota; ${formatBytes(Math.max(estimate.remaining_after.public.bytes, 0))} remains. The public copy was not changed.`,
+        });
+        return;
+      }
+      const intake = await intakePiecePackage(
+        built.bytes,
+        `local-republish-${id}-${project.remoteVersion}-${project.updatedAt}`,
+        { pieceId: project.remotePublicId, expectedRevision: project.remoteVersion },
+      );
+      const updated = await updateProject(db, auth.user.username, id, {
+        title: titleValue,
+        cloudSyncState: 'synced',
+        remoteVersion: intake.version,
+      });
+      setProject(updated);
+      setPublicUpdate(null);
+      setMessage(`Updated the public copy to version ${intake.version}.`);
+    } catch (error) {
+      setMakePublicResult({
+        state: 'error',
+        detail: error instanceof Error ? error.message : 'Could not update the public copy.',
+      });
+    } finally {
+      db?.close();
+      setPublicUpdateBusy(false);
+    }
+  }
+
+  /**
+   * Issue #942 (2D-only): warn → validate title/description → quota
+   * preflight → upload (reusing #932's `intakePiecePackage`, same
+   * idempotency-key convention as `LocalPieceSyncOffer.tsx`'s account-sync
+   * upload) → publish. If intake succeeds but publish fails, the local
+   * record is left `cloudSyncState: 'synced'` (a defined, non-public state
+   * `LocalCloudSyncControl` already renders correctly) rather than any
+   * ambiguous half-published state; the user can retry publishing from the
+   * now-server-backed editor's existing `PublishControl.tsx`. Updating an
+   * already-published copy is explicitly out of scope here — see the
+   * linked follow-up issue.
+   */
+  async function handleMakePublicConfirm(titleValue: string, descriptionValue: string) {
+    if (auth.status !== 'signed-in' || !id || !project) return;
+    setMakePublicBusy(true);
+    setMakePublicResult(null);
+    let db: IDBDatabase | undefined;
+    try {
+      db = await openLocalProjectDatabase();
+      const withTitle = await updateProject(db, auth.user.username, id, {
+        title: titleValue,
+        description: descriptionValue,
+      });
+      setProject(withTitle);
+      const built = await buildLocal2dPiecePackage(
+        db,
+        auth.user.username,
+        id,
+        undefined,
+        descriptionValue,
+      );
+      if (built.missingAssets.length > 0) {
+        setMakePublicResult({
+          state: 'error',
+          detail: 'Missing local media; export or repair it before publishing.',
+        });
+        return;
+      }
+      const estimate = await fetchStorageEstimate({
+        pieceBytes: built.pieceBytes,
+        mediaBytes: built.mediaBytes,
+        pieceFiles: 1,
+        mediaFiles: built.mediaFiles,
+      });
+      if (!estimate.fits.public) {
+        setMakePublicResult({
+          state: 'over-quota',
+          detail: `Over quota; ${formatBytes(Math.max(estimate.remaining_after.public.bytes, 0))} remains. The local piece was not changed.`,
+        });
+        return;
+      }
+      const intake = await intakePiecePackage(
+        built.bytes,
+        `local-publish-${id}-${withTitle.updatedAt}`,
+      );
+      const synced = await updateProject(db, auth.user.username, id, {
+        cloudSyncState: 'synced',
+        remotePublicId: intake.public_id,
+        remoteVersion: intake.version,
+      });
+      setProject(synced);
+      const published = await publishProject(intake.public_id);
+      setShowMakePublic(false);
+      navigate(published.editor_url ?? `/local-projects/${id}`, { replace: true });
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        error.status === 400 &&
+        error.body &&
+        typeof error.body === 'object'
+      ) {
+        const body = error.body as Partial<PublishValidationErrorBody>;
+        if (body.errors && typeof body.errors === 'object') {
+          setMakePublicResult({
+            state: 'error',
+            detail: Object.values(body.errors).flat().join(' '),
+          });
+          return;
+        }
+      }
+      setMakePublicResult({
+        state: 'error',
+        detail: error instanceof Error ? error.message : 'Could not publish this piece.',
+      });
+    } finally {
+      setMakePublicBusy(false);
+      db?.close();
     }
   }
 
@@ -368,6 +772,7 @@ function LocalEditorWorkspace() {
         // remains authoritative even when snapshot storage is unavailable.
       }
       setScenes((current) => current.map((scene) => (scene.id === updated.id ? updated : scene)));
+      if (project) void ensureLocalThumbnail(project).catch(() => undefined);
       setSceneName(updated.name);
       setDirty(false);
       if (recoveryId) setRecoveryDraftId(recoveryId);
@@ -549,6 +954,82 @@ function LocalEditorWorkspace() {
       </p>
       <h2>{project.title}</h2>
       <p>Local editor — this project is loaded from this browser&apos;s IndexedDB.</p>
+      <p>
+        <button
+          type="button"
+          className="shell-action"
+          aria-expanded={showProjectDetails}
+          onClick={() => setShowProjectDetails((current) => !current)}
+        >
+          {showProjectDetails ? 'Hide project details' : 'Edit project details'}
+        </button>
+      </p>
+      {showProjectDetails && (
+        <LocalProjectDetailsPanel
+          project={project}
+          onSaved={(updated) => {
+            setProject(updated);
+            setShowProjectDetails(false);
+            setMessage('Saved local project details.');
+          }}
+        />
+      )}
+      {!project.remotePublicId && (
+        <p>
+          <button type="button" className="shell-action" onClick={() => setShowMakePublic(true)}>
+            Make public
+          </button>
+        </p>
+      )}
+      {project.remotePublicId && (
+        <p>
+          <button
+            type="button"
+            className="shell-action"
+            onClick={() => void preparePublicUpdate()}
+            disabled={publicUpdateBusy}
+          >
+            {publicUpdateBusy ? 'Comparing…' : 'Update public copy'}
+          </button>
+        </p>
+      )}
+      {showMakePublic && (
+        <MakePublicDialog
+          initialTitle={project.title}
+          initialDescription={project.description ?? ''}
+          busy={makePublicBusy}
+          onConfirm={(titleValue, descriptionValue) =>
+            void handleMakePublicConfirm(titleValue, descriptionValue)
+          }
+          onCancel={() => {
+            setShowMakePublic(false);
+            setMakePublicResult(null);
+          }}
+        />
+      )}
+      {publicUpdate && (
+        <MakePublicDialog
+          initialTitle={project.title || publicUpdate.remoteProject.title}
+          initialDescription={publicUpdate.remoteProject.description}
+          busy={publicUpdateBusy}
+          actionLabel="Update public copy"
+          headingLabel="Update"
+          changeSummary={publicUpdate.diff.summary}
+          onConfirm={(titleValue, descriptionValue) =>
+            void handlePublicUpdateConfirm(titleValue, descriptionValue)
+          }
+          onCancel={() => {
+            setPublicUpdate(null);
+            setMakePublicResult(null);
+          }}
+        />
+      )}
+      {makePublicResult && (
+        <p role="alert">
+          {makePublicResult.state === 'over-quota' ? 'Over quota: ' : 'Could not publish: '}
+          {makePublicResult.detail}
+        </p>
+      )}
       {recoveryDraftId && (
         <p role="status">
           A browser-local recovery draft is available.

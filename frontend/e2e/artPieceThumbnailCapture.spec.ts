@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiGet, apiPatch, apiPost, apiPostMultipart } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { expandGeneratedArtEditorTools } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 /**
@@ -26,10 +27,10 @@ import { requireE2EFixtures } from './support/prerequisites.js';
  * order + workers:1); bundling preserves that exact order.
  */
 
-const RED_RECTANGLE =
+const THUMBNAIL_RECTANGLE =
   '<canvas id="art-piece-canvas" width="320" height="240"></canvas>' +
   '<script>var c=document.getElementById("art-piece-canvas");' +
-  'var x=c.getContext("2d");x.fillStyle="#dc2626";x.fillRect(0,0,320,240);</script>';
+  'var x=c.getContext("2d");x.fillStyle="teal";x.fillRect(0,0,320,240);</script>';
 
 async function fetchThumbnailBytes(
   context: Parameters<typeof apiGet>[0],
@@ -64,10 +65,10 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       const fallbackFixture = await apiPost(context, '/api/art-pieces/', {
         title: 'Thumbnail fallback baseline',
         description: 'Never opened in a browser, so never captured.',
-        prompt: 'red rectangle',
+        prompt: 'teal rectangle',
         engine: 'canvas2d',
         capabilities: {},
-        source: RED_RECTANGLE,
+        source: THUMBNAIL_RECTANGLE,
       });
       expect(fallbackFixture.status()).toBe(201);
       const fallbackPiece = (await fallbackFixture.json()) as { public_id: string };
@@ -75,7 +76,7 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
 
       await page.goto('/art-pieces');
       await page.getByLabel('Library').selectOption('canvas2d');
-      await page.getByLabel('Describe the art piece you want to generate').fill('a red rectangle');
+      await page.getByLabel('Describe the art piece you want to generate').fill('a teal rectangle');
       await page.getByRole('button', { name: 'Generate' }).click();
       await expect(page.getByTestId('art-piece-preview')).toBeVisible();
       // #457 fixed: no scrollIntoViewIfNeeded() workaround needed anymore.
@@ -112,10 +113,10 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       const created = await apiPost(context, '/api/art-pieces/', {
         title: 'Thumbnail capture Editor fixture',
         description: 'Original.',
-        prompt: 'red rectangle',
+        prompt: 'teal rectangle',
         engine: 'canvas2d',
         capabilities: {},
-        source: RED_RECTANGLE,
+        source: THUMBNAIL_RECTANGLE,
       });
       expect(created.status()).toBe(201);
       const piece = (await created.json()) as {
@@ -129,14 +130,15 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       await expect(
         page.getByRole('heading', { name: 'Edit Thumbnail capture Editor fixture' }),
       ).toBeVisible();
+      await expandGeneratedArtEditorTools(page);
+      await page.getByTestId('art-piece-editor-tool-ai-edit').click();
       await page
         .getByLabel('Describe the revision you want to generate')
         .fill('a blue rectangle instead');
-      await page.getByRole('button', { name: 'Generate revision' }).click();
+      await page.getByRole('button', { name: 'Refine piece' }).click();
       await expect(page.getByTestId('art-piece-editor-preview')).toBeVisible();
       // #457 fixed: no scrollIntoViewIfNeeded() workaround needed anymore.
-      await expect(page.getByTestId('art-piece-editor-save-version')).toBeVisible();
-      await page.getByTestId('art-piece-editor-save-version').click();
+      await expect(page.getByTestId('art-piece-refine-accepted')).toBeVisible();
       await expect(page.getByTestId('art-piece-editor-save-version')).toHaveCount(0);
 
       const versionsResponse = await apiGet(
@@ -154,6 +156,10 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
           (await fetchThumbnailBytes(context, piece.public_id)).equals(fallbackReference),
         )
         .toBe(false);
+      const captured = await fetchThumbnailBytes(context, piece.public_id);
+      expect(captured.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+      expect(captured.readUInt32BE(16)).toBe(320);
+      expect(captured.readUInt32BE(20)).toBe(240);
 
       // The original version's own thumbnail was never touched by the
       // new version's capture -- each version's thumbnail is independent.
@@ -162,13 +168,21 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
         `/api/art-pieces/${piece.public_id}/versions/`,
       );
       expect(originalStillFallback.status()).toBe(200);
-      // Re-fetch via the piece-level route is only ever "current" -- prove
-      // independence directly against the ORIGINAL version's own row by
-      // requesting a regenerate (reset-to-fallback) on it being impossible
-      // through the piece-level endpoint (it always targets current);
-      // instead confirm structurally: piece.current_version_id moved to
-      // the new version, and the original id is preserved unmodified in
-      // the version list.
+      const versionsAfterCapture = (await originalStillFallback.json()) as Array<{
+        id: number;
+        sequence: number;
+        thumbnail_is_fallback: boolean;
+      }>;
+      const originalVersion = versionsAfterCapture.find(
+        (version) => version.id === piece.current_version.id,
+      );
+      const acceptedVersion = versionsAfterCapture.find((version) => version.id === newVersion!.id);
+      expect(originalVersion).toBeDefined();
+      expect(acceptedVersion).toBeDefined();
+      expect(originalVersion!.thumbnail_is_fallback).toBe(true);
+      expect(acceptedVersion!.thumbnail_is_fallback).toBe(false);
+
+      // The piece-level route serves only the current version.
       const refreshedPiece = await apiGet(context, `/api/art-pieces/${piece.public_id}/`);
       const refreshedPieceData = (await refreshedPiece.json()) as {
         current_version: { id: number };
@@ -192,18 +206,20 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       const created = await apiPost(context, '/api/art-pieces/', {
         title: 'Thumbnail regenerate button fixture',
         description: 'Original.',
-        prompt: 'red rectangle',
+        prompt: 'teal rectangle',
         engine: 'canvas2d',
         capabilities: {},
-        source: RED_RECTANGLE,
+        source: THUMBNAIL_RECTANGLE,
       });
       expect(created.status()).toBe(201);
       const piece = (await created.json()) as { public_id: string };
+      fallbackReference ??= await fetchThumbnailBytes(context, piece.public_id);
       expect((await fetchThumbnailBytes(context, piece.public_id)).equals(fallbackReference)).toBe(
         true,
       );
 
       await page.goto(`/art-pieces/${piece.public_id}/edit`);
+      await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
       await page.getByTestId('art-piece-editor-regenerate-thumbnail').click();
 
       await expect
@@ -222,10 +238,10 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       const created = await apiPost(context, '/api/art-pieces/', {
         title: 'Thumbnail retry fixture',
         description: 'Original.',
-        prompt: 'red rectangle',
+        prompt: 'teal rectangle',
         engine: 'canvas2d',
         capabilities: {},
-        source: RED_RECTANGLE,
+        source: THUMBNAIL_RECTANGLE,
       });
       expect(created.status()).toBe(201);
       const piece = (await created.json()) as { public_id: string };
@@ -242,6 +258,7 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       });
 
       await page.goto(`/art-pieces/${piece.public_id}/edit`);
+      await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
       await page.getByTestId('art-piece-editor-regenerate-thumbnail').click();
       // Give the failed capture attempt time to actually finish failing.
       await page.waitForTimeout(1000);
@@ -267,10 +284,10 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       const created = await apiPost(context, '/api/art-pieces/', {
         title: 'Thumbnail authorization fixture',
         description: 'Original.',
-        prompt: 'red rectangle',
+        prompt: 'teal rectangle',
         engine: 'canvas2d',
         capabilities: {},
-        source: RED_RECTANGLE,
+        source: THUMBNAIL_RECTANGLE,
       });
       expect(created.status()).toBe(201);
       const piece = (await created.json()) as {
@@ -279,6 +296,7 @@ test.describe('Generated thumbnail service: capture artwork instead of hash-deri
       };
 
       await page.goto(`/art-pieces/${piece.public_id}/edit`);
+      await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
       await page.getByTestId('art-piece-editor-regenerate-thumbnail').click();
       await expect
         .poll(async () =>

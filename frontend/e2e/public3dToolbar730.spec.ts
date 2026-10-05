@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiGet } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -11,13 +12,40 @@ type Fixtures = Extract<E2EState, { available: true }>;
 const TOP_LEVEL_ACTIONS =
   ':scope > .piece-stage-icon-button, :scope > .piece-stage-download > .piece-stage-icon-button, :scope > .piece-stage-controls > .piece-stage-icon-button';
 
-async function actionGeometry(actions: import('@playwright/test').Locator) {
+type ActionBox = { x: number; y: number; width: number; height: number };
+
+async function actionGeometry(actions: import('@playwright/test').Locator): Promise<ActionBox[]> {
   return actions.locator(TOP_LEVEL_ACTIONS).evaluateAll((elements) =>
     elements.map((element) => {
       const box = element.getBoundingClientRect();
       return { x: box.x, y: box.y, width: box.width, height: box.height };
     }),
   );
+}
+
+async function waitForStableActionGeometry(actions: import('@playwright/test').Locator) {
+  let previous: ActionBox[] | undefined;
+  await expect
+    .poll(
+      async () => {
+        const current = await actionGeometry(actions);
+        const prior = previous;
+        const stable =
+          prior !== undefined &&
+          current.length === prior.length &&
+          current.every(
+            (button, index) =>
+              Math.abs(button.x - prior[index].x) <= 1 &&
+              Math.abs(button.y - prior[index].y) <= 1 &&
+              Math.abs(button.width - prior[index].width) <= 1 &&
+              Math.abs(button.height - prior[index].height) <= 1,
+          );
+        previous = current;
+        return stable;
+      },
+      { timeout: 3_000 },
+    )
+    .toBe(true);
 }
 
 test.describe('public 3D stage toolbar placement (#730)', () => {
@@ -32,19 +60,9 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
     browser,
   }, testInfo) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    const createdResponse = page.waitForResponse(
-      (response) =>
-        response.url().endsWith('/api/projects3d/') && response.request().method() === 'POST',
-    );
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    const created = await createdResponse;
-    expect(created.status()).toBe(201);
-    const { id: projectId } = (await created.json()) as { id: string };
-    await page.waitForURL(/\/users\/@[^/]+\/edit\/untitled-3d-scene(?:-\d+)?$/);
+    const projectId = await createServerProject3D(page);
     expect(projectId).toBeTruthy();
-    if (!projectId) throw new Error('Could not determine the created 3D project id.');
+    expect(page.url()).toMatch(/\/users\/@[^/]+\/edit\/[^/]+$/);
 
     await page
       .getByRole('group', { name: 'Publication status' })
@@ -85,9 +103,12 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
 
       for (const viewport of [
         { name: 'desktop', width: 1440, height: 900 },
+        { name: 'wide', width: 1280, height: 900 },
+        { name: 'tablet', width: 768, height: 1024 },
         { name: 'mobile', width: 375, height: 812 },
       ]) {
         await anonymousPage.setViewportSize(viewport);
+        await waitForStableActionGeometry(actions);
         const stageBox = await frame.boundingBox();
         const fullscreen = toolbar.getByRole('button', { name: 'Expand piece to fullscreen' });
         await expect(fullscreen).toBeVisible();
@@ -108,7 +129,7 @@ test.describe('public 3D stage toolbar placement (#730)', () => {
           expect(button.width).toBeGreaterThanOrEqual(32);
           expect(button.height).toBeGreaterThanOrEqual(32);
         }
-        if (viewport.name === 'desktop') {
+        if (viewport.width >= 700) {
           expect(
             Math.max(...closed.map((button) => button.y)) -
               Math.min(...closed.map((button) => button.y)),

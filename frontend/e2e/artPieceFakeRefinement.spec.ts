@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { expandGeneratedArtEditorTools } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const FIXTURES = {
@@ -74,6 +75,8 @@ test.describe('fake-provider generated-piece refinement (#698)', () => {
       await expect(
         page.getByRole('heading', { name: `Edit Fake refinement ${engine}` }),
       ).toBeVisible();
+      await expandGeneratedArtEditorTools(page);
+      await page.getByTestId('art-piece-editor-tool-ai-edit').click();
       await page
         .getByLabel('Describe the revision you want to generate')
         .fill('make the accent warmer');

@@ -13,6 +13,7 @@ import {
   readThemePreference,
   resolveThemeMode,
   subscribeToSystemTheme,
+  siteThemePresentation,
   type ThemePreference,
 } from '../theme';
 
@@ -88,56 +89,13 @@ function Layout() {
     if (shouldUseLowPowerEnvironment(navigator)) root.dataset.lowPower = 'true';
     else delete root.dataset.lowPower;
     const mode = resolveThemeMode(themePreference);
-    const palette = siteTheme.theme_palettes?.[mode] ?? siteTheme;
-    const mapping: Record<string, string> = {
-      background: '--bg',
-      surface: '--code-bg',
-      text: '--text-h',
-      muted: '--text',
-      accent: '--accent',
-    };
-    Object.entries(mapping).forEach(([key, variable]) => {
-      const value = palette[key];
+    const mapped = siteThemePresentation(siteTheme, mode);
+    Object.entries(mapped.variables).forEach(([variable, value]) => {
       if (value) root.style.setProperty(variable, value);
     });
-    const fonts: Record<string, string> = {
-      system: "system-ui, 'Segoe UI', Roboto, sans-serif",
-      serif: "Georgia, 'Times New Roman', serif",
-      mono: 'ui-monospace, Consolas, monospace',
-      script: "Lora, Georgia, 'Times New Roman', serif",
-    };
-    const headingFonts: Record<string, string> = {
-      system: "system-ui, 'Segoe UI', Roboto, sans-serif",
-      serif: "Georgia, 'Times New Roman', serif",
-      mono: 'ui-monospace, Consolas, monospace',
-      script: "'Pinyon Script', Georgia, 'Times New Roman', serif",
-    };
-    const presentation = siteTheme.presentation;
-    if (presentation?.font_family && fonts[presentation.font_family]) {
-      root.style.setProperty('--site-font', fonts[presentation.font_family]);
-      root.style.setProperty('--heading', headingFonts[presentation.font_family]);
-      root.dataset.siteFont = presentation.font_family;
-    }
-    if (presentation?.density) {
-      root.style.setProperty(
-        '--site-density',
-        presentation.density === 'compact' ? '12px' : '20px',
-      );
-    }
-    if (presentation?.radius) {
-      root.style.setProperty(
-        '--site-radius',
-        presentation.radius === 'sharp' ? '2px' : presentation.radius === 'pill' ? '999px' : '8px',
-      );
-    }
-    if (presentation?.border_style) {
-      root.style.setProperty(
-        '--site-border-style',
-        presentation.border_style === 'none' ? 'none' : presentation.border_style,
-      );
-    }
-    if (presentation?.shadow) root.dataset.siteShadow = presentation.shadow;
-    if (presentation?.backdrop) root.dataset.siteBackdrop = presentation.backdrop;
+    Object.entries(mapped.attributes).forEach(([attribute, value]) => {
+      if (value) root.setAttribute(attribute, value);
+    });
   }, [siteTheme, themePreference, systemThemeRevision]);
 
   function updateThemePreference(next: ThemePreference) {

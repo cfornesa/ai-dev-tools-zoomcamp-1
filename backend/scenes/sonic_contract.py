@@ -106,7 +106,7 @@ def _bounded(
     return max(low, min(high, parsed))
 
 
-def normalize_sonic(value: Any) -> dict[str, Any] | None:
+def normalize_sonic(value: Any) -> dict[str, Any] | None:  # noqa: C901
     """Return the canonical authored defaults, or ``None`` for a bad block."""
     if not isinstance(value, dict):
         return None

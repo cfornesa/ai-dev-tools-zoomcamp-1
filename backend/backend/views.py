@@ -48,8 +48,8 @@ def cache_is_available() -> bool:
             logger.exception("Cache health-check cleanup failed")
 
 
-def health(request):
-    """Report application and database availability, without connection details."""
+def health_status() -> dict[str, str]:
+    """Return app health without connection details for HTTP and MCP callers."""
     db_ok = database_is_available()
     cache_ok = cache_is_available()
     checks_ok = db_ok and cache_ok
@@ -58,9 +58,15 @@ def health(request):
         "database": "ok" if db_ok else "unavailable",
     }
     payload["cache"] = "ok" if cache_ok else "unavailable"
+    return payload
+
+
+def health(request):
+    """Report application and database availability, without connection details."""
+    payload = health_status()
     return JsonResponse(
         payload,
-        status=200 if checks_ok else 503,
+        status=200 if payload["status"] == "ok" else 503,
     )
 
 

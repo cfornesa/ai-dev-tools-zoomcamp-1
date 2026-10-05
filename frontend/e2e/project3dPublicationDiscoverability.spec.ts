@@ -3,6 +3,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -17,13 +18,8 @@ test.describe('3D publication discoverability', () => {
 
   test('shows and updates visibility in the editor and owner card', async ({ page, browser }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
+    const projectId = await createServerProject3D(page);
     expect(projectId).toBeTruthy();
-    if (!projectId) return;
 
     const status = page.getByTestId('visibility-status-3d');
     await expect(status).toContainText('Private');

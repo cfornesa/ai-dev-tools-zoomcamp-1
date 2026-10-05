@@ -121,6 +121,8 @@ def test_missing_project_404s(visitor_client):
 @pytest.mark.django_db
 def test_successful_fork_creates_private_project_version_and_provenance(visitor_client, owner):
     source = _make_public_project(owner)
+    source.brief = "source-only private intent"
+    source.save(update_fields=["brief"])
 
     response = visitor_client.post(_fork_url(source))
 
@@ -130,6 +132,7 @@ def test_successful_fork_creates_private_project_version_and_provenance(visitor_
     assert body["owner"] == "bob"
 
     forked = Project.objects.get(public_id=body["id"])
+    assert forked.brief == ""
     assert forked.owner_id != source.owner_id
     versions = SceneVersion.objects.filter(project=forked)
     assert versions.count() == 1
@@ -328,7 +331,7 @@ def test_postgres_rollback_on_injected_failure_leaves_no_records(django_db_block
         source.current_version = source_version
         source.save(using="postgres_test", update_fields=["current_version"])
 
-        class InjectedFailure(Exception):
+        class InjectedFailure(Exception):  # noqa: N818
             pass
 
         with pytest.raises(InjectedFailure):
@@ -367,7 +370,7 @@ def test_postgres_concurrent_duplicate_fork_submission_creates_exactly_one_fork(
     forked project instead of creating a duplicate.
     """
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         owner = User.objects.db_manager("postgres_test").create_user(username="pg-fork-owner")
         visitor = User.objects.db_manager("postgres_test").create_user(username="pg-fork-visitor")
         source = Project.objects.using("postgres_test").create(
@@ -427,7 +430,7 @@ def test_postgres_concurrent_forks_without_request_id_both_succeed_independently
     own project/version/provenance triple with no cross-contamination.
     """
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         owner = User.objects.db_manager("postgres_test").create_user(username="pg-fork-owner-2")
         visitor = User.objects.db_manager("postgres_test").create_user(username="pg-fork-visitor-2")
         source = Project.objects.using("postgres_test").create(

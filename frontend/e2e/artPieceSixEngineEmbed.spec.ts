@@ -117,7 +117,51 @@ test.describe('Six-engine chrome-less embeds (#615)', () => {
         }
         const frameBox = await page.locator('iframe[title="Art piece preview"]').boundingBox();
         expect(frameBox).not.toBeNull();
-        if (frameBox) expect(Math.abs(frameBox.width / frameBox.height - 4 / 3)).toBeLessThan(0.02);
+        if (!frameBox) throw new Error('The generated-piece iframe must have a visible box.');
+        const geometry = await page.evaluate(() => {
+          const stage = document.querySelector<HTMLElement>('.public-art-piece-stage')!;
+          const iframe = stage.querySelector('iframe')!;
+          const row = document.querySelector<HTMLElement>('.public-art-piece-toolbar-row')!;
+          const toolbar = row.querySelector<HTMLElement>('[role="toolbar"]')!;
+          const frameRect = iframe.getBoundingClientRect();
+          const stageRect = stage.getBoundingClientRect();
+          const rowRect = row.getBoundingClientRect();
+          const toolbarRect = toolbar.getBoundingClientRect();
+          const phoneTargets = Array.from(row.querySelectorAll<HTMLElement>('button, a')).filter(
+            (target) =>
+              !target.classList.contains('sr-only') &&
+              target.getClientRects().length > 0 &&
+              getComputedStyle(target).visibility === 'visible',
+          );
+          return {
+            stageAspectRatio: getComputedStyle(stage).aspectRatio,
+            frame: { width: frameRect.width, height: frameRect.height, bottom: frameRect.bottom },
+            rowTop: rowRect.top,
+            toolbarInsideStage:
+              toolbarRect.left >= stageRect.left &&
+              toolbarRect.right <= stageRect.right &&
+              toolbarRect.top >= stageRect.top &&
+              toolbarRect.bottom <= stageRect.bottom,
+            phoneTargetsAtLeast44:
+              phoneTargets.length > 0 &&
+              phoneTargets.every((target) => {
+                const rect = target.getBoundingClientRect();
+                return rect.width >= 44 && rect.height >= 44;
+              }),
+          };
+        });
+        const phone = viewport.width <= 700;
+        const interactivePhone = phone && fixture.engine === 'c2js-interactive';
+        expect({
+          frameContract: interactivePhone
+            ? frameBox.height >= 300 && geometry.stageAspectRatio === 'auto'
+            : Math.abs(frameBox.width / frameBox.height - 4 / 3) < 0.02 &&
+              geometry.stageAspectRatio !== 'auto',
+          toolbarPlacement: phone
+            ? geometry.rowTop >= geometry.frame.bottom
+            : geometry.toolbarInsideStage,
+          phoneTargets: !phone || geometry.phoneTargetsAtLeast44,
+        }).toEqual({ frameContract: true, toolbarPlacement: true, phoneTargets: true });
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
           viewport.width,
         );

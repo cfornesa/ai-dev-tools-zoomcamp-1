@@ -6,6 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { expandGeneratedArtEditorTools } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const CASES = [
@@ -172,6 +173,8 @@ test.describe('reference-style authoring workflow (#740)', () => {
       expect(threeD).toBeDefined();
       await page.goto(`/art-pieces/${threeD!.public_id}/edit`);
       await expect(page.getByRole('heading', { name: `Edit ${threeD!.title}` })).toBeVisible();
+      await expandGeneratedArtEditorTools(page);
+      await page.getByRole('button', { name: 'Toggle description panel' }).click();
       await page.getByLabel('Piece description').fill('Refined through the owner workflow.');
       await page.getByTestId('art-piece-editor-save-metadata').click();
       await expect(page.getByRole('heading', { name: `Edit ${threeD!.title}` })).toBeVisible();
@@ -179,6 +182,7 @@ test.describe('reference-style authoring workflow (#740)', () => {
         page.getByTestId('art-piece-editor-version-list').getByRole('listitem'),
       ).toHaveCount(1);
 
+      await page.getByRole('button', { name: 'Toggle revise piece panel' }).click();
       await page
         .getByLabel('Describe the revision you want to generate')
         .fill('Make the geometric forms brighter.');

@@ -42,6 +42,7 @@ import {
 import { useAuth } from '../auth/useAuth';
 import DesignPreview from '../components/DesignPreview';
 import type { DesignPalettes, PresentationOptions } from '../api/adminSettings';
+import ConnectedMcpAppsSettings from './ConnectedMcpAppsSettings';
 
 const MIN_MAX_RETRIES = 1;
 const MAX_MAX_RETRIES = 10;
@@ -58,6 +59,7 @@ const DEFAULT_SECTION_ORDER = [
   'cloudSync',
   'profile',
   'management',
+  'connectedApps',
   'credentials',
   'models',
   'personas',
@@ -365,12 +367,25 @@ function AccountSettings() {
                 <span aria-hidden="true">▣</span> View local storage usage
               </Link>
             </li>
+            <li>
+              <Link to="/account/settings/unpublished">
+                <span aria-hidden="true">↺</span> Retained unpublished pieces
+              </Link>
+            </li>
             <li className="account-settings-action-danger">
               <Link to="/account/settings/delete">
                 <span aria-hidden="true">⚠</span> Delete your account
               </Link>
             </li>
           </ul>
+        </section>
+      ),
+    },
+    connectedApps: {
+      label: 'Connected MCP apps',
+      content: (
+        <section className="account-settings-card">
+          <ConnectedMcpAppsSettings />
         </section>
       ),
     },
@@ -885,7 +900,7 @@ function ProviderCredentialCards() {
   const [providers, setProviders] = useState<ProviderCredentialStatus[]>([]);
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [busyVendor, setBusyVendor] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ReactNode>(null);
 
   useEffect(() => {
     Promise.resolve(fetchProviderCredentials())
@@ -905,8 +920,21 @@ function ProviderCredentialCards() {
         ),
       );
       setKeys((current) => ({ ...current, [vendor]: '' }));
-    } catch {
-      setError(`Could not save your ${vendor} key.`);
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 401) {
+        setError(
+          <>
+            Your session expired. <Link to="/accounts/login/">Sign in again</Link> to save your{' '}
+            {vendor} key.
+          </>,
+        );
+      } else if (caught instanceof ApiError && caught.status === 400) {
+        const body = caught.body as { key?: string[] | string; detail?: string } | null;
+        const keyError = Array.isArray(body?.key) ? body.key[0] : body?.key;
+        setError(keyError ?? body?.detail ?? `Could not save your ${vendor} key.`);
+      } else {
+        setError(`Could not save your ${vendor} key.`);
+      }
     } finally {
       setBusyVendor(null);
     }

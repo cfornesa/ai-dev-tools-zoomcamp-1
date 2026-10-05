@@ -38,7 +38,7 @@ test.describe('Celestial style (#647)', () => {
     await applyCelestialPreview(page, 'dark');
 
     await expect(page.locator('html')).toHaveAttribute('data-site-backdrop', 'cosmic');
-    await expect(page.getByRole('radio', { name: 'Reduced' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Use full motion' })).toBeVisible();
     await expect(page.locator('h1')).toHaveCSS('font-family', /Pinyon Script/);
     await expect(page.locator('body')).toHaveCSS('font-family', /Lora/);
     await page.screenshot({

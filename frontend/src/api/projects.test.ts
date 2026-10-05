@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchPublicGallery } from './projects';
+import { fetchPublicGallery, getRelatedPublicProjects } from './projects';
 
 const originalFetch = globalThis.fetch;
 
@@ -93,5 +93,41 @@ describe('fetchPublicGallery', () => {
       status: 400,
       body: { errors: { type: ['Must be one of: all, authored, generated.'] } },
     });
+  });
+});
+
+describe('getRelatedPublicProjects', () => {
+  beforeEach(() => {
+    globalThis.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('fetches the safe related-card projection for the encoded public id', async () => {
+    const results = [
+      {
+        id: 'related-id',
+        kind: '2d' as const,
+        title: 'Related study',
+        owner: 'Artist',
+        owner_handle: 'artist',
+        published_at: '2026-10-01T12:00:00Z',
+        thumbnail_url: null,
+        viewer_url: '/users/@artist/pieces/related-study',
+      },
+    ];
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ results }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    await expect(getRelatedPublicProjects('public/id')).resolves.toEqual(results);
+    const call = vi.mocked(globalThis.fetch).mock.calls[0];
+    expect(call?.[0]).toBe('/api/public/projects/public%2Fid/related/');
+    expect(call?.[1]).toMatchObject({ method: 'GET' });
   });
 });

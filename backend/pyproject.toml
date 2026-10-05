@@ -6,7 +6,6 @@ requires-python = ">=3.13"
 dependencies = [
     "cryptography>=50.0.0",
     "django>=6.1",
-    "cryptography>=46.0.0",
     "django-allauth>=65.19.1",
     "djangorestframework>=3.18.0",
     "jsonschema>=4.26.0",
@@ -15,6 +14,8 @@ dependencies = [
     "psycopg[binary]>=3.3.4",
     "requests>=2.34.2",
     "pyjwt>=2.13.0",
+    "mcp<2",
+    "django-oauth-toolkit>=3.4.1",
 ]
 
 [dependency-groups]
@@ -42,7 +43,7 @@ target-version = "py313"
 extend-exclude = ["migrations"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "DJ"]
+select = ["E", "F", "I", "UP", "B", "DJ", "C90", "N"]
 
 [tool.ruff.format]
 quote-style = "preserve"
@@ -69,6 +70,12 @@ ignore_missing_imports = true
 # djangorestframework ships no type stubs / py.typed marker.
 module = "rest_framework.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# django-oauth-toolkit ships no type stubs / py.typed marker. The Django
+# plugin resolves it from INSTALLED_APPS while checking the app config too.
+module = ["backend.urls", "scenes.apps", "scenes.mcp.oauth", "scenes.mcp.oauth_applications", "scenes.mcp.oauth_api", "scenes.mcp.server", "tests.test_mcp_oauth", "tests.test_mcp_server"]
+disable_error_code = ["import-untyped"]
 
 [tool.django-stubs]
 django_settings_module = "backend.test_settings"

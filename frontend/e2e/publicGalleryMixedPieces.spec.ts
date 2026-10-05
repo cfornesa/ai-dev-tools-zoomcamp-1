@@ -3,21 +3,18 @@
  *  listing with a visible type filter. */
 import { expect, test } from '@playwright/test';
 
+import { createServerProjectAndOpenAIProposalPanel } from './support/aiProposal.js';
 import { apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
 async function publishFrom2D(page: import('@playwright/test').Page): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create an AI-assisted animation' }).click();
-  await page.waitForURL(/\/ai-projects\/[^/]+$/);
-  const projectId = /\/ai-projects\/([^/]+)$/.exec(page.url())?.[1];
+  const { projectId } = await createServerProjectAndOpenAIProposalPanel(page, '2d');
   expect(projectId).toBeTruthy();
-  if (!projectId) throw new Error('Could not determine the created 2D project id.');
 
   const metadata = await apiPatch(page.context(), `/api/projects/${projectId}/`, {
     // Issue #392: a per-run-unique title, not a hardcoded one --
@@ -32,13 +29,10 @@ async function publishFrom2D(page: import('@playwright/test').Page): Promise<str
   });
   expect(metadata.ok()).toBe(true);
   await page.reload();
-  const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-  await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
-  await toolbar
-    .getByRole('dialog')
-    .getByRole('button', { name: 'Publication status: Draft' })
-    .click();
-  await toolbar
+  const primaryActions = page.getByRole('group', { name: 'Primary editor actions' });
+  const fileMenu = primaryActions.getByRole('button', { name: 'File', exact: true });
+  if ((await fileMenu.getAttribute('aria-expanded')) !== 'true') await fileMenu.click();
+  await primaryActions
     .getByRole('group', { name: 'Publication status', exact: true })
     .getByRole('button', { name: 'Published', exact: true })
     .click();
@@ -49,13 +43,9 @@ async function publishFrom2D(page: import('@playwright/test').Page): Promise<str
 }
 
 async function publishFrom3D(page: import('@playwright/test').Page): Promise<string> {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-  await page.waitForURL(/\/projects3d\/[^/]+$/);
-  const projectId = /\/projects3d\/([^/]+)$/.exec(page.url())?.[1];
-  expect(projectId).toBeTruthy();
-  if (!projectId) throw new Error('Could not determine the created 3D project id.');
+  // The scenario validates the server-backed publication/gallery flow;
+  // local-first creation is covered by the dedicated lifecycle specs.
+  const projectId = await createServerProject3D(page);
 
   const metadata = await apiPatch(page.context(), `/api/projects3d/${projectId}/`, {
     // Same per-run-unique-title rationale as `publishFrom2D` above.
@@ -119,16 +109,31 @@ test.describe('mixed public gallery', () => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
     const project2dId = await publishFrom2D(page);
     const project3dId = await publishFrom3D(page);
-    const artPieceId = await publishGeneratedArtPiece(
-      context,
-      `Gallery generated fixture ${testInfo.project.name}`,
+    const generatedTitle = `Gallery generated fixture ${testInfo.project.name}`;
+    const artPieceId = await publishGeneratedArtPiece(context, generatedTitle);
+
+    const noJavaScriptContext = await browser.newContext({ javaScriptEnabled: false });
+    const noJavaScriptPage = await noJavaScriptContext.newPage();
+    const noJavaScriptResponse = await noJavaScriptPage.goto('/art-pieces/gallery');
+    expect(noJavaScriptResponse?.status()).toBe(200);
+    await expect(
+      noJavaScriptPage.getByRole('heading', { name: 'Generated art gallery' }),
+    ).toBeVisible();
+    await expect(noJavaScriptPage.getByRole('link', { name: generatedTitle })).toHaveAttribute(
+      'href',
+      /\/users\/@e2e_owner\/pieces\/gallery-generated-fixture/,
     );
+    expect(
+      await noJavaScriptPage.locator('noscript').evaluate((element) => element.outerHTML),
+    ).toContain('A public gallery generated fixture.');
+    await noJavaScriptContext.close();
 
     const anonymousContext = await browser.newContext();
     const anonymousPage = await anonymousContext.newPage();
     try {
       for (const viewport of [
         { width: 1280, height: 900 },
+        { width: 768, height: 1024 },
         { width: 375, height: 812 },
       ]) {
         await anonymousPage.setViewportSize(viewport);

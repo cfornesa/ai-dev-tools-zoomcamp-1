@@ -108,6 +108,7 @@ function createFakeToneModule() {
   const loopStartCalls: number[] = [];
   let loopCallback: ((time: number) => void) | null = null;
   let loopInterval: string | number | null = null;
+  let loopInstance: FakeLoop | null = null;
   class FakeLoop {
     get interval() {
       return loopInterval;
@@ -119,13 +120,46 @@ function createFakeToneModule() {
       loopCallback = callback;
       this.interval = interval;
       loopInterval = interval;
+      loopInstance = this;
     }
-    start(time: number) {
-      loopStartCalls.push(time);
+    stopped = false;
+    start(time?: number) {
+      loopStartCalls.push(time ?? -1);
+      this.stopped = false;
+      return this;
+    }
+    stop() {
+      this.stopped = true;
       return this;
     }
     dispose() {
       disposeCalls.push('loop');
+    }
+  }
+
+  const playerInstances: Array<{
+    url: unknown;
+    loop: boolean;
+    autostart: boolean;
+    disposed: boolean;
+  }> = [];
+  class FakePlayer {
+    url: unknown;
+    loop: boolean;
+    autostart: boolean;
+    disposed = false;
+    constructor(options: { url: unknown; loop: boolean; autostart: boolean }) {
+      this.url = options.url;
+      this.loop = options.loop;
+      this.autostart = options.autostart;
+      playerInstances.push(this);
+    }
+    connect() {
+      return this;
+    }
+    dispose() {
+      this.disposed = true;
+      disposeCalls.push('player');
     }
   }
 
@@ -185,6 +219,7 @@ function createFakeToneModule() {
       }
     },
     Loop: FakeLoop,
+    Player: FakePlayer,
     UserMedia: FakeUserMedia,
     Transport: {
       start: transportStartCalls,
@@ -214,6 +249,8 @@ function createFakeToneModule() {
     },
     fireAmbientLoopTick: (time = 0) => loopCallback?.(time),
     getLoopInterval: () => loopInterval,
+    isLoopStopped: () => loopInstance?.stopped ?? true,
+    playerInstances,
     volumeInstances,
     getFilter: () => filterInstance,
     getTransportBpm: () =>
@@ -635,6 +672,43 @@ describe('createSonicEngine mic input (issue #308)', () => {
     expect(engine.isMicEffectEnabled('distortion')).toBe(false);
   });
 
+  it.each([
+    ['sound → mic', false, false],
+    ['sound → mic → camera', true, false],
+    ['sound → mic → steer', false, true],
+    ['sound → mic → camera → steer', true, true],
+    ['sound → camera → steer → mic', true, true],
+    ['sound → camera → mic → steer', true, true],
+  ])(
+    'keeps the native mic flow alive for the %s interaction case',
+    async (_name, camera, steer) => {
+      const fake = createFakeToneModule();
+      const source = { connect: vi.fn(), disconnect: vi.fn() };
+      const rawContext = {
+        state: 'running',
+        createMediaStreamSource: vi.fn(() => source),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      };
+      Object.assign(fake.fakeModule, {
+        getContext: () => ({ rawContext, resume: vi.fn().mockResolvedValue(undefined) }),
+      });
+      const track = { readyState: 'live', stop: vi.fn() };
+      const stream = { getTracks: () => [track] } as unknown as MediaStream;
+      const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+      await engine.enable();
+      if (camera) engine.startCameraTheremin();
+      if (steer) engine.reportMovement({ dx: 1, dy: 0, dz: 0 });
+      await engine.connectMic(stream);
+
+      expect(rawContext.createMediaStreamSource).toHaveBeenCalledWith(stream);
+      expect(source.connect).toHaveBeenCalled();
+      expect(track.stop).not.toHaveBeenCalled();
+      engine.disconnectMic();
+      expect(track.stop).toHaveBeenCalledOnce();
+    },
+  );
+
   it('disconnectMic() releases the microphone and is a safe no-op if never connected', async () => {
     const fake = createFakeToneModule();
     const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
@@ -719,5 +793,74 @@ describe('createSonicEngine camera theremin (issue #309)', () => {
     engine.disable();
 
     expect(fake.releaseCalls).toEqual(['synth-3']);
+  });
+});
+
+describe('createSonicEngine ambient sample (issue #847)', () => {
+  const blob = new Blob(['fake audio bytes'], { type: 'audio/mpeg' });
+
+  it('setAmbientSample() while active stops the synthesized loop and plays a looping Tone.Player', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+
+    engine.setAmbientSample(blob);
+
+    expect(fake.isLoopStopped()).toBe(true);
+    expect(fake.playerInstances).toHaveLength(1);
+    expect(fake.playerInstances[0]).toMatchObject({ loop: true, autostart: true });
+  });
+
+  it('setAmbientSample(null) disposes the player and resumes the synthesized loop', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+    engine.setAmbientSample(blob);
+
+    engine.setAmbientSample(null);
+
+    expect(fake.playerInstances[0].disposed).toBe(true);
+    expect(fake.isLoopStopped()).toBe(false);
+  });
+
+  it('a sample set before enable() is applied once the engine becomes active', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+
+    engine.setAmbientSample(blob);
+    expect(fake.playerInstances).toHaveLength(0);
+
+    await engine.enable();
+
+    expect(fake.playerInstances).toHaveLength(1);
+    expect(fake.isLoopStopped()).toBe(true);
+  });
+
+  it('disable() releases the player without losing the pending sample for the next enable()', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+    engine.setAmbientSample(blob);
+
+    engine.disable();
+    expect(fake.playerInstances[0].disposed).toBe(true);
+
+    await engine.enable();
+
+    expect(fake.playerInstances).toHaveLength(2);
+  });
+
+  it('replacing one sample with another disposes the previous player', async () => {
+    const fake = createFakeToneModule();
+    const engine = createSonicEngine(vi.fn().mockResolvedValue(fake.fakeModule));
+    await engine.enable();
+    engine.setAmbientSample(blob);
+    const second = new Blob(['other bytes'], { type: 'audio/mpeg' });
+
+    engine.setAmbientSample(second);
+
+    expect(fake.playerInstances[0].disposed).toBe(true);
+    expect(fake.playerInstances).toHaveLength(2);
+    expect(fake.playerInstances[1].disposed).toBe(false);
   });
 });

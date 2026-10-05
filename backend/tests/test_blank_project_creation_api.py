@@ -189,7 +189,7 @@ def test_postgres_rollback_on_injected_failure_leaves_no_records(django_db_block
 
         from django.db import transaction as txn
 
-        class InjectedFailure(Exception):
+        class InjectedFailure(Exception):  # noqa: N818
             pass
 
         with pytest.raises(InjectedFailure):
@@ -211,7 +211,7 @@ def test_postgres_rollback_on_injected_failure_leaves_no_records(django_db_block
 @pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
 def test_postgres_concurrent_duplicate_submission_creates_exactly_one_project(django_db_blocker):
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-blank-user"
         )

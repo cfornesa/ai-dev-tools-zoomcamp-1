@@ -14,6 +14,16 @@ const fixtures = {
     'window.sketch = ({ canvas, startFrame }) => { canvas.addEventListener("pointermove", (event) => { canvas.dataset.pointer = `${event.offsetX},${event.offsetY}`; }); const x = canvas.getContext("2d"); startFrame(() => { x.fillStyle = "#172554"; x.fillRect(0, 0, canvas.width, canvas.height); }); };',
 } as const;
 
+async function waitForPreviewSurface(page: import('@playwright/test').Page, selector: string) {
+  await expect(async () => {
+    const surface = page
+      .locator('iframe[title="Art piece preview"]')
+      .contentFrame()
+      .locator(selector);
+    await surface.waitFor({ state: 'visible', timeout: 2_000 });
+  }).toPass({ timeout: 15_000, intervals: [100, 250, 500] });
+}
+
 test.describe('Generated 2D regular stage fill (#705)', () => {
   const e2eFixtures = requireE2EFixtures();
 
@@ -54,17 +64,21 @@ test.describe('Generated 2D regular stage fill (#705)', () => {
       await page.setViewportSize(viewport);
       for (const engine of Object.keys(fixtures) as Array<keyof typeof fixtures>) {
         await page.goto(`/users/@${profile.handle}/pieces/${pieces.get(engine)}`);
-        const frame = page.frameLocator('iframe[title="Art piece preview"]');
-        const surface = frame.locator(
+        const surfaceSelector =
           engine === 'svg'
             ? 'svg'
             : engine === 'p5js'
               ? 'canvas'
               : engine === 'canvas2d'
                 ? '#piece-canvas'
-                : '#c2-canvas',
-        );
-        await expect(surface).toBeVisible({ timeout: 15_000 });
+                : '#c2-canvas';
+        await waitForPreviewSurface(page, surfaceSelector);
+        // Resolve the iframe again after waiting: preview content can replace
+        // its iframe while the runtime initializes.
+        const surface = page
+          .locator('iframe[title="Art piece preview"]')
+          .contentFrame()
+          .locator(surfaceSelector);
         const geometry = await surface.evaluate((element) => {
           const rect = element.getBoundingClientRect();
           const stage = element.ownerDocument.body.getBoundingClientRect();

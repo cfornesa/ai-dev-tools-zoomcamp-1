@@ -183,6 +183,18 @@ def test_full_document_includes_published_pieces_and_collections_and_excludes_pr
 
 
 @pytest.mark.django_db
+def test_llms_links_are_absolute_on_the_validated_request_host(client, published_page):
+    concise = client.get(reverse("llms"), secure=True)
+    expanded = client.get(reverse("llms-full"), secure=True)
+
+    assert "https://testserver/gallery" in concise.content.decode()
+    assert "https://testserver/llms-full.txt" in concise.content.decode()
+    full_text = expanded.content.decode()
+    assert "https://testserver/gallery" in full_text
+    assert "https://testserver/pages/about-the-studio" in full_text
+
+
+@pytest.mark.django_db
 def test_llms_output_has_deterministic_case_insensitive_ordering(client):
     Page.objects.create(
         title="Zebra page", slug="zebra-page", description="", status=Page.Status.PUBLISHED

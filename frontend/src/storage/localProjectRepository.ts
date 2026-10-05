@@ -196,6 +196,9 @@ export type LocalProjectRecord = {
   activeSceneId: string | null;
   createdAt: string;
   updatedAt: string;
+  description?: string;
+  thumbnail?: Blob;
+  thumbnailUpdatedAt?: string;
   /** Optional in the TypeScript shape for compatibility with pre-v5 test
    * fixtures; persisted v5 records are normalized by the upgrade step. */
   kind?: LocalPieceKind;
@@ -511,7 +514,7 @@ function nextUpdatedAt(previous: string): string {
 
 export async function createProject(
   db: IDBDatabase,
-  input: { ownerId: string; title: string; kind?: LocalPieceKind },
+  input: { ownerId: string; title: string; description?: string; kind?: LocalPieceKind },
 ): Promise<LocalProjectRecord> {
   const record: LocalProjectRecord = {
     id: crypto.randomUUID(),
@@ -521,6 +524,7 @@ export async function createProject(
     activeSceneId: null,
     createdAt: nowIso(),
     updatedAt: nowIso(),
+    ...(input.description === undefined ? {} : { description: input.description }),
     kind: input.kind ?? '2d',
     versionOrder: [],
     currentVersionId: null,
@@ -540,6 +544,7 @@ export async function createProjectWithScene(
   input: {
     ownerId: string;
     title: string;
+    description?: string;
     kind?: LocalPieceKind;
     sceneName: string;
     sceneJson: Record<string, unknown>;
@@ -553,6 +558,7 @@ export async function createProjectWithScene(
     activeSceneId: null,
     createdAt: nowIso(),
     updatedAt: nowIso(),
+    ...(input.description === undefined ? {} : { description: input.description }),
     kind: input.kind ?? '2d',
     versionOrder: [],
     currentVersionId: null,
@@ -620,6 +626,9 @@ function isWellFormedProject(value: unknown): value is LocalProjectRecord {
     (r.activeSceneId === null || typeof r.activeSceneId === 'string') &&
     typeof r.createdAt === 'string' &&
     typeof r.updatedAt === 'string' &&
+    (r.description === undefined || typeof r.description === 'string') &&
+    (r.thumbnail === undefined || r.thumbnail instanceof Blob) &&
+    (r.thumbnailUpdatedAt === undefined || typeof r.thumbnailUpdatedAt === 'string') &&
     isPieceKind(r.kind) &&
     Array.isArray(r.versionOrder) &&
     (r.currentVersionId === null || typeof r.currentVersionId === 'string')
@@ -687,6 +696,9 @@ export async function updateProject(
       | 'cloudSyncState'
       | 'remotePublicId'
       | 'remoteVersion'
+      | 'description'
+      | 'thumbnail'
+      | 'thumbnailUpdatedAt'
     >
   >,
 ): Promise<LocalProjectRecord> {
@@ -697,7 +709,9 @@ export async function updateProject(
   const updated: LocalProjectRecord = {
     ...existing,
     ...patch,
-    updatedAt: nextUpdatedAt(existing.updatedAt),
+    updatedAt: Object.keys(patch).some((key) => key !== 'thumbnail' && key !== 'thumbnailUpdatedAt')
+      ? nextUpdatedAt(existing.updatedAt)
+      : existing.updatedAt,
   };
   try {
     const tx = db.transaction(STORE_PROJECTS, 'readwrite');
@@ -970,6 +984,7 @@ export async function createLocalGeneratedProject(
   const created = await createProjectWithScene(db, {
     ownerId: input.ownerId,
     title: input.title,
+    description: input.description,
     kind: 'generated',
     sceneName: 'Generated preview',
     sceneJson: payload,

@@ -121,8 +121,25 @@ test.describe('structured 3D immersive view toolbar (#769)', () => {
       expect(order.every((index) => index > 1)).toBe(true);
       expect(order[0]).toBeLessThan(order[1]!);
 
-      // The icon row leaves most of the stage to the artwork.
-      expect((await toolbar.boundingBox())!.height).toBeLessThan(viewport.height * 0.3);
+      // The accessible toolbar spans the stage as a pointer-event shell;
+      // only the visible action row should be measured against this limit.
+      const iconRow = toolbar.locator('.scene3d-preview-actions');
+      const toolbarBounds = await toolbar.boundingBox();
+      const iconRowBounds = await iconRow.boundingBox();
+      const stageBounds = await frame.boundingBox();
+      expect(toolbarBounds).not.toBeNull();
+      expect(iconRowBounds).not.toBeNull();
+      expect(stageBounds).not.toBeNull();
+      console.info(
+        'IMMERSIVE_3D_TOOLBAR_GEOMETRY',
+        JSON.stringify({
+          viewport,
+          toolbar: toolbarBounds,
+          iconRow: iconRowBounds,
+          stage: stageBounds,
+        }),
+      );
+      expect(iconRowBounds!.height).toBeLessThan(viewport.height * 0.3);
       await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
       await expect(
         toolbar.getByRole('group', { name: 'Piece controls' }).getByRole('button', {

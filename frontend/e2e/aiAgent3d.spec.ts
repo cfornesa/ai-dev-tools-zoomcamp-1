@@ -1,6 +1,6 @@
 /**
- * Issue #463: end-to-end coverage for the 3D "Agent workflow" action at
- * `/ai-projects3d/:id` (`AIProposalPanel3D.tsx`, reusing the shared
+ * Issue #463: end-to-end coverage for the 3D "Agent workflow" action in the
+ * canonical owner editor (`AIProposalPanel3D.tsx`, reusing the shared
  * `useAIRun`/`AIRunPanel` orchestrator issue #462 already shipped for 2D).
  * Mirrors `aiAgent2d.spec.ts`'s exact fake-provider infrastructure and
  * conventions -- see that file's own module doc comment for the full
@@ -22,6 +22,7 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { apiPost } from './support/api.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -103,16 +104,15 @@ async function probeFakeAIProviderMode(context: BrowserContext, page: Page): Pro
   return response.status() === 201;
 }
 
-async function createProject3DWithFixtureScene(context: BrowserContext): Promise<string> {
-  const created = await apiPost(context, '/api/projects3d/', {});
-  expect(created.status()).toBe(201);
-  const { id } = (await created.json()) as { id: string };
+async function createProject3DWithFixtureScene(page: Page, context: BrowserContext): Promise<void> {
+  const id = await createServerProject3D(page);
+  expect(page).toHaveURL(/\/users\/@[^/]+\/edit\/[^/]+\/?$/);
   const saved = await apiPost(context, `/api/projects3d/${id}/versions/`, {
     scene_json: CUBE_SPHERE_SCENE,
     origin: 'manual',
   });
   expect(saved.status()).toBe(201);
-  return id;
+  await page.reload();
 }
 
 test.describe('AI 3D editor: Agent workflow (#463)', () => {
@@ -129,17 +129,16 @@ test.describe('AI 3D editor: Agent workflow (#463)', () => {
     await resetAIScenario(page);
   });
 
-  test('creates a piece through a full agent run and accepts it', async ({ page, context }) => {
+  test('creates a piece through a full agent run and accepts it', async ({ page }) => {
     test.skip(
       !fakeProviderActive,
       'Server is not running with AI_PROVIDER=fake -- see AGENTS.md "End-to-end tests".',
     );
 
-    const created = await apiPost(context, '/api/projects3d/', {});
-    const { id: projectId } = (await created.json()) as { id: string };
+    await createServerProject3D(page);
     await setAIScenario(page, 'success');
 
-    await page.goto(`/ai-projects3d/${projectId}`);
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page
@@ -171,10 +170,10 @@ test.describe('AI 3D editor: Agent workflow (#463)', () => {
       'Server is not running with AI_PROVIDER=fake -- see AGENTS.md "End-to-end tests".',
     );
 
-    const projectId = await createProject3DWithFixtureScene(context);
+    await createProject3DWithFixtureScene(page, context);
     await setAIScenario(page, 'success');
 
-    await page.goto(`/ai-projects3d/${projectId}`);
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
     await page.getByRole('radio', { name: 'Edit selected object' }).click();
 
@@ -195,20 +194,16 @@ test.describe('AI 3D editor: Agent workflow (#463)', () => {
     await expect(page.getByTestId('ai-run-status')).toContainText(/accepted/i);
   });
 
-  test('a run that keeps failing validation ends in a terminal failed state', async ({
-    page,
-    context,
-  }) => {
+  test('a run that keeps failing validation ends in a terminal failed state', async ({ page }) => {
     test.skip(
       !fakeProviderActive,
       'Server is not running with AI_PROVIDER=fake -- see AGENTS.md "End-to-end tests".',
     );
 
-    const created = await apiPost(context, '/api/projects3d/', {});
-    const { id: projectId } = (await created.json()) as { id: string };
+    await createServerProject3D(page);
     await setAIScenario(page, 'invalid_structured_output');
 
-    await page.goto(`/ai-projects3d/${projectId}`);
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page.getByLabel('Describe the scene you want to generate').fill('an impossible geometry');
@@ -222,18 +217,16 @@ test.describe('AI 3D editor: Agent workflow (#463)', () => {
 
   test('a browser reload reconnects to an awaiting-review run without another attempt', async ({
     page,
-    context,
   }) => {
     test.skip(
       !fakeProviderActive,
       'Server is not running with AI_PROVIDER=fake -- see AGENTS.md "End-to-end tests".',
     );
 
-    const created = await apiPost(context, '/api/projects3d/', {});
-    const { id: projectId } = (await created.json()) as { id: string };
+    await createServerProject3D(page);
     await setAIScenario(page, 'success');
 
-    await page.goto(`/ai-projects3d/${projectId}`);
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
     await page.getByRole('radio', { name: 'Create piece' }).click();
     await page.getByLabel('Describe the scene you want to generate').fill('a simple scene');
@@ -244,6 +237,7 @@ test.describe('AI 3D editor: Agent workflow (#463)', () => {
     const statusBefore = await page.getByTestId('ai-run-status').textContent();
 
     await page.reload();
+    await page.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
     await page.getByRole('radio', { name: 'Agent workflow' }).click();
 
     await expect(page.getByTestId('ai-run-preview')).toBeVisible({ timeout: 5000 });

@@ -17,9 +17,12 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path
+from oauth2_provider import views as oauth_views
+from oauth2_provider.urls import metadata_urlpatterns
 
 from backend.oauth_gates import github_callback, github_login, linkedin_callback, linkedin_login
 from backend.views import health, whoami
+from scenes.crawler_resources import RobotsTextView, SitemapXMLView
 from scenes.llms import LLMSFullTextView, LLMSTextView
 from scenes.profile_feeds import (
     PublicProfileAtomFeedView,
@@ -28,6 +31,31 @@ from scenes.profile_feeds import (
 )
 
 urlpatterns = [
+    path(
+        '',
+        include(
+            (
+                metadata_urlpatterns
+                + [
+                    path(
+                        'oauth/authorize/',
+                        oauth_views.AuthorizationView.as_view(),
+                        name='authorize',
+                    ),
+                    path('oauth/token/', oauth_views.TokenView.as_view(), name='token'),
+                    path(
+                        'oauth/revoke_token/',
+                        oauth_views.RevokeTokenView.as_view(),
+                        name='revoke-token',
+                    ),
+                ],
+                'oauth2_provider',
+            ),
+            namespace='oauth2_provider',
+        ),
+    ),
+    path('robots.txt', RobotsTextView.as_view(), name='robots'),
+    path('sitemap.xml', SitemapXMLView.as_view(), name='sitemap'),
     path('llms.txt', LLMSTextView.as_view(), name='llms'),
     path('llms-full.txt', LLMSFullTextView.as_view(), name='llms-full'),
     path(

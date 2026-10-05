@@ -88,9 +88,12 @@ test.describe('Generated public sound telemetry (#918)', () => {
     await page.goto(`/art-pieces/p/${piece.public_id}`);
     await expect(page.getByRole('heading', { name: 'Sonic telemetry fixture' })).toBeVisible();
     await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
-    await expect(page.getByLabel(/^Scale:/)).toHaveValue('major');
-    await expect(page.getByLabel('Key')).toHaveValue('C');
-    await expect(page.getByLabel('Scale', { exact: true })).toHaveValue('major');
+    const pieceControls = page.getByRole('region', { name: 'Piece controls' });
+    await expect(pieceControls.getByLabel(/^Scale:/)).toHaveValue('major');
+    await expect(pieceControls.getByRole('combobox', { name: 'Key', exact: true })).toHaveValue(
+      'C',
+    );
+    await expect(pieceControls.getByLabel('Scale', { exact: true })).toHaveValue('major');
     await page.getByRole('button', { name: 'Unmute sound' }).click();
     await expect(page.getByTestId('sound-status')).toContainText('(running).');
 

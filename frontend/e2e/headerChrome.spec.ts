@@ -20,12 +20,19 @@ test.describe('Header chrome (#674)', () => {
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
       await page.goto('/studio');
 
-      await expect(page.getByRole('combobox', { name: /Color mode, currently/i })).toHaveCount(1);
-      await expect(page.getByRole('button', { name: /Switch to (light|dark) mode/i })).toHaveCount(
-        0,
-      );
-      await expect(page.getByRole('radiogroup', { name: 'Reduce motion' })).toBeVisible();
-      await expect(page.locator('.app-shell-motion')).toHaveAttribute('class', /app-shell-motion/);
+      const displaySettings = page.getByRole('complementary', { name: 'Display settings' });
+      await expect(displaySettings).toBeVisible();
+      await expect(
+        displaySettings.getByRole('button', { name: /Switch to (light|dark) mode/i }),
+      ).toHaveCount(1);
+      await expect(
+        page
+          .locator('.app-shell-header')
+          .getByRole('button', { name: /Switch to (light|dark) mode/i }),
+      ).toHaveCount(0);
+      await expect(
+        displaySettings.getByRole('button', { name: /Use (reduced|full) motion/i }),
+      ).toBeVisible();
 
       const overflowing = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,

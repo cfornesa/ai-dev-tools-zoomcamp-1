@@ -227,7 +227,13 @@ class ProjectPublishView(APIView):
                 # -- see scenes/gallery.py's module docstring for why this,
                 # not updated_at, is the public gallery's sort/cursor key.
                 locked_project.published_at = timezone.now()
-                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+                # Issue #944: republishing is how an owner "restores" an
+                # unpublished piece within its retention window -- clear the
+                # unpublish-retention clock so it's no longer purge-eligible.
+                locked_project.unpublished_at = None
+                locked_project.save(
+                    update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
+                )
                 ProjectActivity.objects.create(
                     project=locked_project,
                     actor=request.user,
@@ -277,7 +283,14 @@ class ProjectUnpublishView(APIView):
                 # request excludes this project -- no stale card lingers
                 # because of a cached/prior publish timestamp.
                 locked_project.published_at = None
-                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+                # Issue #944: start the unpublish-retention clock -- the
+                # server copy stays intact and restorable (republish clears
+                # this again) until the retention policy's grace window
+                # passes, at which point it becomes purge-eligible.
+                locked_project.unpublished_at = timezone.now()
+                locked_project.save(
+                    update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
+                )
                 ProjectActivity.objects.create(
                     project=locked_project,
                     actor=request.user,
@@ -469,7 +482,7 @@ class PublicGalleryListView(APIView):
         "generated": ("generated",),
     }
 
-    def get(self, request):
+    def get(self, request):  # noqa: C901
         gallery_type = request.query_params.get("type", "all")
         if gallery_type not in VALID_GALLERY_TYPES:
             return Response(
@@ -644,7 +657,7 @@ class ProjectThumbnailView(APIView):
         return HttpResponse(bytes(thumbnail.image_data), content_type=thumbnail.content_type)
 
 
-class ProjectForkNotAvailable(Exception):
+class ProjectForkNotAvailable(Exception):  # noqa: N818
     """Raised inside the locked fork transaction when the source project turns
     out not to be forkable after all (checked fresh under the lock)."""
 
@@ -731,7 +744,7 @@ class ProjectForkView(APIView):
     changes after fork time.
     """
 
-    def post(self, request, public_id):
+    def post(self, request, public_id):  # noqa: C901
         source = _get_project_or_404(public_id)
 
         if not request.user.is_authenticated:
@@ -928,6 +941,16 @@ class SceneVersionListCreateView(APIView):
                     origin=input_serializer.validated_data["origin"],
                     change_label=input_serializer.validated_data.get("change_label", ""),
                 )
+                ProjectActivity.objects.create(
+                    project=locked_project,
+                    actor=request.user if request.user.is_authenticated else None,
+                    action_type=ProjectActivity.ActionType.VERSION_SAVED,
+                    metadata={
+                        "version_id": version.pk,
+                        "sequence": version.sequence,
+                        "origin": version.origin,
+                    },
+                )
                 active_scene.current_version = version
                 active_scene.save(update_fields=["current_version", "updated_at"])
                 locked_project.current_version = version
@@ -958,7 +981,7 @@ def _get_version_or_404(project: Project, version_id) -> SceneVersion:
         raise Http404 from exc
 
 
-class CannotModifyCurrentVersion(Exception):
+class CannotModifyCurrentVersion(Exception):  # noqa: N818
     """Raised inside an atomic block to abort restoring/deleting the current version."""
 
 
@@ -990,15 +1013,30 @@ class SceneVersionDetailView(APIView):
                 # check-then-act sequence -- the lock itself is the point;
                 # nothing below needs to read the locked row's fields.
                 Project.objects.select_for_update().get(pk=project.pk)
+                # Another DELETE may have completed while this request was
+                # waiting on the project lock. Re-read the version under the
+                # same lock ordering so retries observe the committed state.
+                version = SceneVersion.objects.select_for_update().get(pk=version.pk)
                 # Issue #510: a version is protected from soft-delete by
                 # being its *own scene's* current version -- not just by
                 # being the project-wide mirrored `current_version` -- so
                 # this also protects a non-active scene's current version.
                 if version.scene_id is not None and version.scene.current_version_id == version.pk:
                     raise CannotModifyCurrentVersion
-                version.is_deleted = True
-                version.deleted_at = timezone.now()
-                version.save()
+                if not version.is_deleted:
+                    version.is_deleted = True
+                    version.deleted_at = timezone.now()
+                    version.save()
+                    ProjectActivity.objects.create(
+                        project=project,
+                        actor=request.user if request.user.is_authenticated else None,
+                        action_type=ProjectActivity.ActionType.VERSION_DELETED,
+                        metadata={
+                            "version_id": version.pk,
+                            "sequence": version.sequence,
+                            "origin": version.origin,
+                        },
+                    )
         except CannotModifyCurrentVersion:
             return Response(
                 {"detail": "The current version cannot be soft-deleted."},
@@ -1053,6 +1091,17 @@ class SceneVersionRestoreView(APIView):
                     parent=source,
                     origin=SceneVersion.Origin.RESTORE,
                     change_label=f"Restored from version {source.sequence}",
+                )
+                ProjectActivity.objects.create(
+                    project=locked_project,
+                    actor=request.user if request.user.is_authenticated else None,
+                    action_type=ProjectActivity.ActionType.VERSION_RESTORED,
+                    metadata={
+                        "version_id": new_version.pk,
+                        "sequence": new_version.sequence,
+                        "origin": new_version.origin,
+                        "restored_from_sequence": source.sequence,
+                    },
                 )
                 target_scene.current_version = new_version
                 target_scene.save(update_fields=["current_version", "updated_at"])

@@ -77,6 +77,8 @@ servers:
 tags:
   - name: Health
     description: Unauthenticated liveness/readiness check.
+  - name: MCP
+    description: Anonymous Model Context Protocol Streamable HTTP endpoint.
   - name: Auth
     description: Who is signed in, and signing out.
   - name: Credentials
@@ -104,6 +106,51 @@ security:
   - sessionCookie: []
 
 paths:
+  /mcp/:
+    post:
+      tags: [MCP]
+      operationId: authenticatedMcpEndpoint
+      summary: Stateless OAuth-protected MCP endpoint for public application operations
+      description: |
+        JSON Streamable HTTP MCP transport. Every request requires a valid
+        bearer token issued for this exact `/mcp` resource; session cookies
+        are ignored. Public content tools and resources require `gallery:read`;
+        owner 2D/3D project tools require `projects:write` (including reads);
+        AI generation and run tools require `ai:use`, and proposal acceptance
+        also requires `projects:write`. Authenticated piece package intake
+        requires `projects:write` and accepts at most 180 KiB decoded ZIP data.
+        Historical-version deletion requires both `destructive` and
+        `projects:write`, plus an exact project/version confirmation; project
+        deletion is not exposed until an owner-facing restore path exists.
+        `health_check` and `whoami` require
+        authentication only. Tool schemas,
+        scope declarations, and public data eligibility are documented in
+        `docs/mcp.md`. Authenticated tool calls are limited to 60 per minute
+        per OAuth client and per user;
+        rate errors use JSON-RPC code -32029 with `retry_after_seconds` in
+        error data. Audit rows include OAuth client and user ids plus a keyed
+        IP fingerprint; arguments, tokens, secrets, and raw IPs are not stored.
+        `X-Forwarded-For` is honored only when the immediate peer is loopback.
+      x-access: oauth
+      security:
+        - mcpOAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: MCP JSON response, notification acknowledgement, or structured JSON-RPC tool error (including insufficient scope).
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "400": { description: Invalid MCP request or content type. }
+        "401": { description: Missing, expired, revoked, or wrong-audience bearer token; includes a protected-resource metadata challenge. }
+        "403": { description: Origin is not trusted. }
+        "413": { description: Request body exceeds 256 KiB. }
+        "421": { description: Host is not allowed. }
+        "405": { description: Unsupported HTTP method. }
   /api/pieces/intake/:
     post:
       tags: [Storage]
@@ -699,6 +746,184 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ValidationErrors" }
+
+  /api/public/gallery/:
+    get:
+      tags: [Public]
+      operationId: listPublicPieces
+      summary: Cursor-paginated public gallery across pieces and collections
+      description: Anonymous. Merges currently eligible 2D, 3D, generated, and collection cards in stable publication order. Never includes private scene data, prompts, email addresses, or owner-only fields.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string, enum: [all, authored, pieces, collections, generated], default: all }
+        - name: engine
+          in: query
+          schema: { type: string }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: page_size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 60, default: 24 }
+      responses:
+        "200":
+          description: One bounded page of public gallery cards and the generated engine catalog.
+          content:
+            application/json:
+              schema: { type: object, required: [results, next_cursor, has_more, engine_catalog], additionalProperties: true }
+        "400": { description: Invalid type, engine, cursor, or page size. }
+
+  /api/public/projects3d/{projectId}/:
+    get:
+      tags: [Public]
+      operationId: getPublic3DProject
+      summary: Read one currently published 3D project
+      description: Anonymous. The public 3D serializer includes the current scene snapshot and safe version summaries; private, deleted, and missing projects return the same 404.
+      x-access: anonymous
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Public 3D project payload.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "404": { description: Project is absent or not currently public. }
+
+  /api/public/art-pieces/:
+    get:
+      tags: [Public]
+      operationId: listPublicArtPieces
+      summary: List currently published generated pieces
+      description: Anonymous. Uses the canonical generated-piece eligibility gate; prompt and owner id are omitted.
+      x-access: anonymous
+      security: []
+      responses:
+        "200":
+          description: Public generated-piece metadata and public versions.
+          content:
+            application/json:
+              schema: { type: array, items: { type: object, additionalProperties: true } }
+
+  /api/public/art-pieces/{pieceId}/:
+    get:
+      tags: [Public]
+      operationId: getPublicArtPiece
+      summary: Read one currently published generated piece
+      description: Anonymous. Exposes only fields in the public generated-piece projection; private, deleted, and missing pieces return 404.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: pieceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Public generated-piece metadata and its current public version.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "404": { description: Piece is absent or not currently published. }
+
+  /api/public/art-pieces/{pieceId}/thumbnail.png:
+    get:
+      tags: [Public]
+      operationId: getPublicArtPieceThumbnail
+      summary: Read the current thumbnail for a published generated piece
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: pieceId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: PNG thumbnail bytes.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+        "404": { description: Piece is absent, unpublished, deleted, or lacks a current version. }
+
+  /api/collections/public/:
+    get:
+      tags: [Public]
+      operationId: listPublicCollections
+      summary: List bounded cards for currently published public collections
+      description: Anonymous. Supports keyset pagination and public collection sorts.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, oldest, item_count], default: newest }
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: page_size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 60, default: 24 }
+      responses:
+        "200":
+          description: Public collection cards with continuation cursor.
+          content:
+            application/json:
+              schema: { type: object, required: [results, next_cursor, has_more], additionalProperties: true }
+        "400": { description: Invalid sort, cursor, or page size. }
+
+  /api/public/collections/{handle}/{slug}/:
+    get:
+      tags: [Public]
+      operationId: getPublicCollection
+      summary: Read one active public collection
+      description: Anonymous. Requires a public profile and a published, active collection; historical slugs redirect to the current public URL.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: handle
+          in: path
+          required: true
+          schema: { type: string }
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Visibility-safe collection data and public members.
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        "301": { description: Historical slug redirects to the current public collection URL. }
+        "404": { description: Collection is absent, private, inactive, deleted, or owner profile is not public. }
+
+  /api/public/gallery/search/:
+    get:
+      tags: [Public]
+      operationId: searchPublicGallery
+      summary: Search public accounts or published content
+      description: Anonymous. `q` is limited to 100 characters; results are capped at 50. Account scope searches public profiles only; content scope searches eligible public 2D, 3D, and generated pieces.
+      x-access: anonymous
+      security: []
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 100 }
+        - name: scope
+          in: query
+          schema: { type: string, enum: [accounts, content], default: content }
+      responses:
+        "200":
+          description: Bounded public search results.
+          content:
+            application/json:
+              schema: { type: object, required: [scope, results], additionalProperties: true }
+        "400": { description: Invalid query or scope. }
 
   /api/public/projects/{projectId}/:
     get:
@@ -1372,6 +1597,137 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AIErrorBody3D" }
 
+  /.well-known/oauth-authorization-server:
+    get:
+      summary: Discover the OAuth authorization server
+      responses:
+        "200": { description: RFC 8414 authorization-server metadata; only code/S256 and the supported OAuth scopes are advertised. }
+  /.well-known/oauth-protected-resource/mcp/:
+    get:
+      summary: Discover authorization for the MCP protected resource
+      responses:
+        "200": { description: "RFC 9728 metadata for the MCP resource at the validated application host." }
+  /oauth/authorize/:
+    get:
+      summary: Begin the MCP OAuth authorization-code flow
+      description: Requires an existing allauth browser session, exact pre-registered redirect URI, resource=https://{host}/mcp, and PKCE S256. The user must explicitly approve requested scopes; public dynamic registration is disabled.
+      x-access: session
+      parameters:
+        - { name: response_type, in: query, required: true, schema: { type: string, enum: [code] } }
+        - { name: client_id, in: query, required: true, schema: { type: string } }
+        - { name: redirect_uri, in: query, required: true, schema: { type: string, format: uri } }
+        - { name: scope, in: query, required: true, schema: { type: string, description: "Space-separated gallery:read, projects:write, ai:use, and separately consented destructive scopes." } }
+        - { name: state, in: query, required: true, schema: { type: string } }
+        - { name: code_challenge, in: query, required: true, schema: { type: string } }
+        - { name: code_challenge_method, in: query, required: true, schema: { type: string, enum: [S256] } }
+        - { name: resource, in: query, required: true, schema: { type: string, format: uri } }
+      responses:
+        "302": { description: Consent page or redirect carrying the authorization code and state. }
+        "400": { description: Invalid client, redirect URI, scope, resource or PKCE request. }
+  /oauth/token/:
+    post:
+      summary: Exchange or refresh an MCP access token
+      description: Supports authorization_code and refresh_token only. Authorization-code requests require the same exact redirect URI, S256 verifier, and MCP resource. Refresh tokens rotate.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type: { type: string, enum: [authorization_code, refresh_token] }
+                code: { type: string }
+                redirect_uri: { type: string, format: uri }
+                client_id: { type: string }
+                code_verifier: { type: string }
+                refresh_token: { type: string }
+                resource: { type: string, format: uri }
+      responses:
+        "200": { description: Short-lived audience-restricted token response; access and refresh credentials are never written to logs. }
+        "400": { description: Invalid client, grant, resource, scope, or PKCE proof. }
+  /oauth/revoke_token/:
+    post:
+      summary: Revoke an MCP OAuth token
+      description: RFC 7009 revocation; a successfully revoked token is rejected on the next request.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+                token_type_hint: { type: string, enum: [access_token, refresh_token] }
+      responses:
+        "200": { description: Token revoked, or unknown token treated as already revoked. }
+  /api/account/connected-apps/:
+    get:
+      summary: List the signed-in user's connected MCP applications
+      security: [{ sessionCookie: [] }]
+      x-access: session
+      responses:
+        "200":
+          description: Applications with an active MCP access or refresh token; token values and client secrets are omitted.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, name, scopes, last_authorized]
+                  properties:
+                    id: { type: integer }
+                    name: { type: string }
+                    scopes: { type: array, items: { type: string } }
+                    last_authorized: { type: string, format: date-time }
+        "401": { description: Authentication required. }
+  /api/account/connected-apps/{applicationId}/:
+    delete:
+      summary: Revoke only the signed-in user's tokens for one MCP application
+      security: [{ sessionCookie: [] }]
+      x-access: session
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200": { description: Revoked status; foreign and unknown applications are indistinguishable. }
+        "401": { description: Authentication required. }
+  /api/admin/oauth-applications/:
+    get:
+      summary: List pre-registered MCP OAuth applications
+      security: [{ sessionCookie: [] }]
+      x-access: application-admin
+      responses:
+        "200": { description: Pre-registered client metadata without any secret. }
+        "401": { description: Authentication required. }
+        "403": { description: Application-admin authorization required. }
+    post:
+      summary: Pre-register an MCP public client
+      security: [{ sessionCookie: [] }]
+      x-access: application-admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, redirect_uris]
+              properties:
+                name: { type: string, maxLength: 255 }
+                redirect_uris:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items: { type: string, format: uri }
+      responses:
+        "201": { description: Created public client ID and configured redirect URIs; no secret is returned. }
+        "400": { description: Invalid name or unsafe/non-exact redirect URI. }
+        "401": { description: Authentication required. }
+        "403": { description: Application-admin authorization required. }
+
 components:
   securitySchemes:
     sessionCookie:
@@ -1384,6 +1740,18 @@ components:
         require the `X-CSRFToken` header, read from the `csrftoken` cookie
         — see `frontend/src/api/client.ts`. Operations reachable without a
         session set `security: []` and are marked `x-access: anonymous`.
+    mcpOAuth:
+      type: oauth2
+      description: Authorization-code OAuth for external MCP clients. DCR is disabled; clients are pre-registered by application administrators.
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth/authorize/
+          tokenUrl: /oauth/token/
+          scopes:
+            gallery:read: Read public gallery content.
+            projects:write: Read and modify the authenticated user's projects.
+            ai:use: Use AI tools within the same web-app entitlements and quotas.
+            destructive: Separately consent to destructive actions.
 
   parameters:
     ProjectId:
@@ -1468,10 +1836,11 @@ components:
 
     HealthResponse:
       type: object
-      required: [status, database]
+      required: [status, database, cache]
       properties:
         status: { type: string, enum: [ok, error] }
         database: { type: string, enum: [ok, unavailable] }
+        cache: { type: string, enum: [ok, unavailable] }
 
     CurrentUser:
       type: object

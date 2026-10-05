@@ -65,23 +65,25 @@ test.describe('generated art-piece public toolset (#690)', () => {
     test(`renders labelled ${engine} actions without a hamburger`, async ({ page }, testInfo) => {
       await stubCanonicalPiece(page, engine);
       await page.goto('/users/@artist/pieces/sample-piece');
-
       await expect(page.getByRole('heading', { name: `${engine} piece` })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Open download menu' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'Expand piece to fullscreen' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Piece controls' })).toHaveCount(
+      await expect(page.getByRole('button', { name: 'Piece controls', exact: true })).toHaveCount(
         engine === 'threejs' ? 1 : 0,
       );
       // Steer lives inside the Piece controls popover; the guide is its own button (#766).
       await expect(page.getByRole('button', { name: /^Hand tracking$/ })).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Show hand gesture guide' })).toHaveCount(
-        engine === 'threejs' ? 1 : 0,
-      );
-      await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveCount(
-        engine === 'threejs' ? 1 : 0,
-      );
-      await expect(page.getByRole('button', { name: 'Open piece controls menu' })).toHaveCount(0);
+      // Both affordances remain visible even without the matching capability;
+      // disabled controls explain the Creator-plan boundary.
+      await expect(page.getByRole('button', { name: 'Show hand gesture guide' })).toHaveCount(1);
+      await expect(page.getByRole('button', { name: 'Unmute sound' })).toHaveCount(1);
+      // No operable Piece controls menu trigger is present on public pages.
+      await expect(
+        page
+          .getByRole('toolbar', { name: 'Piece actions' })
+          .locator('button.piece-stage-menu-trigger'),
+      ).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'Embed' })).toBeVisible();
       await expect(page.getByRole('button', { name: 'View immersive piece' })).toBeVisible();
       await expect(page.locator('html')).toHaveJSProperty('scrollWidth', 1280);

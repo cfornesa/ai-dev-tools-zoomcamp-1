@@ -4,6 +4,7 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
 } from 'react';
 
 import { downloadBlob } from '../export/downloadBlob';
@@ -40,6 +41,7 @@ type Props = {
   workingCopy: SceneDocument | null;
   sceneEditor: SceneEditor;
   onAssetsChange?: (assets: LocalMediaAssetRecord[]) => void;
+  publicationStatus?: ReactNode;
 };
 
 type PendingImport = { file: File; altText: string; decorative: boolean };
@@ -66,6 +68,7 @@ export default function ProjectMediaLibraryPanel({
   workingCopy,
   sceneEditor,
   onAssetsChange,
+  publicationStatus,
 }: Props) {
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -320,7 +323,7 @@ export default function ProjectMediaLibraryPanel({
           aria-expanded={fileMenuOpen}
           onClick={() => setFileMenuOpen((open) => !open)}
         >
-          File
+          <span aria-hidden="true">▤</span> File
         </button>
         {fileMenuOpen && (
           <div
@@ -372,6 +375,7 @@ export default function ProjectMediaLibraryPanel({
             <p role="status" aria-live="polite">
               {storageText}
             </p>
+            {publicationStatus}
           </div>
         )}
         <input

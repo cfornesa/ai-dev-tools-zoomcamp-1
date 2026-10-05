@@ -2,13 +2,14 @@ import { expect, test } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { expandGeneratedArtEditorTools } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const SOURCES = {
   threejs:
-    "const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100); camera.position.z = 4; camera.lookAt(0, 0, 0); const renderer = new THREE.WebGLRenderer(); renderer.setSize(320, 240); document.getElementById('art-piece-container').appendChild(renderer.domElement); scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }))); renderer.render(scene, camera);",
+    "const scene = new THREE.Scene(); const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100); camera.position.z = 4; camera.lookAt(0, 0, 0); const renderer = new THREE.WebGLRenderer(); renderer.setSize(320, 240); document.getElementById('art-piece-container').appendChild(renderer.domElement); scene.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0x2a9d8f }))); renderer.render(scene, camera);",
   aframe:
-    '<a-scene embedded><a-box position="0 1 -4" rotation="0 30 0" color="#f472b6"></a-box><a-camera position="0 1.6 0"></a-camera></a-scene>',
+    '<a-scene embedded><a-box position="0 1 -4" rotation="0 30 0" color="#2a9d8f"></a-box><a-camera position="0 1.6 0"></a-camera></a-scene>',
 } as const;
 
 test.describe('3D AI editor engine modes (#620)', () => {
@@ -54,6 +55,8 @@ test.describe('3D AI editor engine modes (#620)', () => {
         await expect(page.getByTestId('art-piece-editor-tool-add-shape')).toBeEnabled();
         await expect(page.getByTestId('art-piece-editor-tool-transform')).toBeEnabled();
         await expect(page.getByTestId('art-piece-editor-tool-ai-edit')).toBeEnabled();
+        await expandGeneratedArtEditorTools(page);
+        await page.getByTestId('art-piece-editor-tool-ai-edit').click();
         await page.screenshot({
           path: `test-results/editor-tool-matrix-${engine}-${viewport.width}.png`,
           fullPage: true,
@@ -62,12 +65,14 @@ test.describe('3D AI editor engine modes (#620)', () => {
           .getByLabel('Describe the revision you want to generate')
           .fill('add a second form');
         await page.getByRole('button', { name: 'Refine piece' }).click();
+        await expect(page.getByTestId('art-piece-refine-accepted')).toBeVisible({
+          timeout: 30_000,
+        });
         const preview = page.frameLocator('iframe[title="Art piece revision preview"]');
         // Three.js owns a renderer canvas directly; A-Frame owns the scene
         // element and may create its renderer canvas asynchronously in a
         // headless browser. Assert each engine's stable runtime surface.
         await expect(preview.locator(engine === 'threejs' ? 'canvas' : 'a-scene')).toBeVisible();
-        await expect(page.getByTestId('art-piece-refine-accepted')).toBeVisible();
         await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 2');
         await context.close();
       }

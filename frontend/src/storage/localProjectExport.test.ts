@@ -87,7 +87,11 @@ describe('localProjectExport', () => {
   it('imports an exported package into a brand-new project with fresh, collision-safe UUIDs', async () => {
     const db = await openLocalProjectDatabase();
     const ownerId = 'alice';
-    const original = await createProject(db, { ownerId, title: 'Original' });
+    const original = await createProject(db, {
+      ownerId,
+      title: 'Original',
+      description: 'Portable description',
+    });
     const scene = await createScene(db, ownerId, {
       projectId: original.id,
       name: 'Only scene',
@@ -108,6 +112,7 @@ describe('localProjectExport', () => {
     expect(result.scenes[0].id).not.toBe(scene.id);
     expect(result.mediaAssets[0].id).not.toBe(asset.id);
     expect(result.project.title).toBe('Original');
+    expect(result.project.description).toBe('Portable description');
     expect(result.scenes[0].name).toBe('Only scene');
     expect(result.mediaAssets[0].checksum).toBe(asset.checksum);
 

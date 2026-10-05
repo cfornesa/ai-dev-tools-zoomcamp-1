@@ -9,6 +9,7 @@ one explicit sandbox product/plan mapping (a `Plan` row with
 fixtures shaped like PayPal's real webhook payloads.
 """
 
+import logging
 from datetime import date, timedelta
 
 import pytest
@@ -76,8 +77,9 @@ def test_webhook_route_404s_while_disabled(client, settings):
 
 
 @pytest.mark.django_db
-def test_forged_signature_is_rejected_before_any_mutation(client, user_a, monkeypatch):
+def test_forged_signature_is_rejected_and_recorded(client, user_a, monkeypatch, caplog):
     monkeypatch.setattr("scenes.billing.verify_webhook_signature", lambda headers, body: False)
+    caplog.set_level(logging.WARNING, logger="scenes.billing")
 
     response = client.post(
         reverse("paypal-webhook"),
@@ -92,11 +94,24 @@ def test_forged_signature_is_rejected_before_any_mutation(client, user_a, monkey
             },
         ),
         content_type="application/json",
+        HTTP_X_FORWARDED_FOR="203.0.113.9",
     )
 
     assert response.status_code == 403
     assert not Subscription.objects.filter(paypal_subscription_id="I-FORGED").exists()
-    assert not BillingEvent.objects.filter(paypal_event_id="evt-forged").exists()
+    assert BillingEvent.objects.filter(paypal_event_id="evt-forged").values(
+        "event_type", "outcome", "detail"
+    ).get() == {
+        "event_type": "BILLING.SUBSCRIPTION.ACTIVATED",
+        "outcome": BillingEvent.Outcome.REJECTED,
+        "detail": "Webhook signature verification failed.",
+    }
+    assert len(caplog.records) == 1
+    assert caplog.records[0].paypal_webhook_rejection == {
+        "event_id": "evt-forged",
+        "event_type": "BILLING.SUBSCRIPTION.ACTIVATED",
+        "source_ip": "203.0.113.9",
+    }
 
 
 @pytest.mark.django_db

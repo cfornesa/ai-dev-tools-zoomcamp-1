@@ -24,10 +24,13 @@ from django.utils import timezone
 
 from scenes import account_deletion
 from scenes.models import (
+    AIRun,
     ArtPiece,
     BillingEvent,
+    MCPToolAuditEvent,
     Project,
     Project3D,
+    ProjectActivity,
     ProviderCredential,
     SessionMetadata,
     Subscription,
@@ -111,13 +114,52 @@ def test_oauth_only_account_needs_no_password_but_still_needs_confirmation():
 @pytest.mark.django_db
 def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_user():
     user = _make_user("owner")
-    project = Project.objects.create(owner=user, title="My animation")
+    project = Project.objects.create(
+        owner=user, title="My animation", brief="private design intent"
+    )
+    ai_run = AIRun.objects.create(
+        owner=user,
+        project=project,
+        target_type=AIRun.TargetType.PROJECT,
+        operation=AIRun.Operation.CREATE,
+        prompt="a red square",
+        intent_note="private design intent snapshot",
+        input_digest="0" * 64,
+        deadline_at=timezone.now(),
+    )
     project3d = Project3D.objects.create(owner=user)
     piece = ArtPiece.objects.create(owner=user, engine=ArtPiece.Engine.CANVAS2D, prompt="a circle")
+    activity_rows = [
+        ProjectActivity.objects.create(
+            project=project,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+        ProjectActivity.objects.create(
+            project3d=project3d,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+        ProjectActivity.objects.create(
+            art_piece=piece,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+    ]
     SocialAccount.objects.create(user=user, provider="github", uid="12345")
     EmailAddress.objects.create(user=user, email="owner@example.test", verified=True, primary=True)
     ProviderCredential.objects.create(owner=user, vendor="mistral", encrypted_key=b"not-a-real-key")
     ProviderCredential.objects.create(owner=user, vendor="gemini", encrypted_key=b"also-not-real")
+    mcp_audit = MCPToolAuditEvent.objects.create(
+        tool_name="get_public_project",
+        client_ip_fingerprint="b" * 64,
+        user=user,
+        outcome=MCPToolAuditEvent.Outcome.SUCCESS,
+        duration_ms=12,
+    )
 
     client = Client()
     client.force_login(user)
@@ -132,11 +174,15 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     assert response.status_code == 204
 
     project.refresh_from_db()
+    ai_run.refresh_from_db()
     project3d.refresh_from_db()
     piece.refresh_from_db()
     assert project.is_deleted is True and project.deleted_at is not None
+    assert project.brief == ""
+    assert ai_run.intent_note == ""
     assert project3d.is_deleted is True and project3d.deleted_at is not None
     assert piece.is_deleted is True and piece.deleted_at is not None
+    assert ProjectActivity.objects.filter(pk__in=[row.pk for row in activity_rows]).count() == 3
     assert not Project.objects.filter(pk=project.pk).exists()  # hidden by the default manager
 
     assert not SocialAccount.objects.filter(user=user).exists()
@@ -152,6 +198,7 @@ def test_full_deletion_soft_deletes_content_erases_credentials_and_anonymizes_us
     assert not ProviderCredential.objects.filter(owner=user).exists()
     assert not Session.objects.filter(session_key=session_key).exists()
     assert not SessionMetadata.objects.filter(user=user).exists()
+    assert MCPToolAuditEvent.objects.filter(pk=mcp_audit.pk, user=user).exists()
 
     user.refresh_from_db()
     assert user.is_active is False
@@ -269,11 +316,38 @@ def test_purge_command_only_removes_content_past_the_grace_period():
 
     not_deleted = Project.objects.create(owner=user, title="Active")
 
+    retained_piece = ArtPiece.objects.create(
+        owner=user, engine=ArtPiece.Engine.CANVAS2D, prompt="retained"
+    )
+    retained_piece.is_deleted = True
+    retained_piece.deleted_at = timezone.now() - timezone.timedelta(days=1)
+    retained_piece.save(update_fields=["is_deleted", "deleted_at"])
+    retained_activity = ProjectActivity.objects.create(
+        art_piece=retained_piece,
+        actor=user,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 1},
+    )
+    old_piece = ArtPiece.objects.create(owner=user, engine=ArtPiece.Engine.CANVAS2D, prompt="old")
+    old_piece.is_deleted = True
+    old_piece.deleted_at = timezone.now() - timezone.timedelta(days=31)
+    old_piece.save(update_fields=["is_deleted", "deleted_at"])
+    purged_activity = ProjectActivity.objects.create(
+        art_piece=old_piece,
+        actor=user,
+        action_type=ProjectActivity.ActionType.PUBLISHED,
+        metadata={"sequence": 1},
+    )
+
     call_command("purge_deleted_content")
 
     assert not Project.all_objects.filter(pk=old_deleted.pk).exists()
     assert Project.all_objects.filter(pk=recently_deleted.pk).exists()
     assert Project.all_objects.filter(pk=not_deleted.pk).exists()
+    assert ArtPiece.all_objects.filter(pk=retained_piece.pk).exists()
+    assert ProjectActivity.objects.filter(pk=retained_activity.pk).exists()
+    assert not ArtPiece.all_objects.filter(pk=old_piece.pk).exists()
+    assert not ProjectActivity.objects.filter(pk=purged_activity.pk).exists()
 
 
 @pytest.mark.django_db
@@ -307,6 +381,10 @@ def test_purge_command_respects_a_custom_grace_period():
 @pytest.mark.django_db
 def test_purge_command_cascades_to_versions_and_covers_all_three_families():
     user = _make_user("owner")
+    project = Project.objects.create(owner=user, title="Old 2D")
+    project.is_deleted = True
+    project.deleted_at = timezone.now() - timezone.timedelta(days=31)
+    project.save(update_fields=["is_deleted", "deleted_at"])
     project3d = Project3D.objects.create(owner=user)
     project3d.is_deleted = True
     project3d.deleted_at = timezone.now() - timezone.timedelta(days=31)
@@ -317,10 +395,33 @@ def test_purge_command_cascades_to_versions_and_covers_all_three_families():
     piece.deleted_at = timezone.now() - timezone.timedelta(days=31)
     piece.save(update_fields=["is_deleted", "deleted_at"])
 
+    activity_rows = [
+        ProjectActivity.objects.create(
+            project=project,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+        ProjectActivity.objects.create(
+            project3d=project3d,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+        ProjectActivity.objects.create(
+            art_piece=piece,
+            actor=user,
+            action_type=ProjectActivity.ActionType.VERSION_SAVED,
+            metadata={"sequence": 1},
+        ),
+    ]
+
     call_command("purge_deleted_content")
 
+    assert not Project.all_objects.filter(pk=project.pk).exists()
     assert not Project3D.all_objects.filter(pk=project3d.pk).exists()
     assert not ArtPiece.all_objects.filter(pk=piece.pk).exists()
+    assert not ProjectActivity.objects.filter(pk__in=[row.pk for row in activity_rows]).exists()
 
 
 # --- PostgreSQL-only: genuine concurrent deletion attempts -------------------
@@ -341,7 +442,7 @@ def test_postgres_concurrent_deletion_requests_only_one_succeeds(django_db_block
     (and potentially double-billing-eventing) an already-deleted account.
     """
     with django_db_blocker.unblock():
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         user = User.objects.db_manager("postgres_test").create_user(
             username="concurrent-delete-user", password="correct-horse-battery-staple"
         )

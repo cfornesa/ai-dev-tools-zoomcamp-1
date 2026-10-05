@@ -1,7 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 
 import { apiGet, apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject2D } from './support/createProject.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const SOURCE =
@@ -76,6 +78,8 @@ test.describe('owner (private) vs public regular view toolbar (#773)', () => {
       'Take screenshot',
       'Open download menu',
       'View immersive piece',
+      'Unmute sound',
+      'Show hand gesture guide',
       'Expand piece to fullscreen',
     ];
     for (const [name, labels] of Object.entries(seen)) {
@@ -108,32 +112,32 @@ test.describe('owner (private) vs public regular view toolbar (#773)', () => {
       ['Create a new 3D project', 'private-3d-editor-1280.png'],
       ['Create a new 2D project with p5.js', 'private-2d-editor-1280.png'],
     ] as const) {
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      await page.getByRole('menuitem', { name: menuItem }).click();
-      await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
-      // Structured editors keep the compact menu shell (legacy menu mode); open it and read the
-      // ordered group. The shared component owns the order, so Fullscreen is last here too.
-      const menu = page.getByRole('button', { name: 'Open piece controls menu' }).first();
-      await expect(menu).toBeVisible({ timeout: 20_000 });
-      await menu.click();
-      const dialog = page.getByRole('dialog', { name: /Piece actions|Preview actions/ }).first();
-      await expect(dialog).toBeVisible();
-      const labels = await dialog
-        .locator('[role="group"]')
-        .first()
-        .evaluate((group) =>
-          Array.from(group.querySelectorAll(':scope > button, :scope > a, :scope > div > button'))
-            .filter((node) => !node.closest('[data-piece-stage-download-menu]'))
-            .map((node) => node.getAttribute('aria-label') ?? ''),
-        );
+      let actions: Locator;
+      if (menuItem === 'Create a new 3D project') {
+        await createServerProject3D(page);
+        const toolbar = page.getByTestId('scene3d-preview-canvas-frame').getByRole('toolbar', {
+          name: 'Preview actions',
+        });
+        actions = toolbar.getByRole('group', { name: 'Preview actions' });
+      } else {
+        await createServerProject2D(page);
+        const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
+        await expect(toolbar).toBeVisible();
+        actions = toolbar.getByRole('group', { name: 'Piece actions' });
+        await expect(actions).toBeVisible();
+      }
+      const labels = await actions.evaluate((group) =>
+        Array.from(group.querySelectorAll(':scope > button, :scope > a, :scope > div > button'))
+          .filter((node) => !node.closest('[data-piece-stage-download-menu]'))
+          .map((node) => node.getAttribute('aria-label') ?? ''),
+      );
       expect(labels[0]).toBe('Take screenshot');
       expect(labels).toContain('Expand piece to fullscreen');
       expect(labels.indexOf('Expand piece to fullscreen')).toBeGreaterThan(
         labels.indexOf('Open download menu'),
       );
       await page.screenshot({ path: testInfo.outputPath(screenshotName) });
-      await page.keyboard.press('Escape');
+      if (menuItem !== 'Create a new 3D project') await page.keyboard.press('Escape');
     }
   });
 
@@ -147,15 +151,10 @@ test.describe('owner (private) vs public regular view toolbar (#773)', () => {
     const { handle } = (await profileResponse.json()) as { handle: string };
     const urls: Record<string, string> = {};
 
-    for (const [menuItem, kind] of [
-      ['Create a new 3D project', '3d'],
-      ['Create a new 2D project with p5.js', '2d'],
-    ] as const) {
+    for (const kind of ['3d', '2d'] as const) {
       await page.setViewportSize({ width: 1280, height: 900 });
-      await page.goto('/');
-      await page.getByRole('button', { name: 'More creation options' }).click();
-      await page.getByRole('menuitem', { name: menuItem }).click();
-      await page.waitForURL(/\/users\/@[^/]+\/edit\/[^/]+$/);
+      if (kind === '3d') await createServerProject3D(page);
+      else await createServerProject2D(page);
       const slug = new URL(page.url()).pathname.split('/').pop()!;
       urls[kind] = `/users/@${handle}/pieces/${slug}`;
 

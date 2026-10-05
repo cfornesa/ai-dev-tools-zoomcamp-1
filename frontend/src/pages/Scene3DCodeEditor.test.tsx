@@ -61,7 +61,15 @@ describe('Scene3DCodeEditor', () => {
     fireEvent.blur(textarea);
 
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(savedVersion));
-    expect(mockedSaveSceneVersion3D).toHaveBeenCalledWith('p1', edited);
+    expect(mockedSaveSceneVersion3D).toHaveBeenCalledWith(
+      'p1',
+      edited,
+      expect.objectContaining({
+        html_source: expect.any(String),
+        css_source: expect.any(String),
+        js_source: expect.any(String),
+      }),
+    );
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

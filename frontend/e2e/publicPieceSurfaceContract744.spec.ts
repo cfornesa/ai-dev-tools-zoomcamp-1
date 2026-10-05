@@ -80,6 +80,11 @@ test.describe('public generated-piece surface contract matrix (#744)', () => {
   test('keeps route consumers aligned with one published current version', async ({
     browser,
   }, testInfo: TestInfo) => {
+    // This matrix visits the generated piece through multiple public route
+    // families at desktop and mobile sizes. Its latest passing local run took
+    // 28.4s against Playwright's 30s default, so give this one route matrix a
+    // bounded 60s budget for normal runner variance without widening other tests.
+    test.setTimeout(60_000);
     const fixtures = requireE2EFixtures();
     const ownerContext = await browser.newContext();
     const ownerPage = await ownerContext.newPage();

@@ -1,12 +1,20 @@
 import { promises as fs } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from 'vite';
-import type { Plugin } from 'vite';
+import type { Plugin, ProxyOptions } from 'vite';
 import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolveBackendProxyTarget } from './src/viteBackendTarget.js';
 import { previewCachePolicy } from './src/vitePreviewCachePolicy.js';
+import { isKnownClientRoute, routeMatchersFromAppSource } from './src/viteClientRouteMatcher.js';
+
+const frontendDirectory = dirname(fileURLToPath(import.meta.url));
+const clientRouteMatchers = routeMatchersFromAppSource(
+  readFileSync(resolve(frontendDirectory, 'src/App.tsx'), 'utf8'),
+);
 
 // Deliberately '127.0.0.1', not 'localhost': Django's runserver only ever
 // binds IPv4 (127.0.0.1:8000). On a machine where 'localhost' resolves to
@@ -24,12 +32,27 @@ const backendProxyTarget = resolveBackendProxyTarget(
   process.env.BROWSER_QA_BACKEND_URL,
 );
 
-const djangoProxy = {
+const djangoProxy: Record<string, ProxyOptions> = {
   '/api': { target: backendProxyTarget, changeOrigin: false },
   '/accounts': { target: backendProxyTarget, changeOrigin: false },
   '/health': { target: backendProxyTarget, changeOrigin: false },
+  '/robots.txt': { target: backendProxyTarget, changeOrigin: false },
+  '/sitemap.xml': { target: backendProxyTarget, changeOrigin: false },
   '/llms.txt': { target: backendProxyTarget, changeOrigin: false },
   '/llms-full.txt': { target: backendProxyTarget, changeOrigin: false },
+  '/mcp': {
+    target: backendProxyTarget,
+    changeOrigin: false,
+    configure(proxy) {
+      proxy.on('proxyReq', (proxyRequest, request) => {
+        const forwardedFor = request.headers['x-forwarded-for'];
+        const clientAddress = Array.isArray(forwardedFor)
+          ? forwardedFor.join(', ')
+          : forwardedFor || request.socket.remoteAddress;
+        if (clientAddress) proxyRequest.setHeader('X-Forwarded-For', clientAddress);
+      });
+    },
+  },
 };
 
 type ShareMetadata = {
@@ -38,6 +61,8 @@ type ShareMetadata = {
   author?: string;
   canonical_path: string;
   image_url: string | null;
+  gallery_items?: Array<{ title: string; path: string; description?: string }>;
+  gallery_heading?: string;
 };
 
 type ShareMetadataError = { name: string; message: string } | null;
@@ -198,6 +223,9 @@ function routeDescriptor(pathname: string): { kind: string; publicId: string } |
 
 function siteMetadataDescriptor(pathname: string): string | null {
   if (pathname === '/' || pathname === '/home') return '/api/public/share-meta/site/home/';
+  if (pathname === '/gallery') return '/api/public/share-meta/site/gallery/';
+  if (pathname === '/collections') return '/api/public/share-meta/site/collections/';
+  if (pathname === '/art-pieces/gallery') return '/api/public/share-meta/site/generated/';
   const profile = pathname.match(/^\/users\/@([^/]+)(?:\/feeds)?\/?$/);
   if (profile) {
     return `/api/public/share-meta/site/profile/${encodeURIComponent(profile[1])}/`;
@@ -303,6 +331,19 @@ function metadataTags(metadata: ShareMetadata | null, requestPath: string): stri
   return tags.join('\n    ');
 }
 
+function noScriptGallery(metadata: ShareMetadata | null): string {
+  if (metadata === null || !metadata.gallery_items?.length) return '';
+  const items = metadata.gallery_items;
+  const heading = metadata.gallery_heading ?? 'Public gallery';
+  const links = items
+    .map(({ title, path, description }) => {
+      const summary = description ? `<p>${escapeHtml(description)}</p>` : '';
+      return `<li><a href="${escapeHtml(path)}">${escapeHtml(title)}</a>${summary}</li>`;
+    })
+    .join('\n        ');
+  return `<noscript><section aria-label="${escapeHtml(heading)}"><h1>${escapeHtml(heading)}</h1><ul>\n        ${links}\n      </ul></section></noscript>`;
+}
+
 function shareMetadataPlugin(): Plugin {
   const install = (
     server: {
@@ -376,6 +417,14 @@ function shareMetadataPlugin(): Plugin {
           ).transformIndexHtml(requestPath, html);
         }
         html = html.replace('</head>', `    ${metadataTags(metadata, requestPath)}\n  </head>`);
+        if (
+          requestPath === '/' ||
+          requestPath === '/gallery' ||
+          requestPath === '/collections' ||
+          requestPath === '/art-pieces/gallery'
+        ) {
+          html = html.replace('</body>', `    ${noScriptGallery(metadata)}\n  </body>`);
+        }
         response.statusCode = 200;
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.end(html);
@@ -434,9 +483,47 @@ const previewCachePolicyPlugin = (): Plugin => ({
   },
 });
 
+const previewUnknownRouteStatusPlugin = (): Plugin => ({
+  name: 'creatrweb-preview-unknown-route-status',
+  configurePreviewServer(server) {
+    server.middlewares.use(async (req, res, next) => {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+      const pathname = new URL(req.url ?? '/', 'http://localhost').pathname;
+      if (
+        pathname.startsWith('/api/') ||
+        pathname === '/api' ||
+        pathname.startsWith('/accounts/') ||
+        pathname === '/accounts' ||
+        pathname.startsWith('/health/') ||
+        pathname === '/health' ||
+        ['/robots.txt', '/sitemap.xml', '/llms.txt', '/llms-full.txt'].includes(pathname) ||
+        pathname.startsWith('/assets/') ||
+        isKnownClientRoute(pathname, clientRouteMatchers) ||
+        /(?:^|\/)[^/]+\.[a-z\d]{1,12}$/i.test(pathname)
+      ) {
+        return next();
+      }
+
+      const html = await fs.readFile(
+        resolve(server.config.root, server.config.build.outDir, 'index.html'),
+      );
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Length', String(html.length));
+      res.end(req.method === 'HEAD' ? undefined : html);
+    });
+  },
+});
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), previewCachePolicyPlugin(), shareMetadataPlugin(), profileFeedProxyPlugin()],
+  plugins: [
+    react(),
+    previewCachePolicyPlugin(),
+    shareMetadataPlugin(),
+    profileFeedProxyPlugin(),
+    previewUnknownRouteStatusPlugin(),
+  ],
   server: {
     host: true,
     port: 5000,
@@ -480,13 +567,11 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
     globals: false,
-    // Task 65 (issue #65): frontend/e2e/ holds the Playwright suite, which
-    // vitest's default include pattern would otherwise also try to run as
-    // unit tests (it imports '@playwright/test', not vitest, and needs a
-    // real running server -- see playwright.config.ts). Exclude it here
-    // the same way vitest's own default `exclude` already excludes
-    // node_modules/dist/etc.
-    exclude: [...configDefaults.exclude, 'e2e/**'],
+    // Playwright browser specs need a real server, while the E2E ratchet
+    // tests use Node's built-in test runner. Keep both out of Vitest's
+    // default unit-test discovery; package.json runs the ratchet tests via
+    // `node --test` as part of `npm test`.
+    exclude: [...configDefaults.exclude, 'e2e/**', 'scripts/**'],
     // Issues #302/#864: the full suite contains many interaction-heavy
     // jsdom files. Vitest's unrestricted worker pool makes otherwise-fast
     // EditorWorkspace and route-fixture tests exceed their timeout under

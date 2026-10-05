@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 
 import scenes.ai_api as ai_api
 from ai_provider.deepseek_provider import DeepSeekSceneProvider
-from ai_provider.e2e_provider import build_e2e_provider
+from ai_provider.e2e_provider import _EDIT_PATCH_SUCCESS, _E2EFakeChat, build_e2e_provider
 from ai_provider.gemini_provider import GeminiSceneProvider
 from ai_provider.interface import AIEditSceneRequest, AIErrorCategory
 from ai_provider.mistral_provider import MistralSceneProvider
@@ -44,6 +44,7 @@ def clear_cache():
     ],
 )
 def test_selected_vendor_uses_only_its_credential(owner, vendor, provider_type, model, monkeypatch):
+    monkeypatch.delenv("AI_PROVIDER", raising=False)
     for credential_vendor in ("mistral", "gemini", "deepseek"):
         credential = ProviderCredential.objects.create(owner=owner, vendor=credential_vendor)
         credential.set_key(f"{credential_vendor}-key-123456")
@@ -63,6 +64,15 @@ def test_selected_vendor_uses_only_its_credential(owner, vendor, provider_type, 
         assert provider._api_key == f"{vendor}-key-123456"
     else:
         assert provider._client.api_key == f"{vendor}-key-123456"
+
+
+def test_success_fake_patch_without_target_constraint_stays_byte_identical():
+    response = _E2EFakeChat("success").complete(
+        response_format={"json_schema": {"name": "scene_json_patch"}},
+        messages=[{"role": "user", "content": "Edit the scene background."}],
+    )
+
+    assert response.choices[0].message.content == json.dumps(_EDIT_PATCH_SUCCESS)
 
 
 @pytest.mark.django_db
@@ -296,7 +306,7 @@ def test_fake_asset_layer_replay_is_vendor_neutral(vendor):
         "Requested edit:\nadd this media asset as a new layer\n"
         "The following are the only assets you may reference (JSON): "
         f"{json.dumps([asset], separators=(',', ':'))} "
-        "Create exactly one new layer with exactly one image shape. "
+        "Add exactly two new records as JSON Patch operations: one layer, then one image shape. "
         "Only modify the following existing element id(s): asset-matrix-1."
     )
 

@@ -20,7 +20,7 @@ test('admin can generate, inspect, accept, and restore a custom theme draft', as
   await expect(draft.getByText(/Attempt 1 of 3/)).toBeVisible();
 
   await draft.getByRole('button', { name: 'Accept theme' }).click();
-  await expect(page.getByText(/accepted/).first()).toBeVisible();
+  await expect(page.locator('.admin-theme-snapshot').getByText(/ accepted$/)).toBeVisible();
 
   const attemptsResponse = await apiGet(page.context(), '/api/admin/theme-generation/');
   expect(attemptsResponse.ok()).toBe(true);

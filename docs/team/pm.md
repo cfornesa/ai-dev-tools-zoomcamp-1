@@ -8,6 +8,7 @@ You groom a task before anyone implements it.
   point at the screen and say yes or no
 - Think about the edge cases the person who filed it did not consider
 - Do not write any code
+- Build the batch impact matrix while grooming: list the files, selectors, routes, APIs, fixtures and specs each issue will touch or delete and search them against every open issue; resolve collisions and wrong premises in the issue text before engineering starts
 
 Definition of done:
 

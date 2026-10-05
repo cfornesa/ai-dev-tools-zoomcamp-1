@@ -13,7 +13,13 @@ from rest_framework.views import APIView
 
 from scenes.art_piece_persistence import eligible_art_pieces, regenerate_thumbnail
 from scenes.collections import _item_record
-from scenes.gallery import eligible_collections, eligible_projects, eligible_projects3d
+from scenes.gallery import (
+    GALLERY_KIND_RANK,
+    eligible_collections,
+    eligible_projects,
+    eligible_projects3d,
+)
+from scenes.llms import public_profiles
 from scenes.models import (
     ArtPieceThumbnail,
     CollectionItem,
@@ -31,6 +37,8 @@ SHARE_IMAGE_WIDTH = 1200
 SHARE_IMAGE_HEIGHT = 630
 KINDS = frozenset({"2d", "3d", "generated"})
 DEFAULT_SHARE_IMAGE_PATH = "/favicon.svg"
+PUBLIC_GALLERY_FALLBACK_LIMIT = 24
+PUBLIC_GALLERY_DESCRIPTION_LIMIT = 320
 
 
 def _record_or_404(kind: str, public_id: str):
@@ -130,9 +138,151 @@ def _collection_image(collection) -> str:
     return candidates[0][1] if candidates else DEFAULT_SHARE_IMAGE_PATH
 
 
-def _site_metadata(path: str) -> dict[str, str | None]:
+def _gallery_text(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    return " ".join(value.replace("\x00", "").split())[:PUBLIC_GALLERY_DESCRIPTION_LIMIT]
+
+
+def _gallery_description(record, kind: str) -> str:
+    if kind in {"generated", "collection"}:
+        seo_config = record.seo_config if isinstance(record.seo_config, dict) else {}
+        seo_description = seo_config.get("description") or seo_config.get("answer_summary")
+        if seo_description:
+            cleaned = _gallery_text(seo_description)
+            if cleaned:
+                return cleaned
+    if kind == "3d":
+        return ""
+    return _gallery_text(getattr(record, "description", ""))
+
+
+def _gallery_item(title: str, path: str, description: str) -> dict[str, str]:
+    item = {"title": title, "path": path}
+    if description:
+        item["description"] = description
+    return item
+
+
+def _gallery_fallback_items() -> list[dict[str, str]]:
+    """Return the bounded, crawlable first page using crawler privacy gates."""
+    handles = {profile.user_id: profile.handle for profile in public_profiles()}
+    candidates: list[tuple[datetime, int, int, str, str, str]] = []
+
+    for kind, queryset in (
+        (
+            "2d",
+            eligible_projects().filter(
+                owner__is_active=True,
+                owner__public_profile__is_public=True,
+                owner__public_profile__handle__isnull=False,
+            )[:PUBLIC_GALLERY_FALLBACK_LIMIT],
+        ),
+        (
+            "3d",
+            eligible_projects3d().filter(
+                owner__is_active=True,
+                owner__public_profile__is_public=True,
+                owner__public_profile__handle__isnull=False,
+            )[:PUBLIC_GALLERY_FALLBACK_LIMIT],
+        ),
+        (
+            "generated",
+            eligible_art_pieces().filter(
+                owner__is_active=True,
+                owner__public_profile__is_public=True,
+                owner__public_profile__handle__isnull=False,
+            )[:PUBLIC_GALLERY_FALLBACK_LIMIT],
+        ),
+    ):
+        for record in queryset:
+            published_at = record.published_at
+            if not handles.get(record.owner_id) or published_at is None:
+                continue
+            path = piece_viewer_path(record, kind)
+            candidates.append(
+                (
+                    published_at,
+                    -GALLERY_KIND_RANK[kind],
+                    record.pk,
+                    record.title,
+                    path,
+                    _gallery_description(record, kind),
+                )
+            )
+
+    for collection in eligible_collections().filter(owner__is_active=True)[
+        :PUBLIC_GALLERY_FALLBACK_LIMIT
+    ]:
+        published_at = collection.published_at
+        if not handles.get(collection.owner_id) or published_at is None:
+            continue
+        handle = handles[collection.owner_id]
+        path = f"/users/@{quote(handle, safe='@')}/collections/{quote(collection.slug, safe='-')}"
+        candidates.append(
+            (
+                published_at,
+                -GALLERY_KIND_RANK["collection"],
+                collection.pk,
+                collection.title,
+                path,
+                _gallery_description(collection, "collection"),
+            )
+        )
+
+    candidates.sort(key=lambda item: item[:3], reverse=True)
+    return [
+        _gallery_item(title, path, description)
+        for _, _, _, title, path, description in candidates[:PUBLIC_GALLERY_FALLBACK_LIMIT]
+    ]
+
+
+def _collection_fallback_items() -> list[dict[str, str]]:
+    handles = {profile.user_id: profile.handle for profile in public_profiles()}
+    items = []
+    for collection in eligible_collections().filter(owner__is_active=True)[
+        :PUBLIC_GALLERY_FALLBACK_LIMIT
+    ]:
+        handle = handles.get(collection.owner_id)
+        if not handle:
+            continue
+        path = f"/users/@{quote(handle, safe='@')}/collections/{quote(collection.slug, safe='-')}"
+        items.append(
+            _gallery_item(
+                collection.title,
+                path,
+                _gallery_description(collection, "collection"),
+            )
+        )
+    return items
+
+
+def _generated_gallery_fallback_items() -> list[dict[str, str]]:
+    handles = {profile.user_id for profile in public_profiles()}
+    queryset = eligible_art_pieces().filter(
+        owner__is_active=True,
+        owner__public_profile__is_public=True,
+        owner__public_profile__handle__isnull=False,
+    )[:PUBLIC_GALLERY_FALLBACK_LIMIT]
+    return [
+        _gallery_item(
+            piece.title,
+            piece_viewer_path(piece, "generated"),
+            _gallery_description(piece, "generated"),
+        )
+        for piece in queryset
+        if piece.owner_id in handles
+    ]
+
+
+def _site_metadata(
+    path: str,
+    *,
+    gallery_items: list[dict[str, str]] | None = None,
+    gallery_heading: str | None = None,
+) -> dict:
     settings = SiteSettings.get_solo()
-    return {
+    metadata: dict[str, object] = {
         "kind": "site",
         "title": settings.site_title or "AugmentrART",
         "description": settings.site_description
@@ -140,6 +290,11 @@ def _site_metadata(path: str) -> dict[str, str | None]:
         "canonical_path": path,
         "image_url": DEFAULT_SHARE_IMAGE_PATH,
     }
+    if gallery_items is not None:
+        metadata["gallery_items"] = gallery_items
+    if gallery_heading is not None:
+        metadata["gallery_heading"] = gallery_heading
+    return metadata
 
 
 def _profile_metadata(handle: str) -> dict[str, str | None]:
@@ -234,7 +389,25 @@ class PublicSiteShareMetadataView(APIView):
 
     def get(self, request, scope, handle=None, slug=None):
         if scope == "home":
-            return Response(_site_metadata("/"))
+            return Response(_site_metadata("/", gallery_items=_gallery_fallback_items()))
+        if scope == "gallery":
+            return Response(_site_metadata("/gallery", gallery_items=_gallery_fallback_items()))
+        if scope == "collections":
+            return Response(
+                _site_metadata(
+                    "/collections",
+                    gallery_items=_collection_fallback_items(),
+                    gallery_heading="Public collections",
+                )
+            )
+        if scope == "generated":
+            return Response(
+                _site_metadata(
+                    "/gallery?type=generated",
+                    gallery_items=_generated_gallery_fallback_items(),
+                    gallery_heading="Generated art gallery",
+                )
+            )
         if scope == "profile" and handle is not None:
             return Response(_profile_metadata(handle))
         if scope == "collection" and handle is not None and slug is not None:

@@ -52,6 +52,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 
 from scenes.models import (
+    AIRun,
     ArtPiece,
     BillingEvent,
     CloudBackupProject,
@@ -69,19 +70,19 @@ class AccountDeletionError(Exception):
     code = "account_deletion_error"
 
 
-class ReauthenticationRequired(AccountDeletionError):
+class ReauthenticationRequired(AccountDeletionError):  # noqa: N818
     """The caller's password didn't match, or one was required but missing."""
 
     code = "reauthentication_required"
 
 
-class ConfirmationMismatch(AccountDeletionError):
+class ConfirmationMismatch(AccountDeletionError):  # noqa: N818
     """The caller's typed confirmation text didn't match what was required."""
 
     code = "confirmation_mismatch"
 
 
-class AccountAlreadyDeleted(AccountDeletionError):
+class AccountAlreadyDeleted(AccountDeletionError):  # noqa: N818
     """A concurrent or repeated deletion request found the account already
     deactivated -- a safe, idempotent no-op rather than a second pass over
     already-anonymized data."""
@@ -136,6 +137,10 @@ def delete_account(user, *, password: str | None, confirmation: str) -> None:
     Project.all_objects.filter(owner=locked_user, is_deleted=False).update(
         is_deleted=True, deleted_at=now
     )
+    # Intent notes can contain personal creative direction. Clear them as
+    # part of deletion even though the project row follows content retention.
+    Project.all_objects.filter(owner=locked_user).update(brief="")
+    AIRun.objects.filter(owner=locked_user).update(intent_note="")
     Project3D.all_objects.filter(owner=locked_user, is_deleted=False).update(
         is_deleted=True, deleted_at=now
     )
@@ -188,3 +193,5 @@ def delete_account(user, *, password: str | None, confirmation: str) -> None:
     locked_user.save(
         update_fields=["username", "email", "first_name", "last_name", "is_active", "password"]
     )
+    # MCP audit events are retained for accountability and remain attached to
+    # this anonymized row; they contain no IP, payload, or credential material.

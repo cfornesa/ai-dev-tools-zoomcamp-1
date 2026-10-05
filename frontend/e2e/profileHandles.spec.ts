@@ -8,6 +8,7 @@ const VIEWPORTS = [
   { width: 1280, height: 900 },
   { width: 375, height: 812 },
 ];
+const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:5000';
 
 async function profile(context: BrowserContext) {
   const response = await apiGet(context, '/api/account/profile/');
@@ -18,7 +19,9 @@ async function profile(context: BrowserContext) {
 async function setHandle(context: BrowserContext, handle: string) {
   const current = await profile(context);
   const response = await apiPatch(context, '/api/account/profile/', {
-    ...current,
+    // GET returns style_key: null for an unset profile style, but PATCH accepts
+    // only a non-null style key. Send the edited field and required revision.
+    revision: current.revision,
     handle,
   });
   expect(response.ok()).toBe(true);
@@ -26,7 +29,7 @@ async function setHandle(context: BrowserContext, handle: string) {
 }
 
 async function signInOther(browser: Browser, email: string, password: string) {
-  const context = await browser.newContext({ baseURL: 'http://localhost:5000' });
+  const context = await browser.newContext({ baseURL: BASE_URL });
   const page = await context.newPage();
   await loginViaUI(page, email, password);
   return { context, page };
@@ -41,16 +44,14 @@ test.describe('public handle lifecycle (#551)', () => {
     // normal cleanup path runs, so later public-gallery/profile specs do not
     // inherit a viewport-specific handle.
     for (const fixture of [fixtures.owner, fixtures.other]) {
-      const context = await browser.newContext({ baseURL: 'http://localhost:5000' });
+      const context = await browser.newContext({ baseURL: BASE_URL });
       const page = await context.newPage();
       try {
         await loginViaUI(page, fixture.email, fixtures.password);
-        const current = await profile(context);
-        const response = await apiPatch(context, '/api/account/profile/', {
-          ...current,
-          handle: fixture === fixtures.owner ? 'e2e_owner' : 'e2e_other',
-        });
-        expect(response.ok()).toBe(true);
+        const restoredHandle = fixture === fixtures.owner ? 'e2e_owner' : 'e2e_other';
+        await setHandle(context, restoredHandle);
+        const restoredProfile = await profile(context);
+        expect(restoredProfile.handle).toBe(restoredHandle);
       } finally {
         await context.close();
       }

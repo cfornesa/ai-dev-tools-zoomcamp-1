@@ -2,17 +2,23 @@
 {% load account socialaccount %}
 {% block title %}Log in · AugmentrART{% endblock %}
 {% block content %}
-<h1>Welcome back</h1><p class="intro">Log in to continue to your animation studio.</p>
+<h1>Welcome back</h1><p class="intro">Log in to continue creating with AugmentrART.</p>
 {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
 <form method="post" action="{% url 'account_login' %}">
   {% csrf_token %}{{ redirect_field }}
   <label for="id_login">Email</label>{{ form.login }}{{ form.login.errors }}
   <label for="id_password">Password</label>{{ form.password }}{{ form.password.errors }}
-  <button type="submit">Login</button>
+  <button class="auth-submit" type="submit">Login</button>
 </form>
 {% get_providers as socialaccount_providers %}
-{% for provider in socialaccount_providers %}
-<form method="post" action="{% provider_login_url provider.id %}">{% csrf_token %}<button class="{{ provider.id }}" type="submit">Continue with {{ provider.name }}</button></form>
+{% if socialaccount_providers %}
+<div class="auth-divider" role="separator" aria-label="or continue with"><span>or continue with</span></div>
+<section class="auth-provider-group" aria-label="Continue with a provider">
+{% comment %}Keep providers in alphabetical display-name order, independent of allauth's list order.{% endcomment %}
+{% for provider in socialaccount_providers|dictsort:"name" %}
+<form method="post" action="{% provider_login_url provider.id %}">{% csrf_token %}<button class="auth-provider" type="submit">Continue with {{ provider.name }}</button></form>
 {% endfor %}
-<p class="links">New here? Continue with Google to create your account.</p>
+</section>
+{% endif %}
+<p class="links">New accounts can be created with an enabled social sign-in provider after you consent.</p>
 {% endblock %}

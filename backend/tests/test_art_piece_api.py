@@ -180,6 +180,28 @@ def test_response_stripped_of_a_stray_markdown_fence(owner_client, monkeypatch):
 
 
 @pytest.mark.django_db
+def test_repair_attempts_count_as_one_art_generation_quota_unit(owner, owner_client, monkeypatch):
+    responses = iter(["<p>bad</p>", _VALID_SNIPPET])
+    calls = []
+
+    def handler(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1),
+            choices=[SimpleNamespace(message=SimpleNamespace(content=next(responses)))],
+        )
+
+    provider = ArtPieceProvider(client=_FakeClient(handler))
+    _use_provider(monkeypatch, provider)
+
+    response = owner_client.post(URL, {"library": "canvas2d", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 200
+    assert len(calls) == 2
+    assert cache.get(art_piece_api._quota_cache_key(owner.id)) == 1
+
+
+@pytest.mark.django_db
 def test_output_missing_canvas_or_script_is_rejected_with_422(owner_client, monkeypatch):
     _use_provider(monkeypatch, _mistral_provider_returning("<p>not a canvas piece</p>"))
 
@@ -187,6 +209,8 @@ def test_output_missing_canvas_or_script_is_rejected_with_422(owner_client, monk
 
     assert response.status_code == 422
     assert response.json()["error"] == "invalid_structured_output"
+    assert response.json()["detail"] == "missing_canvas_root"
+    assert "anything" not in response.json()["detail"]
 
 
 @pytest.mark.django_db
@@ -248,18 +272,24 @@ def test_svg_success_returns_the_generated_snippet(owner_client, monkeypatch):
 
 
 @pytest.mark.django_db
-def test_svg_output_containing_a_script_tag_is_rejected_with_422(owner_client, monkeypatch):
-    """Issue #199 (SVG extension): SVG is meant to be inert markup only --
-    a <script> tag anywhere means the model didn't follow the no-JavaScript
-    rule, so this is rejected the same as missing <svg> entirely, even
-    though the sandboxed iframe would still isolate any script safely."""
+def test_svg_output_with_inline_script_is_accepted(owner_client, monkeypatch):
     scripted = '<svg id="art-piece-svg"><script>alert(1)</script></svg>'
     _use_provider(monkeypatch, _mistral_provider_returning(scripted))
 
     response = owner_client.post(URL, {"library": "svg", "prompt": "anything"}, format="json")
 
+    assert response.status_code == 200
+    assert response.json()["code"] == scripted
+
+
+@pytest.mark.django_db
+def test_svg_output_with_external_script_is_rejected_with_422(owner_client, monkeypatch):
+    scripted = '<svg id="art-piece-svg"><script src="https://example.test/app.js"></script></svg>'
+    _use_provider(monkeypatch, _mistral_provider_returning(scripted))
+
+    response = owner_client.post(URL, {"library": "svg", "prompt": "anything"}, format="json")
+
     assert response.status_code == 422
-    assert response.json()["error"] == "invalid_structured_output"
 
 
 @pytest.mark.django_db
@@ -324,8 +354,23 @@ def test_aframe_success_returns_the_generated_snippet(owner_client, monkeypatch)
 
 
 @pytest.mark.django_db
-def test_aframe_output_containing_a_script_tag_is_rejected_with_422(owner_client, monkeypatch):
-    scripted = '<a-scene id="art-piece-scene"><script>alert(1)</script></a-scene>'
+def test_aframe_output_with_inline_script_is_accepted(owner_client, monkeypatch):
+    scripted = (
+        '<a-scene id="art-piece-scene"><script>'
+        "AFRAME.registerComponent('lamp-toggle', {});"
+        "</script></a-scene>"
+    )
+    _use_provider(monkeypatch, _mistral_provider_returning(scripted))
+
+    response = owner_client.post(URL, {"library": "aframe", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 200
+    assert response.json()["code"] == scripted
+
+
+@pytest.mark.django_db
+def test_aframe_output_with_external_script_is_rejected_with_422(owner_client, monkeypatch):
+    scripted = '<a-scene id="art-piece-scene"><script src="https://example.test/app.js"></script></a-scene>'
     _use_provider(monkeypatch, _mistral_provider_returning(scripted))
 
     response = owner_client.post(URL, {"library": "aframe", "prompt": "anything"}, format="json")

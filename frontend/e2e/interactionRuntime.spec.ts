@@ -87,7 +87,8 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { requireE2EFixtures } from './support/prerequisites.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { saveScene } from './support/saveScene.js';
+import { createServerProject2D } from './support/createProject.js';
 import {
   expandAllCollapsibleSections,
   expandSection,
@@ -139,17 +140,9 @@ async function openPieceControls(page: Page): Promise<void> {
   }
 }
 
-/** Issue #427: reopens the "Edit scene" stage popover after a prior
- * `closeEditScene()` in the same test -- `openEditScene`'s own exact-match
- * "Edit scene" trigger lookup assumes a fresh, never-yet-toggled trigger,
- * which a close-then-reopen cycle within one page violates (see
- * `layersPanel.spec.ts`'s identical helper for the full explanation). */
+/** Reopens the canonical editor's authoring toolbar after it was closed. */
 async function reopenEditScene(page: Page): Promise<void> {
-  await openPieceControlsMenu(page);
-  const toolbar = page.getByRole('toolbar', { name: 'Piece actions' });
-  const trigger = toolbar.getByRole('button', { name: /^(edit scene|hide edit scene)$/i });
-  if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
-  await toolbar.getByRole('toolbar', { name: 'Editor actions' }).waitFor({ state: 'visible' });
+  await openEditScene(page);
 }
 
 function playbackProgress(page: Page) {
@@ -198,7 +191,7 @@ async function connectNodes(
 
 async function openLogicPanel(page: Page): Promise<void> {
   // "Show logic" lives inside "Behaviors" (EditorWorkspace.tsx), alongside
-  // BehaviorCardsPanel -- see createBlankProjectViaUI's own comment on
+  // BehaviorCardsPanel -- see createServerProject2D's own comment on
   // why that section isn't opened any earlier than each scenario needs.
   await expandSection(page, 'Behaviors');
   const toggle = page.getByRole('button', { name: /^(Show logic|Hide logic)$/ });
@@ -210,12 +203,31 @@ async function openLogicPanel(page: Page): Promise<void> {
 
 async function saveAndReload(page: Page, expectedVersionText: RegExp): Promise<void> {
   await reopenEditScene(page);
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await saveScene(page);
   await expect(page.getByTestId('editor-save-status')).toHaveText(expectedVersionText);
   await closeEditScene(page);
   await page.reload();
   await expect(page.getByTestId('editor-save-status')).toHaveText(expectedVersionText);
   await expandAllCollapsibleSections(page);
+}
+
+async function captureMotionToggle(page: Page, state: 'reduced' | 'full'): Promise<void> {
+  const viewports = [
+    { width: 1280, height: 900 },
+    { width: 375, height: 812 },
+  ];
+  const toggleName = state === 'reduced' ? 'Use full motion' : 'Use reduced motion';
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    const toggle = page.getByRole('button', { name: toggleName, exact: true });
+    await expect(toggle).toBeVisible();
+    await toggle.scrollIntoViewIfNeeded();
+    const name = `interaction-runtime-motion-${state}-${viewport.width}.png`;
+    const screenshotPath = `test-results/${name}`;
+    await page.screenshot({ path: screenshotPath });
+    await test.info().attach(name, { path: screenshotPath, contentType: 'image/png' });
+  }
 }
 
 test.describe('Interaction runtime', () => {
@@ -239,7 +251,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       await openPieceControls(page);
 
@@ -287,7 +299,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       await openPieceControls(page);
 
@@ -339,7 +351,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       await openPieceControls(page);
 
@@ -348,16 +360,17 @@ test.describe('Interaction runtime', () => {
       // preference set): Play/Pause is offered.
       await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
 
-      // The global Reduce motion control lives in the header (Layout.tsx),
-      // available on every route including the editor -- but the stage's
-      // "Piece controls" popover is a modal overlay that covers the whole
-      // main content area while open (same class of occlusion documented in
-      // `layersPanel.spec.ts`'s own module doc comment), so it must be
-      // closed before this header control is reachable, then reopened for
-      // the Step click that follows.
+      // The shell motion toggle is available on every route. Close the
+      // stage's Piece controls overlay before reaching it, then reopen the
+      // controls for the manual Step assertion.
       await closePieceControlsMenu(page);
-      await page.getByRole('radio', { name: 'Reduced' }).click();
-      await expect(page.getByText('Motion is currently reduced.')).toBeVisible();
+      const motionToggle = page.getByRole('button', { name: 'Use reduced motion' });
+      await motionToggle.click();
+      await expect(page.getByRole('button', { name: 'Use full motion' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      await captureMotionToggle(page, 'reduced');
       await openPieceControls(page);
 
       // Task 29's documented substitution: auto-advance turns off entirely
@@ -373,10 +386,14 @@ test.describe('Interaction runtime', () => {
       await page.getByRole('button', { name: 'Step', exact: true }).click();
       await expect(playbackProgress(page)).toHaveText('1 of 9 events played');
 
-      // Switching back to Full restores Play/Pause.
+      // Switching back to full motion restores Play/Pause.
       await closePieceControlsMenu(page);
-      await page.getByRole('radio', { name: 'Full', exact: true }).click();
-      await expect(page.getByText('Motion is currently full.')).toBeVisible();
+      await page.getByRole('button', { name: 'Use full motion' }).click();
+      await expect(page.getByRole('button', { name: 'Use reduced motion' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+      await captureMotionToggle(page, 'full');
       await openPieceControls(page);
       await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toBeVisible();
 
@@ -393,13 +410,13 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
       // Issue #113/#116: open "Behaviors" only after the shape exists --
       // BehaviorCardsPanel.tsx's target select otherwise mounts with no
-      // options and never recovers (see createBlankProjectViaUI's comment).
+      // options and never recovers (see createServerProject2D's comment).
       await expandAllCollapsibleSections(page);
 
       // Two "Follow hand" cards on the same target but different axes
@@ -472,7 +489,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
@@ -575,7 +592,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);
@@ -626,7 +643,7 @@ test.describe('Interaction runtime', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await openEditScene(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await closeEditScene(page);

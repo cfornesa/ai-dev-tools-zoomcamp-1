@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import type { AIRunTargetMode, UseAIRunResult } from './useAIRun';
@@ -38,7 +38,18 @@ type AIRunPanelProps<TVersion> = {
   noSelectableObjectsMessage?: string;
   /** Metadata-only local assets offered by the 2D editor's library. */
   mediaAssets?: AITargetMediaAsset[];
+  /** Enables transient decision-reason entry for the 2D Agent workflow.
+   * The shared 3D caller intentionally leaves this unset. */
+  enableDecisionReason?: boolean;
+  /** Private intent note available to server-backed 2D projects only. */
+  intentNote?: string;
 };
+
+const MAX_DECISION_REASON_CODE_POINTS = 280;
+
+function limitCodePoints(value: string, limit: number): string {
+  return Array.from(value).slice(0, limit).join('');
+}
 
 // Issue #461's own server-side defaults, mirrored here purely for display
 // ("current attempt/limit") -- the server enforces the real limits
@@ -70,7 +81,11 @@ function AIRunPanel<TVersion>({
   editSelectionLabel = 'Edit selected layer/object',
   noSelectableObjectsMessage = 'No editable objects in this scene yet.',
   mediaAssets = [],
+  enableDecisionReason = false,
+  intentNote = '',
 }: AIRunPanelProps<TVersion>) {
+  const [decisionReason, setDecisionReason] = useState('');
+  const [includeIntentNotes, setIncludeIntentNotes] = useState(true);
   const {
     targetMode,
     setTargetMode,
@@ -102,6 +117,14 @@ function AIRunPanel<TVersion>({
 
   const { models: savedModels, personas: savedPersonas } = useSavedAIPreferences();
 
+  useEffect(() => {
+    if (run?.status !== 'awaiting_review') setDecisionReason('');
+  }, [run?.id, run?.status]);
+
+  useEffect(() => {
+    if (!run) setIncludeIntentNotes(true);
+  }, [run]);
+
   const targetModeRoving = useRovingRadioGroup(
     [
       { value: 'create' as const, disabled: starting || run !== null },
@@ -126,8 +149,16 @@ function AIRunPanel<TVersion>({
     : ['create', 'edit-selection', 'edit-whole'];
 
   async function handleAccept() {
-    const version = await accept();
+    const reason = decisionReason.trim() || undefined;
+    setDecisionReason('');
+    const version = await accept(reason);
     if (version) onAccepted(version);
+  }
+
+  function handleReject() {
+    const reason = decisionReason.trim() || undefined;
+    setDecisionReason('');
+    void stop(reason);
   }
 
   if (reconnecting) {
@@ -141,6 +172,21 @@ function AIRunPanel<TVersion>({
   if (!run) {
     return (
       <div className="ai-run-panel" data-testid="ai-run-form">
+        {intentNote.length > 0 && (
+          <div className="behavior-card-field ai-proposal-field-full-width">
+            <p>Using your intent notes ({Array.from(intentNote).length} characters)</p>
+            <label htmlFor="ai-run-exclude-intent-notes">
+              <input
+                id="ai-run-exclude-intent-notes"
+                type="checkbox"
+                checked={!includeIntentNotes}
+                disabled={starting}
+                onChange={(event) => setIncludeIntentNotes(!event.target.checked)}
+              />
+              Exclude for this request
+            </label>
+          </div>
+        )}
         <div role="radiogroup" aria-label="Agent action" className="editor-tool-group">
           {targetModeValues.map((value) => (
             <button
@@ -294,7 +340,7 @@ function AIRunPanel<TVersion>({
           type="button"
           disabled={starting || prompt.trim().length === 0}
           data-testid="ai-run-start"
-          onClick={() => void start(workingCopy, null)}
+          onClick={() => void start(workingCopy, null, includeIntentNotes)}
         >
           {starting ? 'Starting…' : 'Start agent run'}
         </button>
@@ -423,6 +469,30 @@ function AIRunPanel<TVersion>({
           </div>
           {run.change_summary && <p data-testid="ai-run-change-summary">{run.change_summary}</p>}
 
+          {enableDecisionReason && (
+            <div className="behavior-card-field ai-proposal-field-full-width">
+              <label htmlFor="ai-run-decision-reason">Why? (optional)</label>
+              <input
+                id="ai-run-decision-reason"
+                className="ai-proposal-field-full-width"
+                type="text"
+                value={decisionReason}
+                aria-describedby="ai-run-decision-reason-count"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') event.preventDefault();
+                }}
+                onChange={(event) =>
+                  setDecisionReason(
+                    limitCodePoints(event.target.value, MAX_DECISION_REASON_CODE_POINTS),
+                  )
+                }
+              />
+              <p id="ai-run-decision-reason-count" className="ai-proposal-empty-preference">
+                {Array.from(decisionReason).length} of {MAX_DECISION_REASON_CODE_POINTS} characters
+              </p>
+            </div>
+          )}
+
           <div className="editor-tool-group">
             <button
               type="button"
@@ -434,7 +504,7 @@ function AIRunPanel<TVersion>({
             </button>
             <button
               type="button"
-              onClick={() => void stop()}
+              onClick={handleReject}
               disabled={accepting}
               data-testid="ai-run-reject"
             >

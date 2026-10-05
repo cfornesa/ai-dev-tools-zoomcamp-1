@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-import { apiGet, apiPatch, apiPost } from './support/api.js';
+import { apiGet, apiPatch } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject2D } from './support/createProject.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const VIEWPORTS = [
@@ -42,10 +43,6 @@ test.describe('Vivid design evidence matrix (#683)', () => {
     const settingsResponse = await apiGet(adminContext, '/api/admin/settings/');
     expect(settingsResponse.ok(), await settingsResponse.text()).toBe(true);
     const settings = (await settingsResponse.json()) as SiteSettings;
-    const created = await apiPost(ownerContext, '/api/projects/blank/');
-    expect(created.ok(), await created.text()).toBe(true);
-    const { id } = (await created.json()) as { id: string };
-
     try {
       const siteUpdate = await apiPatch(adminContext, '/api/admin/settings/', {
         site_title: settings.site_title,
@@ -77,25 +74,43 @@ test.describe('Vivid design evidence matrix (#683)', () => {
           for (const viewport of VIEWPORTS) {
             await ownerPage.setViewportSize(viewport);
             await ownerPage.emulateMedia({ colorScheme: mode, reducedMotion: 'reduce' });
-            await ownerPage.addInitScript(
+
+            await ownerPage.goto('/studio');
+            await ownerPage.evaluate(
               (selectedMode) =>
                 localStorage.setItem('augmentrart:theme-preference:v1', selectedMode),
               mode,
             );
-
-            await ownerPage.goto('/studio');
+            const displaySettings = ownerPage.getByRole('complementary', {
+              name: 'Display settings',
+            });
             await expect(
-              ownerPage.getByRole('combobox', { name: /Color mode, currently/i }),
+              displaySettings.getByRole('button', { name: /Switch to (light|dark) mode/i }),
             ).toHaveCount(1);
             await expect(ownerPage.getByRole('link', { name: 'Home', exact: true })).toHaveCount(0);
             await expect(
-              ownerPage.getByRole('radiogroup', { name: 'Reduce motion' }),
+              displaySettings.getByRole('button', { name: 'Use full motion' }),
             ).toBeVisible();
 
-            await ownerPage.goto('/ai-projects/' + id);
-            const panel = ownerPage.locator('.ai-proposal-panel');
+            const projectId = await createServerProject2D(ownerPage);
+            const editorPath = new URL(ownerPage.url()).pathname;
+            await ownerPage.goto(`/ai-projects/${projectId}`);
+            await ownerPage.waitForURL((url) => url.pathname === editorPath);
+            await ownerPage
+              .getByRole('heading', { name: 'Untitled animation' })
+              .waitFor({ state: 'visible' });
+            const layersTab = ownerPage.getByRole('tab', { name: 'Layers' });
+            if (await layersTab.count()) {
+              await layersTab.click();
+            } else {
+              await expect(ownerPage.getByRole('region', { name: 'Layers' })).toBeVisible();
+            }
+            await ownerPage.getByRole('button', { name: 'Ask AI to improve this scene' }).click();
+            const panel = ownerPage.locator(
+              '[data-testid="editor-ai-layer-panel"] .ai-proposal-panel',
+            );
             await expect(panel).toBeVisible();
-            const prompt = ownerPage.getByLabel('Describe the scene you want to generate');
+            const prompt = panel.getByLabel('Describe the change you want to make');
             const promptBox = await prompt.boundingBox();
             const panelBox = await panel.boundingBox();
             expect(promptBox).not.toBeNull();

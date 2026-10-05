@@ -15,6 +15,7 @@ import {
 } from '../generative/artPieceSandbox';
 import { applyContentMetadata } from '../metadata';
 import { captureArtPieceThumbnailFromSource } from '../generative/artPieceThumbnailCapture';
+import { supportsVisitorDrawing } from '../generative/artPieceCapabilities';
 import PieceStageControls from './PieceStageControls';
 import { aspectRatioFromMetadata } from './artPiecePresentation';
 import { formatPublicAttribution } from '../presentation/publicAttribution';
@@ -228,6 +229,7 @@ export default function PublicArtPieceViewer({
         <div
           ref={stageRef}
           className="art-piece-stage public-art-piece-stage"
+          data-visitor-drawing={supportsVisitorDrawing(piece.engine) ? 'true' : undefined}
           role="region"
           aria-label="Art piece stage"
           style={
@@ -240,11 +242,6 @@ export default function PublicArtPieceViewer({
             } as CSSProperties
           }
         >
-          <div
-            ref={setToolbarHost}
-            className="public-art-piece-toolbar-row"
-            data-testid="regular-piece-toolbar-row"
-          />
           <div
             ref={setFullscreenToolbarHost}
             className="public-art-piece-fullscreen-toolbar-host"
@@ -300,6 +297,11 @@ export default function PublicArtPieceViewer({
             fullscreenToolbarPortalTarget={fullscreenToolbarHost}
           />
         </div>
+        <div
+          ref={setToolbarHost}
+          className="public-art-piece-toolbar-row"
+          data-testid="regular-piece-toolbar-row"
+        />
       </div>
       {!isEmbedRoute && isCanonicalRoute && (
         <>

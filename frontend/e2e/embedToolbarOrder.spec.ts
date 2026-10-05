@@ -18,6 +18,8 @@ const EXPECTED = [
   'Take screenshot',
   'Open download menu',
   'View immersive piece',
+  'Unmute sound',
+  'Show hand gesture guide',
   'Expand piece to fullscreen',
 ];
 
@@ -62,14 +64,30 @@ test.describe('Embed toolbar order and placement (#752)', () => {
         const group = toolbar.locator('.piece-stage-toolbar-group');
         const labels = await group.evaluate((element) =>
           Array.from(element.querySelectorAll(':scope > button, :scope > a, :scope > div > button'))
-            .filter((node) => !node.closest('[data-piece-stage-download-menu]'))
+            .filter((node) => {
+              const bounds = node.getBoundingClientRect();
+              return (
+                bounds.width > 1 &&
+                bounds.height > 1 &&
+                getComputedStyle(node).visibility === 'visible' &&
+                !node.closest('[data-piece-stage-download-menu]')
+              );
+            })
             .map((node) => node.getAttribute('aria-label') ?? ''),
         );
         expect(labels).toEqual(EXPECTED);
 
         const boxes = await group.evaluate((element) =>
           Array.from(element.querySelectorAll(':scope > button, :scope > a, :scope > div > button'))
-            .filter((node) => !node.closest('[data-piece-stage-download-menu]'))
+            .filter((node) => {
+              const bounds = node.getBoundingClientRect();
+              return (
+                bounds.width > 1 &&
+                bounds.height > 1 &&
+                getComputedStyle(node).visibility === 'visible' &&
+                !node.closest('[data-piece-stage-download-menu]')
+              );
+            })
             .map((node) => {
               const box = node.getBoundingClientRect();
               return { width: box.width, height: box.height, right: box.right };

@@ -3,6 +3,7 @@ import { chromium, expect, test } from '@playwright/test';
 
 import { apiGet, apiPatch } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -13,17 +14,8 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
 }, testInfo) => {
   const fixtures: Fixtures = requireE2EFixtures();
   await loginViaUI(page, fixtures.owner.email, fixtures.password);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'More creation options' }).click();
-  const createdResponse = page.waitForResponse(
-    (response) =>
-      response.url().endsWith('/api/projects3d/') && response.request().method() === 'POST',
-  );
-  await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-  const created = await createdResponse;
-  expect(created.status()).toBe(201);
-  const { id: projectId } = (await created.json()) as { id: string };
-  await page.waitForURL(/\/users\/@[^/]+\/edit\/untitled-3d-scene(?:-\d+)?$/);
+  const projectId = await createServerProject3D(page);
+  expect(page.url()).toMatch(/\/users\/@[^/]+\/edit\/[^/]+$/);
 
   await page
     .getByRole('group', { name: 'Publication status' })
@@ -34,11 +26,16 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
 
   const profileResponse = await apiGet(page.context(), '/api/account/profile/');
   expect(profileResponse.status()).toBe(200);
-  const profile = (await profileResponse.json()) as { handle: string };
+  const profile = (await profileResponse.json()) as { handle: string; revision: number };
   const { handle } = profile;
   // An anonymous visitor can only see a piece whose owner's profile is public.
   expect(
-    (await apiPatch(page.context(), '/api/account/profile/', { ...profile, is_public: true })).ok(),
+    (
+      await apiPatch(page.context(), '/api/account/profile/', {
+        is_public: true,
+        revision: profile.revision,
+      })
+    ).ok(),
   ).toBe(true);
   const publicProfileResponse = await apiGet(page.context(), `/api/users/@${handle}/`);
   expect(publicProfileResponse.status()).toBe(200);
@@ -70,6 +67,8 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
 
     for (const viewport of [
       { name: 'desktop', width: 1440, height: 900 },
+      { name: 'wide', width: 1280, height: 900 },
+      { name: 'tablet', width: 768, height: 1024 },
       { name: 'mobile', width: 375, height: 812 },
     ]) {
       await anonymousPage.setViewportSize(viewport);
@@ -81,7 +80,11 @@ test('canonical immersive 3D camera overlay fills and centers the stage at deskt
         );
         const videoBox = videoElement?.getBoundingClientRect();
         const toolbarElement = frameElement.querySelector<HTMLElement>('.piece-stage-toolbar');
-        const dpadElement = frameElement.querySelector<HTMLElement>('.scene3d-touch-dpad');
+        // Issue #1235 places the phone D-pad below the canvas frame while
+        // keeping it in the preview's stacking context. Read the sibling
+        // control from the preview so this remains a real z-index check.
+        const dpadElement =
+          frameElement.parentElement?.querySelector<HTMLElement>('.scene3d-touch-dpad');
         return {
           frame: { x: frameBox.x, y: frameBox.y, width: frameBox.width, height: frameBox.height },
           video: videoBox

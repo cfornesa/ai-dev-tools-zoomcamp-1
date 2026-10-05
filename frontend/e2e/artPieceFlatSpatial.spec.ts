@@ -129,7 +129,7 @@ test.describe('Generated flat-piece runtime: reversible spatial steering for Can
       test(`${label}: steering lazily builds a spatial shell, applies bounded pose changes, and disposes correctly at ${viewport.width}x${viewport.height}`, async ({
         page,
         context,
-      }) => {
+      }, testInfo) => {
         await page.setViewportSize(viewport);
         await mockGrantedCamera(context);
         await loginViaUI(page, fixture.owner.email, fixture.password);
@@ -170,7 +170,21 @@ test.describe('Generated flat-piece runtime: reversible spatial steering for Can
             };
           });
         await page.getByRole('button', { name: 'Show hand gesture guide' }).click();
-        await expect(page.getByRole('dialog', { name: 'Hand gesture guide' })).toBeVisible();
+        const guide = page.getByRole('dialog', { name: 'Hand gesture guide' });
+        await expect(guide).toBeVisible();
+        await expect(guide).toContainText('Step 1 of 5');
+        const guideBox = await guide.boundingBox();
+        expect(guideBox).not.toBeNull();
+        if (!guideBox) throw new Error('Generated-art guide did not have a rendered box');
+        expect(guideBox.x).toBeGreaterThanOrEqual(0);
+        expect(guideBox.y).toBeGreaterThanOrEqual(0);
+        expect(guideBox.x + guideBox.width).toBeLessThanOrEqual(viewport.width);
+        expect(guideBox.y + guideBox.height).toBeLessThanOrEqual(viewport.height);
+        await page.screenshot({
+          path: testInfo.outputPath(
+            `art-piece-guide-${engine}-${viewport.width}x${viewport.height}.png`,
+          ),
+        });
         await page.getByRole('button', { name: 'Close' }).click();
         const gumCalledFromLoadOrGuide = await page
           .frameLocator('iframe[title="Art piece preview"]')

@@ -130,7 +130,7 @@ def encode_cursor(published_at: datetime, project_id: int) -> str:
     return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
 
 
-class InvalidCursor(Exception):
+class InvalidCursor(Exception):  # noqa: N818
     """Raised by `decode_cursor` for a malformed/unparseable cursor string."""
 
 

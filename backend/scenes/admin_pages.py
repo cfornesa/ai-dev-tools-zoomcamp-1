@@ -39,15 +39,15 @@ RESERVED_PAGE_SLUGS = frozenset(
 REQUIRED_SYSTEM_KEYS = frozenset({"home"})
 
 
-class PageValidationFailed(Exception):
+class PageValidationFailed(Exception):  # noqa: N818
     pass
 
 
-class PageRevisionConflict(Exception):
+class PageRevisionConflict(Exception):  # noqa: N818
     pass
 
 
-class PageProtected(Exception):
+class PageProtected(Exception):  # noqa: N818
     pass
 
 
@@ -105,7 +105,7 @@ def _clean_slug(value: object) -> str:
     return normalized
 
 
-def _clean_fields(data: dict[str, object], *, partial: bool = False) -> dict[str, object]:
+def _clean_fields(data: dict[str, object], *, partial: bool = False) -> dict[str, object]:  # noqa: C901
     allowed = {
         "title",
         "slug",

@@ -6,6 +6,8 @@ import { expect, test } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { saveScene } from './support/saveScene.js';
+import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -88,20 +90,19 @@ test.describe('Draw.io editor', () => {
 
     await page.goto(`/projects/${id}`);
     await expect(page.getByTestId('editor-renderer-badge')).toHaveText('Draw.io');
-    await page.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await page.getByRole('button', { name: 'Edit scene', exact: true }).click();
+    await openEditScene(page);
 
     await page.getByRole('button', { name: 'Add draw.io text', exact: true }).press('Enter');
     await expect(
       page
-        .getByTestId('scene-canvas-viewport')
+        .getByRole('toolbar', { name: 'Editor actions' })
         .getByRole('button', { name: 'Select text draw-object-3', exact: true }),
     ).toBeVisible();
     await page
       .getByRole('button', { name: 'Delete selected draw.io object', exact: true })
       .press('Enter');
     await page
-      .getByTestId('scene-canvas-viewport')
+      .getByRole('toolbar', { name: 'Editor actions' })
       .getByRole('button', { name: 'Select rect object-back', exact: true })
       .click();
     await expect(
@@ -114,17 +115,17 @@ test.describe('Draw.io editor', () => {
       .press('Enter');
     await page.getByRole('button', { name: 'Duplicate selected draw.io object' }).click();
     await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
-    await page.locator('button.piece-stage-command-close').click();
+    await closeEditScene(page);
 
     const layers = page.getByRole('region', { name: 'Layers' });
     await expect(layers.getByRole('textbox', { name: 'Layer name for Back' })).toBeVisible();
     await expect(layers.getByRole('textbox', { name: 'Layer name for Front' })).toBeVisible();
     await layers.getByRole('button', { name: 'Select ellipse object-front' }).click();
-    await page.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await openEditScene(page);
     await expect(
       page.getByRole('button', { name: 'Move selected draw.io object right' }),
     ).toBeEnabled();
-    await page.locator('button.piece-stage-command-close').click();
+    await closeEditScene(page);
     const backLayer = layers.getByRole('textbox', { name: 'Layer name for Back' });
     await backLayer.fill('Back Renamed', { force: true });
     await backLayer.press('Enter');
@@ -168,18 +169,18 @@ test.describe('Draw.io editor', () => {
     );
     await layers.getByRole('button', { name: 'Lock Back Renamed' }).click();
     await expect(layers.getByRole('button', { name: 'Unlock Back Renamed' })).toBeVisible();
-    await page.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await openEditScene(page);
     await page
-      .getByTestId('scene-canvas-viewport')
+      .getByRole('toolbar', { name: 'Editor actions' })
       .getByRole('button', { name: 'Select rect object-back', exact: true })
       .click();
     await expect(
       page.getByRole('button', { name: 'Move selected draw.io object right' }),
     ).toBeDisabled();
-    await page.locator('button.piece-stage-command-close').click();
+    await closeEditScene(page);
     await layers.getByRole('button', { name: 'Unlock Back Renamed' }).click();
-    await page.getByRole('button', { name: 'Open piece controls menu' }).click();
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await openEditScene(page);
+    await saveScene(page);
     await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version \d+/);
     const project = (await (await apiGet(context, `/api/projects/${id}/`)).json()) as {
       current_version: number;

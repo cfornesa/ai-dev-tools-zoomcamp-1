@@ -200,6 +200,54 @@ test.describe('Generated immersive viewer: walkable navigation and stage control
     }
   });
 
+  test('microphone controls are available on immersive and immersive-embed routes without camera capability', async ({
+    page,
+    context,
+  }) => {
+    await loginViaUI(page, fixture.owner.email, fixture.password);
+    const created = await apiPost(context, '/api/art-pieces/', {
+      title: 'Immersive microphone fixture',
+      description: 'A published immersive piece with microphone but no camera.',
+      prompt: 'red cube',
+      engine: 'threejs',
+      capabilities: {
+        screenshot: true,
+        download: false,
+        fullscreen: true,
+        sound: true,
+        microphone: true,
+        camera_view: false,
+        hand_steering: false,
+        immersive: true,
+      },
+      source: THREEJS_STEERABLE_CUBE,
+    });
+    expect(created.status()).toBe(201);
+    const piece = (await created.json()) as { public_id: string };
+    const published = await apiPatch(context, `/api/art-pieces/${piece.public_id}/`, {
+      status: 'published',
+    });
+    expect(published.status()).toBe(200);
+
+    for (const route of [
+      `/art-pieces/immersive/${piece.public_id}`,
+      `/embed/art-pieces/immersive/${piece.public_id}`,
+    ]) {
+      await page.goto(route);
+      await page.getByRole('button', { name: 'Piece controls', exact: true }).click();
+      await expect(page.getByRole('group', { name: 'Live mic' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Enable microphone' })).toBeVisible();
+      // #1004/#1031 keep gated controls visible so the capability boundary is
+      // discoverable; they must remain inert when the capability is absent.
+      await expect(page.getByRole('button', { name: 'Enable camera view' })).toBeDisabled();
+      await expect(page.getByRole('button', { name: 'Enable camera view' })).toHaveAttribute(
+        'aria-describedby',
+        'piece-stage-camera-reason',
+      );
+      await expect(page.getByTestId('microphone-status')).toContainText('Microphone is off.');
+    }
+  });
+
   test('a flat renderer gets an honest fallback instead of false movement instructions', async ({
     page,
     context,

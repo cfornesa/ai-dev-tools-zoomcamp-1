@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { expandGeneratedArtEditorTools } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 // The fake AI refinement edits the fake generator's own fixture tokens (`teal`, `#2a9d8f`), so the
@@ -66,6 +67,8 @@ test.describe('2D AI editor engine modes (#618)', () => {
         await expect(page.getByTestId('art-piece-editor-source-only')).toBeVisible();
         await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 1');
 
+        await expandGeneratedArtEditorTools(page);
+        await page.getByRole('button', { name: 'AI edit' }).click();
         await page
           .getByLabel('Describe the revision you want to generate')
           .fill('make it brighter');

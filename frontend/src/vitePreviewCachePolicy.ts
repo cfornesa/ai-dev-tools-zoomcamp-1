@@ -35,6 +35,7 @@ export const PROXIED_DJANGO_PREFIXES = [
   '/health',
   '/llms.txt',
   '/llms-full.txt',
+  '/mcp',
 ] as const;
 
 /**

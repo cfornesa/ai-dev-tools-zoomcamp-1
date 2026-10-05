@@ -36,7 +36,7 @@ test.describe('Cosmic backdrop star field (#807)', () => {
       await expect(field).toHaveAttribute('aria-hidden', 'true');
       await expect(field).toHaveCSS('pointer-events', 'none');
       await expect(field.locator('.cosmic-star')).toHaveCount(90);
-      await expect(page.locator('.app-shell > .skip-link')).toHaveCSS('z-index', '1');
+      await expect(page.locator('.app-shell > .skip-link')).toHaveCSS('z-index', '1000');
 
       await page.screenshot({
         path: testInfo.outputPath(`cosmic-${viewport.width}.png`),

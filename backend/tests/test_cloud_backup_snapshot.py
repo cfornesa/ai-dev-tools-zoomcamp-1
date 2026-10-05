@@ -95,6 +95,24 @@ def test_snapshot_schedule_reports_last_snapshot_at_after_a_write(owner, project
 
 
 @pytest.mark.django_db
+def test_cloud_backup_manifest_does_not_serialize_private_project_brief(owner, project):
+    project.brief = "private project intent"
+    project.save(update_fields=["brief"])
+    enable_backup(owner, project)
+
+    row = put_manifest(
+        owner,
+        project,
+        expected_revision=0,
+        idempotency_key="without-brief",
+        manifest=_manifest(project),
+    )
+
+    assert "brief" not in row.manifest
+    assert "private project intent" not in str(row.manifest)
+
+
+@pytest.mark.django_db
 def test_free_plan_trims_prior_manifest_revisions_and_orphaned_blobs(owner, project):
     _free_plan()
     enable_backup(owner, project)

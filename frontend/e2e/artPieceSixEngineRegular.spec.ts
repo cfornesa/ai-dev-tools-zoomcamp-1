@@ -56,12 +56,17 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
     page,
     context,
   }, testInfo: TestInfo) => {
+    // The complete 12-route matrix took 25.1s locally; allow 60s on slower
+    // CI workers while keeping the timeout bounded well below the default
+    // suite-wide limit.
+    test.setTimeout(60_000);
+
     await loginViaUI(page, e2eFixtures.owner.email, e2eFixtures.password);
     const profileResponse = await apiGet(context, '/api/account/profile/');
     expect(profileResponse.ok()).toBe(true);
     const profile = (await profileResponse.json()) as Record<string, unknown>;
     const updatedProfile = await apiPatch(context, '/api/account/profile/', {
-      ...profile,
+      revision: profile.revision,
       handle: 'e2e-six-engine',
       display_name: 'Six Engine Fixture',
       is_public: true,
@@ -109,9 +114,51 @@ test.describe('Six-engine regular canonical viewer (#607)', () => {
         await frame.locator(fixture.selector).waitFor({ state: 'attached', timeout: 10_000 });
         const frameBox = await page.locator('iframe[title="Art piece preview"]').boundingBox();
         expect(frameBox).not.toBeNull();
-        if (frameBox) {
-          expect(Math.abs(frameBox.width / frameBox.height - 4 / 3)).toBeLessThan(0.02);
-        }
+        if (!frameBox) throw new Error('The generated-piece iframe must have a visible box.');
+        const geometry = await page.evaluate(() => {
+          const stage = document.querySelector<HTMLElement>('.public-art-piece-stage')!;
+          const iframe = stage.querySelector('iframe')!;
+          const row = document.querySelector<HTMLElement>('.public-art-piece-toolbar-row')!;
+          const toolbar = row.querySelector<HTMLElement>('[role="toolbar"]')!;
+          const frameRect = iframe.getBoundingClientRect();
+          const stageRect = stage.getBoundingClientRect();
+          const rowRect = row.getBoundingClientRect();
+          const toolbarRect = toolbar.getBoundingClientRect();
+          const phoneTargets = Array.from(row.querySelectorAll<HTMLElement>('button, a')).filter(
+            (target) =>
+              !target.classList.contains('sr-only') &&
+              target.getClientRects().length > 0 &&
+              getComputedStyle(target).visibility === 'visible',
+          );
+          return {
+            stageAspectRatio: getComputedStyle(stage).aspectRatio,
+            frame: { width: frameRect.width, height: frameRect.height, bottom: frameRect.bottom },
+            rowTop: rowRect.top,
+            toolbarInsideStage:
+              toolbarRect.left >= stageRect.left &&
+              toolbarRect.right <= stageRect.right &&
+              toolbarRect.top >= stageRect.top &&
+              toolbarRect.bottom <= stageRect.bottom,
+            phoneTargetsAtLeast44:
+              phoneTargets.length > 0 &&
+              phoneTargets.every((target) => {
+                const rect = target.getBoundingClientRect();
+                return rect.width >= 44 && rect.height >= 44;
+              }),
+          };
+        });
+        const phone = viewport.width <= 700;
+        const interactivePhone = phone && fixture.engine === 'c2js-interactive';
+        expect({
+          frameContract: interactivePhone
+            ? frameBox.height >= 300 && geometry.stageAspectRatio === 'auto'
+            : Math.abs(frameBox.width / frameBox.height - 4 / 3) < 0.02 &&
+              geometry.stageAspectRatio !== 'auto',
+          toolbarPlacement: phone
+            ? geometry.rowTop >= geometry.frame.bottom
+            : geometry.toolbarInsideStage,
+          phoneTargets: !phone || geometry.phoneTargetsAtLeast44,
+        }).toEqual({ frameContract: true, toolbarPlacement: true, phoneTargets: true });
         await expect(page.getByRole('button', { name: 'Take screenshot' })).toBeVisible();
         await expect(
           page.getByRole('button', { name: 'Expand piece to fullscreen' }),

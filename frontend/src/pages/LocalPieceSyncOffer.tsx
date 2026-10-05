@@ -4,16 +4,20 @@ import { fetchCloudSyncPreference } from '../api/cloudSyncPreference';
 import { intakePiecePackage } from '../api/pieceIntake';
 import { fetchStorageEstimate } from '../api/storageUsage';
 import { useAuth } from '../auth/useAuth';
-import { buildLocalPiecePackage } from '../storage/localPiecePackage';
+import { buildLocalPiecePackage, measureLocalPiecePackage } from '../storage/localPiecePackage';
 import {
-  getProjectStorageUsage,
   listProjectsForOwner,
   openLocalProjectDatabase,
   updateProject,
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
 
-type PieceRow = { project: LocalProjectRecord; bytes: number; mediaBytes: number; files: number };
+type PieceRow = {
+  project: LocalProjectRecord;
+  pieceBytes: number;
+  mediaBytes: number;
+  mediaFiles: number;
+};
 type Result = { state: 'uploaded' | 'failed' | 'over-quota'; detail: string };
 
 function formatBytes(bytes: number): string {
@@ -43,12 +47,12 @@ export default function LocalPieceSyncOffer() {
           const projects = await listProjectsForOwner(db, ownerId);
           const next = await Promise.all(
             projects.map(async (project) => {
-              const usage = await getProjectStorageUsage(db, project.id);
+              const measurement = await measureLocalPiecePackage(db, ownerId, project.id);
               return {
                 project,
-                bytes: usage.versionBytesUsed,
-                mediaBytes: usage.bytesUsed,
-                files: usage.fileCount,
+                pieceBytes: measurement.pieceBytes,
+                mediaBytes: measurement.mediaBytes,
+                mediaFiles: measurement.mediaFiles,
               };
             }),
           );
@@ -83,15 +87,15 @@ export default function LocalPieceSyncOffer() {
       };
     }
     void fetchStorageEstimate({
-      pieceBytes: selectedRows.reduce((sum, row) => sum + row.bytes, 0),
+      pieceBytes: selectedRows.reduce((sum, row) => sum + row.pieceBytes, 0),
       mediaBytes: selectedRows.reduce((sum, row) => sum + row.mediaBytes, 0),
       pieceFiles: selectedRows.length,
-      mediaFiles: selectedRows.reduce((sum, row) => sum + row.files, 0),
+      mediaFiles: selectedRows.reduce((sum, row) => sum + row.mediaFiles, 0),
     })
       .then((estimate) => {
         if (!cancelled) {
           setQuotaMessage(
-            `Selected total: ${formatBytes(selectedRows.reduce((sum, row) => sum + row.bytes + row.mediaBytes, 0))}; ${formatBytes(Math.max(estimate.remaining_after.private.bytes, 0))} remains of the private sync quota.`,
+            `Selected total: ${formatBytes(selectedRows.reduce((sum, row) => sum + row.pieceBytes + row.mediaBytes, 0))}; ${formatBytes(Math.max(estimate.remaining_after.private.bytes, 0))} remains of the private sync quota.`,
           );
         }
       })
@@ -114,10 +118,10 @@ export default function LocalPieceSyncOffer() {
       if (built.missingAssets.length > 0)
         throw new Error('Missing local media; export or repair it before uploading.');
       const estimate = await fetchStorageEstimate({
-        pieceBytes: built.bytes.byteLength,
-        mediaBytes: row.mediaBytes,
+        pieceBytes: built.pieceBytes,
+        mediaBytes: built.mediaBytes,
         pieceFiles: 1,
-        mediaFiles: row.files,
+        mediaFiles: built.mediaFiles,
       });
       if (!estimate.fits.private) {
         setResults((current) => ({
@@ -224,7 +228,7 @@ export default function LocalPieceSyncOffer() {
                     }
                   />{' '}
                   {row.project.title} ({row.project.kind ?? '2d'}) —{' '}
-                  {formatBytes(row.bytes + row.mediaBytes)}, edited{' '}
+                  {formatBytes(row.pieceBytes + row.mediaBytes)}, edited{' '}
                   {new Date(row.project.updatedAt).toLocaleString()}
                 </label>
                 {results[row.project.id] && (

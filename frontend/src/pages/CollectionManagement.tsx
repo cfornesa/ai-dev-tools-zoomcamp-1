@@ -2,18 +2,24 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
+import { listArtPieces } from '../api/artPieces';
+import { listProjects } from '../api/projects';
+import { listProjects3D } from '../api/projects3d';
 import {
   createCollection,
   deleteCollection,
+  fetchCollectionCoverAssets,
   fetchCollections,
   replaceCollectionItems,
   setCollectionPublished,
   updateCollection,
   type Collection,
   type CollectionItem,
+  type CollectionCoverAsset,
 } from '../api/collections';
 
 const ITEM_KINDS: Array<CollectionItem['kind']> = ['project', 'project3d', 'art_piece'];
+type PickerItem = { kind: CollectionItem['kind']; id: string; title: string };
 
 export default function CollectionManagement() {
   const auth = useAuth();
@@ -22,11 +28,21 @@ export default function CollectionManagement() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [publicSlug, setPublicSlug] = useState('');
+  const [collectionStatus, setCollectionStatus] = useState<Collection['status']>('active');
+  const [commentsEnabled, setCommentsEnabled] = useState(false);
   const [kind, setKind] = useState<CollectionItem['kind']>('project');
   const [itemId, setItemId] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [pickerItems, setPickerItems] = useState<PickerItem[]>([]);
+  const [pickerQuery, setPickerQuery] = useState('');
+  const [pickerSelection, setPickerSelection] = useState('');
+  const [coverAssets, setCoverAssets] = useState<CollectionCoverAsset[]>([]);
+  const [coverLoading, setCoverLoading] = useState(false);
 
   useEffect(() => {
     if (auth.status !== 'signed-in') return;
@@ -48,7 +64,26 @@ export default function CollectionManagement() {
     setTitle(selected.title);
     setDescription(selected.description);
     setPublicSlug(selected.slug);
+    setCollectionStatus(selected.status ?? 'active');
+    setCommentsEnabled(selected.comments_enabled ?? false);
   }, [selected]);
+
+  async function loadCoverAssets() {
+    if (coverAssets.length > 0 || coverLoading) return;
+    setCoverLoading(true);
+    try {
+      setCoverAssets(await fetchCollectionCoverAssets());
+    } catch {
+      setError('Could not load your published image assets.');
+    } finally {
+      setCoverLoading(false);
+    }
+  }
+
+  async function saveCover(cover: CollectionCoverAsset | null) {
+    if (!selected) return;
+    await run(() => updateCollection(selected.id, { cover }), 'Collection cover saved.');
+  }
 
   if (auth.status === 'loading') return <p role="status">Loading collections…</p>;
   if (auth.status !== 'signed-in') return <Navigate to="/" replace />;
@@ -95,7 +130,14 @@ export default function CollectionManagement() {
   async function saveDetails() {
     if (!selected) return;
     await run(
-      () => updateCollection(selected.id, { title, description, public_slug: publicSlug }),
+      () =>
+        updateCollection(selected.id, {
+          title,
+          description,
+          public_slug: publicSlug,
+          status: collectionStatus,
+          comments_enabled: commentsEnabled,
+        }),
       'Collection details saved.',
     );
   }
@@ -119,6 +161,52 @@ export default function CollectionManagement() {
     setItemId('');
   }
 
+  async function openPicker() {
+    if (pickerOpen) {
+      setPickerOpen(false);
+      return;
+    }
+    setPickerOpen(true);
+    if (pickerItems.length > 0) return;
+    setPickerLoading(true);
+    try {
+      const [projects, projects3d, artPieces] = await Promise.all([
+        listProjects(),
+        listProjects3D(),
+        listArtPieces(),
+      ]);
+      setPickerItems([
+        ...projects
+          .filter((item) => item.visibility === 'public')
+          .map((item) => ({ kind: 'project' as const, id: item.id, title: item.title })),
+        ...projects3d
+          .filter((item) => item.visibility === 'public')
+          .map((item) => ({ kind: 'project3d' as const, id: item.id, title: item.title })),
+        ...artPieces
+          .filter((item) => item.status === 'published')
+          .map((item) => ({ kind: 'art_piece' as const, id: item.public_id, title: item.title })),
+      ]);
+    } catch {
+      setError('Could not load your published pieces. Use the UUID fallback below.');
+    } finally {
+      setPickerLoading(false);
+    }
+  }
+
+  const filteredPickerItems = pickerItems.filter((item) =>
+    `${item.title} ${item.id}`.toLowerCase().includes(pickerQuery.trim().toLowerCase()),
+  );
+
+  async function addPickerItem(event: React.FormEvent) {
+    event.preventDefault();
+    const item = pickerItems.find(
+      (candidate) => `${candidate.kind}:${candidate.id}` === pickerSelection,
+    );
+    if (!item || !selected) return;
+    await changeItems([...selected.items, { kind: item.kind, id: item.id } as CollectionItem]);
+    setPickerSelection('');
+  }
+
   async function removeItem(item: CollectionItem) {
     if (!selected) return;
     await changeItems(
@@ -134,6 +222,15 @@ export default function CollectionManagement() {
     const target = index + offset;
     if (target < 0 || target >= next.length) return;
     [next[index], next[target]] = [next[target], next[index]];
+    await changeItems(next);
+  }
+
+  async function dropItem(targetIndex: number) {
+    if (!selected || draggedIndex === null || draggedIndex === targetIndex) return;
+    const next = [...selected.items];
+    const [moved] = next.splice(draggedIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    setDraggedIndex(null);
     await changeItems(next);
   }
 
@@ -218,6 +315,26 @@ export default function CollectionManagement() {
                   autoCapitalize="none"
                   spellCheck={false}
                 />
+                <label htmlFor="collection-status">Collection status</label>
+                <select
+                  id="collection-status"
+                  value={collectionStatus}
+                  onChange={(event) =>
+                    setCollectionStatus(event.target.value as Collection['status'])
+                  }
+                >
+                  <option value="active">Active</option>
+                  <option value="draft">Draft (not publicly visible)</option>
+                  <option value="archived">Archived (hidden from this list)</option>
+                </select>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={commentsEnabled}
+                    onChange={(event) => setCommentsEnabled(event.target.checked)}
+                  />{' '}
+                  Allow authenticated visitors to comment
+                </label>
               </>
             )}
             <button type="submit" disabled={busy}>
@@ -231,10 +348,23 @@ export default function CollectionManagement() {
                 {selected.items.length === 0 && <p>No items in this collection yet.</p>}
                 <ol>
                   {selected.items.map((item, index) => (
-                    <li key={`${item.kind}-${item.id}`}>
+                    <li
+                      key={`${item.kind}-${item.id}`}
+                      draggable={!busy}
+                      onDragStart={() => setDraggedIndex(index)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => void dropItem(index)}
+                      onDragEnd={() => setDraggedIndex(null)}
+                      data-dragging={draggedIndex === index ? 'true' : undefined}
+                    >
                       <span>
                         {item.title || item.id} ({item.label})
                       </span>
+                      {item.is_hidden_from_public && (
+                        <span role="status" className="collection-item-hidden-notice">
+                          Currently unpublished — hidden from your public collection until restored
+                        </span>
+                      )}
                       <button
                         type="button"
                         disabled={busy || index === 0}
@@ -281,6 +411,82 @@ export default function CollectionManagement() {
                     Add item
                   </button>
                 </form>
+                <div className="collection-item-picker">
+                  <button type="button" onClick={() => void openPicker()} disabled={busy}>
+                    {pickerOpen ? 'Hide published item picker' : 'Browse published items'}
+                  </button>
+                  {pickerOpen && (
+                    <form
+                      aria-label="Browse published items"
+                      onSubmit={(event) => void addPickerItem(event)}
+                    >
+                      <label htmlFor="collection-item-search">Search published items</label>
+                      <input
+                        id="collection-item-search"
+                        value={pickerQuery}
+                        onChange={(event) => setPickerQuery(event.target.value)}
+                        placeholder="Search by title or ID"
+                      />
+                      {pickerLoading ? (
+                        <p role="status">Loading published items…</p>
+                      ) : (
+                        <>
+                          <label htmlFor="collection-item-picker-select">Published item</label>
+                          <select
+                            id="collection-item-picker-select"
+                            value={pickerSelection}
+                            onChange={(event) => setPickerSelection(event.target.value)}
+                          >
+                            <option value="">Choose an item</option>
+                            {filteredPickerItems.map((item) => (
+                              <option
+                                key={`${item.kind}:${item.id}`}
+                                value={`${item.kind}:${item.id}`}
+                              >
+                                {item.title} ({item.kind})
+                              </option>
+                            ))}
+                          </select>
+                          <button type="submit" disabled={busy || !pickerSelection}>
+                            Add selected item
+                          </button>
+                        </>
+                      )}
+                    </form>
+                  )}
+                </div>
+              </section>
+              <section aria-labelledby="collection-cover-heading">
+                <h3 id="collection-cover-heading">Cover image</h3>
+                <p>Choose an image retained with one of your published pieces.</p>
+                <button type="button" onClick={() => void loadCoverAssets()} disabled={busy}>
+                  {coverLoading ? 'Loading image assets…' : 'Load image assets'}
+                </button>
+                {coverAssets.length > 0 && (
+                  <select
+                    aria-label="Collection cover image"
+                    value={selected.cover?.asset_id ?? ''}
+                    onChange={(event) => {
+                      const asset = coverAssets.find(
+                        (candidate) => candidate.asset_id === event.target.value,
+                      );
+                      void saveCover(asset ?? null);
+                    }}
+                  >
+                    <option value="">No cover image</option>
+                    {coverAssets.map((asset) => (
+                      <option
+                        key={`${asset.piece_public_id}:${asset.asset_id}`}
+                        value={asset.asset_id}
+                      >
+                        {asset.filename} ({asset.piece_kind})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {selected.cover?.filename && (
+                  <p role="status">Current cover: {selected.cover.filename}</p>
+                )}
               </section>
               <div className="collection-management-actions">
                 <button type="button" disabled={busy} onClick={() => void togglePublished()}>

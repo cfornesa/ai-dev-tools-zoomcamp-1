@@ -21,6 +21,7 @@ const LocalEditorWorkspace = lazy(() => import('./pages/LocalEditorWorkspace'));
 const LocalProject3DWorkspace = lazy(() => import('./pages/LocalProject3DWorkspace'));
 const LocalGeneratedPieceWorkspace = lazy(() => import('./pages/LocalGeneratedPieceWorkspace'));
 const PublicGallery = lazy(() => import('./pages/PublicGallery'));
+const PublicCollections = lazy(() => import('./pages/PublicCollections'));
 const PublicProjectViewer = lazy(() => import('./pages/PublicProjectViewer'));
 const PublicProject3DViewer = lazy(() => import('./pages/PublicProject3DViewer'));
 const ImmersiveProject3DViewer = lazy(() => import('./pages/ImmersiveProject3DViewer'));
@@ -36,6 +37,7 @@ const AccountIdentities = lazy(() => import('./pages/AccountIdentities'));
 const AccountSessions = lazy(() => import('./pages/AccountSessions'));
 const AccountDataExport = lazy(() => import('./pages/AccountDataExport'));
 const AccountLocalStorage = lazy(() => import('./pages/AccountLocalStorage'));
+const AccountUnpublishedPieces = lazy(() => import('./pages/AccountUnpublishedPieces'));
 const AccountDeletion = lazy(() => import('./pages/AccountDeletion'));
 const AdminSettings = lazy(() => import('./pages/AdminSettings'));
 const AdminPages = lazy(() => import('./pages/AdminPages'));
@@ -85,6 +87,7 @@ function App() {
                   never checks `useAuth()`'s status, unlike the index route's
                   Home/Gallery split. */}
               <Route path="gallery" element={<PublicGallery />} />
+              <Route path="collections" element={<PublicCollections />} />
               <Route path="users/:handle" element={<PublicProfile />} />
               <Route path="users/:handle/feeds" element={<PublicProfileFeeds />} />
               <Route
@@ -136,6 +139,7 @@ function App() {
               <Route path="account/settings/sessions" element={<AccountSessions />} />
               <Route path="account/settings/export" element={<AccountDataExport />} />
               <Route path="account/settings/storage" element={<AccountLocalStorage />} />
+              <Route path="account/settings/unpublished" element={<AccountUnpublishedPieces />} />
               <Route path="account/settings/delete" element={<AccountDeletion />} />
               <Route path="account/collections" element={<CollectionManagement />} />
               <Route path="admin/settings" element={<AdminSettings />} />

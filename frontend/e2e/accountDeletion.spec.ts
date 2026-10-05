@@ -1,11 +1,8 @@
-import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-
 import { expect, test } from '@playwright/test';
 
 import { apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { runFixtureCommand } from './support/fixtureCommand.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 /**
@@ -33,20 +30,8 @@ import { requireE2EFixtures } from './support/prerequisites.js';
  * naturally treats "no row with this username" the same as "reset this
  * row", so this is a plain, safe re-seed, not a special case.
  */
-const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..');
-const BACKEND_DIR = path.join(REPO_ROOT, 'backend');
-const configuredEnvFile = process.env.E2E_ENV_FILE;
-const ENV_FILE_ARGS = configuredEnvFile
-  ? ['--env-file', configuredEnvFile]
-  : fs.existsSync(path.join(BACKEND_DIR, '.env'))
-    ? ['--env-file', '.env']
-    : [];
-
 function resetDeletableFixture(): void {
-  execFileSync('uv', ['run', ...ENV_FILE_ARGS, 'python', 'manage.py', 'e2e_fixtures', 'create'], {
-    cwd: BACKEND_DIR,
-    stdio: 'ignore',
-  });
+  runFixtureCommand('create');
 }
 
 test.describe('Account deletion (#443)', () => {

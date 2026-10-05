@@ -192,7 +192,10 @@ describe('AccountSettings', () => {
     expect(screen.getByRole('heading', { name: 'Automatic retry' })).toBeInTheDocument();
 
     const actions = screen.getByRole('list', { name: 'Account management actions' });
-    expect(within(actions).getAllByRole('listitem')).toHaveLength(11);
+    expect(within(actions).getAllByRole('listitem')).toHaveLength(12);
+    expect(
+      within(actions).getByRole('link', { name: /retained unpublished pieces/i }),
+    ).toHaveAttribute('href', '/account/settings/unpublished');
     expect(
       within(actions).getByRole('link', { name: /verified email addresses/i }),
     ).toHaveAttribute('href', '/accounts/email/');
@@ -338,6 +341,79 @@ describe('AccountSettings', () => {
     expect(await screen.findByText('Mistral key: not configured')).toBeInTheDocument();
   });
 
+  it('explains that sign-in is required when a provider save returns 401', async () => {
+    mockedSaveProvider.mockRejectedValueOnce(
+      new ApiError(401, { detail: 'Authentication required.' }),
+    );
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    const input = await screen.findByLabelText(/^mistral api key$/i);
+    await user.type(input, 'sk-user-key-12345');
+    await user.click(
+      within(input.closest('.account-settings-section') as HTMLElement).getByRole('button', {
+        name: /^save key$/i,
+      }),
+    );
+
+    expect(await screen.findByRole('link', { name: 'Sign in again' })).toHaveAttribute(
+      'href',
+      '/accounts/login/',
+    );
+    expect(screen.getByRole('link', { name: 'Sign in again' }).parentElement).toHaveTextContent(
+      'Your session expired.',
+    );
+  });
+
+  it('shows the provider key validation reason for a 400 response', async () => {
+    mockedSaveProvider.mockRejectedValueOnce(
+      new ApiError(400, { key: ['Ensure this field has at least 10 characters.'] }),
+    );
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    const input = await screen.findByLabelText(/^mistral api key$/i);
+    await user.type(input, 'short-key1');
+    await user.click(
+      within(input.closest('.account-settings-section') as HTMLElement).getByRole('button', {
+        name: /^save key$/i,
+      }),
+    );
+
+    expect(
+      await screen.findByText('Ensure this field has at least 10 characters.'),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the generic provider save message for other failures', async () => {
+    mockedSaveProvider.mockRejectedValueOnce(new ApiError(500, { detail: 'internal details' }));
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AccountSettings />
+      </MemoryRouter>,
+    );
+
+    const input = await screen.findByLabelText(/^mistral api key$/i);
+    await user.type(input, 'sk-user-key-12345');
+    await user.click(
+      within(input.closest('.account-settings-section') as HTMLElement).getByRole('button', {
+        name: /^save key$/i,
+      }),
+    );
+
+    expect(await screen.findByText('Could not save your mistral key.')).toBeInTheDocument();
+    expect(screen.queryByText('internal details')).not.toBeInTheDocument();
+  });
+
   it('links to every enabled AI vendor model documentation page', async () => {
     render(
       <MemoryRouter>
@@ -464,8 +540,10 @@ describe('AccountSettings', () => {
 
     await user.click(screen.getByRole('button', { name: 'Expand Automatic retry' }));
     await screen.findByRole('heading', { name: 'Automatic retry' });
-    const moveRetryUp = screen.getByRole('button', { name: 'Move Automatic retry up' });
-    for (let i = 0; i < 7; i += 1) await user.click(moveRetryUp);
+    const sectionCount = document.querySelectorAll('[data-settings-section]').length;
+    for (let i = 0; i < sectionCount - 1; i += 1) {
+      await user.click(screen.getByRole('button', { name: 'Move Automatic retry up' }));
+    }
     await user.click(screen.getAllByRole('button', { name: 'Collapse' })[0]);
 
     const order = Array.from(document.querySelectorAll('[data-settings-section]')).map((element) =>

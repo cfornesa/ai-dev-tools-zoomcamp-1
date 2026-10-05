@@ -35,6 +35,9 @@ def published_project3d(db):
             project=project,
             sequence=sequence,
             scene_json={**MINIMAL_SCENE, "id": f"public-history-{sequence}"},
+            html_source="<main id=\"scene-3d\"></main>",
+            css_source="#scene-3d {}",
+            js_source="/* CAMERA_CONFIG_BEGIN */ {} /* CAMERA_CONFIG_END */",
         )
         for sequence in range(1, 4)
     ]
@@ -55,6 +58,9 @@ def test_public_3d_detail_exposes_ordered_safe_version_summaries(published_proje
     assert [version["is_current"] for version in body["versions"]] == [True, False, False]
     assert all("scene_json" not in version for version in body["versions"])
     assert body["current_version"]["scene_json"]["id"] == "public-history-3"
+    assert "html_source" not in body["current_version"]
+    assert "css_source" not in body["current_version"]
+    assert "js_source" not in body["current_version"]
 
 
 @pytest.mark.django_db

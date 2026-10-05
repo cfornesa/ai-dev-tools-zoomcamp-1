@@ -87,8 +87,10 @@ test.describe('Generated-piece live preview (#669)', () => {
         page.getByRole('heading', { name: `Edit Live preview ${engine}` }),
       ).toBeVisible();
       await page
-        .getByTestId(
-          engine === 'canvas2d' ? 'art-piece-editor-edit-source' : 'art-piece-editor-add-box',
+        .locator(
+          engine === 'canvas2d'
+            ? '[data-testid="art-piece-editor-edit-source"]'
+            : 'button[aria-label="Add box"]',
         )
         .click();
       await expect(page.getByTestId('art-piece-editor-preview')).toBeVisible();

@@ -1,14 +1,33 @@
 import { useEffect, useState } from 'react';
 
+import {
+  isMicSupported,
+  micRecoveryMessageFor,
+  categorizeMicError,
+  type MicFailureCategory,
+} from '../audio/micFailure';
 import { PIANO_KEY_MAP, isEditableElement } from '../audio/pianoKeyMap';
+import type { MicEffectName } from '../audio/sonicEngine';
 import type { Structured2DCapabilities } from './structured2dCapabilities';
+
+const MIC_EFFECTS: ReadonlyArray<{ name: MicEffectName; label: string }> = [
+  { name: 'distortion', label: 'Distortion' },
+  { name: 'chorus', label: 'Chorus' },
+  { name: 'tremolo', label: 'Tremolo' },
+  { name: 'pitch_shift', label: 'Pitch shift' },
+  { name: 'bitcrusher', label: 'Bitcrusher' },
+  { name: 'flanger', label: 'Flanger' },
+  { name: 'ring_mod', label: 'Ring mod' },
+];
 
 export type Structured2DAudioEngine = {
   readonly status: 'idle' | 'active' | 'error';
   enable(): Promise<void>;
   disable(): void;
   setVolume(percent: number): void;
-  connectMic?(): Promise<void>;
+  connectMic?(stream?: MediaStream): Promise<void>;
+  setMicEffect?(name: MicEffectName, enabled: boolean): boolean;
+  disconnectMic?(): void;
   setTempo?(bpm: number): void;
   setScale?(name: string): boolean;
   setKey?(key: { root: string; scale: string }): boolean;
@@ -82,6 +101,15 @@ export default function Structured2DSoundControls({
   });
   const [octave, setOctave] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
+  const [microphoneActive, setMicrophoneActive] = useState(false);
+  const [microphoneFailure, setMicrophoneFailure] = useState<MicFailureCategory | null>(null);
+  const [micEffects, setMicEffects] = useState<Record<MicEffectName, boolean>>(
+    () =>
+      Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+        MicEffectName,
+        boolean
+      >,
+  );
 
   useEffect(() => {
     if (!controlledActive || !keyboardEnabled || !engine.triggerMelodicNote) return;
@@ -94,6 +122,8 @@ export default function Structured2DSoundControls({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [controlledActive, engine, keyboardEnabled]);
+
+  useEffect(() => () => engine.disconnectMic?.(), [engine]);
 
   if (!capabilities.sound) return null;
 
@@ -110,12 +140,41 @@ export default function Structured2DSoundControls({
 
   async function activateMicrophone() {
     setMessage(null);
+    setMicrophoneFailure(null);
+    if (!isMicSupported()) {
+      setMicrophoneFailure('unsupported-browser');
+      return;
+    }
+    if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+      setMicrophoneFailure('insecure-context');
+      return;
+    }
+    let stream: MediaStream | null = null;
     try {
       if (!engine.connectMic) throw new Error('Microphone input is unavailable.');
-      await engine.connectMic();
-    } catch {
-      setMessage('Microphone access failed. Check browser permissions and try again.');
+      if (!controlledActive) {
+        await engine.enable();
+        setActive(true);
+      }
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      await engine.connectMic(stream);
+      setMicrophoneActive(true);
+    } catch (error: unknown) {
+      stream?.getTracks().forEach((track) => track.stop());
+      setMicrophoneFailure(categorizeMicError(error));
     }
+  }
+
+  function deactivateMicrophone() {
+    engine.disconnectMic?.();
+    setMicrophoneActive(false);
+    setMicrophoneFailure(null);
+    setMicEffects(
+      Object.fromEntries(MIC_EFFECTS.map(({ name }) => [name, false])) as Record<
+        MicEffectName,
+        boolean
+      >,
+    );
   }
 
   return (
@@ -419,9 +478,43 @@ export default function Structured2DSoundControls({
         </button>
       )}
       {capabilities.microphone && (
-        <button type="button" onClick={() => void activateMicrophone()}>
-          Enable microphone
-        </button>
+        <div role="group" aria-label="Live mic">
+          <button
+            type="button"
+            aria-pressed={microphoneActive}
+            onClick={() => void (microphoneActive ? deactivateMicrophone() : activateMicrophone())}
+          >
+            {microphoneActive ? 'Disable microphone' : 'Enable microphone'}
+          </button>
+          <p data-testid="structured-microphone-status">
+            {microphoneActive ? 'Microphone is active.' : 'Microphone is off.'}
+          </p>
+          {microphoneFailure && (
+            <p role="alert" data-testid="structured-microphone-recovery">
+              {micRecoveryMessageFor(microphoneFailure)}
+            </p>
+          )}
+          {microphoneActive && (
+            <fieldset>
+              <legend>Microphone effects</legend>
+              {MIC_EFFECTS.map(({ name, label }) => (
+                <label key={name}>
+                  <input
+                    type="checkbox"
+                    checked={micEffects[name]}
+                    onChange={(event) => {
+                      const enabled = event.target.checked;
+                      if (engine.setMicEffect?.(name, enabled)) {
+                        setMicEffects((current) => ({ ...current, [name]: enabled }));
+                      }
+                    }}
+                  />
+                  {label}
+                </label>
+              ))}
+            </fieldset>
+          )}
+        </div>
       )}
       {message && <p role="status">{message}</p>}
     </div>

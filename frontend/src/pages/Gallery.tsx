@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { listProjects, type Project } from '../api/projects';
@@ -6,16 +6,86 @@ import { listProjects3D, type Project3D } from '../api/projects3d';
 import { useAuth } from '../auth/useAuth';
 import Project3DCard from '../components/Project3DCard';
 import ProjectCard from '../components/ProjectCard';
+import { formatDate } from '../components/formatDate';
+import { originLabel } from '../components/originLabel';
 import GalleryCreateMenu from './GalleryCreateMenu';
 import {
   listProjectsForOwner,
   openLocalProjectDatabase,
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
+import { ensureLocalThumbnail } from '../storage/localThumbnail';
 import { importLocalPiecePackage } from '../storage/localPiecePackageImport';
 
 type LoadState = 'loading' | 'error' | 'ready';
 type ProjectRendererFilter = 'all' | '2d' | '3d';
+
+function LocalProjectCard({
+  project,
+  onUpdated,
+}: {
+  project: LocalProjectRecord;
+  onUpdated: (project: LocalProjectRecord) => void;
+}) {
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const kind = project.kind === '3d' ? '3D' : project.kind === 'generated' ? 'Generated' : '2D';
+  const origin = originLabel(project.kind === 'generated' ? 'ai_create' : 'manual');
+  const editorPath =
+    project.kind === '3d'
+      ? `/local-projects-3d/${project.id}`
+      : project.kind === 'generated'
+        ? `/local-generated/${project.id}`
+        : `/local-projects/${project.id}`;
+
+  useEffect(() => {
+    let revokedUrl: string | null = null;
+    if (project.thumbnail) {
+      revokedUrl = URL.createObjectURL(project.thumbnail);
+      setThumbnailUrl(revokedUrl);
+    } else {
+      setThumbnailUrl(null);
+      void ensureLocalThumbnail(project).then((updated) => {
+        if (updated?.thumbnail) onUpdated(updated);
+      });
+    }
+    return () => {
+      if (revokedUrl) URL.revokeObjectURL(revokedUrl);
+    };
+  }, [onUpdated, project]);
+
+  return (
+    <article className="project-card" aria-labelledby={`local-project-${project.id}`}>
+      {thumbnailUrl ? (
+        <img
+          src={thumbnailUrl}
+          alt={`Preview of ${project.title}`}
+          className={`project-card-thumbnail${project.kind === '3d' ? ' project-card-thumbnail-3d' : ''}`}
+        />
+      ) : (
+        <div
+          className={`project-card-thumbnail-fallback${project.kind === '3d' ? ' project-card-thumbnail-fallback-3d' : ''}`}
+          role="img"
+          aria-label={`No preview available for ${project.title}`}
+        >
+          No preview available
+        </div>
+      )}
+      <h3 id={`local-project-${project.id}`}>{project.title}</h3>
+      <p className="project-card-description">{project.description || 'No description yet.'}</p>
+      <p>
+        {origin && <span className="origin-badge">{origin}</span>}
+        <span className="visibility-badge">{kind}</span>
+        <span className="visibility-badge">Local only</span>
+      </p>
+      <p>Last updated {formatDate(project.updatedAt)}</p>
+      <p>
+        <Link className="shell-action" to={editorPath}>
+          Open local editor
+        </Link>
+      </p>
+    </article>
+  );
+}
 
 function Gallery() {
   const auth = useAuth();
@@ -32,6 +102,9 @@ function Gallery() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [projectRenderer, setProjectRenderer] = useState<ProjectRendererFilter>('all');
+  const updateLocalProject = useCallback((updated: LocalProjectRecord) => {
+    setLocalProjects((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+  }, []);
 
   async function importPiecePackage(file: File) {
     if (auth.status !== 'signed-in') {
@@ -94,7 +167,12 @@ function Gallery() {
     auth.status === 'signed-in' ? projects3D.filter((p) => p.owner === auth.user.username) : [];
   const filteredProjects = projectRenderer === '3d' ? [] : ownProjects;
   const filteredProjects3D = projectRenderer === '2d' ? [] : ownProjects3D;
-  const filteredLocalProjects = projectRenderer === '3d' ? [] : localProjects;
+  const filteredLocalProjects =
+    projectRenderer === 'all'
+      ? localProjects
+      : localProjects.filter((project) =>
+          projectRenderer === '3d' ? project.kind === '3d' : project.kind !== '3d',
+        );
   const hasProjects =
     ownProjects.length > 0 || ownProjects3D.length > 0 || localProjects.length > 0;
   const hasFilteredProjects =
@@ -177,17 +255,7 @@ function Gallery() {
           ))}
           {filteredLocalProjects.map((project) => (
             <li key={`local-${project.id}`}>
-              <article className="project-card" aria-labelledby={`local-project-${project.id}`}>
-                <div className="project-card-body">
-                  <h3 id={`local-project-${project.id}`}>{project.title}</h3>
-                  <p>
-                    <span className="visibility-badge">Local only</span>
-                  </p>
-                  <Link className="shell-action" to={`/local-projects/${project.id}`}>
-                    Open local editor
-                  </Link>
-                </div>
-              </article>
+              <LocalProjectCard project={project} onUpdated={updateLocalProject} />
             </li>
           ))}
         </ul>

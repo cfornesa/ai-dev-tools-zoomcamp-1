@@ -4,6 +4,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -31,37 +32,24 @@ test.describe('published 3D viewer material warnings', () => {
     page,
   }, testInfo) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/');
-    await page.getByRole('button', { name: 'More creation options' }).click();
-    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-    await page.waitForURL(/\/projects3d\/[^/]+$/);
-    const match = /\/projects3d\/([^/]+)$/.exec(page.url());
-    if (!match) throw new Error(`Could not extract project id from ${page.url()}`);
-    const projectId = match[1];
+    const projectId = await createServerProject3D(page);
 
     // Add default sphere and plane objects. New objects are created with
     // material `{ color: ... }` and no `emissive`, which is the exact
-    // scenario that previously triggered the Three.js warning. Mirrors
-    // manual3dOutlineSelection.spec.ts's proven stage-local sequence
-    // (issues #444/#450 moved authoring behind the piece-controls menu and
-    // the "3D authoring" popover inside the frame's "Preview actions"
-    // toolbar).
+    // scenario that previously triggered the Three.js warning. The editor's
+    // inline Preview actions toolbar exposes the 3D authoring disclosure.
     const toolbar = page
       .getByTestId('scene3d-preview-canvas-frame')
       .getByRole('toolbar', { name: 'Preview actions' });
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
     await toolbar.getByRole('button', { name: '3D authoring' }).click();
     await toolbar.getByRole('button', { name: 'Add sphere' }).click();
     await toolbar.getByRole('button', { name: 'Add plane' }).click();
-    // Persist the scene before publishing. The editor controls (authoring
-    // popover and "Save scene") render inside the open piece-controls menu
-    // overlay, so the save happens while the menu is still open.
-    await toolbar.getByRole('button', { name: 'Save scene' }).click();
+    // Persist the scene before publishing. In the current editor layout,
+    // Save scene lives in the editor header while authoring stays in the
+    // stage-local disclosure.
+    await page.getByRole('button', { name: 'Save scene' }).click();
     await expect(page.getByTestId('project3d-save-status')).toContainText('Saved as version');
-    // Escape (mirroring manual3dOutlineSelection.spec.ts) is what actually
-    // dismisses the menu overlay -- the editor-controls group it leaves
-    // behind otherwise keeps intercepting pointer events over the outline.
-    await page.keyboard.press('Escape');
+    await toolbar.getByRole('button', { name: 'Close 3d authoring' }).click();
 
     // Lift the sphere above the plane so both default-material objects are
     // visibly distinct in the rendered fixture -- at their shared origin
@@ -75,19 +63,8 @@ test.describe('published 3D viewer material warnings', () => {
 
     // Save the repositioned scene so the published version is the one under
     // test.
-    await page.keyboard.press('Escape');
-    await page
-      .getByTestId('scene3d-preview-canvas-frame')
-      .getByRole('toolbar', { name: 'Preview actions' })
-      .getByRole('button', { name: 'Open piece controls menu' })
-      .click();
-    await page
-      .getByTestId('scene3d-preview-canvas-frame')
-      .getByRole('toolbar', { name: 'Preview actions' })
-      .getByRole('button', { name: 'Save scene' })
-      .click();
+    await page.getByRole('button', { name: 'Save scene' }).click();
     await expect(page.getByTestId('project3d-save-status')).toContainText('Saved as version');
-    await page.keyboard.press('Escape');
 
     // Publish the project so the anonymous public route is reachable.
     // Project3DWorkspace renders PublishControl3D non-compact: a plain

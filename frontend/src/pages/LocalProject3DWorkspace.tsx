@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
@@ -13,6 +13,7 @@ import {
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
 import Project3DWorkspace, { type Project3DWorkspaceStorage } from './Project3DWorkspace';
+import LocalPublicTransferControl from './LocalPublicTransferControl';
 import type { Project3D, SceneVersion3D } from '../api/projects3d';
 
 function versionToApi(version: LocalPieceVersionRecord, owner: string): SceneVersion3D {
@@ -49,6 +50,23 @@ export default function LocalProject3DWorkspace() {
   const { id } = useParams<{ id: string }>();
   const auth = useAuth();
   const owner = auth.user?.username;
+  const [localProject, setLocalProject] = useState<LocalProjectRecord | null>(null);
+
+  useEffect(() => {
+    if (!owner || !id) return;
+    let cancelled = false;
+    void openLocalProjectDatabase().then(async (db) => {
+      try {
+        const project = await getProject(db, owner, id);
+        if (!cancelled) setLocalProject(project);
+      } finally {
+        db.close();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, owner]);
 
   const storage = useMemo<Project3DWorkspaceStorage | undefined>(() => {
     if (!owner || !id) return undefined;
@@ -118,5 +136,12 @@ export default function LocalProject3DWorkspace() {
   if (auth.status === 'signed-out') return <Navigate to="/accounts/login/" replace />;
   if (!id || !owner) return <p role="status">Opening local 3D editor…</p>;
   if (!storage) return <p role="alert">This local 3D editor is unavailable.</p>;
-  return <Project3DWorkspace initialProjectId={id} storage={storage} />;
+  return (
+    <>
+      {localProject && (
+        <LocalPublicTransferControl project={localProject} onProjectUpdated={setLocalProject} />
+      )}
+      <Project3DWorkspace initialProjectId={id} storage={storage} />
+    </>
+  );
 }

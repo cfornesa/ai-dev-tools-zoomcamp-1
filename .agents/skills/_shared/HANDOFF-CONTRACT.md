@@ -72,6 +72,19 @@ starts by validating it:
 | 4 | `## QA: PASS` / `## QA: FAIL` comment with a criterion matrix | Stage 5 reads it as evidence, re-checking provenance |
 | 5 | Explicit go / no-go | `session-completion` records it |
 
+Implementation and QA run in a `backlog-session` batch (`docs/process.md`,
+"Canonical batch transaction"), so two further artifacts travel with the
+per-stage artifacts above and every stage reads them:
+
+| Artifact | Built by | Used by |
+| --- | --- | --- |
+| Batch manifest (ordered issues, milestone, wave, dependencies, routing hints) | `task-distillation` / `backlog-session` PM pass | stages 2a/2b, 3, 4 |
+| Batch impact matrix (every changed or deleted shared surface, the open issues in and out of the batch that reference it, collisions, required re-verification) | PM pass; updated by stages 2a/2b | stage 3 (scope of review), stage 4 (batch gate), `session-completion` (audit) |
+
+The stage 4 artifact remains one `## QA` comment per issue; the batch gate
+result and matrix re-verification are recorded in the batch ledger and linked
+from each affected issue.
+
 An incomplete artifact goes back to its stage. It is never repaired silently
 by the receiving stage.
 

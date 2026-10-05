@@ -22,7 +22,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from scenes.models import Project3D, SceneVersion3D, Thumbnail3D
+from scenes.models import Project3D, ProjectActivity, SceneVersion3D, Thumbnail3D
 from scenes.permissions import Action, can
 from scenes.piece_engine import (
     DEFAULT_SCENE3D_ENGINE,
@@ -192,9 +192,24 @@ class Project3DPublishView(APIView):
                 if errors:
                     raise Project3DPublishValidationError(errors)
 
+                was_public = locked_project.visibility == Project3D.Visibility.PUBLIC
                 locked_project.visibility = Project3D.Visibility.PUBLIC
                 locked_project.published_at = timezone.now()
-                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+                # Issue #944: republish restores an unpublished piece within
+                # its retention window -- clear the purge-eligibility clock.
+                locked_project.unpublished_at = None
+                locked_project.save(
+                    update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
+                )
+                if not was_public:
+                    ProjectActivity.objects.create(
+                        project3d=locked_project,
+                        actor=request.user,
+                        action_type=ProjectActivity.ActionType.PUBLISHED,
+                        metadata={
+                            "sequence": locked_project.current_version.sequence,
+                        },
+                    )
         except Project3DPublishValidationError as exc:
             return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Project3D.DoesNotExist as exc:
@@ -216,9 +231,22 @@ class Project3DUnpublishView(APIView):
         try:
             with transaction.atomic():
                 locked_project = Project3D.objects.select_for_update().get(pk=project.pk)
+                was_public = locked_project.visibility == Project3D.Visibility.PUBLIC
                 locked_project.visibility = Project3D.Visibility.PRIVATE
                 locked_project.published_at = None
-                locked_project.save(update_fields=["visibility", "published_at", "updated_at"])
+                # Issue #944: start the unpublish-retention clock; see the
+                # 2D counterpart's comment in scenes/api.py for the contract.
+                locked_project.unpublished_at = timezone.now()
+                locked_project.save(
+                    update_fields=["visibility", "published_at", "unpublished_at", "updated_at"]
+                )
+                if was_public:
+                    ProjectActivity.objects.create(
+                        project3d=locked_project,
+                        actor=request.user,
+                        action_type=ProjectActivity.ActionType.UNPUBLISHED,
+                        metadata={},
+                    )
         except Project3D.DoesNotExist as exc:
             raise Http404 from exc
 
@@ -257,6 +285,10 @@ class SceneVersion3DListCreateView(APIView):
         input_serializer = SceneVersion3DCreateSerializer(data=request.data)
         input_serializer.is_valid(raise_exception=True)
         scene_json = normalize_scene_sonic(input_serializer.validated_data["scene_json"])
+        source_fields = {
+            field_name: input_serializer.validated_data.get(field_name)
+            for field_name in ("html_source", "css_source", "js_source")
+        }
 
         result = validate_scene3d(scene_json)
         if not result.valid:
@@ -286,9 +318,16 @@ class SceneVersion3DListCreateView(APIView):
                     ),
                     created_by=request.user,
                     origin=SceneVersion3D.Origin.MANUAL,
+                    **source_fields,
                 )
                 locked_project.current_version = version
                 locked_project.save(update_fields=["current_version", "updated_at"])
+                ProjectActivity.objects.create(
+                    project3d=locked_project,
+                    actor=request.user,
+                    action_type=ProjectActivity.ActionType.VERSION_SAVED,
+                    metadata={"sequence": version.sequence, "origin": version.origin},
+                )
                 # Issue #243: schedule (as a post-commit follow-up, mirroring
                 # the 2D `maybe_schedule_thumbnail_generation` placement)
                 # generating a thumbnail for the version that just became

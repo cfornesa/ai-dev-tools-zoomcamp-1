@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import PieceStageIcon from '../components/PieceStageIcon';
+import './HandGestureGuideDialog.css';
 
 /**
  * Issue #295: a "Show hand gesture guide" button opening an accessible
@@ -119,7 +121,15 @@ function HandGestureGuideDialogContent({ onClose }: { onClose: () => void }) {
   );
 }
 
-function HandGestureGuideDialog() {
+function HandGestureGuideDialog({
+  disabled = false,
+  disabledReasonId,
+  disabledReason,
+}: {
+  disabled?: boolean;
+  disabledReasonId?: string;
+  disabledReason?: string;
+} = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -130,7 +140,9 @@ function HandGestureGuideDialog() {
         ref={triggerRef}
         className="piece-stage-icon-button"
         aria-label="Show hand gesture guide"
-        title="Show hand gesture guide"
+        aria-describedby={disabled ? disabledReasonId : undefined}
+        title={disabled ? disabledReason : 'Show hand gesture guide'}
+        disabled={disabled}
         onClick={() => setIsOpen(true)}
       >
         <PieceStageIcon name="guide" />
@@ -139,8 +151,19 @@ function HandGestureGuideDialog() {
           Show hand gesture guide
         </span>
       </button>
+      {disabledReasonId && (
+        <span id={disabledReasonId} className="visually-hidden">
+          {disabled ? disabledReason : ''}
+        </span>
+      )}
 
-      {isOpen && <HandGestureGuideDialogContent onClose={() => setIsOpen(false)} />}
+      {isOpen &&
+        createPortal(
+          <div className="hand-gesture-guide-backdrop">
+            <HandGestureGuideDialogContent onClose={() => setIsOpen(false)} />
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

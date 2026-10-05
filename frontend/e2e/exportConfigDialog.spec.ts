@@ -56,7 +56,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
+import { saveScene } from './support/saveScene.js';
+import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -68,8 +69,8 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * defaults closed -- expand them all right after the editor mounts.
  * Nothing here drives `BehaviorCardsPanel`'s target select (issue #116),
  * so there's no mount-order trap to avoid by deferring this. */
-async function createBlankProjectViaUI(page: Page): Promise<string> {
-  const projectId = await createBlankProjectViaUIBase(page);
+async function createServerProject2DWithExpandedSections(page: Page): Promise<string> {
+  const projectId = await createServerProject2DBase(page);
   await expandAllCollapsibleSections(page);
   return projectId;
 }
@@ -111,7 +112,7 @@ async function addShapeAndSave(page: Page): Promise<void> {
   // history of this restructuring.
   await openEditScene(page);
   await page.getByRole('button', { name: 'Add circle' }).click();
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await saveScene(page);
   await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version/);
   await closeEditScene(page);
 }
@@ -137,7 +138,7 @@ test.describe('ExportConfigDialog: real version selection, options, and download
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page); // version 1: an empty canvas
+    await createServerProject2DWithExpandedSections(page); // version 1: an empty canvas
     await addShapeAndSave(page); // version 2: one circle
 
     await fillMetadata(page, {
@@ -192,7 +193,7 @@ test.describe('ExportConfigDialog: real version selection, options, and download
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page);
+    await createServerProject2DWithExpandedSections(page);
     await fillMetadata(page, {
       title: 'Export options wiring fixture',
       description: 'Proves the attribution/ZIP checkboxes reach the real download.',
@@ -226,7 +227,7 @@ test.describe('ExportConfigDialog: real version selection, options, and download
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page); // still-default title/blank description
+    await createServerProject2DWithExpandedSections(page); // still-default title/blank description
 
     await openExportDialog(page);
     await expect(page.getByTestId('export-metadata-errors')).toBeVisible();
@@ -248,7 +249,7 @@ test.describe('ExportConfigDialog: real version selection, options, and download
     context,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
+    const projectId = await createServerProject2DWithExpandedSections(page);
     await fillMetadata(page, {
       title: 'Interaction mode gating fixture',
       description: 'A scene with no camera-driven bindings at all.',

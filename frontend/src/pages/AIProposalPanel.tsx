@@ -80,6 +80,8 @@ type AIProposalPanelProps = {
   seed?: { prompt: string; nonce: number } | null;
   /** Metadata-only local media records; blobs never enter an AI request. */
   mediaAssets?: AITargetMediaAsset[];
+  /** Private project intent, disclosed only in the Agent workflow. */
+  intentNote?: string;
 };
 
 const MODE_LABELS: Record<ProposalMode, string> = {
@@ -106,6 +108,7 @@ function AIProposalPanel({
   onAccepted,
   seed,
   mediaAssets = [],
+  intentNote = '',
 }: AIProposalPanelProps) {
   const {
     mode,
@@ -288,6 +291,8 @@ function AIProposalPanel({
           onAccepted={onAccepted}
           selectableObjects={aiRunSelectableObjects}
           mediaAssets={mediaAssets}
+          intentNote={intentNote}
+          enableDecisionReason
           renderCandidatePreview={(scene) => (
             <AIRunCandidatePreview2D scene={scene as SceneDocument} />
           )}

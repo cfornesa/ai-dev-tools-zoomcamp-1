@@ -82,7 +82,15 @@ function serveDirectory(root: string): Promise<{ url: string; close: () => Promi
       const port = typeof address === 'object' && address ? address.port : 0;
       resolve({
         url: `http://127.0.0.1:${port}/index.html`,
-        close: () => new Promise((closeResolve) => server.close(() => closeResolve())),
+        close: () =>
+          new Promise((closeResolve) => {
+            server.close(() => closeResolve());
+            // Chromium may keep the last immersive page's local bundle
+            // connection alive after the assertions finish. Closing the
+            // server alone can then wait forever, consuming the whole test
+            // timeout during fixture teardown.
+            server.closeAllConnections();
+          }),
       });
     });
   });

@@ -217,6 +217,15 @@ class Command(BaseCommand):
             action="store_true",
             help="Report the owner and planned changes without writing any rows.",
         )
+        parser.add_argument(
+            "--source-id",
+            action="append",
+            dest="source_ids",
+            help=(
+                "Select one reference fixture by source ID; repeat for a bounded import. "
+                "Production invocations must select explicitly."
+            ),
+        )
         parser.add_argument("--json", action="store_true")
 
     def handle(self, *args, **options):
@@ -225,21 +234,22 @@ class Command(BaseCommand):
             raise CommandError(
                 "Production reference imports require the explicit --allow-production opt-in."
             )
+        fixtures = self._selected_fixtures(options["source_ids"], production)
         username = options["username"]
         handle = normalize_public_slug(options["handle"])
         if not handle:
             raise CommandError("--handle must contain a letter or number.")
-        User = get_user_model()
+        User = get_user_model()  # noqa: N806
         if production:
             owner = self._resolve_existing_owner(username, handle, options["email"])
         else:
             username = username or "cfornesa"
             owner = User.objects.filter(username=username).first()
             if not owner and options["dry_run"]:
-                result = self._dry_run_missing_owner(username, handle, options["action"])
+                result = self._dry_run_missing_owner(username, handle, options["action"], fixtures)
                 return self._write_result(result, options["json"])
             if options["dry_run"]:
-                result = self._dry_run(owner, handle, options["action"])
+                result = self._dry_run(owner, handle, options["action"], fixtures)
                 return self._write_result(result, options["json"])
             with transaction.atomic():
                 owner, _ = User.objects.get_or_create(
@@ -255,20 +265,38 @@ class Command(BaseCommand):
                     },
                 )
                 if options["action"] == "cleanup":
-                    result = self._cleanup(owner)
+                    result = self._cleanup(owner, fixtures)
                 else:
-                    result = self._import(owner)
+                    result = self._import(owner, fixtures)
             return self._write_result(result, options["json"])
 
         if options["dry_run"]:
-            result = self._dry_run(owner, handle, options["action"])
+            result = self._dry_run(owner, handle, options["action"], fixtures)
         else:
             with transaction.atomic():
                 if options["action"] == "cleanup":
-                    result = self._cleanup(owner)
+                    result = self._cleanup(owner, fixtures)
                 else:
-                    result = self._import(owner)
+                    result = self._import(owner, fixtures)
         return self._write_result(result, options["json"])
+
+    def _selected_fixtures(
+        self, source_ids: list[str] | None, production: bool
+    ) -> tuple[ReferenceFixture, ...]:
+        requested = source_ids or []
+        if production and not requested:
+            raise CommandError(
+                "Production reference imports require at least one explicit --source-id."
+            )
+        if len(requested) != len(set(requested)):
+            raise CommandError("--source-id values must not be repeated.")
+        fixtures_by_id = {fixture.source_id: fixture for fixture in FIXTURES}
+        unknown = [source_id for source_id in requested if source_id not in fixtures_by_id]
+        if unknown:
+            raise CommandError("Unknown --source-id value(s): " + ", ".join(sorted(unknown)))
+        if not requested:
+            return FIXTURES
+        return tuple(fixtures_by_id[source_id] for source_id in requested)
 
     def _write_result(self, result: dict[str, object], as_json: bool) -> None:
         if as_json:
@@ -292,7 +320,13 @@ class Command(BaseCommand):
             raise CommandError(f"Profile @{handle} does not belong to the requested email.")
         return owner
 
-    def _dry_run_missing_owner(self, username: str, handle: str, action: str) -> dict[str, object]:
+    def _dry_run_missing_owner(
+        self,
+        username: str,
+        handle: str,
+        action: str,
+        fixtures: tuple[ReferenceFixture, ...],
+    ) -> dict[str, object]:
         return {
             "dry_run": True,
             "no_write": True,
@@ -300,14 +334,26 @@ class Command(BaseCommand):
             "owner": username,
             "handle": handle,
             "owner_exists": False,
-            "planned_fixture_count": len(FIXTURES) if action == "import" else 0,
+            "planned_fixture_count": len(fixtures) if action == "import" else 0,
         }
 
-    def _dry_run(self, owner, handle: str, action: str) -> dict[str, object]:
+    def _dry_run(
+        self,
+        owner,
+        handle: str,
+        action: str,
+        fixtures: tuple[ReferenceFixture, ...],
+    ) -> dict[str, object]:
+        selected_source_ids = frozenset(fixture.source_id for fixture in fixtures)
         marked = [
             piece
             for piece in ArtPiece.all_objects.filter(owner=owner)
-            if _is_reference_piece(piece)
+            if (
+                _is_reference_piece(piece)
+                and piece.current_version
+                and piece.current_version.generation_metadata["reference_import"]["source_id"]
+                in selected_source_ids
+            )
         ]
         if action == "cleanup":
             return {
@@ -330,7 +376,7 @@ class Command(BaseCommand):
             if version:
                 source_id = version.generation_metadata["reference_import"]["source_id"]
                 existing_markers.add(source_id)
-                fixture = next(fixture for fixture in FIXTURES if fixture.source_id == source_id)
+                fixture = next(fixture for fixture in fixtures if fixture.source_id == source_id)
                 if version.source != fixture.source or version.capabilities != fixture.capabilities:
                     would_update.append(
                         {
@@ -341,7 +387,7 @@ class Command(BaseCommand):
                             "next_sequence": version.sequence + 1,
                         }
                     )
-        for fixture in FIXTURES:
+        for fixture in fixtures:
             if fixture.source_id in existing_markers:
                 continue
             if fixture.slug in occupied:
@@ -353,17 +399,17 @@ class Command(BaseCommand):
             "owner": owner.username,
             "owner_id": owner.pk,
             "handle": handle,
-            "planned_fixture_count": len(FIXTURES),
+            "planned_fixture_count": len(fixtures),
             "existing_reference_count": len(existing_markers),
-            "would_create": len(FIXTURES) - len(existing_markers),
+            "would_create": len(fixtures) - len(existing_markers),
             "would_update": would_update,
             "slug_conflicts": conflicts,
             "idempotent": True,
         }
 
-    def _import(self, owner) -> dict[str, object]:
+    def _import(self, owner, fixtures: tuple[ReferenceFixture, ...]) -> dict[str, object]:
         rows: list[dict[str, object]] = []
-        for fixture in FIXTURES:
+        for fixture in fixtures:
             marker = _fixture_marker(fixture.source_id)
             existing = next(
                 (
@@ -431,10 +477,16 @@ class Command(BaseCommand):
             )
         return {"import": IMPORT_NAME, "owner": owner.username, "pieces": rows}
 
-    def _cleanup(self, owner) -> dict[str, object]:
+    def _cleanup(self, owner, fixtures: tuple[ReferenceFixture, ...]) -> dict[str, object]:
+        selected_source_ids = frozenset(fixture.source_id for fixture in fixtures)
         pieces = []
         for piece in ArtPiece.all_objects.filter(owner=owner):
-            if _is_reference_piece(piece):
+            if (
+                _is_reference_piece(piece)
+                and piece.current_version
+                and piece.current_version.generation_metadata["reference_import"]["source_id"]
+                in selected_source_ids
+            ):
                 pieces.append(piece)
         for piece in pieces:
             piece.current_version = None

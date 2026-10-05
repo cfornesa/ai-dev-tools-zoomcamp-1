@@ -27,6 +27,11 @@ export const SPATIAL_LIBRARIES = new Set<ArtPieceLibrary>([
   'aframe',
 ]);
 
+/** Visitor drawing needs a phone stage tall enough to interact with. */
+export function supportsVisitorDrawing(library: ArtPieceLibrary): boolean {
+  return library === 'c2js-interactive';
+}
+
 export const CAPABILITY_OPTIONS: Array<{
   key: keyof ArtPieceCapabilitySet;
   label: string;

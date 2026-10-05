@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { localProjectDb } from './support/localProjectDb.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const VIEWPORTS = [
@@ -10,37 +11,15 @@ const VIEWPORTS = [
 const PROJECT_ID = '3c1f43b0-6d75-4f51-9a88-53bbd0f0a545';
 
 async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
-  await page.evaluate(
-    async ({ ownerId, projectId }) => {
-      const repository = (await new Function(
-        'return import("/src/storage/localProjectRepository.ts")',
-      )()) as {
-        openLocalProjectDatabase(): Promise<IDBDatabase>;
-        ensureProject(
-          db: IDBDatabase,
-          input: { id: string; ownerId: string; title: string },
-        ): Promise<unknown>;
-        createScene(
-          db: IDBDatabase,
-          ownerId: string,
-          input: { projectId: string; name: string; sceneJson: Record<string, unknown> },
-        ): Promise<unknown>;
-      };
-      const db = await repository.openLocalProjectDatabase();
-      await repository.ensureProject(db, {
-        id: projectId,
-        ownerId,
-        title: 'Ownership Recovery Fixture',
-      });
-      await repository.createScene(db, ownerId, {
-        projectId,
-        name: 'Initial scene',
-        sceneJson: { shapes: [] },
-      });
-      db.close();
+  await localProjectDb(page, {
+    kind: 'seed',
+    input: {
+      ownerId,
+      projectId: PROJECT_ID,
+      title: 'Ownership Recovery Fixture',
+      scene: { name: 'Initial scene', sceneJson: { shapes: [] } },
     },
-    { ownerId, projectId: PROJECT_ID },
-  );
+  });
 }
 
 test.describe('Offline mutation ownership recovery (#545)', () => {
@@ -65,31 +44,23 @@ test.describe('Offline mutation ownership recovery (#545)', () => {
       await page.getByRole('button', { name: 'Save local changes' }).click();
       await expect(page.getByText('Saved local scene changes to this browser.')).toBeVisible();
       expect(
-        await page.evaluate(async () => {
-          const db = await new Promise<IDBDatabase>((resolve, reject) => {
-            const request = indexedDB.open('creatrart-local-projects', 4);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-          const rows = await new Promise<Array<{ projectId: string; sessionGeneration?: string }>>(
-            (resolve, reject) => {
-              const request = db
-                .transaction('mutationOutbox', 'readonly')
-                .objectStore('mutationOutbox')
-                .getAll();
-              request.onsuccess = () => resolve(request.result);
-              request.onerror = () => reject(request.error);
-            },
-          );
-          db.close();
-          return rows.find((row) => row.projectId === '3c1f43b0-6d75-4f51-9a88-53bbd0f0a545')
-            ?.sessionGeneration;
-        }),
+        (
+          await localProjectDb<Array<{ projectId: string; sessionGeneration?: string }>>(page, {
+            kind: 'read-outbox',
+            projectId: PROJECT_ID,
+          })
+        ).find((row) => row.projectId === PROJECT_ID)?.sessionGeneration,
       ).toMatch(/.+/);
 
       const mobileMenu = page.getByRole('button', { name: 'Open menu' });
       if (await mobileMenu.isVisible()) await mobileMenu.click();
-      await page.getByRole('button', { name: 'Logout' }).click();
+      // Wait for allauth's logout redirect to finish before loginViaUI starts a
+      // second navigation. Without this boundary, the next /accounts/login/
+      // request can race the logout response and carry the old session cookie.
+      await Promise.all([
+        page.waitForURL((url) => url.pathname === '/', { waitUntil: 'load' }),
+        page.getByRole('button', { name: 'Logout' }).click(),
+      ]);
       await loginViaUI(page, fixtures.other.email, fixtures.password);
       await page.goto(`/local-projects/${PROJECT_ID}`);
       await expect(page.getByRole('heading', { name: 'Local project unavailable' })).toBeVisible();

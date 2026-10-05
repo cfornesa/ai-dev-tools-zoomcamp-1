@@ -28,12 +28,12 @@ from scenes.theme import (
 )
 
 
-class RevisionConflict(Exception):
+class RevisionConflict(Exception):  # noqa: N818
     """Raised when the caller's `expected_revision` no longer matches the
     stored row -- someone else changed it first."""
 
 
-class ValidationFailed(Exception):
+class ValidationFailed(Exception):  # noqa: N818
     """Raised for any invalid field value or unknown key. The whole update
     is rejected; nothing is partially applied."""
 
@@ -138,7 +138,7 @@ def get_site_settings() -> SiteSettingsView:
 
 
 @transaction.atomic
-def update_site_settings(
+def update_site_settings(  # noqa: C901
     *,
     actor,
     expected_revision: int,
@@ -267,7 +267,7 @@ def list_plans() -> list[PlanView]:
 
 
 @transaction.atomic
-def update_plan(
+def update_plan(  # noqa: C901
     *,
     actor,
     plan_key: str,

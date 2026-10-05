@@ -11,6 +11,7 @@ import type { PublicProject3D } from '../api/projects3d';
 import type { ArtPiece } from '../api/artPieces';
 import ImmersiveArtPieceViewer from './ImmersiveArtPieceViewer';
 import ImmersiveProject3DViewer from './ImmersiveProject3DViewer';
+import PublicProjectViewer from './PublicProjectViewer';
 
 export default function CanonicalImmersiveStructuredPiece() {
   const { handle = '', pieceSlug = '' } = useParams<{ handle: string; pieceSlug: string }>();
@@ -52,6 +53,18 @@ export default function CanonicalImmersiveStructuredPiece() {
         canonicalHref={`/users/@${cleanHandle}/immersive/${pieceSlug}`}
         regularHref={`/users/@${cleanHandle}/pieces/${pieceSlug}`}
         editHref={resolved.edit_url}
+      />
+    );
+  }
+  if (resolved.type === '2d') {
+    return (
+      <PublicProjectViewer
+        initialProject={resolved.piece as import('../api/projects').PublicProject}
+        toolbarMode="inline"
+        authorDisplayName={profile?.display_name}
+        authorHandle={profile?.handle}
+        canonicalRoute
+        regularHref={`/users/@${cleanHandle}/pieces/${pieceSlug}`}
       />
     );
   }

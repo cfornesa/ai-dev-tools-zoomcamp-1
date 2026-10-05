@@ -45,15 +45,14 @@ test.describe('Generated 3D manual editing tools (#668)', () => {
       await expect(
         page.getByRole('heading', { name: `Edit Manual ${engine} fixture` }),
       ).toBeVisible();
+      await page.getByRole('button', { name: 'Toggle transform inspector' }).click();
       await expect(page.getByTestId('art-piece-editor-3d-manual-tools')).toBeVisible();
-      await expect(page.getByTestId('art-piece-editor-add-box')).toBeVisible();
-      await expect(page.getByTestId('art-piece-editor-add-sphere')).toBeVisible();
-      await expect(page.getByTestId('art-piece-editor-add-plane')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Add box' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Add sphere' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Add plane' })).toBeVisible();
 
       await page
-        .getByTestId(
-          engine === 'threejs' ? 'art-piece-editor-add-box' : 'art-piece-editor-add-sphere',
-        )
+        .getByRole('button', { name: engine === 'threejs' ? 'Add box' : 'Add sphere' })
         .click();
       await expect(page.getByTestId('art-piece-editor-code-panel')).toContainText(
         'AUGMENTRART_EDITABLE_START',

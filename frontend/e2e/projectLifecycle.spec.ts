@@ -56,7 +56,9 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 
 import { apiDelete, apiGet, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI as createBlankProjectViaUIBase } from './support/createProject.js';
+import { saveScene } from './support/saveScene.js';
+import { createServerProject2D as createServerProject2DBase } from './support/createProject.js';
+import { localProjectDb } from './support/localProjectDb.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { closeEditScene, openEditScene } from './support/openEditScene.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
@@ -79,8 +81,8 @@ type Fixtures = Extract<E2EState, { available: true }>;
  * overlay left open over the Preview panel. Callers that do add/save a
  * shape call `openEditScene`/`closeEditScene` themselves around that
  * block; see `openEditScene.ts`. */
-async function createBlankProjectViaUI(page: Page): Promise<string> {
-  const projectId = await createBlankProjectViaUIBase(page);
+async function createServerProject2DWithExpandedSections(page: Page): Promise<string> {
+  const projectId = await createServerProject2DBase(page);
   await expandAllCollapsibleSections(page);
   return projectId;
 }
@@ -134,7 +136,7 @@ test.describe('Project lifecycle', () => {
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
-      await createBlankProjectViaUI(page);
+      await createServerProject2DWithExpandedSections(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 1/);
 
       // Add one shape (a blank-canvas project starts with none — see
@@ -153,7 +155,7 @@ test.describe('Project lifecycle', () => {
 
       await expect(page.getByTestId('editor-save-status')).toHaveText('Unsaved changes');
 
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
       await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version 2/);
 
@@ -186,7 +188,7 @@ test.describe('Project lifecycle', () => {
         // user after the desktop iteration.
         await page.context().clearCookies();
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
-        await createBlankProjectViaUI(page);
+        await createServerProject2DWithExpandedSections(page);
         await openEditScene(page);
         await page.getByRole('button', { name: 'Add circle' }).click();
 
@@ -238,39 +240,49 @@ test.describe('Project lifecycle', () => {
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
       // "Hand follower" (scenes/fixtures/templates/hand_follower.json) has
-      // exactly one shape at positionX=400 — a stable, known baseline.
+      // exactly one shape at transform.x=400 — a stable, known baseline.
       await page.goto('/templates');
       await page
         .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
         .click();
-      await page.waitForURL(/\/projects\/[^/]+$/);
-      await expandAllCollapsibleSections(page);
+      await page.waitForURL(/\/local-projects\/[^/]+$/);
+      const firstProjectId = new URL(page.url()).pathname.split('/').at(-1)!;
+      await expect(page.getByRole('region', { name: 'Local project editor' })).toBeVisible();
+      const firstScenes = await localProjectDb<
+        Array<{ id: string; name: string; sceneJson: Record<string, unknown> }>
+      >(page, { kind: 'read-scenes', projectId: firstProjectId });
+      expect(firstScenes).toHaveLength(1);
+      const firstShapes = firstScenes[0]!.sceneJson.shapes as Array<{
+        transform: { x: number };
+      }>;
+      expect(firstShapes[0]!.transform.x).toBe(400);
 
-      await shapeListItem(page).first().click();
-      const clonePositionX = page.locator('#shape-style-positionX');
-      await expect(clonePositionX).toHaveValue('400');
-
-      // Edit and save this clone — this must never reach back into the
-      // shared Template row (TemplateCloneView deep-copies scene_json on
-      // clone with no mutable link back — scenes/api.py).
-      await clonePositionX.fill('777');
-      await clonePositionX.blur();
-      await openEditScene(page);
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
-      await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
+      // The local editor supports scene-name edits. Saving this clone must
+      // leave the template and a later clone at their original baseline.
+      await page.getByLabel('Scene name').fill('First clone only');
+      await page.getByRole('button', { name: 'Save local changes' }).click();
+      await expect(page.getByText('Saved local scene changes to this browser.')).toBeVisible();
 
       // Clone the same template again. If the first clone's edit had
-      // somehow touched the shared template, this second, independent
-      // clone would start from 777 instead of the template's own baseline.
+      // somehow touched the shared template, this second clone would carry
+      // the first clone's local scene name instead of its own baseline.
       await page.goto('/templates');
       await page
         .getByRole('button', { name: 'Use the "Hand follower" template to create a new project' })
         .click();
-      await page.waitForURL(/\/projects\/[^/]+$/);
-      await expandAllCollapsibleSections(page);
-
-      await shapeListItem(page).first().click();
-      await expect(page.locator('#shape-style-positionX')).toHaveValue('400');
+      await page.waitForURL(/\/local-projects\/[^/]+$/);
+      const secondProjectId = new URL(page.url()).pathname.split('/').at(-1)!;
+      expect(secondProjectId).not.toBe(firstProjectId);
+      await expect(page.getByLabel('Scene name')).toHaveValue('Scene 1');
+      const secondScenes = await localProjectDb<
+        Array<{ id: string; name: string; sceneJson: Record<string, unknown> }>
+      >(page, { kind: 'read-scenes', projectId: secondProjectId });
+      expect(secondScenes).toHaveLength(1);
+      expect(secondScenes[0]!.id).not.toBe(firstScenes[0]!.id);
+      const secondShapes = secondScenes[0]!.sceneJson.shapes as Array<{
+        transform: { x: number };
+      }>;
+      expect(secondShapes[0]!.transform.x).toBe(400);
 
       await context.close();
     });
@@ -280,7 +292,7 @@ test.describe('Project lifecycle', () => {
     page,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlankProjectViaUI(page); // version 1
+    await createServerProject2DWithExpandedSections(page); // version 1
 
     async function addShapeAndSave() {
       await openEditScene(page);
@@ -288,7 +300,7 @@ test.describe('Project lifecycle', () => {
       // SaveControl.tsx (issue #95 follow-up) is a single-click Save with
       // no change-label field by design -- every version created here
       // shows up in history unlabeled, same as any other explicit Save.
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('working-state-status')).toHaveText(/Saved as version/);
     }
 
@@ -339,7 +351,7 @@ test.describe('Project lifecycle', () => {
     browser,
   }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const projectId = await createBlankProjectViaUI(page);
+    const projectId = await createServerProject2DWithExpandedSections(page);
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Untitled animation');
 
     // Owner succeeds, from a completely independent context too (proves
@@ -464,7 +476,7 @@ test.describe('Project lifecycle', () => {
     await loginViaUI(pageA, fixtures.owner.email, fixtures.password);
     await loginViaUI(pageB, fixtures.owner.email, fixtures.password);
 
-    const projectId = await createBlankProjectViaUI(pageA); // version 1
+    const projectId = await createServerProject2DWithExpandedSections(pageA); // version 1
     await pageB.goto(`/projects/${projectId}`);
 
     // version 1's primary key is a global auto-increment shared across every

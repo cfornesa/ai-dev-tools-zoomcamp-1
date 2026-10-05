@@ -36,6 +36,74 @@ V1 deliberately prioritizes individual ownership, reliable provenance, public sh
 - Custom-trained gesture models.
 - General-purpose visual programming, loops, recursion, or unbounded graph execution.
 
+## Scope reconciliation (2026-09-27)
+
+This V1 Plan describes the product as it stood at initial scoping. The
+shipped codebase has grown to include roughly a dozen major domains this
+document never mentioned, which had let issues/tasks and this plan drift
+out of sync with each other. This section reconciles that gap: it records
+what's shipped, and separates what's confirmed as intended scope from what
+still needs an explicit owner decision, per the standing rule that no
+change (including a documentation correction) proceeds past an ambiguous
+scope question by assumption. Nothing below the "Needs owner decision"
+subheading changes anything about how those features currently behave —
+it only flags that the *decision to keep them in scope* was never recorded.
+
+### Confirmed shipped domains (owner-affirmed 2026-09-27, being added to scope)
+
+- **3D scenes** (Three.js/A-Frame authoring, preview, and immersive/embed
+  viewers — `backend/scenes/api3d.py`/`validation3d.py`,
+  `frontend/src/pages/Project3DWorkspace.tsx`/`Scene3DPreview.tsx`,
+  `schema/scene3d.schema.json`) — a parallel scene domain to the 2D
+  canonical scene, following the same immutable-version/validate-before-save
+  discipline.
+- **Ink / drawing planes** (`frontend/src/ink/`,
+  `backend/scenes/ink_document.py`) — freehand drawing layered onto scenes.
+- **Live audio / microphone and ambient audio samples**
+  (`frontend/src/audio/`, `backend/scenes/sonic_contract.py`) — confirmed in
+  an earlier turn of this same reconciliation; extends the gesture-binding
+  system to sound signals and owner-uploaded ambient loops.
+- **Admin CMS** (`admin_content.py`, `admin_pages.py`, `admin_settings.py`)
+  — owner/operator-facing site content and settings management, additive
+  to the creator-facing product and not in tension with any V1 exclusion.
+- **Collections** (`collections.py`, `CollectionManagement.tsx`) — grouping
+  published pieces for gallery organization; an extension of "Public
+  viewing," not a new sharing model.
+- **Generated-art piece sandbox** (`art_piece_*.py`,
+  `frontend/src/generative/`) — a second AI-assisted creative pipeline
+  (generated/refined art pieces, distinct from the gesture-scene editor)
+  that follows the same "AI proposes, owner accepts a new version" pattern
+  as the core AI-assisted workflow below.
+- **Cloud backup, local-first sync, and account data lifecycle**
+  (`cloud_backup*.py`, `sync_mutation_api.py`, `account_export*.py`,
+  `account_deletion*.py`, `frontend/src/storage/localProjectRepository.ts`)
+  — durability/portability infrastructure consistent with "make each saved
+  creative change recoverable"; the local-first storage piece already has
+  its own contract doc (see "Local-first storage and transfer contract
+  (#928)" below).
+
+### Needs owner decision (flagged, not resolved here)
+
+- **Billing / PayPal / subscription plans and entitlements**
+  (`billing.py`, `billing_api.py`, `paypal_adapter.py`, `entitlements.py`,
+  models `Plan`/`Subscription`/`BillingCheckout`/`BillingEvent`) — this is a
+  business-model-level addition (paid plans gating entitlements) that the
+  original product goals never mention and that's a different kind of
+  decision than a creative feature. Recommend the owner explicitly confirm
+  this is intended V1 scope (and, if so, add a "Monetization" section here
+  describing plan tiers and what they gate) before any further billing work
+  is scoped as new issues.
+- **ZIP/bundled export** (issues reference "generated-piece ZIP,"
+  "structured 3D ZIP," ambient-sample ZIP exports; memory topics
+  `generated-zip-export-parity-gaps.md`,
+  `downloaded-3d-pieces-parity-gaps.md`) — this appears to **directly
+  contradict** the "Explicit V1 exclusions" list above: "Fully
+  offline/bundled HTML or ZIP dependency packaging." Either the exclusion is
+  stale and should be removed/narrowed now that ZIP export is real shipped
+  behavior, or ZIP export shipped without the exclusion being revisited.
+  Recommend the owner confirm which is true; until then this plan's
+  exclusion list is left unedited rather than silently removed.
+
 ## Core technical direction
 
 ### Application architecture

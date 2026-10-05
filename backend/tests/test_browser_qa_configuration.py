@@ -15,6 +15,7 @@ def test_browser_qa_owns_disposable_stack_and_identity_probes():
     assert '"status"[[:space:]]*:[[:space:]]*"ok"' in script
     assert "whoami_status" in script
     assert 'E2E_ENV_FILE="$ENV_FILE"' in script
+    assert "export E2E_FIXTURE_ENVIRONMENT=disposable-local" in script
     assert 'for candidate in {5000..5099}' in script
     assert "npx playwright test e2e/layersPanel.spec.ts" in script
     assert 'E2E_SPEC="${BROWSER_QA_E2E_SPEC:-}"' in script
@@ -41,8 +42,14 @@ def test_vite_proxy_allows_browser_qa_to_avoid_an_occupied_backend_port():
 def test_playwright_fixture_hooks_accept_the_disposable_environment_file():
     for name in ("global-setup.ts", "global-teardown.ts"):
         hook = (ROOT / "frontend" / "e2e" / "support" / name).read_text()
-        assert "process.env.E2E_ENV_FILE" in hook
-        assert "['--env-file', configuredEnvFile]" in hook
+        assert "runFixtureCommand" in hook
+        assert "configuredEnvFile" not in hook
+
+    resolver = (ROOT / "frontend" / "e2e" / "support" / "fixtureCommand.ts").read_text()
+    assert "process.env.E2E_ENV_FILE" in resolver
+    assert "process.env.E2E_FIXTURE_ENVIRONMENT" in resolver
+    assert "['run', '--env-file', target.envFile" in resolver
+    assert "backend/.env is never selected implicitly" in resolver
 
 
 def test_playwright_disclosure_helper_handles_nested_closed_panels():
@@ -75,5 +82,27 @@ def test_ci_runs_the_full_browser_acceptance_suite_and_uploads_diagnostics():
 
     assert "e2e-browser:" in workflow
     assert "name: Browser acceptance E2E" in workflow
-    assert "run: npm run test:e2e" in workflow
-    assert "browser-e2e-diagnostics" in workflow
+
+    full_suite = workflow.split("      - name: Run full browser acceptance suite\n", 1)[1]
+    full_suite = full_suite.split("\n      - name:", 1)[0]
+    assert "github.event_name == 'workflow_dispatch'" in full_suite
+    assert "github.event_name == 'schedule'" in full_suite
+    assert "PLAYWRIGHT_JSON_OUTPUT_NAME: test-results/results.json" in full_suite
+    assert "npm run test:e2e -- --shard=${{ matrix.shard }}/16 --reporter=list,json" in full_suite
+    assert 'echo "playwright_exit=$playwright_exit" >> "$GITHUB_OUTPUT"' in full_suite
+
+    ratchet = workflow.split(
+        "      - name: Apply known-failure ratchet and write job summary\n", 1
+    )[1]
+    ratchet = ratchet.split("\n      - name:", 1)[0]
+    assert "github.event_name == 'workflow_dispatch'" in ratchet
+    assert "github.event_name == 'schedule'" in ratchet
+    assert "node scripts/e2e-ratchet.mjs" in ratchet
+    assert "--report test-results/results.json" in ratchet
+    assert "--baseline e2e/known-failures.json" in ratchet
+    assert '--playwright-exit-code "$PLAYWRIGHT_EXIT_CODE"' in ratchet
+
+    diagnostics = workflow.split("      - name: Upload browser diagnostics\n", 1)[1]
+    diagnostics = diagnostics.split("\n      - name:", 1)[0]
+    assert "if: ${{ failure() }}" in diagnostics
+    assert "name: browser-e2e-diagnostics" in diagnostics

@@ -34,28 +34,28 @@ class CloudBackupError(Exception):
     code = "cloud_backup_error"
 
 
-class CloudBackupDisabled(CloudBackupError):
+class CloudBackupDisabled(CloudBackupError):  # noqa: N818
     code = "cloud_sync_disabled"
 
 
-class CloudBackupReadOnly(CloudBackupError):
+class CloudBackupReadOnly(CloudBackupError):  # noqa: N818
     code = "cloud_backup_read_only"
 
 
-class CloudBackupPaused(CloudBackupError):
+class CloudBackupPaused(CloudBackupError):  # noqa: N818
     code = "cloud_backup_paused"
 
 
-class CloudBackupConflict(CloudBackupError):
+class CloudBackupConflict(CloudBackupError):  # noqa: N818
     code = "cloud_backup_conflict"
 
 
-class CloudBackupQuotaExceeded(CloudBackupError):
+class CloudBackupQuotaExceeded(CloudBackupError):  # noqa: N818
     status_code = 413
     code = "cloud_backup_quota_exceeded"
 
 
-class CloudBackupChecksumMismatch(CloudBackupError):
+class CloudBackupChecksumMismatch(CloudBackupError):  # noqa: N818
     code = "checksum_mismatch"
 
 
@@ -141,7 +141,7 @@ def _trim_to_latest_snapshot(backup: CloudBackupProject, latest: CloudBackupMani
     backup.blobs.exclude(asset_id__in=referenced_asset_ids).delete()
 
 
-def _validate_manifest(project: Project, manifest: dict) -> None:
+def _validate_manifest(project: Project, manifest: dict) -> None:  # noqa: C901
     """Require the stable identity/checksum shape used by the sync protocol."""
     if manifest.get("project_id") != str(project.public_id):
         raise CloudBackupConflict("The manifest project_id does not match the project.")
@@ -351,7 +351,7 @@ def _ranges_cover(ranges: list[dict[str, int]], byte_length: int) -> bool:
 
 
 @transaction.atomic
-def put_blob_chunk(
+def put_blob_chunk(  # noqa: C901
     user,
     project: Project,
     asset_id: uuid.UUID,

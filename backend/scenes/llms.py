@@ -50,25 +50,37 @@ def _line(title: object, url: str, description: object = "") -> str:
     return f"- [{safe_title}]({url})" + (f": {safe_description}" if safe_description else "")
 
 
-def _published_records() -> list[str]:
-    lines: list[str] = []
-    for page in Page.objects.filter(status=Page.Status.PUBLISHED).order_by(
-        "sort_order", "title", "id"
-    )[:MAX_ITEMS]:
-        description = _seo_description(page.seo_config) or page.description
-        lines.append(_line(page.title, f"/pages/{page.slug}", description))
+def published_cms_pages():
+    """Published, non-deleted CMS pages shared with crawler indexes."""
+    return Page.objects.filter(status=Page.Status.PUBLISHED).order_by("sort_order", "title", "id")
 
-    profiles = (
+
+def public_profiles():
+    """Active profiles with public handles shared with crawler indexes."""
+    return (
         PublicProfile.objects.filter(is_public=True, user__is_active=True, handle__isnull=False)
         .select_related("user", "style")
-        .order_by("handle", "id")[:MAX_ITEMS]
+        .order_by("handle", "id")
     )
+
+
+def _absolute_url(path: str, request=None) -> str:
+    return request.build_absolute_uri(path) if request is not None else path
+
+
+def _published_records(request=None) -> list[str]:
+    lines: list[str] = []
+    for page in published_cms_pages()[:MAX_ITEMS]:
+        description = _seo_description(page.seo_config) or page.description
+        lines.append(_line(page.title, _absolute_url(f"/pages/{page.slug}", request), description))
+
+    profiles = public_profiles()[:MAX_ITEMS]
     handles = {profile.user_id: profile.handle for profile in profiles}
     for profile in profiles:
         lines.append(
             _line(
                 profile.display_name or profile.handle,
-                f"/users/@{profile.handle}",
+                _absolute_url(f"/users/@{profile.handle}", request),
                 profile.bio,
             )
         )
@@ -78,7 +90,7 @@ def _published_records() -> list[str]:
         lines.append(
             _line(
                 collection.title,
-                f"/users/@{profile.handle}/collections/{collection.slug}",
+                _absolute_url(f"/users/@{profile.handle}/collections/{collection.slug}", request),
                 _seo_description(collection.seo_config) or collection.description,
             )
         )
@@ -89,37 +101,49 @@ def _published_records() -> list[str]:
             lines.append(
                 _line(
                     project.title,
-                    f"/users/@{handle}/pieces/{project.public_slug}",
+                    _absolute_url(f"/users/@{handle}/pieces/{project.public_slug}", request),
                     project.description,
                 )
             )
     for project3d in eligible_projects3d()[:MAX_ITEMS]:
         handle = handles.get(project3d.owner_id)
         if handle:
-            lines.append(_line(project3d.title, f"/users/@{handle}/pieces/{project3d.public_slug}"))
+            lines.append(
+                _line(
+                    project3d.title,
+                    _absolute_url(f"/users/@{handle}/pieces/{project3d.public_slug}", request),
+                )
+            )
     for piece in eligible_art_pieces().select_related("owner", "owner__public_profile")[:MAX_ITEMS]:
         handle = handles.get(piece.owner_id)
         if handle:
             lines.append(
                 _line(
                     piece.title,
-                    f"/users/@{handle}/pieces/{piece.public_slug}",
+                    _absolute_url(f"/users/@{handle}/pieces/{piece.public_slug}", request),
                     _seo_description(piece.seo_config) or piece.description,
                 )
             )
     return sorted(lines, key=str.casefold)
 
 
-def render_llms(*, full: bool) -> str:
+def render_llms(*, full: bool, request=None) -> str:
     title, description, tags = _site_metadata()
     lines = [f"# {title}"]
     if description:
         lines.append(f"> {description}")
     if tags:
         lines.extend(["", f"Topics: {', '.join(tags)}"])
-    lines.extend(["", "## Public entry points", "", _line("Public gallery", "/gallery")])
+    lines.extend(
+        [
+            "",
+            "## Public entry points",
+            "",
+            _line("Public gallery", _absolute_url("/gallery", request)),
+        ]
+    )
     if full:
-        records = _published_records()
+        records = _published_records(request)
         if records:
             lines.extend(["", "## Published site structure and content", "", *records])
     else:
@@ -128,7 +152,8 @@ def render_llms(*, full: bool) -> str:
                 "",
                 "## About this document",
                 "",
-                "This concise index describes the published public site. See /llms-full.txt "
+                "This concise index describes the published public site. See "
+                f"{_absolute_url('/llms-full.txt', request)} "
                 "for the expanded inventory.",
             ]
         )
@@ -140,7 +165,9 @@ class LLMSTextView(APIView):
     permission_classes: list = []
 
     def get(self, request):
-        return HttpResponse(render_llms(full=False), content_type="text/plain; charset=utf-8")
+        return HttpResponse(
+            render_llms(full=False, request=request), content_type="text/plain; charset=utf-8"
+        )
 
 
 class LLMSFullTextView(APIView):
@@ -148,4 +175,6 @@ class LLMSFullTextView(APIView):
     permission_classes: list = []
 
     def get(self, request):
-        return HttpResponse(render_llms(full=True), content_type="text/plain; charset=utf-8")
+        return HttpResponse(
+            render_llms(full=True, request=request), content_type="text/plain; charset=utf-8"
+        )

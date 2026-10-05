@@ -77,9 +77,9 @@ describe('PlaneSelectionOverlay (#782)', () => {
     expect(screen.queryByTestId('plane-precise-panel')).toBeNull();
   });
 
-  it('docks the toolbar to the bottom on a phone-width stage', () => {
+  it('places the toolbar in the outer rail on a phone-width stage', () => {
     setup(340);
-    expect(screen.getByTestId('plane-selection-toolbar')).toHaveAttribute('data-dock', 'bottom');
+    expect(screen.getByTestId('plane-selection-toolbar')).toHaveAttribute('data-dock', 'rail');
   });
 
   it('toolbar actions commit rotation presets, flip, and animation, one edit each', async () => {

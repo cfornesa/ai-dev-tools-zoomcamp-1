@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import { forkProject, getPublicProject, type PublicProject } from '../api/projects';
+import RelatedPublicProjects from './RelatedPublicProjects';
 import { formatPublicAttribution } from '../presentation/publicAttribution';
 import { useAuth } from '../auth/useAuth';
 import CameraControl, { type CameraStatus } from '../components/CameraControl';
@@ -125,12 +126,18 @@ function PublicProjectViewer({
   authorDisplayName,
   authorHandle,
   canonicalRoute = false,
+  showRelatedProjects = false,
+  regularHref,
 }: {
   initialProject?: PublicProject;
   toolbarMode?: 'menu' | 'inline';
   authorDisplayName?: string;
   authorHandle?: string | null;
   canonicalRoute?: boolean;
+  /** #1142 recommendations belong to the regular canonical 2D page only. */
+  showRelatedProjects?: boolean;
+  /** #976: regular canonical view for the chrome-less immersive surface. */
+  regularHref?: string;
 } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = routeId ?? initialProject?.id;
@@ -544,6 +551,11 @@ function PublicProjectViewer({
               authorHandle || project.owner_handle,
             )}
           </p>
+          {regularHref && (
+            <p>
+              <Link to={regularHref}>Back to regular view</Link>
+            </p>
+          )}
 
           {provenance &&
             (provenance.source_public_id && provenance.source_viewer_url ? (
@@ -819,6 +831,9 @@ function PublicProjectViewer({
             ))}
           </ul>
         </aside>
+      )}
+      {showRelatedProjects && isCanonicalRoute && !isEmbedRoute && (
+        <RelatedPublicProjects projectId={project.id} ready={loadState === 'ready'} />
       )}
     </div>
   );

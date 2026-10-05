@@ -7,8 +7,8 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiGet, apiPatch, apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
-import { createBlank3DProjectViaUI } from './support/createProject3d.js';
+import { createServerProject2D } from './support/createProject.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { expandAllCollapsibleSections } from './support/expandCollapsibleSections.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
@@ -27,7 +27,7 @@ test.describe('independent piece slug (#750)', () => {
   }, testInfo) => {
     test.setTimeout(120_000);
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    const id = await createBlankProjectViaUI(page);
+    const id = await createServerProject2D(page);
     const oldSlug = new URL(page.url()).pathname.split('/').pop()!;
 
     // Renaming the title leaves the slug alone.
@@ -62,7 +62,7 @@ test.describe('independent piece slug (#750)', () => {
     ).toBeVisible();
 
     // A slug already in use is refused with a readable message.
-    const other = await createBlankProjectViaUI(page);
+    const other = await createServerProject2D(page);
     const taken = (await (await apiGet(context, `/api/projects/${id}/`)).json()) as {
       public_slug: string;
     };
@@ -80,9 +80,12 @@ test.describe('independent piece slug (#750)', () => {
     test.setTimeout(120_000);
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
-    // 3D, through the "Web address" disclosure.
-    const id3d = await createBlank3DProjectViaUI(page);
-    await page.locator('summary', { hasText: 'Web address' }).click();
+    // 3D, through the current Web address settings button.
+    const id3d = await createServerProject3D(page);
+    await page
+      .getByRole('region', { name: 'Project settings' })
+      .getByRole('button', { name: 'Web address' })
+      .click();
     const slug3d = `three-d-${Date.now().toString(36)}`;
     await editSlug(page, slug3d);
     await page.waitForURL(new RegExp(`/users/@[^/]+/edit/${slug3d}$`));
@@ -116,6 +119,7 @@ test.describe('independent piece slug (#750)', () => {
     const piece = (await created.json()) as { public_slug: string };
     await page.goto(`/users/@${profile.handle}/edit/${piece.public_slug}`);
     const genSlug = `gen-new-${Date.now().toString(36)}`;
+    await page.getByRole('button', { name: 'Toggle description panel' }).click();
     await expect(page.getByTestId('piece-slug-field')).toBeVisible();
     await editSlug(page, genSlug);
     await page.waitForURL(new RegExp(`/users/@[^/]+/edit/${genSlug}$`));

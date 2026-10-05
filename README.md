@@ -177,6 +177,23 @@ A Playwright end-to-end suite covers the full project lifecycle,
 interaction runtime, and AI/draft-recovery flows against a real
 Postgres-backed stack. See AGENTS.md's "End-to-end tests (Playwright)"
 section for the full setup sequence and `make e2e` to run it.
+Fixture commands fail closed unless their target is explicit. For an isolated
+local environment file whose database name identifies a test/E2E database:
+
+```bash
+E2E_FIXTURE_ENVIRONMENT=disposable-local \
+E2E_ENV_FILE=/absolute/path/to/disposable-e2e.env make e2e
+```
+
+If its database name does not contain `e2e`, `test`, `qa`, `disposable`, or
+`staging`, also set `E2E_ALLOWED_DB_NAME` to that exact database name. The
+repository's `make browser-qa` sets the disposable marker and environment file
+it creates automatically.
+
+`make smoke-local` also creates and removes those fixtures, so supply the
+same `E2E_FIXTURE_ENVIRONMENT` and `E2E_ENV_FILE` values (and the exact
+`E2E_ALLOWED_DB_NAME` override when needed). The staging workflow sets
+`disposable-staging` and `STAGING_SMOKE=1` itself.
 
 For repeatable browser acceptance checks without manually coordinating
 services, run:
@@ -216,7 +233,8 @@ as an explicit Playwright runner after the same PostgreSQL/Django/Vite setup:
 ```bash
 cd frontend
 PLAYWRIGHT_CHANNEL=chrome E2E_BASE_URL=http://localhost:5000 \
-  E2E_DOCKER_COMPOSE=true npx playwright test \
+  E2E_FIXTURE_ENVIRONMENT=disposable-compose E2E_DOCKER_COMPOSE=true \
+  npx playwright test \
   e2e/aiLayerTargetExisting.spec.ts --project=chromium
 ```
 

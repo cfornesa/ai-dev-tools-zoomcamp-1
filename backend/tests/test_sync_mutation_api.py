@@ -156,6 +156,8 @@ def test_conflict_resolution_creates_one_version_and_replays_idempotently(
     owner_client, versioned_project
 ):
     project, scene, version = versioned_project
+    project.brief = "private project intent"
+    project.save(update_fields=["brief"])
     resolution = {
         "type": "conflict-resolution",
         "base_version": str(version.pk),
@@ -175,6 +177,7 @@ def test_conflict_resolution_creates_one_version_and_replays_idempotently(
     replay = owner_client.post(_url(project), operation, format="json")
 
     assert first.status_code == 201
+    assert "brief" not in first.json()
     assert replay.status_code == 200
     assert replay.json()["replayed"] is True
     assert first.json()["applied_scene_version_id"] == replay.json()["applied_scene_version_id"]

@@ -266,7 +266,7 @@ function ArtPieceStudio() {
   }
 
   return (
-    <section aria-label="Art piece studio">
+    <section className="art-piece-studio" aria-label="Art piece studio">
       <h2>Art piece studio</h2>
       <p>
         Generate a standalone art piece from a text prompt. This is a separate, simpler flow from
@@ -297,6 +297,7 @@ function ArtPieceStudio() {
           <label htmlFor="art-piece-prompt">Describe the art piece you want to generate</label>
           <textarea
             id="art-piece-prompt"
+            rows={8}
             value={prompt}
             disabled={pending}
             onChange={(event) => setPrompt(event.target.value)}

@@ -21,11 +21,11 @@ RETENTION_STATES = frozenset(
 )
 
 
-class CloudRetentionValidationFailed(Exception):
+class CloudRetentionValidationFailed(Exception):  # noqa: N818
     pass
 
 
-class CloudRetentionConflict(Exception):
+class CloudRetentionConflict(Exception):  # noqa: N818
     pass
 
 

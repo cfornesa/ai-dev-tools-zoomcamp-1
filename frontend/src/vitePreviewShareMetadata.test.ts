@@ -3,7 +3,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { AddressInfo } from 'node:net';
+import { isIP, type AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { preview, type PreviewServer } from 'vite';
 import { resolveBackendProxyTarget } from './viteBackendTarget.js';
@@ -33,12 +33,27 @@ describe('vite preview share metadata (production run path)', () => {
   let baseUrl: string;
   let backendPort: number;
   const forwardedHosts = new Set<string>();
+  const forwardedClientAddresses = new Set<string>();
   const saved = { ...process.env };
 
   beforeAll(async () => {
     backend = createServer((request, response) => {
       const forwardedHost = request.headers['x-forwarded-host'];
       if (typeof forwardedHost === 'string') forwardedHosts.add(forwardedHost);
+      if (request.url === '/mcp/' && request.method === 'POST') {
+        const forwardedAddress = request.headers['x-forwarded-for'];
+        if (typeof forwardedAddress === 'string') forwardedClientAddresses.add(forwardedAddress);
+        response.setHeader('Content-Type', 'application/json');
+        response.statusCode = 200;
+        response.end(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            result: { tools: [{ name: 'health_check' }] },
+          }),
+        );
+        return;
+      }
       if (request.headers['x-forwarded-proto'] !== 'https' || !forwardedHost) {
         response.writeHead(301, {
           Location: `https://127.0.0.1:${backendPort}${request.url}`,
@@ -50,6 +65,51 @@ describe('vite preview share metadata (production run path)', () => {
       if (request.url === '/health/') {
         response.statusCode = 200;
         response.end(JSON.stringify({ status: 'ok' }));
+        return;
+      }
+      if (
+        request.url === '/api/public/share-meta/site/home/' ||
+        request.url === '/api/public/share-meta/site/gallery/' ||
+        request.url === '/api/public/share-meta/site/collections/' ||
+        request.url === '/api/public/share-meta/site/generated/'
+      ) {
+        const collection = request.url.endsWith('/collections/');
+        const generated = request.url.endsWith('/generated/');
+        response.end(
+          JSON.stringify({
+            title: 'AugmentrART',
+            description: 'Public gallery',
+            canonical_path: collection
+              ? '/collections'
+              : generated
+                ? '/gallery?type=generated'
+                : request.url.includes('/gallery/')
+                  ? '/gallery'
+                  : '/',
+            image_url: '/favicon.svg',
+            ...(collection ? { gallery_heading: 'Public collections' } : {}),
+            ...(generated ? { gallery_heading: 'Generated art gallery' } : {}),
+            gallery_items: [
+              {
+                title: collection
+                  ? 'Spring collection'
+                  : generated
+                    ? 'Generated ocean'
+                    : '<script>Gallery injection</script> & ocean',
+                description: collection
+                  ? 'Public collection description'
+                  : generated
+                    ? 'Generated piece description'
+                    : '<img src=x onerror=alert(1)>',
+                path: collection
+                  ? '/users/@artist/collections/spring'
+                  : generated
+                    ? '/users/@artist/pieces/generated-ocean'
+                    : '/users/@artist/pieces/ocean?view=public&sort=new',
+              },
+            ],
+          }),
+        );
         return;
       }
       if (request.url?.startsWith('/api/public/share-meta/site/profile/')) {
@@ -125,10 +185,51 @@ describe('vite preview share metadata (production run path)', () => {
     expect(html).toContain('type="application/feed+json"');
   });
 
+  it('proxies the MCP transport to Django on the production preview path', async () => {
+    const response = await fetch(`${baseUrl}/mcp/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    expect([...forwardedClientAddresses].some((address) => isIP(address) > 0)).toBe(true);
+    await expect(response.json()).resolves.toMatchObject({
+      result: { tools: [{ name: 'health_check' }] },
+    });
+  });
+
   it('still injects generic tags on the home route when the backend has no record', async () => {
     const html = await (await fetch(`${baseUrl}/`)).text();
     expect(html).toContain('og:title');
     expect(html).toContain('https://example.test/');
+    expect(html).toContain('<noscript><section aria-label="Public gallery">');
+    expect(html).toContain(
+      '<a href="/users/@artist/pieces/ocean?view=public&amp;sort=new">&lt;script&gt;Gallery injection&lt;/script&gt; &amp; ocean</a>',
+    );
+    expect(html).toContain('<p>&lt;img src=x onerror=alert(1)&gt;</p>');
+    expect(html).not.toContain('<img src=x onerror=alert(1)>');
+    expect(html).not.toContain('<script>Gallery injection</script>');
+  });
+
+  it('injects canonical link-bearing gallery content into a no-JavaScript shell', async () => {
+    const html = await (await fetch(`${baseUrl}/gallery`)).text();
+    expect(html).toContain('og:url" content="https://example.test/gallery"');
+    expect(html).toContain('<noscript><section aria-label="Public gallery">');
+    expect(html).toContain('href="/users/@artist/pieces/ocean?view=public&amp;sort=new"');
+  });
+
+  it('renders a crawlable collections index and a generated-art fallback', async () => {
+    const collections = await (await fetch(`${baseUrl}/collections`)).text();
+    expect(collections).toContain('og:url" content="https://example.test/collections"');
+    expect(collections).toContain('<h1>Public collections</h1>');
+    expect(collections).toContain('href="/users/@artist/collections/spring">Spring collection</a>');
+
+    const generated = await (await fetch(`${baseUrl}/art-pieces/gallery`)).text();
+    expect(generated).toContain('og:url" content="https://example.test/gallery?type=generated"');
+    expect(generated).toContain('<h1>Generated art gallery</h1>');
+    expect(generated).toContain('href="/users/@artist/pieces/generated-ocean">Generated ocean</a>');
   });
 
   it('injects metadata for canonical regular and immersive piece routes', async () => {

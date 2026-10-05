@@ -29,7 +29,10 @@ import {
   ART_PIECE_IFRAME_SANDBOX,
   ART_PIECE_SANDBOX_MESSAGE_SOURCE,
 } from '../generative/artPieceSandbox';
-import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
+import {
+  captureAndUploadArtPieceThumbnail,
+  captureArtPieceThumbnailFromSource,
+} from '../generative/artPieceThumbnailCapture';
 import MentionPromptField from './MentionPromptField';
 import { buildArtPieceTargetOptionsForPiece } from './artPieceTargets';
 import ArtPieceEditorToolAvailability from '../components/ArtPieceEditorToolAvailability';
@@ -480,6 +483,15 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         );
         return;
       }
+      if (result.accepted_version_id !== null) {
+        void captureArtPieceThumbnailFromSource(
+          piece.public_id,
+          result.accepted_version_id,
+          result.candidate_source,
+          piece.engine,
+          piece.current_version?.ink,
+        );
+      }
       setReviseCode(result.candidate_source);
       setPreviewCode(result.candidate_source);
       setRevisePhase('previewing');
@@ -752,6 +764,21 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
           <span>{packageExporting ? 'Preparing package…' : 'Export package'}</span>
         </button>
         {packageExportError && <p role="alert">{packageExportError}</p>}
+        {currentVersion && (
+          <button
+            type="button"
+            className="generated-piece-thumbnail-button"
+            aria-label="Toggle thumbnail panel"
+            title="Toggle thumbnail panel"
+            aria-pressed={activeEditorPanel === 'thumbnail'}
+            onClick={() =>
+              setActiveEditorPanel((current) => (current === 'thumbnail' ? null : 'thumbnail'))
+            }
+          >
+            <span aria-hidden="true">▣</span>
+            <span>Thumbnail</span>
+          </button>
+        )}
         <ArtPieceEditorToolAvailability
           engine={piece.engine}
           onActivate={(tool) => {
@@ -828,17 +855,6 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
               </button>
               <button
                 type="button"
-                aria-label="Toggle thumbnail panel"
-                title="Toggle thumbnail panel"
-                aria-pressed={activeEditorPanel === 'thumbnail'}
-                onClick={() =>
-                  setActiveEditorPanel((current) => (current === 'thumbnail' ? null : 'thumbnail'))
-                }
-              >
-                <span aria-hidden="true">▣</span>
-              </button>
-              <button
-                type="button"
                 aria-label="Toggle revise piece panel"
                 title="Toggle revise piece panel"
                 aria-pressed={activeEditorPanel === 'revise'}
@@ -875,6 +891,34 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
             </div>
           )}
         </ArtPieceEditorToolAvailability>
+        {engineCapability.family === '2d' && (
+          <div className="generated-2d-action-items" role="toolbar" aria-label="2D editor actions">
+            <button
+              type="button"
+              aria-label="Toggle description panel"
+              title="Toggle description panel"
+              aria-pressed={activeEditorPanel === 'description'}
+              onClick={() =>
+                setActiveEditorPanel((current) =>
+                  current === 'description' ? null : 'description',
+                )
+              }
+            >
+              <span aria-hidden="true">ⓘ</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Toggle delete piece panel"
+              title="Toggle delete piece panel"
+              aria-pressed={activeEditorPanel === 'delete'}
+              onClick={() =>
+                setActiveEditorPanel((current) => (current === 'delete' ? null : 'delete'))
+              }
+            >
+              <span aria-hidden="true">⌫</span>
+            </button>
+          </div>
+        )}
       </div>
       {(piece.engine === 'threejs' || piece.engine === 'aframe') && currentVersion?.source && (
         <Generated3DEditorPreview
@@ -1016,6 +1060,16 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
             onChange={(event) => setDescription(event.target.value)}
           />
           {metadataError && <p role="alert">{metadataError}</p>}
+          {engineCapability.family === '2d' && (
+            <button
+              type="button"
+              onClick={handleSaveMetadata}
+              disabled={metadataSaving}
+              data-testid="art-piece-editor-save-metadata"
+            >
+              {metadataSaving ? 'Saving…' : 'Save changes'}
+            </button>
+          )}
         </div>
       </div>
 

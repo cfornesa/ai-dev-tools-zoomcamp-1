@@ -32,6 +32,8 @@ export type Project = {
   owner_handle?: string | null;
   title: string;
   description: string;
+  /** #1129: private project intent note included only in owner responses. */
+  brief?: string;
   seo_config?: SeoConfig;
   tags: string[];
   visibility: Visibility;
@@ -114,6 +116,7 @@ export type ProjectMetadataInput = Partial<
     Project,
     | 'title'
     | 'description'
+    | 'brief'
     | 'seo_config'
     | 'tags'
     | 'allow_public_remix'
@@ -242,6 +245,31 @@ export type PublicGalleryProject = {
   published_at: string;
   renderer: '2d' | '3d';
 };
+
+/** A related 2D project returned by the public related-project endpoint.
+ * It uses the safe public-gallery projection and is narrower than an owner
+ * project or scene document. */
+export type RelatedPublicProject = {
+  id: string;
+  kind: '2d';
+  title: string;
+  owner: string;
+  owner_handle: string | null;
+  published_at: string;
+  thumbnail_url: string | null;
+  thumbnail_is_fallback?: boolean | null;
+  viewer_url: string;
+  engine?: string | null;
+  engine_label?: string | null;
+};
+
+/** Fetch the bounded anonymous related-project list for one public 2D piece. */
+export async function getRelatedPublicProjects(id: string): Promise<RelatedPublicProject[]> {
+  const response = await apiFetch<{ results: RelatedPublicProject[] }>(
+    `/api/public/projects/${encodeURIComponent(id)}/related/`,
+  );
+  return response.results;
+}
 
 /** Task 50: one page of the public gallery. `next_cursor` is `null` exactly
  * when `has_more` is `false` — there is no separate "end of results"

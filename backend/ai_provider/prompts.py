@@ -25,34 +25,51 @@ eval()/Function()/setTimeout with a string argument.
 fixed reasonable size like 800x600) and begin drawing immediately without user interaction.
 - Prefer requestAnimationFrame for any animation, and make sure the loop is self-terminating \
 or bounded -- never an infinitely recursive synchronous call that could hang the page.""",
-    "svg": """You generate the markup for a single generative-art piece using ONLY \
-inert SVG markup -- no JavaScript at all. Follow these rules exactly:
+    "svg": """You generate the markup for a single generative-art piece using SVG markup. \
+One inline <script> is permitted when the artwork needs DOM-driven values; never use a \
+script src attribute. Follow these rules exactly:
 
 - Respond with ONLY the raw markup -- no prose, no explanation, no markdown code fences \
 before or after it.
 - Output exactly one <svg id="art-piece-svg" ...> root element and nothing else: no <html>, \
-<head>, <body>, <!DOCTYPE>, <script>, <foreignObject>, or any other top-level element.
+<head>, <body>, <!DOCTYPE>, <foreignObject>, or any other top-level element. If scripting is \
+needed, keep one inline <script> inside the SVG root.
 - The <svg> must declare a viewBox (e.g. viewBox="0 0 800 600") so it scales to its container, \
 and must render its content immediately with no user interaction required.
-- Any animation must use SVG's own native animation elements (<animate>, <animateTransform>, \
-<animateMotion>) or a <style> block with CSS @keyframes/animation -- never JavaScript, never \
-a <script> element of any kind.
+- Any animation may use SVG's own native animation elements (<animate>, <animateTransform>, \
+<animateMotion>), a <style> block with CSS @keyframes/animation, or one inline script for \
+DOM-driven values.
 - Never reference an external resource: no xlink:href/href to a URL, no <image> with a remote \
 src, no @import, no url(...) pointing outside the document. Every color/gradient/pattern must \
-be defined inline within the <svg> itself.""",
+be defined inline within the <svg> itself.
+- For an animated gauge or progress-ring prompt, include a visible circular ring with a filled \
+arc, an inline clipPath and gradient that are actually referenced by the artwork, and native SVG \
+animation for the arc. Derive stroke-dasharray/stroke-dashoffset from the circle's actual \
+circumference (2πr), preserving the relationship when the radius changes.""",
     "p5js": """You generate plain JavaScript for one p5.js generative-art piece. \
 The p5.js library is already loaded globally as `p5`; do not import it or write a script tag. \
 Respond with only JavaScript and assign an instance-mode sketch function to `window.sketch`. \
 The function receives the p5 instance, must create its canvas in setup, draw immediately, and \
 keep all state self-contained. Never fetch a URL, create another script, access cookies or \
-storage, or use eval/Function. Use only the p5 API and deterministic inline values.""",
+storage, or use eval/Function. Use only the p5 API and deterministic inline values.
+- For an N-body physics prompt, initialize 5-10 particles with position, velocity, mass, and \
+radius; compute all-pairs gravitational attraction and elastic collision response each frame; \
+and use bounded integration/clamping so the simulation stays visibly active and numerically \
+stable for at least 60 seconds.""",
     "c2js": """You generate plain JavaScript for one C2.js generative-art piece. \
 The wrapper supplies a `runtime` object with `runtime.canvas`, `runtime.c2`, and \
 `runtime.startFrame(callback)`. Respond with only JavaScript and assign a function to \
 `window.sketch`; the function receives `runtime`, draws through the supplied canvas context, \
 and uses `runtime.startFrame` for animation or interaction. Never fetch a URL, create another \
 script, access cookies or storage, or use eval/Function. Keep the source self-contained and \
-preserve pointer events for the interactive variant.""",
+preserve pointer events for the interactive variant.
+- For a recursive fractal-tree prompt, define a terminating recursive geometry function with a \
+depth/base-case guard and at least six visible levels, then call it from the frame callback so \
+the generated branches are visibly rendered rather than leaving a static empty canvas.
+- For a multi-stroke paint-tool prompt, keep a stroke collection with points and colors, wire \
+pointer/touch input to create distinct strokes, expose color plus Undo and Redo controls, and \
+redraw from the collection after every edit so overlapping colors blend instead of opaque \
+overpainting.""",
 }
 
 ART_PIECE_REGION_RULES = {
@@ -204,9 +221,21 @@ respond with an empty JSON array: [].
 - You may address an existing shape by its "name" field when the scene \
 document shows one set (e.g. "the shape named Sun" or "rename Sun to Moon" \
 both refer to whichever shape currently has "name": "Sun") -- you do not \
-need to already know its id. When you add a new shape the prompt implies a \
-name for, set that shape's "name" field so a later prompt can address it \
-back the same way."""
+need to already know its id. Every shape value used in an add/replace \
+operation must use the canonical scene structure: "id", "type", "layerId", \
+"groupId", "transform" ("x", "y", "scaleX", "scaleY", "rotation", "opacity"), \
+and "style" ("fill", "stroke", "strokeWidth"). For an image shape, use \
+"type": "image", the exact selected asset id in "mediaAssetId", and either a \
+truthful `altText` or `decorative: true`; never use `assetId`, top-level \
+`x`/`y`/`width`/`height`, or a `layer` field. Image size is expressed \
+through the transform. When a new shape's prompt implies a name (for example, \
+"add a sun"), set its optional `name` field so a later edit can address it. \
+For an add-layer request, return only the minimal patch that adds one complete \
+layer at "/layers/-" with "id", "name", "order", "visible", and "locked", plus \
+one complete image shape at "/shapes/-", with a new layer id, matching shape \
+`layerId`, and `groupId: null`; never return a complete scene or add a \
+scene-root/fixture object. When a supplied asset is selected, it is explicitly \
+authorized and must be referenced by its supplied `mediaAssetId`."""
 
 # Shared scene3d instructions.  These are deliberately transport-neutral: the
 # Mistral adapter puts them in system messages while Gemini/DeepSeek pass them

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { localProjectDb } from './support/localProjectDb.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const VIEWPORTS = [
@@ -8,7 +9,7 @@ const VIEWPORTS = [
   { width: 375, height: 812 },
 ];
 const PROJECT_ID = 'f63af5e2-9e50-4b61-8e2d-0d2cf52b6a22';
-const ASSET_ID = '8a6a6c5e-7d57-4a12-8b93-b4a5d8dbf6b0';
+const CHECKSUM = 'a'.repeat(64);
 
 test.describe('Offline resumable media transfer (#546)', () => {
   const fixtures = requireE2EFixtures();
@@ -19,10 +20,25 @@ test.describe('Offline resumable media transfer (#546)', () => {
     }) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const seeded = await localProjectDb<{ assetId?: string }>(page, {
+        kind: 'seed',
+        input: {
+          ownerId: fixtures.owner.username,
+          projectId: PROJECT_ID,
+          title: 'Media Transfer Fixture',
+          media: {
+            filename: 'fixture.png',
+            mimeType: 'image/png',
+            bytes: [137, 80, 78, 71, 13, 10, 26, 10],
+          },
+        },
+      });
+      const assetId = seeded.assetId;
+      if (!assetId) throw new Error('The v5 fixture did not return its imported media ID.');
       await page.goto('/account/settings/storage');
       let requests = 0;
       await page.route(
-        `**/api/projects/${PROJECT_ID}/cloud-backup/assets/${ASSET_ID}/chunks/`,
+        `**/api/projects/${PROJECT_ID}/cloud-backup/assets/${assetId}/chunks/`,
         async (route) => {
           requests += 1;
           if (requests === 1) {
@@ -30,8 +46,8 @@ test.describe('Offline resumable media transfer (#546)', () => {
               status: 200,
               contentType: 'application/json',
               body: JSON.stringify({
-                asset_id: ASSET_ID,
-                checksum: 'a'.repeat(64),
+                asset_id: assetId,
+                checksum: CHECKSUM,
                 byte_size: 8,
                 complete: false,
                 acknowledged_ranges: [{ start: 0, end: 4 }],
@@ -47,8 +63,8 @@ test.describe('Offline resumable media transfer (#546)', () => {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-              asset_id: ASSET_ID,
-              checksum: 'a'.repeat(64),
+              asset_id: assetId,
+              checksum: CHECKSUM,
               byte_size: 8,
               complete: true,
               acknowledged_ranges: [{ start: 0, end: 8 }],
@@ -57,104 +73,79 @@ test.describe('Offline resumable media transfer (#546)', () => {
         },
       );
 
-      const result = await page.evaluate(
-        async ({ projectId, assetId }) => {
-          type TransferState = {
-            transferId: string;
-            ownerId: string;
-            projectId: string;
-            assetId: string;
-            byteLength: number;
-            checksum: string;
-            acknowledgedRanges: Array<{ start: number; end: number }>;
-            state: 'pending' | 'uploading' | 'complete' | 'paused';
-            lastErrorCode: string | null;
-          };
-          const db = await new Promise<IDBDatabase>((resolve, reject) => {
-            const request = indexedDB.open('creatrart-local-projects', 4);
-            request.onupgradeneeded = () => {
-              const upgradeDb = request.result;
-              if (!upgradeDb.objectStoreNames.contains('mediaTransfers')) {
-                const transfers = upgradeDb.createObjectStore('mediaTransfers', {
-                  keyPath: 'transferId',
-                });
-                transfers.createIndex('by_owner_project', ['ownerId', 'projectId']);
-                transfers.createIndex('by_owner_asset', ['ownerId', 'assetId']);
-              }
-            };
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-          const save = (record: TransferState) =>
-            new Promise<void>((resolve, reject) => {
-              const transaction = db.transaction('mediaTransfers', 'readwrite');
-              transaction.objectStore('mediaTransfers').put(record);
-              transaction.oncomplete = () => resolve();
-              transaction.onerror = () => reject(transaction.error);
-            });
-          const read = (transferId: string) =>
-            new Promise<TransferState | null>((resolve, reject) => {
-              const request = db
-                .transaction('mediaTransfers', 'readonly')
-                .objectStore('mediaTransfers')
-                .get(transferId);
-              request.onsuccess = () =>
-                resolve((request.result as TransferState | undefined) ?? null);
-              request.onerror = () => reject(request.error);
-            });
-          const send = (start: number, bytes: Uint8Array) =>
-            fetch(`/api/projects/${projectId}/cloud-backup/assets/${assetId}/chunks/`, {
-              method: 'PUT',
-              body: bytes.buffer as ArrayBuffer,
-              headers: {
-                'Content-Type': 'image/png',
-                'Content-Range': `bytes ${start}-${start + bytes.byteLength - 1}/8`,
-                'X-Asset-Checksum': 'a'.repeat(64),
-                'X-Asset-Mime-Type': 'image/png',
-                'X-Idempotency-Key': 'transfer-546',
+      type TransferRecord = {
+        transferId: string;
+        ownerId: string;
+        projectId: string;
+        assetId: string;
+        byteLength: number;
+        checksum: string;
+        acknowledgedRanges: Array<{ start: number; end: number }>;
+        state: 'pending' | 'uploading' | 'complete' | 'paused';
+        lastErrorCode: string | null;
+      };
+      let record: TransferRecord = {
+        transferId: 'transfer-546',
+        ownerId: fixtures.owner.username,
+        projectId: PROJECT_ID,
+        assetId,
+        byteLength: 8,
+        checksum: CHECKSUM,
+        acknowledgedRanges: [],
+        state: 'pending',
+        lastErrorCode: null,
+      };
+      const save = () => localProjectDb(page, { kind: 'put-transfer', record });
+      const send = (start: number, bytes: number[]) =>
+        page.evaluate(
+          async ({ projectId, mediaId, start: rangeStart, bytes: chunk }) => {
+            const response = await fetch(
+              `/api/projects/${projectId}/cloud-backup/assets/${mediaId}/chunks/`,
+              {
+                method: 'PUT',
+                body: new Uint8Array(chunk).buffer,
+                headers: {
+                  'Content-Type': 'image/png',
+                  'Content-Range': `bytes ${rangeStart}-${rangeStart + chunk.length - 1}/8`,
+                  'X-Asset-Checksum': 'a'.repeat(64),
+                  'X-Asset-Mime-Type': 'image/png',
+                  'X-Idempotency-Key': 'transfer-546',
+                },
               },
-            });
-          let record: TransferState = {
-            transferId: 'transfer-546',
-            ownerId: 'owner-a',
-            projectId,
-            assetId,
-            byteLength: 8,
-            checksum: 'a'.repeat(64),
-            acknowledgedRanges: [],
-            state: 'pending',
-            lastErrorCode: null,
-          };
-          await save(record);
-          const first = await (await send(0, new Uint8Array([0, 1, 2, 3]))).json();
-          record = {
-            ...record,
-            acknowledgedRanges: first.acknowledged_ranges,
-            state: 'uploading',
-          };
-          await save(record);
-          try {
-            await send(4, new Uint8Array([4, 5, 6, 7]));
-          } catch {
-            record = { ...record, state: 'paused', lastErrorCode: 'offline' };
-            await save(record);
-          }
-          const paused = await read(record.transferId);
-          if (!paused) throw new Error('Transfer state was not persisted after interruption.');
-          const final = await (await send(4, new Uint8Array([4, 5, 6, 7]))).json();
-          record = {
-            ...record,
-            acknowledgedRanges: final.acknowledged_ranges,
-            state: 'complete',
-            lastErrorCode: null,
-          };
-          await save(record);
-          const completed = await read(record.transferId);
-          db.close();
-          return { pausedState: paused.state, finalState: completed?.state };
-        },
-        { projectId: PROJECT_ID, assetId: ASSET_ID },
-      );
+            );
+            return response.json();
+          },
+          { projectId: PROJECT_ID, mediaId: assetId, start, bytes },
+        );
+
+      await save();
+      const first = await send(0, [0, 1, 2, 3]);
+      record = { ...record, acknowledgedRanges: first.acknowledged_ranges, state: 'uploading' };
+      await save();
+      try {
+        await send(4, [4, 5, 6, 7]);
+      } catch {
+        record = { ...record, state: 'paused', lastErrorCode: 'offline' };
+        await save();
+      }
+      const paused = await localProjectDb<TransferRecord | undefined>(page, {
+        kind: 'get-transfer',
+        transferId: record.transferId,
+      });
+      if (!paused) throw new Error('Transfer state was not persisted after interruption.');
+      const final = await send(4, [4, 5, 6, 7]);
+      record = {
+        ...record,
+        acknowledgedRanges: final.acknowledged_ranges,
+        state: 'complete',
+        lastErrorCode: null,
+      };
+      await save();
+      const completed = await localProjectDb<TransferRecord | undefined>(page, {
+        kind: 'get-transfer',
+        transferId: record.transferId,
+      });
+      const result = { pausedState: paused.state, finalState: completed?.state };
 
       expect(result).toEqual({ pausedState: 'paused', finalState: 'complete' });
       expect(requests).toBe(3);
@@ -165,10 +156,25 @@ test.describe('Offline resumable media transfer (#546)', () => {
     }) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      const seeded = await localProjectDb<{ assetId?: string }>(page, {
+        kind: 'seed',
+        input: {
+          ownerId: fixtures.owner.username,
+          projectId: PROJECT_ID,
+          title: 'Media Transfer Failure Fixture',
+          media: {
+            filename: 'fixture.png',
+            mimeType: 'image/png',
+            bytes: [137, 80, 78, 71, 13, 10, 26, 10],
+          },
+        },
+      });
+      const assetId = seeded.assetId;
+      if (!assetId) throw new Error('The v5 fixture did not return its imported media ID.');
       await page.goto('/account/settings/storage');
       let requests = 0;
       await page.route(
-        `**/api/projects/${PROJECT_ID}/cloud-backup/assets/${ASSET_ID}/chunks/`,
+        `**/api/projects/${PROJECT_ID}/cloud-backup/assets/${assetId}/chunks/`,
         async (route) => {
           requests += 1;
           await route.fulfill({
@@ -179,69 +185,48 @@ test.describe('Offline resumable media transfer (#546)', () => {
         },
       );
 
-      const result = await page.evaluate(
-        async ({ projectId, assetId }) => {
-          type Failure = { transferId: string; state: 'paused'; lastErrorCode: string };
-          const db = await new Promise<IDBDatabase>((resolve, reject) => {
-            const request = indexedDB.open('creatrart-local-projects', 4);
-            request.onupgradeneeded = () => {
-              const upgradeDb = request.result;
-              if (!upgradeDb.objectStoreNames.contains('mediaTransfers')) {
-                const transfers = upgradeDb.createObjectStore('mediaTransfers', {
-                  keyPath: 'transferId',
-                });
-                transfers.createIndex('by_owner_project', ['ownerId', 'projectId']);
-                transfers.createIndex('by_owner_asset', ['ownerId', 'assetId']);
-              }
-            };
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-          });
-          const save = (record: Failure) =>
-            new Promise<void>((resolve, reject) => {
-              const transaction = db.transaction('mediaTransfers', 'readwrite');
-              transaction.objectStore('mediaTransfers').put({
-                ...record,
-                ownerId: 'owner-a',
-                projectId,
-                assetId,
-                byteLength: 8,
-                checksum: 'a'.repeat(64),
-                chunkSize: 4,
-                acknowledgedRanges: [],
-                attemptCount: 1,
-              });
-              transaction.oncomplete = () => resolve();
-              transaction.onerror = () => reject(transaction.error);
-            });
-          const send = () =>
-            fetch(`/api/projects/${projectId}/cloud-backup/assets/${assetId}/chunks/`, {
-              method: 'PUT',
-              body: new Uint8Array([0, 1, 2, 3]),
-              headers: {
-                'Content-Range': 'bytes 0-3/8',
-                'X-Asset-Checksum': 'a'.repeat(64),
-                'X-Asset-Mime-Type': 'image/png',
-                'X-Idempotency-Key': 'failure-546',
+      const send = () =>
+        page.evaluate(
+          async ({ projectId, mediaId }) => {
+            const response = await fetch(
+              `/api/projects/${projectId}/cloud-backup/assets/${mediaId}/chunks/`,
+              {
+                method: 'PUT',
+                body: new Uint8Array([0, 1, 2, 3]),
+                headers: {
+                  'Content-Range': 'bytes 0-3/8',
+                  'X-Asset-Checksum': 'a'.repeat(64),
+                  'X-Asset-Mime-Type': 'image/png',
+                  'X-Idempotency-Key': 'failure-546',
+                },
               },
-            });
-          const checksumResponse = await send();
-          await save({
-            transferId: 'transfer-checksum',
+            );
+            return response.status;
+          },
+          { projectId: PROJECT_ID, mediaId: assetId },
+        );
+      const seedFailedTransfer = (transferId: string, lastErrorCode: string) =>
+        localProjectDb(page, {
+          kind: 'put-transfer',
+          record: {
+            transferId,
+            ownerId: fixtures.owner.username,
+            projectId: PROJECT_ID,
+            assetId,
+            byteLength: 8,
+            checksum: CHECKSUM,
+            chunkSize: 4,
+            acknowledgedRanges: [],
+            attemptCount: 1,
             state: 'paused',
-            lastErrorCode: 'checksum-mismatch',
-          });
-          const quotaResponse = await send();
-          await save({
-            transferId: 'transfer-quota',
-            state: 'paused',
-            lastErrorCode: 'quota-exceeded',
-          });
-          db.close();
-          return { checksumStatus: checksumResponse.status, quotaStatus: quotaResponse.status };
-        },
-        { projectId: PROJECT_ID, assetId: ASSET_ID },
-      );
+            lastErrorCode,
+          },
+        });
+      const checksumStatus = await send();
+      await seedFailedTransfer('transfer-checksum', 'checksum-mismatch');
+      const quotaStatus = await send();
+      await seedFailedTransfer('transfer-quota', 'quota-exceeded');
+      const result = { checksumStatus, quotaStatus };
 
       expect(result).toEqual({ checksumStatus: 409, quotaStatus: 413 });
       expect(requests).toBe(2);

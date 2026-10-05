@@ -12,16 +12,34 @@ test.describe('Account settings reorder controls (#677)', () => {
     await page.goto('/account/settings');
 
     const profileHandle = page.getByRole('button', { name: 'Reorder Public profile' });
-    await expect(page.locator('.account-settings-drag-handle')).toHaveCount(7);
+    await expect(page.locator('[data-settings-section]').first()).toBeVisible();
+    const initialOrder = await page
+      .locator('[data-settings-section]')
+      .evaluateAll((items) => items.map((item) => item.getAttribute('data-settings-section')));
+    await expect(page.locator('.account-settings-drag-handle')).toHaveCount(initialOrder.length);
     await expect(profileHandle).toHaveCSS('touch-action', 'none');
 
     await profileHandle.focus();
     await profileHandle.press('Space');
     await expect(profileHandle).toHaveAttribute('aria-grabbed', 'true');
-    await profileHandle.press('ArrowUp');
-    await expect(page.locator('.visually-hidden[role="status"]')).toContainText('moved up');
+    const profileIndex = initialOrder.indexOf('profile');
+    const moveKey = profileIndex > 0 ? 'ArrowUp' : 'ArrowDown';
+    await profileHandle.press(moveKey);
+    await expect(page.locator('.visually-hidden[role="status"]')).toContainText(
+      `moved ${moveKey === 'ArrowUp' ? 'up' : 'down'}`,
+    );
     await profileHandle.press('Space');
     await expect(profileHandle).toHaveAttribute('aria-grabbed', 'false');
+    const movedOrder = await page
+      .locator('[data-settings-section]')
+      .evaluateAll((items) => items.map((item) => item.getAttribute('data-settings-section')));
+    const expectedOrder = [...initialOrder];
+    const targetIndex = profileIndex + (moveKey === 'ArrowUp' ? -1 : 1);
+    [expectedOrder[profileIndex], expectedOrder[targetIndex]] = [
+      expectedOrder[targetIndex],
+      expectedOrder[profileIndex],
+    ];
+    expect(movedOrder).toEqual(expectedOrder);
 
     await profileHandle.focus();
     await profileHandle.press('Space');

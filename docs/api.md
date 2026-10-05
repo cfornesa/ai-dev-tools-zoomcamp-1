@@ -1,5 +1,138 @@
 # Public gallery API contract
 
+## AI route authorization (#1215)
+
+The `x-access` values in `openapi.yaml` match the checks in the API views:
+
+| Routes | OpenAPI access | Code check |
+|---|---|---|
+| `POST /api/projects/{projectId}/ai/create-scene/`, `edit-scene/`, `accept-proposal/` | `owner` | `Action.AI_CREATE_SCENE`, `Action.AI_EDIT_SCENE`, or `Action.VERSION_CREATE` through `require()`; denied requests return 404. |
+| `POST /api/projects3d/{projectId}/ai/create-scene/`, `edit-scene/`, `accept-proposal/` | `owner` | `Action.PROJECT3D_WRITE` through `can()`; denied requests return 404. |
+| `POST /api/ai/runs/`, `GET /api/ai/runs/{runId}/` | `owner` | Start verifies target ownership; read filters by run owner; denied requests return 404. |
+| `POST /api/ai/art-pieces/generate/` | `session` | Requires an authenticated session; it is not project-owner scoped. |
+
+The 2D and 3D accept-proposal endpoints reject anonymous and foreign users
+without creating a scene version or activity record. The 3D endpoint uses the
+same owner-only policy as the 2D endpoint; the report that it is anonymous is
+not reflected in this repository's code or OpenAPI contract.
+
+## Anonymous MCP Apps public-content endpoint (#1223)
+
+`POST /mcp/apps/` is an isolated, anonymous, read-only MCP Apps endpoint for
+public gallery and project presentation. It lists only `show_public_gallery`
+and `show_public_project`, linked to the `ui://creatrweb/public-content` HTML
+resource using the stable SEP-1865 / ext-apps contract
+(`text/html;profile=mcp-app`). The tools reuse the same eligibility selectors
+and public serializers as the anonymous REST gallery and public-project
+routes; private, unlisted, draft, and deleted content remains unavailable.
+There are no owner, write, AI, or authenticated tools on this endpoint. Its UI
+uses only tool-result data and makes no tool calls. Text content remains
+available to hosts without MCP Apps support. Requests retain the MCP body
+limit and host/origin validation. Browser requests are CORS-enabled only for
+configured trusted origins. Anonymous tool calls are limited to 60 per
+trusted caller IP per minute and audited without user or client identity.
+The endpoint never accepts or returns OAuth tokens, session cookies, secrets,
+or owner-private data. Resource CSP declares no network, nested frame, or
+external resource domains and requests no browser permissions.
+
+## Authenticated MCP endpoint (#1217)
+
+`POST /mcp/` is the OAuth-protected Model Context Protocol Streamable HTTP
+endpoint. Every request requires a valid `Authorization: Bearer` access token;
+browser session cookies are ignored. It exposes authenticated health/identity
+tools, public read tools, owner 2D project/version tools, and
+`gallery://public` / `project://{project_id}` resources. Public project and
+template values use the same serializers and eligibility gates as their REST
+endpoints; the legacy public-project gallery retains its REST-defined 2D/3D
+card mix. Public content tools and resources require `gallery:read`; owner
+project/version tools require `projects:write` (including reads, so
+`gallery:read` alone never grants private-project access). `health_check` and
+`whoami` require authentication but no additional scope. AI generation,
+editing, persistent run creation/read, and standalone art generation use
+`ai:use`; accepting a proposal also requires `projects:write`. These tools call
+the existing REST handlers, preserving their owner checks, validation,
+provider behavior, quotas, and entitlements. Create/edit return an unsaved
+proposal. Only the explicit `ai_accept_proposal` tool persists a scene, with a
+required `base_version_id` and REST validation. `ai_start_run` creates a
+persistent run without blocking on provider work; `ai_get_run` only reads its
+state. Standalone art snippets are returned as data and are never executed by
+the MCP service. Thumbnails use MCP
+image content; published-asset results contain the REST response bytes encoded
+as base64 with media type and checksum. The endpoint uses stateless JSON
+transport and does not authenticate from Django session cookies. The transport
+validates `Origin` and `Host` against Django's
+trusted origins and allowed hosts, rejects unsupported paths/methods, and caps
+request bodies at 256 KiB. Authenticated tool calls are limited to 60 per
+minute per OAuth client and per user. Vite forwards the caller address; Django
+honors `X-Forwarded-For` only when the immediate peer is loopback. Audit rows
+store a keyed, one-way IP fingerprint, not the raw address. Missing, expired,
+revoked, or wrong-audience
+tokens return `401 invalid_token`; an under-scoped tool call returns a
+JSON-RPC `insufficient_scope` error. A limit error uses JSON-RPC code `-32029`
+and includes `retry_after_seconds` in error data. Each tool invocation writes
+one audit row with tool, timestamp, registered client and user, outcome, and
+duration; tool arguments, tokens, and secrets are excluded. Audit rows for a user are
+included in that user's account export and retained against the anonymized row
+after account deletion. Tool schemas, required scopes, cursor semantics, and examples are
+maintained in [`docs/mcp.md`](mcp.md), including every tool's input schema,
+scope, example, and a tested official-SDK client connection example.
+
+The authenticated 2D project/version tools mirror these REST operations:
+`list_my_projects` (`GET /api/projects/`), `create_project` (`POST
+/api/projects/`), `create_blank_project` (`POST /api/projects/blank/`),
+`get_project` (`GET /api/projects/{projectId}/`),
+`update_project_metadata` (`PATCH /api/projects/{projectId}/`),
+`publish_project` / `unpublish_project`, `fork_project` (`POST
+/api/public/projects/{projectId}/fork/`), `clone_template` (`POST
+/api/templates/{templateId}/clone/`), `list_versions` / `save_version`
+(`GET`/`POST /api/projects/{projectId}/versions/`), `get_version`,
+`restore_version`, and `save_version_as_template`. MCP tool errors retain the
+REST HTTP status and response body in structured error data; private or
+owner-only project/version/template operations retain the REST endpoint's
+not-found boundary for foreign or unknown resources; public project reads keep
+the REST visibility policy.
+
+The authenticated MCP AI tools mirror `POST /api/projects/{projectId}/ai/create-scene/`,
+`POST /api/projects/{projectId}/ai/edit-scene/`, and
+`POST /api/projects/{projectId}/ai/accept-proposal/`; `POST /api/ai/runs/` and
+`GET /api/ai/runs/{runId}/`; and `POST /api/ai/art-pieces/generate/`. Structured
+tool errors retain the REST status and response body, including provider,
+validation, quota, and entitlement failures.
+
+The authenticated 3D MCP tools mirror the available owner-facing operations:
+`GET`/`POST /api/projects3d/`, `GET`/`PATCH /api/projects3d/{projectId}/`,
+publish/unpublish, version list/save, and the 3D AI create/edit/accept routes.
+They use `projects:write`; AI create/edit additionally use `ai:use`, while 3D
+proposal acceptance requires both. The 3D REST views retain scene schema
+validation, source-size bounds, stale-base checks, idempotency, quotas, and
+privacy-preserving 404 behavior. No 3D version-detail or restore endpoint exists.
+
+## MCP OAuth authorization server (#1216)
+
+The MCP protected resource identifier is `https://<validated-request-host>/mcp` and
+advertises authorization-server metadata through RFC 9728 at
+`/.well-known/oauth-protected-resource/mcp/`; RFC 8414 metadata is available
+at the domain-root well-known authorization-server route. Clients use the
+authorization-code grant with PKCE `S256` only. Redirect URIs must exactly
+match the pre-registered application. Implicit, password, client-credentials,
+and public dynamic-registration flows are unavailable. OAuth applications
+are created only by an application administrator, using the application's
+admin authorization boundary through `POST /api/admin/oauth-applications/`
+(a same-origin session request with CSRF protection). This accepts exact
+HTTPS redirect URIs or loopback-only HTTP URIs and returns a public client ID,
+never a client secret. No dynamic-registration route is mounted.
+
+Supported scopes are `gallery:read`, `projects:write`, `ai:use`, and
+`destructive`. Consent to `destructive` is explicit and separate from the
+other scopes. `resource` must identify the MCP resource; issued tokens are
+restricted to that audience. Access tokens are short-lived and refresh tokens
+rotate. `POST /oauth/revoke_token/` revokes a token immediately. A signed-in
+user can inspect `GET /api/account/connected-apps/` and revoke their own
+application's authorization with
+`DELETE /api/account/connected-apps/{applicationId}/`; this revokes their
+grants and tokens for that application only. No client secret or token is
+returned after creation or written to logs.
+
 ## Public authorship identity (#897)
 
 Public piece, gallery, collection, profile, search, and feed projections retain
@@ -28,6 +161,21 @@ current cloud-backup API covers structured 2D projects only; public media for
 3D/generated pieces is planned under #941. Any endpoint that introduces a
 server copy or transfer must document its state transition and consent record
 before implementation.
+
+## Owner-uploaded ambient audio (#886)
+
+Owner-uploaded ambient audio samples (`ambient_sample`, #847) have **no
+public server delivery contract**. The sample plays only in the authoring
+browser (from the existing local media asset, no new upload pipeline) and is
+bundled into the piece's downloaded ZIP export; public viewers, embeds, and
+immersive views fall back to the existing synthesized ambient voice with a
+status message. This is deliberate (owner decision, Option 1 of #886,
+reconciled by #1067) — do not add a public asset endpoint for this audio
+without a new owner-decision issue. The retired compatibility upload route
+returns `410 Gone` and does not write server data; the shared public asset
+route also rejects an ambient-sample reference while continuing to serve
+ordinary published piece media. See
+`.agents/memory/ambient-audio-export-only-delivery.md`.
 
 ## Authored per-piece sound contract (#833)
 
@@ -160,11 +308,150 @@ keep their current slug; no migration.
 
 `GET /api/projects3d/<public_id>/versions/` returns the authenticated owner's
 complete immutable `SceneVersion3D` history in ascending sequence order. The
-existing POST save contract on the same path is unchanged. Anonymous users,
+`POST` on the same path accepts `scene_json` plus optional `html_source`,
+`css_source`, and `js_source` projections. Each source is an empty string for
+legacy JSON-only versions and is limited to 100,000 UTF-8 bytes. The saved projections
+are an immutable snapshot of the human-readable HTML/CSS/JS surfaces; the
+canonical validated `scene_json` remains the renderer/runtime representation,
+and the editor synchronizes all four surfaces before creating one new version.
+Anonymous users,
 non-owners, deleted projects, and unknown ids receive the existing 404-style
 authorization boundary; the response uses the existing
-`SceneVersion3DSerializer` shape and does not expose this owner history to
-public viewers.
+`SceneVersion3DSerializer` shape, including the three source fields only on
+owner-scoped responses, and does not expose those fields through public
+viewers. Existing JSON-only versions remain readable with empty source fields.
+The migration is reversible before deployment by dropping these three additive
+columns; because that rollback discards saved source text, a deployment must
+retain a database backup/export before applying it. No public payload or
+existing JSON snapshot is changed by the migration.
+
+## Owner-only 2D project activity (#1133)
+
+`GET /api/projects/<public_id>/activity/` returns one server-backed 2D
+project's activity to its owner, including when the project is public or
+soft-deleted within its existing retention period. `public_id` is the
+project's public UUID; internal project IDs are never returned. Anonymous and
+non-owner requests receive the same `404` response as an unknown UUID.
+
+The response is `{ "results": [...], "next_cursor": <opaque string|null> }`.
+Each result contains only `id`, `action_type`, `label`, `actor_display`,
+`created_at`, and `details`. `label` is the declared action's display label;
+`actor_display` is the actor username or `null`. Details project only the
+present `sequence`, `origin`, `restored_from_sequence`, `run_id`, `scope`,
+`operation`, `change_summary`, and `reason` metadata fields. Email, actor
+IDs, internal project IDs, unknown metadata, and arbitrary metadata values
+are not exposed.
+
+Results are ordered by `created_at DESC, id DESC`. `limit` defaults to 25 and
+must be an integer from 1 through 100. A page reads at most `limit + 1`
+activity rows. `next_cursor` is an opaque continuation bound to that
+project's public UUID and the last returned row's timestamp and ID; malformed
+or cross-project cursors return `400` with `{"errors":{"cursor":["Invalid
+cursor."]}}`. Invalid limits return `400` with
+`{"errors":{"limit":["Must be an integer from 1 to 100."]}}`.
+
+This is a private owner API only. Public project responses, piece payloads,
+and piece-package serializers do not include activity. The event query is
+supported by an index on `(project_id, created_at DESC, id DESC)`. Activity
+for a soft-deleted project remains readable by its owner until the existing
+retention policy hard-purges the project and its cascading activity rows.
+
+## Owner-only structured 3D project activity (#1156)
+
+`GET /api/projects3d/<public_id>/activity/` returns the authenticated owner's
+bounded activity page for a server-backed structured 3D project. It uses the
+same result fields, metadata allowlist, ordering, page limits, and privacy-
+preserving 404 boundary documented for 2D activity above. Its opaque cursor
+is bound to both the 3D project and the 3D activity family; a 2D cursor is
+invalid on this route. Soft-deleted projects remain readable during the
+existing retention period, and hard deletion cascades their activity rows.
+
+Explicit 3D version saves record `version_saved` with only `sequence` and
+`origin`; accepted AI proposals (one-shot or Agent run) record
+`ai_proposal_accepted`, while rejecting an Agent proposal records
+`ai_proposal_rejected`. Publishing and unpublishing record one event only
+when visibility changes, with `sequence` on publish and no details on
+unpublish. Initial creation, package import, 2D-to-3D conversion, and
+AI-generated version creation do not emit a second save event. There is no
+3D version restore/delete endpoint or one-shot AI rejection endpoint, so
+those events are not applicable. Activity remains private and is absent from
+public 3D payloads, gallery/search/embed responses, piece packages, and cloud
+backup manifests.
+Migration `0112` adds the nullable 3D association, its descending activity
+index, and the exact-one-family constraint after migration `0111`. Reversing
+`0112` drops 3D activity rows while preserving all existing 2D rows, then
+restores the 2D-only schema. After deployment, follow the issue's restoration
+path and retain the nullable columns rather than rolling back stored history.
+
+## Owner-only generated ArtPiece activity (#1157)
+
+`GET /api/art-pieces/<public_id>/activity/` returns the authenticated owner's
+bounded activity page for a server-backed generated ArtPiece. It uses the
+same result fields, metadata allowlist, ordering, page limits, and
+privacy-preserving 404 boundary documented for 2D activity above. Its opaque
+cursor is bound to both the ArtPiece public UUID and the ArtPiece activity
+family; cursors from 2D or structured 3D routes are invalid here. A
+soft-deleted piece remains readable during its existing retention period, and
+hard deletion cascades its activity rows.
+
+Explicit version saves record `version_saved` with only `sequence` and
+`origin`. Actual publish and unpublish status transitions record `published`
+with `sequence`, and `unpublished` with no details; unchanged status writes no
+event. Initial creation, package import, and accepted AI refinement runs do
+not emit activity. There are no version restore/delete routes. Event metadata
+never includes prompts, source code, scene content, credentials, email, or
+internal IDs. The activity log is owner-private and is absent from public
+pages, gallery/search, embed and public API payloads, portable piece packages,
+and cloud backup manifests. Account JSON export includes it only under the
+authenticated owner's generated pieces.
+
+Migration `0113` adds a nullable ArtPiece association, descending activity
+index, and the exact-one-family constraint after `0112`. Reversing `0113`
+drops ArtPiece activity rows while preserving 2D and 3D rows, then restores
+the two-family schema.
+
+## Private project intent notes (#1138)
+
+The owner-scoped `GET /api/projects/<public_id>/` and `PATCH
+/api/projects/<public_id>/` contract includes `brief`, a private intent note
+for server-backed 2D projects. The owner may set it to a string up to 1,500
+characters or clear it with an empty string. Over-limit input returns the
+standard field validation `400`; control characters are stripped before
+storage. Existing local-only projects do not use this server field.
+
+`brief` is excluded from every public project serializer, gallery/search
+projection, embed/immersive response, piece/package export, ZIP export,
+fork, template clone, and cloud backup/sync payload. It is included in the
+owner's account JSON export and cleared when account deletion is requested.
+After a Replit Publish containing this migration, verify `brief` exists on
+the actual production `scenes_project` table (for example through
+`information_schema.columns`); `django_migrations` is not a valid success
+signal for Replit's schema-diff publish path.
+
+### Activity in the owner JSON account export (#1148)
+
+`GET /api/account/export/` adds an `activity` array to each owned 2D and
+structured 3D project. The rows use the #1133 projection: exactly `id`, `action_type`,
+`label`, `actor_display`, `created_at`, and `details`. Events are newest-first
+by `created_at DESC, id DESC`; `actor_display` is the actor username or `null`.
+`details` contains only present `sequence`, `origin`,
+`restored_from_sequence`, `run_id`, `scope`, `operation`,
+`change_summary`, and `reason` fields. The export remains owner-scoped and
+repeatable. Activity is included for soft-deleted projects during their
+existing retention period and disappears with the existing hard-purge
+cascade. This is an additive JSON export field only; it does not change the
+#945 ZIP/package export, other export sections, or existing credential
+redaction. ArtPiece activity is not included until the dependent generated-
+piece history issue is implemented.
+
+The export also includes the caller's `mcp_tool_audit` records, with timestamp,
+tool name, OAuth client id when available, a keyed client IP fingerprint,
+outcome, and duration. Request payloads, tokens, and raw client IP addresses
+are never retained in these rows.
+On account deletion, records remain attached to the anonymized retained user
+row, consistent with the account-deletion audit-retention policy.
+
+
 
 ## Art-piece ink layer (#776)
 
@@ -290,6 +577,12 @@ marked with the stable `source_id`/`reference_import` marker, preserves
 non-reference `ArtPiece` rows, and is idempotent. The owner-only browser
 refresh flow may subsequently replace a fixture raster through the same
 version-bound upload contract.
+
+Production invocations must provide an explicit repeated `--source-id`
+allowlist; the production wrapper refuses to run without
+`REFERENCE_IMPORT_SOURCE_IDS`. This prevents a bounded owner-authorized
+refresh, such as #788's two C2 fixtures, from implicitly importing the full
+six-fixture matrix.
 
 ## Share-metadata diagnostic (`#717`)
 
@@ -457,10 +750,40 @@ the next request without a manual artifact edit or deployment.
 `/llms.txt` is the concise orientation document; `/llms-full.txt` is the
 expanded bounded inventory of published CMS pages and canonical public
 profile, collection, and piece routes. Both use deterministic ordering and
-safe text serialization. Draft, deleted, private, unpublished, credential,
+safe text serialization. Their links are absolute URLs on the validated
+request host, including the concise document's link to `/llms-full.txt`, so a
+copied or cached file retains resolvable destinations. Draft, deleted, private, unpublished, credential,
 provider-identity, billing, admin, account-management, and other internal
 data or routes are excluded. Existing routes and API contracts remain
 backward-compatible.
+
+## Generated crawler directives (#1199)
+
+`GET /robots.txt` is an anonymous, request-time generated `text/plain`
+resource. It allows public routes, disallows `/api/`, `/admin`, `/account`,
+`/accounts/`, and `/studio`, and names absolute `/sitemap.xml` and `/llms.txt`
+URLs on the validated request host. It is proxied to Django by the Vite dev
+and preview servers; no static crawler file is required.
+
+## Generated public sitemap (#1200)
+
+`GET /sitemap.xml` is an anonymous request-time `application/xml` sitemap
+containing `/gallery`, published CMS pages, eligible public profiles and
+collections, and canonical URLs for eligible 2D, 3D, and generated pieces.
+Entries use absolute URLs on the validated request host and the record's
+`updated_at` date as `lastmod`; deterministic output is capped at 50,000 URLs
+per sitemap response. The existing public eligibility selectors and canonical
+piece URL builder define publication/privacy boundaries. It is proxied to
+Django by the Vite dev and preview servers.
+
+## Unknown frontend routes (#1201)
+
+On the production `vite preview` run path, a request for an unknown,
+non-asset, non-API route receives the normal frontend HTML shell with HTTP
+404. Paths matching the route table in `frontend/src/App.tsx` remain HTTP
+200; the same shell still renders the client-side not-found page for unknown
+paths. Static assets, `/api`, `/accounts`, and `/health` keep their existing
+serving and proxy behavior.
 
 ## Structured AI-run plans (#656)
 
@@ -512,6 +835,20 @@ Existing layers and shapes must remain deep-equal. Unknown asset ids,
 multiple new layers, existing-layer changes, and image shapes without a
 submitted descriptor are rejected before the run reaches review.
 
+## AI-run project intent context (#1140)
+
+`POST /api/ai/runs/` accepts optional boolean `use_intent_notes` for a
+server-backed 2D `project`; it defaults to `true`. When enabled and
+`Project.brief` is non-empty, the run stores a bounded private snapshot and
+adds it as explicitly untrusted context to every provider attempt, including
+repair attempts. The snapshot is not included in run API responses or account
+exports and is cleared on account deletion. 3D runs ignore this option. The
+2D editor discloses the character count and offers a per-request exclusion
+toggle. The note is bounded to 1,500 characters (about 400 tokens); this
+adds no provider call and does not change quota behavior. With an empty note
+or `use_intent_notes: false`, the provider prompt and `input_digest` remain
+byte-identical to the existing behavior.
+
 ## AI-run plan evaluation and retries (#657)
 
 Each run snapshots the owner's `AIRetryPreference` at start as
@@ -531,6 +868,33 @@ Failed attempts never populate `candidate_scene` or `candidate_patch`; only a
 fully passing attempt can be accepted. Cancellation and exhausted retry
 budgets are terminal. The run quota counter is charged once for every provider
 call, including failed and automatically retried calls.
+
+## 2D AI-run acceptance and discard history (#1132)
+
+The owner may include an optional `reason` in
+`POST /api/ai/runs/<id>/accept/` or `POST /api/ai/runs/<id>/cancel/`:
+
+```json
+{"reason":"The proposal matches the intended update."}
+```
+
+The value must be a string of at most 280 Unicode code points as submitted.
+The server removes Unicode control characters (General Category `Cc`), trims
+surrounding whitespace, preserves other Unicode, and omits a normalized empty
+value. Missing, `null`, empty, or whitespace-only values are also absent. A
+non-string or overlong value returns HTTP 400 with the standard field-error
+shape; overlong values are rejected rather than truncated. Omitting `reason`
+keeps the endpoint's existing response JSON and status behavior unchanged.
+
+Successful acceptance of a 2D proposal records one `ai_proposal_accepted`
+project activity. The first explicit cancel while a 2D run is awaiting review
+records one `ai_proposal_rejected` activity. Both entries identify the
+authenticated owner and contain only `run_id`, `scope`, `operation`, a
+`change_summary` capped at 200 characters, and optional normalized `reason`.
+Running/terminal cancellation, internal cancellation/failure, failed or stale
+acceptance, and all 3D runs do not create these events. Event creation is
+atomic with the corresponding run/version transition and retries do not
+duplicate events.
 
 ## Generated art-piece refinement (#658)
 
@@ -618,6 +982,34 @@ The same metadata service provides anonymous projections for the site shell:
   public collection title, description, canonical path, and the first real
   member thumbnail when available.
 
+- `GET /api/public/share-meta/site/home/` and
+  `GET /api/public/share-meta/site/gallery/` also return a bounded
+  `gallery_items` array for no-JavaScript HTML rendering. The home response
+  uses `/` as its canonical path; the gallery response uses `/gallery`.
+  Each item contains only `title`, a canonical `path`, and an optional
+  plain-text `description` bounded to 320 characters. 2D pieces use their
+  public description; generated pieces and collections use the same
+  SEO-description/answer-summary precedence as `/llms-full.txt`, then fall
+  back to the record's description. 3D pieces may omit a description. The
+  list includes
+  eligible published 2D, 3D, generated-art and public collection entries
+  whose owner has an active public profile with a handle, in deterministic
+  gallery order, capped at the first 24 items. Private, unlisted-profile,
+  draft, deleted and otherwise ineligible content is omitted. The frontend
+  web server renders these links inside a `<noscript>` fallback; the React
+  gallery remains the interactive view.
+
+- `GET /api/public/share-meta/site/collections/` returns the same bounded
+  `gallery_items` projection for the public collections index, ordered by
+  the index's default newest-first order and canonicalized to `/collections`.
+- `GET /api/public/share-meta/site/generated/` returns only eligible,
+  published generated-art pieces, canonicalized to `/gallery?type=generated`.
+  This serves a no-JavaScript fallback on the legacy `/art-pieces/gallery`
+  route; with JavaScript, that route keeps redirecting to the unified gallery.
+  Both projections use an optional `gallery_heading` string to label their
+  `<noscript>` section. Their `gallery_items` fields contain only public
+  titles and canonical paths, capped at 24 items.
+
 Missing or private profile/collection lookups receive generic site metadata;
 they never expose profile or collection fields. The Vite dev/preview server
 injects these projections into `/`, `/users/@<handle>`, and
@@ -666,9 +1058,11 @@ accounts (#571).
 `available_styles` catalog containing only enabled, server-managed styles.
 `PATCH /api/account/profile/` accepts `style_key`; unknown or newly disabled
 styles return field-level validation errors, while an existing assignment
-remains readable after an administrator disables it. `theme_config` remains a
-validated token-only compatibility override and cannot contain CSS, HTML, or
-JavaScript.
+remains readable after an administrator disables it. A `null` `style_key`
+clears the profile-level choice; the profile then inherits the effective site
+style, and metadata-only profile updates may send this value unchanged from
+the GET response. `theme_config` remains a validated token-only compatibility
+override and cannot contain CSS, HTML, or JavaScript.
 
 ## Vendor-aware saved AI models (#553)
 
@@ -905,6 +1299,26 @@ surfaces use the runtime adapters; embed and editor consumers remain
 capability-gated until their dependent contracts are implemented. Existing
 four-engine rows and identifier-based routes remain compatible.
 
+### Related published 2D pieces (#1141)
+
+`GET /api/public/projects/<public_id>/related/` returns
+`{"results": [...]}` with at most six anonymous public gallery cards for
+other eligible, published 2D projects. The source must itself be currently
+published, have a current version, and not be soft-deleted; otherwise the
+route returns the same `404` boundary as public project detail. Candidates
+come from the 200 newest eligible 2D projects (excluding the source), which
+bounds the portable Python-side scoring without database-specific JSON
+containment. A candidate qualifies when it shares at least one tag or its
+current scene uses the same renderer as the source. Results sort by shared
+tag count descending, renderer match first, publication time descending, then
+public project id descending. No match yields `{"results": []}`. Each item
+uses the unified public gallery card projection (`id`, `kind`, `title`,
+`owner`, `owner_handle`, `published_at`, `thumbnail_url`, `viewer_url`, and
+applicable engine metadata); private project fields, owner email, activity,
+drafts, intent notes, and scene data are excluded. Candidate loading uses one
+bounded query with related owner/version records preloaded, avoiding N+1
+queries.
+
 ### Public gallery search (#581)
 
 `GET /api/public/gallery/search/?q=<term>&scope=accounts|content` searches
@@ -1104,6 +1518,37 @@ registered-but-not-yet-implemented engines remain visible with explicit false
 capabilities and must not be treated as runnable. The frontend uses this
 catalog for its engine control and keeps the selected engine in the shareable
 URL.
+
+## Additional anonymous public discovery endpoints (#1212)
+
+The MCP public-piece, collection, and search tools match these JSON endpoints:
+
+- `GET /api/public/projects3d/{public_id}/` returns the public 3D project
+  serializer, including its current public scene snapshot and safe version
+  summaries; a non-public or missing project returns 404.
+- `GET /api/public/art-pieces/` lists published generated-piece metadata and
+  current public versions. `GET /api/public/art-pieces/{public_id}/` returns
+  one published piece; its thumbnail is served by
+  `GET /api/public/art-pieces/{public_id}/thumbnail.png`. These endpoints use
+  `eligible_art_pieces` / `_public_piece_or_404` and `_piece_data(public=True)`.
+  Public data contains no prompt or owner id. Executable source is exposed only
+  to the same extent as the existing public generated-piece endpoint.
+- `GET /api/collections/public/` returns bounded public collection cards and
+  accepts `sort` (`newest`, `oldest`, `item_count`), `cursor`, and `page_size`.
+  `GET /api/public/collections/{handle}/{slug}/` returns an active, published
+  collection only when its owner has a public profile; historical slugs
+  redirect to the current public URL, while private or missing collections
+  return 404.
+- `GET /api/public/gallery/search/` accepts `q` (at most 100 characters) and
+  `scope` (`content` or `accounts`), returning at most 50 visibility-filtered
+  results. Account search returns public profiles only; content search reuses
+  the public project, generated-piece, and 3D eligibility selectors.
+
+The unified `GET /api/public/gallery/` remains the canonical all-kind,
+cursor-paginated piece listing (2D, 3D, generated, and collections); its
+`type`, `engine`, `cursor`, and `page_size` rules are specified above. MCP
+results preserve the REST serializers and privacy gates rather than returning
+source, prompts, emails, drafts, or owner-only fields.
 
 ## Signup-time cloud-sync consent (#524)
 
@@ -1656,6 +2101,24 @@ same values before accepting data; #931 intentionally does not add enforcement.
 
 POST /api/pieces/intake/ accepts an authenticated owner-scoped multipart/form-data upload with package (the #930 ZIP) and optional idempotency_key, piece_id, and expected_revision. Intake is a private server-side sync operation: it never publishes or changes visibility, even when visibilityIntent is public; public transfer remains the explicit publish path. Replaying idempotency_key is safe. piece_id appends a new immutable version and preserves history; omission creates a fresh private piece with a fresh public id. A media asset may optionally carry sourceAssetId, the stable browser-local asset identifier retained for later public-media delivery; packages without it remain valid.
 
+The MCP tool `intake_piece_package` invokes this same REST view and multipart
+parser with a base64-encoded ZIP. Its decoded ZIP limit is 180 KiB, leaving
+room for base64 and MCP protocol fields under the transport's 256 KiB request
+limit. The REST endpoint remains independently bounded by its 50 MiB archive
+limit; the smaller MCP limit is an input-transport cap. Both paths retain the
+same ZIP validation, ownership, quota, and idempotency behavior.
+
+MCP `delete_version` invokes `DELETE /api/projects/{public_id}/versions/{version_id}/`
+only when the separately granted `destructive` and `projects:write` scopes are
+present and `confirm` exactly matches `{public_id}:{version_id}`. It preserves
+the REST owner check, current-version protection, soft-delete behavior, and
+activity audit. The existing `restore_version` MCP operation restores a
+historical version by creating a new version; it does not undelete the source.
+MCP project deletion is not exposed because the current owner-facing project
+API has no corresponding restore route. The owner deferred `delete_project`
+from the first MCP release; a separate owner-only REST recovery feature is
+tracked in #1240 before any future MCP project-deletion decision.
+
 The endpoint validates the complete archive before entering the write transaction, rejects unsafe paths, checksums, MIME declarations, executable extensions, archive limits, and image metadata, strips EXIF/GPS from accepted image assets, and enforces the owner's cloud-sync entitlement and storage quota. Failed requests leave no piece, version, media, receipt, or audit row. Successful requests create an owner-visible piece_intake audit event. The endpoint is rate limited per authenticated owner and returns privacy-preserving 404 responses for foreign or unknown piece_id values.
 
 ## Published piece media delivery (#941)
@@ -1667,3 +2130,36 @@ foreign, unknown, and unsupported-kind lookups all return `404` without
 revealing whether an asset exists. Successful responses send the retained MIME
 type, `X-Content-Type-Options: nosniff`, `Cache-Control: public, immutable`,
 `Access-Control-Allow-Origin: *`, and the stored checksum.
+
+## Owner-only project continuity metrics (#1143)
+
+`GET /api/admin/continuity-metrics/` is an additive, read-only endpoint for
+application administrators. It returns only aggregate cohorts for each
+owner's first, second, and third server-backed 2D `Project`, ordered by
+`created_at` then primary key. Lifetime projects and proposal activity are
+included, including soft-deleted projects still represented in the database;
+there is no date cutoff. The response contains no user, project, prompt, or
+scene identifiers or content. The response is
+`{"cohorts":[{"project_position":1,"suppressed":true,"metrics":null}]}`.
+Each of positions 1–3 always has a cohort row. Cohorts with fewer than five
+distinct owners suppress all metric values with `suppressed: true` and
+`metrics: null`; others return `proposals_per_project`, `accepted_share`, and
+`median_time_to_accept_seconds` under `metrics`. `accepted_share` is `null`
+when that cohort has no reviewable proposals; the median is `null` when no
+project in that cohort has both required timestamps.
+
+A reviewable proposal is an `AIRun` in `awaiting_review` or `accepted`, or a
+recorded `AI_PROPOSAL_REJECTED` event for a 2D project. Provider failures and
+cancellations before review are excluded. Accepted share is accepted proposals
+divided by all reviewable proposals. Proposals per project includes projects
+with zero reviewable proposals. Median time includes only projects with both a
+first run and an accepted proposal; the duration is from the first run's
+`created_at` to the acceptance activity's `created_at`.
+
+The full-history aggregate runs on demand using existing project, run, and
+activity foreign-key indexes. PostgreSQL enforces a five-second statement
+timeout for the aggregate. If the database cancels it, the endpoint returns a
+retryable `503` and no partial or truncated metrics. No history window,
+background job, cache, or schema change is part of this contract. This
+endpoint covers structured 2D projects only; 3D and generated-piece activity
+are not included.

@@ -14,6 +14,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 type Engine = 'threejs' | 'aframe';
@@ -124,15 +125,7 @@ test.describe('drawing plane in ZIP exports (#787)', () => {
         test.setTimeout(180_000);
         await page.setViewportSize({ width: 1280, height: 900 });
         await loginViaUI(page, fixtures.owner.email, fixtures.password);
-        await page.goto('/');
-        await page.getByRole('button', { name: 'More creation options' }).click();
-        const created = page.waitForResponse(
-          (res) =>
-            res.request().method() === 'POST' && new URL(res.url()).pathname === '/api/projects3d/',
-        );
-        await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
-        const { id } = (await (await created).json()) as { id: string };
-        await page.waitForURL(/\/users\/@[^/]+\/edit\//);
+        const id = await createServerProject3D(page);
         expect(
           (
             await apiPost(context, `/api/projects3d/${id}/versions/`, {
@@ -145,7 +138,6 @@ test.describe('drawing plane in ZIP exports (#787)', () => {
         await expect(page.getByRole('toolbar', { name: 'Preview actions' })).toBeVisible();
 
         const toolbar = page.getByRole('toolbar', { name: 'Preview actions' });
-        await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
         await toolbar.getByRole('button', { name: 'Open download menu' }).click();
         const download = page.waitForEvent('download');
         await page.getByRole('menuitem', { name: new RegExp(`Download ${variant}`, 'i') }).click();

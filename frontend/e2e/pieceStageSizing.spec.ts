@@ -59,6 +59,18 @@ test.describe('Generated regular-piece stage sizing (#703)', () => {
       const geometry = await stage.evaluate((element) => {
         const rect = element.getBoundingClientRect();
         const style = getComputedStyle(element);
+        const iframe = element.querySelector('iframe')!;
+        const frameRect = iframe.getBoundingClientRect();
+        const row = document.querySelector<HTMLElement>('.public-art-piece-toolbar-row')!;
+        const rowRect = row.getBoundingClientRect();
+        const toolbar = row.querySelector<HTMLElement>('[role="toolbar"]')!;
+        const toolbarRect = toolbar.getBoundingClientRect();
+        const phoneTargets = Array.from(row.querySelectorAll<HTMLElement>('button, a')).filter(
+          (target) =>
+            !target.classList.contains('sr-only') &&
+            target.getClientRects().length > 0 &&
+            getComputedStyle(target).visibility === 'visible',
+        );
         return {
           left: rect.left,
           right: rect.right,
@@ -66,6 +78,19 @@ test.describe('Generated regular-piece stage sizing (#703)', () => {
           height: rect.height,
           aspectRatio: style.aspectRatio,
           backgroundColor: style.backgroundColor,
+          frameBottom: frameRect.bottom,
+          rowTop: rowRect.top,
+          toolbarInsideStage:
+            toolbarRect.left >= rect.left &&
+            toolbarRect.right <= rect.right &&
+            toolbarRect.top >= rect.top &&
+            toolbarRect.bottom <= rect.bottom,
+          phoneTargetsAtLeast44:
+            phoneTargets.length > 0 &&
+            phoneTargets.every((target) => {
+              const targetRect = target.getBoundingClientRect();
+              return targetRect.width >= 44 && targetRect.height >= 44;
+            }),
           scrollWidth: document.documentElement.scrollWidth,
           clientWidth: document.documentElement.clientWidth,
         };
@@ -73,7 +98,14 @@ test.describe('Generated regular-piece stage sizing (#703)', () => {
       expect(geometry.width).toBeGreaterThan(0);
       expect(geometry.height).toBeGreaterThan(0);
       expect(geometry.aspectRatio).toMatch(/16\s*\/\s*9/);
-      expect(geometry.height).toBeLessThanOrEqual(viewport.height);
+      expect({
+        stageFitsViewport: geometry.height <= viewport.height,
+        toolbarPlacement:
+          viewport.width <= 700
+            ? geometry.rowTop >= geometry.frameBottom
+            : geometry.toolbarInsideStage,
+        phoneTargets: viewport.width > 700 || geometry.phoneTargetsAtLeast44,
+      }).toEqual({ stageFitsViewport: true, toolbarPlacement: true, phoneTargets: true });
       expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
       expect(geometry.right - geometry.left).toBeCloseTo(geometry.width, 1);
       expect(geometry.backgroundColor).not.toBe('rgb(255, 255, 255)');

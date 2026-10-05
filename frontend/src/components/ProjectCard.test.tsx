@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -126,38 +126,45 @@ describe('ProjectCard: delete (issue #252)', () => {
 
   it('confirms, deletes, and notifies the parent on success', async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     mockedDeleteProject.mockResolvedValue(undefined);
     const onDeleted = vi.fn();
     renderCard(baseProject({ id: 'abc-123' }), onDeleted);
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog).toHaveTextContent('My animation');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
-    expect(window.confirm).toHaveBeenCalled();
     await waitFor(() => expect(mockedDeleteProject).toHaveBeenCalledWith('abc-123'));
     await waitFor(() => expect(onDeleted).toHaveBeenCalledWith('abc-123'));
   });
 
   it('does nothing when the confirmation is declined', async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(false);
     const onDeleted = vi.fn();
     renderCard(baseProject(), onDeleted);
 
-    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    const trigger = screen.getByRole('button', { name: 'Delete' });
+    await user.click(trigger);
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel' }),
+    );
 
     expect(mockedDeleteProject).not.toHaveBeenCalled();
     expect(onDeleted).not.toHaveBeenCalled();
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 
   it('shows an error and re-enables the button when the request fails', async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     mockedDeleteProject.mockRejectedValue(new Error('boom'));
     const onDeleted = vi.fn();
     renderCard(baseProject(), onDeleted);
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Could not delete this project. Please try again.',
@@ -174,38 +181,41 @@ describe('ProjectCard: delete (issue #252)', () => {
   // checkpoint fails.
   it('deletes directly with a single confirm when the project is not cloud-synced', async () => {
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const confirmSpy = vi.spyOn(window, 'confirm');
     mockedSaveNowBeforeClearing.mockResolvedValue({ applicable: false });
     mockedDeleteProject.mockResolvedValue(undefined);
     const onDeleted = vi.fn();
     renderCard(baseProject({ id: 'abc-123' }), onDeleted);
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
 
     await waitFor(() => expect(mockedDeleteProject).toHaveBeenCalledWith('abc-123'));
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
   it('deletes directly once a checkpoint succeeds for a cloud-synced project', async () => {
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const confirmSpy = vi.spyOn(window, 'confirm');
     mockedSaveNowBeforeClearing.mockResolvedValue({ applicable: true, success: true });
     mockedDeleteProject.mockResolvedValue(undefined);
     const onDeleted = vi.fn();
     renderCard(baseProject({ id: 'abc-123' }), onDeleted);
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
 
     await waitFor(() => expect(mockedDeleteProject).toHaveBeenCalledWith('abc-123'));
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(confirmSpy).not.toHaveBeenCalled();
   });
 
   it('asks for an explicit override naming the reason when the checkpoint fails, and never deletes if declined', async () => {
     const user = userEvent.setup();
-    const confirmSpy = vi
-      .spyOn(window, 'confirm')
-      .mockReturnValueOnce(true) // initial "Delete ...?" confirm
-      .mockReturnValueOnce(false); // "... Delete anyway?" override
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
     mockedSaveNowBeforeClearing.mockResolvedValue({
       applicable: true,
       success: false,
@@ -215,8 +225,11 @@ describe('ProjectCard: delete (issue #252)', () => {
     renderCard(baseProject({ id: 'abc-123' }), onDeleted);
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
 
-    await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1));
     expect(confirmSpy).toHaveBeenLastCalledWith(
       expect.stringContaining('A newer version already exists in the cloud copy.'),
     );
@@ -237,6 +250,9 @@ describe('ProjectCard: delete (issue #252)', () => {
     renderCard(baseProject({ id: 'abc-123' }), onDeleted);
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
 
     await waitFor(() => expect(mockedDeleteProject).toHaveBeenCalledWith('abc-123'));
     await waitFor(() => expect(onDeleted).toHaveBeenCalledWith('abc-123'));
@@ -244,14 +260,33 @@ describe('ProjectCard: delete (issue #252)', () => {
 
   it('skips the checkpoint entirely for a project with no saved version yet', async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     mockedDeleteProject.mockResolvedValue(undefined);
     const onDeleted = vi.fn();
     renderCard(baseProject({ id: 'abc-123', current_version: null }), onDeleted);
 
     await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+    );
 
     await waitFor(() => expect(mockedDeleteProject).toHaveBeenCalledWith('abc-123'));
     expect(mockedSaveNowBeforeClearing).not.toHaveBeenCalled();
+  });
+
+  it('cancels with Escape and restores focus to the delete trigger', async () => {
+    const user = userEvent.setup();
+    renderCard(baseProject());
+
+    const trigger = screen.getByRole('button', { name: 'Delete' });
+    await user.click(trigger);
+    expect(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel' }),
+    ).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(mockedDeleteProject).not.toHaveBeenCalled();
   });
 });

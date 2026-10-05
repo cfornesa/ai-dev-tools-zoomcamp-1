@@ -109,12 +109,36 @@ describe('Project3DWorkspace rendering library (#771, #772)', () => {
 });
 
 describe('Project3DWorkspace Save action', () => {
+  it('renders independent full-width Web address and Sound accordion sections', async () => {
+    mockedGetProject3D.mockResolvedValue(baseProject());
+    const user = userEvent.setup();
+
+    renderWorkspace();
+    await screen.findByTestId('project3d-save-status');
+    const webAddress = screen.getByRole('button', { name: 'Web address' });
+    const sound = screen.getByRole('button', { name: 'Sound' });
+    expect(webAddress).toHaveAttribute('aria-expanded', 'false');
+    expect(sound).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('region', { name: 'Project settings' })).toBeInTheDocument();
+
+    await user.click(webAddress);
+    expect(webAddress).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Public URL slug')).toBeVisible();
+    expect(sound).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(sound);
+    expect(sound).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('group', { name: 'Authored sound defaults' })).toBeVisible();
+    expect(webAddress).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('exposes 3D authoring commands in the stage menu and makes object edits undoable', async () => {
     mockedGetProject3D.mockResolvedValue(baseProject());
     const user = userEvent.setup();
 
     renderWorkspace();
     await screen.findByTestId('project3d-save-status');
+    expect(screen.getByTestId('project3d-save-button')).toBeInTheDocument();
     await screen.findByTestId('scene3d-preview-unavailable');
     await user.click(screen.getByRole('button', { name: 'Open piece controls menu' }));
 
@@ -125,11 +149,22 @@ describe('Project3DWorkspace Save action', () => {
     await user.click(screen.getByRole('button', { name: '3D authoring' }));
 
     expect(screen.getByRole('group', { name: '3D authoring actions' })).toBeInTheDocument();
+    const helpersToggle = screen.getByRole('button', { name: 'Hide grid and axes' });
+    expect(helpersToggle).toHaveAttribute('aria-pressed', 'true');
+    await user.click(helpersToggle);
+    expect(screen.getByRole('button', { name: 'Show grid and axes' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     await user.click(screen.getByRole('button', { name: 'Add sphere' }));
     await user.click(screen.getByRole('button', { name: 'Add plane' }));
+    await user.click(screen.getByRole('button', { name: 'Add box' }));
+    await user.click(screen.getByRole('button', { name: 'Add cylinder' }));
     await user.click(screen.getByRole('button', { name: 'Add group' }));
     expect(screen.getByRole('button', { name: 'Sphere 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Plane 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Box 1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cylinder 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Group: Group 1' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Sphere 1' }));
@@ -157,6 +192,11 @@ describe('Project3DWorkspace Save action', () => {
       'p1',
       expect.objectContaining({
         objects: expect.arrayContaining([expect.objectContaining({ type: 'sphere' })]),
+      }),
+      expect.objectContaining({
+        html_source: expect.stringContaining('<main id="scene-3d">'),
+        css_source: expect.stringContaining('#scene-3d'),
+        js_source: expect.stringContaining('CAMERA_CONFIG_BEGIN'),
       }),
     );
   });
@@ -214,7 +254,15 @@ describe('Project3DWorkspace Save action', () => {
     await waitFor(() =>
       expect(screen.getByTestId('project3d-save-status')).toHaveTextContent('Saved as version 2'),
     );
-    expect(mockedSaveSceneVersion3D).toHaveBeenCalledWith('p1', expect.any(Object));
+    expect(mockedSaveSceneVersion3D).toHaveBeenCalledWith(
+      'p1',
+      expect.any(Object),
+      expect.objectContaining({
+        html_source: expect.any(String),
+        css_source: expect.any(String),
+        js_source: expect.any(String),
+      }),
+    );
     expect(screen.getByTestId('project3d-save-button')).toBeDisabled();
   });
 

@@ -147,6 +147,7 @@ whoami_status="$(curl -sS --max-time 3 -o "$WORK_DIR/whoami.json" -w '%{http_cod
 
 export E2E_BASE_URL="http://127.0.0.1:$FRONTEND_PORT"
 export E2E_ENV_FILE="$ENV_FILE"
+export E2E_FIXTURE_ENVIRONMENT=disposable-local
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$WORK_DIR/uv-cache}"
 log "Running Layers browser acceptance suite against $E2E_BASE_URL"
 if [[ -n "$E2E_SPEC" ]]; then

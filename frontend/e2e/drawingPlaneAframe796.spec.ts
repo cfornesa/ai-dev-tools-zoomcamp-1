@@ -7,7 +7,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { apiPost } from './support/api.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlank3DProjectViaUI } from './support/createProject3d.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const SCENE = {
@@ -106,7 +106,7 @@ test.describe('drawing-plane selection chrome on the A-Frame stage (#796)', () =
       test.setTimeout(150_000);
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const id = await createBlank3DProjectViaUI(page);
+      const id = await createServerProject3D(page);
       expect(
         (
           await apiPost(page.context(), `/api/projects3d/${id}/versions/`, {

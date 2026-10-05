@@ -53,22 +53,19 @@ test.describe('Authoring workspaces redirect a non-owner away from owner control
     for (const viewport of VIEWPORTS) {
       for (const visitorPage of [anonPage, otherPage]) {
         await visitorPage.setViewportSize(viewport);
-        // The 2D manual/AI editors each fetch the owner-only SceneVersion
-        // detail (`Action.VERSION_READ`, owner-only for every project
-        // regardless of publish status) right after the project itself,
-        // so a non-owner already 404s there and lands on the same
-        // "You don't have access" state a private project produces --
-        // never a URL redirect to the public viewer, but just as
-        // effectively never the authoring UI either.
         await visitorPage.goto(`/projects/${project.id}`);
-        await expect(visitorPage.getByRole('alert')).toContainText("don't have access");
+        await expect(visitorPage.getByRole('alert')).toContainText(
+          'This art piece isn’t available.',
+        );
         await expect(visitorPage.getByRole('button', { name: 'Edit title' })).toHaveCount(0);
         await expect(
           visitorPage.getByRole('button', { name: 'Unpublish', exact: true }),
         ).toHaveCount(0);
 
         await visitorPage.goto(`/ai-projects/${project.id}`);
-        await expect(visitorPage.getByRole('alert')).toContainText("don't have access");
+        await expect(visitorPage.getByRole('alert')).toContainText(
+          'This art piece isn’t available.',
+        );
         await expect(visitorPage.getByRole('button', { name: 'Edit title' })).toHaveCount(0);
       }
     }
@@ -87,14 +84,16 @@ test.describe('Authoring workspaces redirect a non-owner away from owner control
     ).toBeVisible();
   });
 
-  test('a published 3D project: signed-out and non-owner visitors are redirected off /projects3d/:id and /ai-projects3d/:id, at both viewports', async ({
+  test('a published 3D project: signed-out and non-owner visitors cannot access the owner editor from legacy routes, at both viewports', async ({
     page,
     context,
   }) => {
     await loginViaUI(page, fixture.owner.email, fixture.password);
     const created = await apiPost(context, '/api/projects3d/', {});
     expect(created.status()).toBe(201);
-    const project = (await created.json()) as { id: string };
+    const project = (await created.json()) as { id: string; editor_url?: string };
+    if (!project.editor_url) throw new Error('The 3D project omitted its canonical editor URL.');
+    const ownerEditorPath = project.editor_url;
     const published = await apiPost(context, `/api/projects3d/${project.id}/publish/`);
     expect(published.status()).toBe(200);
 
@@ -108,13 +107,20 @@ test.describe('Authoring workspaces redirect a non-owner away from owner control
       for (const visitorPage of [anonPage, otherPage]) {
         await visitorPage.setViewportSize(viewport);
         await visitorPage.goto(`/projects3d/${project.id}`);
-        await expect(visitorPage).toHaveURL(new RegExp(`/p3d/${project.id}$`));
+        await expect
+          .poll(async () => ({
+            path: new URL(visitorPage.url()).pathname,
+            unavailableMessage: (await visitorPage.getByRole('alert').textContent())?.includes(
+              'This art piece isn’t available.',
+            ),
+          }))
+          .toEqual({ path: ownerEditorPath, unavailableMessage: true });
         await expect(
           visitorPage.getByRole('button', { name: 'Unpublish', exact: true }),
         ).toHaveCount(0);
 
         await visitorPage.goto(`/ai-projects3d/${project.id}`);
-        await expect(visitorPage).toHaveURL(new RegExp(`/p3d/${project.id}$`));
+        await expect.poll(() => new URL(visitorPage.url()).pathname).toBe(ownerEditorPath);
       }
     }
 

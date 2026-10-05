@@ -108,12 +108,14 @@
  * validation, versioning, accept/reject, draft persistence/cleanup, and
  * recovery — never prompt quality.
  */
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Dialog, type Page } from '@playwright/test';
 
 import { apiGet, apiPost, apiPut } from './support/api.js';
 import { aiScenarioHeader, resetAIScenario, setAIScenario } from './support/aiScenario.js';
 import { loginViaUI } from './support/auth.js';
-import { createBlankProjectViaUI } from './support/createProject.js';
+import { saveScene } from './support/saveScene.js';
+import { createServerProject2D } from './support/createProject.js';
+import { closeEditScene, closePieceControlsMenu, openEditScene } from './support/openEditScene.js';
 import {
   readLocalDraft,
   readSessionId,
@@ -126,11 +128,32 @@ import type { E2EState } from './support/state.js';
 
 type Fixtures = Extract<E2EState, { available: true }>;
 
+/** Reload the dirty editor in browser runs where Chromium surfaces its
+ * native beforeunload confirmation. Recovery scenarios deliberately reload
+ * after seeding IndexedDB; accept only that browser guard so the app can
+ * mount and evaluate the recovery candidate. */
+async function reloadDirtyEditor(page: Page): Promise<void> {
+  const receivedDialogs: Dialog[] = [];
+  const handleDialog = (dialog: Dialog) => {
+    receivedDialogs.push(dialog);
+    void dialog.accept();
+  };
+
+  page.once('dialog', handleDialog);
+  try {
+    await page.reload();
+  } finally {
+    page.off('dialog', handleDialog);
+  }
+
+  expect(receivedDialogs[0]?.type()).toBe('beforeunload');
+}
+
 /**
  * Issue #113: every Tools/Inspector `CollapsibleSection` (issue #95)
  * defaults closed, so a scenario that needs one open must call
  * `expandAllCollapsibleSections` explicitly at its own call site --
- * deliberately NOT baked into `createBlankProjectViaUI` itself. This
+ * deliberately NOT baked into `createServerProject2D` itself. This
  * suite's "Draft recovery" scenarios seed a local IndexedDB draft right
  * after creating the project, with no fake clock installed yet, racing
  * the app's own real (uncontrolled) ~1.5s "no changes since last save"
@@ -145,12 +168,7 @@ type Fixtures = Extract<E2EState, { available: true }>;
 async function openAuthoringControls(page: Page): Promise<void> {
   const addCircle = page.getByRole('button', { name: 'Add circle' });
   if (!(await addCircle.isVisible())) {
-    const pieceControlsMenu = page.getByRole('button', { name: 'Open piece controls menu' });
-    await expect(pieceControlsMenu).toBeVisible();
-    await pieceControlsMenu.click();
-    const editScene = page.getByRole('button', { name: 'Edit scene' });
-    await expect(editScene).toBeVisible();
-    await editScene.click();
+    await openEditScene(page);
   }
   await expect(addCircle).toBeVisible();
 }
@@ -177,7 +195,7 @@ function versionRow(page: Page, sequence: number) {
  * this call instead of returning `200`, which is exactly the actionable
  * signal used to skip. */
 async function probeFakeAIProviderMode(context: BrowserContext, page: Page): Promise<boolean> {
-  const projectId = await createBlankProjectViaUI(page);
+  const projectId = await createServerProject2D(page);
   const response = await apiPost(
     context,
     `/api/projects/${projectId}/ai/create-scene/`,
@@ -236,7 +254,7 @@ test.describe('AI create/edit proposals', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page); // version 1
+      await createServerProject2D(page); // version 1
       await expandAllCollapsibleSections(page);
       await setAIScenario(page, 'success');
 
@@ -294,7 +312,7 @@ test.describe('AI create/edit proposals', () => {
           ]),
         }),
       );
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       await setAIScenario(page, 'success');
 
@@ -329,7 +347,7 @@ test.describe('AI create/edit proposals', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page); // version 1
+      await createServerProject2D(page); // version 1
       await expandAllCollapsibleSections(page);
 
       async function attemptAndExpectError(
@@ -366,7 +384,7 @@ test.describe('AI create/edit proposals', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page); // version 1
+      await createServerProject2D(page); // version 1
       await expandAllCollapsibleSections(page);
       await setAIScenario(page, 'success');
 
@@ -388,7 +406,7 @@ test.describe('AI create/edit proposals', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page); // version 1
+      await createServerProject2D(page); // version 1
       await expandAllCollapsibleSections(page);
 
       await page.getByRole('radio', { name: 'Edit' }).click();
@@ -460,7 +478,7 @@ test.describe('Concurrency (PostgreSQL)', () => {
       // concurrency proof silently skip on rate limiting.
       await loginViaUI(page, fixtures.other.email, fixtures.password);
 
-      const projectId = await createBlankProjectViaUI(page); // version 1
+      const projectId = await createServerProject2D(page); // version 1
 
       const projectBefore = (await (
         await apiGet(context, `/api/projects/${projectId}/`)
@@ -523,7 +541,7 @@ test.describe('Concurrency (PostgreSQL)', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
@@ -607,7 +625,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
 
       await page.clock.install();
@@ -632,12 +650,15 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      // Install the fake clock before the editor mounts its periodic sync
+      // interval; installing it afterward leaves that existing interval on
+      // wall-clock time, so fastForward cannot fire it.
+      await page.clock.install();
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
-      await page.clock.install();
       await openAuthoringControls(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
 
@@ -661,7 +682,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
@@ -695,7 +716,8 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await page.clock.install();
+      await createServerProject2D(page);
       const editorUrl = page.url();
       await expandAllCollapsibleSections(page);
 
@@ -707,7 +729,6 @@ test.describe('Local and server draft autosave', () => {
         }
       });
 
-      await page.clock.install();
       await openAuthoringControls(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
 
@@ -737,7 +758,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
@@ -774,7 +795,7 @@ test.describe('Local and server draft autosave', () => {
       await page.clock.fastForward(1700); // let the local debounce fire first
       expect(await readLocalDraft(page, projectId)).not.toBeNull();
 
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
       expect(await readLocalDraft(page, projectId)).toBeNull();
@@ -788,19 +809,19 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      await page.clock.install();
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
       const draftPath = `/api/projects/${projectId}/draft/${encodeURIComponent(sessionId)}/`;
 
-      await page.clock.install();
       await openAuthoringControls(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await page.clock.fastForward(1700); // local debounce fires, seeding a local draft
       expect(await readLocalDraft(page, projectId)).not.toBeNull();
 
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
       // Reproduces the exact evidence sequence from issue #125: POST
@@ -839,16 +860,16 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      await page.clock.install();
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
 
-      await page.clock.install();
       await openAuthoringControls(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
       await page.clock.fastForward(1700);
       expect(await readLocalDraft(page, projectId)).not.toBeNull();
 
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
+      await saveScene(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved as version 2/);
 
       // Reopen before a full periodic interval would have elapsed.
@@ -871,7 +892,7 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
 
       await page.clock.install();
@@ -884,10 +905,8 @@ test.describe('Local and server draft autosave', () => {
       // menu. Close that menu before exercising the page-level exit action so
       // the test models the user's explicit dismissal rather than force-clicking
       // through the modal surface.
-      await page
-        .getByRole('dialog', { name: 'Piece actions' })
-        .getByRole('button', { name: 'Close piece controls menu' })
-        .click();
+      await closePieceControlsMenu(page);
+      await closeEditScene(page);
       await page.getByRole('button', { name: 'Exit without saving' }).click();
       const dialog = page.getByRole('alertdialog', { name: 'Exit without saving?' });
       await expect(dialog).toBeVisible();
@@ -910,7 +929,11 @@ test.describe('Local and server draft autosave', () => {
       // projects that have never opted in remain covered by the unit-level
       // 404/no-op contract for saveNowBeforeClearing.
       const cloudFailure = page.getByRole('alertdialog', { name: 'Could not save to the cloud' });
-      if (await cloudFailure.isVisible().catch(() => false)) {
+      const exitOutcome = await Promise.race([
+        page.waitForURL(/\/(?:studio|gallery)?$/, { timeout: 5000 }).then(() => 'navigated'),
+        cloudFailure.waitFor({ state: 'visible', timeout: 5000 }).then(() => 'needs-override'),
+      ]);
+      if (exitOutcome === 'needs-override') {
         await cloudFailure.getByRole('button', { name: 'Clear anyway' }).click();
       }
       // `navigate('/')` immediately resolves through Home.tsx; authenticated
@@ -944,7 +967,7 @@ test.describe('beforeunload guard', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
 
       const dialogPromise = page.waitForEvent('dialog', { timeout: 5_000 });
@@ -964,7 +987,7 @@ test.describe('beforeunload guard', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
       await expect(page.getByTestId('editor-save-status')).toHaveText(/Saved/);
 
       let dialogSeen = false;
@@ -1006,11 +1029,15 @@ test.describe('Draft recovery', () => {
   test('the recovery prompt: Recover, Discard, and Cancel each behave correctly', async ({
     browser,
   }) => {
+    // This test creates three independent server-backed projects and logs in
+    // for each recovery choice; bound the complete lifecycle accordingly.
+    test.setTimeout(60_000);
+
     await test.step('Recover loads the draft as unsaved working state and leaves the saved version untouched', async () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
 
       await seedLocalDraft(page, {
         projectId,
@@ -1042,7 +1069,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
@@ -1084,7 +1111,8 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
+      const editorUrl = page.url();
 
       await seedLocalDraft(page, {
         projectId,
@@ -1106,7 +1134,7 @@ test.describe('Draft recovery', () => {
       expect(await readLocalDraft(page, projectId)).not.toBeNull();
 
       // Reopening the project still offers the same draft for recovery.
-      await page.goto(`/projects/${projectId}`);
+      await page.goto(editorUrl);
       await expect(page.getByRole('alertdialog', { name: 'Recover unsaved work?' })).toBeVisible();
 
       await context.close();
@@ -1116,11 +1144,15 @@ test.describe('Draft recovery', () => {
   test('expired, corrupt, and unauthorized draft candidates are treated as none; a genuine conflict resolves by recency', async ({
     browser,
   }) => {
+    // Four independent project/login flows and draft probes share this one
+    // aggregate scenario so give its recovery assertions a bounded budget.
+    test.setTimeout(90_000);
+
     await test.step('an expired local draft is treated as none and cleared, never prompted', async () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
 
       const twentyFiveHoursAgo = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
       await seedLocalDraft(page, {
@@ -1146,7 +1178,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
 
       await seedCorruptLocalDraft(page, projectId);
 
@@ -1162,7 +1194,7 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await createBlankProjectViaUI(page);
+      await createServerProject2D(page);
 
       // No real session-expiry path exists to reach a 401/403 for the
       // caller's own draft mid-check (DraftDetailView.get scopes strictly
@@ -1192,9 +1224,16 @@ test.describe('Draft recovery', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      const projectId = await createBlankProjectViaUI(page);
+      const projectId = await createServerProject2D(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
+
+      // Seeded IndexedDB/server records do not make the mounted editor dirty.
+      // Make a real unsaved edit so reloadDirtyEditor exercises the app's
+      // beforeunload guard deterministically instead of relying on incidental
+      // state left by project creation or CI timing.
+      await openAuthoringControls(page);
+      await page.getByRole('button', { name: 'Add circle' }).click();
 
       const older = new Date(Date.now() - 60_000).toISOString();
       await seedLocalDraft(page, {
@@ -1211,7 +1250,7 @@ test.describe('Draft recovery', () => {
       // PUT issued after the local seed above is unambiguously newer in time.
       //
       // Issue #193 root cause (confirmed by live reproduction, not just
-      // static analysis): `createBlankProjectViaUI` above already mounts a
+      // static analysis): `createServerProject2D` above already mounts a
       // real editor for this project, whose `useDraftServerSync` periodic
       // timer (`DEFAULT_SYNC_INTERVAL_MS`, storage/draftServerSync.ts) syncs
       // the pristine, untouched blank scene to the server the moment
@@ -1234,7 +1273,7 @@ test.describe('Draft recovery', () => {
         client_seq: 1_000_000,
       });
 
-      await page.reload();
+      await reloadDirtyEditor(page);
       const prompt = page.getByRole('alertdialog', { name: 'Recover unsaved work?' });
       await expect(prompt).toBeVisible();
       await prompt.getByRole('button', { name: 'Recover draft' }).click();

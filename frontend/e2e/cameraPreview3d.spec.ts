@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
-import { createBlank3DProjectViaUI } from './support/createProject3d.js';
+import { createServerProject3D } from './support/createProject3d.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 import type { E2EState } from './support/state.js';
 
@@ -17,14 +17,11 @@ test.describe('3D independent camera preview', () => {
 
   test('opens and stops the camera preview without enabling steering', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await createBlank3DProjectViaUI(page);
+    await createServerProject3D(page);
 
     const frame = page.getByTestId('scene3d-preview-canvas-frame');
     const toolbar = frame.getByRole('toolbar', { name: 'Preview actions' });
-    // Issue #444: every action in this toolbar (including "Piece
-    // controls") is nested behind "Open piece controls menu" -- matches
-    // immersive3dRouteParity.spec.ts's own working sequence.
-    await toolbar.getByRole('button', { name: 'Open piece controls menu' }).click();
+    // The inline 3D toolbar renders Piece controls directly without a menu.
     await toolbar.getByRole('button', { name: 'Piece controls', exact: true }).click();
     await toolbar.getByRole('button', { name: 'Show camera' }).click();
     await expect(toolbar.getByRole('region', { name: 'Camera preview' })).toBeVisible();

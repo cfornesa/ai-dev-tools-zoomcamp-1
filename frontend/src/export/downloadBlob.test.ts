@@ -1,9 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { downloadBlob } from './downloadBlob';
 
 describe('downloadBlob', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('creates and clicks a synthetic <a download> anchor, then revokes the object URL', () => {
+    vi.useFakeTimers();
     const created: string[] = [];
     const revoked: string[] = [];
     const originalCreate = URL.createObjectURL;
@@ -41,6 +46,7 @@ describe('downloadBlob', () => {
 
     try {
       downloadBlob(new Blob(['x']), 'my-file.png');
+      vi.runAllTimers();
     } finally {
       document.createElement = originalCreateElement;
       URL.createObjectURL = originalCreate;

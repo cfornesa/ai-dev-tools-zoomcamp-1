@@ -1,4 +1,17 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+
+/** Opens the generated-art editor's compact tool row at mobile/tablet widths. */
+export async function expandGeneratedArtEditorTools(page: Page): Promise<void> {
+  const viewport = page.viewportSize();
+  if (!viewport || viewport.width > 1024) return;
+
+  const toggle = page.getByRole('button', { name: 'Editor tools', exact: true });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  }
+}
 
 /**
  * Issue #113: issue #95 flipped every editor `CollapsibleSection`

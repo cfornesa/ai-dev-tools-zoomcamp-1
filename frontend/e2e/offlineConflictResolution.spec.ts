@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { loginViaUI } from './support/auth.js';
+import { localProjectDb } from './support/localProjectDb.js';
 import { requireE2EFixtures } from './support/prerequisites.js';
 
 const VIEWPORTS = [
@@ -10,69 +11,29 @@ const VIEWPORTS = [
 const PROJECT_ID = 'f7e1dc1d-e1df-40e1-ae66-0d7d9f57c994';
 
 async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
-  await page.evaluate(
-    async ({ ownerId, projectId }) => {
-      const repository = (await new Function(
-        'return import("/src/storage/localProjectRepository.ts")',
-      )()) as {
-        openLocalProjectDatabase(): Promise<IDBDatabase>;
-        ensureProject(
-          db: IDBDatabase,
-          input: { id: string; ownerId: string; title: string },
-        ): Promise<unknown>;
-        createScene(
-          db: IDBDatabase,
-          ownerId: string,
-          input: { projectId: string; name: string; sceneJson: Record<string, unknown> },
-        ): Promise<unknown>;
-      };
-      const db = await repository.openLocalProjectDatabase();
-      await repository.ensureProject(db, { id: projectId, ownerId, title: 'Conflict Fixture' });
-      await repository.createScene(db, ownerId, {
-        projectId,
-        name: 'Initial scene',
-        sceneJson: { objects: [{ id: 'shape-1', x: 10 }] },
-      });
-      db.close();
+  await localProjectDb(page, {
+    kind: 'seed',
+    input: {
+      ownerId,
+      projectId: PROJECT_ID,
+      title: 'Conflict Fixture',
+      scene: { name: 'Initial scene', sceneJson: { objects: [{ id: 'shape-1', x: 10 }] } },
     },
-    { ownerId, projectId: PROJECT_ID },
-  );
+  });
 }
 
 async function outboxKinds(page: Page): Promise<Array<{ state: string; type?: string }>> {
-  return page.evaluate(
-    ({ projectId }) =>
-      new Promise<Array<{ state: string; type?: string }>>((resolve, reject) => {
-        const request = indexedDB.open('creatrart-local-projects', 4);
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-          const db = request.result;
-          const read = db
-            .transaction('mutationOutbox', 'readonly')
-            .objectStore('mutationOutbox')
-            .index('by_owner_project')
-            .getAll();
-          read.onsuccess = () => {
-            db.close();
-            resolve(
-              (
-                read.result as Array<{
-                  projectId: string;
-                  state: string;
-                  clientSequence: number;
-                  payload?: { type?: string };
-                }>
-              )
-                .filter((row) => row.projectId === projectId)
-                .sort((left, right) => left.clientSequence - right.clientSequence)
-                .map((row) => ({ state: row.state, type: row.payload?.type })),
-            );
-          };
-          read.onerror = () => reject(read.error);
-        };
-      }),
-    { projectId: PROJECT_ID },
-  );
+  const rows = await localProjectDb<
+    Array<{
+      state: string;
+      projectId: string;
+      clientSequence?: number;
+      payload?: { type?: string };
+    }>
+  >(page, { kind: 'read-outbox', projectId: PROJECT_ID });
+  return rows
+    .sort((left, right) => (left.clientSequence ?? 0) - (right.clientSequence ?? 0))
+    .map((row) => ({ state: row.state, type: row.payload?.type }));
 }
 
 test.describe('Offline conflict resolution (#544)', () => {

@@ -335,8 +335,48 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.openid_connect',
+    'oauth2_provider',
     'scenes',
 ]
+
+# MCP OAuth is authorization-code only. Keep the provider's optional
+# registration/device/OIDC endpoints disabled and advertise only capabilities
+# that this application actually serves. RFC 8707 resource indicators bind
+# each access token to the /mcp/ protected resource.
+OAUTH2_PROVIDER = {
+    'SCOPES': {
+        'gallery:read': 'Read public gallery content.',
+        'projects:write': 'Read and modify your own projects.',
+        'ai:use': 'Use AI tools within your account entitlements and quotas.',
+        'destructive': 'Separately consent to destructive actions.',
+    },
+    'DEFAULT_SCOPES': [],
+    'PKCE_REQUIRED': True,
+    'OAUTH2_VALIDATOR_CLASS': 'scenes.mcp.oauth.MCPOAuth2Validator',
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 900,
+    'REFRESH_TOKEN_EXPIRE_SECONDS': 2592000,
+    'ROTATE_REFRESH_TOKEN': True,
+    'REFRESH_TOKEN_REUSE_PROTECTION': True,
+    'ALLOW_URI_WILDCARDS': False,
+    'ALLOWED_REDIRECT_URI_SCHEMES': ['http', 'https'],
+    'ALLOW_LOCALHOST_LOOPBACK': False,
+    'COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT': True,
+    'COMPLIANT_BCP_RFC9700_PASSWORD_GRANT': True,
+    'COMPLIANT_BCP_RFC9700_PKCE_METHOD': True,
+    'COMPLIANT_BCP_RFC9700_ACCESS_TOKEN_TRANSPORT': True,
+    'COMPLIANT_BCP_RFC9700_TOKEN_STORAGE': True,
+    'COMPLIANT_BCP_RFC9700_REFRESH_TOKEN': True,
+    'COMPLIANT_BCP_RFC9700_REDIRECT_URI_SCHEME': True,
+    'COMPLIANT_BCP_RFC9700_REDIRECT_URI_MATCHING': True,
+    'COMPLIANT_BCP_RFC9700_PKCE_REQUIRED': True,
+    'DCR_ENABLED': False,
+    'CIMD_ENABLED': False,
+    'OAUTH2_RESPONSE_TYPES_SUPPORTED': ['code'],
+    'OAUTH2_GRANT_TYPES_SUPPORTED': ['authorization_code', 'refresh_token'],
+    'OAUTH2_TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED': ['none'],
+    'OAUTH2_PROTECTED_RESOURCE_NAME': 'Creatrweb MCP',
+    'OAUTH2_PROTECTED_RESOURCE_AUTHORIZATION_SERVERS': [],
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -415,6 +455,12 @@ if GITHUB_OAUTH_ENABLED:
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+# Password login protection: allauth's login endpoint remains capped at
+# 30 requests/minute per IP, while this failed-attempt counter caps one
+# normalized email at 5 failed passwords per 300 seconds. Setting the limit
+# to 0 disables the failed-password counter without changing login behavior.
+ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
+ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 300
 # Password lifecycle safety (#563): reset links never create a session, and
 # changing/setting a password invalidates the current session so the next
 # authentication is explicit. Django's token generator remains single-use;
@@ -422,7 +468,10 @@ ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_LOGIN_ON_PASSWORD_RESET = False
 ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 PASSWORD_RESET_TIMEOUT = 3600
-ACCOUNT_FORMS = {'signup': 'backend.forms.RecaptchaSignupForm'}
+ACCOUNT_FORMS = {
+    'login': 'backend.login_forms.LoginForm',
+    'signup': 'backend.forms.RecaptchaSignupForm',
+}
 # V1 supports Google (required), GitHub, and LinkedIn (optional,
 # environment-gated)
 # sign-in only. Both providers verify the email during their OAuth flow,
@@ -451,6 +500,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'backend.context_processors.recaptcha',
+                'backend.context_processors.site_theme',
             ],
         },
     },

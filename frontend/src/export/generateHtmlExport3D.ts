@@ -32,6 +32,7 @@ import {
 } from './standaloneCameraSource';
 import type { Scene3DDocument } from '../pages/scene3dTypes';
 import { normalizeSonic, SONIC_SCALES, type SonicDefaults } from '../audio/sonicContract';
+import { resolveAmbientSample } from '../audio/ambientSampleAsset';
 
 export class Scene3DBundleError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -172,6 +173,7 @@ function buildIndexHtml(
   sonic?: SonicDefaults,
 ): string {
   const authored = sonic ?? normalizeSonic({})!;
+  const microphoneControls = `<div role="group" aria-label="Live mic"><button id="piece-mic" type="button" aria-pressed="false">Live mic</button><fieldset id="piece-mic-effects" hidden><legend>Microphone effects</legend>${['distortion', 'chorus', 'tremolo', 'pitch_shift', 'bitcrusher', 'flanger', 'ring_mod'].map((effect) => `<label><input type="checkbox" data-mic-effect="${effect}">${effect.replace('_', ' ')}</label>`).join('')}</fieldset></div>`;
   const selected = (value: string, current: string) => (value === current ? ' selected' : '');
   return `<!doctype html>
 <html>
@@ -208,7 +210,7 @@ ${renderExportStageToolbar({ buttons: ['screenshot', 'sound', 'controls', 'guide
     </fieldset>
     <p id="piece-sound-status" role="status">Sound is off.</p>
     <p id="piece-keyboard-status" role="status">Turn on Sound to play keyboard notes.</p>
-    ${variant === 'full' ? '<button id="piece-mic" type="button" aria-pressed="false">Live mic</button>' : ''}
+    ${variant === 'full' ? microphoneControls : ''}
     ${variant === 'full' ? '<button id="piece-theremin" type="button" aria-pressed="false">Camera theremin</button>' : ''}
     <p>Enable sound, then turn on keyboard notes to play A–L keys.</p>
     ${variant === 'full' ? '<div id="camera-controls-host" role="group" aria-label="Camera controls"></div>' : ''}
@@ -381,6 +383,11 @@ export async function generateScene3DBundle(
   }
   const runtimeBytes = await fetchThreeRuntime();
   const mediapipeAssets = variant === 'full' ? await fetchMediaPipeAssets() : null;
+  const ambientSampleId = normalizeSonic(scene.sonic)?.extras.ambient_sample;
+  const ambientSample = ambientSampleId ? await resolveAmbientSample(ambientSampleId) : null;
+  const ambientSamplePath = ambientSample
+    ? `assets/ambient-sample.${mimeExtension(ambientSample.type)}`
+    : null;
 
   try {
     const zip = new JSZip();
@@ -389,8 +396,10 @@ export async function generateScene3DBundle(
     zip.file('index.html', buildIndexHtml(variant, immersive, normalizeSonic(scene.sonic)));
     zip.file(
       'scripts/piece.js',
-      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\n${buildStandaloneThreeRuntimeScript({ includeCameraFeatures: variant === 'full', immersive })}${variant === 'full' ? `\n${buildStandaloneCameraScript({ visionBundleUrl: './runtime/mediapipe/vision_bundle.mjs', wasmBaseUrl: './runtime/mediapipe/wasm', modelUrl: `./${MEDIAPIPE_MODEL_PATH}` })}` : ''}`,
+      `window.__SCENE3D_DATA__ = ${JSON.stringify(scene)};\nwindow.__SCENE3D_AMBIENT_SAMPLE_URL__ = ${JSON.stringify(ambientSamplePath ? `./${ambientSamplePath}` : null)};\n${buildStandaloneThreeRuntimeScript({ includeCameraFeatures: variant === 'full', immersive })}${variant === 'full' ? `\n${buildStandaloneCameraScript({ visionBundleUrl: './runtime/mediapipe/vision_bundle.mjs', wasmBaseUrl: './runtime/mediapipe/wasm', modelUrl: `./${MEDIAPIPE_MODEL_PATH}` })}` : ''}`,
     );
+    if (ambientSample && ambientSamplePath)
+      zip.file(ambientSamplePath, await ambientSample.arrayBuffer());
     zip.file(`runtime/${THREE_RUNTIME_FILENAME}`, runtimeBytes);
     mediapipeAssets?.forEach((bytes, path) => zip.file(path, bytes));
     const zipBlob = await zip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
@@ -402,6 +411,20 @@ export async function generateScene3DBundle(
       { cause: error },
     );
   }
+}
+
+function mimeExtension(mimeType: string): string {
+  return (
+    (
+      {
+        'audio/mpeg': 'mp3',
+        'audio/wav': 'wav',
+        'audio/ogg': 'ogg',
+        'audio/webm': 'webm',
+        'audio/mp4': 'm4a',
+      } as Record<string, string>
+    )[mimeType] ?? 'audio'
+  );
 }
 
 /** Reuses #285's shared `downloadBlob.ts` helper rather than adding a 4th

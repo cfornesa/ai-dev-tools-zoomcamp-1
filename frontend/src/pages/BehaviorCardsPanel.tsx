@@ -22,7 +22,7 @@ import {
   type PinchTargetProperty,
   type TargetScope,
 } from './behaviorCards';
-import { shapeLabel } from './sceneShapes';
+import { shapeLabels } from './sceneShapes';
 import type { SceneEditor } from './useSceneEditor';
 
 type CardTypeName = BehaviorCard['type'];
@@ -70,11 +70,12 @@ function CardConflictDialog({
 }
 
 function targetOptionsFor(sceneEditor: SceneEditor): TargetOption[] {
+  const labelsByShapeId = shapeLabels(sceneEditor.shapes);
   return [
     ...sceneEditor.shapes.map((shape) => ({
       id: shape.id,
       scope: 'shape' as const,
-      label: shapeLabel(shape, sceneEditor.shapes),
+      label: labelsByShapeId.get(shape.id) ?? shape.id,
     })),
     ...sceneEditor.groups.map((group) => ({
       id: group.id,

@@ -930,9 +930,7 @@ test.describe('Local and server draft autosave', () => {
       // 404/no-op contract for saveNowBeforeClearing.
       const cloudFailure = page.getByRole('alertdialog', { name: 'Could not save to the cloud' });
       const exitOutcome = await Promise.race([
-        page
-          .waitForURL(/\/(?:studio|gallery)?$/, { timeout: 5000 })
-          .then(() => 'navigated'),
+        page.waitForURL(/\/(?:studio|gallery)?$/, { timeout: 5000 }).then(() => 'navigated'),
         cloudFailure.waitFor({ state: 'visible', timeout: 5000 }).then(() => 'needs-override'),
       ]);
       if (exitOutcome === 'needs-override') {

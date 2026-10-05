@@ -35,13 +35,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/immersive3dToolbar769.spec.ts|structured 3D immersive view toolbar (#769) › exact icon row and Steer inside Piece controls",
-    "issue": 1231,
-    "added": "2026-10-04",
-    "expires": "2026-10-25",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/pieceTemplateParity2d.spec.ts|2D runtime template parity (#799) › asserts online and Full ZIP controls for every 2D engine",
     "issue": 1166,
     "added": "2026-10-03",

@@ -14,13 +14,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/aiAndRecovery.spec.ts|Local and server draft autosave › local debounce, periodic server-sync cadence, and page-hide keepalive all fire on schedule",
-    "issue": 1232,
-    "added": "2026-10-04",
-    "expires": "2026-10-25",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) › a published 2D project: signed-out and non-owner visitors never see owner controls at /projects/:id or /ai-projects/:id, at both viewports",
     "issue": 1180,
     "added": "2026-10-03",

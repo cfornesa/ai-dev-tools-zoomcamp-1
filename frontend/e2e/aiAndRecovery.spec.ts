@@ -650,12 +650,15 @@ test.describe('Local and server draft autosave', () => {
       const context = await browser.newContext();
       const page = await context.newPage();
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
+      // Install the fake clock before the editor mounts its periodic sync
+      // interval; installing it afterward leaves that existing interval on
+      // wall-clock time, so fastForward cannot fire it.
+      await page.clock.install();
       const projectId = await createServerProject2D(page);
       await expandAllCollapsibleSections(page);
       const sessionId = await readSessionId(page, projectId);
       if (!sessionId) throw new Error('Expected a session id to already be assigned after mount.');
 
-      await page.clock.install();
       await openAuthoringControls(page);
       await page.getByRole('button', { name: 'Add circle' }).click();
 

@@ -4431,6 +4431,18 @@ textarea:disabled {
   margin-top: 0;
 }
 
+.art-piece-editor-publication {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-block: 0.75rem 1rem;
+}
+
+.art-piece-editor-publication > p {
+  margin: 0;
+}
+
 .generated-3d-action-items {
   display: contents;
 }

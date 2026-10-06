@@ -2,6 +2,10 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import ArtPieceEditorToolAvailability from './ArtPieceEditorToolAvailability';
+import { getArtPieceEditorCapabilities } from './artPieceEditorCapabilities';
+
+const FLAT_ENGINES = ['canvas2d', 'svg', 'p5js', 'c2js', 'c2js-interactive'] as const;
+const SPATIAL_ENGINES = ['threejs', 'aframe'] as const;
 
 describe('ArtPieceEditorToolAvailability', () => {
   it('renders compact icon buttons with accessible hover/focus labels', () => {
@@ -59,5 +63,30 @@ describe('ArtPieceEditorToolAvailability', () => {
     render(<ArtPieceEditorToolAvailability engine="threejs" />);
 
     expect(screen.getByTestId('art-piece-editor-tool-ai-edit')).toBeEnabled();
+  });
+
+  it.each(FLAT_ENGINES)('%s exposes the shared flat-source editing tools', (engine) => {
+    const capabilities = getArtPieceEditorCapabilities(engine);
+    for (const key of [
+      'add-shape',
+      'add-ellipse',
+      'add-line',
+      'freehand-draw',
+      'erase',
+      'ai-edit',
+    ] as const) {
+      expect(capabilities[key]).toMatchObject({ enabled: true });
+    }
+    expect(capabilities.transform.enabled).toBe(false);
+  });
+
+  it.each(SPATIAL_ENGINES)('%s exposes spatial object and transform editing', (engine) => {
+    const capabilities = getArtPieceEditorCapabilities(engine);
+    expect(capabilities['add-shape']).toMatchObject({ enabled: true });
+    expect(capabilities.transform).toMatchObject({ enabled: true });
+    expect(capabilities['ai-edit']).toMatchObject({ enabled: true });
+    for (const key of ['add-ellipse', 'add-line', 'freehand-draw', 'erase'] as const) {
+      expect(capabilities[key].enabled).toBe(false);
+    }
   });
 });

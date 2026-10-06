@@ -171,3 +171,41 @@ The PHP reference exposes grouped immersive chrome from `augment-humankind/publi
 The dated local browser observations above are intentionally separated from production evidence.
 They support implementation/QA routing only. No production URL, Replit database, published revision,
 or production download is claimed by this audit.
+
+## Generated editor parity by engine (#1277)
+
+This editor checklist supplements the stage-toolbar matrix above. It records
+the owner editor at `/users/@:handle/edit/:slug`; it does not claim that the
+public, embed, immersive, or downloaded surfaces were verified by these
+editor checks. Local Chromium screenshots at 1280x900 and 375x812 plus the
+existing generated-editor E2E suites are the evidence boundary for #1277.
+
+| Editor feature | Canvas2D | SVG | p5.js | C2.js | C2.js Interactive | Three.js | A-Frame |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Sandboxed preview and manual source editor | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Save immutable versions and inspect version history | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| View/regenerate version thumbnail | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Export piece package | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Draft/Published editor control | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Sound defaults editor | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| AI refine panel | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Source-declared `@augmentr-part`, `@layer`, and asset targets | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Native SVG `id` element targets | — | ✓ | — | — | — | — | — |
+| Manual add/erase ink tools | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| Manual 3D primitive and transform tools | — | — | — | — | — | ✓ | ✓ |
+| Editor preview action placement | 2D actions below preview | 2D actions below preview | 2D actions below preview | 2D actions below preview | 2D actions below preview | 3D action row below preview | 3D action row below preview |
+
+The 2D editors share source-only authoring because their source is each
+library's native markup or program; validated ink is the manual shape layer.
+SVG additionally resolves element IDs safely. Three.js and A-Frame retain
+source editing and add spatial primitives/transforms because their renderers
+have 3D objects. C2.js Interactive retains its authored pointer behavior;
+ink remains a separate overlay. The 2D transform and 3D drawing controls are
+disabled with accessible reasons where they do not apply. Toolbar differences
+above follow render-library capabilities; shared save, history, thumbnail,
+export, publication, sound, and AI functions do not vary by engine.
+
+AI target choices are discovered without executing source. All engines accept
+explicit part/region and asset markers; SVG additionally offers existing
+element IDs, and an existing 2D ink layer is independently targetable. A
+source with no recognized markers remains a free-text refinement prompt.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { ART_PIECE_ENGINE_CAPABILITIES, type ArtPieceLibrary } from '../api/artPieces';
 import { buildArtPieceTargetOptions, buildArtPieceTargetOptionsForPiece } from './artPieceTargets';
 
 describe('generated art-piece refinement targets', () => {
@@ -43,4 +44,13 @@ describe('generated art-piece refinement targets', () => {
   it('keeps an unmarked source as a plain prompt with no discovered targets', () => {
     expect(buildArtPieceTargetOptionsForPiece('const sketch = 1;', 'p5js', false)).toEqual([]);
   });
+
+  it.each(Object.keys(ART_PIECE_ENGINE_CAPABILITIES) as ArtPieceLibrary[])(
+    '%s can target declared regions without executing or parsing generated source',
+    (engine) => {
+      expect(buildArtPieceTargetOptionsForPiece('// @layer sky', engine, false)).toEqual([
+        expect.objectContaining({ id: 'sky', mentionKind: 'region', category: 'Regions' }),
+      ]);
+    },
+  );
 });

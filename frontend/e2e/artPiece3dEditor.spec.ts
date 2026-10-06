@@ -17,7 +17,7 @@ test.describe('3D AI editor engine modes (#620)', () => {
 
   test('preserves authored Three.js and A-Frame editor identity through revision/save', async ({
     browser,
-  }) => {
+  }, testInfo) => {
     test.setTimeout(90_000);
     for (const viewport of [
       { width: 1280, height: 900 },
@@ -42,6 +42,11 @@ test.describe('3D AI editor engine modes (#620)', () => {
           source: SOURCES[engine],
         });
         expect(created.status()).toBe(201);
+        const piece = (await created.json()) as { public_id: string };
+        await testInfo.attach(`piece-${engine}-${viewport.width}`, {
+          body: JSON.stringify({ public_id: piece.public_id, public_slug: slug }, null, 2),
+          contentType: 'application/json',
+        });
 
         await page.goto(`/users/@${profile.handle}/edit/${slug}`);
         await expect(page.getByTestId('art-piece-editor-mode')).toHaveText(
@@ -55,6 +60,43 @@ test.describe('3D AI editor engine modes (#620)', () => {
         await expect(page.getByTestId('art-piece-editor-tool-add-shape')).toBeEnabled();
         await expect(page.getByTestId('art-piece-editor-tool-transform')).toBeEnabled();
         await expect(page.getByTestId('art-piece-editor-tool-ai-edit')).toBeEnabled();
+        await expect(page.getByRole('button', { name: 'Export piece package' })).toBeEnabled();
+        await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
+        await expect(page.getByRole('heading', { name: 'Current version' })).toBeVisible();
+        await expect(page.getByTestId('art-piece-editor-regenerate-thumbnail')).toBeEnabled();
+        await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
+        await page.getByText('Sound', { exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Save sound defaults' })).toBeEnabled();
+        await page.getByText('Sound', { exact: true }).click();
+        await expect(page.getByRole('group', { name: 'Publication status' })).toBeVisible();
+        await page.getByRole('button', { name: 'Published', exact: true }).click();
+        const publishDialog = page.getByRole('alertdialog', { name: /Publish/ });
+        await expect(publishDialog).toBeVisible();
+        await publishDialog.getByRole('button', { name: 'Publish', exact: true }).click();
+        await expect(page.getByTestId('art-piece-editor-publication-status')).toContainText(
+          'Published (public)',
+        );
+        await page.getByRole('button', { name: 'Draft', exact: true }).click();
+        await expect(page.getByTestId('art-piece-editor-publication-status')).toContainText(
+          'Draft (private)',
+        );
+        await page.screenshot({
+          path: testInfo.outputPath(`generated-3d-editor-${engine}-${viewport.width}.png`),
+          fullPage: true,
+        });
+        await page.getByTestId('art-piece-editor-edit-source').click();
+        await expect(page.getByTestId('art-piece-editor-code-panel')).toBeVisible();
+        await expect(page.getByTestId('art-piece-editor-save-version')).toBeEnabled({
+          timeout: 15_000,
+        });
+        const sourceEdit =
+          engine === 'aframe'
+            ? `${SOURCES[engine]}\n<!-- manual source parity edit -->`
+            : `${SOURCES[engine]}\n// manual source parity edit`;
+        await page.getByLabel('Editable source preview').fill(sourceEdit);
+        await page.getByTestId('art-piece-editor-save-version').click();
+        await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 2');
+
         await expandGeneratedArtEditorTools(page);
         await page.getByTestId('art-piece-editor-tool-ai-edit').click();
         await page.screenshot({
@@ -73,7 +115,7 @@ test.describe('3D AI editor engine modes (#620)', () => {
         // element and may create its renderer canvas asynchronously in a
         // headless browser. Assert each engine's stable runtime surface.
         await expect(preview.locator(engine === 'threejs' ? 'canvas' : 'a-scene')).toBeVisible();
-        await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 2');
+        await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 3');
         await context.close();
       }
     }

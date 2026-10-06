@@ -46,6 +46,7 @@ import { downloadBlob } from '../export/downloadBlob';
 import SonicDefaultsPanel from './SonicDefaultsPanel';
 import { normalizeSonic, type SonicDefaults } from '../audio/sonicContract';
 import { supportsGeneratedSourceEditing } from './artPieceSourceEditing';
+import { validateProjectMetadataForPublish } from '../validation/projectMetadata';
 import {
   buildServerGeneratedPiecePackage,
   serverGeneratedPackageFilename,
@@ -272,6 +273,157 @@ function ArtPieceDeleteConfirm({
  * whole flow (pick a library, generate, save as brand-new piece) doesn't
  * apply once a piece and its engine already exist.
  */
+function ArtPiecePublishConfirmDialog({
+  title,
+  ownerName,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  ownerName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { dialogRef, onKeyDown } = useAlertDialogFocus<HTMLDivElement>(onCancel);
+  return (
+    <div
+      ref={dialogRef}
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+      role="alertdialog"
+      aria-labelledby="art-piece-publish-confirm-title"
+      aria-describedby="art-piece-publish-confirm-description"
+      className="publish-confirm-dialog"
+    >
+      <h4 id="art-piece-publish-confirm-title">Publish “{title}”?</h4>
+      <p id="art-piece-publish-confirm-description">
+        Anyone with the link will be able to view this piece, its title and creator attribution (
+        {ownerName || 'you'}). It will also become eligible to appear in the public gallery.
+      </p>
+      <button type="button" onClick={onConfirm}>
+        Publish
+      </button>
+      <button type="button" onClick={onCancel}>
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+function ArtPiecePublishControl({
+  piece,
+  title,
+  description,
+  ownerName,
+  onUpdated,
+}: {
+  piece: ArtPiece;
+  title: string;
+  description: string;
+  ownerName: string;
+  onUpdated: (piece: ArtPiece) => void;
+}) {
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string[]>>({});
+  const isPublished = piece.status === 'published';
+
+  function requestPublish() {
+    const nextErrors = validateProjectMetadataForPublish({ title, description });
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length === 0) setShowPublishConfirm(true);
+  }
+
+  async function confirmPublish() {
+    setShowPublishConfirm(false);
+    setSaving(true);
+    setErrors({});
+    try {
+      let latest = piece;
+      const nextTitle = title.trim();
+      if (latest.title !== nextTitle || latest.description !== description) {
+        latest = await updateArtPiece(piece.public_id, {
+          title: nextTitle,
+          description,
+        });
+        onUpdated(latest);
+      }
+      onUpdated(await updateArtPiece(piece.public_id, { status: 'published' }));
+    } catch {
+      setErrors({ form: ['Could not publish this piece. Please try again.'] });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function setDraft() {
+    setSaving(true);
+    setErrors({});
+    try {
+      onUpdated(await updateArtPiece(piece.public_id, { status: 'draft' }));
+    } catch {
+      setErrors({ form: ['Could not make this piece private. Please try again.'] });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="art-piece-editor-publication" data-testid="art-piece-editor-publication">
+      <p aria-live="polite" data-testid="art-piece-editor-publication-status">
+        {isPublished
+          ? 'Published (public) — eligible to appear in the public gallery.'
+          : piece.status === 'archived'
+            ? 'Archived — not visible in the public gallery.'
+            : 'Draft (private) — only visible to you.'}
+      </p>
+      <div className="publish-visibility-switch" role="group" aria-label="Publication status">
+        <button
+          type="button"
+          className="publish-visibility-option"
+          aria-pressed={piece.status === 'draft'}
+          disabled={!isPublished || saving}
+          onClick={() => void setDraft()}
+        >
+          Draft
+        </button>
+        <button
+          type="button"
+          className="publish-visibility-option"
+          aria-pressed={isPublished}
+          disabled={isPublished || saving}
+          onClick={requestPublish}
+        >
+          Published
+        </button>
+      </div>
+      {errors.title?.map((message) => (
+        <p key={message} role="alert">
+          {message}
+        </p>
+      ))}
+      {errors.description?.map((message) => (
+        <p key={message} role="alert">
+          {message}
+        </p>
+      ))}
+      {errors.form?.map((message) => (
+        <p key={message} role="alert">
+          {message}
+        </p>
+      ))}
+      {showPublishConfirm && (
+        <ArtPiecePublishConfirmDialog
+          title={title.trim()}
+          ownerName={ownerName}
+          onConfirm={() => void confirmPublish()}
+          onCancel={() => setShowPublishConfirm(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
   const id = initialPiece?.public_id ?? routeId;
@@ -745,6 +897,17 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       <p data-testid="art-piece-editor-mode">
         {editorModeLabel} · {engineCapability.label}
       </p>
+      <ArtPiecePublishControl
+        piece={piece}
+        title={title}
+        description={description}
+        ownerName={auth.user.username}
+        onUpdated={(updated) => {
+          setPiece(updated);
+          setTitle(updated.title);
+          setDescription(updated.description);
+        }}
+      />
       {isSourceOnlyEditor && (
         <p data-testid="art-piece-editor-source-only">
           Source-only preview for {engineCapability.label}; this engine does not expose structured

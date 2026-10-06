@@ -44,6 +44,7 @@ type TransferRow = {
 type DatabaseAction =
   | { kind: 'seed'; input: SeedInput }
   | { kind: 'create-project'; input: CreateProjectInput }
+  | { kind: 'read-project-content'; ownerId: string; projectId: string }
   | { kind: 'read-scenes'; projectId: string }
   | { kind: 'read-outbox'; projectId: string }
   | { kind: 'put-transfer'; record: TransferRow }
@@ -79,6 +80,16 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
           kind?: '2d' | '3d' | 'generated';
         },
       ): Promise<{ id: string }>;
+      getProject(
+        db: IDBDatabase,
+        ownerId: string,
+        projectId: string,
+      ): Promise<Record<string, unknown> | null>;
+      listPieceVersions(
+        db: IDBDatabase,
+        ownerId: string,
+        projectId: string,
+      ): Promise<Array<{ sequence: number; payload: Record<string, unknown> }>>;
       updateProject(
         db: IDBDatabase,
         ownerId: string,
@@ -166,6 +177,16 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
           }
           return { assetId };
         }
+        case 'read-project-content':
+          return {
+            project: await repository.getProject(db, operation.ownerId, operation.projectId),
+            scenes: await repository.listScenesForProject(db, operation.projectId),
+            versions: await repository.listPieceVersions(
+              db,
+              operation.ownerId,
+              operation.projectId,
+            ),
+          };
         case 'read-outbox': {
           const rows = await new Promise<OutboxRow[]>((resolve, reject) => {
             const request = db

@@ -38,7 +38,8 @@ function publishValidationMessage(error: unknown): string | null {
   ) {
     return null;
   }
-  const body = error.body as Partial<PublishValidationErrorBody>;
+  const body = error.body as Partial<PublishValidationErrorBody> & { detail?: unknown };
+  if (typeof body.detail === 'string' && body.detail.trim()) return body.detail;
   return body.errors && typeof body.errors === 'object'
     ? Object.values(body.errors).flat().join(' ')
     : null;
@@ -94,10 +95,17 @@ export async function publishLocalPiece(
     );
   }
 
-  const intake = await intakePiecePackage(
-    built.bytes,
-    `local-publish-${projectId}-${project.updatedAt}`,
-  );
+  let intake: Awaited<ReturnType<typeof intakePiecePackage>>;
+  try {
+    intake = await intakePiecePackage(
+      built.bytes,
+      `local-publish-${projectId}-${project.updatedAt}`,
+    );
+  } catch (error) {
+    const message = publishValidationMessage(error);
+    if (message) throw new LocalPublicTransferError('validation', message);
+    throw error;
+  }
   // Persist the title and the verified intake before publishing. If publish
   // fails, this is deliberately the defined private, server-backed state.
   const synced = await updateProject(db, ownerId, projectId, {

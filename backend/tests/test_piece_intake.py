@@ -8,6 +8,8 @@ from pathlib import Path
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client as DjangoClient
 from PIL import Image
 from rest_framework.test import APIClient
 
@@ -170,6 +172,25 @@ def test_3d_package_intake_does_not_record_version_activity(client):
     project = Project3D.objects.get(public_id=response.json()["public_id"])
     assert SceneVersion3D.objects.filter(project=project).count() == 1
     assert not ProjectActivity.objects.filter(project3d=project).exists()
+
+
+@pytest.mark.django_db
+def test_authenticated_http_intake_resolves_lazy_request_user(client, owner):
+    # SessionAuthentication exercises Django's real request middleware path,
+    # where request.user is a SimpleLazyObject rather than force-authenticated.
+    session_client = DjangoClient()
+    session_client.force_login(owner)
+    response = session_client.post(
+        "/api/pieces/intake/",
+        {
+            "package": SimpleUploadedFile("piece.zip", _package_3d()),
+            "idempotency_key": "session-authenticated-3d",
+        },
+    )
+
+    assert response.status_code == 201, response.content
+    project = Project3D.objects.get(public_id=response.json()["public_id"])
+    assert SceneVersion3D.objects.filter(project=project).count() == 1
 
 
 @pytest.mark.django_db

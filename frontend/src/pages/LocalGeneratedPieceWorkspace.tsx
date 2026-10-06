@@ -73,7 +73,7 @@ export default function LocalGeneratedPieceWorkspace() {
   const previewRef = useRef<HTMLIFrameElement | null>(null);
 
   const load = useCallback(async () => {
-    if (!id || !owner) return;
+    if (!id || !owner) return null;
     const db = await openLocalProjectDatabase();
     try {
       const profile = await fetchProfile().catch(() => null);
@@ -82,25 +82,35 @@ export default function LocalGeneratedPieceWorkspace() {
         throw new Error('Local generated piece unavailable.');
       const rows = await listPieceVersions(db, owner, id);
       const active = rows.find((row) => row.id === loaded.currentVersionId) ?? rows.at(-1) ?? null;
-      setProject(loaded);
-      setVersions(rows);
-      setCurrent(active);
-      setSource(String(payloadOf(active).source ?? ''));
-      setCapabilities(
-        normalizeCapabilities(
-          payloadOf(active).capabilities,
-          localEngine(payloadOf(active).engine),
-        ),
-      );
+      return { project: loaded, versions: rows, current: active };
     } finally {
       db.close();
     }
   }, [id, owner]);
 
   useEffect(() => {
-    void load().catch((error) =>
-      setMessage(error instanceof Error ? error.message : 'Could not open local piece.'),
-    );
+    let current = true;
+    void load()
+      .then((loaded) => {
+        if (!current || !loaded) return;
+        setProject(loaded.project);
+        setVersions(loaded.versions);
+        setCurrent(loaded.current);
+        setSource(String(payloadOf(loaded.current).source ?? ''));
+        setCapabilities(
+          normalizeCapabilities(
+            payloadOf(loaded.current).capabilities,
+            localEngine(payloadOf(loaded.current).engine),
+          ),
+        );
+      })
+      .catch((error) => {
+        if (current)
+          setMessage(error instanceof Error ? error.message : 'Could not open local piece.');
+      });
+    return () => {
+      current = false;
+    };
   }, [load]);
 
   if (auth.status === 'signed-out') return <Navigate to="/accounts/login/" replace />;

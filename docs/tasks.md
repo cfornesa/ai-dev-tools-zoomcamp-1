@@ -26623,3 +26623,19 @@ tracks running that check in CI with disposable safe values, failing on any
 warning/error, and regression coverage that proves the gate catches a broken
 configuration. Assigned to Batch 14 (matching-ref CI stabilization), Stage
 2a. Scope is CI/test harness only; no production credentials or database.
+
+### 2026-10-06 — Production local-piece publishing module failure (#1285)
+
+During #1262's authorized Q6 check, publishing the prefixed local 2D test
+piece failed before upload with `Failed to fetch dynamically imported
+module` for the package helper URL. That public URL returned HTTP 200 with
+`Content-Type: video/mp2t`, which is not an executable JavaScript module
+type. The test piece remains local and unpublished. This is an actionable
+production/build-serving defect, distinct from #1266's package import/export
+round trip; [#1285](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1285)
+owns the diagnosis and fix. Assigned to the still-open milestone Batch 19:
+production verification (2026-10-05), Stage 2a diagnosis and front-end/hosting
+classification. Next action: identify whether the published build emitted the
+`.ts` URL or the host assigned the wrong MIME type, then verify the local
+publish transfer on a production-like build and complete one authorized
+prefixed-piece lifecycle check.

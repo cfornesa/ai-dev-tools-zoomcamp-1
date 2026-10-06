@@ -59,7 +59,10 @@ function Templates() {
     setCreatingId(template.id);
     setCloneError(null);
     try {
-      const destination = await createLocalTemplate(template.id);
+      const destination = await createLocalTemplate(
+        auth.status === 'signed-in' ? auth.user.username : '',
+        template.id,
+      );
       navigate(destination);
     } catch {
       setCloneError(`Could not create a project from "${template.name}". Please try again.`);

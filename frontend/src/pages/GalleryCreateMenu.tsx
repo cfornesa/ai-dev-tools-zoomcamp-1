@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useMenuButton } from '../a11y/useMenuButton';
+import { useAuth } from '../auth/useAuth';
 import {
   createLocalGeneratedPiece,
   createNew3DProject,
@@ -34,29 +35,31 @@ function GalleryCreateMenu({
   onImport,
 }: GalleryCreateMenuProps) {
   const navigate = useNavigate();
+  const auth = useAuth();
+  const ownerId = auth.status === 'signed-in' ? auth.user.username : '';
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const actions: MenuAction[] = [
     {
       id: 'create-2d-p5',
       label: 'Create a new 2D project with p5.js',
-      run: () => createNewAnimation('p5'),
+      run: () => createNewAnimation(ownerId, 'p5'),
     },
     {
       id: 'create-2d-canvas2d',
       label: 'Create a new 2D project with Canvas2D',
-      run: () => createNewAnimation('canvas2d'),
+      run: () => createNewAnimation(ownerId, 'canvas2d'),
     },
     {
       id: 'create-2d-svg',
       label: 'Create a new 2D project with SVG',
-      run: () => createNewAnimation('svg'),
+      run: () => createNewAnimation(ownerId, 'svg'),
     },
-    { id: 'create-3d', label: 'Create a new 3D project', run: createNew3DProject },
+    { id: 'create-3d', label: 'Create a new 3D project', run: () => createNew3DProject(ownerId) },
     {
       id: 'create-generated-local',
       label: 'Create a local generated piece',
-      run: createLocalGeneratedPiece,
+      run: () => createLocalGeneratedPiece(ownerId),
     },
   ];
 

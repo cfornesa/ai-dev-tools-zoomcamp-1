@@ -9,19 +9,21 @@
  * and classifies every failure into one of five caller-actionable kinds so a
  * failed write never corrupts or discards the last known-good project.
  *
- * Database: `creatrart-local-projects`, version 5. Nine object stores --
+ * Database: `creatrart-local-projects`, version 6. Nine object stores --
  * `projects`, `scenes`, `mediaAssets`, `mediaBlobs`, `meta`, recovery drafts,
  * and the authenticated mutation outbox -- exactly as
  * specified in issue #512. Every future schema change ships as a new,
  * numbered upgrade step appended to `UPGRADE_STEPS` below (keyed to the
  * target version), so upgrades compose instead of rewriting history; this
  * issue ships steps 1 (the initial schema), 2 (bounded recovery drafts), 3
- * (the authenticated cloud-mutation outbox used by issue #543), and 4 (the
- * resumable media-transfer ledger used by issue #546).
+ * (the authenticated cloud-mutation outbox used by issue #543), 4 (the
+ * resumable media-transfer ledger used by issue #546), 5 (version history),
+ * and 6 (owner-scoped recovery-draft lookup for #1282).
  */
+import { rekeyLocalTransferConsentOwner } from './localTransferConsent';
 
 export const DB_NAME = 'creatrart-local-projects';
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 export const STORE_PROJECTS = 'projects';
 export const STORE_SCENES = 'scenes';
@@ -356,6 +358,14 @@ const UPGRADE_STEPS: Array<(db: IDBDatabase, tx: IDBTransaction) => void> = [
       cursor.continue();
     };
   },
+  // Step 6: efficient owner/project lookup for the lossless legacy owner-key
+  // re-key performed when a signed-in user opens their old handle-keyed work.
+  (_db, tx) => {
+    const drafts = tx.objectStore(STORE_RECOVERY_DRAFTS);
+    if (!drafts.indexNames.contains('by_owner_project')) {
+      drafts.createIndex('by_owner_project', ['ownerId', 'projectId'], { unique: false });
+    }
+  },
 ];
 
 function isPieceKind(value: unknown): value is LocalPieceKind {
@@ -681,6 +691,80 @@ export async function listProjectsForOwner(
     }
   }
   return rows as LocalProjectRecord[];
+}
+
+/** Re-keys a legacy project and its owner-scoped recovery/sync metadata in a
+ * single transaction. Project content stores are keyed by project id, so
+ * their records remain intact and need no rewrite. No source record is
+ * deleted: each record is updated in place with the canonical owner key. */
+async function rekeyLegacyProjectOwner(
+  db: IDBDatabase,
+  projectId: string,
+  legacyOwnerId: string,
+  ownerId: string,
+): Promise<LocalProjectRecord | null> {
+  const transaction = db.transaction(
+    [STORE_PROJECTS, STORE_RECOVERY_DRAFTS, STORE_MUTATION_OUTBOX, STORE_MEDIA_TRANSFERS],
+    'readwrite',
+  );
+  const done = txDone(transaction);
+  const projects = transaction.objectStore(STORE_PROJECTS);
+  const project = (await reqPromise(projects.get(projectId))) as LocalProjectRecord | undefined;
+  if (!project || (project.ownerId !== legacyOwnerId && project.ownerId !== ownerId)) {
+    transaction.abort();
+    await done.catch(() => undefined);
+    return null;
+  }
+  if (project.ownerId === ownerId) {
+    await done;
+    return project;
+  }
+
+  projects.put({ ...project, ownerId });
+  for (const storeName of [STORE_RECOVERY_DRAFTS, STORE_MUTATION_OUTBOX, STORE_MEDIA_TRANSFERS]) {
+    const store = transaction.objectStore(storeName);
+    const records = (await reqPromise(
+      store.index('by_owner_project').getAll([legacyOwnerId, projectId]),
+    )) as Array<{ ownerId: string; projectId: string }>;
+    for (const record of records) store.put({ ...record, ownerId });
+  }
+  await done;
+  rekeyLocalTransferConsentOwner(legacyOwnerId, ownerId, projectId);
+  return { ...project, ownerId };
+}
+
+/** Looks up the canonical username first. The current profile handle is
+ * consulted only for pre-fix records, and a match is atomically re-keyed to
+ * the username before it is returned. */
+export async function getProjectWithOwnerFallback(
+  db: IDBDatabase,
+  ownerId: string,
+  legacyOwnerId: string | null | undefined,
+  projectId: string,
+): Promise<LocalProjectRecord | null> {
+  const current = await getProject(db, ownerId, projectId);
+  if (current) return current;
+  if (!legacyOwnerId || legacyOwnerId === ownerId) return null;
+  const legacy = await getProject(db, legacyOwnerId, projectId);
+  if (!legacy) return null;
+  return rekeyLegacyProjectOwner(db, projectId, legacyOwnerId, ownerId);
+}
+
+/** Lists username-keyed projects first, then recovers and re-keys any older
+ * records stored under this same account's current profile handle. */
+export async function listProjectsForOwnerWithFallback(
+  db: IDBDatabase,
+  ownerId: string,
+  legacyOwnerId: string | null | undefined,
+): Promise<LocalProjectRecord[]> {
+  const projects = await listProjectsForOwner(db, ownerId);
+  if (!legacyOwnerId || legacyOwnerId === ownerId) return projects;
+  const legacyProjects = await listProjectsForOwner(db, legacyOwnerId);
+  for (const project of legacyProjects) {
+    const rekeyed = await rekeyLegacyProjectOwner(db, project.id, legacyOwnerId, ownerId);
+    if (rekeyed) projects.push(rekeyed);
+  }
+  return projects;
 }
 
 export async function updateProject(

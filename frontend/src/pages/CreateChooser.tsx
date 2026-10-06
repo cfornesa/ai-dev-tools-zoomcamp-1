@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { useAuth } from '../auth/useAuth';
 import {
   createLocalGeneratedPiece,
   createNew3DProject,
@@ -16,31 +17,32 @@ type ChooserAction = { id: string; label: string; description: string; run: () =
 // `createBlankProject` itself already defaults to, matching this app's
 // pre-existing behavior for every creation path that never showed a
 // renderer choice at all (e.g. issue #159's "Ask AI to fix this" flow).
-const ACTIONS: ChooserAction[] = [
-  {
-    id: 'create-2d',
-    label: 'Create a new 2D project',
-    description: 'Start a blank 2D scene in the manual editor.',
-    run: () => createNewAnimation('p5'),
-  },
-  {
-    id: 'create-3d',
-    label: 'Create a new 3D project',
-    description: 'Start a blank 3D scene in the manual editor.',
-    run: createNew3DProject,
-  },
-  {
-    id: 'create-generated-local',
-    label: 'Create a local generated piece',
-    description: 'Edit generated source locally without sending it to the server.',
-    run: createLocalGeneratedPiece,
-  },
-];
-
 function CreateChooser() {
   const navigate = useNavigate();
+  const auth = useAuth();
+  const ownerId = auth.status === 'signed-in' ? auth.user.username : '';
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const actions: ChooserAction[] = [
+    {
+      id: 'create-2d',
+      label: 'Create a new 2D project',
+      description: 'Start a blank 2D scene in the manual editor.',
+      run: () => createNewAnimation(ownerId, 'p5'),
+    },
+    {
+      id: 'create-3d',
+      label: 'Create a new 3D project',
+      description: 'Start a blank 3D scene in the manual editor.',
+      run: () => createNew3DProject(ownerId),
+    },
+    {
+      id: 'create-generated-local',
+      label: 'Create a local generated piece',
+      description: 'Edit generated source locally without sending it to the server.',
+      run: () => createLocalGeneratedPiece(ownerId),
+    },
+  ];
 
   async function handleChoose(action: ChooserAction) {
     setCreatingId(action.id);
@@ -64,7 +66,7 @@ function CreateChooser() {
       )}
 
       <ul className="template-grid">
-        {ACTIONS.map((action) => {
+        {actions.map((action) => {
           const titleId = `create-chooser-${action.id}-title`;
           return (
             <li key={action.id}>

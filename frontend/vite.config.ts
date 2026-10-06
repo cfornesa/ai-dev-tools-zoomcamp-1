@@ -32,10 +32,30 @@ const backendProxyTarget = resolveBackendProxyTarget(
   process.env.BROWSER_QA_BACKEND_URL,
 );
 
+function forwardClientAddress(proxy: Parameters<NonNullable<ProxyOptions['configure']>>[0]) {
+  proxy.on('proxyReq', (proxyRequest, request) => {
+    const forwardedFor = request.headers['x-forwarded-for'];
+    const clientAddress = Array.isArray(forwardedFor)
+      ? forwardedFor.join(', ')
+      : forwardedFor || request.socket.remoteAddress;
+    if (clientAddress) proxyRequest.setHeader('X-Forwarded-For', clientAddress);
+  });
+}
+
 const djangoProxy: Record<string, ProxyOptions> = {
   '/api': { target: backendProxyTarget, changeOrigin: false },
   '/accounts': { target: backendProxyTarget, changeOrigin: false },
   '/health': { target: backendProxyTarget, changeOrigin: false },
+  '/.well-known': {
+    target: backendProxyTarget,
+    changeOrigin: false,
+    configure: forwardClientAddress,
+  },
+  '/oauth': {
+    target: backendProxyTarget,
+    changeOrigin: false,
+    configure: forwardClientAddress,
+  },
   '/robots.txt': { target: backendProxyTarget, changeOrigin: false },
   '/sitemap.xml': { target: backendProxyTarget, changeOrigin: false },
   '/llms.txt': { target: backendProxyTarget, changeOrigin: false },
@@ -43,15 +63,7 @@ const djangoProxy: Record<string, ProxyOptions> = {
   '/mcp': {
     target: backendProxyTarget,
     changeOrigin: false,
-    configure(proxy) {
-      proxy.on('proxyReq', (proxyRequest, request) => {
-        const forwardedFor = request.headers['x-forwarded-for'];
-        const clientAddress = Array.isArray(forwardedFor)
-          ? forwardedFor.join(', ')
-          : forwardedFor || request.socket.remoteAddress;
-        if (clientAddress) proxyRequest.setHeader('X-Forwarded-For', clientAddress);
-      });
-    },
+    configure: forwardClientAddress,
   },
 };
 
@@ -496,6 +508,10 @@ const previewUnknownRouteStatusPlugin = (): Plugin => ({
         pathname === '/accounts' ||
         pathname.startsWith('/health/') ||
         pathname === '/health' ||
+        pathname.startsWith('/.well-known/') ||
+        pathname === '/.well-known' ||
+        pathname.startsWith('/oauth/') ||
+        pathname === '/oauth' ||
         ['/robots.txt', '/sitemap.xml', '/llms.txt', '/llms-full.txt'].includes(pathname) ||
         pathname.startsWith('/assets/') ||
         isKnownClientRoute(pathname, clientRouteMatchers) ||

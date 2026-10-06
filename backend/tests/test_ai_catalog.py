@@ -325,6 +325,33 @@ class TestAdminAIModelsAPI:
         assert delete_response.status_code == 204
         assert not AIProviderModel.objects.filter(pk=model_id).exists()
 
+    def test_admin_can_create_and_preserve_art_piece_task_kind(self, client, admin_a):
+        client.force_login(admin_a)
+        create_response = client.post(
+            reverse("admin-ai-models"),
+            data={
+                "vendor": "mistral",
+                "model_slug": "mistral-art-piece-test",
+                "display_label": "Mistral art test",
+                "task_kinds": ["one_shot_2d", "art_piece"],
+            },
+            content_type="application/json",
+        )
+
+        assert create_response.status_code == 201
+        model_id = create_response.json()["id"]
+        assert create_response.json()["task_kinds"] == ["art_piece", "one_shot_2d"]
+
+        patch_response = client.patch(
+            reverse("admin-ai-model-detail", args=[model_id]),
+            data={"revision": 1, "display_label": "Updated art model"},
+            content_type="application/json",
+        )
+
+        assert patch_response.status_code == 200
+        assert patch_response.json()["display_label"] == "Updated art model"
+        assert patch_response.json()["task_kinds"] == ["art_piece", "one_shot_2d"]
+
     def test_unknown_field_rejected(self, client, admin_a):
         client.force_login(admin_a)
         response = client.post(

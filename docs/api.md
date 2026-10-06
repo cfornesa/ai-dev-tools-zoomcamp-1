@@ -133,6 +133,14 @@ application's authorization with
 grants and tokens for that application only. No client secret or token is
 returned after creation or written to logs.
 
+The Vite development and production-preview servers must proxy `/.well-known/`
+and `/oauth/` to Django, including the authorization-server and protected-
+resource discovery routes plus `/oauth/authorize/`, `/oauth/token/`, and
+`/oauth/revoke_token/`. Keep `changeOrigin: false` so Django receives the
+original `Host`, and forward the client address as the MCP transport proxy
+does. Otherwise OAuth clients receive the frontend's 404 instead of Django's
+OAuth responses.
+
 ## Public authorship identity (#897)
 
 Public piece, gallery, collection, profile, search, and feed projections retain

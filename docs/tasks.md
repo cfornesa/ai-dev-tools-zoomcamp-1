@@ -26656,3 +26656,19 @@ npm test -- src/storage/localPublicTransfer.test.ts`; `cd backend && uv run
 pytest tests/test_piece_intake.py tests/test_project3d_publish_api.py`; browser: `cd frontend &&
 npx playwright test e2e/localPieceRoundTripPublish.spec.ts --project=chromium`.
 
+### 2026-10-06 — Production local generated publish transfer returns HTTP 400 (#1287)
+
+During the owner's authorized production test, local generated piece
+`DEPLOY-CHECK-2026-10-05-21` rendered its SVG source (dark background and cyan
+circle) and retained that render after reload. Its **Make public** action
+returned `API request failed with status 400`; it remained browser-local and
+unpublished. This is new production evidence after #1050 closed. Diagnose and
+verify transfer of a valid versioned local SVG through the generated-piece
+route, including an actionable validation outcome, no half-synced state, and a
+successful public route when valid. Keep separate from #1285's 2D
+dynamic-module/MIME failure. Milestone: Batch 19. Status: PROPOSED. Routing:
+Stage 2b because the transfer crosses package intake and ArtPiece publication.
+Focused checks: `cd frontend && npm test -- src/storage/localPublicTransfer.test.ts`;
+`cd backend && uv run pytest tests/test_piece_intake.py tests/test_art_piece_api.py`;
+browser: `cd frontend && npx playwright test e2e/localPieceRoundTripPublish.spec.ts
+--project=chromium`.

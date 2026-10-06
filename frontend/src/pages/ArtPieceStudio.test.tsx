@@ -7,6 +7,13 @@ import * as aiPreferencesApi from '../api/aiPreferences';
 import { ApiError } from '../api/client';
 import * as authModule from '../auth/useAuth';
 import * as artPieceBundleModule from '../generative/artPieceBundle';
+import * as thumbnailCaptureModule from '../generative/artPieceThumbnailCapture';
+import {
+  ART_PIECE_ENGINE_CAPABILITIES,
+  type ArtPiece,
+  type ArtPieceLibrary,
+} from '../api/artPieces';
+import { getArtPieceStarter } from '../generative/artPieceStarters';
 import { ART_PIECE_SANDBOX_MESSAGE_SOURCE } from '../generative/artPieceSandbox';
 import ArtPieceStudio from './ArtPieceStudio';
 
@@ -14,14 +21,17 @@ vi.mock('../api/artPieces');
 vi.mock('../api/aiPreferences');
 vi.mock('../auth/useAuth');
 vi.mock('../generative/artPieceBundle');
+vi.mock('../generative/artPieceThumbnailCapture');
 
 const mockedGenerateArtPiece = vi.mocked(artPiecesApi.generateArtPiece);
+const mockedCreateArtPiece = vi.mocked(artPiecesApi.createArtPiece);
 const mockedFetchAIPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
 const mockedGenerateArtPieceBundle = vi.mocked(artPieceBundleModule.generateArtPieceBundle);
 const mockedTriggerArtPieceBundleDownload = vi.mocked(
   artPieceBundleModule.triggerArtPieceBundleDownload,
 );
+const mockedCaptureThumbnail = vi.mocked(thumbnailCaptureModule.captureAndUploadArtPieceThumbnail);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -31,6 +41,8 @@ beforeEach(() => {
     user: { username: 'alice', email: 'a@example.com', is_application_admin: false },
   });
   mockedFetchAIPersonas.mockResolvedValue([]);
+  window.history.replaceState({}, '', '/art-pieces');
+  mockedCaptureThumbnail.mockResolvedValue(true);
 });
 
 function dispatchSandboxMessage(iframe: HTMLIFrameElement, data: Record<string, unknown>): void {
@@ -42,6 +54,54 @@ function dispatchSandboxMessage(iframe: HTMLIFrameElement, data: Record<string, 
 }
 
 describe('ArtPieceStudio (issue #199)', () => {
+  it.each(Object.keys(ART_PIECE_ENGINE_CAPABILITIES) as ArtPieceLibrary[])(
+    'opens the %s starter without an AI request and saves it as a server-backed art piece',
+    async (library) => {
+      const savedPiece = {
+        public_id: `piece-${library}`,
+        title: `Untitled ${ART_PIECE_ENGINE_CAPABILITIES[library].label} piece`,
+        description: '',
+        engine: library,
+        status: 'draft',
+        current_version: {
+          id: 42,
+          sequence: 1,
+          source: getArtPieceStarter(library),
+          capabilities: {},
+          thumbnail_url: '',
+          thumbnail_is_fallback: true,
+          created_at: '2026-01-01T00:00:00Z',
+        },
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      } as ArtPiece;
+      mockedCreateArtPiece.mockResolvedValue(savedPiece);
+      window.history.replaceState({}, '', `/art-pieces?mode=blank&engine=${library}`);
+
+      render(<ArtPieceStudio />);
+
+      expect(await screen.findByTestId('art-piece-starter-mode')).toHaveTextContent(
+        'No AI request is made.',
+      );
+      const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+      expect(iframe.srcdoc).toContain(getArtPieceStarter(library));
+      dispatchSandboxMessage(iframe, { source: ART_PIECE_SANDBOX_MESSAGE_SOURCE, status: 'ready' });
+      await userEvent.click(await screen.findByTestId('art-piece-save'));
+
+      expect(mockedGenerateArtPiece).not.toHaveBeenCalled();
+      expect(mockedCreateArtPiece).toHaveBeenCalledWith({
+        title: `Untitled ${ART_PIECE_ENGINE_CAPABILITIES[library].label} piece`,
+        description: '',
+        prompt: `Blank ${library} starter`,
+        engine: library,
+        source: getArtPieceStarter(library),
+        capabilities: {},
+        camera_placement: 'overlay',
+      });
+      expect(mockedCaptureThumbnail).toHaveBeenCalledWith(iframe, savedPiece.public_id, 42);
+    },
+  );
+
   it('prompts sign-in when signed out, and never calls the API', async () => {
     mockedUseAuth.mockReturnValue({ status: 'signed-out', user: null });
     render(<ArtPieceStudio />);

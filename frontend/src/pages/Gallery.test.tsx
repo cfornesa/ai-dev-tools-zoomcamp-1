@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
 import * as projects3dApi from '../api/projects3d';
+import * as artPiecesApi from '../api/artPieces';
 import * as profileApi from '../api/profile';
 import * as authModule from '../auth/useAuth';
 import { formatDate } from '../components/formatDate';
@@ -15,6 +16,7 @@ import Gallery from './Gallery';
 
 vi.mock('../api/projects');
 vi.mock('../api/projects3d');
+vi.mock('../api/artPieces');
 vi.mock('../api/profile');
 vi.mock('../auth/useAuth');
 vi.mock('../storage/localProjectRepository');
@@ -22,6 +24,7 @@ vi.mock('../storage/localThumbnail');
 
 const mockedListProjects = vi.mocked(projectsApi.listProjects);
 const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
+const mockedListArtPieces = vi.mocked(artPiecesApi.listArtPieces);
 const mockedDeleteProject3D = vi.mocked(projects3dApi.deleteProject3D);
 const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
@@ -67,6 +70,23 @@ function baseProject(overrides: Partial<projectsApi.Project> = {}): projectsApi.
   };
 }
 
+function baseArtPiece(overrides: Partial<artPiecesApi.ArtPiece> = {}): artPiecesApi.ArtPiece {
+  return {
+    public_id: 'art-1',
+    public_slug: 'sunset-study',
+    owner: 'alice',
+    owner_handle: 'alice-public',
+    title: 'Sunset study',
+    description: 'A layered sunset.',
+    engine: 'p5js',
+    status: 'draft',
+    current_version: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-03T00:00:00Z',
+    ...overrides,
+  };
+}
+
 function renderGallery() {
   return render(
     <MemoryRouter initialEntries={['/']}>
@@ -99,7 +119,9 @@ beforeEach(() => {
   // Default to no 3D projects; individual tests override when they need
   // to assert 3D-specific rendering.
   mockedListProjects3D.mockResolvedValue([]);
+  mockedListArtPieces.mockResolvedValue([]);
   mockedOpenLocal.mockResolvedValue(localDb);
+  mockedListProjects.mockResolvedValue([]);
   mockedListLocal.mockResolvedValue([]);
   mockedEnsureLocalThumbnail.mockResolvedValue(null);
   mockedCreateLocal.mockResolvedValue({
@@ -134,6 +156,64 @@ beforeEach(() => {
 });
 
 describe('Gallery loading/error/empty/populated states', () => {
+  it('merges generated pieces into the Studio in updated order with engine, status, origin, and canonical editor link', async () => {
+    mockedListProjects.mockResolvedValue([
+      baseProject({
+        id: 'p1',
+        title: 'Older structured piece',
+        updated_at: '2026-01-02T00:00:00Z',
+      }),
+    ]);
+    mockedListProjects3D.mockResolvedValue([]);
+    mockedListArtPieces.mockResolvedValue([
+      baseArtPiece({
+        current_version: {
+          id: 10,
+          sequence: 1,
+          source: '<canvas></canvas>',
+          capabilities: {},
+          thumbnail_url: '/media/sunset.png',
+          thumbnail_is_fallback: false,
+          created_at: '2026-01-03T00:00:00Z',
+        },
+      }),
+    ]);
+
+    renderGallery();
+
+    const heading = await screen.findByRole('heading', { name: 'Sunset study' });
+    expect(heading.closest('li')).toHaveTextContent('draft');
+    expect(heading.closest('li')).toHaveTextContent('Private');
+    expect(heading.closest('li')).toHaveTextContent('AI');
+    expect(heading.closest('li')).toHaveTextContent('p5.js');
+    expect(
+      within(screen.getByRole('list', { name: 'All your pieces' }))
+        .getAllByRole('heading')
+        .map((item) => item.textContent),
+    ).toEqual(['Sunset study', 'Older structured piece']);
+    expect(
+      screen
+        .getAllByRole('link', { name: 'Edit' })
+        .find((link) => link.getAttribute('href')?.includes('sunset-study')),
+    ).toHaveAttribute('href', '/users/@alice-public/edit/sunset-study');
+  });
+
+  it('shows available piece sources when another endpoint fails', async () => {
+    mockedListProjects.mockRejectedValue(new Error('2D unavailable'));
+    mockedListProjects3D.mockResolvedValue([baseProject3D({ title: 'Available 3D piece' })]);
+    mockedListArtPieces.mockRejectedValue(new Error('Generated unavailable'));
+
+    renderGallery();
+
+    expect(await screen.findByRole('heading', { name: 'Available 3D piece' })).toBeInTheDocument();
+    expect(screen.getAllByRole('alert').map((alert) => alert.textContent)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("couldn't load your 2D projects"),
+        expect.stringContaining("couldn't load your generated art pieces"),
+      ]),
+    );
+  });
+
   it('renders local cards with metadata, fallback, and lazy thumbnail backfill', async () => {
     mockedListProjects.mockResolvedValue([]);
     mockedFetchProfile.mockResolvedValue({ handle: 'alice-public' } as never);
@@ -188,10 +268,11 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(
       screen.getByText(`Last updated ${formatDate('2026-01-02T00:00:00Z')}`),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('link', { name: 'Open local editor' })[0]).toHaveAttribute(
-      'href',
-      '/local-generated/local-with-thumbnail',
-    );
+    expect(
+      screen
+        .getAllByRole('link', { name: 'Open local editor' })
+        .find((link) => link.getAttribute('href') === '/local-generated/local-with-thumbnail'),
+    ).toHaveAttribute('href', '/local-generated/local-with-thumbnail');
     expect(mockedEnsureLocalThumbnail).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'local-without-thumbnail' }),
     );
@@ -237,7 +318,7 @@ describe('Gallery loading/error/empty/populated states', () => {
 
     renderGallery();
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't load your projects/i);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't load your 2d projects/i);
   });
 
   it('shows a clear empty state with a keyboard-accessible create action', async () => {
@@ -293,10 +374,14 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(await screen.findByRole('heading', { name: 'Hand Follower' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Untitled 3D scene' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Your 3D projects' })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('list', { name: '' })).toHaveLength(1);
+    expect(screen.getAllByRole('list', { name: 'All your pieces' })).toHaveLength(1);
     const editLinks = screen.getAllByRole('link', { name: /^edit$/i });
     expect(editLinks).toHaveLength(2);
-    expect(editLinks.some((link) => link.getAttribute('href') === '/projects3d/p3d-1')).toBe(true);
+    expect(
+      editLinks.some(
+        (link) => link.getAttribute('href') === '/users/@alice/edit/untitled-3d-scene',
+      ),
+    ).toBe(true);
   });
 
   it('defaults to All and filters the unified grid by 2D or 3D renderer', async () => {
@@ -510,7 +595,7 @@ describe('Gallery create action (dropdown menu, issue #268)', () => {
       screen.getByRole('menuitem', { name: /^create a new 2d project with p5\.js$/i }),
     );
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/could not create/i);
+    expect(await screen.findByText(/could not create/i)).toHaveAttribute('role', 'alert');
     expect(screen.getByRole('button', { name: /more creation options/i })).toBeEnabled();
   });
 

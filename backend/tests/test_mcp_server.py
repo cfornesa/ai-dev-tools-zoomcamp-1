@@ -33,6 +33,7 @@ from backend.asgi import application
 from scenes.mcp.server import (
     MAX_MCP_REQUEST_BODY_SIZE,
     _built_in_templates,
+    _consume_mcp_rate_limit,
     _public_3d_project,
     _public_collection_detail,
     _public_collection_page,
@@ -111,6 +112,21 @@ def _create_mcp_access_token(
         resource=[resource],
     )
     return token_value, oauth_application, token
+
+
+def _freeze_mcp_rate_limit_clock(monkeypatch):
+    consume_mcp_rate_limit = _consume_mcp_rate_limit
+    fixed_window_time = 1_790_000_040.0
+
+    def consume_in_fixed_window(client_ip, now=None, *, client_id=None, user_id=None):
+        return consume_mcp_rate_limit(
+            client_ip,
+            fixed_window_time,
+            client_id=client_id,
+            user_id=user_id,
+        )
+
+    monkeypatch.setattr("scenes.mcp.server._consume_mcp_rate_limit", consume_in_fixed_window)
 
 
 def _call_mcp_tools(token_value, calls, *, client_ip="203.0.113.5"):
@@ -244,8 +260,9 @@ def _mcp_intake_package() -> bytes:
 
 
 @pytest.mark.django_db(transaction=True)
-def test_mcp_conformance_client_initializes_lists_and_calls_health_check():
+def test_mcp_conformance_client_initializes_lists_and_calls_health_check(monkeypatch):
     cache.clear()
+    _freeze_mcp_rate_limit_clock(monkeypatch)
     repo_root = Path(__file__).resolve().parents[2]
     vscode_config = json.loads((repo_root / "docs/examples/mcp.json").read_text())
     configured_url = vscode_config["servers"]["creatrweb-public"]["url"]
@@ -1708,8 +1725,9 @@ def test_mcp_3d_tools_preserve_non_owner_404_and_enforce_scope(monkeypatch):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_mcp_authenticated_rate_limit_is_per_oauth_client_and_user():
+def test_mcp_authenticated_rate_limit_is_per_oauth_client_and_user(monkeypatch):
     cache.clear()
+    _freeze_mcp_rate_limit_clock(monkeypatch)
     user_a = get_user_model().objects.create_user(username="mcp-rate-user-a")
     user_b = get_user_model().objects.create_user(username="mcp-rate-user-b")
     token_a, client_a, _ = _create_mcp_access_token(user_a)

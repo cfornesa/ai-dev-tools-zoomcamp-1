@@ -1,63 +1,51 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import { ART_PIECE_ENGINE_CAPABILITIES, type ArtPieceLibrary } from '../api/artPieces';
 import { useAuth } from '../auth/useAuth';
 import {
-  createLocalGeneratedPiece,
-  createNew3DProject,
-  createNewAnimation,
+  createChooser2DProject,
+  createChooser3DProject,
+  getGeneratedArtPieceStartPath,
+  type CreationMode,
+  type NewProjectRenderer,
 } from './galleryCreateActions';
 
-type ChooserAction = { id: string; label: string; description: string; run: () => Promise<string> };
+type PieceKind = '2d' | '3d' | 'generated';
 
-// Issue #268: the standalone "/create" page reached by clicking the
-// gallery header's "+" icon directly. The renderer select stays in the
-// gallery header only (the repository owner's explicit layout decision --
-// see #268) -- the two 2D cards below use the same 'p5' default
-// `createBlankProject` itself already defaults to, matching this app's
-// pre-existing behavior for every creation path that never showed a
-// renderer choice at all (e.g. issue #159's "Ask AI to fix this" flow).
+const RENDERER_OPTIONS: Array<{ value: NewProjectRenderer; label: string }> = [
+  { value: 'p5', label: 'p5.js' },
+  { value: 'canvas2d', label: 'Canvas2D' },
+  { value: 'svg', label: 'SVG' },
+];
+
 function CreateChooser() {
   const navigate = useNavigate();
   const auth = useAuth();
   const ownerId = auth.status === 'signed-in' ? auth.user.username : '';
-  const [creatingId, setCreatingId] = useState<string | null>(null);
+  const [kind, setKind] = useState<PieceKind>('2d');
+  const [renderer, setRenderer] = useState<NewProjectRenderer>('p5');
+  const [library, setLibrary] = useState<ArtPieceLibrary>('canvas2d');
+  const [creatingMode, setCreatingMode] = useState<CreationMode | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const actions: ChooserAction[] = [
-    {
-      id: 'create-2d',
-      label: 'Create a new 2D project',
-      description: 'Start a blank 2D scene in the manual editor.',
-      run: () => createNewAnimation(ownerId, 'p5'),
-    },
-    {
-      id: 'create-3d',
-      label: 'Create a new 3D project',
-      description: 'Start a blank 3D scene in the manual editor.',
-      run: () => createNew3DProject(ownerId),
-    },
-    {
-      id: 'create-generated-local',
-      label: 'Create a local generated piece',
-      description: 'Edit generated source locally without sending it to the server.',
-      run: () => createLocalGeneratedPiece(ownerId),
-    },
-  ];
 
-  async function handleChoose(action: ChooserAction) {
-    setCreatingId(action.id);
+  async function handleChoose(mode: CreationMode) {
+    setCreatingMode(mode);
     setError(null);
     try {
-      navigate(await action.run());
+      if (kind === '2d') navigate(await createChooser2DProject(ownerId, renderer, mode));
+      else if (kind === '3d') navigate(await createChooser3DProject(ownerId, mode));
+      else navigate(getGeneratedArtPieceStartPath(library, mode));
     } catch {
       setError(`Could not create a project. Please try again.`);
-      setCreatingId(null);
+      setCreatingMode(null);
     }
   }
 
   return (
-    <section className="page-shell" aria-labelledby="create-chooser-heading">
+    <section className="page-shell create-chooser" aria-labelledby="create-chooser-heading">
       <h2 id="create-chooser-heading">Create</h2>
+      <p>Choose a piece type and how you want to start.</p>
 
       {error && (
         <p role="alert" aria-live="assertive">
@@ -65,39 +53,96 @@ function CreateChooser() {
         </p>
       )}
 
-      <ul className="template-grid">
-        {actions.map((action) => {
-          const titleId = `create-chooser-${action.id}-title`;
-          return (
-            <li key={action.id}>
-              <article aria-labelledby={titleId} className="template-card">
-                <h4 id={titleId}>{action.label}</h4>
-                <p>{action.description}</p>
-                <button
-                  className="shell-action"
-                  type="button"
-                  onClick={() => void handleChoose(action)}
-                  disabled={creatingId !== null}
-                >
-                  {creatingId === action.id ? 'Creating…' : action.label}
-                </button>
-              </article>
-            </li>
-          );
-        })}
-        <li>
-          <article
-            aria-labelledby="create-chooser-browse-templates-title"
-            className="template-card"
+      <fieldset className="create-chooser-kind">
+        <legend>What do you want to create?</legend>
+        <label>
+          <input
+            type="radio"
+            name="piece-kind"
+            value="2d"
+            checked={kind === '2d'}
+            onChange={() => setKind('2d')}
+          />
+          Structured 2D scene
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="piece-kind"
+            value="3d"
+            checked={kind === '3d'}
+            onChange={() => setKind('3d')}
+          />
+          Structured 3D scene
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="piece-kind"
+            value="generated"
+            checked={kind === 'generated'}
+            onChange={() => setKind('generated')}
+          />
+          Generated art piece
+        </label>
+      </fieldset>
+
+      {kind === '2d' && (
+        <label htmlFor="create-chooser-renderer">
+          2D renderer
+          <select
+            id="create-chooser-renderer"
+            value={renderer}
+            onChange={(event) => setRenderer(event.target.value as NewProjectRenderer)}
           >
-            <h4 id="create-chooser-browse-templates-title">Browse templates</h4>
-            <p>Start from an existing template instead of a blank scene.</p>
-            <Link className="shell-action" to="/templates">
-              Browse templates
-            </Link>
-          </article>
-        </li>
-      </ul>
+            {RENDERER_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {kind === 'generated' && (
+        <label htmlFor="create-chooser-library">
+          Generated library
+          <select
+            id="create-chooser-library"
+            value={library}
+            onChange={(event) => setLibrary(event.target.value as ArtPieceLibrary)}
+          >
+            {Object.entries(ART_PIECE_ENGINE_CAPABILITIES).map(([value, capability]) => (
+              <option key={value} value={value}>
+                {capability.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <div className="create-chooser-actions" aria-label="Choose how to start">
+        <button
+          className="shell-action"
+          type="button"
+          onClick={() => void handleChoose('blank')}
+          disabled={creatingMode !== null}
+        >
+          {creatingMode === 'blank' ? 'Opening blank editor…' : 'Start blank'}
+        </button>
+        <button
+          className="shell-action"
+          type="button"
+          onClick={() => void handleChoose('ai')}
+          disabled={creatingMode !== null}
+        >
+          {creatingMode === 'ai' ? 'Opening AI tools…' : 'Start with AI'}
+        </button>
+      </div>
+
+      <p>
+        Want a prebuilt 2D scene? <Link to="/templates">Browse templates</Link>.
+      </p>
     </section>
   );
 }

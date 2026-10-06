@@ -30,6 +30,7 @@ export type E2EState =
       empty: FixtureUser;
       admin: FixtureUser;
       deletable: FixtureUser;
+      split: FixtureUser;
     }
   | {
       available: false;

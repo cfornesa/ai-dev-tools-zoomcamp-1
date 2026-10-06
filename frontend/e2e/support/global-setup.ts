@@ -93,6 +93,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       empty: { username: string; email: string };
       admin: { username: string; email: string };
       deletable: { username: string; email: string };
+      split: { username: string; email: string };
     };
     if (!fixtures.database_fingerprint)
       throw new Error('fixture create output omitted database_fingerprint');

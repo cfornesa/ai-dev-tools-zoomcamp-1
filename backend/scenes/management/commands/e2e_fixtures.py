@@ -65,6 +65,8 @@ E2E_USERS = {
     # owner/other/empty/admin are (a shared fixture consumed by a
     # deletion test would break every later spec in the same run).
     "deletable": ("e2e_deletable", "e2e-deletable@example.test"),
+    # Issue #1282: the public handle intentionally differs from the username.
+    "split": ("e2e_split", "e2e-split@example.test"),
 }
 
 PUBLIC_MEDIA_FIXTURE_SLUG = "public-media-fixture"
@@ -231,19 +233,20 @@ class Command(BaseCommand):
             empty = _get_or_create_user(*E2E_USERS["empty"])
             admin = _get_or_create_user(*E2E_USERS["admin"])
             deletable = _get_or_create_user(*E2E_USERS["deletable"])
+            split = _get_or_create_user(*E2E_USERS["split"])
             ApplicationAdmin.objects.get_or_create(user=admin)
 
             # Aborted browser runs can leave user-scoped policy and handle
             # history behind. Reset only the disposable fixture identities
             # so the next run starts with the documented default contract.
             UserEntitlementPlan.objects.filter(
-                user__in=[owner, other, empty, admin, deletable]
+                user__in=[owner, other, empty, admin, deletable, split]
             ).delete()
             UserFeatureOverride.objects.filter(
-                user__in=[owner, other, empty, admin, deletable]
+                user__in=[owner, other, empty, admin, deletable, split]
             ).delete()
             fixture_profiles = PublicProfile.objects.filter(
-                user__in=[owner, other, empty, admin, deletable]
+                user__in=[owner, other, empty, admin, deletable, split]
             )
             PublicProfileHandleRedirect.objects.filter(profile__in=fixture_profiles).delete()
             for fixture_user, handle in (
@@ -252,6 +255,7 @@ class Command(BaseCommand):
                 (empty, "e2e_empty"),
                 (admin, "e2e_admin"),
                 (deletable, "e2e_deletable"),
+                (split, "e2e_split_artist"),
             ):
                 profile, _created = PublicProfile.objects.get_or_create(
                     user=fixture_user,
@@ -272,7 +276,7 @@ class Command(BaseCommand):
             # ~8 rows instead of the 2 that test asserts. Resetting the
             # fixture users' session state here -- before any test logs
             # anyone in -- keeps the first test's count deterministic.
-            fixture_users = [owner, other, empty, admin, deletable]
+            fixture_users = [owner, other, empty, admin, deletable, split]
             stale_keys = list(
                 SessionMetadata.objects.filter(user__in=fixture_users).values_list(
                     "session_key", flat=True
@@ -291,6 +295,7 @@ class Command(BaseCommand):
             "empty": {"username": empty.username, "email": empty.email},
             "admin": {"username": admin.username, "email": admin.email},
             "deletable": {"username": deletable.username, "email": deletable.email},
+            "split": {"username": split.username, "email": split.email},
         }
 
         if as_json:
@@ -302,7 +307,7 @@ class Command(BaseCommand):
                 self.style.SUCCESS(
                     "Created/reset E2E fixture users: "
                     f"{owner.username}, {other.username}, {empty.username}, "
-                    f"{admin.username}, {deletable.username}"
+                    f"{admin.username}, {deletable.username}, {split.username}"
                 )
             )
 

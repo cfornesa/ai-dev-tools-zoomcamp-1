@@ -1,15 +1,9 @@
 /**
- * Issue #268: the 4 project-creation calls shared by the gallery header's
- * split-button dropdown and the full "/create" chooser page, so neither
- * duplicates `createBlankProject`/`createProject3D` request-building or
- * destination-route logic. Each function performs the exact same API call
- * and returns the exact same destination route `Gallery.tsx`'s pre-#268
- * `handleCreate`/`handleCreateAiAssisted`/`handleCreate3D`/
- * `handleCreate3DAiAssisted` navigated to -- a pure extraction, not a
- * behavior change.
+ * Shared local-first creation calls for the gallery menu, chooser and
+ * template flow. Callers pass the authenticated username so new browser
+ * records use the same owner key as the Studio and local editors.
  */
 import { getTemplate } from '../api/templates';
-import { fetchProfile } from '../api/profile';
 import {
   createProject,
   createProjectWithScene,
@@ -21,17 +15,19 @@ import {
 
 export type NewProjectRenderer = 'p5' | 'canvas2d' | 'svg';
 
-export async function createNewAnimation(renderer: NewProjectRenderer): Promise<string> {
-  const profile = await fetchProfile();
-  if (!profile.handle) throw new Error('A signed-in profile is required for local projects.');
+export async function createNewAnimation(
+  ownerId: string,
+  renderer: NewProjectRenderer,
+): Promise<string> {
+  if (!ownerId) throw new Error('A signed-in account is required for local projects.');
   const db = await openLocalProjectDatabase();
   try {
     const project = await createProject(db, {
-      ownerId: profile.handle,
+      ownerId,
       title: 'Untitled animation',
       kind: '2d',
     });
-    await createScene(db, profile.handle, {
+    await createScene(db, ownerId, {
       projectId: project.id,
       name: 'Scene 1',
       sceneJson: {
@@ -54,20 +50,22 @@ export async function createNewAnimation(renderer: NewProjectRenderer): Promise<
   }
 }
 
-export async function createAiAssistedAnimation(renderer: NewProjectRenderer): Promise<string> {
-  return createNewAnimation(renderer);
+export async function createAiAssistedAnimation(
+  ownerId: string,
+  renderer: NewProjectRenderer,
+): Promise<string> {
+  return createNewAnimation(ownerId, renderer);
 }
 
-export async function createLocalTemplate(templateId: string): Promise<string> {
-  const profile = await fetchProfile();
-  if (!profile.handle) throw new Error('A signed-in profile is required for local projects.');
+export async function createLocalTemplate(ownerId: string, templateId: string): Promise<string> {
+  if (!ownerId) throw new Error('A signed-in account is required for local projects.');
   const template = await getTemplate(templateId);
   const db = await openLocalProjectDatabase();
   try {
     const sceneJson = structuredClone(template.scene_json);
     sceneJson.id = crypto.randomUUID();
     const { project } = await createProjectWithScene(db, {
-      ownerId: profile.handle,
+      ownerId,
       title: template.name,
       kind: '2d',
       sceneName: 'Scene 1',
@@ -79,9 +77,8 @@ export async function createLocalTemplate(templateId: string): Promise<string> {
   }
 }
 
-export async function createNew3DProject(): Promise<string> {
-  const profile = await fetchProfile();
-  if (!profile.handle) throw new Error('A signed-in profile is required for local projects.');
+export async function createNew3DProject(ownerId: string): Promise<string> {
+  if (!ownerId) throw new Error('A signed-in account is required for local projects.');
   const db = await openLocalProjectDatabase();
   try {
     const scene = {
@@ -103,7 +100,7 @@ export async function createNew3DProject(): Promise<string> {
       renderer: { preferred: 'threejs' },
     } satisfies Record<string, unknown>;
     const { project } = await createLocal3DProject(db, {
-      ownerId: profile.handle,
+      ownerId,
       title: 'Untitled 3D scene',
       sceneJson: scene,
     });
@@ -113,17 +110,16 @@ export async function createNew3DProject(): Promise<string> {
   }
 }
 
-export async function createAiAssisted3DProject(): Promise<string> {
-  return createNew3DProject();
+export async function createAiAssisted3DProject(ownerId: string): Promise<string> {
+  return createNew3DProject(ownerId);
 }
 
-export async function createLocalGeneratedPiece(): Promise<string> {
-  const profile = await fetchProfile();
-  if (!profile.handle) throw new Error('A signed-in profile is required for local projects.');
+export async function createLocalGeneratedPiece(ownerId: string): Promise<string> {
+  if (!ownerId) throw new Error('A signed-in account is required for local projects.');
   const db = await openLocalProjectDatabase();
   try {
     const { project } = await createLocalGeneratedProject(db, {
-      ownerId: profile.handle,
+      ownerId,
       title: 'Local generated SVG',
       description:
         'A local-only generated piece. Edit the source and save versions without server transfer.',

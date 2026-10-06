@@ -244,7 +244,8 @@ def test_create_provisions_public_profiles_for_canonical_fixture_routes():
 
     for key, (username, _email) in E2E_USERS.items():
         profile = PublicProfile.objects.get(user__username=username)
-        assert profile.handle == f"e2e_{key}"
+        expected_handle = "e2e_split_artist" if key == "split" else f"e2e_{key}"
+        assert profile.handle == expected_handle
         assert profile.is_public is True
 
     # Re-running the command keeps the canonical handles and visibility

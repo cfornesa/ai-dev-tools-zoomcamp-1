@@ -71,6 +71,7 @@ describe('Playwright disposable fixture selection', () => {
       empty: { username: 'empty', email: 'empty@example.test' },
       admin: { username: 'admin', email: 'admin@example.test' },
       deletable: { username: 'deletable', email: 'deletable@example.test' },
+      split: { username: 'split', email: 'split@example.test' },
     });
     await globalTeardown();
     expect(runFixtureCommand).toHaveBeenCalledWith('cleanup', 'setup-target-fingerprint');

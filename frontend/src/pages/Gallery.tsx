@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { listProjects, type Project } from '../api/projects';
 import { listProjects3D, type Project3D } from '../api/projects3d';
+import { fetchProfile } from '../api/profile';
 import { useAuth } from '../auth/useAuth';
 import Project3DCard from '../components/Project3DCard';
 import ProjectCard from '../components/ProjectCard';
@@ -10,7 +11,7 @@ import { formatDate } from '../components/formatDate';
 import { originLabel } from '../components/originLabel';
 import GalleryCreateMenu from './GalleryCreateMenu';
 import {
-  listProjectsForOwner,
+  listProjectsForOwnerWithFallback,
   openLocalProjectDatabase,
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
@@ -138,7 +139,8 @@ function Gallery() {
         if (auth.status === 'signed-in') {
           try {
             const db = await openLocalProjectDatabase();
-            local = await listProjectsForOwner(db, auth.user.username);
+            const profile = await fetchProfile().catch(() => null);
+            local = await listProjectsForOwnerWithFallback(db, auth.user.username, profile?.handle);
             db.close();
           } catch {
             // A local storage failure must not hide server-backed projects.

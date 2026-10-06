@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
+import { fetchProfile } from '../api/profile';
 import { useAlertDialogFocus } from '../a11y/useAlertDialogFocus';
 import { ApiError } from '../api/client';
 import { intakePiecePackage } from '../api/pieceIntake';
@@ -30,7 +31,7 @@ import { getFolderBridgeStatus, writeArchiveFile } from '../storage/folderArchiv
 import { ensureLocalThumbnail } from '../storage/localThumbnail';
 import { appendRecoveryDraft, getLatestRecoveryDraft } from '../storage/localRecovery';
 import {
-  getProject,
+  getProjectWithOwnerFallback,
   listMediaAssetsForProject,
   listScenesForProject,
   openLocalProjectDatabase,
@@ -299,7 +300,13 @@ function LocalEditorWorkspace() {
     void (async () => {
       try {
         const db = await openLocalProjectDatabase();
-        const loadedProject = await getProject(db, auth.user.username, id);
+        const profile = await fetchProfile().catch(() => null);
+        const loadedProject = await getProjectWithOwnerFallback(
+          db,
+          auth.user.username,
+          profile?.handle,
+          id,
+        );
         if (cancelled) return;
         if (!loadedProject) {
           db.close();

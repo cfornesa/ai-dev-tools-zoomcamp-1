@@ -29,7 +29,7 @@ const mockedOpenLocal = vi.mocked(repository.openLocalProjectDatabase);
 const mockedCreateLocal = vi.mocked(repository.createProject);
 const mockedCreateScene = vi.mocked(repository.createScene);
 const mockedCreateLocal3D = vi.mocked(repository.createLocal3DProject);
-const mockedListLocal = vi.mocked(repository.listProjectsForOwner);
+const mockedListLocal = vi.mocked(repository.listProjectsForOwnerWithFallback);
 const mockedEnsureLocalThumbnail = vi.mocked(localThumbnail.ensureLocalThumbnail);
 const localDb = { close: vi.fn() } as unknown as IDBDatabase;
 
@@ -136,6 +136,7 @@ beforeEach(() => {
 describe('Gallery loading/error/empty/populated states', () => {
   it('renders local cards with metadata, fallback, and lazy thumbnail backfill', async () => {
     mockedListProjects.mockResolvedValue([]);
+    mockedFetchProfile.mockResolvedValue({ handle: 'alice-public' } as never);
     mockedListLocal.mockResolvedValue([
       {
         id: 'local-with-thumbnail',
@@ -171,6 +172,7 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(
       await screen.findByRole('heading', { name: 'Local illustrated piece' }),
     ).toBeInTheDocument();
+    expect(mockedListLocal).toHaveBeenCalledWith(localDb, 'alice', 'alice-public');
     expect(screen.getByText('A local description')).toBeInTheDocument();
     expect(screen.getByText('AI')).toBeInTheDocument();
     expect(screen.getByText('Generated')).toBeInTheDocument();

@@ -30,6 +30,7 @@ import {
   deleteScene,
   getMediaBlob,
   getProject,
+  getProjectWithOwnerFallback,
   getProjectStorageUsage,
   getProjectUsage,
   getStorageEstimate,
@@ -37,6 +38,7 @@ import {
   listMediaAssetsForProject,
   listPieceVersions,
   listProjectsForOwner,
+  listProjectsForOwnerWithFallback,
   listScenesForProject,
   openLocalProjectDatabase,
   appendPieceVersion,
@@ -50,6 +52,10 @@ import {
   updateProject,
   updateScene,
 } from './localProjectRepository';
+import { enqueueMutation, listMutationOutbox } from './mutationOutbox';
+import { appendRecoveryDraft, listRecoveryDrafts } from './localRecovery';
+import { createMediaTransferRecord } from './mediaTransfer';
+import { listMediaTransfersForProject, saveMediaTransfer } from './mediaTransferRepository';
 
 function pngBlob(sizeBytes = 16): Blob {
   const bytes = new Uint8Array(sizeBytes);
@@ -292,6 +298,76 @@ describe('localProjectRepository', () => {
     const updated = await updateProject(db, ownerA, projectA.id, { title: 'Renamed' });
     expect(updated.title).toBe('Renamed');
     expect(updated.updatedAt).not.toBe(projectA.updatedAt);
+  });
+
+  it('recovers a handle-keyed project for its username and re-keys dependent local state', async () => {
+    const db = await openLocalProjectDatabase();
+    const legacyOwner = 'split_artist';
+    const username = 'split_username';
+    const project = await createProject(db, {
+      ownerId: legacyOwner,
+      title: 'Legacy local piece',
+    });
+    const listOnlyProject = await createProject(db, {
+      ownerId: legacyOwner,
+      title: 'Legacy list-only piece',
+    });
+    await createScene(db, legacyOwner, {
+      projectId: project.id,
+      name: 'Scene 1',
+      sceneJson: { shapes: [] },
+    });
+    await appendRecoveryDraft(db, {
+      ownerId: legacyOwner,
+      projectId: project.id,
+      archive: pngBlob(),
+    });
+    await enqueueMutation(db, {
+      ownerId: legacyOwner,
+      projectId: project.id,
+      kind: 'metadata',
+      payload: { title: project.title },
+    });
+    await saveMediaTransfer(
+      db,
+      createMediaTransferRecord({
+        transferId: 'legacy-transfer',
+        ownerId: legacyOwner,
+        projectId: project.id,
+        assetId: 'legacy-asset',
+        byteLength: 1,
+        checksum: 'checksum',
+      }),
+    );
+
+    expect(
+      await getProjectWithOwnerFallback(db, username, 'a-different-current-handle', project.id),
+    ).toBeNull();
+    const opened = await getProjectWithOwnerFallback(db, username, legacyOwner, project.id);
+
+    expect(opened).toMatchObject({ id: project.id, ownerId: username });
+    expect(await getProject(db, legacyOwner, project.id)).toBeNull();
+    expect(await getProject(db, username, project.id)).toMatchObject({
+      id: project.id,
+      ownerId: username,
+    });
+    expect(await listProjectsForOwnerWithFallback(db, username, legacyOwner)).toMatchObject([
+      { id: project.id, ownerId: username },
+      { id: listOnlyProject.id, ownerId: username },
+    ]);
+    expect(await listProjectsForOwner(db, legacyOwner)).toEqual([]);
+    expect(await listScenesForProject(db, project.id)).toHaveLength(1);
+    expect(await listRecoveryDrafts(db, username, project.id)).toHaveLength(1);
+    expect(await listMutationOutbox(db, username, project.id)).toHaveLength(1);
+    expect(await listMediaTransfersForProject(db, username, project.id)).toMatchObject([
+      { transferId: 'legacy-transfer', ownerId: username },
+    ]);
+
+    // Re-running either lookup is idempotent and keeps the existing data.
+    expect(await getProjectWithOwnerFallback(db, username, legacyOwner, project.id)).toEqual(
+      opened,
+    );
+    db.close();
   });
 
   it('stores optional description and thumbnail fields with the required timestamps', async () => {

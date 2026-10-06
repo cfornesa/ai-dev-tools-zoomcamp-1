@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
+import { fetchProfile } from '../api/profile';
 import { generateArtPiece } from '../api/artPieces';
 import { buildArtPieceSandboxDocument } from '../generative/artPieceSandbox';
 import {
@@ -26,7 +27,7 @@ import {
   localGeneratedPackageFilename,
 } from '../storage/localGeneratedPiecePackage';
 import {
-  getProject,
+  getProjectWithOwnerFallback,
   listPieceVersions,
   openLocalProjectDatabase,
   restoreLocalGeneratedVersion,
@@ -75,7 +76,8 @@ export default function LocalGeneratedPieceWorkspace() {
     if (!id || !owner) return;
     const db = await openLocalProjectDatabase();
     try {
-      const loaded = await getProject(db, owner, id);
+      const profile = await fetchProfile().catch(() => null);
+      const loaded = await getProjectWithOwnerFallback(db, owner, profile?.handle, id);
       if (!loaded || loaded.kind !== 'generated')
         throw new Error('Local generated piece unavailable.');
       const rows = await listPieceVersions(db, owner, id);

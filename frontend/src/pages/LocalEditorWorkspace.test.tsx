@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthContext } from '../auth/context';
+import * as profileApi from '../api/profile';
 import * as repository from '../storage/localProjectRepository';
 import * as mutationOutbox from '../storage/mutationOutbox';
 import * as mediaTransferRepository from '../storage/mediaTransferRepository';
@@ -21,6 +22,7 @@ vi.mock('../storage/localProjectRepository', async () => {
     ...actual,
     openLocalProjectDatabase: vi.fn(),
     getProject: vi.fn(),
+    getProjectWithOwnerFallback: vi.fn(),
     listScenesForProject: vi.fn(),
     listMediaAssetsForProject: vi.fn(),
     updateScene: vi.fn(),
@@ -34,6 +36,7 @@ vi.mock('../storage/localPiecePackage', async () => {
   return { ...actual, buildLocal2dPiecePackage: vi.fn() };
 });
 vi.mock('../api/pieceIntake', () => ({ intakePiecePackage: vi.fn() }));
+vi.mock('../api/profile');
 vi.mock('../api/storageUsage', () => ({ fetchStorageEstimate: vi.fn() }));
 vi.mock('../api/projects', async () => {
   const actual = await vi.importActual<typeof import('../api/projects')>('../api/projects');
@@ -42,6 +45,8 @@ vi.mock('../api/projects', async () => {
 
 const mockedOpen = vi.mocked(repository.openLocalProjectDatabase);
 const mockedGetProject = vi.mocked(repository.getProject);
+const mockedGetProjectWithFallback = vi.mocked(repository.getProjectWithOwnerFallback);
+const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
 const mockedListScenes = vi.mocked(repository.listScenesForProject);
 const mockedListAssets = vi.mocked(repository.listMediaAssetsForProject);
 const mockedUpdateScene = vi.mocked(repository.updateScene);
@@ -107,7 +112,9 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   mockedOpen.mockResolvedValue(db);
+  mockedFetchProfile.mockResolvedValue({ handle: 'alice-public' } as never);
   mockedGetProject.mockResolvedValue(project);
+  mockedGetProjectWithFallback.mockResolvedValue(project);
   mockedListScenes.mockResolvedValue([scene]);
   mockedListAssets.mockResolvedValue([asset]);
   mockedUpdateScene.mockResolvedValue({ ...scene, name: 'Renamed scene' });
@@ -213,7 +220,7 @@ describe('LocalEditorWorkspace', () => {
     expect(await screen.findByRole('heading', { name: 'Local project' })).toBeVisible();
     expect(screen.getByLabelText('Scene name')).toHaveValue('Opening scene');
     expect(screen.getByText(/evidence\.png/)).toBeVisible();
-    expect(mockedGetProject).toHaveBeenCalledWith(db, 'alice', 'p1');
+    expect(mockedGetProjectWithFallback).toHaveBeenCalledWith(db, 'alice', 'alice-public', 'p1');
   });
 
   it('requires saving or cancelling before switching local scene context', async () => {
@@ -256,6 +263,7 @@ describe('LocalEditorWorkspace', () => {
 
   it('does not expose a missing or foreign local project', async () => {
     mockedGetProject.mockResolvedValue(null);
+    mockedGetProjectWithFallback.mockResolvedValue(null);
     renderPage();
 
     expect(await screen.findByRole('heading', { name: 'Local project unavailable' })).toBeVisible();
@@ -349,6 +357,7 @@ describe('LocalEditorWorkspace', () => {
 
     function prepareUpdateFixture() {
       mockedGetProject.mockResolvedValue(publishedProject);
+      mockedGetProjectWithFallback.mockResolvedValue(publishedProject);
       mockedListScenes.mockResolvedValue([
         {
           ...scene,

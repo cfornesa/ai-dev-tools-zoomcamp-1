@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
+import { fetchProfile } from '../api/profile';
 import {
-  getProject,
+  getProjectWithOwnerFallback,
   listPieceVersions,
   openLocalProjectDatabase,
   restoreLocal3DVersion,
@@ -57,7 +58,8 @@ export default function LocalProject3DWorkspace() {
     let cancelled = false;
     void openLocalProjectDatabase().then(async (db) => {
       try {
-        const project = await getProject(db, owner, id);
+        const profile = await fetchProfile().catch(() => null);
+        const project = await getProjectWithOwnerFallback(db, owner, profile?.handle, id);
         if (!cancelled) setLocalProject(project);
       } finally {
         db.close();
@@ -75,7 +77,8 @@ export default function LocalProject3DWorkspace() {
       async loadProject(projectId) {
         const db = await openLocalProjectDatabase();
         try {
-          const project = await getProject(db, owner, projectId);
+          const profile = await fetchProfile().catch(() => null);
+          const project = await getProjectWithOwnerFallback(db, owner, profile?.handle, projectId);
           if (!project || project.kind !== '3d') throw new Error('Local 3D project unavailable');
           const versions = await listPieceVersions(db, owner, projectId);
           const current =

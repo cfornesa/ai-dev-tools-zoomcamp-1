@@ -132,7 +132,7 @@ describe('Templates local creation action', () => {
     await user.click(useButton);
 
     await waitFor(() => expect(screen.getByText('Local editor placeholder')).toBeInTheDocument());
-    expect(mockedCreateLocalTemplate).toHaveBeenCalledWith('t1');
+    expect(mockedCreateLocalTemplate).toHaveBeenCalledWith('alice', 't1');
   });
 
   it('shows an accessible error and re-enables the button on failure', async () => {

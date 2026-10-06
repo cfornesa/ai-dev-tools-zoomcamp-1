@@ -42,6 +42,18 @@ vi.mock('../api/projects', async () => {
   const actual = await vi.importActual<typeof import('../api/projects')>('../api/projects');
   return { ...actual, publishProject: vi.fn(), getProject: vi.fn(), getSceneVersion: vi.fn() };
 });
+vi.mock('../render/createScenePreview', () => ({
+  createScenePreview: (container: HTMLElement) => {
+    const canvas = document.createElement('canvas');
+    container.appendChild(canvas);
+    return {
+      render: vi.fn(),
+      destroy: () => canvas.remove(),
+      getCanvasElement: () => canvas,
+    };
+  },
+  resolveSceneRendererId: vi.fn(() => 'canvas2d'),
+}));
 
 const mockedOpen = vi.mocked(repository.openLocalProjectDatabase);
 const mockedGetProject = vi.mocked(repository.getProject);

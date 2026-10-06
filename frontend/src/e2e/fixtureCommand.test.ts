@@ -52,7 +52,28 @@ describe('Playwright disposable fixture selection', () => {
     process.env.E2E_FIXTURE_ENVIRONMENT = 'disposable-compose';
     process.env.E2E_DOCKER_COMPOSE = 'true';
     delete process.env.E2E_ENV_FILE;
-    expect(resolveFixtureTarget()).toEqual({ compose: true });
+    delete process.env.E2E_DOCKER_COMPOSE_PROJECT_NAME;
+    expect(resolveFixtureTarget()).toEqual({
+      compose: true,
+      projectName: 'ai-dev-tools-zoomcamp-1',
+    });
+  });
+
+  it('allows an explicitly named isolated disposable Compose project', () => {
+    process.env.E2E_FIXTURE_ENVIRONMENT = 'disposable-compose';
+    process.env.E2E_DOCKER_COMPOSE = 'true';
+    process.env.E2E_DOCKER_COMPOSE_PROJECT_NAME = 'codex-hotfix-local-publish-render';
+    expect(resolveFixtureTarget()).toEqual({
+      compose: true,
+      projectName: 'codex-hotfix-local-publish-render',
+    });
+  });
+
+  it('rejects malformed explicit Compose project names before fixture commands run', () => {
+    process.env.E2E_FIXTURE_ENVIRONMENT = 'disposable-compose';
+    process.env.E2E_DOCKER_COMPOSE = 'true';
+    process.env.E2E_DOCKER_COMPOSE_PROJECT_NAME = '../production';
+    expect(() => resolveFixtureTarget()).toThrow(/valid disposable Compose project name/);
   });
 
   it('skips teardown when setup recorded unavailable prerequisites', async () => {

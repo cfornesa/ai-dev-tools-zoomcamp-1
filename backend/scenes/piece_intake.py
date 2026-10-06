@@ -9,6 +9,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from PIL import Image, UnidentifiedImageError
@@ -195,7 +196,9 @@ def intake_package(  # noqa: C901
         piece = None
     _check_quota(owner, len(archive), len(manifest["mediaAssets"]))
     with transaction.atomic():
-        owner = type(owner).objects.select_for_update().get(pk=owner.pk)
+        # Django's request.user is a SimpleLazyObject during the HTTP path;
+        # resolve its row through the configured user model, not type(owner).
+        owner = get_user_model().objects.select_for_update().get(pk=owner.pk)
         if idempotency_key:
             existing = PieceIntakeReceipt.objects.filter(
                 owner=owner, idempotency_key=idempotency_key

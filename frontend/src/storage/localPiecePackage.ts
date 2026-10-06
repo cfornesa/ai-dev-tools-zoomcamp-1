@@ -27,7 +27,7 @@ export type LocalPiecePackageModule = {
 };
 
 async function loadPiecePackageModule(): Promise<LocalPiecePackageModule> {
-  return import(/* @vite-ignore */ new URL('./piecePackage.js', import.meta.url).href);
+  return import('./piecePackage');
 }
 
 export type LocalPiecePackageResult = {

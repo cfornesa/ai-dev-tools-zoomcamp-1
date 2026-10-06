@@ -13,10 +13,12 @@ import { useAuth } from './auth/useAuth';
  * lazy-loading them keeps that weight out of the initial bundle so a
  * first-time visitor to `/` only pays for routing + the public gallery. */
 const ArtPieceStudio = lazy(() => import('./pages/ArtPieceStudio'));
-const ArtPieceEditor = lazy(() => import('./pages/ArtPieceEditor'));
 const PublicArtPieceGallery = lazy(() => import('./pages/PublicArtPieceGallery'));
 const PublicArtPieceViewer = lazy(() => import('./pages/PublicArtPieceViewer'));
-const ArtPieceManagement = lazy(() => import('./pages/ArtPieceManagement'));
+const LegacyArtPieceManagementRedirect = lazy(
+  () => import('./pages/LegacyArtPieceManagementRedirect'),
+);
+const LegacyArtPieceEditorRedirect = lazy(() => import('./pages/LegacyArtPieceEditorRedirect'));
 const LocalEditorWorkspace = lazy(() => import('./pages/LocalEditorWorkspace'));
 const LocalProject3DWorkspace = lazy(() => import('./pages/LocalProject3DWorkspace'));
 const LocalGeneratedPieceWorkspace = lazy(() => import('./pages/LocalGeneratedPieceWorkspace'));
@@ -126,8 +128,8 @@ function App() {
                   issue's grooming for why the direct route is enough for
                   this slice. */}
               <Route path="art-pieces" element={<ArtPieceStudio />} />
-              <Route path="art-pieces/manage" element={<ArtPieceManagement />} />
-              <Route path="art-pieces/:id/edit" element={<ArtPieceEditor />} />
+              <Route path="art-pieces/manage" element={<LegacyArtPieceManagementRedirect />} />
+              <Route path="art-pieces/:id/edit" element={<LegacyArtPieceEditorRedirect />} />
               <Route path="art-pieces/gallery" element={<PublicArtPieceGallery />} />
               <Route path="art-pieces/p/:id" element={<PublicArtPieceViewer />} />
               <Route path="users/:handle/pieces/:pieceSlug" element={<CanonicalPublicPiece />} />

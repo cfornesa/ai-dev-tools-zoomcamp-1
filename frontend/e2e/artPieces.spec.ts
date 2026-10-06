@@ -48,8 +48,8 @@ test.describe('Generated art pieces (#315)', () => {
       status: 'published',
     });
     expect(published.status()).toBe(200);
-    await page.goto('/art-pieces/manage');
-    await expect(page.getByRole('heading', { name: 'Your art pieces' })).toBeVisible();
+    await page.goto('/studio?kind=generated');
+    await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible();
     await expect(page.getByText(title, { exact: true })).toBeVisible();
     await page.goto(`/art-pieces/p/${piece.public_id}`);
     await expect(page.getByRole('heading', { name: title })).toBeVisible();

@@ -556,7 +556,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     return (
       <div role="alert">
         <p>This art piece isn't available.</p>
-        <Link to="/art-pieces/manage">Back to your art pieces</Link>
+        <Link to="/studio?kind=generated">Back to your generated pieces</Link>
       </div>
     );
   }
@@ -866,7 +866,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
     setDeleteError(null);
     try {
       await deleteArtPiece(id);
-      navigate('/art-pieces/manage');
+      navigate('/studio?kind=generated');
     } catch {
       setDeleteError('Could not delete this art piece. Please try again.');
       setDeleting(false);
@@ -1430,7 +1430,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
         </div>
       )}
       <p className="art-piece-editor-back-link">
-        <Link to="/art-pieces/manage">Back to your art pieces</Link>
+        <Link to="/studio?kind=generated">Back to your generated pieces</Link>
       </p>
     </section>
   );

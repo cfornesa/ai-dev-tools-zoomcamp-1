@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { listProjects, type Project } from '../api/projects';
 import { listProjects3D, type Project3D } from '../api/projects3d';
@@ -20,7 +20,11 @@ import { ensureLocalThumbnail } from '../storage/localThumbnail';
 import { importLocalPiecePackage } from '../storage/localPiecePackageImport';
 
 type LoadState = 'loading' | 'error' | 'ready';
-type ProjectRendererFilter = 'all' | '2d' | '3d';
+type PieceKindFilter = 'all' | '2d' | '3d' | 'generated';
+
+function parsePieceKindFilter(value: string | null): PieceKindFilter {
+  return value === '2d' || value === '3d' || value === 'generated' ? value : 'all';
+}
 
 type GalleryEntry =
   | { kind: '2d'; id: string; updatedAt: string; value: Project }
@@ -65,6 +69,18 @@ function OwnedArtPieceCard({ piece, handle }: { piece: ArtPiece; handle: string 
       </p>
       <p>Last updated {formatDate(piece.updated_at)}</p>
       <p>
+        {piece.status === 'published' && (
+          <Link
+            className="shell-action"
+            to={
+              handle && piece.public_slug
+                ? `/users/@${encodeURIComponent(handle)}/pieces/${encodeURIComponent(piece.public_slug)}`
+                : `/art-pieces/p/${encodeURIComponent(piece.public_id)}`
+            }
+          >
+            View public page
+          </Link>
+        )}{' '}
         <Link className="shell-action" to={href}>
           Edit
         </Link>
@@ -163,7 +179,19 @@ function Gallery() {
   const [profileHandle, setProfileHandle] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [projectRenderer, setProjectRenderer] = useState<ProjectRendererFilter>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const projectKind = parsePieceKindFilter(searchParams.get('kind'));
+  function changeProjectKind(value: PieceKindFilter) {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (value === 'all') next.delete('kind');
+        else next.set('kind', value);
+        return next;
+      },
+      { replace: true },
+    );
+  }
   const updateLocalProject = useCallback((updated: LocalProjectRecord) => {
     setLocalProjects((current) => current.map((item) => (item.id === updated.id ? updated : item)));
   }, []);
@@ -241,13 +269,18 @@ function Gallery() {
     auth.status === 'signed-in' ? projects.filter((p) => p.owner === auth.user.username) : [];
   const ownProjects3D =
     auth.status === 'signed-in' ? projects3D.filter((p) => p.owner === auth.user.username) : [];
-  const filteredProjects = projectRenderer === '3d' ? [] : ownProjects;
-  const filteredProjects3D = projectRenderer === '2d' ? [] : ownProjects3D;
+  const filteredProjects = projectKind === '3d' || projectKind === 'generated' ? [] : ownProjects;
+  const filteredProjects3D =
+    projectKind === '2d' || projectKind === 'generated' ? [] : ownProjects3D;
   const filteredLocalProjects =
-    projectRenderer === 'all'
+    projectKind === 'all'
       ? localProjects
       : localProjects.filter((project) =>
-          projectRenderer === '3d' ? project.kind === '3d' : project.kind !== '3d',
+          projectKind === 'generated'
+            ? project.kind === 'generated'
+            : projectKind === '3d'
+              ? project.kind === '3d'
+              : project.kind !== '3d',
         );
   const ownArtPieces =
     auth.status === 'signed-in'
@@ -255,8 +288,9 @@ function Gallery() {
       : [];
   const filteredArtPieces = ownArtPieces.filter(
     (piece) =>
-      projectRenderer === 'all' ||
-      ART_PIECE_ENGINE_CAPABILITIES[piece.engine].family === projectRenderer,
+      projectKind === 'all' ||
+      projectKind === 'generated' ||
+      ART_PIECE_ENGINE_CAPABILITIES[piece.engine].family === projectKind,
   );
   const hasProjects =
     ownProjects.length > 0 ||
@@ -313,16 +347,17 @@ function Gallery() {
       <div className="gallery-header">
         <h2 id="gallery-heading">Your projects</h2>
         <label htmlFor="project-renderer-filter" className="gallery-renderer-label">
-          Renderer
+          Piece kind
         </label>
         <select
           id="project-renderer-filter"
-          value={projectRenderer}
-          onChange={(event) => setProjectRenderer(event.target.value as ProjectRendererFilter)}
+          value={projectKind}
+          onChange={(event) => changeProjectKind(event.target.value as PieceKindFilter)}
         >
           <option value="all">All</option>
           <option value="2d">2D</option>
           <option value="3d">3D</option>
+          <option value="generated">Generated</option>
         </select>
         <GalleryCreateMenu
           creating={creating}
@@ -355,7 +390,11 @@ function Gallery() {
         </div>
       ) : entries.length === 0 ? (
         <div className="centered-state gallery-empty-state">
-          <p>No {projectRenderer.toUpperCase()} projects match this filter.</p>
+          <p>
+            {projectKind === 'generated'
+              ? 'No generated pieces match this filter.'
+              : `No ${projectKind.toUpperCase()} projects match this filter.`}
+          </p>
         </div>
       ) : (
         <ul className="project-grid" aria-label="All your pieces">

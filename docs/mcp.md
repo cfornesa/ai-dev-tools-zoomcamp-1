@@ -282,6 +282,11 @@ characters or an unsupported scope.
 
 ## Related contracts
 
+The browser UI also preserves the legacy owner links `/art-pieces/manage` and
+`/art-pieces/<id>/edit`: they redirect to the generated-only Studio view and
+the canonical profile-nested editor URL, respectively. `/art-pieces` remains
+the AI creation route. These frontend redirects do not add or change MCP tools.
+
 - [`docs/api.md`](api.md) records both `/mcp/` and `/mcp/apps/` transport, privacy, throttling,
   audit, and account-lifecycle contract.
 - [`openapi.yaml`](../openapi.yaml) documents the HTTP endpoint. MCP tool and

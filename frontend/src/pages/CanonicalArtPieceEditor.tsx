@@ -12,16 +12,24 @@ export default function CanonicalArtPieceEditor() {
   const [missing, setMissing] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     fetchOwnerArtPiece(handle.replace(/^@/, ''), pieceSlug)
-      .then((response) => setPiece(response))
-      .catch(() => setMissing(true));
+      .then((response) => {
+        if (!cancelled) setPiece(response);
+      })
+      .catch(() => {
+        if (!cancelled) setMissing(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [handle, pieceSlug]);
 
   if (missing) {
     return (
       <section role="alert">
         <p>This art piece isn’t available.</p>
-        <Link to="/art-pieces/manage">Back to your art pieces</Link>
+        <Link to="/studio?kind=generated">Back to your generated pieces</Link>
       </section>
     );
   }

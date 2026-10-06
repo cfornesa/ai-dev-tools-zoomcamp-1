@@ -74,14 +74,14 @@ test.describe('Local project gallery cards (#1087)', () => {
       });
     }
 
-    await page.getByLabel('Renderer').selectOption('3d');
+    await page.getByLabel('Piece kind').selectOption('3d');
     await expect(page.getByRole('heading', { name: 'Local card without preview' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Local card with preview' })).not.toBeVisible();
     await expect(page.getByRole('link', { name: 'Open local editor' })).toHaveAttribute(
       'href',
       `/local-projects-3d/${ids.withoutThumbnail}`,
     );
-    await page.getByLabel('Renderer').selectOption('all');
+    await page.getByLabel('Piece kind').selectOption('all');
     const generatedHeading = page.getByRole('heading', { name: 'Local generated route' });
     await expect(generatedHeading).toBeVisible();
     await expect(generatedHeading.locator('..').getByRole('link')).toHaveAttribute(

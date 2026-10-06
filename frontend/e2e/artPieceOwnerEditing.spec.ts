@@ -9,7 +9,7 @@ import { requireE2EFixtures } from './support/prerequisites.js';
  * to the public-only viewer, which 404s for anything not Published, and
  * no owner edit route existed at all -- the Studio's own `handleSave`
  * always creates a brand new piece, never a new version on an existing
- * one. This suite drives the real `/art-pieces/manage` -> owner editor
+ * one. This suite drives the generated-only Studio -> canonical owner editor
  * flow: card routing by status, edit + revise + version history, thumbnail
  * regeneration, soft-delete with confirmation, and cross-user denial.
  *
@@ -58,7 +58,7 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
   test('Draft and Archived cards open the editor; only Published cards also expose a public link', async ({
     page,
     context,
-  }) => {
+  }, testInfo) => {
     await loginViaUI(page, fixture.owner.email, fixture.password);
 
     async function seed(title: string, status: 'draft' | 'published' | 'archived') {
@@ -82,32 +82,67 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
     }
 
     await seed('Routing draft fixture', 'draft');
-    await seed('Routing published fixture', 'published');
+    const publishedId = await seed('Routing published fixture', 'published');
     await seed('Routing archived fixture', 'archived');
 
     await page.goto('/art-pieces/manage');
-    await expect(page.getByRole('heading', { name: 'Your art pieces' })).toBeVisible();
+    await expect(page).toHaveURL(/\/studio\?kind=generated$/);
+    await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Piece kind' })).toHaveValue('generated');
 
-    await expect(page.getByRole('link', { name: 'Routing draft fixture' })).toHaveAttribute(
+    const draftItem = page.getByRole('heading', { name: 'Routing draft fixture' }).locator('..');
+    const archivedItem = page
+      .getByRole('heading', { name: 'Routing archived fixture' })
+      .locator('..');
+    const publishedItem = page
+      .getByRole('heading', { name: 'Routing published fixture' })
+      .locator('..');
+    await expect(draftItem.getByRole('link', { name: 'Edit' })).toHaveAttribute(
       'href',
       '/users/@e2e_owner/edit/routing-draft-fixture',
     );
-    await expect(page.getByRole('link', { name: 'Routing archived fixture' })).toHaveAttribute(
+    await expect(archivedItem.getByRole('link', { name: 'Edit' })).toHaveAttribute(
       'href',
       '/users/@e2e_owner/edit/routing-archived-fixture',
     );
-    await expect(page.getByRole('link', { name: 'Routing published fixture' })).toHaveAttribute(
+    await expect(publishedItem.getByRole('link', { name: 'Edit' })).toHaveAttribute(
       'href',
       '/users/@e2e_owner/edit/routing-published-fixture',
     );
 
-    const draftItem = page.getByRole('link', { name: 'Routing draft fixture' }).locator('..');
-    const archivedItem = page.getByRole('link', { name: 'Routing archived fixture' }).locator('..');
     await expect(draftItem.getByRole('link', { name: 'View public page' })).toHaveCount(0);
     await expect(archivedItem.getByRole('link', { name: 'View public page' })).toHaveCount(0);
+    await expect(publishedItem.getByRole('link', { name: 'View public page' })).toHaveAttribute(
+      'href',
+      '/users/@e2e_owner/pieces/routing-published-fixture',
+    );
+
+    for (const viewport of [
+      { name: 'desktop', width: 1280, height: 900 },
+      { name: 'mobile', width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await testInfo.attach(`generated-studio-${viewport.name}`, {
+        body: await page.screenshot(),
+        contentType: 'image/png',
+      });
+    }
+
+    await page.goto(`/art-pieces/${publishedId}/edit`);
+    await expect(page).toHaveURL('/users/@e2e_owner/edit/routing-published-fixture');
     await expect(
-      page.locator('a[href="/users/@e2e_owner/pieces/routing-published-fixture"]'),
-    ).toHaveAttribute('href', '/users/@e2e_owner/pieces/routing-published-fixture');
+      page.getByRole('heading', { name: 'Edit Routing published fixture' }),
+    ).toBeVisible();
+    for (const viewport of [
+      { name: 'desktop', width: 1280, height: 900 },
+      { name: 'mobile', width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await testInfo.attach(`generated-editor-${viewport.name}`, {
+        body: await page.screenshot(),
+        contentType: 'image/png',
+      });
+    }
   });
 
   test('edit metadata, generate and save a revision, and see it reflected in the version list after reload, at both viewports', async ({
@@ -134,9 +169,10 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
           source: TEAL_RECTANGLE,
         });
         expect(created.status()).toBe(201);
-        const piece = (await created.json()) as { public_id: string };
+        const piece = (await created.json()) as { public_id: string; public_slug: string };
 
         await page.goto(`/art-pieces/${piece.public_id}/edit`);
+        await expect(page).toHaveURL(`/users/@e2e_owner/edit/${piece.public_slug}`);
         await expect(page.getByRole('heading', { name: `Edit ${title}` })).toBeVisible();
         await page.getByRole('button', { name: 'Toggle description panel' }).click();
 
@@ -318,7 +354,7 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
     // Confirm actually deletes and navigates away.
     await page.getByRole('button', { name: 'Delete piece', exact: true }).click();
     await page.getByTestId('art-piece-editor-confirm-delete').click();
-    await expect(page).toHaveURL(/\/art-pieces\/manage$/);
+    await expect(page).toHaveURL(/\/studio\?kind=generated$/);
     const afterDelete = await apiGet(context, `/api/art-pieces/${piece.public_id}/`);
     expect(afterDelete.status()).toBe(404);
   });
@@ -364,7 +400,7 @@ test.describe('Generated owner management: reopen and revise a saved piece (#429
     // generic unavailable state a deleted/nonexistent piece would --
     // never a distinguishable "not yours" message.
     await otherPage.goto(`/art-pieces/${piece.public_id}/edit`);
-    await expect(otherPage.getByRole('alert')).toContainText("isn't available");
+    await expect(otherPage.getByRole('alert')).toContainText('isn’t available');
 
     await otherContext.close();
   });

@@ -87,9 +87,9 @@ function baseArtPiece(overrides: Partial<artPiecesApi.ArtPiece> = {}): artPieces
   };
 }
 
-function renderGallery() {
+function renderGallery(initialEntry = '/') {
   return render(
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/" element={<Gallery />} />
         <Route path="/users/@alice/edit/:slug" element={<p>Editor placeholder</p>} />
@@ -255,7 +255,11 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(mockedListLocal).toHaveBeenCalledWith(localDb, 'alice', 'alice-public');
     expect(screen.getByText('A local description')).toBeInTheDocument();
     expect(screen.getByText('AI')).toBeInTheDocument();
-    expect(screen.getByText('Generated')).toBeInTheDocument();
+    const localCard = screen
+      .getByRole('heading', { name: 'Local illustrated piece' })
+      .closest('article');
+    expect(localCard).not.toBeNull();
+    expect(within(localCard!).getByText('Generated')).toBeInTheDocument();
     expect(screen.getAllByText('Local only')).toHaveLength(2);
     await waitFor(() =>
       expect(
@@ -297,7 +301,7 @@ describe('Gallery loading/error/empty/populated states', () => {
 
     renderGallery();
     await screen.findByRole('heading', { name: 'Local 3D project' });
-    await userEvent.setup().selectOptions(screen.getByLabelText('Renderer'), '3d');
+    await userEvent.setup().selectOptions(screen.getByLabelText('Piece kind'), '3d');
     expect(screen.getByRole('heading', { name: 'Local 3D project' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open local editor' })).toHaveAttribute(
       'href',
@@ -384,7 +388,7 @@ describe('Gallery loading/error/empty/populated states', () => {
     ).toBe(true);
   });
 
-  it('defaults to All and filters the unified grid by 2D or 3D renderer', async () => {
+  it('defaults to All and filters the unified grid by piece kind', async () => {
     const user = userEvent.setup();
     mockedListProjects.mockResolvedValue([baseProject({ id: 'p1', title: 'Flat study' })]);
     mockedListProjects3D.mockResolvedValue([baseProject3D({ id: 'p3d-1', title: 'Sphere study' })]);
@@ -392,13 +396,13 @@ describe('Gallery loading/error/empty/populated states', () => {
     renderGallery();
 
     await screen.findByRole('heading', { name: 'Flat study' });
-    const filter = screen.getByRole('combobox', { name: 'Renderer' });
+    const filter = screen.getByRole('combobox', { name: 'Piece kind' });
     expect(filter).toHaveValue('all');
     expect(
       within(filter)
         .getAllByRole('option')
         .map((option) => option.textContent),
-    ).toEqual(['All', '2D', '3D']);
+    ).toEqual(['All', '2D', '3D', 'Generated']);
     expect(screen.getAllByRole('list')).toHaveLength(1);
     expect(screen.getByRole('heading', { name: 'Sphere study' })).toBeInTheDocument();
 
@@ -412,6 +416,37 @@ describe('Gallery loading/error/empty/populated states', () => {
     expect(screen.getByRole('heading', { name: 'Sphere study' })).toBeInTheDocument();
   });
 
+  it('loads the generated-only Studio filter from the URL and includes local generated pieces', async () => {
+    mockedListProjects.mockResolvedValue([baseProject({ title: 'Structured piece' })]);
+    mockedListProjects3D.mockResolvedValue([baseProject3D({ title: 'Structured 3D piece' })]);
+    mockedListArtPieces.mockResolvedValue([baseArtPiece({ title: 'Server generated piece' })]);
+    mockedListLocal.mockResolvedValue([
+      {
+        id: 'local-generated-1',
+        ownerId: 'alice',
+        title: 'Local generated piece',
+        description: '',
+        kind: 'generated',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-04T00:00:00Z',
+        sceneOrder: [],
+        activeSceneId: null,
+        versionOrder: [],
+        currentVersionId: null,
+      } as never,
+    ]);
+
+    renderGallery('/?kind=generated');
+
+    expect(
+      await screen.findByRole('heading', { name: 'Server generated piece' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Local generated piece' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Structured piece' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Structured 3D piece' })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Piece kind' })).toHaveValue('generated');
+  });
+
   it('shows an accurate empty state when a renderer filter has no matches', async () => {
     const user = userEvent.setup();
     mockedListProjects.mockResolvedValue([baseProject({ title: 'Flat study' })]);
@@ -419,7 +454,7 @@ describe('Gallery loading/error/empty/populated states', () => {
 
     renderGallery();
 
-    const filter = await screen.findByRole('combobox', { name: 'Renderer' });
+    const filter = await screen.findByRole('combobox', { name: 'Piece kind' });
     await user.selectOptions(filter, '3d');
 
     expect(screen.getByText('No 3D projects match this filter.')).toBeInTheDocument();
@@ -483,7 +518,7 @@ describe('Gallery keyboard accessibility', () => {
     await screen.findByRole('heading', { name: 'First' });
 
     await user.tab();
-    expect(screen.getByLabelText('Renderer')).toHaveFocus();
+    expect(screen.getByLabelText('Piece kind')).toHaveFocus();
 
     await user.tab();
     expect(screen.getByRole('link', { name: /create a new project/i })).toHaveFocus();

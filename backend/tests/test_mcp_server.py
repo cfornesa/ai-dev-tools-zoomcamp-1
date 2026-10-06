@@ -1975,7 +1975,7 @@ def test_mcp_client_ip_only_trusts_forwarding_from_loopback_proxy():
     )
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db(transaction=True, reset_sequences=True)
 def test_published_piece_kinds_share_gallery_crawler_and_mcp_surfaces():
     """Issue #1278: publish 2D, 3D, and generated pieces through their owner APIs,
     then prove public listings agree and unpublishing retains their versions."""
@@ -2147,6 +2147,7 @@ def test_published_piece_kinds_share_gallery_crawler_and_mcp_surfaces():
                 "{http://www.sitemaps.org/schemas/sitemap/0.9}url/"
                 "{http://www.sitemaps.org/schemas/sitemap/0.9}loc"
             )
+            if entry.text is not None
         }
         visible_sitemap_slugs = {slug for slug in slugs if any(slug in url for url in sitemap_urls)}
         assert visible_sitemap_slugs == (slugs if expected else set())

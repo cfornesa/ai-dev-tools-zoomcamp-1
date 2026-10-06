@@ -124,6 +124,7 @@ def test_site_profile_collection_and_home_metadata_are_public_and_canonical(publ
         position=0,
     )
     SiteSettings.objects.create(
+        pk=1,
         site_title="Configured Site",
         site_description="Configured description",
     )

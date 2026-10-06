@@ -26672,3 +26672,24 @@ Focused checks: `cd frontend && npm test -- src/storage/localPublicTransfer.test
 `cd backend && uv run pytest tests/test_piece_intake.py tests/test_art_piece_api.py`;
 browser: `cd frontend && npx playwright test e2e/localPieceRoundTripPublish.spec.ts
 --project=chromium`.
+
+### 2026-10-06 — Render saved scenes in browser-local 2D projects (#1288)
+
+At the production route `/local-projects/:id`, the owner-local structured 2D
+records retain their IndexedDB project and scene metadata after reload, but the
+current workspace shows no scene canvas. Blank starters have `shapes: []`, so
+the observed gray/empty state is not evidence of corruption; a populated local
+scene still cannot be visually checked. [#1261](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1261)
+owns the local-first production verification, while criterion-ready
+[#1288](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1288) owns
+adding a visible render surface for saved local 2D scenes, an explicit
+non-destructive error for unrenderable stored content, reload fidelity, and
+browser evidence at 1280×900 and 375×812. The local route must stay
+browser-local and make no server persistence writes. Out of scope: shape
+authoring parity, cloud/public transfer, 3D/generated routes, and schema/API
+changes. Assigned to open Batch 20: unified piece workspace (2026-10-06),
+Stage 2a. Status: PROPOSED; hand to the PM pass for grooming. Focused checks:
+`cd frontend && npx vitest run src/pages/LocalEditorWorkspace.test.tsx` and
+`cd frontend && npx playwright test e2e/localFirstCreate2d.spec.ts
+--project=chromium`; batch checks: `make check` plus the focused Playwright
+command (E2E is outside `make check`).

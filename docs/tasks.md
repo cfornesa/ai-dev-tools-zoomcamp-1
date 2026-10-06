@@ -26639,3 +26639,20 @@ classification. Next action: identify whether the published build emitted the
 `.ts` URL or the host assigned the wrong MIME type, then verify the local
 publish transfer on a production-like build and complete one authorized
 prefixed-piece lifecycle check.
+
+### 2026-10-06 — Production local 3D publish transfer returns HTTP 400 (#1286)
+
+During the owner's authorized production test, local Three.js piece
+`DEPLOY-CHECK-2026-10-05-02` (version 1) displayed the expected empty starter
+scene (gray grid, camera only). Its **Make public** action returned `API request
+failed with status 400`; it remained browser-local and unpublished. This is
+new production evidence after #1050 closed. Diagnose and verify transfer for a
+valid local 3D scene with a camera and one primitive, including an actionable
+validation outcome, no half-synced state, and a successful public route when
+valid. Keep separate from #1285's 2D dynamic-module/MIME failure. Milestone:
+Batch 19. Status: PROPOSED. Routing: Stage 2b because the local transfer crosses
+the package intake and 3D publication contract. Focused checks: `cd frontend &&
+npm test -- src/storage/localPublicTransfer.test.ts`; `cd backend && uv run
+pytest tests/test_piece_intake.py tests/test_project3d_publish_api.py`; browser: `cd frontend &&
+npx playwright test e2e/localPieceRoundTripPublish.spec.ts --project=chromium`.
+

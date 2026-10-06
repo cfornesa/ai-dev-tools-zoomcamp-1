@@ -105,6 +105,14 @@ next MCP request. It does not affect another user's authorization for the same
 pre-registered client. AI operations retain the web application's entitlement
 and quota rules.
 
+The Vite development and production-preview servers must proxy `/.well-known/`
+and `/oauth/` to Django, including `/oauth/authorize/`, `/oauth/token/`, and
+`/oauth/revoke_token/`. The proxy preserves the incoming `Host` header and
+forwards the client address so Django can build the correct issuer URLs and
+apply trusted-proxy IP handling. Without these proxy routes, OAuth clients
+receive the frontend's unknown-route 404 instead of Django discovery and
+authorization responses.
+
 The following Python example uses the official MCP SDK client. Set
 `MCP_ACCESS_TOKEN` to a current access token issued for the exact resource
 above. It initializes a session, discovers the tools, and calls `whoami`.

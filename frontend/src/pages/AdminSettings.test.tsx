@@ -27,6 +27,7 @@ vi.mock('../api/adminSettings', async () => {
     updateUnpublishRetentionPolicy: vi.fn(),
     purgeUnpublishRetention: vi.fn(),
     fetchAIProviderModels: vi.fn(),
+    createAIProviderModel: vi.fn(),
     updateAIProviderModel: vi.fn(),
     fetchProfileStyles: vi.fn(),
     fetchContinuityMetrics: vi.fn(),
@@ -90,11 +91,22 @@ beforeEach(() => {
     vendor: 'gemini',
     model_slug: 'gemini-test',
     display_label: 'Gemini test',
-    task_kinds: ['one_shot_2d'],
+    task_kinds: fields.task_kinds ?? ['one_shot_2d'],
     agentic_supported: false,
     native_schema: fields.native_schema ?? true,
     active: true,
     revision: 2,
+  }));
+  vi.mocked(adminApi.createAIProviderModel).mockImplementation(async (fields) => ({
+    id: 2,
+    vendor: fields.vendor,
+    model_slug: fields.model_slug,
+    display_label: fields.display_label,
+    task_kinds: fields.task_kinds,
+    agentic_supported: fields.agentic_supported ?? false,
+    native_schema: fields.native_schema ?? true,
+    active: true,
+    revision: 1,
   }));
   vi.mocked(adminApi.fetchThemeGenerationAttempts).mockResolvedValue([]);
   vi.mocked(adminApi.fetchContinuityMetrics).mockResolvedValue({
@@ -304,6 +316,84 @@ describe('AI model native schema capability (#817)', () => {
     expect(adminApi.updateAIProviderModel).toHaveBeenCalledWith(
       1,
       expect.objectContaining({ native_schema: false }),
+    );
+  });
+});
+
+describe('AI model generated-art capability (#1269)', () => {
+  it('lets an admin toggle art_piece on an existing model and sends it in the save payload', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AdminSettings />
+      </MemoryRouter>,
+    );
+
+    const row = await screen.findByRole('form', { name: 'Catalog entry gemini/gemini-test' });
+    await user.click(within(row).getByRole('checkbox', { name: 'Generated art piece' }));
+    await user.click(within(row).getByRole('button', { name: 'Save' }));
+
+    expect(adminApi.updateAIProviderModel).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ task_kinds: ['one_shot_2d', 'art_piece'] }),
+    );
+  });
+
+  it('keeps an existing art_piece value when saving another model field', async () => {
+    vi.mocked(adminApi.fetchAIProviderModels).mockResolvedValueOnce([
+      {
+        id: 1,
+        vendor: 'gemini',
+        model_slug: 'gemini-test',
+        display_label: 'Gemini test',
+        task_kinds: ['one_shot_2d', 'art_piece'],
+        agentic_supported: false,
+        native_schema: true,
+        active: true,
+        revision: 1,
+      },
+    ]);
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AdminSettings />
+      </MemoryRouter>,
+    );
+
+    const row = await screen.findByRole('form', { name: 'Catalog entry gemini/gemini-test' });
+    expect(within(row).getByRole('checkbox', { name: 'Generated art piece' })).toBeChecked();
+    await user.clear(within(row).getByRole('textbox', { name: 'Display label' }));
+    await user.type(within(row).getByRole('textbox', { name: 'Display label' }), 'Updated label');
+    await user.click(within(row).getByRole('button', { name: 'Save' }));
+
+    expect(adminApi.updateAIProviderModel).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        display_label: 'Updated label',
+        task_kinds: ['one_shot_2d', 'art_piece'],
+      }),
+    );
+  });
+
+  it('lets an admin add a model with art_piece enabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AdminSettings />
+      </MemoryRouter>,
+    );
+
+    const form = await screen.findByRole('form', { name: 'Add AI model catalog entry' });
+    await user.type(within(form).getByRole('textbox', { name: 'Model slug' }), 'mistral-art-test');
+    await user.type(
+      within(form).getByRole('textbox', { name: 'Display label' }),
+      'Mistral art test',
+    );
+    await user.click(within(form).getByRole('checkbox', { name: 'Generated art piece' }));
+    await user.click(within(form).getByRole('button', { name: 'Add model' }));
+
+    expect(adminApi.createAIProviderModel).toHaveBeenCalledWith(
+      expect.objectContaining({ task_kinds: ['art_piece'] }),
     );
   });
 });

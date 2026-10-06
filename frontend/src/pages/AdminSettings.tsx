@@ -926,6 +926,7 @@ const AI_TASK_KIND_OPTIONS = [
   ['one_shot_3d', 'One-shot 3D'],
   ['agent_2d', 'Agent run (2D)'],
   ['agent_3d', 'Agent run (3D)'],
+  ['art_piece', 'Generated art piece'],
 ] as const;
 
 function AIModelCatalogRow({

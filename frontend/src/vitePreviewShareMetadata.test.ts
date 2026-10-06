@@ -34,10 +34,25 @@ describe('vite preview share metadata (production run path)', () => {
   let backendPort: number;
   const forwardedHosts = new Set<string>();
   const forwardedClientAddresses = new Set<string>();
+  const forwardedOAuthRequests: Array<{ path: string; host: string; clientAddress: string }> = [];
   const saved = { ...process.env };
 
   beforeAll(async () => {
     backend = createServer((request, response) => {
+      if (request.url?.startsWith('/.well-known/') || request.url?.startsWith('/oauth/')) {
+        const forwardedAddress = request.headers['x-forwarded-for'];
+        forwardedOAuthRequests.push({
+          path: request.url,
+          host: request.headers.host ?? '',
+          clientAddress: Array.isArray(forwardedAddress)
+            ? forwardedAddress.join(', ')
+            : (forwardedAddress ?? ''),
+        });
+        response.setHeader('Content-Type', 'application/json');
+        response.statusCode = 200;
+        response.end(JSON.stringify({ source: 'django', path: request.url }));
+        return;
+      }
       const forwardedHost = request.headers['x-forwarded-host'];
       if (typeof forwardedHost === 'string') forwardedHosts.add(forwardedHost);
       if (request.url === '/mcp/' && request.method === 'POST') {
@@ -198,6 +213,37 @@ describe('vite preview share metadata (production run path)', () => {
     await expect(response.json()).resolves.toMatchObject({
       result: { tools: [{ name: 'health_check' }] },
     });
+  });
+
+  it('proxies OAuth discovery and authorization routes while preserving host and client address', async () => {
+    const paths = [
+      '/.well-known/oauth-authorization-server',
+      '/.well-known/oauth-protected-resource/mcp/',
+      '/oauth/authorize/',
+      '/oauth/token/',
+      '/oauth/revoke_token/',
+    ];
+
+    for (const path of paths) {
+      const method = path.endsWith('/token/') || path.endsWith('/revoke_token/') ? 'POST' : 'GET';
+      const response = await fetch(`${baseUrl}${path}`, { method });
+
+      expect(response.status, path).toBe(200);
+      expect(response.headers.get('content-type'), path).toContain('application/json');
+      await expect(response.json()).resolves.toEqual({ source: 'django', path });
+    }
+
+    const previewHost = new URL(baseUrl).host;
+    expect(forwardedOAuthRequests.map(({ path }) => path)).toEqual(paths);
+    expect(forwardedOAuthRequests.every(({ host }) => host === previewHost)).toBe(true);
+    expect(forwardedOAuthRequests.every(({ clientAddress }) => isIP(clientAddress) > 0)).toBe(true);
+  });
+
+  it('keeps unknown preview routes at the existing 404 response', async () => {
+    const response = await fetch(`${baseUrl}/not-a-known-route-for-oauth-proxy`);
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('content-type')).toContain('text/html');
   });
 
   it('still injects generic tags on the home route when the backend has no record', async () => {

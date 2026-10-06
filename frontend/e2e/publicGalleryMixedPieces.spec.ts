@@ -111,6 +111,30 @@ test.describe('mixed public gallery', () => {
     const project3dId = await publishFrom3D(page);
     const generatedTitle = `Gallery generated fixture ${testInfo.project.name}`;
     const artPieceId = await publishGeneratedArtPiece(context, generatedTitle);
+    await testInfo.attach('published-piece-ids', {
+      body: JSON.stringify(
+        [
+          { kind: '2d', public_id: project2dId },
+          { kind: '3d', public_id: project3dId },
+          { kind: 'generated', public_id: artPieceId },
+        ],
+        null,
+        2,
+      ),
+      contentType: 'application/json',
+    });
+
+    const noJavaScriptGalleryContext = await browser.newContext({ javaScriptEnabled: false });
+    const noJavaScriptGalleryPage = await noJavaScriptGalleryContext.newPage();
+    const serverGalleryResponse = await noJavaScriptGalleryPage.goto('/gallery');
+    expect(serverGalleryResponse?.status()).toBe(200);
+    const serverGalleryMarkup = await noJavaScriptGalleryPage
+      .locator('noscript')
+      .evaluate((element) => element.outerHTML);
+    expect(serverGalleryMarkup).toContain(`Gallery 2D fixture ${project2dId}`);
+    expect(serverGalleryMarkup).toContain(`Gallery 3D fixture ${project3dId}`);
+    expect(serverGalleryMarkup).toContain(generatedTitle);
+    await noJavaScriptGalleryContext.close();
 
     const noJavaScriptContext = await browser.newContext({ javaScriptEnabled: false });
     const noJavaScriptPage = await noJavaScriptContext.newPage();

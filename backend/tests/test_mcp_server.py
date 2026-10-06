@@ -1973,3 +1973,228 @@ def test_mcp_client_ip_only_trusts_forwarding_from_loopback_proxy():
     assert _trusted_client_ip({"client": ("192.0.2.10", 8000), "headers": headers}) == (
         "192.0.2.10"
     )
+
+
+@pytest.mark.django_db(transaction=True)
+def test_published_piece_kinds_share_gallery_crawler_and_mcp_surfaces():
+    """Issue #1278: publish 2D, 3D, and generated pieces through their owner APIs,
+    then prove public listings agree and unpublishing retains their versions."""
+    from xml.etree import ElementTree as ET
+
+    owner = get_user_model().objects.create_user(username="surface-owner")
+    PublicProfile.objects.create(user=owner, handle="surface-owner", is_public=True)
+    owner_client = APIClient()
+    owner_client.force_authenticate(owner)
+    anonymous = APIClient()
+
+    project2d = Project.objects.create(
+        owner=owner,
+        title="Surface contract 2D",
+        description="Published structured 2D piece.",
+        public_slug="surface-contract-2d",
+    )
+    version2d = SceneVersion.objects.create(
+        project=project2d,
+        sequence=1,
+        scene_json=copy.deepcopy(BLANK_SCENE),
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    project2d.current_version = version2d
+    project2d.save(update_fields=["current_version"])
+    assert owner_client.post(f"/api/projects/{project2d.public_id}/publish/").status_code == 200
+
+    project3d = Project3D.objects.create(
+        owner=owner,
+        title="Surface contract 3D",
+        public_slug="surface-contract-3d",
+    )
+    version3d = SceneVersion3D.objects.create(
+        project=project3d,
+        sequence=1,
+        scene_json=copy.deepcopy(MINIMAL_SCENE_3D),
+        created_by=owner,
+    )
+    project3d.current_version = version3d
+    project3d.save(update_fields=["current_version"])
+    assert owner_client.post(f"/api/projects3d/{project3d.public_id}/publish/").status_code == 200
+
+    created_generated = owner_client.post(
+        "/api/art-pieces/",
+        {
+            "title": "Surface contract generated",
+            "description": "Published generated piece.",
+            "prompt": "private generation prompt",
+            "engine": "svg",
+            "public_slug": "surface-contract-generated",
+            "source": '<svg xmlns="http://www.w3.org/2000/svg" />',
+        },
+        format="json",
+    )
+    assert created_generated.status_code == 201
+    generated_id = created_generated.data["public_id"]
+    assert (
+        owner_client.patch(
+            f"/api/art-pieces/{generated_id}/", {"status": "published"}, format="json"
+        ).status_code
+        == 200
+    )
+    generated = ArtPiece.objects.get(public_id=generated_id)
+
+    # A draft sentinel of each kind must stay private while its public sibling is listed.
+    private2d = Project.objects.create(owner=owner, title="Private surface 2D")
+    private3d = Project3D.objects.create(owner=owner, title="Private surface 3D")
+    private_generated_response = owner_client.post(
+        "/api/art-pieces/",
+        {
+            "title": "Private surface generated",
+            "description": "Still a draft.",
+            "prompt": "private prompt",
+            "engine": "svg",
+            "source": "<svg />",
+        },
+        format="json",
+    )
+    assert private_generated_response.status_code == 201
+
+    deleted2d = Project.objects.create(
+        owner=owner,
+        title="Deleted surface 2D",
+        public_slug="deleted-surface-2d",
+        visibility=Project.Visibility.PUBLIC,
+        published_at=timezone.now(),
+        is_deleted=True,
+    )
+    deleted2d_version = SceneVersion.objects.create(
+        project=deleted2d,
+        sequence=1,
+        scene_json=copy.deepcopy(BLANK_SCENE),
+        created_by=owner,
+        origin=SceneVersion.Origin.MANUAL,
+    )
+    deleted2d.current_version = deleted2d_version
+    deleted2d.save(update_fields=["current_version"])
+    deleted3d = Project3D.objects.create(
+        owner=owner,
+        title="Deleted surface 3D",
+        public_slug="deleted-surface-3d",
+        visibility=Project3D.Visibility.PUBLIC,
+        published_at=timezone.now(),
+        is_deleted=True,
+    )
+    deleted3d_version = SceneVersion3D.objects.create(
+        project=deleted3d,
+        sequence=1,
+        scene_json=copy.deepcopy(MINIMAL_SCENE_3D),
+        created_by=owner,
+    )
+    deleted3d.current_version = deleted3d_version
+    deleted3d.save(update_fields=["current_version"])
+    deleted_generated = ArtPiece.objects.create(
+        owner=owner,
+        title="Deleted surface generated",
+        public_slug="deleted-surface-generated",
+        prompt="deleted prompt",
+        engine=ArtPiece.Engine.SVG,
+        status=ArtPiece.Status.PUBLISHED,
+        published_at=timezone.now(),
+        is_deleted=True,
+    )
+    deleted_generated_version = ArtPieceVersion.objects.create(
+        piece=deleted_generated, sequence=1, source="<svg />"
+    )
+    deleted_generated.current_version = deleted_generated_version
+    deleted_generated.save(update_fields=["current_version"])
+
+    expected_ids = {str(project2d.public_id), str(project3d.public_id), str(generated.public_id)}
+    slugs = {
+        "surface-contract-2d",
+        "surface-contract-3d",
+        "surface-contract-generated",
+    }
+    oauth_token, _, _ = _create_mcp_access_token(owner, scopes=("gallery:read",))
+
+    def assert_public_everywhere(expected: bool) -> None:
+        gallery_response = anonymous.get("/api/public/gallery/?type=all&page_size=60")
+        assert gallery_response.status_code == 200
+        gallery_results = gallery_response.json()["results"]
+        ids = {item["id"] for item in gallery_results}
+        assert ids == (expected_ids if expected else set())
+        if expected:
+            assert {item["kind"] for item in gallery_results} == {"2d", "3d", "generated"}
+        else:
+            assert all(
+                item["title"]
+                not in {"Surface contract 2D", "Surface contract 3D", "Surface contract generated"}
+                for item in gallery_results
+            )
+        for hidden_title in (
+            private2d.title,
+            private3d.title,
+            "Private surface generated",
+            deleted2d.title,
+            deleted3d.title,
+            deleted_generated.title,
+        ):
+            assert hidden_title not in json.dumps(gallery_results)
+
+        sitemap = anonymous.get("/sitemap.xml")
+        assert sitemap.status_code == 200
+        sitemap_body = sitemap.content.decode()
+        sitemap_urls = {
+            entry.text
+            for entry in ET.fromstring(sitemap.content).findall(
+                "{http://www.sitemaps.org/schemas/sitemap/0.9}url/"
+                "{http://www.sitemaps.org/schemas/sitemap/0.9}loc"
+            )
+        }
+        visible_sitemap_slugs = {slug for slug in slugs if any(slug in url for url in sitemap_urls)}
+        assert visible_sitemap_slugs == (slugs if expected else set())
+        for hidden_slug in (
+            "deleted-surface-2d",
+            "deleted-surface-3d",
+            "deleted-surface-generated",
+        ):
+            assert hidden_slug not in sitemap_body
+
+        llms_response = anonymous.get("/llms-full.txt")
+        assert llms_response.status_code == 200
+        llms_body = llms_response.content.decode()
+        assert {slug for slug in slugs if slug in llms_body} == (slugs if expected else set())
+        for hidden_title in (
+            private2d.title,
+            private3d.title,
+            "Private surface generated",
+            deleted2d.title,
+            deleted3d.title,
+            deleted_generated.title,
+        ):
+            assert hidden_title not in llms_body
+
+        mcp_result = _mcp_result_payload(
+            _call_mcp_tool(oauth_token, "list_public_pieces", {"page_size": 60})
+        )
+        mcp_ids = {item["id"] for item in mcp_result["results"]}
+        assert mcp_ids == (expected_ids if expected else set())
+        app_tools, _, _, app_results = _call_public_apps(
+            [("show_public_gallery", {"page_size": 60})]
+        )
+        app_payload = _mcp_result_payload(app_results[0])
+        app_ids = {item["id"] for item in app_payload["results"]}
+        assert app_ids == (expected_ids if expected else set())
+        assert any(tool.name == "show_public_gallery" for tool in app_tools.tools)
+
+    assert_public_everywhere(expected=True)
+
+    assert owner_client.post(f"/api/projects/{project2d.public_id}/unpublish/").status_code == 200
+    assert owner_client.post(f"/api/projects3d/{project3d.public_id}/unpublish/").status_code == 200
+    assert (
+        owner_client.patch(
+            f"/api/art-pieces/{generated.public_id}/", {"status": "draft"}, format="json"
+        ).status_code
+        == 200
+    )
+    assert SceneVersion.objects.filter(project=project2d, is_deleted=False).count() == 1
+    assert SceneVersion3D.objects.filter(project=project3d).count() == 1
+    assert ArtPieceVersion.objects.filter(piece=generated).count() == 1
+    assert_public_everywhere(expected=False)

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
@@ -55,6 +55,9 @@ import type { StoredSyncConflict, MutationOutboxRecord } from '../storage/mutati
 import { pauseMutation } from '../storage/mutationOutbox';
 import { getMutationSessionGeneration } from '../storage/mutationSession';
 import { replaySyncMutations } from '../storage/syncMutationReplay';
+import type { SceneDocument } from '../api/projects';
+import { createScenePreview, resolveSceneRendererId } from '../render/createScenePreview';
+import type { ScenePreview } from '../render/scenePreview';
 import {
   deleteMediaTransfer,
   listMediaTransfersForProject,
@@ -86,6 +89,37 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function LocalScenePreview({ sceneJson }: { sceneJson: Record<string, unknown> }) {
+  const mountRef = useRef<HTMLDivElement | null>(null);
+  const [renderError, setRenderError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+    let preview: ScenePreview | undefined;
+    try {
+      preview = createScenePreview(mount, resolveSceneRendererId(sceneJson));
+      preview.render(sceneJson as SceneDocument);
+      setRenderError(null);
+    } catch (error) {
+      preview?.destroy();
+      setRenderError(error instanceof Error ? error.message : 'Could not render this scene.');
+      return;
+    }
+    return () => preview?.destroy();
+  }, [sceneJson]);
+
+  return (
+    <section className="local-scene-preview" aria-label="Local scene preview">
+      <h3>Preview</h3>
+      {renderError ? (
+        <p role="alert">Couldn&apos;t render this local scene: {renderError}</p>
+      ) : null}
+      <div ref={mountRef} data-testid="local-scene-preview" aria-label="Rendered local scene" />
+    </section>
+  );
 }
 
 function LocalProjectDetailsPanel({
@@ -1110,6 +1144,7 @@ function LocalEditorWorkspace() {
       </select>
       {selectedScene ? (
         <>
+          <LocalScenePreview sceneJson={selectedScene.sceneJson} />
           <label htmlFor="local-scene-name">Scene name</label>
           <input
             id="local-scene-name"

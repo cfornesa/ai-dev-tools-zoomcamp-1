@@ -19,6 +19,15 @@ type CreateProjectInput = {
   thumbnail?: { mimeType: string; bytes: number[]; updatedAt: string };
 };
 
+type CreateProjectWithSceneInput = {
+  ownerId: string;
+  title: string;
+  description?: string;
+  kind?: '2d' | '3d' | 'generated';
+  sceneName: string;
+  sceneJson: Record<string, unknown>;
+};
+
 type OutboxRow = {
   projectId: string;
   state: string;
@@ -44,6 +53,7 @@ type TransferRow = {
 type DatabaseAction =
   | { kind: 'seed'; input: SeedInput }
   | { kind: 'create-project'; input: CreateProjectInput }
+  | { kind: 'create-project-with-scene'; input: CreateProjectWithSceneInput }
   | { kind: 'read-project-content'; ownerId: string; projectId: string }
   | { kind: 'read-scenes'; projectId: string }
   | { kind: 'read-outbox'; projectId: string }
@@ -80,6 +90,17 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
           kind?: '2d' | '3d' | 'generated';
         },
       ): Promise<{ id: string }>;
+      createProjectWithScene(
+        db: IDBDatabase,
+        input: {
+          ownerId: string;
+          title: string;
+          description?: string;
+          kind?: '2d' | '3d' | 'generated';
+          sceneName: string;
+          sceneJson: Record<string, unknown>;
+        },
+      ): Promise<{ project: { id: string } }>;
       getProject(
         db: IDBDatabase,
         ownerId: string,
@@ -149,6 +170,11 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
             });
           }
           return { id: project.id };
+        }
+        case 'create-project-with-scene': {
+          const { input } = operation;
+          const created = await repository.createProjectWithScene(db, input);
+          return { id: created.project.id };
         }
         case 'seed': {
           const { input } = operation;

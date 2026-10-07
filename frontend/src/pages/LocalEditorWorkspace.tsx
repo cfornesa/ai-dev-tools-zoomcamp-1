@@ -645,12 +645,16 @@ function LocalEditorWorkspace() {
         error.body &&
         typeof error.body === 'object'
       ) {
-        const body = error.body as Partial<PublishValidationErrorBody>;
+        const body = error.body as Partial<PublishValidationErrorBody> & { detail?: unknown };
         if (body.errors && typeof body.errors === 'object') {
           setMakePublicResult({
             state: 'error',
             detail: Object.values(body.errors).flat().join(' '),
           });
+          return;
+        }
+        if (typeof body.detail === 'string' && body.detail.trim()) {
+          setMakePublicResult({ state: 'error', detail: body.detail });
           return;
         }
       }

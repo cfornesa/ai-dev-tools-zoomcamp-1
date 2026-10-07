@@ -66,6 +66,7 @@ function GalleryCard({ item }: { item: PublicGalleryItem | PublicGalleryAccountI
     <PieceCard
       href={item.viewer_url}
       title={item.title}
+      publishedAt={item.published_at}
       thumbnailUrl={item.thumbnail_url}
       thumbnailIsFallback={item.kind === 'generated' ? item.thumbnail_is_fallback : false}
       kind={item.kind}

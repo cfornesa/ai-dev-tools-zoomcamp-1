@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
@@ -37,6 +38,7 @@ import {
   type LocalProjectRecord,
 } from '../storage/localProjectRepository';
 import { ensureLocalThumbnail } from '../storage/localThumbnail';
+import { validateProjectMetadataForLocalSave } from '../validation/projectMetadata';
 
 function payloadOf(version: LocalPieceVersionRecord | null) {
   return (version?.payload ?? {}) as {
@@ -70,6 +72,10 @@ export default function LocalGeneratedPieceWorkspace() {
   const [aiPending, setAiPending] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [titleError, setTitleError] = useState<string | null>(null);
+  const [titleSaving, setTitleSaving] = useState(false);
   const previewRef = useRef<HTMLIFrameElement | null>(null);
 
   const load = useCallback(async () => {
@@ -135,6 +141,33 @@ export default function LocalGeneratedPieceWorkspace() {
       setMessage('Saved locally. Nothing was sent to the server.');
     } finally {
       db.close();
+    }
+  }
+
+  async function saveTitle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const title = titleDraft.trim();
+    const errors = validateProjectMetadataForLocalSave({ title });
+    if (errors.title) {
+      setTitleError(errors.title.join(' '));
+      return;
+    }
+    setTitleSaving(true);
+    setTitleError(null);
+    try {
+      const db = await openLocalProjectDatabase();
+      try {
+        const updated = await updateProject(db, owner!, id!, { title });
+        setProject(updated);
+        setEditingTitle(false);
+        setMessage('Title saved locally. Nothing was sent to the server.');
+      } finally {
+        db.close();
+      }
+    } catch {
+      setTitleError('Could not save the title locally. Please try again.');
+    } finally {
+      setTitleSaving(false);
     }
   }
 
@@ -242,6 +275,56 @@ export default function LocalGeneratedPieceWorkspace() {
       <main className="local-generated-editor" aria-labelledby="local-generated-title">
         <p className="eyebrow">LOCAL-ONLY GENERATED PIECE</p>
         <h1 id="local-generated-title">{project.title}</h1>
+        {editingTitle ? (
+          <form
+            className="editor-title-display"
+            aria-label="Local generated piece title"
+            onSubmit={(event) => void saveTitle(event)}
+            noValidate
+          >
+            <label htmlFor="local-generated-title-input">Title</label>
+            <input
+              id="local-generated-title-input"
+              value={titleDraft}
+              onChange={(event) => setTitleDraft(event.target.value)}
+              aria-invalid={titleError ? true : undefined}
+              aria-describedby={titleError ? 'local-generated-title-error' : undefined}
+            />
+            {titleError && (
+              <p id="local-generated-title-error" role="alert">
+                {titleError}
+              </p>
+            )}
+            <button type="submit" disabled={titleSaving}>
+              {titleSaving ? 'Saving title…' : 'Save title'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingTitle(false);
+                setTitleError(null);
+              }}
+              disabled={titleSaving}
+            >
+              Cancel
+            </button>
+          </form>
+        ) : (
+          <div className="editor-title-display">
+            <button
+              type="button"
+              className="editor-icon-button"
+              aria-label="Edit title"
+              onClick={() => {
+                setTitleDraft(project.title);
+                setTitleError(null);
+                setEditingTitle(true);
+              }}
+            >
+              Edit title
+            </button>
+          </div>
+        )}
         <p>{payload.description ?? 'Edit and preview this generated piece locally.'}</p>
         <section className="local-generated-preview" aria-label="Generated piece preview">
           <iframe

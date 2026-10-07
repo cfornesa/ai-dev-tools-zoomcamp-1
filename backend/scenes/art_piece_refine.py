@@ -224,7 +224,24 @@ def _apply_edits(source: str, edits: Any) -> str:
         pattern = r"\s+".join(re.escape(token) for token in tokens)
         matches = list(re.finditer(pattern, updated))
         if len(matches) != 1:
-            raise ValueError(f"Edit search must match exactly once: {search[:120]!r}.")
+            message = f"Edit search must match exactly once: {search[:120]!r}."
+            if len(matches) > 1:
+                line_numbers: list[str] = []
+                cursor = 0
+                line = 1
+                for match in matches[:10]:
+                    line += updated.count("\n", cursor, match.start())
+                    line_numbers.append(str(line))
+                    cursor = match.start()
+                locations = ", ".join(line_numbers)
+                if len(matches) > len(line_numbers):
+                    locations += ", …"
+                message += (
+                    f" Found {len(matches)} matches on lines {locations}. "
+                    "Expand the search to a unique multi-line block using surrounding source "
+                    "context; keep the replacement limited to the intended occurrence."
+                )
+            raise ValueError(message)
         match = matches[0]
         updated = updated[: match.start()] + edit["replace"] + updated[match.end() :]
     return updated

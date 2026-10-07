@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as projectsApi from '../api/projects';
 import * as projects3dApi from '../api/projects3d';
+import * as artPiecesApi from '../api/artPieces';
+import * as profileApi from '../api/profile';
+import * as repository from '../storage/localProjectRepository';
+import * as localThumbnail from '../storage/localThumbnail';
 import * as authModule from '../auth/useAuth';
 import Layout from '../components/Layout';
 import Gallery from './Gallery';
@@ -17,11 +21,21 @@ import Gallery from './Gallery';
 
 vi.mock('../api/projects');
 vi.mock('../api/projects3d');
+vi.mock('../api/artPieces');
+vi.mock('../api/profile');
+vi.mock('../storage/localProjectRepository');
+vi.mock('../storage/localThumbnail');
 vi.mock('../auth/useAuth');
 
 const mockedListProjects = vi.mocked(projectsApi.listProjects);
 const mockedListProjects3D = vi.mocked(projects3dApi.listProjects3D);
+const mockedListArtPieces = vi.mocked(artPiecesApi.listArtPieces);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
+const mockedFetchProfile = vi.mocked(profileApi.fetchProfile);
+const mockedOpenLocal = vi.mocked(repository.openLocalProjectDatabase);
+const mockedListLocal = vi.mocked(repository.listProjectsForOwnerWithFallback);
+const mockedEnsureLocalThumbnail = vi.mocked(localThumbnail.ensureLocalThumbnail);
+const localDb = { close: vi.fn() } as unknown as IDBDatabase;
 
 function baseProject(overrides: Partial<projectsApi.Project> = {}): projectsApi.Project {
   return {
@@ -61,20 +75,25 @@ beforeEach(() => {
     user: { username: 'alice', email: 'alice@example.com', is_application_admin: false },
   });
   mockedListProjects3D.mockResolvedValue([]);
+  mockedListArtPieces.mockResolvedValue([]);
+  mockedFetchProfile.mockResolvedValue({ handle: 'alice' } as never);
+  mockedOpenLocal.mockResolvedValue(localDb);
+  mockedListLocal.mockResolvedValue([]);
+  mockedEnsureLocalThumbnail.mockResolvedValue(null);
 });
 
 describe('Gallery accessibility', () => {
   it('has no axe violations while loading', async () => {
     mockedListProjects.mockReturnValue(new Promise(() => {}));
     const { container } = renderGallery();
-    await screen.findByText(/loading your projects/i);
+    await screen.findByText(/loading the remaining piece lists/i);
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it('has no axe violations on load error', async () => {
     mockedListProjects.mockRejectedValue(new Error('network down'));
     const { container } = renderGallery();
-    await screen.findByRole('alert');
+    await screen.findByText(/couldn't load your 2d projects/i);
     expect(await axe(container)).toHaveNoViolations();
   });
 

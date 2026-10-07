@@ -18,7 +18,7 @@ test.describe('2D AI editor engine modes (#618)', () => {
 
   test('catalogs all 2D engines and preserves source-only editor identity through revision/save', async ({
     browser,
-  }) => {
+  }, testInfo) => {
     test.setTimeout(90_000);
     for (const viewport of [
       { width: 1280, height: 900 },
@@ -55,6 +55,11 @@ test.describe('2D AI editor engine modes (#618)', () => {
           source: SOURCES[engine],
         });
         expect(created.status()).toBe(201);
+        const piece = (await created.json()) as { public_id: string };
+        await testInfo.attach(`piece-${engine}-${viewport.width}`, {
+          body: JSON.stringify({ public_id: piece.public_id, public_slug: slug }, null, 2),
+          contentType: 'application/json',
+        });
 
         await page.goto(`/users/@${profile.handle}/edit/${slug}`);
         await expect(page.getByTestId('art-piece-editor-mode')).toHaveText(
@@ -66,6 +71,53 @@ test.describe('2D AI editor engine modes (#618)', () => {
         );
         await expect(page.getByTestId('art-piece-editor-source-only')).toBeVisible();
         await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 1');
+        await expect(page.getByRole('group', { name: 'Publication status' })).toBeVisible();
+        await expect(page.getByTestId('art-piece-editor-publication-status')).toContainText(
+          'Draft (private)',
+        );
+        await expect(page.getByRole('button', { name: 'Export piece package' })).toBeEnabled();
+        await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
+        await expect(page.getByRole('heading', { name: 'Current version' })).toBeVisible();
+        await expect(page.getByTestId('art-piece-editor-regenerate-thumbnail')).toBeEnabled();
+        await page.getByRole('button', { name: 'Toggle thumbnail panel' }).click();
+        await page.getByText('Sound', { exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Save sound defaults' })).toBeEnabled();
+        await page.getByText('Sound', { exact: true }).click();
+        await page.getByRole('button', { name: 'Published', exact: true }).click();
+        const publishDialog = page.getByRole('alertdialog', { name: /Publish/ });
+        await expect(publishDialog).toBeVisible();
+        await publishDialog.getByRole('button', { name: 'Cancel' }).click();
+        await expect(page.getByTestId('art-piece-editor-publication-status')).toContainText(
+          'Draft (private)',
+        );
+        await page.getByRole('button', { name: 'Published', exact: true }).click();
+        await page
+          .getByRole('alertdialog', { name: /Publish/ })
+          .getByRole('button', { name: 'Publish', exact: true })
+          .click();
+        await expect(page.getByTestId('art-piece-editor-publication-status')).toContainText(
+          'Published (public)',
+        );
+        await page.getByRole('button', { name: 'Draft', exact: true }).click();
+        await expect(page.getByTestId('art-piece-editor-publication-status')).toContainText(
+          'Draft (private)',
+        );
+        await page.screenshot({
+          path: testInfo.outputPath(`generated-2d-editor-${engine}-${viewport.width}.png`),
+          fullPage: true,
+        });
+
+        await page.getByTestId('art-piece-editor-edit-source').click();
+        await expect(page.getByTestId('art-piece-editor-code-panel')).toBeVisible();
+        await expect(page.getByTestId('art-piece-editor-save-version')).toBeEnabled({
+          timeout: 15_000,
+        });
+        await page
+          .getByLabel('Editable source preview')
+          .fill(`${SOURCES[engine]}\n// manual source parity edit`);
+        await expect(page.getByTestId('art-piece-editor-save-version')).toBeEnabled();
+        await page.getByTestId('art-piece-editor-save-version').click();
+        await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 2');
 
         await expandGeneratedArtEditorTools(page);
         await page.getByRole('button', { name: 'AI edit' }).click();
@@ -75,7 +127,7 @@ test.describe('2D AI editor engine modes (#618)', () => {
         await page.getByRole('button', { name: 'Refine piece' }).click();
         await expect(page.getByTestId('art-piece-editor-preview')).toBeVisible();
         await expect(page.getByTestId('art-piece-refine-accepted')).toBeVisible();
-        await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 2');
+        await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('Version 3');
         await expect(page.getByTestId('art-piece-editor-version-list')).toContainText('(current)');
         await context.close();
       }

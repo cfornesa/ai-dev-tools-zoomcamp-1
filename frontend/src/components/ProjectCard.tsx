@@ -108,7 +108,7 @@ function ProjectCard({
             the same prominent treatment `Layout.tsx`'s Home/Account
             settings navigation already uses) rather than a plain inline
             text link, since it's the card's primary action. */}
-        <Link className="shell-action" to={`/projects/${project.id}`}>
+        <Link className="shell-action" to={project.editor_url || `/projects/${project.id}`}>
           Edit
         </Link>{' '}
         <ConfirmDialog

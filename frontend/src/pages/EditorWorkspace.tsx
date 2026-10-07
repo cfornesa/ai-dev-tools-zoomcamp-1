@@ -13,7 +13,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import {
   updateProjectMetadata,
@@ -807,6 +807,8 @@ function localizePreviewError(message: string): { pointer: string; detail: strin
  */
 function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
+  const location = useLocation();
+  const startWithAi = new URLSearchParams(location.search).get('start') === 'ai';
   const id = initialProjectId ?? routeId;
   const navigate = useNavigate();
   const auth = useAuth();
@@ -861,7 +863,12 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // Issue #93: Preview is no longer one of the switchable tabs (it's always
   // rendered — see `panelHidden` below), so the switcher only ever toggles
   // between Tools and Inspector; 'tools' is as good a default as either.
-  const [activePanel, setActivePanel] = useState<EditorPanelName>('tools');
+  const [activePanel, setActivePanel] = useState<EditorPanelName>(
+    startWithAi ? 'inspector' : 'tools',
+  );
+  useEffect(() => {
+    setActivePanel(startWithAi ? 'inspector' : 'tools');
+  }, [startWithAi]);
   // Task 36: "Show logic" reveals behavior cards as typed connected nodes
   // (`_docs/plan.md`'s "Progressive disclosure" section) — the advanced
   // graph view/list-view pair, hidden by default so the default editing
@@ -3499,7 +3506,11 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
           className="editor-panel"
           hidden={panelHidden('inspector')}
         >
-          <TopLevelPanel name="Inspector">
+          <TopLevelPanel
+            key={startWithAi ? 'ai-start' : 'standard-start'}
+            name="Inspector"
+            defaultOpen={startWithAi}
+          >
             {/* Task 94 (issue #94), point 3: same independently collapsible
               section pattern as the Tools panel above — see that panel's
               own comment. */}
@@ -3580,7 +3591,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
               )}
             </CollapsibleSection>
 
-            <CollapsibleSection heading="AI proposals" icon="✨">
+            <CollapsibleSection heading="AI proposals" icon="✨" defaultOpen={startWithAi}>
               {/* Task 48: AI create/edit proposal preview and acceptance.
                 The proposal itself is a third state entirely inside
                 AIProposalPanel/useAIProposal — nothing here is touched

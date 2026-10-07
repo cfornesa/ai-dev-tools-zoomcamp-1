@@ -205,6 +205,64 @@ def test_regular_runtime_engines_persist_with_regular_capability(client, engine,
     assert response.data["engine_capabilities"]["immersive"] is True
 
 
+@pytest.mark.parametrize(
+    ("engine", "source"),
+    [
+        (
+            "canvas2d",
+            '<canvas id="art-piece-canvas" width="800" height="600"></canvas>'
+            '<script>document.getElementById("art-piece-canvas").getContext("2d").fillRect(0,0,10,10);</script>',
+        ),
+        ("svg", '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="10"/></svg>'),
+        (
+            "p5js",
+            "window.sketch = function (p) { p.setup = function () { p.createCanvas(10, 10); }; };",
+        ),
+        (
+            "c2js",
+            "window.sketch = function ({ canvas, startFrame }) { "
+            "const context = canvas.getContext('2d'); "
+            "startFrame(function () { context.beginPath(); "
+            "context.arc(10, 10, 5, 0, Math.PI * 2); context.fill(); }); return {}; };",
+        ),
+        (
+            "c2js-interactive",
+            "window.sketch = function ({ startFrame, canvas }) { "
+            "canvas.addEventListener('pointerdown', function () {}); "
+            "const context = canvas.getContext('2d'); "
+            "startFrame(function () { context.beginPath(); "
+            "context.arc(10, 10, 5, 0, Math.PI * 2); context.fill(); }); return {}; };",
+        ),
+        (
+            "threejs",
+            "var scene = new THREE.Scene(); "
+            "scene.add(new THREE.Mesh(new THREE.SphereGeometry(), "
+            "new THREE.MeshBasicMaterial()));",
+        ),
+        ("aframe", '<a-scene><a-sphere position="0 1 -3" radius="1"></a-sphere></a-scene>'),
+    ],
+)
+def test_blank_starter_source_can_be_saved_for_every_library(client, engine, source):
+    response = client.post(
+        "/api/art-pieces/",
+        {
+            "prompt": f"Blank {engine} starter",
+            "engine": engine,
+            "source": source,
+            "title": f"Blank {engine}",
+            "description": "A library starter saved without AI generation.",
+            "capabilities": {},
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    assert response.data["engine"] == engine
+    assert response.data["engine_capabilities"]["regular"] is True
+    assert response.data["current_version"]["sequence"] == 1
+    assert response.data["current_version"]["thumbnail_is_fallback"] is True
+
+
 def test_publish_requires_meaningful_metadata_and_public_detail_hides_prompt(client):
     response = create_piece(client)
     public_id = response.data["public_id"]

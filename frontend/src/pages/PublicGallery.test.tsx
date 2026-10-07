@@ -76,6 +76,20 @@ describe('PublicGallery engine labels on every piece kind (#770)', () => {
       expect(card.querySelector('.engine-label')).toHaveTextContent(engine);
     }
   });
+
+  it('shows the published date on public content cards', async () => {
+    mockedFetchPublicGallery.mockResolvedValueOnce({
+      results: [baseItem({ published_at: '2026-08-01T00:00:00Z' })],
+      next_cursor: null,
+      has_more: false,
+    });
+
+    renderPublicGallery();
+
+    const card = await screen.findByTestId('gallery-card-p1');
+    expect(within(card).getByText('Aug 1, 2026')).toBeVisible();
+    expect(card.querySelector('time')).toHaveAttribute('datetime', '2026-08-01T00:00:00Z');
+  });
 });
 
 describe('PublicGallery loading/error/empty states', () => {

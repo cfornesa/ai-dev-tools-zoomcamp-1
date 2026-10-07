@@ -118,7 +118,7 @@ function Project3DCard({
       </p>
       <p>Last updated {formatDate(project.updated_at)}</p>
       <p>
-        <Link className="shell-action" to={`/projects3d/${project.id}`}>
+        <Link className="shell-action" to={project.editor_url || `/projects3d/${project.id}`}>
           Edit
         </Link>{' '}
         <button type="button" className="shell-action" onClick={handleDelete} disabled={deleting}>

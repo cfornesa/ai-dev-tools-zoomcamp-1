@@ -4,6 +4,10 @@
  * records use the same owner key as the Studio and local editors.
  */
 import { getTemplate } from '../api/templates';
+import { createBlankProject as createApiBlankProject } from '../api/projects';
+import { createProject3D as createApiProject3D } from '../api/projects3d';
+import { ART_PIECE_ENGINE_CAPABILITIES, type ArtPieceLibrary } from '../api/artPieces';
+import { getArtPieceStarter } from '../generative/artPieceStarters';
 import {
   createProject,
   createProjectWithScene,
@@ -14,6 +18,42 @@ import {
 } from '../storage/localProjectRepository';
 
 export type NewProjectRenderer = 'p5' | 'canvas2d' | 'svg';
+export type CreationMode = 'blank' | 'ai';
+
+function editorRoute(editorUrl: string | null | undefined, mode: CreationMode): string {
+  if (!editorUrl) throw new Error('The new project has no canonical editor route.');
+  const destination = new URL(editorUrl, window.location.origin);
+  if (mode === 'ai') destination.searchParams.set('start', 'ai');
+  return `${destination.pathname}${destination.search}${destination.hash}`;
+}
+
+/** Issue #1276: create structured 2D work through the server model so blank
+ * and AI starts share the same canonical editor, save and publish controls. */
+export async function createChooser2DProject(
+  ownerId: string,
+  renderer: NewProjectRenderer,
+  mode: CreationMode,
+): Promise<string> {
+  if (!ownerId) throw new Error('A signed-in account is required to create a project.');
+  const project = await createApiBlankProject(undefined, renderer);
+  return editorRoute(project.editor_url, mode);
+}
+
+/** Issue #1276: 3D blank and AI starts share the canonical server editor. */
+export async function createChooser3DProject(ownerId: string, mode: CreationMode): Promise<string> {
+  if (!ownerId) throw new Error('A signed-in account is required to create a project.');
+  const project = await createApiProject3D();
+  return editorRoute(project.editor_url, mode);
+}
+
+export function getGeneratedArtPieceStartPath(
+  library: ArtPieceLibrary,
+  mode: CreationMode,
+): string {
+  const params = new URLSearchParams({ engine: library });
+  if (mode === 'blank') params.set('mode', 'blank');
+  return `/art-pieces?${params.toString()}`;
+}
 
 export async function createNewAnimation(
   ownerId: string,
@@ -114,18 +154,22 @@ export async function createAiAssisted3DProject(ownerId: string): Promise<string
   return createNew3DProject(ownerId);
 }
 
-export async function createLocalGeneratedPiece(ownerId: string): Promise<string> {
+export async function createLocalGeneratedPiece(
+  ownerId: string,
+  library: ArtPieceLibrary = 'svg',
+): Promise<string> {
   if (!ownerId) throw new Error('A signed-in account is required for local projects.');
   const db = await openLocalProjectDatabase();
   try {
     const { project } = await createLocalGeneratedProject(db, {
       ownerId,
-      title: 'Local generated SVG',
-      description:
-        'A local-only generated piece. Edit the source and save versions without server transfer.',
-      engine: 'svg',
-      source:
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="#101827"/><circle cx="400" cy="300" r="120" fill="#35c6dc"/></svg>',
+      title:
+        library === 'svg'
+          ? 'Local generated SVG'
+          : `Local ${ART_PIECE_ENGINE_CAPABILITIES[library].label} starter`,
+      description: `A local-only ${ART_PIECE_ENGINE_CAPABILITIES[library].label} starter. Edit the source and save versions without server transfer.`,
+      engine: library,
+      source: getArtPieceStarter(library),
     });
     return `/local-generated/${project.id}`;
   } finally {

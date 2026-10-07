@@ -19,14 +19,10 @@ type GalleryCreateMenuProps = {
 type MenuAction = { id: string; label: string; run: () => Promise<string> };
 
 /**
- * Issue #268: replaces `Gallery.tsx`'s 4 inline "Create X" buttons + the
- * "Browse templates" link with a single split-button -- a "+" that
- * navigates to the full `/create` chooser page (`CreateChooser.tsx`), and
- * an adjacent arrow that opens an accessible dropdown offering renderer-
- * specific 2D actions plus 3D and templates, via `useMenuButton`'s WAI-ARIA menu-button
- * behavior. Every action here calls the same shared functions
- * (`galleryCreateActions.ts`) `CreateChooser.tsx` calls, so both paths
- * stay behaviorally identical to each other and to the pre-#268 buttons.
+ * Issue #268/#1276: the plus opens the unified `/create` chooser, where a
+ * user selects a piece kind/library and starts blank or with AI. The
+ * adjacent accessible menu keeps the pre-existing quick-create actions,
+ * template link and package import entry point working for compatibility.
  */
 function GalleryCreateMenu({
   creating,

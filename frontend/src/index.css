@@ -4290,6 +4290,40 @@ textarea:disabled {
   resize: vertical;
 }
 
+.create-chooser-kind {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin-block: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.create-chooser-kind label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.create-chooser > label {
+  display: block;
+  margin-block: 1rem;
+}
+
+.create-chooser > label select {
+  display: block;
+  width: min(100%, 28rem);
+  margin-top: 0.4rem;
+}
+
+.create-chooser-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+
 .art-piece-editor-revise-panel {
   display: flex;
   flex-direction: column;
@@ -4412,6 +4446,18 @@ textarea:disabled {
 
 .art-piece-editor-page > h2 {
   margin-top: 0;
+}
+
+.art-piece-editor-publication {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-block: 0.75rem 1rem;
+}
+
+.art-piece-editor-publication > p {
+  margin: 0;
 }
 
 .generated-3d-action-items {

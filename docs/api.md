@@ -617,6 +617,14 @@ grammar:
 - `/users/@<handle>/edit/<slug>` — the owner's piece editor entry point; and
 - `/users/@<handle>/collections/<slug>` plus `/users/@<handle>/collections/<slug>/immersive` — collection views.
 
+### Legacy generated-piece editor routes (#1279)
+
+The owner-facing web UI keeps old generated-piece links working: `/art-pieces/manage`
+redirects to `/studio?kind=generated`, and `/art-pieces/<id>/edit` resolves an
+owned generated piece to its canonical `/users/@<handle>/edit/<slug>` URL. These
+are frontend redirects; the owner API and MCP contracts are unchanged. The
+`/art-pieces` route remains the AI creation form.
+
 ### Owner-private generated pieces and slug collisions (#745)
 
 The existing `GET /api/users/@<handle>/pieces/<slug>/` resolver remains the

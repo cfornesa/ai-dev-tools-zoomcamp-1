@@ -148,7 +148,7 @@ test.describe('Generated studio /art-pieces: capability contract (#428)', () => 
 
         // Reload from a fresh page load -- proves the persisted contract, not
         // just in-memory component state.
-        await page.goto(`/art-pieces/manage`);
+        await page.goto('/studio?kind=generated');
         const detail = await apiGet(context, `/api/art-pieces/${saved!.public_id}/`);
         const piece = (await detail.json()) as {
           current_version: { capabilities: Record<string, boolean> };

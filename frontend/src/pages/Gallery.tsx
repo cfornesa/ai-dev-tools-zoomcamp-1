@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { listProjects, type Project } from '../api/projects';
 import { listProjects3D, type Project3D } from '../api/projects3d';
+import { ART_PIECE_ENGINE_CAPABILITIES, listArtPieces, type ArtPiece } from '../api/artPieces';
 import { fetchProfile } from '../api/profile';
 import { useAuth } from '../auth/useAuth';
 import Project3DCard from '../components/Project3DCard';
@@ -19,7 +20,74 @@ import { ensureLocalThumbnail } from '../storage/localThumbnail';
 import { importLocalPiecePackage } from '../storage/localPiecePackageImport';
 
 type LoadState = 'loading' | 'error' | 'ready';
-type ProjectRendererFilter = 'all' | '2d' | '3d';
+type PieceKindFilter = 'all' | '2d' | '3d' | 'generated';
+
+function parsePieceKindFilter(value: string | null): PieceKindFilter {
+  return value === '2d' || value === '3d' || value === 'generated' ? value : 'all';
+}
+
+type GalleryEntry =
+  | { kind: '2d'; id: string; updatedAt: string; value: Project }
+  | { kind: '3d'; id: string; updatedAt: string; value: Project3D }
+  | { kind: 'generated'; id: string; updatedAt: string; value: ArtPiece }
+  | { kind: 'local'; id: string; updatedAt: string; value: LocalProjectRecord };
+
+function OwnedArtPieceCard({ piece, handle }: { piece: ArtPiece; handle: string | null }) {
+  const titleId = `owned-art-piece-${piece.public_id}-title`;
+  const href =
+    handle && piece.public_slug
+      ? `/users/@${encodeURIComponent(handle)}/edit/${encodeURIComponent(piece.public_slug)}`
+      : `/art-pieces/${encodeURIComponent(piece.public_id)}/edit`;
+  const thumbnail = piece.current_version?.thumbnail_url;
+  const engineLabel =
+    piece.engine_label ?? ART_PIECE_ENGINE_CAPABILITIES[piece.engine]?.label ?? piece.engine;
+
+  return (
+    <article className="project-card" aria-labelledby={titleId}>
+      {thumbnail ? (
+        <img className="project-card-thumbnail" src={thumbnail} alt={`Preview of ${piece.title}`} />
+      ) : (
+        <div
+          className="project-card-thumbnail-fallback"
+          role="img"
+          aria-label={`No preview available for ${piece.title}`}
+        >
+          No preview available
+        </div>
+      )}
+      <h3 id={titleId}>{piece.title}</h3>
+      <p>
+        <span className="visibility-badge">{piece.status}</span>
+        <span className="visibility-badge">
+          {piece.status === 'published' ? 'Public' : 'Private'}
+        </span>
+        <span className="origin-badge">AI</span>
+      </p>
+      <p>
+        <span className="visibility-badge">Generated</span>{' '}
+        <span className="visibility-badge">{engineLabel}</span>
+      </p>
+      <p>Last updated {formatDate(piece.updated_at)}</p>
+      <p>
+        {piece.status === 'published' && (
+          <Link
+            className="shell-action"
+            to={
+              handle && piece.public_slug
+                ? `/users/@${encodeURIComponent(handle)}/pieces/${encodeURIComponent(piece.public_slug)}`
+                : `/art-pieces/p/${encodeURIComponent(piece.public_id)}`
+            }
+          >
+            View public page
+          </Link>
+        )}{' '}
+        <Link className="shell-action" to={href}>
+          Edit
+        </Link>
+      </p>
+    </article>
+  );
+}
 
 function LocalProjectCard({
   project,
@@ -91,7 +159,6 @@ function LocalProjectCard({
 function Gallery() {
   const auth = useAuth();
   const navigate = useNavigate();
-  const [loadState, setLoadState] = useState<LoadState>('loading');
   const [projects, setProjects] = useState<Project[]>([]);
   // Gap found live in production while verifying #238's fix: 3D projects
   // could be created but never appeared anywhere afterward, because this
@@ -99,10 +166,32 @@ function Gallery() {
   // already existed in `api/projects3d.ts` -- it was just never called
   // here.
   const [projects3D, setProjects3D] = useState<Project3D[]>([]);
+  const [artPieces, setArtPieces] = useState<ArtPiece[]>([]);
   const [localProjects, setLocalProjects] = useState<LocalProjectRecord[]>([]);
+  const [sourceStates, setSourceStates] = useState<
+    Record<'projects' | 'projects3D' | 'artPieces' | 'local', LoadState>
+  >({
+    projects: 'loading',
+    projects3D: 'loading',
+    artPieces: 'loading',
+    local: 'loading',
+  });
+  const [profileHandle, setProfileHandle] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [projectRenderer, setProjectRenderer] = useState<ProjectRendererFilter>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const projectKind = parsePieceKindFilter(searchParams.get('kind'));
+  function changeProjectKind(value: PieceKindFilter) {
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        if (value === 'all') next.delete('kind');
+        else next.set('kind', value);
+        return next;
+      },
+      { replace: true },
+    );
+  }
   const updateLocalProject = useCallback((updated: LocalProjectRecord) => {
     setLocalProjects((current) => current.map((item) => (item.id === updated.id ? updated : item)));
   }, []);
@@ -131,30 +220,43 @@ function Gallery() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoadState('loading');
-    Promise.all([listProjects(), listProjects3D()])
-      .then(async ([data, data3D]) => {
-        if (cancelled) return;
-        let local: LocalProjectRecord[] = [];
-        if (auth.status === 'signed-in') {
-          try {
-            const db = await openLocalProjectDatabase();
-            const profile = await fetchProfile().catch(() => null);
-            local = await listProjectsForOwnerWithFallback(db, auth.user.username, profile?.handle);
-            db.close();
-          } catch {
-            // A local storage failure must not hide server-backed projects.
-          }
-        }
-        setProjects(data);
-        setProjects3D(data3D);
-        setLocalProjects(local);
-        setLoadState('ready');
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setLoadState('error');
-      });
+    setSourceStates({
+      projects: 'loading',
+      projects3D: 'loading',
+      artPieces: 'loading',
+      local: 'loading',
+    });
+    const settle = <T,>(
+      key: keyof typeof sourceStates,
+      request: Promise<T>,
+      save: (data: T) => void,
+    ) => {
+      void request.then(
+        (data) => {
+          if (cancelled) return;
+          save(data);
+          setSourceStates((current) => ({ ...current, [key]: 'ready' }));
+        },
+        () => {
+          if (!cancelled) setSourceStates((current) => ({ ...current, [key]: 'error' }));
+        },
+      );
+    };
+    const loadLocal = async () => {
+      if (auth.status !== 'signed-in') return [] as LocalProjectRecord[];
+      const db = await openLocalProjectDatabase();
+      try {
+        const profile = await fetchProfile().catch(() => null);
+        if (!cancelled) setProfileHandle(profile?.handle ?? null);
+        return await listProjectsForOwnerWithFallback(db, auth.user.username, profile?.handle);
+      } finally {
+        db.close();
+      }
+    };
+    settle('projects', listProjects(), setProjects);
+    settle('projects3D', listProjects3D(), setProjects3D);
+    settle('artPieces', listArtPieces(), setArtPieces);
+    settle('local', loadLocal(), setLocalProjects);
     return () => {
       cancelled = true;
     };
@@ -167,22 +269,64 @@ function Gallery() {
     auth.status === 'signed-in' ? projects.filter((p) => p.owner === auth.user.username) : [];
   const ownProjects3D =
     auth.status === 'signed-in' ? projects3D.filter((p) => p.owner === auth.user.username) : [];
-  const filteredProjects = projectRenderer === '3d' ? [] : ownProjects;
-  const filteredProjects3D = projectRenderer === '2d' ? [] : ownProjects3D;
+  const filteredProjects = projectKind === '3d' || projectKind === 'generated' ? [] : ownProjects;
+  const filteredProjects3D =
+    projectKind === '2d' || projectKind === 'generated' ? [] : ownProjects3D;
   const filteredLocalProjects =
-    projectRenderer === 'all'
+    projectKind === 'all'
       ? localProjects
       : localProjects.filter((project) =>
-          projectRenderer === '3d' ? project.kind === '3d' : project.kind !== '3d',
+          projectKind === 'generated'
+            ? project.kind === 'generated'
+            : projectKind === '3d'
+              ? project.kind === '3d'
+              : project.kind !== '3d',
         );
+  const ownArtPieces =
+    auth.status === 'signed-in'
+      ? artPieces.filter((piece) => !piece.owner || piece.owner === auth.user.username)
+      : [];
+  const filteredArtPieces = ownArtPieces.filter(
+    (piece) =>
+      projectKind === 'all' ||
+      projectKind === 'generated' ||
+      ART_PIECE_ENGINE_CAPABILITIES[piece.engine].family === projectKind,
+  );
   const hasProjects =
-    ownProjects.length > 0 || ownProjects3D.length > 0 || localProjects.length > 0;
-  const hasFilteredProjects =
-    filteredProjects.length > 0 ||
-    filteredProjects3D.length > 0 ||
-    filteredLocalProjects.length > 0;
+    ownProjects.length > 0 ||
+    ownProjects3D.length > 0 ||
+    ownArtPieces.length > 0 ||
+    localProjects.length > 0;
+  const entries: GalleryEntry[] = [
+    ...filteredProjects.map((value) => ({
+      kind: '2d' as const,
+      id: value.id,
+      updatedAt: value.updated_at,
+      value,
+    })),
+    ...filteredProjects3D.map((value) => ({
+      kind: '3d' as const,
+      id: value.id,
+      updatedAt: value.updated_at,
+      value,
+    })),
+    ...filteredArtPieces.map((value) => ({
+      kind: 'generated' as const,
+      id: value.public_id,
+      updatedAt: value.updated_at,
+      value,
+    })),
+    ...filteredLocalProjects.map((value) => ({
+      kind: 'local' as const,
+      id: value.id,
+      updatedAt: value.updatedAt,
+      value,
+    })),
+  ].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  const isLoading = Object.values(sourceStates).some((state) => state === 'loading');
+  const hasReadySource = Object.values(sourceStates).some((state) => state === 'ready');
 
-  if (loadState === 'loading') {
+  if (isLoading && !hasReadySource) {
     return (
       <p role="status" aria-live="polite">
         Loading your projects…
@@ -190,7 +334,7 @@ function Gallery() {
     );
   }
 
-  if (loadState === 'error') {
+  if (!isLoading && !hasReadySource) {
     return (
       <p role="alert" aria-live="assertive">
         We couldn't load your projects. Please try again.
@@ -203,16 +347,17 @@ function Gallery() {
       <div className="gallery-header">
         <h2 id="gallery-heading">Your projects</h2>
         <label htmlFor="project-renderer-filter" className="gallery-renderer-label">
-          Renderer
+          Piece kind
         </label>
         <select
           id="project-renderer-filter"
-          value={projectRenderer}
-          onChange={(event) => setProjectRenderer(event.target.value as ProjectRendererFilter)}
+          value={projectKind}
+          onChange={(event) => changeProjectKind(event.target.value as PieceKindFilter)}
         >
           <option value="all">All</option>
           <option value="2d">2D</option>
           <option value="3d">3D</option>
+          <option value="generated">Generated</option>
         </select>
         <GalleryCreateMenu
           creating={creating}
@@ -228,36 +373,58 @@ function Gallery() {
         </p>
       )}
 
-      {!hasProjects ? (
+      {sourceStates.projects === 'error' && <p role="alert">We couldn't load your 2D projects.</p>}
+      {sourceStates.projects3D === 'error' && (
+        <p role="alert">We couldn't load your 3D projects.</p>
+      )}
+      {sourceStates.artPieces === 'error' && (
+        <p role="alert">We couldn't load your generated art pieces.</p>
+      )}
+      {sourceStates.local === 'error' && <p role="alert">We couldn't load your local pieces.</p>}
+      {isLoading && hasReadySource && <p role="status">Loading the remaining piece lists…</p>}
+
+      {!hasProjects && isLoading ? null : !hasProjects ? (
         <div className="centered-state gallery-empty-state">
           <p>You have not created any projects.</p>
           <p>Create your first animation to get started.</p>
         </div>
-      ) : !hasFilteredProjects ? (
+      ) : entries.length === 0 ? (
         <div className="centered-state gallery-empty-state">
-          <p>No {projectRenderer.toUpperCase()} projects match this filter.</p>
+          <p>
+            {projectKind === 'generated'
+              ? 'No generated pieces match this filter.'
+              : `No ${projectKind.toUpperCase()} projects match this filter.`}
+          </p>
         </div>
       ) : (
-        <ul className="project-grid">
-          {filteredProjects.map((project) => (
-            <li key={`2d-${project.id}`}>
-              <ProjectCard
-                project={project}
-                onDeleted={(id) => setProjects((current) => current.filter((p) => p.id !== id))}
-              />
-            </li>
-          ))}
-          {filteredProjects3D.map((project) => (
-            <li key={`3d-${project.id}`}>
-              <Project3DCard
-                project={project}
-                onDeleted={(id) => setProjects3D((current) => current.filter((p) => p.id !== id))}
-              />
-            </li>
-          ))}
-          {filteredLocalProjects.map((project) => (
-            <li key={`local-${project.id}`}>
-              <LocalProjectCard project={project} onUpdated={updateLocalProject} />
+        <ul className="project-grid" aria-label="All your pieces">
+          {entries.map((entry) => (
+            <li key={`${entry.kind}-${entry.id}`}>
+              {entry.kind === '2d' && (
+                <ProjectCard
+                  project={entry.value}
+                  onDeleted={(id) =>
+                    setProjects((current) => current.filter((item) => item.id !== id))
+                  }
+                />
+              )}
+              {entry.kind === '3d' && (
+                <Project3DCard
+                  project={entry.value}
+                  onDeleted={(id) =>
+                    setProjects3D((current) => current.filter((item) => item.id !== id))
+                  }
+                />
+              )}
+              {entry.kind === 'generated' && (
+                <OwnedArtPieceCard
+                  piece={entry.value}
+                  handle={entry.value.owner_handle ?? profileHandle}
+                />
+              )}
+              {entry.kind === 'local' && (
+                <LocalProjectCard project={entry.value} onUpdated={updateLocalProject} />
+              )}
             </li>
           ))}
         </ul>

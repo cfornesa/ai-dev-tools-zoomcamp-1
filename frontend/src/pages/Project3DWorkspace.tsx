@@ -7,7 +7,7 @@ import {
   type SetStateAction,
   useMemo,
 } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { ApiError } from '../api/client';
 import {
@@ -187,6 +187,7 @@ function Project3DWorkspace({
   storage,
 }: { initialProjectId?: string; storage?: Project3DWorkspaceStorage } = {}) {
   const { id: routeId } = useParams<{ id: string }>();
+  const location = useLocation();
   const id = initialProjectId ?? routeId;
   const projectStorage = useMemo<Project3DWorkspaceStorage>(
     () =>
@@ -290,7 +291,9 @@ function Project3DWorkspace({
   // mounted only while a whole-scene "Ask AI to improve this scene"
   // request is active, mirroring the 2D manual editor's "Ask AI to fix
   // this"/"Ask AI to change this" floating-panel pattern (#159/#282).
-  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [showAiPanel, setShowAiPanel] = useState(
+    () => new URLSearchParams(location.search).get('start') === 'ai',
+  );
   const [aiSeed, setAiSeed] = useState<{ prompt: string; nonce: number } | null>(null);
   const handleAskAiImproveScene = () => {
     setAiSeed({ prompt: 'Improve this scene: ', nonce: Date.now() });

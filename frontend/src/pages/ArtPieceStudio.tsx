@@ -29,6 +29,7 @@ import {
   ART_PIECE_IFRAME_SANDBOX,
 } from '../generative/artPieceSandbox';
 import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
+import { getArtPieceStarter } from '../generative/artPieceStarters';
 
 type GenerationPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
 
@@ -87,24 +88,38 @@ function errorMessage(err: unknown): string {
  */
 function ArtPieceStudio() {
   const auth = useAuth();
-  const [library, setLibrary] = useState<ArtPieceLibrary>('canvas2d');
-  const [prompt, setPrompt] = useState('');
+  const searchParams = new URLSearchParams(window.location.search);
+  const requestedEngine = searchParams.get('engine');
+  const hasValidStarterEngine = Boolean(
+    requestedEngine && Object.hasOwn(ART_PIECE_ENGINE_CAPABILITIES, requestedEngine),
+  );
+  const initialLibrary: ArtPieceLibrary =
+    hasValidStarterEngine && requestedEngine ? (requestedEngine as ArtPieceLibrary) : 'canvas2d';
+  const isBlankStart = searchParams.get('mode') === 'blank' && hasValidStarterEngine;
+  const [library, setLibrary] = useState<ArtPieceLibrary>(initialLibrary);
+  const [prompt, setPrompt] = useState(isBlankStart ? `Blank ${initialLibrary} starter` : '');
   const [model, setModel] = useState(readStoredModel);
   const [personas, setPersonas] = useState<AIPersona[]>([]);
   const [personaId, setPersonaId] = useState<number | null>(null);
-  const [phase, setPhase] = useState<GenerationPhase>('idle');
+  const [phase, setPhase] = useState<GenerationPhase>(isBlankStart ? 'previewing' : 'idle');
   const [error, setError] = useState<string | null>(null);
-  const [code, setCode] = useState<string | null>(null);
+  const [code, setCode] = useState<string | null>(
+    isBlankStart ? getArtPieceStarter(initialLibrary) : null,
+  );
   // The library `code` was actually generated for -- tracked separately
   // from `library` (the live dropdown value) because the dropdown isn't
   // disabled once a result arrives, so a user could change it while
   // still viewing a previous result. Using `library` directly here would
   // then build the sandbox for the *new* selection against the *old*
   // code (e.g. wrapping Three.js JS in a Canvas2D-shaped document).
-  const [resultLibrary, setResultLibrary] = useState<ArtPieceLibrary>('canvas2d');
+  const [resultLibrary, setResultLibrary] = useState<ArtPieceLibrary>(initialLibrary);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
-  const [title, setTitle] = useState('Untitled art piece');
+  const [title, setTitle] = useState(
+    isBlankStart
+      ? `Untitled ${ART_PIECE_ENGINE_CAPABILITIES[initialLibrary].label} piece`
+      : 'Untitled art piece',
+  );
   const [description, setDescription] = useState('');
   const [savedPiece, setSavedPiece] = useState<ArtPiece | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -268,6 +283,12 @@ function ArtPieceStudio() {
   return (
     <section className="art-piece-studio" aria-label="Art piece studio">
       <h2>Art piece studio</h2>
+      {isBlankStart && (
+        <p role="status" data-testid="art-piece-starter-mode">
+          Starting with the {ART_PIECE_ENGINE_CAPABILITIES[initialLibrary].label} blank starter. No
+          AI request is made.
+        </p>
+      )}
       <p>
         Generate a standalone art piece from a text prompt. This is a separate, simpler flow from
         the main editor: there is no layers panel or undo history here — just a prompt, a sandboxed

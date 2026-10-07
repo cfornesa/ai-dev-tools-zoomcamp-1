@@ -26623,3 +26623,73 @@ tracks running that check in CI with disposable safe values, failing on any
 warning/error, and regression coverage that proves the gate catches a broken
 configuration. Assigned to Batch 14 (matching-ref CI stabilization), Stage
 2a. Scope is CI/test harness only; no production credentials or database.
+
+### 2026-10-06 — Production local-piece publishing module failure (#1285)
+
+During #1262's authorized Q6 check, publishing the prefixed local 2D test
+piece failed before upload with `Failed to fetch dynamically imported
+module` for the package helper URL. That public URL returned HTTP 200 with
+`Content-Type: video/mp2t`, which is not an executable JavaScript module
+type. The test piece remains local and unpublished. This is an actionable
+production/build-serving defect, distinct from #1266's package import/export
+round trip; [#1285](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1285)
+owns the diagnosis and fix. Assigned to the still-open milestone Batch 19:
+production verification (2026-10-05), Stage 2a diagnosis and front-end/hosting
+classification. Next action: identify whether the published build emitted the
+`.ts` URL or the host assigned the wrong MIME type, then verify the local
+publish transfer on a production-like build and complete one authorized
+prefixed-piece lifecycle check.
+
+### 2026-10-06 — Production local 3D publish transfer returns HTTP 400 (#1286)
+
+During the owner's authorized production test, local Three.js piece
+`DEPLOY-CHECK-2026-10-05-02` (version 1) displayed the expected empty starter
+scene (gray grid, camera only). Its **Make public** action returned `API request
+failed with status 400`; it remained browser-local and unpublished. This is
+new production evidence after #1050 closed. Diagnose and verify transfer for a
+valid local 3D scene with a camera and one primitive, including an actionable
+validation outcome, no half-synced state, and a successful public route when
+valid. Keep separate from #1285's 2D dynamic-module/MIME failure. Milestone:
+Batch 19. Status: PROPOSED. Routing: Stage 2b because the local transfer crosses
+the package intake and 3D publication contract. Focused checks: `cd frontend &&
+npm test -- src/storage/localPublicTransfer.test.ts`; `cd backend && uv run
+pytest tests/test_piece_intake.py tests/test_project3d_publish_api.py`; browser: `cd frontend &&
+npx playwright test e2e/localPieceRoundTripPublish.spec.ts --project=chromium`.
+
+### 2026-10-06 — Production local generated publish transfer returns HTTP 400 (#1287)
+
+During the owner's authorized production test, local generated piece
+`DEPLOY-CHECK-2026-10-05-21` rendered its SVG source (dark background and cyan
+circle) and retained that render after reload. Its **Make public** action
+returned `API request failed with status 400`; it remained browser-local and
+unpublished. This is new production evidence after #1050 closed. Diagnose and
+verify transfer of a valid versioned local SVG through the generated-piece
+route, including an actionable validation outcome, no half-synced state, and a
+successful public route when valid. Keep separate from #1285's 2D
+dynamic-module/MIME failure. Milestone: Batch 19. Status: PROPOSED. Routing:
+Stage 2b because the transfer crosses package intake and ArtPiece publication.
+Focused checks: `cd frontend && npm test -- src/storage/localPublicTransfer.test.ts`;
+`cd backend && uv run pytest tests/test_piece_intake.py tests/test_art_piece_api.py`;
+browser: `cd frontend && npx playwright test e2e/localPieceRoundTripPublish.spec.ts
+--project=chromium`.
+
+### 2026-10-06 — Render saved scenes in browser-local 2D projects (#1288)
+
+At the production route `/local-projects/:id`, the owner-local structured 2D
+records retain their IndexedDB project and scene metadata after reload, but the
+current workspace shows no scene canvas. Blank starters have `shapes: []`, so
+the observed gray/empty state is not evidence of corruption; a populated local
+scene still cannot be visually checked. [#1261](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1261)
+owns the local-first production verification, while criterion-ready
+[#1288](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1288) owns
+adding a visible render surface for saved local 2D scenes, an explicit
+non-destructive error for unrenderable stored content, reload fidelity, and
+browser evidence at 1280×900 and 375×812. The local route must stay
+browser-local and make no server persistence writes. Out of scope: shape
+authoring parity, cloud/public transfer, 3D/generated routes, and schema/API
+changes. Assigned to open Batch 20: unified piece workspace (2026-10-06),
+Stage 2a. Status: PROPOSED; hand to the PM pass for grooming. Focused checks:
+`cd frontend && npx vitest run src/pages/LocalEditorWorkspace.test.tsx` and
+`cd frontend && npx playwright test e2e/localFirstCreate2d.spec.ts
+--project=chromium`; batch checks: `make check` plus the focused Playwright
+command (E2E is outside `make check`).

@@ -387,6 +387,85 @@ def test_refine_retries_with_real_source_and_preference_budget(monkeypatch, owne
 
 
 @pytest.mark.django_db
+def test_refine_repairs_ambiguous_comment_search_with_unique_multiline_block(monkeypatch, owner):
+    source = (
+        'window.sketch = function (p) {\n'
+        '  // Fireflies\n  const first = "dim";\n'
+        '  // Fireflies\n  const second = "dim";\n};'
+    )
+    piece = ArtPiece.objects.create(owner=owner, prompt="p5", engine=ArtPiece.Engine.P5JS)
+    version = ArtPieceVersion.objects.create(piece=piece, sequence=1, source=source)
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+    provider = _Provider(
+        [
+            _result("// Fireflies", "unused ambiguous replacement"),
+            _result(
+                '  // Fireflies\n  const second = "dim";',
+                '  // Fireflies\n  const second = "bright";',
+            ),
+        ]
+    )
+    monkeypatch.setattr(art_piece_refine, "_provider_for_user", lambda *args: provider)
+    AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=True, max_retries=1)
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.post(
+        f"/api/art-pieces/{piece.public_id}/refine/",
+        {"instruction": "brighten the second firefly"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "accepted"
+    assert response.json()["attempts"] == 2
+    assert provider.calls == 2
+    assert "2 matches on lines 2, 4" in provider.instructions[1]
+    assert "unique multi-line block" in provider.instructions[1]
+    piece.refresh_from_db()
+    assert piece.current_version.sequence == 2
+    assert 'const first = "dim"' in piece.current_version.source
+    assert 'const second = "bright"' in piece.current_version.source
+    assert piece.versions.count() == 2
+
+
+@pytest.mark.django_db
+def test_unrepairable_ambiguous_search_fails_without_changing_source_or_version(monkeypatch, owner):
+    source = (
+        'window.sketch = function (p) {\n'
+        '  // Fireflies\n  const first = "dim";\n'
+        '  // Fireflies\n  const second = "dim";\n};'
+    )
+    piece = ArtPiece.objects.create(owner=owner, prompt="p5", engine=ArtPiece.Engine.P5JS)
+    version = ArtPieceVersion.objects.create(piece=piece, sequence=1, source=source)
+    piece.current_version = version
+    piece.save(update_fields=["current_version"])
+    provider = _Provider([_result("// Fireflies", "// Bright fireflies")] * 3)
+    monkeypatch.setattr(art_piece_refine, "_provider_for_user", lambda *args: provider)
+    AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=True, max_retries=2)
+    client = APIClient()
+    client.force_authenticate(owner)
+
+    response = client.post(
+        f"/api/art-pieces/{piece.public_id}/refine/",
+        {"instruction": "brighten the fireflies"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "failed"
+    assert response.json()["attempts"] == 3
+    assert provider.calls == 3
+    assert "2 matches on lines 2, 4" in provider.instructions[1]
+    assert "2 matches on lines 2, 4" in provider.instructions[2]
+    piece.refresh_from_db()
+    assert piece.current_version.sequence == 1
+    assert piece.current_version.source == source
+    assert piece.versions.count() == 1
+
+
+@pytest.mark.django_db
 def test_refine_is_owner_only(monkeypatch, piece):
     other = get_user_model().objects.create_user(username="other-refine-owner")
     client = APIClient()

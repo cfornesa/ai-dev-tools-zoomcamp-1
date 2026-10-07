@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthContext } from '../auth/context';
+import { ApiError } from '../api/client';
 import * as profileApi from '../api/profile';
 import * as repository from '../storage/localProjectRepository';
 import * as mutationOutbox from '../storage/mutationOutbox';
@@ -356,6 +357,29 @@ describe('LocalEditorWorkspace', () => {
       });
       expect(mockedIntake).not.toHaveBeenCalled();
       expect(mockedPublish).not.toHaveBeenCalled();
+    });
+
+    it('shows the intake API detail when a package upload is rejected', async () => {
+      mockedIntake.mockRejectedValue(
+        new ApiError(400, { detail: 'Package must contain at least one record.' }),
+      );
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(await screen.findByRole('button', { name: 'Make public' }));
+      await user.type(screen.getByLabelText('Description'), 'A short description.');
+      await user.click(screen.getByRole('button', { name: 'Publish' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Could not publish: Package must contain at least one record.',
+      );
+      expect(mockedPublish).not.toHaveBeenCalled();
+      expect(mockedUpdateProject).not.toHaveBeenCalledWith(
+        db,
+        'alice',
+        'p1',
+        expect.objectContaining({ cloudSyncState: 'synced' }),
+      );
     });
   });
 

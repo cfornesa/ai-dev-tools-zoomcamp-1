@@ -325,6 +325,7 @@ function LocalEditorWorkspace() {
   const [publicUpdateBusy, setPublicUpdateBusy] = useState(false);
   const sessionGeneration =
     auth.status === 'signed-in' ? getMutationSessionGeneration(auth.user.username) : undefined;
+  const cloudSyncEnabled = project?.cloudSyncState === 'synced';
   const selectedScene = scenes.find((scene) => scene.id === selectedSceneId) ?? null;
 
   useEffect(() => {
@@ -367,7 +368,9 @@ function LocalEditorWorkspace() {
         setSelectedSceneId(firstScene?.id ?? null);
         setSceneName(firstScene?.name ?? '');
         setRecoveryDraftId(latestRecovery?.id ?? null);
-        setSyncRecovery(pausedMutation ?? null);
+        setSyncRecovery(
+          loadedProject.cloudSyncState === 'synced' ? (pausedMutation ?? null) : null,
+        );
         setPausedMediaTransfers(mediaTransfers.filter((transfer) => transfer.state === 'paused'));
         setState('ready');
       } catch {
@@ -381,7 +384,7 @@ function LocalEditorWorkspace() {
 
   useEffect(() => {
     const ownerId = auth.user?.username;
-    if (auth.status !== 'signed-in' || !ownerId || !id) return;
+    if (auth.status !== 'signed-in' || !ownerId || !id || !cloudSyncEnabled) return;
     const replay = () => {
       void replaySyncMutations(ownerId, id, sessionGeneration)
         .then((completed) => {
@@ -402,10 +405,10 @@ function LocalEditorWorkspace() {
     replay();
     window.addEventListener('online', replay);
     return () => window.removeEventListener('online', replay);
-  }, [auth.status, auth.user?.username, id, sessionGeneration]);
+  }, [auth.status, auth.user?.username, cloudSyncEnabled, id, sessionGeneration]);
 
   async function resumeSyncRecovery() {
-    if (!syncRecovery || auth.status !== 'signed-in') return;
+    if (!syncRecovery || auth.status !== 'signed-in' || !cloudSyncEnabled) return;
     const db = await openLocalProjectDatabase();
     try {
       await resumeMutation(db, auth.user.username, syncRecovery.operationId);
@@ -669,7 +672,7 @@ function LocalEditorWorkspace() {
   }
 
   async function resolveSyncConflict(choice: ConflictResolutionChoice, resolvedPayload: unknown) {
-    if (!syncConflict || !id || auth.status !== 'signed-in') return;
+    if (!syncConflict || !id || auth.status !== 'signed-in' || !cloudSyncEnabled) return;
     let db: IDBDatabase | undefined;
     try {
       db = await openLocalProjectDatabase();
@@ -789,14 +792,16 @@ function LocalEditorWorkspace() {
         name: sceneName.trim() || selectedScene.name,
       });
       try {
-        await enqueueMutation(db, {
-          ownerId: auth.user!.username,
-          sessionGeneration,
-          projectId: id,
-          sceneId: updated.id,
-          kind: 'scene',
-          payload: { name: updated.name, scene_json: updated.sceneJson },
-        });
+        if (cloudSyncEnabled) {
+          await enqueueMutation(db, {
+            ownerId: auth.user!.username,
+            sessionGeneration,
+            projectId: id,
+            sceneId: updated.id,
+            kind: 'scene',
+            payload: { name: updated.name, scene_json: updated.sceneJson },
+          });
+        }
       } catch {
         // Local IndexedDB remains authoritative when the optional sync queue
         // cannot accept this project or the browser is unavailable.

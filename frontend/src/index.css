@@ -1064,6 +1064,23 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
+.local-scene-preview {
+  margin-block: 1rem;
+}
+
+.local-scene-preview > [data-testid='local-scene-preview'] {
+  width: min(100%, 800px);
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #808080;
+}
+
+.local-scene-preview canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
 .account-billing {
   display: flex;
   flex-direction: column;

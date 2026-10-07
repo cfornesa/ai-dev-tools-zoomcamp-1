@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiError } from '../api/client';
 import * as artPiecesApi from '../api/artPieces';
 import * as pieceIntake from '../api/pieceIntake';
 import * as projects3dApi from '../api/projects3d';
@@ -112,6 +113,21 @@ describe('local public transfer quota accounting', () => {
       publishLocalPiece({} as IDBDatabase, 'alice', project.id, project.title, 'Public copy'),
     ).rejects.toMatchObject({ kind: 'over-quota' } satisfies Partial<LocalPublicTransferError>);
     expect(mockedIntake).not.toHaveBeenCalled();
+    expect(mockedPublish3d).not.toHaveBeenCalled();
+  });
+
+  it('surfaces intake validation detail without creating or recording a remote copy', async () => {
+    mockedIntake.mockRejectedValue(
+      new ApiError(400, { detail: 'A 3D record does not satisfy the scene schema.' }),
+    );
+
+    await expect(
+      publishLocalPiece({} as IDBDatabase, 'alice', project.id, project.title, 'Public copy'),
+    ).rejects.toMatchObject({
+      kind: 'validation',
+      message: 'A 3D record does not satisfy the scene schema.',
+    });
+    expect(mockedUpdateProject).not.toHaveBeenCalled();
     expect(mockedPublish3d).not.toHaveBeenCalled();
   });
 });

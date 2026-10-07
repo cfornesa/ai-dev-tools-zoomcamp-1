@@ -36,6 +36,20 @@ const scene = {
 };
 
 describe('local piece package export', () => {
+  it('loads the bundled package module for a local 2D export', async () => {
+    repository.getProject.mockResolvedValue({ id: 'p1', title: 'Bundled package' });
+    repository.listScenesForProject.mockResolvedValue([
+      { id: 's1', name: 'Scene 1', position: 0, sceneJson: scene },
+    ]);
+    repository.listMediaAssetsForProject.mockResolvedValue([]);
+
+    const result = await buildLocal2dPiecePackage({} as IDBDatabase, 'alice', 'p1');
+
+    expect(result.bytes[0]).toBe(0x50);
+    expect(result.bytes[1]).toBe(0x4b);
+    expect(result.missingAssets).toEqual([]);
+  });
+
   it('builds one checksum-verifiable 2D package without changing local records', async () => {
     repository.getProject.mockResolvedValue({ id: 'p1', title: 'My / Piece' });
     repository.listScenesForProject.mockResolvedValue([

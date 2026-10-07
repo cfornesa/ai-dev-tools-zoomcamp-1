@@ -8,10 +8,14 @@ from pathlib import Path
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client as DjangoClient
 from PIL import Image
 from rest_framework.test import APIClient
 
 from scenes.models import (
+    ArtPiece,
+    ArtPieceVersion,
     PieceIntakeAsset,
     PieceIntakeReceipt,
     Project,
@@ -110,6 +114,38 @@ def _package_3d() -> bytes:
     return output.getvalue()
 
 
+def _package_generated(source: str) -> bytes:
+    record = json.dumps({"engine": "svg", "source": source, "capabilities": {}}).encode()
+    manifest = {
+        "formatVersion": 1,
+        "kind": "generated",
+        "metadata": {
+            "title": "Local SVG fixture",
+            "description": "A saved SVG scene.",
+            "tags": [],
+            "visibilityIntent": "private",
+            "origin": {"appVersion": "test", "exportedAt": "2026-09-26T00:00:00Z"},
+        },
+        "records": [{"index": 0, "schemaVersion": 1, "fileIndex": 0}],
+        "mediaAssets": [],
+        "files": [
+            {
+                "index": 0,
+                "path": "files/0.json",
+                "byteSize": len(record),
+                "sha256": hashlib.sha256(record).hexdigest(),
+            }
+        ],
+        "source": {"engine": "svg", "code": source},
+        "capabilities": {},
+    }
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w") as archive:
+        archive.writestr("manifest.json", json.dumps(manifest))
+        archive.writestr("files/0.json", record)
+    return output.getvalue()
+
+
 @pytest.fixture(autouse=True)
 def _clear_cache():
     cache.clear()
@@ -170,6 +206,63 @@ def test_3d_package_intake_does_not_record_version_activity(client):
     project = Project3D.objects.get(public_id=response.json()["public_id"])
     assert SceneVersion3D.objects.filter(project=project).count() == 1
     assert not ProjectActivity.objects.filter(project3d=project).exists()
+
+
+@pytest.mark.django_db
+def test_generated_svg_package_intake_creates_a_private_version(client):
+    source = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+        '<circle cx="50" cy="50" r="36" fill="#00e5ff"/></svg>'
+    )
+    response = client.post(
+        "/api/pieces/intake/",
+        {"package": io.BytesIO(_package_generated(source)), "idempotency_key": "svg-one"},
+        format="multipart",
+    )
+
+    assert response.status_code == 201
+    assert response.json()["kind"] == "generated"
+    assert response.json()["visibility"] == "private"
+    piece = ArtPiece.objects.get(public_id=response.json()["public_id"])
+    version = ArtPieceVersion.objects.get(piece=piece, sequence=1)
+    assert piece.status == ArtPiece.Status.DRAFT
+    assert version.source == source
+
+
+@pytest.mark.django_db
+def test_generated_svg_intake_returns_a_specific_error_without_creating_a_piece(client):
+    response = client.post(
+        "/api/pieces/intake/",
+        {
+            "package": io.BytesIO(_package_generated("<canvas></canvas>")),
+            "idempotency_key": "svg-invalid-one",
+        },
+        format="multipart",
+    )
+
+    assert response.status_code == 400
+    assert "Generated source does not match its declared engine." in response.json()["detail"]
+    assert not ArtPiece.objects.exists()
+    assert not ArtPieceVersion.objects.exists()
+
+
+@pytest.mark.django_db
+def test_authenticated_http_intake_resolves_lazy_request_user(client, owner):
+    # SessionAuthentication exercises Django's real request middleware path,
+    # where request.user is a SimpleLazyObject rather than force-authenticated.
+    session_client = DjangoClient()
+    session_client.force_login(owner)
+    response = session_client.post(
+        "/api/pieces/intake/",
+        {
+            "package": SimpleUploadedFile("piece.zip", _package_3d()),
+            "idempotency_key": "session-authenticated-3d",
+        },
+    )
+
+    assert response.status_code == 201, response.content
+    project = Project3D.objects.get(public_id=response.json()["public_id"])
+    assert SceneVersion3D.objects.filter(project=project).count() == 1
 
 
 @pytest.mark.django_db

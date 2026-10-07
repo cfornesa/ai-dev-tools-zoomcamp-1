@@ -18,7 +18,7 @@ const ALLOWED_ENVIRONMENTS = new Set([
 export type FixtureAction =
   'create' | 'cleanup' | 'reset-sessions' | 'public-media-create' | 'public-media-cleanup';
 
-type FixtureTarget = { compose: true } | { compose: false; envFile: string };
+type FixtureTarget = { compose: true; projectName: string } | { compose: false; envFile: string };
 
 export function resolveFixtureTarget(): FixtureTarget {
   const environment = process.env.E2E_FIXTURE_ENVIRONMENT;
@@ -29,7 +29,15 @@ export function resolveFixtureTarget(): FixtureTarget {
     );
   }
   const compose = process.env.E2E_DOCKER_COMPOSE === 'true';
-  if (environment === 'disposable-compose' && compose) return { compose: true };
+  if (environment === 'disposable-compose' && compose) {
+    const projectName = process.env.E2E_DOCKER_COMPOSE_PROJECT_NAME ?? 'ai-dev-tools-zoomcamp-1';
+    if (!/^[a-z0-9][a-z0-9_-]{0,62}$/.test(projectName)) {
+      throw new Error(
+        'E2E_DOCKER_COMPOSE_PROJECT_NAME must be a valid disposable Compose project name.',
+      );
+    }
+    return { compose: true, projectName };
+  }
   if (compose || environment === 'disposable-compose') {
     throw new Error(
       'Compose fixture mode requires both disposable-compose and E2E_DOCKER_COMPOSE=true.',
@@ -73,7 +81,7 @@ export function runFixtureCommand(action: FixtureAction, expectedFingerprint?: s
       [
         'compose',
         '--project-name',
-        'ai-dev-tools-zoomcamp-1',
+        target.projectName,
         '--file',
         'compose.yaml',
         'exec',

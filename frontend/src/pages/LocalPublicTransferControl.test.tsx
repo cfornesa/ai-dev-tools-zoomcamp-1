@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthContext } from '../auth/context';
+import { ApiError } from '../api/client';
 import * as artPiecesApi from '../api/artPieces';
 import * as pieceIntake from '../api/pieceIntake';
 import * as projects3dApi from '../api/projects3d';
@@ -192,5 +193,26 @@ describe('LocalPublicTransferControl', () => {
       'local-1',
       expect.objectContaining({ cloudSyncState: 'synced', remotePublicId: 'remote-1' }),
     );
+  });
+
+  it('shows a specific package-intake validation response and keeps Make public available', async () => {
+    const user = userEvent.setup();
+    mockedIntake.mockRejectedValue(
+      new ApiError(400, { detail: 'Generated source does not match its declared engine.' }),
+    );
+    mockedUpdateProject.mockResolvedValue(baseProject);
+    renderControl({ ...baseProject, kind: 'generated' });
+
+    await user.click(screen.getByRole('button', { name: 'Make public' }));
+    await user.type(screen.getByLabelText('Description'), 'A public piece.');
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not publish: Generated source does not match its declared engine.',
+    );
+    expect(screen.getByRole('button', { name: 'Make public' })).toBeVisible();
+    expect(mockedUpdateProject).not.toHaveBeenCalled();
+    expect(mockedPublish3d).not.toHaveBeenCalled();
+    expect(mockedUpdateArtPiece).not.toHaveBeenCalled();
   });
 });

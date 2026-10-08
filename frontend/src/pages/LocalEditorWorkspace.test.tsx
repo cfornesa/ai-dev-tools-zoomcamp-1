@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,7 @@ import { ApiError } from '../api/client';
 import * as profileApi from '../api/profile';
 import * as repository from '../storage/localProjectRepository';
 import * as mutationOutbox from '../storage/mutationOutbox';
+import * as syncMutationReplay from '../storage/syncMutationReplay';
 import * as mediaTransferRepository from '../storage/mediaTransferRepository';
 import * as localPiecePackage from '../storage/localPiecePackage';
 import * as pieceIntake from '../api/pieceIntake';
@@ -36,6 +37,7 @@ vi.mock('../storage/localPiecePackage', async () => {
   );
   return { ...actual, buildLocal2dPiecePackage: vi.fn() };
 });
+vi.mock('../storage/syncMutationReplay', () => ({ replaySyncMutations: vi.fn() }));
 vi.mock('../api/pieceIntake', () => ({ intakePiecePackage: vi.fn() }));
 vi.mock('../api/profile');
 vi.mock('../api/storageUsage', () => ({ fetchStorageEstimate: vi.fn() }));
@@ -65,6 +67,8 @@ const mockedListAssets = vi.mocked(repository.listMediaAssetsForProject);
 const mockedUpdateScene = vi.mocked(repository.updateScene);
 const mockedUpdateProject = vi.mocked(repository.updateProject);
 const mockedListMutationOutbox = vi.spyOn(mutationOutbox, 'listMutationOutbox');
+const mockedEnqueueMutation = vi.spyOn(mutationOutbox, 'enqueueMutation');
+const mockedReplaySyncMutations = vi.mocked(syncMutationReplay.replaySyncMutations);
 const mockedListMediaTransfers = vi.spyOn(mediaTransferRepository, 'listMediaTransfersForProject');
 const mockedBuildPackage = vi.mocked(localPiecePackage.buildLocal2dPiecePackage);
 const mockedIntake = vi.mocked(pieceIntake.intakePiecePackage);
@@ -132,6 +136,8 @@ beforeEach(() => {
   mockedListAssets.mockResolvedValue([asset]);
   mockedUpdateScene.mockResolvedValue({ ...scene, name: 'Renamed scene' });
   mockedListMutationOutbox.mockResolvedValue([]);
+  mockedEnqueueMutation.mockResolvedValue({} as never);
+  mockedReplaySyncMutations.mockResolvedValue([]);
   mockedListMediaTransfers.mockResolvedValue([]);
   mockedUpdateProject.mockImplementation((_db, _ownerId, _id, patch) =>
     Promise.resolve({ ...project, ...patch }),
@@ -179,6 +185,58 @@ beforeEach(() => {
 });
 
 describe('LocalEditorWorkspace', () => {
+  it('saves local-only scenes without queuing or replaying server mutations', async () => {
+    const user = userEvent.setup();
+    mockedListMutationOutbox.mockResolvedValue([
+      { state: 'paused', lastErrorCode: 'permission-denied' } as never,
+    ]);
+    renderPage();
+
+    const input = await screen.findByLabelText('Scene name');
+    await user.clear(input);
+    await user.type(input, 'Local-only scene');
+    await user.click(screen.getByRole('button', { name: 'Save local changes' }));
+
+    expect(mockedUpdateScene).toHaveBeenCalledWith(db, 's1', { name: 'Local-only scene' });
+    expect(await screen.findByRole('status')).toHaveTextContent(/saved local scene changes/i);
+    expect(mockedEnqueueMutation).not.toHaveBeenCalled();
+    expect(mockedReplaySyncMutations).not.toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: 'Private sync paused' })).not.toBeInTheDocument();
+  });
+
+  it('queues and replays scene mutations for an explicitly cloud-synced project', async () => {
+    const user = userEvent.setup();
+    const syncedProject = {
+      ...project,
+      cloudSyncState: 'synced' as const,
+      remotePublicId: 'server-p1',
+      remoteVersion: 1,
+    };
+    mockedGetProject.mockResolvedValue(syncedProject);
+    mockedGetProjectWithFallback.mockResolvedValue(syncedProject);
+    renderPage();
+
+    await screen.findByLabelText('Scene name');
+    await waitFor(() =>
+      expect(mockedReplaySyncMutations).toHaveBeenCalledWith('alice', 'p1', expect.any(String)),
+    );
+    const input = screen.getByLabelText('Scene name');
+    await user.clear(input);
+    await user.type(input, 'Synced scene');
+    await user.click(screen.getByRole('button', { name: 'Save local changes' }));
+
+    expect(mockedEnqueueMutation).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({
+        ownerId: 'alice',
+        projectId: 'p1',
+        sceneId: 's1',
+        kind: 'scene',
+        payload: { name: 'Renamed scene', scene_json: scene.sceneJson },
+      }),
+    );
+  });
+
   it('edits and persists local title and description through the details control', async () => {
     const user = userEvent.setup();
     renderPage();

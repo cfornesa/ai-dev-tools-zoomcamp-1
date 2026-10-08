@@ -22,6 +22,7 @@ async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
       ownerId,
       projectId: PROJECT_ID,
       title: 'Offline Sync Fixture',
+      sync: { remotePublicId: PROJECT_ID, remoteVersion: 1 },
       scene: { name: 'Initial scene', sceneJson: { shapes: [] } },
     },
   });

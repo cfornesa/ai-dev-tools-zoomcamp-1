@@ -361,7 +361,7 @@ PUBLIC_CONTENT_UI_META = {
 public_apps_server = FastMCP(
     "Creatrweb Public Gallery App",
     instructions=(
-        "Show eligible public Creatrweb gallery or 2D project content. "
+        "Show eligible public Creatrweb gallery, 2D/3D project, or generated piece content. "
         "This endpoint has no owner, write, AI, or authenticated tools."
     ),
     streamable_http_path="/mcp/apps/",
@@ -460,6 +460,44 @@ async def show_public_project(project_id: str) -> dict[str, Any]:
         "viewer_url": f"{origin}{project['viewer_url']}",
         "site_origin": origin,
     }
+
+
+@public_apps_server.tool(
+    name="show_public_3d_project",
+    description=(
+        "Display a read-only view of one published public 3D project by exact ID. "
+        "Private or unavailable projects return not found."
+    ),
+)
+@_anonymous_public_app_tool("show_public_3d_project")
+async def show_public_3d_project(project_id: str) -> dict[str, Any]:
+    """Return one published public 3D project and its canonical viewer URL."""
+    origin = _mcp_public_app_origin.get()
+    if origin is None:
+        raise McpError(ErrorData(code=-32603, message="Public app request origin is unavailable."))
+    project = await sync_to_async(_public_3d_project, thread_sensitive=True)(project_id)
+    return {
+        "project": project,
+        "viewer_url": f"{origin}{project['viewer_url']}",
+        "site_origin": origin,
+    }
+
+
+@public_apps_server.tool(
+    name="show_public_art_piece",
+    description=(
+        "Display a read-only view of one published public generated art piece by exact ID. "
+        "Private or unavailable pieces return not found."
+    ),
+)
+@_anonymous_public_app_tool("show_public_art_piece")
+async def show_public_art_piece(piece_id: str) -> dict[str, Any]:
+    """Return one published public generated art piece by its exact public ID."""
+    origin = _mcp_public_app_origin.get()
+    if origin is None:
+        raise McpError(ErrorData(code=-32603, message="Public app request origin is unavailable."))
+    piece = await sync_to_async(_public_generated_piece, thread_sensitive=True)(piece_id)
+    return {"piece": piece, "site_origin": origin}
 
 
 @public_apps_server.resource(

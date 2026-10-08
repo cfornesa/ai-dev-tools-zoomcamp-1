@@ -55,8 +55,13 @@ for where to place this file and how to start the configured server.
 ## Anonymous public-content apps endpoint (#1223)
 
 `POST /mcp/apps/` is a separate, anonymous MCP Apps surface. It exposes only
-`show_public_gallery` and `show_public_project`; both return public REST
-content through the same eligibility checks, plus a plain JSON text fallback.
+`show_public_gallery`, `show_public_project`, `show_public_3d_project`, and
+`show_public_art_piece`. The gallery returns one bounded mixed-kind page;
+each detail tool takes one exact public ID for its kind and returns only that
+public REST detail through the same eligibility checks. Private, unlisted,
+draft, soft-deleted, and missing records remain unavailable. The 2D detail
+tool is linked to the public-content widget; all tools retain a plain JSON
+text fallback.
 The tools are rate-limited to 60 calls per trusted caller IP per minute and
 write payload-free audit rows with no user/client identity. The linked
 `ui://creatrweb/public-content` resource is `text/html;profile=mcp-app`; its
@@ -169,6 +174,8 @@ SDK input properties; optional properties may be omitted.
 |---|---|
 | `show_public_gallery` | None; anonymous `/mcp/apps/` endpoint. |
 | `show_public_project` | None; anonymous `/mcp/apps/` endpoint. |
+| `show_public_3d_project` | None; anonymous `/mcp/apps/` endpoint. |
+| `show_public_art_piece` | None; anonymous `/mcp/apps/` endpoint. |
 | `health_check` | None beyond a valid bearer token. |
 | `whoami` | None beyond a valid bearer token. |
 | `list_public_gallery` | `gallery:read` |
@@ -220,6 +227,8 @@ SDK input properties; optional properties may be omitted.
 |---|---|---|---|
 | `show_public_gallery` | `page_size?: integer` (default 12, clamped 1–60) | `show_public_gallery({"page_size": 8})` | Eligible public 2D/3D/generated/collection cards and viewer origin; also linked to the public content UI. |
 | `show_public_project` | `project_id: string` | `show_public_project({"project_id": "<public-uuid>"})` | Published public 2D project detail, scene preview data, and same-site viewer URL; also linked to the public content UI. |
+| `show_public_3d_project` | `project_id: string` | `show_public_3d_project({"project_id": "<public-uuid>"})` | One exact published public 3D project and same-site viewer URL. |
+| `show_public_art_piece` | `piece_id: string` | `show_public_art_piece({"piece_id": "<public-uuid>"})` | One exact published generated piece using its public detail serializer. |
 | `health_check` | `{}` | `health_check()` | Safe database/cache status without connection details. |
 | `whoami` | `{}` | `whoami()` | Authenticated user ID, username, client ID, and granted scopes. |
 | `list_public_gallery` | `cursor?: string \| null`, `page_size?: integer` (default 24, clamped 1–60) | `list_public_gallery({"page_size": 10})` | One newest-first page of the legacy public 2D/3D project gallery, `next_cursor`, and `has_more`. |

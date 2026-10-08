@@ -19,12 +19,17 @@ not reflected in this repository's code or OpenAPI contract.
 ## Anonymous MCP Apps public-content endpoint (#1223)
 
 `POST /mcp/apps/` is an isolated, anonymous, read-only MCP Apps endpoint for
-public gallery and project presentation. It lists only `show_public_gallery`
-and `show_public_project`, linked to the `ui://creatrweb/public-content` HTML
-resource using the stable SEP-1865 / ext-apps contract
+public gallery and exact public-piece presentation. It lists
+`show_public_gallery`, `show_public_project`, `show_public_3d_project`, and
+`show_public_art_piece`. The gallery tool returns one bounded mixed-kind page;
+the three detail tools each resolve only one caller-supplied public ID for
+their stated kind. The gallery and 2D detail tools remain linked to the
+`ui://creatrweb/public-content` HTML resource using the stable SEP-1865 /
+ext-apps contract
 (`text/html;profile=mcp-app`). The tools reuse the same eligibility selectors
-and public serializers as the anonymous REST gallery and public-project
-routes; private, unlisted, draft, and deleted content remains unavailable.
+and public serializers as the anonymous REST gallery and public detail routes;
+private, unlisted, draft, and deleted content remains unavailable, and detail
+tools return no gallery results or other pieces.
 There are no owner, write, AI, or authenticated tools on this endpoint. Its UI
 uses only tool-result data and makes no tool calls. Text content remains
 available to hosts without MCP Apps support. Requests retain the MCP body

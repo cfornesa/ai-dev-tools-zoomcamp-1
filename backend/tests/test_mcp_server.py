@@ -541,15 +541,63 @@ def test_anonymous_mcp_apps_exposes_only_public_content_and_sandboxed_widget():
     private.current_version = private_version
     private.save(update_fields=["current_version"])
 
+    public_3d = Project3D.objects.create(
+        owner=owner,
+        title="MCP app public 3D project",
+        visibility=Project3D.Visibility.PUBLIC,
+        published_at=timezone.now(),
+    )
+    public_3d_version = SceneVersion3D.objects.create(
+        project=public_3d,
+        sequence=1,
+        scene_json=copy.deepcopy(MINIMAL_SCENE_3D),
+        created_by=owner,
+    )
+    public_3d.current_version = public_3d_version
+    public_3d.save(update_fields=["current_version"])
+    private_3d = Project3D.objects.create(owner=owner, title="MCP app private 3D project")
+
+    public_art_piece = ArtPiece.objects.create(
+        owner=owner,
+        title="MCP app public generated piece",
+        description="Public generated metadata",
+        prompt="private prompt sentinel",
+        engine=ArtPiece.Engine.SVG,
+        status=ArtPiece.Status.PUBLISHED,
+        published_at=timezone.now(),
+    )
+    public_art_version = ArtPieceVersion.objects.create(
+        piece=public_art_piece,
+        sequence=1,
+        source="<svg />",
+    )
+    public_art_piece.current_version = public_art_version
+    public_art_piece.save(update_fields=["current_version"])
+    draft_art_piece = ArtPiece.objects.create(
+        owner=owner,
+        title="MCP app private generated piece",
+        prompt="private draft prompt",
+        engine=ArtPiece.Engine.SVG,
+    )
+
     tools, resources, resource, results = _call_public_apps(
         [
             ("show_public_gallery", {"page_size": 12}),
             ("show_public_project", {"project_id": str(public.public_id)}),
             ("show_public_project", {"project_id": str(private.public_id)}),
+            ("show_public_3d_project", {"project_id": str(public_3d.public_id)}),
+            ("show_public_3d_project", {"project_id": str(private_3d.public_id)}),
+            ("show_public_art_piece", {"piece_id": str(public_art_piece.public_id)}),
+            ("show_public_art_piece", {"piece_id": str(draft_art_piece.public_id)}),
         ]
     )
 
-    assert {tool.name for tool in tools.tools} == {"show_public_gallery", "show_public_project"}
+    assert {tool.name for tool in tools.tools} == {
+        "show_public_gallery",
+        "show_public_project",
+        "show_public_3d_project",
+        "show_public_art_piece",
+    }
     assert all(
         tool.meta["ui"]
         == {
@@ -557,6 +605,12 @@ def test_anonymous_mcp_apps_exposes_only_public_content_and_sandboxed_widget():
             "visibility": ["model"],
         }
         for tool in tools.tools
+        if tool.name in {"show_public_gallery", "show_public_project"}
+    )
+    assert all(
+        not tool.meta or "ui" not in tool.meta
+        for tool in tools.tools
+        if tool.name in {"show_public_3d_project", "show_public_art_piece"}
     )
     assert {str(item.uri) for item in resources.resources} == {"ui://creatrweb/public-content"}
     assert resources.resources[0].mimeType == "text/html;profile=mcp-app"
@@ -576,17 +630,36 @@ def test_anonymous_mcp_apps_exposes_only_public_content_and_sandboxed_widget():
     assert "<iframe" not in widget_content.text.lower()
 
     gallery = _mcp_result_payload(results[0])
-    assert [item["id"] for item in gallery["results"]] == [str(public.public_id)]
+    assert {item["id"] for item in gallery["results"]} == {
+        str(public.public_id),
+        str(public_3d.public_id),
+        str(public_art_piece.public_id),
+    }
     assert gallery["site_origin"] == "http://localhost:8000"
     project_result = _mcp_result_payload(results[1])
     assert project_result["project"]["id"] == str(public.public_id)
     assert project_result["site_origin"] == "http://localhost:8000"
     assert project_result["viewer_url"].startswith("http://localhost:8000/")
     assert results[2].isError is True
+    project_3d_result = _mcp_result_payload(results[3])
+    assert project_3d_result["project"]["id"] == str(public_3d.public_id)
+    assert project_3d_result["viewer_url"].startswith("http://localhost:8000/")
+    assert project_3d_result["site_origin"] == "http://localhost:8000"
+    assert results[4].isError is True
+    art_piece_result = _mcp_result_payload(results[5])
+    assert art_piece_result["piece"]["public_id"] == str(public_art_piece.public_id)
+    assert "private prompt sentinel" not in json.dumps(art_piece_result)
+    assert art_piece_result["site_origin"] == "http://localhost:8000"
+    assert results[6].isError is True
     audit_rows = MCPToolAuditEvent.objects.filter(
-        tool_name__in=("show_public_gallery", "show_public_project")
+        tool_name__in=(
+            "show_public_gallery",
+            "show_public_project",
+            "show_public_3d_project",
+            "show_public_art_piece",
+        )
     )
-    assert audit_rows.count() == 3
+    assert audit_rows.count() == 7
     assert not audit_rows.filter(user__isnull=False).exists()
     assert not audit_rows.filter(client_id__isnull=False).exists()
 

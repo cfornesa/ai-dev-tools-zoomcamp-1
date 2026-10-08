@@ -17,6 +17,7 @@ async function seedLocalProject(page: Page, ownerId: string): Promise<void> {
       ownerId,
       projectId: PROJECT_ID,
       title: 'Conflict Fixture',
+      sync: { remotePublicId: PROJECT_ID, remoteVersion: 7 },
       scene: { name: 'Initial scene', sceneJson: { objects: [{ id: 'shape-1', x: 10 }] } },
     },
   });

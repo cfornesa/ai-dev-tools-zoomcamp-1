@@ -6,6 +6,7 @@ type SeedInput = {
   ownerId: string;
   projectId: string;
   title: string;
+  sync?: { remotePublicId: string; remoteVersion: number };
   scene?: SceneSeed;
   media?: { filename: string; mimeType: string; bytes: number[] };
 };
@@ -115,7 +116,13 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
         db: IDBDatabase,
         ownerId: string,
         projectId: string,
-        patch: { thumbnail: Blob; thumbnailUpdatedAt: string },
+        patch: {
+          thumbnail?: Blob;
+          thumbnailUpdatedAt?: string;
+          cloudSyncState?: 'local' | 'syncing' | 'synced' | 'failed';
+          remotePublicId?: string | null;
+          remoteVersion?: number | null;
+        },
       ): Promise<unknown>;
       importMediaAsset(
         db: IDBDatabase,
@@ -183,6 +190,13 @@ export async function localProjectDb<T = unknown>(page: Page, action: DatabaseAc
             ownerId: input.ownerId,
             title: input.title,
           });
+          if (input.sync) {
+            await repository.updateProject(db, input.ownerId, input.projectId, {
+              cloudSyncState: 'synced',
+              remotePublicId: input.sync.remotePublicId,
+              remoteVersion: input.sync.remoteVersion,
+            });
+          }
           if (input.scene) {
             await repository.createScene(db, input.ownerId, {
               projectId: input.projectId,

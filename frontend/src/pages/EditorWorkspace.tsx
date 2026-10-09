@@ -848,6 +848,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // behavior/test around controlled props instead of just adding this one
   // new access path. See `EditorDetailsPanel.tsx`'s own doc comment.
   const detailsPanelRef = useRef<EditorDetailsPanelHandle>(null);
+  const editorWorkspaceRef = useRef<HTMLDivElement>(null);
 
   // Issue #128: `PublishControl`'s "auto-persist, then validate/publish"
   // flow calls this before running `validateProjectMetadataForPublish`.
@@ -2543,7 +2544,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
 
       {isNarrow && <EditorPanelSwitcher activePanel={activePanel} onSelect={setActivePanel} />}
 
-      <div className="editor-workspace">
+      <div ref={editorWorkspaceRef} className="editor-workspace">
         {/* Task 94 (issue #94), point 2: Preview leads the layout — the
             first panel in DOM order (and therefore first in both the
             >=1024px side-by-side row and the narrow stacked column, since
@@ -3595,21 +3596,12 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
             </CollapsibleSection>
 
             <CollapsibleSection heading="Export" icon="⇪">
-              {/* Task 55: export configuration dialog. Read-only against
-                version history/project metadata — it never restores a
-                version or changes `project.current_version`, and its
-                terminal "Export" action is an intentional stub (logs the
-                assembled config) until Task 56+ builds real artifact
-                generation. See `ExportConfigDialog.tsx`'s module doc
-                comment. */}
-              {id && (
-                <ExportConfigDialog
-                  projectId={id}
-                  project={project}
-                  openSignal={exportDialogOpenSignal}
-                  getCameraExport={getCameraExport}
-                />
-              )}
+              <button
+                type="button"
+                onClick={() => setExportDialogOpenSignal((current) => current + 1)}
+              >
+                Export…
+              </button>
             </CollapsibleSection>
 
             <CollapsibleSection heading="AI proposals" icon="✨" defaultOpen={startWithAi}>
@@ -3693,6 +3685,20 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
           </TopLevelPanel>
         </section>
       </div>
+      {id && (
+        <ExportConfigDialog
+          projectId={id}
+          project={project}
+          openSignal={exportDialogOpenSignal}
+          showTrigger={false}
+          getReturnFocusFallback={() =>
+            editorWorkspaceRef.current?.querySelector<HTMLElement>(
+              '.editor-piece-stage-toolbar button[aria-label="Open download menu"]',
+            ) ?? null
+          }
+          getCameraExport={getCameraExport}
+        />
+      )}
     </div>
   );
 }

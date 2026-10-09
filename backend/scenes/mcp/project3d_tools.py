@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from asgiref.sync import sync_to_async
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from scenes.ai_api3d import AIAcceptProposal3DView, AICreateScene3DView, AIEditScene3DView
 from scenes.api3d import (
@@ -22,7 +22,7 @@ __all__ = ["register_project3d_tools"]
 
 
 def register_project3d_tools(  # noqa: C901
-    server: FastMCP,
+    server: MCPServer,
     audited_tool: Callable[..., Callable[..., Any]],
     current_principal: Callable[[tuple[str, ...]], Any],
 ) -> None:

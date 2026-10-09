@@ -110,6 +110,10 @@ export type ExportConfig = {
 export type ExportConfigDialogProps = {
   projectId: string;
   project: Project | null;
+  /** Keep the dialog mounted outside collapsible panels when its trigger is rendered elsewhere. */
+  showTrigger?: boolean;
+  /** Optional persistent caller-owned target for cases where the opener unmounts. */
+  getReturnFocusFallback?: () => HTMLElement | null;
   /** Increment to open the dialog from a stage-local export affordance. */
   openSignal?: number;
   /** Task 56: generates the standalone HTML export and triggers a browser
@@ -178,6 +182,8 @@ async function defaultOnExport(config: ExportConfig): Promise<void> {
 function ExportConfigDialog({
   projectId,
   project,
+  showTrigger = true,
+  getReturnFocusFallback,
   onExport = defaultOnExport,
   getCameraExport,
   openSignal,
@@ -199,7 +205,24 @@ function ExportConfigDialog({
   const [generationErrors, setGenerationErrors] = useState<string[]>([]);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const versionSelectRef = useRef<HTMLSelectElement>(null);
+
+  function usableReturnTarget(target: HTMLElement | null): target is HTMLElement {
+    return Boolean(
+      target?.isConnected &&
+      !target.closest('[hidden]') &&
+      getComputedStyle(target).display !== 'none' &&
+      getComputedStyle(target).visibility !== 'hidden',
+    );
+  }
+
+  function fallbackReturnTarget(): HTMLElement | null {
+    const callerFallback = getReturnFocusFallback?.() ?? null;
+    if (usableReturnTarget(callerFallback)) return callerFallback;
+    return usableReturnTarget(triggerRef.current) ? triggerRef.current : null;
+  }
 
   const sortedVersions = useMemo(
     () => [...versions].sort((a, b) => a.sequence - b.sequence),
@@ -259,10 +282,10 @@ function ExportConfigDialog({
   }, [sceneDetailState, availableInteractionModes, interactionMode]);
 
   useEffect(() => {
-    if (isOpen) {
-      versionSelectRef.current?.focus();
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    if (versionSelectRef.current?.disabled) dialogRef.current?.focus();
+    else versionSelectRef.current?.focus();
+  }, [isOpen, historyLoadState]);
 
   // Issue #206: the export's renderer is whatever the selected version's
   // scene document itself declares (`scene.renderer.preferred`) -- there
@@ -290,6 +313,14 @@ function ExportConfigDialog({
     !hasMetadataErrors;
 
   function handleOpen() {
+    const activeElement = document.activeElement;
+    returnFocusRef.current =
+      activeElement instanceof HTMLElement &&
+      activeElement !== document.body &&
+      activeElement !== document.documentElement &&
+      usableReturnTarget(activeElement)
+        ? activeElement
+        : fallbackReturnTarget();
     // Reset to the documented defaults every time the dialog is (re)opened
     // (issue #55: "defaults to latest saved version, p5.js, CDN-linked
     // HTML, attribution off, and social-thumbnail ZIP off").
@@ -309,7 +340,9 @@ function ExportConfigDialog({
 
   function handleClose() {
     setIsOpen(false);
-    triggerRef.current?.focus();
+    const returnTarget = returnFocusRef.current;
+    if (usableReturnTarget(returnTarget)) returnTarget.focus();
+    else fallbackReturnTarget()?.focus();
   }
 
   async function handleExport() {
@@ -352,15 +385,19 @@ function ExportConfigDialog({
 
   return (
     <>
-      <button type="button" ref={triggerRef} onClick={handleOpen}>
-        Export…
-      </button>
+      {showTrigger && (
+        <button type="button" ref={triggerRef} onClick={handleOpen}>
+          Export…
+        </button>
+      )}
 
       {isOpen && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="export-dialog-title"
+          tabIndex={-1}
           className="export-config-dialog"
           onKeyDown={(event) => {
             if (event.key === 'Escape') {

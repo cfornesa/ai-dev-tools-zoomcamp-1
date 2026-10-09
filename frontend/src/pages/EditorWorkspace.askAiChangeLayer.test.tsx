@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as aiApi from '../api/ai';
 import * as projectsApi from '../api/projects';
@@ -26,6 +26,7 @@ const mockedGetProject = vi.mocked(projectsApi.getProject);
 const mockedGetSceneVersion = vi.mocked(projectsApi.getSceneVersion);
 const mockedListSceneVersions = vi.mocked(projectsApi.listSceneVersions);
 const mockedEditAIScene = vi.mocked(aiApi.editAIScene);
+const originalInnerWidthDescriptor = Object.getOwnPropertyDescriptor(window, 'innerWidth');
 
 function baseProject(overrides: Partial<Project> = {}): Project {
   return {
@@ -114,30 +115,56 @@ async function loadWorkspaceWithShape() {
   renderWorkspace();
   await screen.findByRole('region', { name: 'Tools' });
   expandAllCollapsibleSections();
-  await screen.findByRole('button', { name: /ask ai to change layer 1/i });
+  await screen.findByRole('button', { name: /ask ai to change layer 1/i, hidden: true });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+  if (originalInnerWidthDescriptor) {
+    Object.defineProperty(window, 'innerWidth', originalInnerWidthDescriptor);
+  }
+});
+
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+}
+
+function expectWholeSceneUnchanged() {
+  expect(screen.getByText('1 shape(s) in the working copy.')).toBeVisible();
+  expect(screen.getByTestId('editor-save-status')).toHaveTextContent('Saved as version 1');
+  expect(screen.getByRole('button', { name: /^Save scene$/ })).toBeDisabled();
+  expect(mockedEditAIScene).not.toHaveBeenCalled();
+}
+
 describe('"Ask AI to change this" (LayersPanel rows)', () => {
   it('offers the action on the layer row and seeds the Edit-mode prompt with its name', async () => {
+    setViewportWidth(375);
     await loadWorkspaceWithShape();
     const user = userEvent.setup();
 
     expect(screen.queryByTestId('editor-ai-layer-panel')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: /^Layers$/ }));
 
     await user.click(screen.getByRole('button', { name: /ask ai to change layer 1/i }));
 
     const panel = screen.getByTestId('editor-ai-layer-panel');
-    expect(panel).toBeInTheDocument();
+    expect(panel).toBeVisible();
 
     const editRadio = within(panel).getByRole('radio', { name: 'Edit' });
     expect(editRadio).toHaveAttribute('aria-checked', 'true');
 
     const promptField = within(panel).getByLabelText(/describe the change/i) as HTMLTextAreaElement;
-    expect(promptField.value).toContain('Layer 1');
+    expect(promptField).toHaveValue('Change Layer 1: ');
+    expect(promptField).toHaveFocus();
+    expect(mockedEditAIScene).not.toHaveBeenCalled();
   });
 
   it('offers the action on a shape row and seeds the prompt with the shape label', async () => {
@@ -189,6 +216,52 @@ describe('"Ask AI to change this" (LayersPanel rows)', () => {
 });
 
 describe('"Ask AI to improve this scene" (whole-scene, issue #283)', () => {
+  it('reveals and focuses the assistant from Tools at a narrow viewport without changing the scene', async () => {
+    setViewportWidth(375);
+    await loadWorkspaceWithShape();
+    const user = userEvent.setup();
+
+    const toolsTab = screen.getByRole('tab', { name: /^Tools$/ });
+    expect(toolsTab).toHaveAttribute('aria-selected', 'true');
+    await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
+
+    const layersTab = screen.getByRole('tab', { name: /^Layers$/ });
+    expect(layersTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('region', { name: 'Layers' })).toBeVisible();
+    const panel = screen.getByTestId('editor-ai-layer-panel');
+    expect(panel).toBeVisible();
+    expect(within(panel).getByLabelText(/describe the change/i)).toHaveValue(
+      'Improve this scene: ',
+    );
+    expect(within(panel).getByLabelText(/describe the change/i)).toHaveFocus();
+    expect(within(panel).getByRole('radio', { name: 'Edit' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expectWholeSceneUnchanged();
+  });
+
+  it('expands a collapsed Layers disclosure when the whole-scene action is activated', async () => {
+    setViewportWidth(1280);
+    await loadWorkspaceWithShape();
+    const user = userEvent.setup();
+    const layersDisclosure = screen.getByRole('button', { name: 'Collapse Layers panel' });
+    await user.click(layersDisclosure);
+    expect(screen.getByRole('button', { name: 'Expand Layers panel' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
+
+    const expandedDisclosure = screen.getByRole('button', { name: 'Collapse Layers panel' });
+    expect(expandedDisclosure).toHaveAttribute('aria-expanded', 'true');
+    const panel = screen.getByTestId('editor-ai-layer-panel');
+    expect(panel).toBeVisible();
+    expect(within(panel).getByLabelText(/describe the change/i)).toHaveFocus();
+    expectWholeSceneUnchanged();
+  });
+
   it('offers an unscoped action that seeds a generic Edit-mode prompt', async () => {
     await loadWorkspaceWithShape();
     const user = userEvent.setup();
@@ -196,9 +269,12 @@ describe('"Ask AI to improve this scene" (whole-scene, issue #283)', () => {
     await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
 
     const panel = screen.getByTestId('editor-ai-layer-panel');
+    expect(panel).toBeVisible();
     const editRadio = within(panel).getByRole('radio', { name: 'Edit' });
     expect(editRadio).toHaveAttribute('aria-checked', 'true');
     const promptField = within(panel).getByLabelText(/describe the change/i) as HTMLTextAreaElement;
     expect(promptField.value).toBe('Improve this scene: ');
+    expect(promptField).toHaveFocus();
+    expect(mockedEditAIScene).not.toHaveBeenCalled();
   });
 });

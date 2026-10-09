@@ -321,13 +321,24 @@ function TopLevelPanel({
   name,
   children,
   defaultOpen = false,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   name: 'Canvas' | 'Details' | 'Tools' | 'Layers' | 'Inspector';
   children: ReactNode;
   defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const open = controlledOpen ?? uncontrolledOpen;
   const contentId = `editor-panel-${name.toLowerCase()}-content`;
+
+  function toggleOpen() {
+    const nextOpen = !open;
+    if (controlledOpen === undefined) setUncontrolledOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
 
   return (
     <>
@@ -338,7 +349,7 @@ function TopLevelPanel({
           aria-expanded={open}
           aria-controls={contentId}
           aria-label={`${open ? 'Collapse' : 'Expand'} ${name} panel`}
-          onClick={() => setOpen((current) => !current)}
+          onClick={toggleOpen}
         >
           <span aria-hidden="true">{open ? '▾' : '▸'}</span>
           <span>{name}</span>
@@ -837,6 +848,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // behavior/test around controlled props instead of just adding this one
   // new access path. See `EditorDetailsPanel.tsx`'s own doc comment.
   const detailsPanelRef = useRef<EditorDetailsPanelHandle>(null);
+  const editorWorkspaceRef = useRef<HTMLDivElement>(null);
 
   // Issue #128: `PublishControl`'s "auto-persist, then validate/publish"
   // flow calls this before running `validateProjectMetadataForPublish`.
@@ -866,6 +878,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   const [activePanel, setActivePanel] = useState<EditorPanelName>(
     startWithAi ? 'inspector' : 'tools',
   );
+  const [layersPanelOpen, setLayersPanelOpen] = useState(true);
   useEffect(() => {
     setActivePanel(startWithAi ? 'inspector' : 'tools');
   }, [startWithAi]);
@@ -1216,6 +1229,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     openAiLayerPanel,
     closeAiLayerPanel,
   } = useAiAssistPanels();
+  const aiLayerPromptInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Closes the ask-AI-to-fix panel automatically once the render failure
   // it was opened for is actually resolved (a scene edit, an accepted AI
@@ -1257,8 +1271,15 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // user fills in, rather than naming anything (documented implementation
   // decision, per the issue's own "decide during implementation" note).
   const handleAskAiImproveScene = () => {
+    setActivePanel('layers');
+    setLayersPanelOpen(true);
     openAiLayerPanel('Improve this scene: ');
   };
+
+  useEffect(() => {
+    if (!showAiLayerPanel || activePanel !== 'layers' || !layersPanelOpen) return;
+    aiLayerPromptInputRef.current?.focus();
+  }, [activePanel, aiLayerSeed, layersPanelOpen, showAiLayerPanel]);
 
   // Task 26: "latest value" refs so the window-level drag listeners below
   // (created once, lazily, and reused for the lifetime of the component —
@@ -2523,7 +2544,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
 
       {isNarrow && <EditorPanelSwitcher activePanel={activePanel} onSelect={setActivePanel} />}
 
-      <div className="editor-workspace">
+      <div ref={editorWorkspaceRef} className="editor-workspace">
         {/* Task 94 (issue #94), point 2: Preview leads the layout — the
             first panel in DOM order (and therefore first in both the
             >=1024px side-by-side row and the narrow stacked column, since
@@ -3441,7 +3462,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
           className="editor-panel"
           hidden={panelHidden('layers')}
         >
-          <TopLevelPanel name="Layers" defaultOpen>
+          <TopLevelPanel name="Layers" open={layersPanelOpen} onOpenChange={setLayersPanelOpen}>
             <LayersPanel
               sceneEditor={sceneEditor}
               onRowSelect={handleLayerRowSelect}
@@ -3478,6 +3499,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   mediaAssets={mediaAssets}
                   intentNote={project?.brief ?? ''}
                   seed={aiLayerSeed}
+                  promptInputRef={aiLayerPromptInputRef}
                   onAccepted={handleAIProposalAccepted}
                 />
               </div>
@@ -3574,21 +3596,12 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
             </CollapsibleSection>
 
             <CollapsibleSection heading="Export" icon="⇪">
-              {/* Task 55: export configuration dialog. Read-only against
-                version history/project metadata — it never restores a
-                version or changes `project.current_version`, and its
-                terminal "Export" action is an intentional stub (logs the
-                assembled config) until Task 56+ builds real artifact
-                generation. See `ExportConfigDialog.tsx`'s module doc
-                comment. */}
-              {id && (
-                <ExportConfigDialog
-                  projectId={id}
-                  project={project}
-                  openSignal={exportDialogOpenSignal}
-                  getCameraExport={getCameraExport}
-                />
-              )}
+              <button
+                type="button"
+                onClick={() => setExportDialogOpenSignal((current) => current + 1)}
+              >
+                Export…
+              </button>
             </CollapsibleSection>
 
             <CollapsibleSection heading="AI proposals" icon="✨" defaultOpen={startWithAi}>
@@ -3672,6 +3685,20 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
           </TopLevelPanel>
         </section>
       </div>
+      {id && (
+        <ExportConfigDialog
+          projectId={id}
+          project={project}
+          openSignal={exportDialogOpenSignal}
+          showTrigger={false}
+          getReturnFocusFallback={() =>
+            editorWorkspaceRef.current?.querySelector<HTMLElement>(
+              '.editor-piece-stage-toolbar button[aria-label="Open download menu"]',
+            ) ?? null
+          }
+          getCameraExport={getCameraExport}
+        />
+      )}
     </div>
   );
 }

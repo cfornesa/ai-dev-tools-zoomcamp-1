@@ -127,11 +127,79 @@ async function openExportDialog(page: Page): Promise<void> {
   await expect(page.locator('#export-version')).toBeEnabled();
 }
 
+async function openExportFromStageDownload(
+  page: Page,
+  action: 'Download Full' | 'Download Non-Camera',
+): Promise<void> {
+  await page.getByRole('button', { name: 'Open download menu' }).click();
+  const menu = page.getByRole('menu', { name: 'Download piece' });
+  await expect(menu).toBeVisible();
+  await menu.getByRole('menuitem', { name: action, exact: true }).click();
+}
+
 test.describe('ExportConfigDialog: real version selection, options, and download wiring', () => {
   let fixtures: Fixtures;
 
   test.beforeAll(() => {
     fixtures = requireE2EFixtures();
+  });
+
+  test('stage Download Full and Non-Camera open one usable dialog while Inspector Export is collapsed', async ({
+    page,
+  }) => {
+    await loginViaUI(page, fixtures.owner.email, fixtures.password);
+    await createServerProject2DBase(page);
+    await expandAllCollapsibleSections(page);
+    await fillMetadata(page, {
+      title: 'Collapsed export fixture',
+      description: 'Verifies stage download opens the saved-version export dialog.',
+    });
+    const exportToggle = page.locator('.editor-collapsible-section-toggle').filter({
+      hasText: 'Export',
+    });
+    if ((await exportToggle.getAttribute('aria-expanded')) === 'true') await exportToggle.click();
+
+    for (const { viewport, action } of [
+      { viewport: { width: 1280, height: 900 }, action: 'Download Full' as const },
+      { viewport: { width: 375, height: 812 }, action: 'Download Non-Camera' as const },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect(exportToggle).toHaveAttribute('aria-expanded', 'false');
+      await openExportFromStageDownload(page, action);
+
+      const dialogs = page.getByRole('dialog', { name: 'Export project' });
+      await expect(dialogs).toHaveCount(1);
+      await expect(dialogs).toBeVisible();
+      await expect(page.locator('#export-version')).toBeEnabled();
+      await expect(page.locator('#export-version')).toBeFocused();
+      await expect
+        .poll(() =>
+          dialogs.evaluate((dialog) => {
+            let ancestor = dialog.parentElement;
+            while (ancestor) {
+              if (getComputedStyle(ancestor).display === 'none') return true;
+              ancestor = ancestor.parentElement;
+            }
+            return false;
+          }),
+        )
+        .toBe(false);
+
+      await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Open download menu' })).toBeFocused();
+    }
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await exportToggle.click();
+    await expect(exportToggle).toHaveAttribute('aria-expanded', 'true');
+    const inspectorTrigger = page.getByRole('button', { name: 'Export…' });
+    await inspectorTrigger.click();
+    const directDialog = page.getByRole('dialog', { name: 'Export project' });
+    await expect(directDialog).toHaveCount(1);
+    await expect(directDialog).toBeVisible();
+    await expect(page.locator('#export-version')).toBeEnabled();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(inspectorTrigger).toBeFocused();
   });
 
   test('selecting a historical (non-latest) version and exporting downloads a file generated from that version, not the latest', async ({

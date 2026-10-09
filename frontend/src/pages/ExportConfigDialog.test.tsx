@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -103,6 +104,42 @@ async function openDialog(
   // Let the default-version-selection and scene-detail-fetch effects settle.
   await waitFor(() => expect(mockedGetSceneVersion).toHaveBeenCalled());
   return { user, dialog };
+}
+
+function ExternalTriggerExportDialog({ removeOpener = false }: { removeOpener?: boolean }) {
+  const [openSignal, setOpenSignal] = useState(0);
+  const [openerVisible, setOpenerVisible] = useState(true);
+  const fallbackRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <>
+      <button ref={fallbackRef} type="button">
+        Persistent Download trigger
+      </button>
+      {openerVisible && (
+        <button
+          type="button"
+          onClick={() => {
+            setOpenSignal((signal) => signal + 1);
+          }}
+        >
+          Stage Download Full
+        </button>
+      )}
+      {removeOpener && (
+        <button type="button" onClick={() => setOpenerVisible(false)}>
+          Remove invoking control
+        </button>
+      )}
+      <ExportConfigDialog
+        projectId="p1"
+        project={baseProject()}
+        showTrigger={false}
+        openSignal={openSignal}
+        getReturnFocusFallback={() => fallbackRef.current}
+      />
+    </>
+  );
 }
 
 describe('ExportConfigDialog defaults', () => {
@@ -464,6 +501,31 @@ describe('ExportConfigDialog accessibility', () => {
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: /export…/i })).toHaveFocus();
+  });
+
+  it('returns focus to a surviving caller opener when showTrigger is false', async () => {
+    const user = userEvent.setup();
+    render(<ExternalTriggerExportDialog />);
+
+    await user.click(screen.getByRole('button', { name: 'Stage Download Full' }));
+    await screen.findByRole('dialog', { name: 'Export project' });
+    expect(screen.queryByRole('button', { name: /export…/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('button', { name: 'Stage Download Full' })).toHaveFocus();
+  });
+
+  it('uses the caller fallback when the invoking control unmounts before dismissal', async () => {
+    const user = userEvent.setup();
+    render(<ExternalTriggerExportDialog removeOpener />);
+
+    await user.click(screen.getByRole('button', { name: 'Stage Download Full' }));
+    await screen.findByRole('dialog', { name: 'Export project' });
+    await user.click(screen.getByRole('button', { name: 'Remove invoking control' }));
+    expect(screen.queryByRole('button', { name: 'Stage Download Full' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('button', { name: 'Persistent Download trigger' })).toHaveFocus();
   });
 
   it('surfaces compatibility and metadata errors as live, screen-reader-announced regions', async () => {

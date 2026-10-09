@@ -45,7 +45,7 @@ test.describe('Public profiles (#520)', () => {
     expect(savedProfile.is_public).toBe(true);
     await page.goto(`/users/@${savedProfile.handle}`);
     await expect(page.getByRole('heading', { name: 'E2E Artist' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Public pieces' })).toBeVisible();
+    await expect(page.getByRole('status')).toHaveText('No public collections or pieces yet.');
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.screenshot({ path: testInfo.outputPath('profile-1280x900.png'), fullPage: true });
     await page.setViewportSize({ width: 375, height: 812 });

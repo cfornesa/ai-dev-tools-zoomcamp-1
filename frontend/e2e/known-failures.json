@@ -47,12 +47,5 @@
     "added": "2026-10-03",
     "expires": "2026-10-24",
     "count": 1
-  },
-  {
-    "key": "chromium|e2e/publicProfiles.spec.ts|Public profiles (#520) › owner publishes profile metadata and only its public profile route is visible",
-    "issue": 1230,
-    "added": "2026-10-03",
-    "expires": "2026-10-24",
-    "count": 1
   }
 ]

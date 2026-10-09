@@ -14,13 +14,6 @@
     "count": 1
   },
   {
-    "key": "chromium|e2e/authoringOwnershipGate.spec.ts|Authoring workspaces redirect a non-owner away from owner controls (#458) › a published 2D project: signed-out and non-owner visitors never see owner controls at /projects/:id or /ai-projects/:id, at both viewports",
-    "issue": 1180,
-    "added": "2026-10-03",
-    "expires": "2026-10-10",
-    "count": 1
-  },
-  {
     "key": "chromium|e2e/pieceTemplateParity2d.spec.ts|2D runtime template parity (#799) › asserts online and Full ZIP controls for every 2D engine",
     "issue": 1166,
     "added": "2026-10-03",

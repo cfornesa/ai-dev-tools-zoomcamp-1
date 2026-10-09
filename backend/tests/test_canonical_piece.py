@@ -506,6 +506,32 @@ def test_owner_editor_slug_resolver_mounts_structured_2d_and_3d_pieces(client):
     assert three_d.json()["piece"]["id"] == str(project3d.public_id)
 
 
+@pytest.mark.django_db
+@pytest.mark.parametrize("family", ["2d", "3d"])
+@pytest.mark.parametrize("visitor", ["anonymous", "non-owner"])
+def test_owner_editor_slug_denies_structured_projects_to_anonymous_and_non_owners(
+    client, family, visitor
+):
+    owner = get_user_model().objects.create_user(username="structured-denial-owner")
+    non_owner = get_user_model().objects.create_user(username="structured-denial-visitor")
+    PublicProfile.objects.create(user=owner, handle="structured-denial-owner", is_public=False)
+    if family == "2d":
+        project = Project.objects.create(owner=owner, title="Private Canvas")
+    else:
+        project = Project3D.objects.create(owner=owner, title="Private Scene")
+    url = reverse(
+        "owner-art-piece-by-slug",
+        kwargs={"handle": "structured-denial-owner", "piece_slug": project.public_slug},
+    )
+
+    if visitor == "non-owner":
+        client.force_login(non_owner)
+
+    response = client.get(url)
+
+    assert response.status_code == 404
+
+
 # --- #790: the owner can open the regular view of their own private structured piece ---
 
 

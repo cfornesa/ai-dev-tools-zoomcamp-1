@@ -1,4 +1,12 @@
-import { useEffect, useId, useMemo, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type Ref,
+} from 'react';
 
 import type { AITargetOption } from './aiTargeting';
 
@@ -11,6 +19,7 @@ type MentionPromptFieldProps = {
   selectedIds: string[];
   onSelectedIdsChange: (ids: string[]) => void;
   disabled?: boolean;
+  textareaRef?: Ref<HTMLTextAreaElement>;
 };
 
 function HighlightedLabel({ label, query }: { label: string; query: string | null }) {
@@ -35,6 +44,7 @@ export default function MentionPromptField({
   selectedIds,
   onSelectedIdsChange,
   disabled,
+  textareaRef,
 }: MentionPromptFieldProps) {
   const listboxId = useId();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -146,6 +156,7 @@ export default function MentionPromptField({
         aria-expanded={listOpen}
       >
         <textarea
+          ref={textareaRef}
           id={id}
           aria-autocomplete="list"
           aria-activedescendant={

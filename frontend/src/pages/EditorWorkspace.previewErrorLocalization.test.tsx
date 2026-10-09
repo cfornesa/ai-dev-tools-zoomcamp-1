@@ -182,6 +182,24 @@ describe('"Ask AI to fix this"', () => {
     expect(promptField.value).toContain('missing-layer');
   });
 
+  it('keeps whole-scene prompt focus in its own assistant when the error-fix assistant is also open', async () => {
+    await loadWorkspaceWithRenderFailure(LOCALIZABLE_MESSAGE);
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('ask-ai-fix-preview-error'));
+    const errorPanel = screen.getByTestId('editor-ai-fix-panel');
+    const errorPrompt = within(errorPanel).getByLabelText(/describe the change/i);
+
+    await user.click(screen.getByRole('button', { name: 'Ask AI to improve this scene' }));
+
+    const layerPanel = screen.getByTestId('editor-ai-layer-panel');
+    const layerPrompt = layerPanel.querySelector('textarea');
+    expect(layerPrompt).not.toBeNull();
+    expect(layerPanel).toBeVisible();
+    expect(layerPrompt).toHaveFocus();
+    expect(errorPrompt).not.toHaveFocus();
+    expect(mockedEditAIScene).not.toHaveBeenCalled();
+  });
+
   it('generating from the seeded panel sends the erroring workingCopy as current_scene via the existing editAIScene path', async () => {
     await loadWorkspaceWithRenderFailure(LOCALIZABLE_MESSAGE);
     const user = userEvent.setup();

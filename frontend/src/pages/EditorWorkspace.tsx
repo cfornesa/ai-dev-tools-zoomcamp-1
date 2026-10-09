@@ -321,13 +321,24 @@ function TopLevelPanel({
   name,
   children,
   defaultOpen = false,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   name: 'Canvas' | 'Details' | 'Tools' | 'Layers' | 'Inspector';
   children: ReactNode;
   defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const open = controlledOpen ?? uncontrolledOpen;
   const contentId = `editor-panel-${name.toLowerCase()}-content`;
+
+  function toggleOpen() {
+    const nextOpen = !open;
+    if (controlledOpen === undefined) setUncontrolledOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
 
   return (
     <>
@@ -338,7 +349,7 @@ function TopLevelPanel({
           aria-expanded={open}
           aria-controls={contentId}
           aria-label={`${open ? 'Collapse' : 'Expand'} ${name} panel`}
-          onClick={() => setOpen((current) => !current)}
+          onClick={toggleOpen}
         >
           <span aria-hidden="true">{open ? '▾' : '▸'}</span>
           <span>{name}</span>
@@ -866,6 +877,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   const [activePanel, setActivePanel] = useState<EditorPanelName>(
     startWithAi ? 'inspector' : 'tools',
   );
+  const [layersPanelOpen, setLayersPanelOpen] = useState(true);
   useEffect(() => {
     setActivePanel(startWithAi ? 'inspector' : 'tools');
   }, [startWithAi]);
@@ -1216,6 +1228,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
     openAiLayerPanel,
     closeAiLayerPanel,
   } = useAiAssistPanels();
+  const aiLayerPromptInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Closes the ask-AI-to-fix panel automatically once the render failure
   // it was opened for is actually resolved (a scene edit, an accepted AI
@@ -1257,8 +1270,15 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
   // user fills in, rather than naming anything (documented implementation
   // decision, per the issue's own "decide during implementation" note).
   const handleAskAiImproveScene = () => {
+    setActivePanel('layers');
+    setLayersPanelOpen(true);
     openAiLayerPanel('Improve this scene: ');
   };
+
+  useEffect(() => {
+    if (!showAiLayerPanel || activePanel !== 'layers' || !layersPanelOpen) return;
+    aiLayerPromptInputRef.current?.focus();
+  }, [activePanel, aiLayerSeed, layersPanelOpen, showAiLayerPanel]);
 
   // Task 26: "latest value" refs so the window-level drag listeners below
   // (created once, lazily, and reused for the lifetime of the component —
@@ -3441,7 +3461,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
           className="editor-panel"
           hidden={panelHidden('layers')}
         >
-          <TopLevelPanel name="Layers" defaultOpen>
+          <TopLevelPanel name="Layers" open={layersPanelOpen} onOpenChange={setLayersPanelOpen}>
             <LayersPanel
               sceneEditor={sceneEditor}
               onRowSelect={handleLayerRowSelect}
@@ -3478,6 +3498,7 @@ function EditorWorkspace({ initialProjectId }: { initialProjectId?: string } = {
                   mediaAssets={mediaAssets}
                   intentNote={project?.brief ?? ''}
                   seed={aiLayerSeed}
+                  promptInputRef={aiLayerPromptInputRef}
                   onAccepted={handleAIProposalAccepted}
                 />
               </div>

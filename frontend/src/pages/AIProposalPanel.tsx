@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type Ref } from 'react';
 
 import { useRovingRadioGroup } from '../a11y/useRovingRadioGroup';
 import { getSceneVersion, type SceneDocument, type SceneVersion } from '../api/projects';
@@ -82,6 +82,8 @@ type AIProposalPanelProps = {
   mediaAssets?: AITargetMediaAsset[];
   /** Private project intent, disclosed only in the Agent workflow. */
   intentNote?: string;
+  /** Focus this panel's prompt when its owning editor action opens it. */
+  promptInputRef?: Ref<HTMLTextAreaElement>;
 };
 
 const MODE_LABELS: Record<ProposalMode, string> = {
@@ -109,6 +111,7 @@ function AIProposalPanel({
   seed,
   mediaAssets = [],
   intentNote = '',
+  promptInputRef,
 }: AIProposalPanelProps) {
   const {
     mode,
@@ -357,6 +360,7 @@ function AIProposalPanel({
                 selectedIds={selectedTargetIds}
                 onSelectedIdsChange={setSelectedTargetIds}
                 disabled={pending}
+                textareaRef={promptInputRef}
               />
             </div>
             {/* Issue #198/#262: optional, defaults to the server's own model.

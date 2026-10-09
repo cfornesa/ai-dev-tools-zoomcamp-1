@@ -76,12 +76,13 @@ test.describe('Authoring workspaces redirect a non-owner away from owner control
     // The owner's own authoring flow is unaffected.
     await page.goto(`/projects/${project.id}`);
     await expect(page.getByRole('heading', { name: 'Ownership gate 2D fixture' })).toBeVisible();
-    await page.getByRole('button', { name: 'Open piece controls menu' }).click();
+    await page.getByRole('button', { name: 'File', exact: true }).click();
     await expect(
-      page.getByRole('button', {
-        name: /^(publication status: published|hide publication status: published)$/i,
-      }),
-    ).toBeVisible();
+      page
+        .getByRole('menu', { name: 'File menu' })
+        .getByRole('group', { name: 'Publication status' })
+        .getByRole('button', { name: 'Published', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('a published 3D project: signed-out and non-owner visitors cannot access the owner editor from legacy routes, at both viewports', async ({

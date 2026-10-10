@@ -20,7 +20,10 @@
 # is a plain dict on the process-wide `connections` singleton (not
 # thread-local), so this is visible to every worker thread these tests
 # spawn, including ones that open their `"default"` connection only after
-# the swap.
+# the swap. Django also caches a backend-specific connection wrapper per
+# thread, so each thread evicts its old `"default"` wrapper after the swap;
+# closing it alone leaves SQLite active even though this dict now names
+# PostgreSQL.
 #
 # That swap alone still isn't enough: fixtures were created via `.using(
 # "postgres_test")`, so their `instance._state.db` is the string
@@ -59,17 +62,21 @@ def close_thread_connections():
     other users".
     """
     connections["default"].close()
+    try:
+        delattr(connections._connections, "default")
+    except AttributeError:
+        pass
     connections["postgres_test"].close()
 
 
 @contextmanager
 def route_default_to_postgres_test():
     original = connections.databases["default"]
-    connections["default"].close()
+    close_thread_connections()
     connections.databases["default"] = dict(connections.databases["postgres_test"])
     try:
         with override_settings(DATABASE_ROUTERS=[_AllowAllRelations()]):
             yield
     finally:
-        connections["default"].close()
+        close_thread_connections()
         connections.databases["default"] = original

@@ -11,7 +11,7 @@ from typing import Any
 
 from asgiref.sync import sync_to_async
 from django.http import HttpRequest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 
@@ -100,7 +100,7 @@ def _invoke_intake_view(
 
 
 def register_piece_intake_tools(
-    server: FastMCP,
+    server: MCPServer,
     audited_tool: Callable[..., Callable[..., Any]],
     current_principal: Callable[[tuple[str, ...]], Any],
 ) -> None:

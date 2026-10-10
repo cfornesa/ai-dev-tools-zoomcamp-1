@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from asgiref.sync import sync_to_async
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from scenes.api import SceneVersionDetailView
 from scenes.mcp.project_tools import _invoke_rest_view, _rest_error
@@ -17,7 +17,7 @@ __all__ = ["DESTRUCTIVE_PROJECT_SCOPES", "register_destructive_tools"]
 
 
 def register_destructive_tools(
-    server: FastMCP,
+    server: MCPServer,
     audited_tool: Callable[..., Callable[..., Any]],
     current_principal: Callable[[tuple[str, ...]], Any],
 ) -> None:

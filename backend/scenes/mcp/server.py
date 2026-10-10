@@ -25,9 +25,10 @@ from django.core.handlers.asgi import ASGIRequest
 from django.db.models import Count, Prefetch, Q, Value
 from django.db.models.functions import Coalesce
 from django.http import Http404
-from mcp.server.fastmcp import FastMCP, Image
+from mcp.server.mcpserver import Image, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
-from mcp.shared.exceptions import McpError
+from mcp.shared.exceptions import MCPError
 from mcp.types import ErrorData
 from rest_framework.renderers import JSONRenderer
 from starlette.middleware.cors import CORSMiddleware
@@ -228,14 +229,14 @@ def _require_principal_scopes(
     principal: MCPPrincipal | None, required_scopes: tuple[str, ...]
 ) -> MCPPrincipal:
     if principal is None:
-        raise McpError(
+        raise MCPError.from_error_data(
             ErrorData(
                 code=-32001, message="Authentication required.", data={"error": "invalid_token"}
             )
         )
     missing_scopes = sorted(set(required_scopes) - principal.scopes)
     if missing_scopes:
-        raise McpError(
+        raise MCPError.from_error_data(
             ErrorData(
                 code=-32003,
                 message="The access token does not grant the required scope.",
@@ -245,9 +246,21 @@ def _require_principal_scopes(
     return principal
 
 
+def _require_tool_principal_scopes(
+    principal: MCPPrincipal | None, required_scopes: tuple[str, ...]
+) -> MCPPrincipal:
+    """Raise SDK expected-tool errors for authentication and scope denials."""
+    if principal is None:
+        raise ToolError("Authentication required.")
+    missing_scopes = sorted(set(required_scopes) - principal.scopes)
+    if missing_scopes:
+        raise ToolError("The access token does not grant the required scope.")
+    return principal
+
+
 def _require_current_scopes(required_scopes: tuple[str, ...]) -> MCPPrincipal:
-    """Require the authenticated MCP principal and its declared tool/resource scopes."""
-    return _require_principal_scopes(_mcp_principal.get(), required_scopes)
+    """Require the authenticated MCP principal and its declared tool scopes."""
+    return _require_tool_principal_scopes(_mcp_principal.get(), required_scopes)
 
 
 def _write_mcp_audit(
@@ -285,16 +298,8 @@ def _audited_tool(tool_name: str, required_scopes: tuple[str, ...]):
                 )
                 if retry_after is not None:
                     outcome = MCPToolAuditEvent.Outcome.RATE_LIMITED
-                    raise McpError(
-                        ErrorData(
-                            code=-32029,
-                            message=(
-                                f"MCP rate limit exceeded; retry_after_seconds={retry_after}."
-                            ),
-                            data={"retry_after_seconds": retry_after},
-                        )
-                    )
-                principal = _require_principal_scopes(principal, required_scopes)
+                    raise ToolError(f"MCP rate limit exceeded; retry_after_seconds={retry_after}.")
+                principal = _require_tool_principal_scopes(principal, required_scopes)
                 result = await function(*args, **kwargs)
                 outcome = MCPToolAuditEvent.Outcome.SUCCESS
                 return result
@@ -325,21 +330,34 @@ def _mcp_allowed_hosts() -> list[str]:
     return hosts
 
 
-server = FastMCP(
+def _mcp_transport_security() -> TransportSecuritySettings:
+    """Retain Django's explicit host and browser-origin checks in MCP 2.x."""
+    return TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=_mcp_allowed_hosts(),
+        allowed_origins=list(settings.CSRF_TRUSTED_ORIGINS),
+    )
+
+
+def _streamable_http_app(mcp_server: MCPServer, path: str):
+    """Build a bounded, stateless app with the same explicit transport policy."""
+    return mcp_server.streamable_http_app(
+        streamable_http_path=path,
+        stateless_http=True,
+        json_response=True,
+        max_request_body_size=MAX_MCP_REQUEST_BODY_SIZE,
+        transport_security=_mcp_transport_security(),
+    )
+
+
+server = MCPServer(
     "Creatrweb Public MCP",
     instructions=(
         "Read-only public-content tools for authenticated Creatrweb users. "
         "Send an OAuth bearer token for the /mcp resource."
     ),
-    streamable_http_path="/mcp/",
-    stateless_http=True,
-    json_response=True,
-    max_request_body_size=MAX_MCP_REQUEST_BODY_SIZE,
-    transport_security=TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=_mcp_allowed_hosts(),
-        allowed_origins=list(settings.CSRF_TRUSTED_ORIGINS),
-    ),
+    # Preserve existing serverInfo metadata; this is not the installed SDK version.
+    version="1.30.0",
 )
 
 PUBLIC_CONTENT_UI_URI = "ui://creatrweb/public-content"
@@ -358,21 +376,14 @@ PUBLIC_CONTENT_UI_META = {
 
 # This separate server intentionally registers only anonymous, read-only public
 # content tools. The existing `/mcp/` app above remains bearer-token protected.
-public_apps_server = FastMCP(
+public_apps_server = MCPServer(
     "Creatrweb Public Gallery App",
     instructions=(
         "Show eligible public Creatrweb gallery, 2D/3D project, or generated piece content. "
         "This endpoint has no owner, write, AI, or authenticated tools."
     ),
-    streamable_http_path="/mcp/apps/",
-    stateless_http=True,
-    json_response=True,
-    max_request_body_size=MAX_MCP_REQUEST_BODY_SIZE,
-    transport_security=TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=_mcp_allowed_hosts(),
-        allowed_origins=list(settings.CSRF_TRUSTED_ORIGINS),
-    ),
+    # Preserve existing serverInfo metadata; this is not the installed SDK version.
+    version="1.30.0",
 )
 
 
@@ -391,15 +402,7 @@ def _anonymous_public_app_tool(tool_name: str):
                 )
                 if retry_after is not None:
                     outcome = MCPToolAuditEvent.Outcome.RATE_LIMITED
-                    raise McpError(
-                        ErrorData(
-                            code=-32029,
-                            message=(
-                                f"MCP rate limit exceeded; retry_after_seconds={retry_after}."
-                            ),
-                            data={"retry_after_seconds": retry_after},
-                        )
-                    )
+                    raise ToolError(f"MCP rate limit exceeded; retry_after_seconds={retry_after}.")
                 result = await function(*args, **kwargs)
                 outcome = MCPToolAuditEvent.Outcome.SUCCESS
                 return result
@@ -431,7 +434,9 @@ async def show_public_gallery(page_size: int = 12) -> dict[str, Any]:
     """Return public gallery cards and the validated host origin for viewer links."""
     origin = _mcp_public_app_origin.get()
     if origin is None:
-        raise McpError(ErrorData(code=-32603, message="Public app request origin is unavailable."))
+        raise MCPError.from_error_data(
+            ErrorData(code=-32603, message="Public app request origin is unavailable.")
+        )
     return {
         **await sync_to_async(_unified_gallery_page, thread_sensitive=True)(
             "all", None, None, clamp_page_size(page_size)
@@ -453,7 +458,9 @@ async def show_public_project(project_id: str) -> dict[str, Any]:
     """Return public project detail and its canonical viewer URL."""
     origin = _mcp_public_app_origin.get()
     if origin is None:
-        raise McpError(ErrorData(code=-32603, message="Public app request origin is unavailable."))
+        raise MCPError.from_error_data(
+            ErrorData(code=-32603, message="Public app request origin is unavailable.")
+        )
     project = await sync_to_async(_public_project, thread_sensitive=True)(project_id)
     return {
         "project": project,
@@ -474,7 +481,9 @@ async def show_public_3d_project(project_id: str) -> dict[str, Any]:
     """Return one published public 3D project and its canonical viewer URL."""
     origin = _mcp_public_app_origin.get()
     if origin is None:
-        raise McpError(ErrorData(code=-32603, message="Public app request origin is unavailable."))
+        raise MCPError.from_error_data(
+            ErrorData(code=-32603, message="Public app request origin is unavailable.")
+        )
     project = await sync_to_async(_public_3d_project, thread_sensitive=True)(project_id)
     return {
         "project": project,
@@ -495,7 +504,9 @@ async def show_public_art_piece(piece_id: str) -> dict[str, Any]:
     """Return one published public generated art piece by its exact public ID."""
     origin = _mcp_public_app_origin.get()
     if origin is None:
-        raise McpError(ErrorData(code=-32603, message="Public app request origin is unavailable."))
+        raise MCPError.from_error_data(
+            ErrorData(code=-32603, message="Public app request origin is unavailable.")
+        )
     piece = await sync_to_async(_public_generated_piece, thread_sensitive=True)(piece_id)
     return {"piece": piece, "site_origin": origin}
 
@@ -550,7 +561,7 @@ def _public_gallery_page(cursor: str | None, page_size: int) -> dict[str, Any]:
         try:
             cursor_timestamp, cursor_kind, object_id, _gallery_type = decode_gallery_cursor(cursor)
         except InvalidCursor as exc:
-            raise ValueError("Invalid or expired cursor.") from exc
+            raise ToolError("Invalid or expired cursor.") from exc
         queryset_2d = filter_after_gallery_cursor(
             queryset_2d, cursor_timestamp, cursor_kind, object_id
         )
@@ -592,11 +603,15 @@ def _public_gallery_page(cursor: str | None, page_size: int) -> dict[str, Any]:
 
 def _public_project(public_id: str) -> dict[str, Any]:
     try:
-        project = Project.objects.get(public_id=uuid.UUID(public_id))
-    except (Project.DoesNotExist, ValueError, TypeError) as exc:
-        raise Http404 from exc
+        parsed_public_id = uuid.UUID(public_id)
+    except (ValueError, TypeError) as exc:
+        raise ToolError("Not found.") from exc
+    try:
+        project = Project.objects.get(public_id=parsed_public_id)
+    except Project.DoesNotExist as exc:
+        raise ToolError("Not found.") from exc
     if project.visibility != Project.Visibility.PUBLIC or project.current_version_id is None:
-        raise Http404
+        raise ToolError("Not found.")
     project = Project.objects.prefetch_related(
         Prefetch(
             "versions",
@@ -614,16 +629,20 @@ def _built_in_templates() -> list[dict[str, Any]]:
 
 def _public_thumbnail(public_id: str) -> tuple[bytes, str]:
     try:
-        project = Project.objects.get(public_id=uuid.UUID(public_id))
-    except (Project.DoesNotExist, ValueError, TypeError) as exc:
-        raise Http404 from exc
+        parsed_public_id = uuid.UUID(public_id)
+    except (ValueError, TypeError) as exc:
+        raise ToolError("Not found.") from exc
+    try:
+        project = Project.objects.get(public_id=parsed_public_id)
+    except Project.DoesNotExist as exc:
+        raise ToolError("Not found.") from exc
     if project.visibility != Project.Visibility.PUBLIC or project.current_version_id is None:
-        raise Http404
+        raise ToolError("Not found.")
     thumbnail = Thumbnail.objects.filter(scene_version_id=project.current_version_id).first()
     if thumbnail is None:
         thumbnail = ensure_thumbnail_for_version(project.current_version_id)
     if thumbnail is None:
-        raise Http404
+        raise ToolError("Not found.")
     return bytes(thumbnail.image_data), thumbnail.content_type
 
 
@@ -632,14 +651,14 @@ def _published_asset(public_id: str, asset_id: str) -> dict[str, str]:
         piece_id = uuid.UUID(public_id)
         source_id = uuid.UUID(asset_id)
     except (ValueError, TypeError) as exc:
-        raise Http404 from exc
+        raise ToolError("Not found.") from exc
     piece = Project.objects.filter(
         public_id=piece_id,
         visibility=Project.Visibility.PUBLIC,
         is_deleted=False,
     ).exists()
     if not piece:
-        raise Http404
+        raise ToolError("Not found.")
     asset = (
         PieceIntakeAsset.objects.filter(
             piece_kind="2d", piece_public_id=piece_id, source_asset_id=source_id
@@ -648,7 +667,7 @@ def _published_asset(public_id: str, asset_id: str) -> dict[str, str]:
         .first()
     )
     if asset is None:
-        raise Http404
+        raise ToolError("Not found.")
     return {
         "media_type": asset.mime_type,
         "data_base64": base64.b64encode(bytes(asset.data)).decode("ascii"),
@@ -660,7 +679,7 @@ def _unified_gallery_page(  # noqa: C901
     gallery_type: str, engine: str | None, cursor: str | None, page_size: int
 ) -> dict[str, Any]:
     if gallery_type not in VALID_GALLERY_TYPES:
-        raise ValueError("type must be all, authored, pieces, collections, or generated.")
+        raise ToolError("type must be all, authored, pieces, collections, or generated.")
     querysets: dict[str, Any] = {}
     queryset_kinds = {
         "all": ("2d", "3d", "collection", "generated"),
@@ -670,7 +689,7 @@ def _unified_gallery_page(  # noqa: C901
         "generated": ("generated",),
     }[gallery_type]
     if engine is not None and engine not in {value for value, _ in ArtPiece.Engine.choices}:
-        raise ValueError("engine must be a supported public gallery engine.")
+        raise ToolError("engine must be a supported public gallery engine.")
     for kind in queryset_kinds:
         if kind == "2d":
             querysets[kind] = eligible_projects()
@@ -684,9 +703,9 @@ def _unified_gallery_page(  # noqa: C901
         try:
             cursor_timestamp, cursor_kind, cursor_id, cursor_type = decode_gallery_cursor(cursor)
         except InvalidCursor as exc:
-            raise ValueError("Invalid or expired cursor.") from exc
+            raise ToolError("Invalid or expired cursor.") from exc
         if cursor_type != gallery_type:
-            raise ValueError("Invalid or expired cursor.")
+            raise ToolError("Invalid or expired cursor.")
         for kind, queryset in querysets.items():
             querysets[kind] = filter_after_gallery_cursor(
                 queryset, cursor_timestamp, cursor_kind, cursor_id
@@ -735,11 +754,15 @@ def _unified_gallery_page(  # noqa: C901
 
 def _public_3d_project(public_id: str) -> dict[str, Any]:
     try:
-        project = Project3D.objects.get(public_id=uuid.UUID(public_id))
-    except (Project3D.DoesNotExist, ValueError, TypeError) as exc:
-        raise Http404 from exc
+        parsed_public_id = uuid.UUID(public_id)
+    except (ValueError, TypeError) as exc:
+        raise ToolError("Not found.") from exc
+    try:
+        project = Project3D.objects.get(public_id=parsed_public_id)
+    except Project3D.DoesNotExist as exc:
+        raise ToolError("Not found.") from exc
     if project.visibility != Project3D.Visibility.PUBLIC:
-        raise Http404
+        raise ToolError("Not found.")
     project = Project3D.objects.prefetch_related(
         Prefetch(
             "versions",
@@ -751,13 +774,20 @@ def _public_3d_project(public_id: str) -> dict[str, Any]:
 
 
 def _public_generated_piece(public_id: str) -> dict[str, Any]:
-    piece = _public_piece_or_404(public_id)
+    try:
+        parsed_public_id = uuid.UUID(public_id)
+    except (ValueError, TypeError) as exc:
+        raise ToolError("Not found.") from exc
+    try:
+        piece = _public_piece_or_404(parsed_public_id)
+    except Http404 as exc:
+        raise ToolError("Not found.") from exc
     return json.loads(JSONRenderer().render(_piece_data(piece, public=True)))
 
 
 def _public_collection_page(sort: str, cursor: str | None, page_size: int) -> dict[str, Any]:
     if sort not in COLLECTION_SORTS:
-        raise ValueError("sort must be newest, oldest, or item_count.")
+        raise ToolError("sort must be newest, oldest, or item_count.")
     queryset = (
         eligible_collections()
         .filter(status=Collection.Status.ACTIVE)
@@ -798,9 +828,9 @@ def _public_collection_page(sort: str, cursor: str | None, page_size: int) -> di
         try:
             cursor_sort, count, published_at, object_id = _decode_collection_cursor(cursor)
         except ValueError as exc:
-            raise ValueError("Invalid or expired cursor.") from exc
+            raise ToolError("Invalid or expired cursor.") from exc
         if cursor_sort != sort:
-            raise ValueError("Invalid or expired cursor.")
+            raise ToolError("Invalid or expired cursor.")
         queryset = _after_collection_cursor(queryset, sort, count, published_at, object_id)
     page = list(queryset[: page_size + 1])
     has_more = len(page) > page_size
@@ -816,14 +846,14 @@ def _public_collection_page(sort: str, cursor: str | None, page_size: int) -> di
 def _public_collection_detail(handle: str, slug: str) -> dict[str, Any]:
     collection = public_collection(handle=handle, slug=slug)
     if collection is None:
-        raise Http404
+        raise ToolError("Not found.")
     return collection_payload(collection, public=True)
 
 
 def _public_search(query: str, scope: str) -> dict[str, Any]:
     query = query.strip()
     if len(query) > 100 or scope not in {"accounts", "content"}:
-        raise ValueError("Invalid search query.")
+        raise ToolError("Invalid search query.")
     if not query:
         return {"scope": scope, "results": []}
     if scope == "accounts":
@@ -1042,12 +1072,14 @@ class DjangoMCPApplication:
         django_app: Any,
         mcp_app: Any,
         public_apps_app: Any,
-        public_apps_lifespan_app: Any,
+        mcp_session_manager: Any,
+        public_apps_session_manager: Any,
     ) -> None:
         self.django_app = django_app
         self.mcp_app = mcp_app
         self.public_apps_app = public_apps_app
-        self.public_apps_lifespan_app = public_apps_lifespan_app
+        self.mcp_session_manager = mcp_session_manager
+        self.public_apps_session_manager = public_apps_session_manager
 
     async def __call__(self, scope, receive, send) -> None:
         if scope["type"] == "lifespan":
@@ -1118,12 +1150,8 @@ class DjangoMCPApplication:
         startup_complete = False
         try:
             async with AsyncExitStack() as stack:
-                await stack.enter_async_context(self.mcp_app.router.lifespan_context(self.mcp_app))
-                await stack.enter_async_context(
-                    self.public_apps_lifespan_app.router.lifespan_context(
-                        self.public_apps_lifespan_app
-                    )
-                )
+                await stack.enter_async_context(self.mcp_session_manager.run())
+                await stack.enter_async_context(self.public_apps_session_manager.run())
                 while True:
                     message = await receive()
                     if message["type"] == "lifespan.startup":
@@ -1146,9 +1174,8 @@ class DjangoMCPApplication:
 
 def create_mcp_asgi_app(django_app: Any) -> DjangoMCPApplication:
     """Create the production ASGI router for the Django and MCP applications."""
-    public_apps_lifespan_app = public_apps_server.streamable_http_app()
     public_apps_app = CORSMiddleware(
-        public_apps_lifespan_app,
+        _streamable_http_app(public_apps_server, "/mcp/apps/"),
         allow_origins=list(settings.CSRF_TRUSTED_ORIGINS),
         allow_methods=["GET", "POST"],
         allow_headers=[
@@ -1160,9 +1187,11 @@ def create_mcp_asgi_app(django_app: Any) -> DjangoMCPApplication:
         ],
         expose_headers=["mcp-protocol-version", "mcp-session-id"],
     )
+    mcp_app = _streamable_http_app(server, "/mcp/")
     return DjangoMCPApplication(
         django_app,
-        server.streamable_http_app(),
+        mcp_app,
         public_apps_app,
-        public_apps_lifespan_app,
+        server.session_manager,
+        public_apps_server.session_manager,
     )

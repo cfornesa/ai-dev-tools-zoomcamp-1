@@ -7,6 +7,7 @@ import copy
 import hashlib
 import io
 import json
+import logging
 import secrets
 import uuid
 import zipfile
@@ -15,20 +16,31 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import anyio
-import httpx
+import httpx2 as httpx
 import pytest
+from asgiref.sync import sync_to_async
 from asgiref.testing import ApplicationCommunicator
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.http import Http404
+from django.db import connections
 from django.utils import timezone
+from mcp import Client
 from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamable_http_client
-from mcp.types import TextContent, TextResourceContents
+from mcp.server.mcpserver.exceptions import ToolError
+from mcp.shared.exceptions import MCPError
+from mcp.types import (
+    CallToolRequestParams,
+    CallToolResult,
+    ErrorData,
+    TextContent,
+    TextResourceContents,
+)
 from oauth2_provider.models import AccessToken, Application
-from pydantic import AnyUrl
 from rest_framework.test import APIClient
 
+import scenes.mcp.server as mcp_server_module
 from backend.asgi import application
 from scenes.mcp.server import (
     MAX_MCP_REQUEST_BODY_SIZE,
@@ -64,6 +76,7 @@ from scenes.models import (
     Template,
     Thumbnail,
 )
+from tests._postgres_routing import close_thread_connections, route_default_to_postgres_test
 
 BLANK_SCENE = json.loads(
     (
@@ -129,12 +142,18 @@ def _freeze_mcp_rate_limit_clock(monkeypatch):
     monkeypatch.setattr("scenes.mcp.server._consume_mcp_rate_limit", consume_in_fixed_window)
 
 
+def _reset_mcp_session_managers():
+    # MCP 2.x exposes a read-only manager; tests create a fresh server process
+    # per ASGI lifecycle, so reset the internal manager between those processes.
+    server._lowlevel_server._session_manager = None
+    public_apps_server._lowlevel_server._session_manager = None
+
+
 def _call_mcp_tools(token_value, calls, *, client_ip="203.0.113.5"):
     async def exercise():
         # The SDK session managers are single-use after lifespan shutdown.
         # Each helper invocation represents a fresh server process.
-        server._session_manager = None
-        public_apps_server._session_manager = None
+        _reset_mcp_session_managers()
         test_application = create_mcp_asgi_app(application.django_app)
         lifespan = ApplicationCommunicator(test_application, {"type": "lifespan"})
         await lifespan.send_input({"type": "lifespan.startup"})
@@ -151,7 +170,7 @@ def _call_mcp_tools(token_value, calls, *, client_ip="203.0.113.5"):
             ) as http_client:
                 async with streamable_http_client(
                     "http://localhost:8000/mcp/", http_client=http_client
-                ) as (read_stream, write_stream, _):
+                ) as (read_stream, write_stream):
                     async with ClientSession(read_stream, write_stream) as mcp_client:
                         await mcp_client.initialize()
                         return [
@@ -162,6 +181,8 @@ def _call_mcp_tools(token_value, calls, *, client_ip="203.0.113.5"):
             await lifespan.send_input({"type": "lifespan.shutdown"})
             assert await lifespan.receive_output() == {"type": "lifespan.shutdown.complete"}
             await lifespan.wait()
+            if "postgres_test" in settings.DATABASES:
+                await sync_to_async(close_thread_connections, thread_sensitive=True)()
 
     return anyio.run(exercise)
 
@@ -171,18 +192,453 @@ def _call_mcp_tool(token_value, tool_name, arguments=None, *, client_ip="203.0.1
 
 
 def _mcp_result_payload(result):
-    assert result.isError is not True
-    if result.structuredContent is not None:
-        structured = result.structuredContent
+    assert result.is_error is not True
+    if result.structured_content is not None:
+        structured = result.structured_content
         return structured["result"] if set(structured) == {"result"} else structured
     text_content = next(block.text for block in result.content if isinstance(block, TextContent))
     return json.loads(text_content)
 
 
+@pytest.mark.parametrize("wrapper_mode", ["authenticated", "public"])
+def test_mcp_audited_wrapper_preserves_success_and_protocol_errors(monkeypatch, wrapper_mode):
+    audit_events = []
+    monkeypatch.setattr(mcp_server_module, "_consume_mcp_rate_limit", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        mcp_server_module, "_write_mcp_audit", lambda *args: audit_events.append(args)
+    )
+    principal = SimpleNamespace(
+        client_id="mcp-wrapper-test-client",
+        user=SimpleNamespace(pk=314),
+        scopes={"gallery:read"},
+    )
+    principal_token = mcp_server_module._mcp_principal.set(principal)
+    client_ip_token = mcp_server_module._mcp_client_ip.set("203.0.113.25")
+    decorate = (
+        mcp_server_module._audited_tool("wrapper_test", ("gallery:read",))
+        if wrapper_mode == "authenticated"
+        else mcp_server_module._anonymous_public_app_tool("wrapper_test")
+    )
+
+    async def succeed():
+        return {"status": "ok"}
+
+    try:
+        result = anyio.run(decorate(succeed))
+    finally:
+        mcp_server_module._mcp_client_ip.reset(client_ip_token)
+        mcp_server_module._mcp_principal.reset(principal_token)
+
+    assert result == {"status": "ok"}
+    assert len(audit_events) == 1
+    assert audit_events[0][1] == MCPToolAuditEvent.Outcome.SUCCESS
+    assert audit_events[0][0] == "wrapper_test"
+    if wrapper_mode == "authenticated":
+        assert audit_events[0][4:] == ("mcp-wrapper-test-client", 314)
+    else:
+        assert audit_events[0][4:] == (None, None)
+
+    audit_events.clear()
+    principal_token = mcp_server_module._mcp_principal.set(principal)
+    client_ip_token = mcp_server_module._mcp_client_ip.set("203.0.113.25")
+    protocol_error = MCPError.from_error_data(
+        ErrorData(code=-32003, message="The access token does not grant the required scope.")
+    )
+
+    async def fail_with_protocol_error():
+        raise protocol_error
+
+    try:
+        with pytest.raises(MCPError, match="does not grant the required scope"):
+            anyio.run(decorate(fail_with_protocol_error))
+    finally:
+        mcp_server_module._mcp_client_ip.reset(client_ip_token)
+        mcp_server_module._mcp_principal.reset(principal_token)
+
+    assert len(audit_events) == 1
+    assert audit_events[0][1] == MCPToolAuditEvent.Outcome.ERROR
+
+
+def test_mcp_server_logs_unexpected_tool_failure_without_exposing_exception_details(caplog):
+    test_server = mcp_server_module.MCPServer("Unexpected failure test", version="test")
+    sensitive_detail = "private provider credential sentinel"
+
+    async def fail_unexpectedly():
+        raise RuntimeError(sensitive_detail)
+
+    test_server.add_tool(fail_unexpectedly, name="unexpected_failure")
+    caplog.set_level("ERROR")
+    result = anyio.run(
+        test_server._handle_call_tool,
+        None,
+        CallToolRequestParams(name="unexpected_failure", arguments={}),
+    )
+
+    assert isinstance(result, CallToolResult)
+    assert result.is_error is True
+    error_text = " ".join(block.text for block in result.content if isinstance(block, TextContent))
+    assert "Error executing tool unexpected_failure" in error_text
+    assert sensitive_detail not in error_text
+    assert sensitive_detail in caplog.text
+
+
+@pytest.mark.parametrize("wrapper_mode", ["authenticated", "public"])
+def test_mcp_audited_wrapper_propagates_unexpected_errors_and_audits_once(
+    monkeypatch, wrapper_mode
+):
+    audit_events = []
+    monkeypatch.setattr(mcp_server_module, "_consume_mcp_rate_limit", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        mcp_server_module, "_write_mcp_audit", lambda *args: audit_events.append(args)
+    )
+    principal = SimpleNamespace(
+        client_id="mcp-wrapper-test-client",
+        user=SimpleNamespace(pk=314),
+        scopes={"gallery:read"},
+    )
+    principal_token = mcp_server_module._mcp_principal.set(principal)
+    client_ip_token = mcp_server_module._mcp_client_ip.set("203.0.113.25")
+    decorate = (
+        mcp_server_module._audited_tool("wrapper_unexpected_test", ("gallery:read",))
+        if wrapper_mode == "authenticated"
+        else mcp_server_module._anonymous_public_app_tool("wrapper_unexpected_test")
+    )
+
+    async def fail_unexpectedly():
+        raise RuntimeError("unexpected tool failure sentinel")
+
+    try:
+        with pytest.raises(RuntimeError, match="unexpected tool failure sentinel"):
+            anyio.run(decorate(fail_unexpectedly))
+    finally:
+        mcp_server_module._mcp_client_ip.reset(client_ip_token)
+        mcp_server_module._mcp_principal.reset(principal_token)
+
+    assert len(audit_events) == 1
+    assert audit_events[0][0] == "wrapper_unexpected_test"
+    assert audit_events[0][1] == MCPToolAuditEvent.Outcome.ERROR
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_expected_application_errors_are_actionable_audited_tool_results(caplog):
+    cache.clear()
+    owner = get_user_model().objects.create_user(username="mcp-expected-error-owner")
+    caller = get_user_model().objects.create_user(username="mcp-expected-error-caller")
+    private_project = Project.objects.create(
+        owner=owner,
+        title="MCP expected error private project sentinel",
+        visibility=Project.Visibility.PRIVATE,
+    )
+    private_art_piece = ArtPiece.objects.create(
+        owner=owner,
+        title="MCP expected error private art sentinel",
+        prompt="private generated-art prompt sentinel",
+        engine=ArtPiece.Engine.SVG,
+        status=ArtPiece.Status.DRAFT,
+    )
+    missing_art_piece_id = str(uuid.uuid4())
+    token, oauth_application, _ = _create_mcp_access_token(
+        caller, scopes=("gallery:read", "projects:write")
+    )
+    missing_project_id = str(uuid.uuid4())
+    calls = [
+        ("list_public_gallery", {"cursor": "invalid-cursor"}),
+        ("list_public_pieces", {"gallery_type": "invalid"}),
+        ("list_public_pieces", {"engine": "invalid"}),
+        ("list_public_collections", {"sort": "invalid"}),
+        ("search_public", {"query": "x" * 101, "scope": "content"}),
+        ("get_project", {"project_id": "not-a-uuid"}),
+        ("get_project", {"project_id": missing_project_id}),
+        ("get_project", {"project_id": str(private_project.public_id)}),
+        ("get_public_art_piece", {"piece_id": "nope"}),
+        ("get_public_art_piece", {"piece_id": missing_art_piece_id}),
+        ("get_public_art_piece", {"piece_id": str(private_art_piece.public_id)}),
+    ]
+
+    caplog.set_level(logging.ERROR)
+    results = _call_mcp_tools(token, calls)
+
+    rest_not_found = (
+        'Error executing tool get_project: The REST operation returned HTTP 404 Not Found: '
+        '{"detail": "Not found."}'
+    )
+    expected_messages = [
+        "Error executing tool list_public_gallery: Invalid or expired cursor.",
+        (
+            "Error executing tool list_public_pieces: "
+            "type must be all, authored, pieces, collections, or generated."
+        ),
+        (
+            "Error executing tool list_public_pieces: "
+            "engine must be a supported public gallery engine."
+        ),
+        (
+            "Error executing tool list_public_collections: "
+            "sort must be newest, oldest, or item_count."
+        ),
+        "Error executing tool search_public: Invalid search query.",
+        "Error executing tool get_project: ['“not-a-uuid” is not a valid UUID.']",
+        rest_not_found,
+        rest_not_found,
+        "Error executing tool get_public_art_piece: Not found.",
+        "Error executing tool get_public_art_piece: Not found.",
+        "Error executing tool get_public_art_piece: Not found.",
+    ]
+    assert len(results) == len(expected_messages)
+    for result, expected_message in zip(results, expected_messages, strict=True):
+        assert isinstance(result, CallToolResult)
+        assert result.is_error is True
+        assert [block.text for block in result.content if isinstance(block, TextContent)] == [
+            expected_message
+        ]
+
+    error_log_records = [
+        record
+        for record in caplog.records
+        if record.name.startswith("mcp.") and record.levelno >= logging.ERROR
+    ]
+    assert error_log_records == []
+    assert not any(record.exc_info for record in caplog.records if record.name.startswith("mcp."))
+    serialized_results = json.dumps([result.model_dump() for result in results])
+    assert "MCP expected error private project sentinel" not in serialized_results
+    assert str(private_project.public_id) not in serialized_results
+    assert "MCP expected error private art sentinel" not in serialized_results
+    assert "private generated-art prompt sentinel" not in serialized_results
+    assert str(private_art_piece.public_id) not in serialized_results
+
+    audits = list(
+        MCPToolAuditEvent.objects.filter(
+            tool_name__in={tool_name for tool_name, _ in calls}
+        ).order_by("id")
+    )
+    assert len(audits) == len(calls)
+    assert [event.tool_name for event in audits] == [tool_name for tool_name, _ in calls]
+    assert all(event.outcome == MCPToolAuditEvent.Outcome.ERROR for event in audits)
+    assert all(event.client_id == oauth_application.client_id for event in audits)
+    assert all(event.user_id == caller.pk for event in audits)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_public_app_lookup_failures_are_safe_failed_tool_results(caplog):
+    owner = get_user_model().objects.create_user(username="mcp-public-error-owner")
+    private_project = Project.objects.create(
+        owner=owner,
+        title="MCP public app private project sentinel",
+        visibility=Project.Visibility.PRIVATE,
+    )
+    private_art_piece = ArtPiece.objects.create(
+        owner=owner,
+        title="MCP public app private art sentinel",
+        prompt="anonymous private generated-art prompt sentinel",
+        engine=ArtPiece.Engine.SVG,
+        status=ArtPiece.Status.DRAFT,
+    )
+    calls = [
+        ("show_public_project", {"project_id": "not-a-uuid"}),
+        ("show_public_project", {"project_id": str(uuid.uuid4())}),
+        ("show_public_project", {"project_id": str(private_project.public_id)}),
+        ("show_public_art_piece", {"piece_id": "nope"}),
+        ("show_public_art_piece", {"piece_id": str(uuid.uuid4())}),
+        ("show_public_art_piece", {"piece_id": str(private_art_piece.public_id)}),
+    ]
+
+    caplog.set_level(logging.ERROR)
+    _, _, _, results = _call_public_apps(calls)
+
+    expected_texts = [f"Error executing tool {tool_name}: Not found." for tool_name, _ in calls]
+    assert [
+        [block.text for block in result.content if isinstance(block, TextContent)]
+        for result in results
+    ] == [[message] for message in expected_texts]
+    assert all(result.is_error is True for result in results)
+    serialized_results = json.dumps([result.model_dump() for result in results])
+    assert "MCP public app private project sentinel" not in serialized_results
+    assert str(private_project.public_id) not in serialized_results
+    assert "MCP public app private art sentinel" not in serialized_results
+    assert "anonymous private generated-art prompt sentinel" not in serialized_results
+    assert str(private_art_piece.public_id) not in serialized_results
+    error_log_records = [
+        record
+        for record in caplog.records
+        if record.name.startswith("mcp.") and record.levelno >= logging.ERROR
+    ]
+    assert error_log_records == []
+    assert not any(record.exc_info for record in caplog.records if record.name.startswith("mcp."))
+
+    audited_tool_names = {tool_name for tool_name, _ in calls}
+    audits = list(MCPToolAuditEvent.objects.filter(tool_name__in=audited_tool_names).order_by("id"))
+    assert len(audits) == len(calls)
+    assert [event.tool_name for event in audits] == [tool_name for tool_name, _ in calls]
+    assert all(event.outcome == MCPToolAuditEvent.Outcome.ERROR for event in audits)
+    assert all(event.user_id is None and event.client_id is None for event in audits)
+
+
+@pytest.mark.parametrize("wrapper_mode", ["authenticated", "public"])
+def test_mcp_audited_wrapper_preserves_protocol_errors_and_audits_once(monkeypatch, wrapper_mode):
+    audit_events = []
+    monkeypatch.setattr(mcp_server_module, "_consume_mcp_rate_limit", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        mcp_server_module, "_write_mcp_audit", lambda *args: audit_events.append(args)
+    )
+    principal = SimpleNamespace(
+        client_id="mcp-protocol-test-client",
+        user=SimpleNamespace(pk=315),
+        scopes={"gallery:read"},
+    )
+    principal_token = mcp_server_module._mcp_principal.set(principal)
+    client_ip_token = mcp_server_module._mcp_client_ip.set("203.0.113.26")
+    decorate = (
+        mcp_server_module._audited_tool("protocol_error", ("gallery:read",))
+        if wrapper_mode == "authenticated"
+        else mcp_server_module._anonymous_public_app_tool("protocol_error")
+    )
+    test_server = mcp_server_module.MCPServer("Protocol boundary test", version="test")
+
+    async def fail_with_protocol_error():
+        raise MCPError.from_error_data(
+            ErrorData(code=-32042, message="Protocol boundary sentinel.")
+        )
+
+    test_server.add_tool(decorate(fail_with_protocol_error), name="protocol_error")
+    try:
+        with pytest.raises(MCPError, match="Protocol boundary sentinel"):
+            anyio.run(
+                test_server._handle_call_tool,
+                None,
+                CallToolRequestParams(name="protocol_error", arguments={}),
+            )
+    finally:
+        mcp_server_module._mcp_client_ip.reset(client_ip_token)
+        mcp_server_module._mcp_principal.reset(principal_token)
+
+    assert len(audit_events) == 1
+    assert audit_events[0][0] == "protocol_error"
+    assert audit_events[0][1] == MCPToolAuditEvent.Outcome.ERROR
+    if wrapper_mode == "authenticated":
+        assert audit_events[0][4:] == ("mcp-protocol-test-client", 315)
+    else:
+        assert audit_events[0][4:] == (None, None)
+
+
+@pytest.mark.parametrize("wrapper_mode", ["authenticated", "public"])
+def test_mcp_sdk_masks_logged_unexpected_tool_failure_and_audits_once(
+    monkeypatch, caplog, wrapper_mode
+):
+    audit_events = []
+    monkeypatch.setattr(mcp_server_module, "_consume_mcp_rate_limit", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        mcp_server_module, "_write_mcp_audit", lambda *args: audit_events.append(args)
+    )
+    principal = SimpleNamespace(
+        client_id="mcp-crash-test-client",
+        user=SimpleNamespace(pk=316),
+        scopes={"gallery:read"},
+    )
+    principal_token = mcp_server_module._mcp_principal.set(principal)
+    client_ip_token = mcp_server_module._mcp_client_ip.set("203.0.113.27")
+    decorate = (
+        mcp_server_module._audited_tool("unexpected_failure", ("gallery:read",))
+        if wrapper_mode == "authenticated"
+        else mcp_server_module._anonymous_public_app_tool("unexpected_failure")
+    )
+    test_server = mcp_server_module.MCPServer("Unexpected failure test", version="test")
+    sensitive_detail = "private provider credential sentinel"
+
+    async def fail_unexpectedly():
+        raise RuntimeError(sensitive_detail)
+
+    test_server.add_tool(decorate(fail_unexpectedly), name="unexpected_failure")
+    caplog.set_level(logging.ERROR)
+    try:
+        result = anyio.run(
+            test_server._handle_call_tool,
+            None,
+            CallToolRequestParams(name="unexpected_failure", arguments={}),
+        )
+    finally:
+        mcp_server_module._mcp_client_ip.reset(client_ip_token)
+        mcp_server_module._mcp_principal.reset(principal_token)
+
+    assert isinstance(result, CallToolResult)
+    assert result.is_error is True
+    error_text = " ".join(block.text for block in result.content if isinstance(block, TextContent))
+    assert error_text == "Error executing tool unexpected_failure"
+    assert sensitive_detail not in error_text
+    crash_records = [
+        record
+        for record in caplog.records
+        if record.name.startswith("mcp.") and record.levelno >= logging.ERROR
+    ]
+    assert len(crash_records) == 1
+    assert crash_records[0].exc_info is not None
+    assert sensitive_detail in caplog.text
+    assert len(audit_events) == 1
+    assert audit_events[0][0] == "unexpected_failure"
+    assert audit_events[0][1] == MCPToolAuditEvent.Outcome.ERROR
+
+
+@pytest.mark.skipif(
+    "postgres_test" not in settings.DATABASES,
+    reason="POSTGRES_TEST_DATABASE_URL is not set; skipping MCP PostgreSQL transport/audit test.",
+)
+@pytest.mark.django_db(databases=["default", "postgres_test"], transaction=True)
+def test_mcp_expected_error_transport_and_audit_use_disposable_postgres():
+    cache.clear()
+    _, _, _, predecessor_results = _call_public_apps(
+        [("show_public_project", {"project_id": str(uuid.uuid4())})]
+    )
+    assert predecessor_results[0].is_error is True
+
+    original_default_settings = dict(connections.databases["default"])
+
+    async def worker_default_vendor():
+        return await sync_to_async(lambda: connections["default"].vendor, thread_sensitive=True)()
+
+    with route_default_to_postgres_test():
+        assert connections["default"].vendor == "postgresql"
+        # The prior public-app request used this same thread-sensitive ORM worker.
+        # Its backend must be rebuilt from the routed settings, not retained SQLite.
+        assert anyio.run(worker_default_vendor) == "postgresql"
+        assert (
+            connections["default"].settings_dict["NAME"]
+            == connections.databases["postgres_test"]["NAME"]
+        )
+        user = get_user_model().objects.create_user(username="mcp-postgres-expected-error")
+        token, oauth_application, _ = _create_mcp_access_token(user, scopes=("gallery:read",))
+        result = _call_mcp_tool(token, "list_public_pieces", {"engine": "invalid"})
+        assert isinstance(result, CallToolResult)
+        assert result.is_error is True
+        assert [block.text for block in result.content if isinstance(block, TextContent)] == [
+            "Error executing tool list_public_pieces: "
+            "engine must be a supported public gallery engine."
+        ]
+
+    audits = list(
+        MCPToolAuditEvent.objects.using("postgres_test")
+        .filter(tool_name="list_public_pieces", user_id=user.pk)
+        .order_by("id")
+    )
+    assert len(audits) == 1
+    assert audits[0].outcome == MCPToolAuditEvent.Outcome.ERROR
+    assert audits[0].client_id == oauth_application.client_id
+    assert audits[0].user_id == user.pk
+    assert audits[0].duration_ms >= 0
+    assert len(audits[0].client_ip_fingerprint) == 64
+    assert connections.databases["default"] == original_default_settings
+    assert connections["default"].vendor == "sqlite"
+    assert anyio.run(worker_default_vendor) == "sqlite"
+
+    with pytest.raises(RuntimeError, match="routing cleanup probe"):
+        with route_default_to_postgres_test():
+            raise RuntimeError("routing cleanup probe")
+    assert connections.databases["default"] == original_default_settings
+    assert connections["default"].vendor == "sqlite"
+    assert anyio.run(worker_default_vendor) == "sqlite"
+
+
 def _call_public_apps(calls):
     async def exercise():
-        server._session_manager = None
-        public_apps_server._session_manager = None
+        _reset_mcp_session_managers()
         test_application = create_mcp_asgi_app(application.django_app)
         lifespan = ApplicationCommunicator(test_application, {"type": "lifespan"})
         await lifespan.send_input({"type": "lifespan.startup"})
@@ -195,23 +651,28 @@ def _call_public_apps(calls):
             ) as http_client:
                 async with streamable_http_client(
                     "http://localhost:8000/mcp/apps/", http_client=http_client
-                ) as (read_stream, write_stream, _):
+                ) as (read_stream, write_stream):
                     async with ClientSession(read_stream, write_stream) as mcp_client:
                         await mcp_client.initialize()
                         tools = await mcp_client.list_tools()
                         resources = await mcp_client.list_resources()
-                        resource = await mcp_client.read_resource(
-                            AnyUrl("ui://creatrweb/public-content")
-                        )
+                        resource = await mcp_client.read_resource("ui://creatrweb/public-content")
                         results = [
                             await mcp_client.call_tool(name, arguments or {})
                             for name, arguments in calls
                         ]
                         return tools, resources, resource, results
         finally:
-            await lifespan.send_input({"type": "lifespan.shutdown"})
-            assert await lifespan.receive_output() == {"type": "lifespan.shutdown.complete"}
-            await lifespan.wait()
+            try:
+                await lifespan.send_input({"type": "lifespan.shutdown"})
+                assert await lifespan.receive_output() == {"type": "lifespan.shutdown.complete"}
+                await lifespan.wait()
+            finally:
+                if "postgres_test" in settings.DATABASES:
+                    # ORM connections were opened on asgiref's thread-sensitive worker.
+                    # Close and evict that worker's backend wrapper before another test
+                    # changes the shared default alias from SQLite to PostgreSQL.
+                    await sync_to_async(close_thread_connections, thread_sensitive=True)()
 
     return anyio.run(exercise)
 
@@ -292,7 +753,6 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check(monkeyp
                 async with streamable_http_client(client_url, http_client=http_client) as (
                     read_stream,
                     write_stream,
-                    _,
                 ):
                     async with ClientSession(read_stream, write_stream) as client:
                         await client.initialize()
@@ -355,43 +815,44 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check(monkeyp
                             ]
                             row = matching_rows[-1]
                             assert all(
-                                prop in row for prop in tool.inputSchema.get("properties", {})
+                                prop in row for prop in tool.input_schema.get("properties", {})
                             ), (
                                 f"{tool.name} schema fields missing from docs: "
-                                f"{tool.inputSchema.get('properties', {})}; row={row}"
+                                f"{tool.input_schema.get('properties', {})}; row={row}"
                             )
                         gallery_tool = next(
                             tool for tool in listing.tools if tool.name == "list_public_gallery"
                         )
-                        assert set(gallery_tool.inputSchema["properties"]) == {
+                        assert set(gallery_tool.input_schema["properties"]) == {
                             "cursor",
                             "page_size",
                         }
-                        assert (
-                            gallery_tool.inputSchema["properties"]["page_size"]["type"] == "integer"
-                        )
+                        page_size_type = gallery_tool.input_schema["properties"]["page_size"][
+                            "type"
+                        ]
+                        assert page_size_type == "integer"
                         assert gallery_tool.description is not None
                         assert "newest-published-first" in gallery_tool.description
-                        assert gallery_tool.inputSchema.get("required", []) == []
+                        assert gallery_tool.input_schema.get("required", []) == []
                         resources = await client.list_resources()
                         assert {resource.name for resource in resources.resources} == {
                             "public_gallery",
                         }
                         templates = await client.list_resource_templates()
-                        assert {template.name for template in templates.resourceTemplates} == {
+                        assert {template.name for template in templates.resource_templates} == {
                             "public_project",
                         }
 
                         result = await client.call_tool("health_check")
-                        assert result.isError is not True
-                        assert result.structuredContent == {
+                        assert result.is_error is not True
+                        assert result.structured_content == {
                             "status": "ok",
                             "database": "ok",
                             "cache": "ok",
                         }
                         identity = await client.call_tool("whoami")
-                        assert identity.isError is not True
-                        assert identity.structuredContent == {
+                        assert identity.is_error is not True
+                        assert identity.structured_content == {
                             "user_id": str(user.pk),
                             "username": user.get_username(),
                             "client_id": oauth_application.client_id,
@@ -400,7 +861,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check(monkeyp
                         gallery_result = await client.call_tool(
                             "list_public_gallery", {"page_size": 0}
                         )
-                        assert gallery_result.isError is not True
+                        assert gallery_result.is_error is not True
                         gallery_content = gallery_result.content[0]
                         assert isinstance(gallery_content, TextContent)
                         assert json.loads(gallery_content.text) == {
@@ -408,7 +869,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check(monkeyp
                             "next_cursor": None,
                             "has_more": False,
                         }
-                        gallery_resource = await client.read_resource(AnyUrl("gallery://public"))
+                        gallery_resource = await client.read_resource("gallery://public")
                         gallery_resource_content = gallery_resource.contents[0]
                         assert isinstance(gallery_resource_content, TextResourceContents)
                         assert json.loads(gallery_resource_content.text) == {
@@ -419,7 +880,7 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check(monkeyp
                         pieces_tool = next(
                             tool for tool in listing.tools if tool.name == "list_public_pieces"
                         )
-                        assert set(pieces_tool.inputSchema["properties"]) == {
+                        assert set(pieces_tool.input_schema["properties"]) == {
                             "gallery_type",
                             "engine",
                             "cursor",
@@ -437,9 +898,9 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check(monkeyp
                         assert isinstance(pieces_page["engine_catalog"], list)
                         for _ in range(56):
                             result = await client.call_tool("health_check")
-                            assert result.isError is not True
+                            assert result.is_error is not True
                         limited = await client.call_tool("health_check")
-                        assert limited.isError is True
+                        assert limited.is_error is True
                         assert "retry_after_seconds" in " ".join(
                             block.text for block in limited.content if block.type == "text"
                         )
@@ -504,6 +965,53 @@ def test_mcp_conformance_client_initializes_lists_and_calls_health_check(monkeyp
     assert all(len(event.client_ip_fingerprint) == 64 for event in audits)
     assert "203.0.113.5" not in json.dumps([event.client_ip_fingerprint for event in audits])
     assert len({event.client_ip_fingerprint for event in audits}) == 1
+
+
+@pytest.mark.django_db(transaction=True)
+def test_mcp_asgi_supports_current_discovery_protocol_and_preserves_identity():
+    cache.clear()
+    user = get_user_model().objects.create_user(username="mcp-current-protocol-client")
+    bearer_token, _, _ = _create_mcp_access_token(user)
+    _reset_mcp_session_managers()
+
+    async def exercise_client() -> None:
+        test_application = create_mcp_asgi_app(application.django_app)
+        lifespan = ApplicationCommunicator(test_application, {"type": "lifespan"})
+        await lifespan.send_input({"type": "lifespan.startup"})
+        assert await lifespan.receive_output() == {"type": "lifespan.startup.complete"}
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=test_application),
+                base_url="http://localhost:8000",
+                headers={
+                    "Authorization": f"Bearer {bearer_token}",
+                    "Origin": "http://localhost:8000",
+                    "X-Forwarded-For": "203.0.113.5",
+                },
+            ) as http_client:
+                transport = streamable_http_client(
+                    "http://localhost:8000/mcp/", http_client=http_client
+                )
+                async with Client(transport) as mcp_client:
+                    assert mcp_client.protocol_version == "2026-07-28"
+                    assert mcp_client.server_info is not None
+                    assert mcp_client.server_info.name == "Creatrweb Public MCP"
+                    # MCP 1.x exposed its installed SDK version here; keep that
+                    # existing protocol metadata stable across this migration.
+                    assert mcp_client.server_info.version == "1.30.0"
+                    result = await mcp_client.call_tool("health_check")
+                    assert result.is_error is not True
+                    assert result.structured_content == {
+                        "status": "ok",
+                        "database": "ok",
+                        "cache": "ok",
+                    }
+        finally:
+            await lifespan.send_input({"type": "lifespan.shutdown"})
+            assert await lifespan.receive_output() == {"type": "lifespan.shutdown.complete"}
+            await lifespan.wait()
+
+    anyio.run(exercise_client)
 
 
 @pytest.mark.django_db(transaction=True)
@@ -613,10 +1121,10 @@ def test_anonymous_mcp_apps_exposes_only_public_content_and_sandboxed_widget():
         if tool.name in {"show_public_3d_project", "show_public_art_piece"}
     )
     assert {str(item.uri) for item in resources.resources} == {"ui://creatrweb/public-content"}
-    assert resources.resources[0].mimeType == "text/html;profile=mcp-app"
+    assert resources.resources[0].mime_type == "text/html;profile=mcp-app"
     widget_content = resource.contents[0]
     assert isinstance(widget_content, TextResourceContents)
-    assert widget_content.mimeType == "text/html;profile=mcp-app"
+    assert widget_content.mime_type == "text/html;profile=mcp-app"
     assert widget_content.meta["ui"]["csp"] == {
         "connectDomains": [],
         "resourceDomains": [],
@@ -640,17 +1148,17 @@ def test_anonymous_mcp_apps_exposes_only_public_content_and_sandboxed_widget():
     assert project_result["project"]["id"] == str(public.public_id)
     assert project_result["site_origin"] == "http://localhost:8000"
     assert project_result["viewer_url"].startswith("http://localhost:8000/")
-    assert results[2].isError is True
+    assert results[2].is_error is True
     project_3d_result = _mcp_result_payload(results[3])
     assert project_3d_result["project"]["id"] == str(public_3d.public_id)
     assert project_3d_result["viewer_url"].startswith("http://localhost:8000/")
     assert project_3d_result["site_origin"] == "http://localhost:8000"
-    assert results[4].isError is True
+    assert results[4].is_error is True
     art_piece_result = _mcp_result_payload(results[5])
     assert art_piece_result["piece"]["public_id"] == str(public_art_piece.public_id)
     assert "private prompt sentinel" not in json.dumps(art_piece_result)
     assert art_piece_result["site_origin"] == "http://localhost:8000"
-    assert results[6].isError is True
+    assert results[6].is_error is True
     audit_rows = MCPToolAuditEvent.objects.filter(
         tool_name__in=(
             "show_public_gallery",
@@ -760,16 +1268,16 @@ def test_user_token_cannot_read_another_users_private_data_through_any_tool():
             "get_public_art_piece",
             "get_public_collection",
         }:
-            assert result.isError is True
+            assert result.is_error is True
         else:
-            assert result.isError is not True
+            assert result.is_error is not True
             serialized = json.dumps(result.model_dump())
             assert private_title not in serialized
             assert "private prompt sentinel" not in serialized
             assert "mcp-private-asset-sentinel" not in serialized
             if tool_name == "whoami":
-                assert result.structuredContent["user_id"] == str(caller.pk)
-                assert result.structuredContent["username"] == caller.get_username()
+                assert result.structured_content["user_id"] == str(caller.pk)
+                assert result.structured_content["username"] == caller.get_username()
                 assert owner.get_username() not in serialized
 
 
@@ -827,13 +1335,13 @@ def test_mcp_enforces_tool_scope_and_exposes_identity_only_for_token_user():
         [("list_public_gallery", {"page_size": 1}), ("whoami", {})],
     )
     gallery_result = results[0]
-    assert gallery_result.isError is True
+    assert gallery_result.is_error is True
     assert "does not grant the required scope" in json.dumps(gallery_result.model_dump())
 
     identity = results[1]
-    assert identity.isError is not True
-    assert identity.structuredContent["user_id"] == str(user.pk)
-    assert identity.structuredContent["scopes"] == ["projects:write"]
+    assert identity.is_error is not True
+    assert identity.structured_content["user_id"] == str(user.pk)
+    assert identity.structured_content["scopes"] == ["projects:write"]
 
 
 @pytest.mark.django_db(transaction=True)
@@ -881,7 +1389,7 @@ def test_mcp_piece_intake_matches_rest_and_enforces_transport_limit_and_scope(mo
         "intake_piece_package",
         {"package_base64": base64.b64encode(invalid).decode()},
     )
-    assert mcp_invalid.isError is True
+    assert mcp_invalid.is_error is True
     assert rest_invalid.json()["detail"] in json.dumps(mcp_invalid.model_dump())
 
     malicious_output = io.BytesIO()
@@ -897,14 +1405,14 @@ def test_mcp_piece_intake_matches_rest_and_enforces_transport_limit_and_scope(mo
         {"package_base64": base64.b64encode(malicious).decode()},
     )
     assert rest_malicious.status_code == 400
-    assert mcp_malicious.isError is True
+    assert mcp_malicious.is_error is True
     assert rest_malicious.json()["detail"] in json.dumps(mcp_malicious.model_dump())
 
     from scenes.mcp.piece_intake_tools import MCP_PACKAGE_MAX_BYTES
 
     too_large = base64.b64encode(b"x" * (MCP_PACKAGE_MAX_BYTES + 1)).decode()
     limited = _call_mcp_tool(token, "intake_piece_package", {"package_base64": too_large})
-    assert limited.isError is True
+    assert limited.is_error is True
     assert "HTTP 413" in json.dumps(limited.model_dump())
     assert "180 KiB" in json.dumps(limited.model_dump())
 
@@ -918,7 +1426,7 @@ def test_mcp_piece_intake_matches_rest_and_enforces_transport_limit_and_scope(mo
             "piece_id": rest_response.json()["public_id"],
         },
     )
-    assert foreign_target.isError is True
+    assert foreign_target.is_error is True
     assert "HTTP 404" in json.dumps(foreign_target.model_dump())
     assert "MCP intake fixture" not in json.dumps(foreign_target.model_dump())
     gallery_reader = get_user_model().objects.create_user(
@@ -930,7 +1438,7 @@ def test_mcp_piece_intake_matches_rest_and_enforces_transport_limit_and_scope(mo
         "intake_piece_package",
         {"package_base64": base64.b64encode(package).decode()},
     )
-    assert denied.isError is True
+    assert denied.is_error is True
     assert "does not grant the required scope" in json.dumps(denied.model_dump())
     assert Project.objects.filter(owner=gallery_reader).count() == 0
 
@@ -971,7 +1479,7 @@ def test_mcp_delete_version_requires_confirmation_scopes_and_owner_and_matches_r
         "delete_version",
         {"project_id": mcp_project_id, "version_id": historical_id, "confirm": "wrong"},
     )
-    assert mismatch.isError is True
+    assert mismatch.is_error is True
     assert "HTTP 400" in json.dumps(mismatch.model_dump())
     assert not SceneVersion.objects.get(pk=historical_id).is_deleted
 
@@ -980,8 +1488,8 @@ def test_mcp_delete_version_requires_confirmation_scopes_and_owner_and_matches_r
         "delete_version",
         {"project_id": mcp_project_id, "version_id": historical_id, "confirm": confirmed},
     )
-    assert deleted.isError is not True
-    assert deleted.structuredContent == {"result": None}
+    assert deleted.is_error is not True
+    assert deleted.structured_content == {"result": None}
     assert SceneVersion.objects.get(pk=historical_id).is_deleted
     assert not SceneVersion.objects.get(pk=current_id).is_deleted
     assert SceneVersion.objects.get(pk=rest_version_id).is_deleted
@@ -994,7 +1502,7 @@ def test_mcp_delete_version_requires_confirmation_scopes_and_owner_and_matches_r
             "confirm": f"{mcp_project_id}:{current_id}",
         },
     )
-    assert current.isError is True
+    assert current.is_error is True
     assert "cannot be soft-deleted" in json.dumps(current.model_dump())
 
     restored = _call_mcp_tool(
@@ -1018,7 +1526,7 @@ def test_mcp_delete_version_requires_confirmation_scopes_and_owner_and_matches_r
             "confirm": f"{mcp_project_id}:{current_id}",
         },
     )
-    assert foreign.isError is True
+    assert foreign.is_error is True
     assert "HTTP 404" in json.dumps(foreign.model_dump())
     assert "MCP delete history" not in json.dumps(foreign.model_dump())
 
@@ -1032,7 +1540,7 @@ def test_mcp_delete_version_requires_confirmation_scopes_and_owner_and_matches_r
             "confirm": f"{mcp_project_id}:{current_id}",
         },
     )
-    assert scope_denied.isError is True
+    assert scope_denied.is_error is True
     assert "does not grant the required scope" in json.dumps(scope_denied.model_dump())
 
     destructive_without_project_write, _, _ = _create_mcp_access_token(
@@ -1047,7 +1555,7 @@ def test_mcp_delete_version_requires_confirmation_scopes_and_owner_and_matches_r
             "confirm": f"{mcp_project_id}:{current_id}",
         },
     )
-    assert project_scope_denied.isError is True
+    assert project_scope_denied.is_error is True
     assert "does not grant the required scope" in json.dumps(project_scope_denied.model_dump())
 
     audit_rows = MCPToolAuditEvent.objects.filter(tool_name="delete_version")
@@ -1265,7 +1773,7 @@ def test_mcp_project_tools_block_non_owner_private_access_and_enforce_scope():
         ),
     ]
     non_owner_results = _call_mcp_tools(caller_token, private_calls)
-    assert all(result.isError is True for result in non_owner_results)
+    assert all(result.is_error is True for result in non_owner_results)
     assert all("HTTP 404" in json.dumps(result.model_dump()) for result in non_owner_results)
     serialized_errors = json.dumps([result.model_dump() for result in non_owner_results])
     assert private_title not in serialized_errors
@@ -1309,7 +1817,7 @@ def test_mcp_project_tools_block_non_owner_private_access_and_enforce_scope():
         ),
     ]
     scope_results = _call_mcp_tools(caller_gallery_token, scope_calls)
-    assert all(result.isError is True for result in scope_results)
+    assert all(result.is_error is True for result in scope_results)
     assert all("required scope" in json.dumps(result.model_dump()) for result in scope_results)
 
 
@@ -1414,7 +1922,7 @@ def test_mcp_ai_tools_match_rest_contract_and_require_explicit_accept(monkeypatc
     assert isinstance(mcp_art["code"], str)
 
     invalid = _call_mcp_tool(token, "ai_create_scene", {"project_id": project_id, "prompt": ""})
-    assert invalid.isError is True
+    assert invalid.is_error is True
     assert "HTTP 400" in json.dumps(invalid.model_dump())
 
     from ai_provider.e2e_scenario import _current_scenario
@@ -1430,7 +1938,7 @@ def test_mcp_ai_tools_match_rest_contract_and_require_explicit_accept(monkeypatc
     finally:
         _current_scenario.reset(scenario_token)
     provider_failure_text = json.dumps(provider_failure.model_dump())
-    assert provider_failure.isError is True
+    assert provider_failure.is_error is True
     assert "HTTP 504" in provider_failure_text
     assert "timeout" in provider_failure_text
 
@@ -1496,7 +2004,7 @@ def test_mcp_ai_tools_preserve_private_404_and_scope_boundaries(monkeypatch):
         ("ai_get_run", {"run_id": run_response.json()["id"]}),
     ]
     private_results = _call_mcp_tools(caller_token, private_calls)
-    assert all(result.isError is True for result in private_results)
+    assert all(result.is_error is True for result in private_results)
     assert all("HTTP 404" in json.dumps(result.model_dump()) for result in private_results)
     assert "Private owner run" not in json.dumps(
         [result.model_dump() for result in private_results]
@@ -1512,7 +2020,7 @@ def test_mcp_ai_tools_preserve_private_404_and_scope_boundaries(monkeypatch):
         )
     ]
     scope_results = _call_mcp_tools(gallery_token, ai_scope_calls)
-    assert all(result.isError is True for result in scope_results)
+    assert all(result.is_error is True for result in scope_results)
     assert all("required scope" in json.dumps(result.model_dump()) for result in scope_results)
 
     ai_only_token, _, _ = _create_mcp_access_token(caller, scopes=("ai:use",))
@@ -1526,7 +2034,7 @@ def test_mcp_ai_tools_preserve_private_404_and_scope_boundaries(monkeypatch):
             "base_version_id": version_id,
         },
     )
-    assert accept_without_write.isError is True
+    assert accept_without_write.is_error is True
     assert "required scope" in json.dumps(accept_without_write.model_dump())
 
 
@@ -1546,7 +2054,7 @@ def test_mcp_ai_tools_surface_rest_quota_errors(monkeypatch):
     mcp_error = _call_mcp_tool(token, "ai_create_scene", {"project_id": project_id, **body})
     assert rest_error.status_code == 429
     assert rest_error.json()["error"] == "quota_exceeded"
-    assert mcp_error.isError is True
+    assert mcp_error.is_error is True
     assert "HTTP 429" in json.dumps(mcp_error.model_dump())
     assert "quota_exceeded" in json.dumps(mcp_error.model_dump())
 
@@ -1708,7 +2216,7 @@ def test_mcp_3d_tools_match_rest_contract_and_validate_scene3d(monkeypatch):
             "base_version_id": mcp_accept["id"],
         },
     )
-    assert invalid_scene.isError is True
+    assert invalid_scene.is_error is True
     assert "HTTP 422" in json.dumps(invalid_scene.model_dump())
     assert "invalid_structured_output" in json.dumps(invalid_scene.model_dump())
 
@@ -1764,7 +2272,7 @@ def test_mcp_3d_tools_preserve_non_owner_404_and_enforce_scope(monkeypatch):
         ),
     ]
     private_results = _call_mcp_tools(caller_token, private_calls)
-    assert all(result.isError is True for result in private_results)
+    assert all(result.is_error is True for result in private_results)
     assert all("HTTP 404" in json.dumps(result.model_dump()) for result in private_results)
 
     gallery_token, _, _ = _create_mcp_access_token(caller, scopes=("gallery:read",))
@@ -1774,7 +2282,7 @@ def test_mcp_3d_tools_preserve_non_owner_404_and_enforce_scope(monkeypatch):
         *private_calls,
     ]
     scope_results = _call_mcp_tools(gallery_token, all_scope_calls)
-    assert all(result.isError is True for result in scope_results)
+    assert all(result.is_error is True for result in scope_results)
     assert all("required scope" in json.dumps(result.model_dump()) for result in scope_results)
 
     ai_only_token, _, _ = _create_mcp_access_token(caller, scopes=("ai:use",))
@@ -1788,7 +2296,7 @@ def test_mcp_3d_tools_preserve_non_owner_404_and_enforce_scope(monkeypatch):
             "base_version_id": base_version_id,
         },
     )
-    assert accept_without_write.isError is True
+    assert accept_without_write.is_error is True
     assert "required scope" in json.dumps(accept_without_write.model_dump())
 
     own_projects = _mcp_result_payload(_call_mcp_tool(caller_token, "list_my_3d_projects"))
@@ -1812,18 +2320,18 @@ def test_mcp_authenticated_rate_limit_is_per_oauth_client_and_user(monkeypatch):
         [("health_check", {}) for _ in range(60)],
         client_ip="203.0.113.10",
     )
-    assert all(result.isError is not True for result in first_sixty)
+    assert all(result.is_error is not True for result in first_sixty)
 
     same_user_other_client = _call_mcp_tool(
         token_other_client, "health_check", client_ip="203.0.113.11"
     )
-    assert same_user_other_client.isError is True
+    assert same_user_other_client.is_error is True
     assert "retry_after_seconds" in json.dumps(same_user_other_client.model_dump())
 
     same_client_other_user = _call_mcp_tool(
         token_other_user, "health_check", client_ip="203.0.113.12"
     )
-    assert same_client_other_user.isError is True
+    assert same_client_other_user.is_error is True
     assert "retry_after_seconds" in json.dumps(same_client_other_user.model_dump())
 
     audits = list(MCPToolAuditEvent.objects.order_by("id"))
@@ -1992,7 +2500,7 @@ def test_public_2d_tools_match_rest_payloads_and_hide_ineligible_projects():
     assert rest_3d.status_code == 200
     assert _public_3d_project(str(public_3d.public_id)) == rest_3d.json()
     private_3d = Project3D.objects.create(owner=owner, title="MCP private 3D")
-    with pytest.raises(Http404):
+    with pytest.raises(ToolError, match=r"Not found\."):
         _public_3d_project(str(private_3d.public_id))
 
     generated = ArtPiece.objects.create(
@@ -2021,7 +2529,7 @@ def test_public_2d_tools_match_rest_payloads_and_hide_ineligible_projects():
         prompt="draft prompt",
         engine=ArtPiece.Engine.SVG,
     )
-    with pytest.raises(Http404):
+    with pytest.raises(ToolError, match=r"Not found\."):
         _public_generated_piece(str(draft_piece.public_id))
 
     PublicProfile.objects.create(user=owner, handle="mcp-public-owner", is_public=True)

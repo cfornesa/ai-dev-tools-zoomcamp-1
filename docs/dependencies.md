@@ -44,12 +44,11 @@ JSON-response mode for Replit autoscale compatibility.
   available independently.
 - **Section 8 answer / approval:** approved by the owner in #1205; the SDK
   does not transmit runtime data to its publisher or another third party.
-- **Version:** locked at `mcp==1.30.0` with the compatible range `mcp<2`.
-  The currently resolved 2.x major has renamed/removed
-  `mcp.server.fastmcp.FastMCP`; the installed 1.30.0 API was inspected and
-  confirmed to expose `FastMCP`, decorated `tool()`,
-  `streamable_http_app()`, `stateless_http`, `json_response`, request-size
-  limits, and transport-security settings as required by the owner decision.
+- **Version:** declared as `mcp>=2.3.0,<3` and locked at `mcp==2.3.0` in
+  `backend/uv.lock`. PR #1311 migrates the integration to `MCPServer` and
+  `ToolError`; expected tool failures retain the established
+  `Error executing tool <name>: <message>` result with `is_error=true`.
+  Streamable HTTP remains stateless and uses JSON responses.
 
 ## Self-hosted presentation fonts (#643)
 

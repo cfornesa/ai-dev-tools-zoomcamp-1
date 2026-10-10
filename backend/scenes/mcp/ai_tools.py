@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from asgiref.sync import sync_to_async
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from scenes.ai_api import AIAcceptProposalView, AICreateSceneView, AIEditSceneView
 from scenes.ai_runs_api import AIRunDetailView, AIRunListCreateView
@@ -17,7 +17,7 @@ __all__ = ["register_ai_tools"]
 
 
 def register_ai_tools(  # noqa: C901
-    server: FastMCP,
+    server: MCPServer,
     audited_tool: Callable[..., Callable[..., Any]],
     current_principal: Callable[[tuple[str, ...]], Any],
 ) -> None:

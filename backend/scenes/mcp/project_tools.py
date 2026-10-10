@@ -8,10 +8,10 @@ from collections.abc import Callable
 from typing import Any
 
 from asgiref.sync import sync_to_async
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import Http404, HttpRequest
-from mcp.server.fastmcp import FastMCP
-from mcp.shared.exceptions import McpError
-from mcp.types import ErrorData
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
@@ -38,21 +38,13 @@ def _json_data(value: Any) -> Any:
     return json.loads(JSONRenderer().render(value))
 
 
-def _rest_error(http_status: int, body: Any) -> McpError:
+def _rest_error(http_status: int, body: Any) -> ToolError:
     serialized_body = json.dumps(_json_data(body), ensure_ascii=False, sort_keys=True)
     if http_status == 404:
         message = f"The REST operation returned HTTP 404 Not Found: {serialized_body}"
-        code = -32004
     else:
         message = f"The REST operation failed with HTTP {http_status}: {serialized_body}"
-        code = -32000
-    return McpError(
-        ErrorData(
-            code=code,
-            message=message,
-            data={"http_status": http_status, "body": _json_data(body)},
-        )
-    )
+    return ToolError(message)
 
 
 def _invoke_rest_view(
@@ -89,6 +81,10 @@ def _invoke_rest_view(
         raise _rest_error(404, {"detail": "Not found."}) from exc
     except ValidationError as exc:
         raise _rest_error(400, exc.detail) from exc
+    except DjangoValidationError as exc:
+        # MCP 1.x exposed this field error as str(exc), rather than as a REST
+        # response envelope. Keep that established, actionable client text.
+        raise ToolError(str(exc)) from exc
 
     if response.status_code >= 400:
         raise _rest_error(response.status_code, response.data)
@@ -98,7 +94,7 @@ def _invoke_rest_view(
 
 
 def register_project_tools(  # noqa: C901
-    server: FastMCP,
+    server: MCPServer,
     audited_tool: Callable[..., Callable[..., Any]],
     current_principal: Callable[[tuple[str, ...]], Any],
 ) -> None:

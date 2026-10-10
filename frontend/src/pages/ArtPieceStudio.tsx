@@ -57,7 +57,9 @@ function errorMessage(err: unknown): string {
     if (body?.error === 'personal_key_required') {
       return 'Configure your personal Mistral key in Account settings before generating an art piece.';
     }
-    if (typeof body?.detail === 'string') return body.detail;
+    if (typeof body?.detail === 'string') {
+      return body.guidance ? `${body.detail} ${body.guidance}` : body.detail;
+    }
     if (body?.detail != null) {
       try {
         return JSON.stringify(body.detail);

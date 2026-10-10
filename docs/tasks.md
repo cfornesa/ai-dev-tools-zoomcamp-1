@@ -26693,3 +26693,61 @@ Stage 2a. Status: PROPOSED; hand to the PM pass for grooming. Focused checks:
 `cd frontend && npx playwright test e2e/localFirstCreate2d.spec.ts
 --project=chromium`; batch checks: `make check` plus the focused Playwright
 command (E2E is outside `make check`).
+
+### 2026-10-10 — ACTIVE implementation candidate: #1314 and #1315
+
+This owner-authorized isolated implementation wave covers only the two retry
+policy repairs. Base: `adcb737e4015138ecc651a139768c1b34f785273` (verified as
+current `origin/main` and GitHub `main` on 2026-10-10). Branch/worktree:
+`codex/implement-art-retry-policy-1314-1315`. The primary checkout's dirty
+files were preserved. #1316's finding, addendum comment
+<https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1316#issuecomment-6095261501>,
+and QA comment
+<https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1316#issuecomment-6095261785>
+were read; its accepted prerequisite remains open because closure is a
+separate owner step.
+
+| Issue                                                                    | Status / scope                                                                     | Current behavior characterized before edits                                                                                                                                                                         | Candidate behavior                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#1314](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1314) | ACTIVE; preference-gated refinement retries and focused copy                       | No preference: 1 model operation, 1 loop attempt/rate increment/quota unit. Disabled with `max_retries=3`: 2 operations/attempts/rate increments/quota units. Enabled with 1 retry: 2. Enabled above cap: 3.        | Missing/off: 1 operation and `run.max_retries=0`; enabled: `min(max_retries, 2)+1`. `run.attempts` remains loop iterations. Existing per-admitted-iteration rate/quota charging remains.                                                                                            |
+| [#1315](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1315) | ACTIVE; generation preference gate, two-repair hard ceiling, model-safe escalation | Retry-off/missing preference still repaired invalid output (2 operations in the characterized request). `ART_PIECE_MAX_REPAIRS=5` allowed 6 operations; invalid text fell back to 3; negative value clamped to one. | Missing/off: one operation and no repair. Enabled: at most `1 + min(preference, environment, 2)`. Escalation shares the budget and is validated against explicit selection and active generated-art catalog capability. Generation still charges one quota unit only after success. |
+
+**Impact matrix (this wave):** `backend/scenes/art_piece_refine.py` (#1314; run
+and quota loop semantics), `backend/ai_provider/art_piece_provider.py` and
+`backend/scenes/art_piece_api.py` (#1315; operation budget/escalation), the
+four matching backend test modules, `docs/api.md` (active behavior contract),
+`frontend/src/pages/ArtPieceEditor.tsx` and
+`frontend/src/pages/artPieceRefineFailureMessage.ts` (reason-aware failure
+guidance), its tests, `frontend/src/pages/ArtPieceStudio.tsx` (display
+additive API guidance), and `frontend/src/pages/AccountSettings.tsx` (copy).
+Cross-issue
+dependency surfaces include #1317 telemetry, #1334 reference behavior, and
+#1294 runtime-invalid refinement preservation; none of those implementations is
+included in this wave. #1294’s enabled retry and source-preservation behavior
+remain covered by the focused refinement tests; its browser runtime regression
+remains separate. Its broad “existing bounded retry” wording is intentionally
+refined by #1314 for the disabled-preference case. There is
+no migration, SDK retry/redirect change, quota-policy harmonization, or new
+retry control.
+
+**Repair verification (2026-10-10):** the focused four-file backend suite
+passed 146 tests; the full backend suite passed 2,099 tests with 45 PostgreSQL
+health tests skipped because no disposable PostgreSQL URL was configured.
+Ruff check/format and mypy passed (310 files formatted; 424 source files
+type-checked). The frontend focused suite passed 44 tests across three files;
+the full frontend suite passed 326 files / 3,336 tests, followed by all seven
+E2E-ratchet tests. Typecheck and changed-file Prettier passed; oxlint completed
+with repository warnings and none in changed lines. The ArtPieceEditor
+large-page component harness is absent; its production-used pure message
+helper has direct tests, while AccountSettings and ArtPieceStudio wiring have
+mounted component assertions. The supplied seam matrix passed 42 cases, and
+all ten scoped mutation checks were killed, including M1, M5, and M9.
+
+Verification used the inspected Claude scratch Python environment at
+`/private/tmp/claude-503/-Users-Fornesus-Code-ai-dev-tools-zoomcamp-1/91c95406-1837-432c-830e-acb6b42532c8/scratchpad/s4/venv/bin/python`, matching
+`backend/uv.lock` SHA-256
+`52c9c639473d248672c92b6578ef4f3af3ed782a1b855fa41ef14980052558fe`; it does
+not use the primary checkout's stale `.venv`. Provider calls are mocked. No
+server-side pre-invocation cancellation path was found; this candidate does
+not add one or claim that a client abort stops server execution. The candidate
+remains uncommitted and unpushed; no GitHub state was changed.

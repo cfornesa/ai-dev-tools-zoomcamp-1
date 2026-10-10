@@ -1052,10 +1052,9 @@ function AIRetrySettings() {
   return (
     <section className="account-settings-card">
       <p>
-        When an AI generation fails with a retryable error (an invalid response, a timeout, or a
-        provider failure), automatically retry instead of leaving you to notice and resubmit.
-        Retries still count against your existing AI request limits. Off by default — while off, we
-        ask you to confirm before each retry.
+        When an eligible AI generation or art-piece refinement fails, automatically retry within the
+        limits for that feature. Off by default — when off, the failed action stops without an
+        automatic retry; submit again to try it.
       </p>
       {!loaded && !error && <p>Loading your automatic retry setting…</p>}
       {loaded && (

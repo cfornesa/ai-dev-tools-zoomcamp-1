@@ -11,6 +11,7 @@ these tests need no `Project` fixture at all.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -20,7 +21,7 @@ from rest_framework.test import APIClient
 
 import scenes.art_piece_api as art_piece_api
 from ai_provider.art_piece_provider import ArtPieceProvider
-from scenes.models import AIPersona, AIProviderModel, ProviderCredential
+from scenes.models import AIPersona, AIProviderModel, AIRetryPreference, ProviderCredential
 
 URL = "/api/ai/art-pieces/generate/"
 
@@ -46,6 +47,17 @@ def owner_client(owner):
 
 def _use_provider(monkeypatch, provider):
     monkeypatch.setattr(art_piece_api, "get_art_piece_provider", lambda: provider)
+
+
+def _bad_output_provider(operations):
+    def handler(**kwargs):
+        operations.append(kwargs)
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1),
+            choices=[SimpleNamespace(message=SimpleNamespace(content="<p>bad</p>"))],
+        )
+
+    return ArtPieceProvider(client=_FakeClient(handler))
 
 
 class _FakeChat:
@@ -181,6 +193,7 @@ def test_response_stripped_of_a_stray_markdown_fence(owner_client, monkeypatch):
 
 @pytest.mark.django_db
 def test_repair_attempts_count_as_one_art_generation_quota_unit(owner, owner_client, monkeypatch):
+    AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=True, max_retries=3)
     responses = iter(["<p>bad</p>", _VALID_SNIPPET])
     calls = []
 
@@ -202,6 +215,205 @@ def test_repair_attempts_count_as_one_art_generation_quota_unit(owner, owner_cli
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("preference_state", ["missing", "disabled"])
+def test_generation_retry_off_characterizes_operation_and_quota_counts(
+    owner, owner_client, monkeypatch, preference_state
+):
+    """At adcb737e generation ignored the off preference and repaired once.
+
+    The scripted client records actual chat.complete model operations;
+    adapter_calls records provider.generate calls. Generation currently
+    charges one quota unit after success and one rate-limit increment per
+    request, regardless of repair count. #1315 will stop after the first
+    invalid response when retry is off, preserving those accounting rules.
+    """
+    if preference_state == "disabled":
+        AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=False, max_retries=3)
+    operations = []
+    adapter_calls = []
+    contents = iter(["<p>bad</p>", _VALID_SNIPPET])
+
+    def handler(**kwargs):
+        operations.append(kwargs)
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=10, completion_tokens=20),
+            choices=[SimpleNamespace(message=SimpleNamespace(content=next(contents)))],
+        )
+
+    model_provider = ArtPieceProvider(client=_FakeClient(handler))
+
+    class CountingProvider:
+        def generate(self, prompt, library, **kwargs):
+            adapter_calls.append((prompt, library))
+            return model_provider.generate(prompt, library, **kwargs)
+
+    _use_provider(monkeypatch, CountingProvider())
+    response = owner_client.post(
+        URL, {"library": "canvas2d", "prompt": "a calm field"}, format="json"
+    )
+
+    # Corrected policy: one model operation inside one adapter call; one
+    # rate-limit increment; no success quota unit because generation failed.
+    assert response.status_code == 422
+    assert len(adapter_calls) == 1
+    assert len(operations) == 1
+    assert cache.get(art_piece_api._rate_limit_cache_key(owner.id)) == 1
+    assert cache.get(art_piece_api._quota_cache_key(owner.id), 0) == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("warnings", [None, []])
+def test_generation_malformed_output_formats_nullable_warnings_safely(
+    owner_client, monkeypatch, warnings
+):
+    operations = []
+    provider = _bad_output_provider(operations)
+
+    class WarningsOverrideProvider:
+        def generate(self, prompt, library, **kwargs):
+            return replace(provider.generate(prompt, library, **kwargs), warnings=warnings)
+
+    _use_provider(monkeypatch, WarningsOverrideProvider())
+    response = owner_client.post(URL, {"library": "canvas2d", "prompt": "anything"}, format="json")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "missing_canvas_root"
+    assert response.json()["guidance"] == (
+        "No automatic repair was run; revise the prompt or submit again."
+    )
+    assert response.json()["attempts"] == []
+    assert len(operations) == 1
+
+
+@pytest.mark.django_db
+def test_generation_preference_below_ceiling_limits_model_operations(
+    owner, owner_client, monkeypatch
+):
+    AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=True, max_retries=1)
+    operations = []
+    _use_provider(monkeypatch, _bad_output_provider(operations))
+
+    response = owner_client.post(
+        URL, {"library": "canvas2d", "prompt": "a calm field"}, format="json"
+    )
+
+    assert response.status_code == 422
+    assert len(operations) == 2  # initial call plus the single preferred repair
+    assert response.json()["detail"] == "missing_canvas_root"
+    assert response.json()["guidance"] == (
+        "Automatic repairs were exhausted; revise the prompt or submit again."
+    )
+
+
+@pytest.mark.django_db
+def test_generation_escalation_requires_catalog_support(owner, owner_client, monkeypatch):
+    AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=True, max_retries=3)
+    monkeypatch.setenv("ART_PIECE_ESCALATION_MODEL", "mistral-large-latest")
+    monkeypatch.setattr(
+        art_piece_api,
+        "is_art_piece_supported",
+        lambda **kwargs: kwargs["model_slug"] == "mistral-small-latest",
+    )
+    operations = []
+    _use_provider(monkeypatch, _bad_output_provider(operations))
+
+    owner_client.post(URL, {"library": "canvas2d", "prompt": "a calm field"}, format="json")
+
+    assert [operation["model"] for operation in operations] == [
+        "mistral-small-latest",
+        "mistral-small-latest",
+        "mistral-small-latest",
+    ]
+
+
+@pytest.mark.django_db
+def test_generation_ignores_another_owners_retry_preference(owner, owner_client, monkeypatch):
+    other = get_user_model().objects.create_user(username="other-preference-owner")
+    AIRetryPreference.objects.create(owner=other, auto_retry_enabled=True, max_retries=3)
+    operations = []
+    _use_provider(monkeypatch, _bad_output_provider(operations))
+
+    owner_client.post(URL, {"library": "canvas2d", "prompt": "a calm field"}, format="json")
+
+    assert len(operations) == 1
+
+
+@pytest.mark.django_db
+def test_generation_escalation_shares_budget_and_sums_usage(owner, owner_client, monkeypatch):
+    AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=True, max_retries=8)
+    monkeypatch.setenv("ART_PIECE_MAX_REPAIRS", "99")
+    monkeypatch.setenv("ART_PIECE_ESCALATION_MODEL", "mistral-large-latest")
+    monkeypatch.setattr(art_piece_api, "is_art_piece_supported", lambda **kwargs: True)
+    operations = []
+    adapter_calls = []
+    contents = iter(["<p>bad</p>", "<div>still bad</div>", _VALID_SNIPPET])
+
+    def handler(**kwargs):
+        operations.append(kwargs)
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=10, completion_tokens=20),
+            choices=[SimpleNamespace(message=SimpleNamespace(content=next(contents)))],
+        )
+
+    model_provider = ArtPieceProvider(client=_FakeClient(handler))
+
+    class CountingProvider:
+        def generate(self, prompt, library, **kwargs):
+            adapter_calls.append((prompt, library))
+            return model_provider.generate(prompt, library, **kwargs)
+
+    _use_provider(monkeypatch, CountingProvider())
+    response = owner_client.post(
+        URL, {"library": "canvas2d", "prompt": "a calm field"}, format="json"
+    )
+
+    assert response.status_code == 200
+    assert len(adapter_calls) == 1
+    assert [operation["model"] for operation in operations] == [
+        "mistral-small-latest",
+        "mistral-small-latest",
+        "mistral-large-latest",
+    ]
+    assert response.json()["usage"]["prompt_tokens"] == 30
+    assert response.json()["usage"]["completion_tokens"] == 60
+    assert cache.get(art_piece_api._rate_limit_cache_key(owner.id)) == 1
+    assert cache.get(art_piece_api._quota_cache_key(owner.id)) == 1
+
+
+@pytest.mark.django_db
+def test_generation_escalation_does_not_override_explicit_model(owner, owner_client, monkeypatch):
+    AIRetryPreference.objects.create(owner=owner, auto_retry_enabled=True, max_retries=3)
+    monkeypatch.setenv("ART_PIECE_ESCALATION_MODEL", "mistral-large-latest")
+    monkeypatch.setattr(art_piece_api, "is_art_piece_supported", lambda **kwargs: True)
+    operations = []
+
+    def handler(**kwargs):
+        operations.append(kwargs)
+        return SimpleNamespace(
+            usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1),
+            choices=[SimpleNamespace(message=SimpleNamespace(content="<p>bad</p>"))],
+        )
+
+    _use_provider(monkeypatch, ArtPieceProvider(client=_FakeClient(handler)))
+    response = owner_client.post(
+        URL,
+        {
+            "library": "canvas2d",
+            "prompt": "a calm field",
+            "model": "mistral-small-latest",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 422
+    assert [operation["model"] for operation in operations] == [
+        "mistral-small-latest",
+        "mistral-small-latest",
+        "mistral-small-latest",
+    ]
+
+
+@pytest.mark.django_db
 def test_output_missing_canvas_or_script_is_rejected_with_422(owner_client, monkeypatch):
     _use_provider(monkeypatch, _mistral_provider_returning("<p>not a canvas piece</p>"))
 
@@ -210,6 +422,9 @@ def test_output_missing_canvas_or_script_is_rejected_with_422(owner_client, monk
     assert response.status_code == 422
     assert response.json()["error"] == "invalid_structured_output"
     assert response.json()["detail"] == "missing_canvas_root"
+    assert response.json()["guidance"] == (
+        "No automatic repair was run; revise the prompt or submit again."
+    )
     assert "anything" not in response.json()["detail"]
 
 

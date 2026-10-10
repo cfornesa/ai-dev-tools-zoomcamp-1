@@ -397,4 +397,22 @@ describe('ArtPieceStudio (issue #199)', () => {
 
     expect(await screen.findByTestId('art-piece-error')).toHaveTextContent(/account settings/i);
   });
+
+  it('shows additive retry guidance while retaining the structured-output reason', async () => {
+    mockedGenerateArtPiece.mockRejectedValue(
+      new ApiError(422, {
+        error: 'invalid_structured_output',
+        detail: 'missing_canvas_root',
+        guidance: 'No automatic repair was run; revise the prompt or submit again.',
+      }),
+    );
+    render(<ArtPieceStudio />);
+
+    await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'a circle');
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+
+    const alert = await screen.findByTestId('art-piece-error');
+    expect(alert).toHaveTextContent('missing_canvas_root');
+    expect(alert).toHaveTextContent('No automatic repair was run');
+  });
 });

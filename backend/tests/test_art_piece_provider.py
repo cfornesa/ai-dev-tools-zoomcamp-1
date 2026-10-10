@@ -494,7 +494,7 @@ def test_generate_repairs_invalid_output_and_sends_max_tokens(monkeypatch):
     client = _ScriptedClient(["<p>bad</p>", _VALID_CANVAS])
     provider = ArtPieceProvider(client=client)
 
-    result = provider.generate("a calm field", "canvas2d")
+    result = provider.generate("a calm field", "canvas2d", auto_retry_enabled=True)
 
     assert result.code == _VALID_CANVAS
     assert len(client.chat.calls) == 2
@@ -510,10 +510,14 @@ def test_generate_repairs_invalid_output_and_sends_max_tokens(monkeypatch):
 
 def test_generate_exhausts_repairs_with_reason_evidence_and_escalates(monkeypatch):
     client = _ScriptedClient(["<p>bad</p>", "<p>still bad</p>", "<p>last bad</p>"])
-    monkeypatch.setenv("ART_PIECE_ESCALATION_MODEL", "mistral-large-latest")
     provider = ArtPieceProvider(client=client)
 
-    result = provider.generate("a calm field", "canvas2d")
+    result = provider.generate(
+        "a calm field",
+        "canvas2d",
+        auto_retry_enabled=True,
+        escalation_model="mistral-large-latest",
+    )
 
     assert result.code is None
     assert result.error == "empty_or_malformed:missing_canvas_root"
@@ -535,10 +539,101 @@ def test_generate_zero_repairs_restores_single_call(monkeypatch):
     monkeypatch.setenv("ART_PIECE_MAX_REPAIRS", "0")
     provider = ArtPieceProvider(client=client)
 
-    result = provider.generate("a calm field", "canvas2d")
+    result = provider.generate("a calm field", "canvas2d", auto_retry_enabled=True)
 
     assert result.error == "empty_or_malformed:missing_canvas_root"
     assert len(client.chat.calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("configured_repairs", "expected_calls"),
+    [("5", 3), ("-4", 1), ("invalid", 3)],
+)
+def test_generate_environment_repair_limit_characterization(
+    monkeypatch, configured_repairs, expected_calls
+):
+    """Record the pre-fix env behavior and the #1315 hard-ceiling contract.
+
+    At adcb737e values above two were not capped (five repairs meant six
+    model operations); invalid values fell back to the two-repair default,
+    and negative values clamped to zero. The provider mock records each
+    application-issued chat.complete operation, not HTTP transport attempts.
+    """
+    monkeypatch.setenv("ART_PIECE_MAX_REPAIRS", configured_repairs)
+    client = _ScriptedClient(["<p>bad</p>"] * (expected_calls + 1))
+    provider = ArtPieceProvider(client=client)
+
+    result = provider.generate("a calm field", "canvas2d", auto_retry_enabled=True)
+
+    assert result.code is None
+    actual_calls = len(client.chat.calls)
+    assert actual_calls == expected_calls
+    assert (
+        len([warning for warning in result.warnings if warning.startswith("attempt=")])
+        == expected_calls
+    )
+    assert result.usage.prompt_tokens == expected_calls * 2
+    assert result.usage.completion_tokens == expected_calls * 3
+
+
+@pytest.mark.parametrize(
+    ("preference", "environment", "expected_calls"),
+    [(1, "2", 2), (2, "1", 2), (0, "2", 1), (3, "2", 3)],
+)
+def test_generate_enabled_allowance_is_min_of_preference_environment_and_ceiling(
+    monkeypatch, preference, environment, expected_calls
+):
+    monkeypatch.setenv("ART_PIECE_MAX_REPAIRS", environment)
+    client = _ScriptedClient(["<p>bad</p>"] * (expected_calls + 1))
+
+    ArtPieceProvider(client=client).generate(
+        "a calm field", "canvas2d", auto_retry_enabled=True, max_retries=preference
+    )
+
+    assert len(client.chat.calls) == expected_calls
+
+
+def test_generate_retry_disabled_makes_one_model_operation_even_when_env_allows_repairs(
+    monkeypatch,
+):
+    monkeypatch.setenv("ART_PIECE_MAX_REPAIRS", "2")
+    client = _ScriptedClient(["<p>bad</p>", _VALID_CANVAS])
+    provider = ArtPieceProvider(client=client)
+
+    result = provider.generate("a calm field", "canvas2d", auto_retry_enabled=False, max_retries=3)
+
+    assert result.error == "empty_or_malformed:missing_canvas_root"
+    assert len(client.chat.calls) == 1
+
+
+def test_generate_omitted_retry_preference_defaults_to_one_model_operation(monkeypatch):
+    monkeypatch.setenv("ART_PIECE_MAX_REPAIRS", "2")
+    client = _ScriptedClient(["<p>bad</p>", _VALID_CANVAS])
+
+    result = ArtPieceProvider(client=client).generate("a calm field", "canvas2d")
+
+    assert result.code is None
+    assert result.error == "empty_or_malformed:missing_canvas_root"
+    assert len(client.chat.calls) == 1
+    assert result.warnings == ["attempt=1 reason=missing_canvas_root model=mistral-small-latest"]
+
+
+def test_generate_negative_retry_preference_clamps_to_zero_repairs(monkeypatch):
+    monkeypatch.setenv("ART_PIECE_MAX_REPAIRS", "2")
+    client = _ScriptedClient(["<p>bad</p>", _VALID_CANVAS])
+
+    result = ArtPieceProvider(client=client).generate(
+        "a calm field",
+        "canvas2d",
+        auto_retry_enabled=True,
+        max_retries=-1,
+        escalation_model="mistral-large-latest",
+    )
+
+    assert result.code is None
+    assert result.error == "empty_or_malformed:missing_canvas_root"
+    assert len(client.chat.calls) == 1
+    assert [call["model"] for call in client.chat.calls] == ["mistral-small-latest"]
 
 
 @pytest.mark.parametrize(

@@ -35,6 +35,7 @@ import {
 } from '../generative/artPieceThumbnailCapture';
 import MentionPromptField from './MentionPromptField';
 import { buildArtPieceTargetOptionsForPiece } from './artPieceTargets';
+import { artPieceRefineFailureMessage } from './artPieceRefineFailureMessage';
 import ArtPieceEditorToolAvailability from '../components/ArtPieceEditorToolAvailability';
 import PieceSlugField from '../components/PieceSlugField';
 import GeneratedInkPanel, { type InkRequest } from '../components/GeneratedInkPanel';
@@ -629,10 +630,7 @@ function ArtPieceEditor({ initialPiece }: { initialPiece?: ArtPiece } = {}) {
       setRefineRun(result);
       if (result.status !== 'accepted' || !result.candidate_source) {
         setRevisePhase('error');
-        setReviseError(
-          result.validation_summary ||
-            'The refinement did not produce a valid revision; the stored source is unchanged.',
-        );
+        setReviseError(artPieceRefineFailureMessage(result));
         return;
       }
       if (result.accepted_version_id !== null) {

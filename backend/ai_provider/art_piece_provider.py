@@ -86,6 +86,8 @@ AFRAME_CDN_URL = f"https://cdn.jsdelivr.net/npm/aframe@{AFRAME_VERSION}/dist/afr
 DEFAULT_MODEL = "mistral-small-latest"
 REQUEST_TIMEOUT_MS = 20_000
 ART_PIECE_MAX_REPAIRS = 2
+# The global ceiling stays fixed if the environment default changes.
+ART_PIECE_GLOBAL_MAX_REPAIRS = 2
 ART_PIECE_ESCALATION_MODEL = ""
 ART_PIECE_DEADLINE_MS = 60_000
 
@@ -343,7 +345,15 @@ class ArtPieceProvider:
             ),
         )
 
-    def generate(self, prompt: str, library: str) -> ArtPieceResult:  # noqa: C901
+    def generate(  # noqa: C901
+        self,
+        prompt: str,
+        library: str,
+        *,
+        auto_retry_enabled: bool = False,
+        max_retries: int | None = None,
+        escalation_model: str | None = None,
+    ) -> ArtPieceResult:
         zero_usage = AIUsageMetadata(prompt_tokens=0, completion_tokens=0, estimated_cost_usd=0.0)
         if library not in SUPPORTED_LIBRARIES:
             # Defense in depth: `ArtPieceGenerateRequestSerializer` already
@@ -372,11 +382,21 @@ class ArtPieceProvider:
             messages.append({"role": "system", "content": self.persona_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        max_repairs = _bounded_int_env("ART_PIECE_MAX_REPAIRS", ART_PIECE_MAX_REPAIRS, minimum=0)
+        environment_repairs = _bounded_int_env(
+            "ART_PIECE_MAX_REPAIRS",
+            ART_PIECE_MAX_REPAIRS,
+            minimum=0,
+            maximum=ART_PIECE_GLOBAL_MAX_REPAIRS,
+        )
+        max_repairs = (
+            min(environment_repairs, max(0, max_retries), ART_PIECE_GLOBAL_MAX_REPAIRS)
+            if auto_retry_enabled and max_retries is not None
+            else environment_repairs
+            if auto_retry_enabled
+            else 0
+        )
         deadline_ms = _bounded_int_env("ART_PIECE_DEADLINE_MS", ART_PIECE_DEADLINE_MS, minimum=1)
-        escalation_model = os.environ.get(
-            "ART_PIECE_ESCALATION_MODEL", ART_PIECE_ESCALATION_MODEL
-        ).strip()
+        escalation_model = escalation_model or ""
         deadline = time.monotonic() + deadline_ms / 1000
         attempt_evidence: list[str] = []
         total_usage = zero_usage
@@ -588,12 +608,13 @@ class ArtPieceProvider:
         )
 
 
-def _bounded_int_env(name: str, default: int, *, minimum: int) -> int:
+def _bounded_int_env(name: str, default: int, *, minimum: int, maximum: int | None = None) -> int:
     try:
         value = int(os.environ.get(name, str(default)))
     except ValueError:
         return default
-    return max(minimum, value)
+    bounded = max(minimum, value)
+    return min(maximum, bounded) if maximum is not None else bounded
 
 
 def _sum_usage(first: AIUsageMetadata, second: AIUsageMetadata) -> AIUsageMetadata:

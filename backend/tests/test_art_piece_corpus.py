@@ -74,7 +74,9 @@ def test_corpus_replays_failure_then_repair_without_network():
             )
 
     provider = ArtPieceProvider(client=SimpleNamespace(chat=ScriptedChat()))
-    result = provider.generate("animated gauge with gradient and clipPath", "svg")
+    result = provider.generate(
+        "animated gauge with gradient and clipPath", "svg", auto_retry_enabled=True
+    )
 
     assert result.error is None
     assert result.code == (CORPUS / "runtime_gauge.svg").read_text().strip()

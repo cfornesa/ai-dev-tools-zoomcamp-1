@@ -313,7 +313,7 @@ def refine_art_piece(  # noqa: C901
     )
     preference = AIRetryPreference.objects.filter(owner=owner).first()
     auto_retry = preference.auto_retry_enabled if preference else False
-    max_retries = min(preference.max_retries if preference else 0, MAX_RETRIES)
+    max_retries = min(preference.max_retries, MAX_RETRIES) if auto_retry and preference else 0
     run = ArtPieceRefineRun.objects.create(
         piece=piece,
         owner=owner,

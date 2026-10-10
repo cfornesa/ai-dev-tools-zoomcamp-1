@@ -287,6 +287,40 @@ catalog entry flagged for `art_piece` before a provider call is made. Missing
 or undecryptable credentials return the existing structured
 `personal_key_required` response.
 
+## Generated art-piece retry policy (#1314/#1315)
+
+The generation endpoint and owner-scoped refinement endpoint apply the
+owner's `AIRetryPreference` before any automatic repair/refinement retry. A
+missing preference or a disabled setting permits one model-operation call
+after the request is admitted to execution; invalid generated output is
+returned with its existing error and is not silently resubmitted. When
+enabled, refinement permits at most `min(max_retries, 2) + 1` model-operation
+calls. Generation permits at most one initial call plus the minimum of the
+preference retry count, `ART_PIECE_MAX_REPAIRS`, and the global two-repair
+ceiling (`ART_PIECE_GLOBAL_MAX_REPAIRS = 2`). The environment value defaults
+to two when invalid, is clamped at zero when negative, and cannot raise the
+global ceiling. Escalation uses one of those same permitted calls and cannot
+override an explicitly selected or catalog-disabled model.
+
+For `422 invalid_structured_output`, `detail` remains the bare validation
+reason (for example, `missing_canvas_root`). The additive `guidance` string is
+user-facing retry guidance: it says whether automatic repairs were exhausted
+or no automatic repair ran. Clients that match or classify the failure should
+continue to use `error` and `detail`; `guidance` is optional and does not
+change the status code or existing fields. Other error responses are unchanged.
+
+These limits count application-issued model-operation calls at the provider
+client boundary (`Mistral.chat.complete` on the Mistral path). Provider
+adapter calls, application loop iterations, SDK transport attempts, quota
+units, and provider-billed usage are distinct. Generation charges its
+existing single quota unit only after success, regardless of repair calls;
+refinement charges its existing quota unit for each admitted loop iteration
+before provider construction. `run.attempts` continues to count refinement
+loop iterations, not model-operation calls. The local generated-piece Ask AI
+revision uses the generation endpoint and inherits this policy while saving
+the returned source in browser-local storage. These rules make no guarantee
+about wire requests, provider processing, duplicate handling, or billing.
+
 ## AI model catalog capabilities (#817)
 
 Admin AI model catalog entries expose `native_schema`, a boolean capability

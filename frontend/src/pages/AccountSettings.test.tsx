@@ -514,6 +514,21 @@ describe('AccountSettings', () => {
 
     const toggle = await screen.findByLabelText(/automatically retry failed ai generations/i);
     expect(toggle).not.toBeChecked();
+    expect(
+      screen.getByText(
+        /When an eligible AI generation or art-piece refinement fails, automatically retry within the limits for that feature\./,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /when off, the failed action stops without an automatic retry; submit again to try it\./,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('form', { name: 'Automatic retry settings' })).getAllByRole(
+        'checkbox',
+      ),
+    ).toHaveLength(1);
     const retriesInput = screen.getByLabelText(/retry attempts/i);
     expect(retriesInput).toHaveValue(3);
 

@@ -220,6 +220,7 @@ export type ArtPieceErrorCode =
 export type ArtPieceErrorBody = {
   error: ArtPieceErrorCode;
   detail: unknown;
+  guidance?: string;
 };
 
 export type ArtPieceRefineRun = {

@@ -24,6 +24,7 @@ failure taxonomy `scenes/ai_api.py` already established.
 
 from __future__ import annotations
 
+import os
 import re
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, cast
@@ -34,6 +35,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ai_provider.art_piece_provider import (
+    ART_PIECE_ESCALATION_MODEL,
     EMPTY_OR_MALFORMED_PREFIX,
     ENGINE_UNAVAILABLE_PREFIX,
     RESPONSE_TOO_LARGE_PREFIX,
@@ -45,7 +47,12 @@ from ai_provider.registry import validate_model
 from scenes.ai_catalog import is_art_piece_supported
 from scenes.art_piece_contract import GENERATABLE_ART_PIECE_ENGINES
 from scenes.entitlements import get_effective_cap, is_unlimited
-from scenes.models import AIPersona, MistralCredentialDecryptionError, ProviderCredential
+from scenes.models import (
+    AIPersona,
+    AIRetryPreference,
+    MistralCredentialDecryptionError,
+    ProviderCredential,
+)
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
@@ -252,7 +259,15 @@ def get_art_piece_provider() -> ArtPieceProvider:  # noqa: C901
         _THROWING_CODE = "<script>throw new Error('e2e synchronous throw fixture');</script>"  # noqa: N806
 
         class _FakeArtPieceProvider:
-            def generate(self, prompt: str, library: str) -> ArtPieceResult:
+            def generate(
+                self,
+                prompt: str,
+                library: str,
+                *,
+                auto_retry_enabled: bool = False,
+                max_retries: int = 0,
+                escalation_model: str | None = None,
+            ) -> ArtPieceResult:
                 if library not in GENERATABLE_ART_PIECE_ENGINES:
                     return ArtPieceResult(
                         usage=AIUsageMetadata(
@@ -344,6 +359,22 @@ def _provider_for_user(
         _current_ai_user.reset(user_token)
         _current_ai_model.reset(model_token)
         _current_ai_persona_prompt.reset(persona_token)
+
+
+def _allowed_escalation_model(
+    *, vendor: str, configured_model: str, effective_model: str, explicit_model: bool
+) -> str | None:
+    """Resolve escalation only when it stays inside the request's model policy."""
+    candidate = configured_model.strip()
+    if not candidate or (explicit_model and candidate != effective_model):
+        return None
+    try:
+        resolved = validate_model(vendor, candidate)
+    except ValueError:
+        return None
+    if resolved != candidate or not is_art_piece_supported(vendor=vendor, model_slug=resolved):
+        return None
+    return resolved
 
 
 def _missing_key_response() -> Response:
@@ -446,6 +477,18 @@ class ArtPieceGenerateView(APIView):
         ):
             return _quota_exceeded_response(art_generate_cap)
 
+        retry_preference = AIRetryPreference.objects.filter(owner=request.user).first()
+        auto_retry_enabled = bool(retry_preference and retry_preference.auto_retry_enabled)
+        max_retries = retry_preference.max_retries if auto_retry_enabled and retry_preference else 0
+        escalation_model = _allowed_escalation_model(
+            vendor=vendor,
+            configured_model=os.environ.get(
+                "ART_PIECE_ESCALATION_MODEL", ART_PIECE_ESCALATION_MODEL
+            ),
+            effective_model=effective_model,
+            explicit_model=bool(model),
+        )
+
         vendor_token = _current_ai_vendor.set(vendor)
         try:
             provider = _provider_for_user(request.user, model or effective_model, persona_prompt)
@@ -454,7 +497,13 @@ class ArtPieceGenerateView(APIView):
         finally:
             _current_ai_vendor.reset(vendor_token)
 
-        result = provider.generate(prompt, library)
+        result = provider.generate(
+            prompt,
+            library,
+            auto_retry_enabled=auto_retry_enabled,
+            max_retries=max_retries,
+            escalation_model=escalation_model,
+        )
 
         if result.error is not None:
             error_text = result.error
@@ -475,11 +524,17 @@ class ArtPieceGenerateView(APIView):
                     status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 )
             if error_text.startswith(EMPTY_OR_MALFORMED_PREFIX):
+                attempts = result.warnings or []
                 return Response(
                     {
                         "error": "invalid_structured_output",
                         "detail": error_text[len(EMPTY_OR_MALFORMED_PREFIX) :],
-                        "attempts": result.warnings or [],
+                        "guidance": (
+                            "Automatic repairs were exhausted; revise the prompt or submit again."
+                            if sum(warning.startswith("attempt=") for warning in attempts) > 1
+                            else "No automatic repair was run; revise the prompt or submit again."
+                        ),
+                        "attempts": attempts,
                     },
                     status=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )

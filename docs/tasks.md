@@ -26751,3 +26751,26 @@ not use the primary checkout's stale `.venv`. Provider calls are mocked. No
 server-side pre-invocation cancellation path was found; this candidate does
 not add one or claim that a client abort stops server execution. The candidate
 remains uncommitted and unpushed; no GitHub state was changed.
+
+## 2026-10-11 — Batch ledger: [#1346](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1346) + [#1347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1347) / PR [#1348](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/1348) (merged, issues closed)
+
+Final ledger rows for the single batch. Stage rows are retroactive and say so (`backlog-session` requires rows as each stage completes). Parent [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096); milestone Batch 14: matching-ref CI stabilization (2026-09-30).
+
+- **Merge:** PR #1348 merged 2026-10-11T06:23:27Z as `442444851ac83010dd42f9c9624aca5a2201c410` (parents `4175e4e6de94e84c35a2a1fa9c5cf40ceed2ac21`, `aef8b22868b5d120f65508c3d41b1ca765d0ae34`); merge tree identical to the approved head. Issue commits: #1346 `f88ac6c7e658bf1defe02ee49e32f99d675706b0`, #1347 `aef8b22868b5d120f65508c3d41b1ca765d0ae34`.
+- **Batch gate:** literal `make check` exit 0 at the exact head (pytest 2103 passed/45 skipped; Vitest 326 files / 3349 tests; lint/format/typecheck clean); CI run 38114346743 success (browser shard 1 does not include the changed specs); #1346 eight-spec Chromium run re-run by QA **20 passed / 3 failed (not green)**; #1347's 40 local trials carried forward from retained logs. Full 16-shard matrix and known-failure ratchet NOT run: release stays blocked (#1332, #1258 open). Impact matrix: in the #1346 QA comment (103 open issues).
+- **Records:** QA PASS [#1346](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1346#issuecomment-6105963415), [#1347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1347#issuecomment-6105963550); Stage 5 assessment [PR #1348 comment 6106165716](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/pull/1348#issuecomment-6106165716) ("ready for guarded mark-ready/merge" with a record hold); reconciliation and closure [#1346](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1346#issuecomment-6106299186), [#1347](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1347#issuecomment-6106299327); tracker note [#1096](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1096#issuecomment-6106299464). Restoration path verified in a scratch clone: each commit reverts cleanly and both reverted reproduce the pre-batch tree.
+- **Terminal statuses:** #1346 CLOSED completed (criteria met; failing cases classified, not green). #1347 CLOSED completed (bounded diagnostic contract; CI causality unresolved, shifted to #1096; no freeze fix; #776 stays closed).
+- **Post-merge hold:** the memory/DECISIONS update deferred by the Stage 5 addendum is the docs-only change set that includes this block (`.agents/memory/ci-vitest-changed-pr-full-main.md` corrected, new topic `local-first-entry-and-test-harness-boundaries.md`, two `MEMORY.md` index lines, one `DECISIONS.md` entry). Prepared and uncommitted; a commit needs separate authorization.
+
+| Stage | Rostered | Actual (service / model / effort) | Substituted |
+|---|---|---|---|
+| 1 scoping | Codex (Track A) or Claude (Track B) | Claude / Sonnet 5.5 / medium | no (dual-track Track B) |
+| 2 implementation | Opencode Go (2a) | Codex / GPT / model and effort unrecorded | yes (owner-directed in session; no `DECISIONS.md` waiver located) |
+| 3 second opinion | Mistral Vibe or Codex-not-author | **not run** (optional) | n/a |
+| 4 QA | Claude / Sonnet 5 / medium | Claude / Sonnet 5.5 / medium | no |
+| 5 readiness | Claude Opus 5 or Sonnet 5 | Claude / Sonnet 5.5 / medium | no |
+
+Additional review (not Stage 3): two independent Claude Sonnet 5.5 reviews of the Codex diff, and a Codex automated review of `aef8b22` that completed with no findings.
+
+- [#1349](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1349) E2E: retarget remaining stale local-generated-piece setups (#938, #939, #1287). Tests only; parent #1096; related #1346, #1306, #1286. **Status:** PROPOSED (next release scope).
+- [#1350](https://github.com/cfornesa/ai-dev-tools-zoomcamp-1/issues/1350) CI: frontend PR Vitest step runs the full suite (`--changed` forwarded to the ratchet script); decide intent and align workflow/memory. Parent #1096. **Status:** PROPOSED.

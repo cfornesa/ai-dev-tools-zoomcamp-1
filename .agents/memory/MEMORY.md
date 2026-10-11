@@ -112,3 +112,5 @@
 - 2026-09-28 CONSTRAINT Never regress an established feature or surface while implementing a new one; preserve existing specifications and add explicit regression coverage before release.
 - [LIGDOL adaptation guardrails](ligdol-adaptation-guardrails.md) — additive, deployment-light, user-controlled adoption of LIGDOL ideas (Batch 16, #1129-#1143); non-goals and deferrals.
 - [Batch implementation and QA](batch-implementation-and-qa.md) — issues atomic, implementation/QA batched per session with an all-open-issues impact matrix and a batch gate before closure (2026-10-01).
+- [Vitest changed-test PR path and full-main gate](ci-vitest-changed-pr-full-main.md) — intended: PRs run changed-test selection and main runs the full suite; observed 2026-10-11: PR Vitest ran the full suite because `--changed` is forwarded to the ratchet script (#1350).
+- [Local-first entry points and test-harness boundaries](local-first-entry-and-test-harness-boundaries.md) — `/create` "Start blank" is server-backed while local-first creation is Studio's menu; `globalSetup`'s `uv run` can sync a shared venv; Vitest collects `*.spec.ts` outside `e2e/` unless excluded (#1346/#1347).

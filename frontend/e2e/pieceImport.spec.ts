@@ -58,8 +58,9 @@ test.describe('Per-piece local package import (#936)', () => {
     const sourceContext = await browser.newContext();
     const sourcePage = await sourceContext.newPage();
     await loginViaUI(sourcePage, fixtures.owner.email, fixtures.password);
-    await sourcePage.goto('/create');
-    await sourcePage.getByRole('button', { name: 'Create a new 2D project', exact: true }).click();
+    await sourcePage.goto('/studio');
+    await sourcePage.getByRole('button', { name: 'More creation options' }).click();
+    await sourcePage.getByRole('menuitem', { name: 'Create a new 2D project with p5.js' }).click();
     await sourcePage.waitForURL(/\/local-projects\/[^/]+$/);
     const sourceId = new URL(sourcePage.url()).pathname.split('/').at(-1)!;
     const sourceSnapshot = await readLocalSnapshot(sourcePage, sourceId);

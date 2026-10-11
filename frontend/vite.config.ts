@@ -587,7 +587,7 @@ export default defineConfig({
     // tests use Node's built-in test runner. Keep both out of Vitest's
     // default unit-test discovery; package.json runs the ratchet tests via
     // `node --test` as part of `npm test`.
-    exclude: [...configDefaults.exclude, 'e2e/**', 'scripts/**'],
+    exclude: [...configDefaults.exclude, 'e2e/**', 'scripts/**', 'diagnostics/**'],
     // Issues #302/#864: the full suite contains many interaction-heavy
     // jsdom files. Vitest's unrestricted worker pool makes otherwise-fast
     // EditorWorkspace and route-fixture tests exceed their timeout under

@@ -51,8 +51,9 @@ test.describe('Local-only piece publish-as-transfer (#942)', () => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
-      await page.goto('/create');
-      await page.getByRole('button', { name: 'Create a new 2D project', exact: true }).click();
+      await page.goto('/studio');
+      await page.getByRole('button', { name: 'More creation options' }).click();
+      await page.getByRole('menuitem', { name: 'Create a new 2D project with p5.js' }).click();
       await page.waitForURL(/\/local-projects\/[^/]+$/);
 
       let intakeCalls = 0;
@@ -115,8 +116,9 @@ test.describe('Local-only piece publish-as-transfer (#942)', () => {
   test('refuses to upload over quota and leaves the local piece editable', async ({ page }) => {
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
 
-    await page.goto('/create');
-    await page.getByRole('button', { name: 'Create a new 2D project', exact: true }).click();
+    await page.goto('/studio');
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create a new 2D project with p5.js' }).click();
     await page.waitForURL(/\/local-projects\/[^/]+$/);
 
     let intakeCalls = 0;
@@ -170,8 +172,9 @@ test.describe('Local versioned 3D transfer integrity (#1286)', () => {
       }
     });
 
-    await page.goto('/create');
-    await page.getByRole('button', { name: 'Create a new 3D project', exact: true }).click();
+    await page.goto('/studio');
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
     await page.waitForURL(/\/local-projects\/[^/]+$/);
     const localId = new URL(page.url()).pathname.split('/').at(-1)!;
     await page.getByRole('button', { name: '3D authoring' }).click();

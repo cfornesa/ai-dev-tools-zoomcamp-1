@@ -43,8 +43,9 @@ export async function createServerProject3D(page: Page): Promise<string> {
 
 /** Creates a local-only 3D project through the creation page and opens its IndexedDB editor. */
 export async function createLocalProject3DViaUI(page: Page): Promise<string> {
-  await page.goto('/create');
-  await page.getByRole('button', { name: 'Create a new 3D project', exact: true }).click();
+  await page.goto('/studio');
+  await page.getByRole('button', { name: 'More creation options' }).click();
+  await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
   await page.waitForURL(/\/local-projects\/[^/]+$/);
   const id = /\/local-projects\/([^/]+)$/.exec(new URL(page.url()).pathname)?.[1];
   if (!id) throw new Error('The local 3D project route did not contain a project id');

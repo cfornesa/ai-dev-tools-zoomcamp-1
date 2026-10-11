@@ -71,7 +71,7 @@ test.describe('Local-first 2D creation (#934)', () => {
     }, testInfo: TestInfo) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await page.goto('/create');
+      await page.goto('/studio');
 
       const serverCreateRequests: string[] = [];
       page.on('request', (request) => {
@@ -83,7 +83,8 @@ test.describe('Local-first 2D creation (#934)', () => {
         }
       });
 
-      await page.getByRole('button', { name: 'Create a new 2D project', exact: true }).click();
+      await page.getByRole('button', { name: 'More creation options' }).click();
+      await page.getByRole('menuitem', { name: 'Create a new 2D project with p5.js' }).click();
       await page.waitForURL(/\/local-projects\/[^/]+$/);
       await expect(page.getByRole('heading', { name: 'Untitled animation' })).toBeVisible();
       await expect(page.getByLabel('Scene', { exact: true })).toHaveValue(/.+/);

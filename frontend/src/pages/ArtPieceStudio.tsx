@@ -14,6 +14,7 @@ import {
   type ArtPieceLibrary,
 } from '../api/artPieces';
 import { useAuth } from '../auth/useAuth';
+import { downloadBlob } from '../export/downloadBlob';
 import {
   CAPABILITY_OPTIONS,
   SPATIAL_LIBRARIES,
@@ -25,13 +26,18 @@ import {
 } from '../generative/artPieceBundle';
 import {
   buildArtPieceSandboxDocument,
+  getArtPieceSourceStartLine,
+  mapArtPieceSourceLocation,
   parseArtPieceSandboxMessage,
+  sha256ArtPieceSource,
   ART_PIECE_IFRAME_SANDBOX,
 } from '../generative/artPieceSandbox';
 import { captureAndUploadArtPieceThumbnail } from '../generative/artPieceThumbnailCapture';
 import { getArtPieceStarter } from '../generative/artPieceStarters';
 
 type GenerationPhase = 'idle' | 'pending' | 'previewing' | 'ready' | 'crashed' | 'error';
+
+let sandboxPreviewSequence = 0;
 
 const AI_MODEL_STORAGE_KEY = 'gesture-studio:ai-model-preference';
 
@@ -108,6 +114,14 @@ function ArtPieceStudio() {
   const [code, setCode] = useState<string | null>(
     isBlankStart ? getArtPieceStarter(initialLibrary) : null,
   );
+  const previewIdRef = useRef<string | null>(isBlankStart ? 'preview-initial' : null);
+  const [sourceSha256, setSourceSha256] = useState<string | null>(null);
+  const [sourceHashUnavailable, setSourceHashUnavailable] = useState(false);
+  const [runtimeErrorLocation, setRuntimeErrorLocation] = useState<{
+    line: number;
+    column: number;
+  } | null>(null);
+  const [copySourceStatus, setCopySourceStatus] = useState<string | null>(null);
   // The library `code` was actually generated for -- tracked separately
   // from `library` (the live dropdown value) because the dropdown isn't
   // disabled once a result arrives, so a user could change it while
@@ -134,6 +148,24 @@ function ArtPieceStudio() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    if (!code) return;
+    let active = true;
+    void sha256ArtPieceSource(code)
+      .then((hash) => {
+        if (active) {
+          setSourceSha256(hash);
+          setSourceHashUnavailable(false);
+        }
+      })
+      .catch(() => {
+        if (active) setSourceHashUnavailable(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [code]);
+
+  useEffect(() => {
     if (auth.status !== 'signed-in') return;
     void fetchAIPersonas()
       .then(setPersonas)
@@ -151,12 +183,17 @@ function ArtPieceStudio() {
     // sandbox's synchronous ready/error handshake before the effect runs.
     function onMessage(event: MessageEvent) {
       if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) return;
-      const parsed = parseArtPieceSandboxMessage(event.data);
+      const expectedPreviewId = previewIdRef.current;
+      if (!expectedPreviewId) return;
+      const parsed = parseArtPieceSandboxMessage(event.data, expectedPreviewId);
       if (!parsed) return;
       if (parsed.status === 'ready') setPhase('ready');
       else {
         setPhase('crashed');
         setError(parsed.message);
+        setRuntimeErrorLocation(
+          parsed.line && parsed.column ? { line: parsed.line, column: parsed.column } : null,
+        );
       }
     }
     window.addEventListener('message', onMessage);
@@ -178,6 +215,11 @@ function ArtPieceStudio() {
     abortControllerRef.current = controller;
 
     setPhase('pending');
+    previewIdRef.current = null;
+    setRuntimeErrorLocation(null);
+    setCopySourceStatus(null);
+    setSourceSha256(null);
+    setSourceHashUnavailable(false);
     setError(null);
     setCode(null);
     setCapabilities({});
@@ -197,6 +239,8 @@ function ArtPieceStudio() {
       if (abortControllerRef.current !== controller) return;
       setCode(result.code);
       setResultLibrary(library);
+      const nextPreviewId = `preview-${++sandboxPreviewSequence}`;
+      previewIdRef.current = nextPreviewId;
       setPhase('previewing');
     } catch (err) {
       if (abortControllerRef.current !== controller) return;
@@ -216,7 +260,37 @@ function ArtPieceStudio() {
   }
 
   const pending = phase === 'pending';
-  const sandboxDoc = code ? buildArtPieceSandboxDocument(code, resultLibrary) : null;
+  const sandboxDoc = code
+    ? buildArtPieceSandboxDocument(code, resultLibrary, 'regular', {
+        previewId: previewIdRef.current ?? undefined,
+      })
+    : null;
+  const sourceStartLine =
+    sandboxDoc && code && resultLibrary === 'canvas2d'
+      ? getArtPieceSourceStartLine(sandboxDoc, code)
+      : null;
+  const sourceLocation =
+    runtimeErrorLocation && code
+      ? mapArtPieceSourceLocation(runtimeErrorLocation, sourceStartLine, code)
+      : null;
+
+  async function handleCopyFailedSource() {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopySourceStatus('Failed source copied.');
+    } catch {
+      setCopySourceStatus('Clipboard access is unavailable. Select the source below to copy it.');
+    }
+  }
+
+  function handleDownloadFailedSource() {
+    if (!code) return;
+    downloadBlob(
+      new Blob([code], { type: 'text/plain;charset=utf-8' }),
+      'failed-art-piece-source.txt',
+    );
+  }
 
   // Issue #200: a portable multi-file bundle (index.html + styles/ +
   // scripts/ for Three.js + runtime/ vendoring the CDN library so a
@@ -384,6 +458,43 @@ function ArtPieceStudio() {
         <div role="alert" aria-live="assertive" data-testid="art-piece-crashed">
           <p>The generated piece could not render: {error}</p>
           <p>Try adjusting the prompt and generating again.</p>
+          {resultLibrary === 'canvas2d' && code && (
+            <section
+              aria-label="Failed Canvas2D source evidence"
+              data-testid="failed-source-evidence"
+            >
+              {sourceSha256 ? (
+                <p data-testid="failed-source-sha256">Source SHA-256: {sourceSha256}</p>
+              ) : sourceHashUnavailable ? (
+                <p data-testid="failed-source-hash-unavailable">Source SHA-256 unavailable.</p>
+              ) : (
+                <p role="status">Calculating source SHA-256…</p>
+              )}
+              {sourceLocation && (
+                <p data-testid="failed-source-location">
+                  Preview source location: line {sourceLocation.line}, column{' '}
+                  {sourceLocation.column}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleCopyFailedSource}
+                data-testid="copy-failed-source"
+              >
+                Copy failed source
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadFailedSource}
+                data-testid="download-failed-source"
+              >
+                Download failed source
+              </button>
+              {copySourceStatus && <p role="status">{copySourceStatus}</p>}
+              <label htmlFor="failed-art-piece-source">Failed source used by this preview</label>
+              <textarea id="failed-art-piece-source" readOnly rows={12} value={code} />
+            </section>
+          )}
         </div>
       )}
 

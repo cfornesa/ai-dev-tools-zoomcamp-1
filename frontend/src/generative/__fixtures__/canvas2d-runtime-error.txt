@@ -1,0 +1,224 @@
+(function() {
+  const canvas = document.getElementById('art-piece-canvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth || 800;
+    const h = canvas.clientHeight || 600;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // @layer Background
+  const path = { x: 0, y: 0, width: canvas.width / 800 * 100, height: canvas.height };
+  const lamp = { x: path.width + canvas.width / 800 * 30, y: canvas.height / 2, radius: canvas.width / 800 * 8, on: false };
+
+  function moon(x, y, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, r);
+    gradient.addColorStop(0, '#fdf7e3');
+    gradient.addColorStop(1, '#c98f37');
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x - r / 3, y - r / 3, r / 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fill();
+  }
+
+  function star(x, y, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+  }
+
+  function cloud(x, y, w, h) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, [h / 2]);
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fill();
+  }
+
+  function ground() {
+    ctx.fillStyle = '#122a2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#0a1a1c';
+    ctx.fillRect(0, canvas.height * 0.7, canvas.width, canvas.height * 0.3);
+  }
+
+  function drawStars() {
+    ctx.fillStyle = '#fff';
+    for (let i = 0; i < 80; i++) {
+      star(Math.random() * canvas.width, Math.random() * canvas.height * 0.6, Math.random() * 1.5 + 0.5);
+    }
+  }
+
+  function drawMoon() {
+    moon(canvas.width * 0.7, canvas.height * 0.3, canvas.width / 800 * 30);
+  }
+
+  // @layer Glasshouse
+  function greenhouse() {
+    const glassWidth = canvas.width / 800 * 200;
+    const glassHeight = canvas.height / 600 * 200;
+    const glassX = (canvas.width - glassWidth) / 2;
+    const glassY = canvas.height * 0.3;
+
+    // Frame
+    ctx.strokeStyle = '#6b4a27';
+    ctx.lineWidth = canvas.width / 800 * 4;
+    ctx.strokeRect(glassX, glassY, glassWidth, glassHeight);
+
+    // Glass panes
+    const paneWidth = glassWidth / 4;
+    for (let i = 0; i < 4; i++) {
+      ctx.fillStyle = 'rgba(173, 216, 230, 0.2)';
+      ctx.fillRect(glassX + i * paneWidth, glassY, paneWidth, glassHeight);
+    }
+
+    // Roof
+    ctx.beginPath();
+    ctx.moveTo(glassX, glassY);
+    ctx.lineTo(glassX + glassWidth / 2, glassY - glassHeight / 3);
+    ctx.lineTo(glassX + glassWidth, glassY);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(139, 69, 19, 0.3)';
+    ctx.fill();
+    ctx.strokeStyle = '#8b4513';
+    ctx.stroke();
+  }
+
+  // @layer Flower beds
+  function flowerBeds() {
+    const bedWidth = canvas.width / 800 * 120;
+    const bedHeight = canvas.height / 600 * 60;
+    const bedX = glassX - bedWidth - canvas.width / 800 * 10;
+    const bedY = glassY + glassHeight - bedHeight;
+
+    // Left bed
+    ctx.fillStyle = '#2a5c47';
+    ctx.fillRect(bedX, bedY, bedWidth, bedHeight);
+    drawFlowers(bedX, bedY, bedWidth, bedHeight, 30, '#ff6b6b', '#ffa500', '#9b59b6');
+
+    // Right bed
+    const bedX2 = glassX + glassWidth + canvas.width / 800 * 10;
+    ctx.fillStyle = '#2a5c47';
+    ctx.fillRect(bedX2, bedY, bedWidth, bedHeight);
+    drawFlowers(bedX2, bedY, bedWidth, bedHeight, 30, '#3498db', '#f1c40f', '#e74c3c');
+  }
+
+  function drawFlowers(x, y, w, h, count, color1, color2, color3) {
+    for (let i = 0; i < count; i++) {
+      const fx = x + Math.random() * w;
+      const fy = y + Math.random() * h * 0.8;
+      const size = Math.random() * 8 + 4;
+
+      ctx.beginPath();
+      ctx.moveTo(fx, fy - size);
+      ctx.lineTo(fx - size, fy + size);
+      ctx.lineTo(fx + size, fy + size);
+      ctx.closePath();
+      ctx.fillStyle = color1;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(fx, fy, size * 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = color2;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(fx, fy, size * 0.3, 0, Math.PI * 2);
+      ctx.fillStyle = color3;
+      ctx.fill();
+    }
+  }
+
+  // @layer Path
+  function drawPath() {
+    ctx.fillStyle = '#5a4a3a';
+    ctx.fillRect(path.x, path.y, path.width, path.height);
+  }
+
+  // @layer Lamp
+  function drawLamp() {
+    ctx.beginPath();
+    ctx.arc(lamp.x, lamp.y, lamp.radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#333';
+    ctx.fill();
+
+    ctx.fillStyle = lamp.on ? '#ffeb3b' : '#333';
+    ctx.beginPath();
+    ctx.arc(lamp.x, lamp.y, lamp.radius * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.arc(lamp.x, lamp.y, lamp.radius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function lampGlow() {
+    if (!lamp.on) return;
+    const glowRadius = lamp.radius * 3;
+    const gradient = ctx.createRadialGradient(lamp.x, lamp.y, 0, lamp.x, lamp.y, glowRadius);
+    gradient.addColorStop(0, 'rgba(255, 235, 59, 0.8)');
+    gradient.addColorStop(1, 'rgba(255, 235, 59, 0)');
+    ctx.beginPath();
+    ctx.arc(lamp.x, lamp.y, glowRadius, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+  }
+
+  // @layer Interaction
+  function toggleLamp() {
+    lamp.on = !lamp.on;
+    draw();
+  }
+
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const dx = x - lamp.x;
+    const dy = y - lamp.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist <= lamp.radius) {
+      toggleLamp();
+    }
+  });
+
+  // @layer Animation
+  let animationId;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ground();
+    drawStars();
+    drawMoon();
+    greenhouse();
+    flowerBeds();
+    drawPath();
+    drawLamp();
+    lampGlow();
+    animationId = requestAnimationFrame(animate);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ground();
+    drawStars();
+    drawMoon();
+    greenhouse();
+    flowerBeds();
+    drawPath();
+    drawLamp();
+    lampGlow();
+  }
+
+  draw();
+})();

@@ -112,8 +112,15 @@ export function isValidArtPieceSoundCommand(
 }
 
 export type ArtPieceSandboxMessage =
-  | { source: typeof ART_PIECE_SANDBOX_MESSAGE_SOURCE; status: 'ready' }
-  | { source: typeof ART_PIECE_SANDBOX_MESSAGE_SOURCE; status: 'error'; message: string };
+  | { source: typeof ART_PIECE_SANDBOX_MESSAGE_SOURCE; status: 'ready'; previewId?: string }
+  | {
+      source: typeof ART_PIECE_SANDBOX_MESSAGE_SOURCE;
+      status: 'error';
+      message: string;
+      previewId?: string;
+      line?: number;
+      column?: number;
+    };
 
 /** The exact `sandbox` attribute value every art-piece preview iframe must
  * use. Exported as a single constant (rather than inlined at each call
@@ -498,18 +505,18 @@ function buildFlatEngineBody(snippet: string, library: ArtPieceLibrary): string 
  * (document order = execution order for synchronous inline scripts), so
  * even a snippet that throws synchronously during its own top-level
  * evaluation is still caught. */
-function buildListenerScript(library: ArtPieceLibrary): string {
+function buildListenerScript(library: ArtPieceLibrary, previewId?: string): string {
   return `
 <script>
 (function () {
   var pieceLibrary = ${JSON.stringify(library)};
-  function report(status, message) {
+  function report(status, message, details) {
     if (status === 'ready' && runtimeFailed) return;
     if (status === 'error') runtimeFailed = true;
     if (status === 'ready') runtimeReady = true;
     try {
       window.parent.postMessage(
-        { source: ${JSON.stringify(ART_PIECE_SANDBOX_MESSAGE_SOURCE)}, status: status, message: message },
+        { source: ${JSON.stringify(ART_PIECE_SANDBOX_MESSAGE_SOURCE)}, status: status, message: message, previewId: ${JSON.stringify(previewId ?? null)}, line: details && details.line, column: details && details.column },
         '*'
       );
     } catch (e) {
@@ -860,7 +867,10 @@ function buildListenerScript(library: ArtPieceLibrary): string {
   }
   window.addEventListener('error', function (event) {
     if (isBenignResizeObserverNotification(event)) return;
-    report('error', (event && event.message) || 'The generated piece threw an error.');
+    report('error', (event && event.message) || 'The generated piece threw an error.', {
+      line: event && event.lineno,
+      column: event && event.colno
+    });
   });
   window.addEventListener('unhandledrejection', function (event) {
     var reason = event && event.reason;
@@ -1177,7 +1187,7 @@ export function buildArtPieceSandboxDocument(
   snippet: string,
   library: ArtPieceLibrary = 'canvas2d',
   presentation: 'regular' | 'immersive' = 'regular',
-  options: { background?: string; ink?: unknown } = {},
+  options: { background?: string; ink?: unknown; previewId?: string } = {},
 ): string {
   const cdnUrl = LIBRARY_CDN[library];
   const cdnScriptTag = cdnUrl ? `<script src="${cdnUrl}"></script>` : '';
@@ -1203,7 +1213,7 @@ ${cdnScriptTag}
 ${webglCapturePrelude(library)}
 ${webglResponsivePrelude(library, presentation)}
 ${flatResponsivePrelude(library, presentation)}
-${buildListenerScript(library)}
+${buildListenerScript(library, options.previewId)}
 </head>
 <body>
 ${body}
@@ -1218,18 +1228,67 @@ ${buildInkOverlayBlock(options.ink)}
  * verify `event.source === iframe.contentWindow` before calling this --
  * see this module's own doc comment for why `event.origin` can't do that
  * job for an opaque-origin sandboxed iframe. */
-export function parseArtPieceSandboxMessage(data: unknown): ArtPieceSandboxMessage | null {
+export function parseArtPieceSandboxMessage(
+  data: unknown,
+  expectedPreviewId?: string,
+): ArtPieceSandboxMessage | null {
   if (typeof data !== 'object' || data === null) return null;
   const record = data as Record<string, unknown>;
   if (record.source !== ART_PIECE_SANDBOX_MESSAGE_SOURCE) return null;
+  if (expectedPreviewId !== undefined && record.previewId !== expectedPreviewId) return null;
+  const previewId = typeof record.previewId === 'string' ? record.previewId : undefined;
   if (record.status === 'ready')
-    return { source: ART_PIECE_SANDBOX_MESSAGE_SOURCE, status: 'ready' };
+    return {
+      source: ART_PIECE_SANDBOX_MESSAGE_SOURCE,
+      status: 'ready',
+      ...(previewId ? { previewId } : {}),
+    };
   if (record.status === 'error') {
     return {
       source: ART_PIECE_SANDBOX_MESSAGE_SOURCE,
       status: 'error',
       message: typeof record.message === 'string' ? record.message : 'Unknown error.',
+      ...(previewId ? { previewId } : {}),
+      ...(typeof record.line === 'number' && Number.isInteger(record.line) && record.line > 0
+        ? { line: record.line }
+        : {}),
+      ...(typeof record.column === 'number' && Number.isInteger(record.column) && record.column > 0
+        ? { column: record.column }
+        : {}),
     };
   }
   return null;
+}
+
+/** Returns the one-based srcdoc line where the exact source starts. */
+export function getArtPieceSourceStartLine(document: string, source: string): number | null {
+  const bodyStart = document.indexOf('<body>\n');
+  if (bodyStart < 0) return null;
+  const sourceStart = bodyStart + '<body>\n'.length;
+  if (!document.startsWith(source, sourceStart)) return null;
+  return document.slice(0, sourceStart).split('\n').length;
+}
+
+/** Maps a srcdoc error only when it falls inside the exact embedded source. */
+export function mapArtPieceSourceLocation(
+  location: { line: number; column: number },
+  sourceStartLine: number | null,
+  source: string,
+): { line: number; column: number } | null {
+  if (
+    sourceStartLine === null ||
+    !Number.isInteger(location.line) ||
+    !Number.isInteger(location.column) ||
+    location.column < 1
+  )
+    return null;
+  const sourceLine = location.line - sourceStartLine + 1;
+  if (sourceLine < 1 || sourceLine > source.split('\n').length) return null;
+  return { line: sourceLine, column: location.column };
+}
+
+/** Hash the original source only, excluding the preview wrapper/runtime. */
+export async function sha256ArtPieceSource(source: string): Promise<string> {
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }

@@ -7,7 +7,12 @@ import {
   buildArtPieceSandboxDocument,
   isValidArtPieceSoundCommand,
   parseArtPieceSandboxMessage,
+  mapArtPieceSourceLocation,
+  getArtPieceSourceStartLine,
+  sha256ArtPieceSource,
 } from './artPieceSandbox';
+
+import pilotSource from './__fixtures__/canvas2d-runtime-error.txt?raw';
 
 const SNIPPET = '<canvas id="art-piece-canvas"></canvas><script>document.title = "hi";</script>';
 
@@ -20,6 +25,63 @@ describe('ART_PIECE_IFRAME_SANDBOX', () => {
 });
 
 describe('buildArtPieceSandboxDocument', () => {
+  it('#1340 binds runtime reports to the preview and includes ErrorEvent coordinates', () => {
+    const doc = buildArtPieceSandboxDocument(SNIPPET, 'canvas2d', 'regular', {
+      previewId: 'preview-test',
+    });
+    expect(doc).toContain('previewId: "preview-test"');
+    expect(doc).toContain('line: event && event.lineno');
+    expect(doc).toContain('column: event && event.colno');
+    expect(doc).toContain("default-src 'none';");
+    expect(doc).not.toContain('allow-same-origin');
+  });
+
+  it('#1340 locates source in the exact built Canvas2D preview and maps runtime frames', () => {
+    const doc = buildArtPieceSandboxDocument(pilotSource, 'canvas2d');
+    const sourceStartLine = getArtPieceSourceStartLine(doc, pilotSource);
+    if (sourceStartLine === null)
+      throw new Error('Canvas2D source was not embedded in the preview document.');
+
+    expect(doc.slice(doc.indexOf('<body>') + '<body>\n'.length).startsWith(pilotSource)).toBe(true);
+    const bodyStart = doc.indexOf('<body>\n') + '<body>\n'.length;
+    expect(doc.slice(0, bodyStart)).toContain('<body>');
+    expect(sourceStartLine).toBe(doc.slice(0, bodyStart).split('\n').length);
+    expect(
+      mapArtPieceSourceLocation(
+        { line: sourceStartLine + 100, column: 18 },
+        sourceStartLine,
+        pilotSource,
+      ),
+    ).toEqual({ line: 101, column: 18 });
+    expect(
+      mapArtPieceSourceLocation(
+        { line: sourceStartLine + 216, column: 5 },
+        sourceStartLine,
+        pilotSource,
+      ),
+    ).toEqual({ line: 217, column: 5 });
+    expect(
+      mapArtPieceSourceLocation(
+        { line: sourceStartLine + 222, column: 3 },
+        sourceStartLine,
+        pilotSource,
+      ),
+    ).toEqual({ line: 223, column: 3 });
+    expect(
+      mapArtPieceSourceLocation(
+        { line: sourceStartLine - 1, column: 3 },
+        sourceStartLine,
+        pilotSource,
+      ),
+    ).toBeNull();
+  });
+
+  it('#1340 exposes SHA-256 of the original source string', async () => {
+    expect(await sha256ArtPieceSource(pilotSource)).toBe(
+      '204d4ea23daa718e9097b2b017b95741c1d558fe1b73c44530b5e620ec026f4c',
+    );
+  });
+
   it('embeds a strict, network-blocking Content-Security-Policy meta tag', () => {
     const doc = buildArtPieceSandboxDocument(SNIPPET);
     expect(doc).toContain('Content-Security-Policy');
@@ -399,5 +461,21 @@ describe('parseArtPieceSandboxMessage', () => {
     expect(parseArtPieceSandboxMessage('not an object')).toBeNull();
     expect(parseArtPieceSandboxMessage(null)).toBeNull();
     expect(parseArtPieceSandboxMessage(undefined)).toBeNull();
+  });
+
+  it('#1340 accepts error locations only from the expected preview instance', () => {
+    const message = {
+      source: ART_PIECE_SANDBOX_MESSAGE_SOURCE,
+      status: 'error',
+      previewId: 'preview-current',
+      message: 'boom',
+      line: 863,
+      column: 18,
+    };
+    expect(parseArtPieceSandboxMessage(message, 'preview-current')).toEqual(message);
+    expect(
+      parseArtPieceSandboxMessage({ ...message, previewId: 'preview-stale' }, 'preview-current'),
+    ).toBeNull();
+    expect(parseArtPieceSandboxMessage(message, 'another-source-window')).toBeNull();
   });
 });

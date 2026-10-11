@@ -20,8 +20,9 @@ test.describe('Local 2D piece package export (#956)', () => {
     }, testInfo: TestInfo) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await page.goto('/create');
-      await page.getByRole('button', { name: 'Create a new 2D project', exact: true }).click();
+      await page.goto('/studio');
+      await page.getByRole('button', { name: 'More creation options' }).click();
+      await page.getByRole('menuitem', { name: 'Create a new 2D project with p5.js' }).click();
       await page.waitForURL(/\/local-projects\/[^/]+$/);
       await expect(page.getByRole('heading', { name: 'Untitled animation' })).toBeVisible();
 

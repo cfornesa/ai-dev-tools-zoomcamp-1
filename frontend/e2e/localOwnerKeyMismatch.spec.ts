@@ -108,8 +108,9 @@ test.describe('local-first owner key mismatch (#1282)', () => {
         }
       });
 
-      await page.goto('/create');
-      await page.getByRole('button', { name: 'Create a new 2D project', exact: true }).click();
+      await page.goto('/studio');
+      await page.getByRole('button', { name: 'More creation options' }).click();
+      await page.getByRole('menuitem', { name: 'Create a new 2D project with p5.js' }).click();
       await page.waitForURL(/\/local-projects\/[^/]+$/);
       await expect(page.getByRole('heading', { name: 'Untitled animation' })).toBeVisible();
       const twoDId = new URL(page.url()).pathname.split('/').at(-1)!;
@@ -123,8 +124,9 @@ test.describe('local-first owner key mismatch (#1282)', () => {
         fullPage: true,
       });
 
-      await page.goto('/create');
-      await page.getByRole('button', { name: 'Create a new 3D project', exact: true }).click();
+      await page.goto('/studio');
+      await page.getByRole('button', { name: 'More creation options' }).click();
+      await page.getByRole('menuitem', { name: 'Create a new 3D project' }).click();
       await page.waitForURL(/\/local-projects\/[^/]+$/);
       await expect(page.getByRole('heading', { name: 'Untitled 3D scene' })).toBeVisible();
       const threeDId = new URL(page.url()).pathname.split('/').at(-1)!;
@@ -138,10 +140,9 @@ test.describe('local-first owner key mismatch (#1282)', () => {
         fullPage: true,
       });
 
-      await page.goto('/create');
-      await page
-        .getByRole('button', { name: 'Create a local generated piece', exact: true })
-        .click();
+      await page.goto('/studio');
+      await page.getByRole('button', { name: 'More creation options' }).click();
+      await page.getByRole('menuitem', { name: 'Create a local generated piece' }).click();
       await page.waitForURL(/\/local-generated\/[^/]+$/);
       await expect(page.getByRole('heading', { name: 'Local generated SVG' })).toBeVisible();
       const generatedId = new URL(page.url()).pathname.split('/').at(-1)!;

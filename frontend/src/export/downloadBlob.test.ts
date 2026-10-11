@@ -46,6 +46,7 @@ describe('downloadBlob', () => {
 
     try {
       downloadBlob(new Blob(['x']), 'my-file.png');
+      expect(revoked).toEqual([]);
       vi.runAllTimers();
     } finally {
       document.createElement = originalCreateElement;

@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,6 +6,7 @@ import * as artPiecesApi from '../api/artPieces';
 import * as aiPreferencesApi from '../api/aiPreferences';
 import { ApiError } from '../api/client';
 import * as authModule from '../auth/useAuth';
+import { downloadBlob } from '../export/downloadBlob';
 import * as artPieceBundleModule from '../generative/artPieceBundle';
 import * as thumbnailCaptureModule from '../generative/artPieceThumbnailCapture';
 import {
@@ -14,12 +15,14 @@ import {
   type ArtPieceLibrary,
 } from '../api/artPieces';
 import { getArtPieceStarter } from '../generative/artPieceStarters';
+import pilotSource from '../generative/__fixtures__/canvas2d-runtime-error.txt?raw';
 import { ART_PIECE_SANDBOX_MESSAGE_SOURCE } from '../generative/artPieceSandbox';
 import ArtPieceStudio from './ArtPieceStudio';
 
 vi.mock('../api/artPieces');
 vi.mock('../api/aiPreferences');
 vi.mock('../auth/useAuth');
+vi.mock('../export/downloadBlob');
 vi.mock('../generative/artPieceBundle');
 vi.mock('../generative/artPieceThumbnailCapture');
 
@@ -27,6 +30,7 @@ const mockedGenerateArtPiece = vi.mocked(artPiecesApi.generateArtPiece);
 const mockedCreateArtPiece = vi.mocked(artPiecesApi.createArtPiece);
 const mockedFetchAIPersonas = vi.mocked(aiPreferencesApi.fetchAIPersonas);
 const mockedUseAuth = vi.mocked(authModule.useAuth);
+const mockedDownloadBlob = vi.mocked(downloadBlob);
 const mockedGenerateArtPieceBundle = vi.mocked(artPieceBundleModule.generateArtPieceBundle);
 const mockedTriggerArtPieceBundleDownload = vi.mocked(
   artPieceBundleModule.triggerArtPieceBundleDownload,
@@ -46,9 +50,13 @@ beforeEach(() => {
 });
 
 function dispatchSandboxMessage(iframe: HTMLIFrameElement, data: Record<string, unknown>): void {
+  const embeddedPreviewId = iframe.srcdoc.match(/previewId: "([^"]+)"/)?.[1];
   act(() => {
     window.dispatchEvent(
-      new MessageEvent('message', { data, source: iframe.contentWindow as Window }),
+      new MessageEvent('message', {
+        data: { ...data, previewId: data.previewId ?? embeddedPreviewId },
+        source: iframe.contentWindow as Window,
+      }),
     );
   });
 }
@@ -357,6 +365,107 @@ describe('ArtPieceStudio (issue #199)', () => {
 
     expect(await screen.findByTestId('art-piece-crashed')).toHaveTextContent('boom');
     expect(screen.queryByTestId('art-piece-download')).toBeNull();
+  });
+
+  it('#1340 retains, identifies, maps, copies, and downloads the exact failed Canvas2D source', async () => {
+    mockedGenerateArtPiece.mockResolvedValue({
+      library: 'canvas2d',
+      code: pilotSource,
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2, estimated_cost_usd: 0 },
+    });
+    const clipboard = { writeText: vi.fn().mockResolvedValue(undefined) };
+    const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: clipboard });
+    try {
+      render(<ArtPieceStudio />);
+      await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'greenhouse');
+      await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+      const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+      const sourceStart = iframe.srcdoc.indexOf(pilotSource);
+      const sourceStartLine = iframe.srcdoc.slice(0, sourceStart).split('\n').length;
+      dispatchSandboxMessage(iframe, {
+        source: ART_PIECE_SANDBOX_MESSAGE_SOURCE,
+        status: 'error',
+        message: 'ReferenceError: glassX is not defined',
+        line: sourceStartLine + 100,
+        column: 18,
+      });
+
+      const crashed = await screen.findByTestId('art-piece-crashed');
+      expect(crashed).toHaveTextContent(
+        'The generated piece could not render: ReferenceError: glassX is not defined',
+      );
+      expect(await screen.findByTestId('failed-source-sha256')).toHaveTextContent(
+        '204d4ea23daa718e9097b2b017b95741c1d558fe1b73c44530b5e620ec026f4c',
+      );
+      expect(screen.getByTestId('failed-source-location')).toHaveTextContent(
+        'Preview source location: line 101, column 18',
+      );
+      expect(screen.getByLabelText('Failed source used by this preview')).toHaveValue(pilotSource);
+      expect(screen.getByLabelText('Piece title')).toBeInTheDocument();
+      expect(screen.queryByTestId('art-piece-save')).toBeNull();
+      expect(screen.queryByTestId('art-piece-download')).toBeNull();
+      expect(screen.queryByTestId('art-piece-capabilities')).toBeNull();
+
+      await userEvent.click(screen.getByTestId('copy-failed-source'));
+      expect(clipboard.writeText).toHaveBeenCalledWith(pilotSource);
+      await userEvent.click(screen.getByTestId('download-failed-source'));
+      expect(mockedDownloadBlob).toHaveBeenCalledOnce();
+      const [failedSourceBlob, filename] = mockedDownloadBlob.mock.calls[0];
+      expect(failedSourceBlob.type).toBe('text/plain;charset=utf-8');
+      await expect(failedSourceBlob.text()).resolves.toBe(pilotSource);
+      expect(filename).toBe('failed-art-piece-source.txt');
+    } finally {
+      if (originalClipboard) Object.defineProperty(navigator, 'clipboard', originalClipboard);
+      else Reflect.deleteProperty(navigator, 'clipboard');
+    }
+  });
+
+  it('#1340 ignores a stale preview error delivered through the current iframe window', async () => {
+    const usage = {
+      prompt_tokens: 1,
+      completion_tokens: 1,
+      total_tokens: 2,
+      estimated_cost_usd: 0,
+    };
+    mockedGenerateArtPiece
+      .mockResolvedValueOnce({
+        library: 'canvas2d',
+        code: '<canvas></canvas><script></script>',
+        usage,
+      })
+      .mockResolvedValueOnce({
+        library: 'canvas2d',
+        code: '<canvas id="new"></canvas><script></script>',
+        usage,
+      });
+    render(<ArtPieceStudio />);
+    await userEvent.type(screen.getByLabelText(/describe the art piece/i), 'first preview');
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+    const iframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+    const oldPreviewId = iframe.srcdoc.match(/previewId: "([^"]+)"/)?.[1];
+    expect(oldPreviewId).toBeTruthy();
+
+    await userEvent.click(screen.getByRole('button', { name: /generate/i }));
+    const nextIframe = (await screen.findByTestId('art-piece-preview')) as HTMLIFrameElement;
+    await waitFor(() => expect(nextIframe.srcdoc).toContain('<canvas id="new">'));
+    const currentPreviewId = nextIframe.srcdoc.match(/previewId: "([^"]+)"/)?.[1];
+    expect(currentPreviewId).not.toBe(oldPreviewId);
+    dispatchSandboxMessage(nextIframe, {
+      source: ART_PIECE_SANDBOX_MESSAGE_SOURCE,
+      status: 'error',
+      previewId: oldPreviewId,
+      message: 'stale error',
+    });
+    expect(screen.queryByTestId('art-piece-crashed')).toBeNull();
+    expect(screen.queryByTestId('art-piece-save')).toBeNull();
+
+    dispatchSandboxMessage(nextIframe, {
+      source: ART_PIECE_SANDBOX_MESSAGE_SOURCE,
+      status: 'ready',
+      previewId: currentPreviewId,
+    });
+    expect(await screen.findByTestId('art-piece-save')).toBeInTheDocument();
   });
 
   it("ignores a message whose source is not this iframe's own contentWindow", async () => {

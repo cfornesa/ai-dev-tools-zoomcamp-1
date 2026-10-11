@@ -326,8 +326,9 @@ test.describe('Local generated transfer integrity (#1287)', () => {
   }, testInfo: TestInfo) => {
     await page.setViewportSize(VIEWPORTS[0]);
     await loginViaUI(page, fixtures.split.email, fixtures.password);
-    await page.goto('/create');
-    await page.getByRole('button', { name: 'Create a local generated piece', exact: true }).click();
+    await page.goto('/studio');
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create a local generated piece' }).click();
     await page.waitForURL(/\/local-generated\/[^/]+$/);
     const localId = new URL(page.url()).pathname.split('/').at(-1)!;
     const source =
@@ -467,8 +468,9 @@ test.describe('Local generated transfer integrity (#1287)', () => {
   }, testInfo: TestInfo) => {
     await page.setViewportSize(VIEWPORTS[0]);
     await loginViaUI(page, fixtures.split.email, fixtures.password);
-    await page.goto('/create');
-    await page.getByRole('button', { name: 'Create a local generated piece', exact: true }).click();
+    await page.goto('/studio');
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create a local generated piece' }).click();
     await page.waitForURL(/\/local-generated\/[^/]+$/);
     const localId = new URL(page.url()).pathname.split('/').at(-1)!;
     const source =

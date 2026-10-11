@@ -9,7 +9,7 @@ test.describe('Local-only transfer consent (#939)', () => {
   test('discloses the AI transfer and sends only after per-version consent', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await loginViaUI(page, fixtures.owner.email, fixtures.password);
-    await page.goto('/create');
+    await page.goto('/studio');
 
     const apiPosts: string[] = [];
     const aiRequests: string[] = [];
@@ -38,7 +38,8 @@ test.describe('Local-only transfer consent (#939)', () => {
       });
     });
 
-    await page.getByRole('button', { name: 'Create a local generated piece', exact: true }).click();
+    await page.getByRole('button', { name: 'More creation options' }).click();
+    await page.getByRole('menuitem', { name: 'Create a local generated piece' }).click();
     await page.waitForURL(/\/local-generated\/[^/]+$/);
     await page.getByLabel('Describe the local revision').fill('Make the circle purple.');
     await page.getByRole('button', { name: 'Ask AI for a local revision', exact: true }).click();

@@ -17,7 +17,7 @@ test.describe('Local-first generated creation (#938)', () => {
     }) => {
       await page.setViewportSize(viewport);
       await loginViaUI(page, fixtures.owner.email, fixtures.password);
-      await page.goto('/create');
+      await page.goto('/studio');
       const serverMutations: string[] = [];
       page.on('request', (request) => {
         if (request.method() === 'POST' && new URL(request.url()).pathname.startsWith('/api/')) {
@@ -25,9 +25,8 @@ test.describe('Local-first generated creation (#938)', () => {
         }
       });
 
-      await page
-        .getByRole('button', { name: 'Create a local generated piece', exact: true })
-        .click();
+      await page.getByRole('button', { name: 'More creation options' }).click();
+      await page.getByRole('menuitem', { name: 'Create a local generated piece' }).click();
       await page.waitForURL(/\/local-generated\/[^/]+$/);
       await expect(page.getByRole('heading', { name: 'Local generated SVG' })).toBeVisible();
       await expect(page.getByTitle('Local generated SVG preview')).toBeVisible();
